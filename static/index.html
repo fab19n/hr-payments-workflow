@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HR Payments</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<aside class="side">
+  <div class="brand">
+    <div class="eyebrow">Agrinexus · HR &amp; Finance</div>
+    <div class="name">HR Payments</div>
+  </div>
+  <nav id="nav" class="nav"></nav>
+  <div class="side-foot muted">Records stay on this PC</div>
+</aside>
+<div class="content">
+  <header class="top">
+    <div id="pageTitle" class="crumb"></div>
+    <div class="month-pick">
+      <button id="prevMonth" aria-label="Previous month">‹</button>
+      <div id="monthLabel" class="label"></div>
+      <button id="nextMonth" aria-label="Next month">›</button>
+      <button id="thisMonth" class="ghost">Current</button>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+<aside id="drawer" class="drawer" hidden></aside>
+<div id="toast" class="toast" hidden></div>
+<input type="file" id="filePick" hidden multiple>
+<script src="/static/app.js"></script>
+</body>
+</html>

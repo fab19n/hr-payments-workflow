@@ -1,0 +1,11 @@
+# Never commit real records or samples: they contain salaries, IC and bank account numbers.
+samples/
+.venv/
+__pycache__/
+*.pyc
+*.db
+data/
+review/
+
+# Tests use real names, amounts and account numbers from the records, so they stay on this PC.
+tests/
