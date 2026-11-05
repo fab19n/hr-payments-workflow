@@ -1,4 +1,5 @@
 """Local web app. Listens on 127.0.0.1 only, so nothing outside this PC can reach it."""
+import io
 import json
 import re
 import secrets
@@ -10,8 +11,8 @@ from pathlib import Path
 
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import auditpack, budget as stored, db, nextup, rules, sqlimport, statements
-from .config import BACKUP_DIR, DATA_DIR, DB_PATH, PACKS_DIR, SETTINGS, PROGRAM_DIR
+from . import auditpack, budget as stored, db, nextup, reports, rules, sqlimport, statements
+from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
 app = Flask(__name__, static_folder=str(PROGRAM_DIR / "static"), static_url_path="/static")
@@ -1410,6 +1411,63 @@ def audit_pack_file():
     if PACKS_DIR.resolve() not in p.parents or not p.exists():
         abort(404)
     return send_file(p)
+
+
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _entity_arg(c):
+    return entity(c, id_from(request.args.get("entity_id") or request.args.get("entity") or ""))
+
+
+@app.get("/api/export/month.xlsx")
+def export_month():
+    """The month report as an Excel file, built in memory (reports.month_workbook)."""
+    c = con()
+    e = _entity_arg(c)
+    month = month_from(request.args.get("month"))
+    data = reports.workbook_bytes(reports.month_workbook(c, e, month))
+    return send_file(io.BytesIO(data), mimetype=XLSX, as_attachment=True, download_name=reports.month_report_name(e, month))
+
+
+@app.get("/api/export/budget.xlsx")
+def export_budget():
+    """The month's stored budget as an Excel file; the usual error when none is set up."""
+    c = con()
+    e = _entity_arg(c)
+    month = month_from(request.args.get("month"))
+    as_at = day_from(request.args["as_at"]) if request.args.get("as_at") else None
+    try:
+        wb = reports.budget_workbook(c, e, month, as_at)
+    except LookupError as ex:
+        return err(str(ex), 404)
+    return send_file(io.BytesIO(reports.workbook_bytes(wb)), mimetype=XLSX, as_attachment=True,
+                     download_name=reports.budget_report_name(e, month))
+
+
+@app.post("/api/auditor-export")
+def auditor_export():
+    """Builds a fresh audit pack and a zip for the auditor (reports.auditor_package) and logs it."""
+    b = _body()
+    c = con()
+    e = entity(c, id_from(str(b.get("entity_id"))))
+    month = month_from(b.get("month"))
+    try:
+        path, n, left_out = reports.auditor_package(c, e, month)
+    except auditpack.PackError as ex:
+        return err(str(ex))
+    db.log(c, f"Built auditor package {path.name} ({n} files{f', {left_out} left out' if left_out else ''}), with a fresh audit pack")
+    c.commit()
+    return jsonify({"name": path.name, "url": f"/api/auditor-export/file?name={path.parent.name}/{path.name}", "files": n,
+                    "left_out": left_out})
+
+
+@app.get("/api/auditor-export/file")
+def auditor_export_file():
+    p = (EXPORTS_DIR / request.args["name"]).resolve()
+    if EXPORTS_DIR.resolve() not in p.parents or p.suffix != ".zip" or not p.exists():
+        abort(404)
+    return send_file(p, as_attachment=True)
 
 
 @app.get("/api/audit-packs")

@@ -31,8 +31,9 @@ DATA_DIR = Path(os.environ.get("HRP_DATA_DIR") or SETTINGS["data_dir"])
 DOCS_DIR = DATA_DIR / "documents"
 PACKS_DIR = DATA_DIR / "audit-packs"
 BACKUP_DIR = DATA_DIR / "backups"
+EXPORTS_DIR = DATA_DIR / "exports"
 DB_PATH = DATA_DIR / "records.db"
 SEED_PATH = DATA_DIR / "seed.json"
 
-for d in (DATA_DIR, DOCS_DIR, PACKS_DIR, BACKUP_DIR):
+for d in (DATA_DIR, DOCS_DIR, PACKS_DIR, BACKUP_DIR, EXPORTS_DIR):
     d.mkdir(parents=True, exist_ok=True)

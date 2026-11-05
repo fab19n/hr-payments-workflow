@@ -145,6 +145,10 @@ def build(con, entity, month):
     for pg in PdfReader(io.BytesIO(_cover(entity, month, index_rows, not_merged))).pages:
         out.add_page(pg)
     out.add_outline_item("Index", 0)
+    first = len(out.pages)
+    for pg in PdfReader(io.BytesIO(_reconciliation(con, entity, month))).pages:
+        out.add_page(pg)
+    out.add_outline_item("Bank reconciliation", first)
     for label, d, pages in parts:
         first = len(out.pages)
         try:
@@ -294,6 +298,118 @@ def readiness(con, entity, month, cached=False):
             "pack": pack and {"name": pack["path"].name, "when": pack["when"], "changed": n},
             "pack_open": pack_open, "still_open": summary + ([pack_open] if pack_open else []),
             "to_print": to_print(sql_to_print(con, entity, [(p, evs[p["id"]]) for p in pays]))}
+
+
+def reconciliation(con, entity, month):
+    """Each account of the company with what its statement for the month shows, for the bank reconciliation pages and the
+    Excel report: [{label, currency, statement: the statements row or None, lines: its lines, sum (the lines added up),
+    difference (opening + lines - closing), balanced, matched (lines linked to a payment), to_explain (lines left),
+    no_docs (lines marked as needing no documents), no_line: paid payments on the account with no bank line anywhere that were
+    paid in the statement's month (whatever their payroll month) or belong to the month's payroll (paid in another month)}]. A payment with no account of its own counts for the only account in its currency."""
+    accts = con.execute("SELECT * FROM accounts WHERE entity_id = ? ORDER BY id", (entity["id"],)).fetchall()
+    pays = con.execute(
+        """SELECT * FROM payments WHERE entity_id = ? AND paid_date IS NOT NULL AND paid_date <> ''
+           AND (substr(paid_date, 1, 7) = ? OR month = ?) AND NOT EXISTS
+           (SELECT 1 FROM statement_lines l WHERE l.payment_id = payments.id) ORDER BY paid_date, id""",
+        (entity["id"], month, month)).fetchall()
+    out = []
+    for a in accts:
+        st = con.execute("SELECT * FROM statements WHERE account_id = ? AND month = ?", (a["id"], month)).fetchone()
+        lines = con.execute("SELECT * FROM statement_lines WHERE statement_id = ? ORDER BY line_no", (st["id"],)).fetchall() if st else []
+        total = round(sum(l["amount"] for l in lines), 2)
+        diff = round(st["opening"] + total - st["closing"], 2) if st and st["opening"] is not None and st["closing"] is not None else None
+        same = [x for x in accts if x["currency"] == a["currency"]]
+        no_line = [p for p in pays if p["account_id"] == a["id"] or (p["account_id"] is None and p["currency"] == a["currency"] and len(same) == 1)]
+        out.append({"label": a["label"], "currency": a["currency"], "statement": st, "lines": lines, "sum": total, "difference": diff,
+                    "balanced": diff is not None and abs(diff) <= 0.01,
+                    "matched": [l for l in lines if l["payment_id"]],
+                    "to_explain": [l for l in lines if l["status"] == "unmatched" and not l["payment_id"]],
+                    "no_docs": [l for l in lines if l["status"] == "no_docs" and not l["payment_id"]], "no_line": no_line})
+    return out
+
+
+def _no_line_note(p, month):
+    """Why a paid payment with no bank line is listed on the month's page."""
+    paid = p["paid_date"][:7]
+    if paid != month:  # a payment of this month paid in another month: its statement is the one to check
+        return f"{month_label(p['month'])} payment paid in {month_label(paid)}, check that statement"
+    base = "paid per SQL, not on the statement" if p["sql_ref"] else "not on the statement"
+    return base if p["month"] == month else f"{month_label(p['month'])} payment, {base}"
+
+
+def _reconciliation(con, entity, month):
+    """The bank reconciliation pages: one section per account of the company for the month."""
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(True, 15)
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 15)
+    pdf.cell(0, 8, _latin(f"{entity['name']} - Bank reconciliation {month_label(month)}"), new_x="LMARGIN", new_y="NEXT")
+    cols = (22, 100, 30, 38)
+
+    def heading(text):
+        pdf.ln(3)
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(0, 7, _latin(text), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 9)
+
+    def say(text):
+        pdf.multi_cell(0, LINE, _latin(text), new_x="LMARGIN", new_y="NEXT")
+
+    def table(title, head, rows):
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.cell(0, 6, _latin(title), new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "B", 8.5)
+        for w, t in zip(cols, head):
+            pdf.cell(w, 5, t, border="B")
+        pdf.ln(5)
+        pdf.set_font("Helvetica", "", 8.5)
+        for r in rows:
+            cells = [_latin(str(s)) for s in r]
+            h = max(LINE, *(pdf.multi_cell(w, LINE, s, dry_run=True, output="HEIGHT") for w, s in zip(cols, cells)))
+            if pdf.will_page_break(h):
+                pdf.add_page()
+            x, y = pdf.l_margin, pdf.get_y()
+            for i, (w, s) in enumerate(zip(cols, cells)):
+                pdf.set_xy(x, y)
+                pdf.multi_cell(w, LINE, s, align="R" if i == 2 else "L")
+                x += w
+            pdf.set_y(y + h)
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "", 9)
+
+    for a in reconciliation(con, entity, month):
+        cur, st = a["currency"], a["statement"]
+        heading(a["label"] if a["label"].endswith(")") else f"{a['label']} ({cur})")
+        if not st:
+            say(f"The {month_label(month)} statement is not imported.")
+            continue
+        n = lambda v: "not on statement" if v is None else money(v, cur)
+        say(f"Opening balance {n(st['opening'])}. Closing balance {n(st['closing'])}. "
+            f"Total debits {n(st['total_debits'])}. Total credits {n(st['total_credits'])}. {len(a['lines'])} lines.")
+        if a["difference"] is None:
+            say("Check: the statement has no opening or closing balance to check against.")
+        else:
+            say(f"Check: opening {money(st['opening'], cur)} + lines {money(a['sum'], cur)} = {money(st['opening'] + a['sum'], cur)}; "
+                f"closing {money(st['closing'], cur)}. " + ("The balances add up." if a["balanced"]
+                                                              else f"THE BALANCES DO NOT ADD UP (difference {money(a['difference'], cur)})."))
+        m = a["matched"]
+        say(f"Lines matched to a payment: {len(m)}. Money out {money(-sum(l['amount'] for l in m if l['amount'] < 0), cur)}, "
+            f"money in {money(sum(l['amount'] for l in m if l['amount'] > 0), cur)}.")
+        if a["no_docs"]:
+            say(f"Lines marked as needing no documents: {len(a['no_docs'])}, total {money(sum(l['amount'] for l in a['no_docs']), cur)}.")
+        if a["to_explain"]:
+            table(f"Lines still to explain ({len(a['to_explain'])}, total {money(sum(l['amount'] for l in a['to_explain']), cur)})",
+                  ("Date", "Description", "Amount", "Note"),
+                  [(l["txn_date"], l["description"], f"{l['amount']:,.2f}", l["note"] or "") for l in a["to_explain"]])
+        else:
+            say("No lines left to explain.")
+        if a["no_line"]:
+            table(f"Paid with no bank line ({len(a['no_line'])})", ("Paid", "Payment", "Amount", "Note"),
+                  [(p["paid_date"], p["description"], "" if p["amount"] is None else f"{p['amount']:,.2f}",
+                    _no_line_note(p, month)) for p in a["no_line"]])
+        else:
+            say("Every payment paid in the month on this account has a bank line.")
+    return bytes(pdf.output())
 
 
 def _proofs(required, docs, ev):

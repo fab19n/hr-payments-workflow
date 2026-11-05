@@ -605,7 +605,8 @@ async function viewStoredBudget(main, d, here) {
   main.innerHTML = `${entityPicker()}${d.set_up ? "" : notSetUp(d.entity, month, d.lines.length)}
     <div class="card">
       <div class="row spread"><div><div class="eyebrow">${esc(d.entity.name)}</div><h1>Budget for ${esc(d.label)}</h1></div>
-      <button class="ghost noprint" id="printPage">Print budget</button></div>
+      <span class="row noprint"><a class="ghost" href="/api/export/budget.xlsx?entity_id=${eid}&month=${month}&as_at=${esc(d.as_at)}">Excel</a>
+      <button class="ghost" id="printPage">Print budget</button></span></div>
       ${cycleNote(d)}
       <div class="note noprint">Change any figure, description or detail here; it saves when you leave the box. The payments themselves are not changed. A payment paid on or before the balance date is already out of the balance, so it is not counted as still to pay.</div>
       <div class="form" style="max-width:800px">
@@ -1039,7 +1040,9 @@ async function viewAudit(main) {
         : `<div class="row">${r.summary.map(s => `<span class="pill warn">${esc(s)}</span>`).join("")}</div>
           <div class="note">Click a line to fix it. You can still build the pack: what is missing is listed on its index page.</div><div class="fixes">${open}</div>`}
       ${fromSql}${pack}
-      <div class="row"><button class="btn" id="buildPack">Build audit pack PDF</button></div><div id="packOut" class="note" hidden></div>
+      <div class="row"><button class="btn" id="buildPack">Build audit pack PDF</button>
+        <a class="ghost" id="excelReport" href="/api/export/month.xlsx?entity_id=${state.entity}&month=${state.month}">Excel report</a>
+        <button class="ghost" id="auditorPack">Auditor package</button></div><div id="packOut" class="note" hidden></div>
       ${built ? `<div class="row"><b>Printed and filed?</b><button class="btn" data-close-month="built">Yes, mark month as filed</button></div>` : ""}</div>
     <div class="card"><h2>Recent packs</h2>${packs.length ? packs.map(p => `<div class="row spread"><a href="${p.url}" target="_blank">${esc(p.name)}</a><span class="muted">${esc(p.at.replace("T", " "))}</span></div>`).join("") : `<div class="note">None built for ${esc(r.label)} yet.</div>`}</div>`;
 }
@@ -1204,6 +1207,18 @@ document.addEventListener("click", async ev => {
         $("#packOut").textContent = `The pack wasn't built: ${e.message}`; $("#packOut").hidden = false; throw e;
       }
       window.open(r.url, "_blank"); return render();
+    }
+    if (t.id === "auditorPack") {
+      if (!confirm("The auditor package holds staff pay, bank and ID details. It stays on this PC until you send it. Build it now?")) return;
+      t.disabled = true; t.textContent = "Building…"; $("#packOut").hidden = true;
+      try {
+        const r = await api("/api/auditor-export", { json: { entity_id: state.entity, month: state.month } });
+        // The package also built a fresh audit pack: show it in Recent packs and Before you print, then the link.
+        await render();
+        $("#packOut").innerHTML = `Auditor package built (${r.files} files${r.left_out ? `, ${r.left_out} left out because they changed or are missing` : ""}): <a href="${r.url}">${esc(r.name)}</a>. It also built a fresh audit pack, and it is in the exports folder on this PC.`;
+        $("#packOut").hidden = false; return;
+      } catch (e) { $("#packOut").textContent = `The package wasn't built: ${e.message}`; }
+      t.disabled = false; t.textContent = "Auditor package"; $("#packOut").hidden = false; return;
     }
     if (t.id === "doBackup") {
       t.disabled = true; const r = await api("/api/backup", { json: {} });
