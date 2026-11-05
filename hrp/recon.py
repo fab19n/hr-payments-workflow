@@ -63,7 +63,9 @@ def movements(con, ent, acct, month):
     SQL's books too. Customer invoices (IV) and journals (JV) are left out: they move no bank balance by themselves, and
     a journal's bank side can't be told from its amounts. A company's other accounts have no SQL listing of their own and
     are worked out from payments, as a company that isn't in SQL is: every payment recorded for the account with a paid
-    date in the month."""
+    date in the month, plus the account's statement lines dated in the month that need no documents (bank charges and
+    own-account transfers, marked by statements.classify or by a person): money the bank moved with nothing to record,
+    counted as it stands on the statement (kind 'bank')."""
     if ent["uses_sql"] and acct["id"] == _primary(con, ent):
         # A voucher edited in SQL and pasted again is a row in a later paste; only the latest paste of a doc_no counts.
         # Rows of one paste all count (a voucher listed on several lines).
@@ -88,6 +90,11 @@ def movements(con, ent, acct, month):
         items = [{"kind": "payment", "id": p["id"], "ref": None, "date": p["paid_date"], "description": p["description"],
                   "amount": _r(p["amount"] if p["direction"] == "in" else -p["amount"]), "payment_id": p["id"],
                   "status": None, "doc_type": None} for p in rows]
+        items += [{"kind": "bank", "id": l["id"], "ref": None, "date": l["txn_date"], "description": l["description"],
+                   "amount": _r(l["amount"]), "payment_id": None, "status": "no_docs", "doc_type": None, "line_id": l["id"]}
+                  for l in con.execute("""SELECT l.* FROM statement_lines l JOIN statements s ON s.id = l.statement_id
+                                          WHERE s.account_id = ? AND substr(l.txn_date, 1, 7) = ? AND l.status = 'no_docs'
+                                          AND l.payment_id IS NULL ORDER BY l.txn_date, l.line_no""", (acct["id"], month))]
         left, listing, source = {"journals": 0, "invoices": 0, "unknown": 0}, True, "payments"
     return {"source": source, "listing": listing, "items": items,
             "in": _r(sum(i["amount"] for i in items if i["amount"] > 0)),
@@ -274,10 +281,11 @@ def _lists(con, ent, acct, month, st, mv):
     lines = con.execute("SELECT * FROM statement_lines WHERE statement_id = ? ORDER BY line_no", (st["id"],)).fetchall() if st else []
     on_stmt = {l["payment_id"] for l in lines if l["payment_id"]}
     in_books = {i["payment_id"] for i in mv["items"] if i["payment_id"]}
+    bank_items = {i["line_id"] for i in mv["items"] if i.get("line_id")}  # charges and transfers counted from the statement
     books_only = []
     for i in mv["items"]:
         pid = i["payment_id"]
-        if pid and pid in on_stmt:
+        if (pid and pid in on_stmt) or i.get("line_id"):
             continue
         if pid:
             elsewhere = con.execute(
@@ -295,7 +303,7 @@ def _lists(con, ent, acct, month, st, mv):
     bank_only = []
     for l in lines:
         pid = l["payment_id"]
-        if pid and pid in in_books:
+        if (pid and pid in in_books) or l["id"] in bank_items:
             continue
         if not pid:
             why = ("No payment needed: " + l["note"]) if l["status"] == "no_docs" and l["note"] else \
