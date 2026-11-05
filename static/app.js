@@ -45,6 +45,16 @@ const estimateShort = p => p.planned_is_estimate && p.planned_amount != null && 
 const lowerFirst = s => s.charAt(0).toLowerCase() + s.slice(1);
 // What a payment's or checklist item's dates mean today, as the server words it (Due today, Waiting for SQL record...)
 const flagPill = f => f ? `<span class="pill ${f.tone}"${f.hint ? ` title="${esc(f.hint)}"` : ""}>${esc(f.text)}</span>` : "";
+// A payment's status in the month table. Money received says Received <date> (with the documents still missing), Part
+// received, or while it is not in the server's word for why (Not received yet, Waiting for Nov statement...).
+function statusPill(p) {
+  if (p.status === "planned") return flagPill(p.flag);
+  if (p.direction !== "in") return p.status === "complete" ? `<span class="pill ok">Complete</span>` : p.status === "paid" ? `<span class="pill warn">Paid · ${p.missing.length} doc${p.missing.length > 1 ? "s" : ""} missing</span>` :
+    `<span class="pill warn">Part paid · ${foundOf(p)}</span>`;
+  const day = p.paid_date ? ` ${shortDate(p.paid_date)}` : "";
+  return p.status === "complete" ? `<span class="pill ok">Received${day}</span>` : p.status === "part_paid" ? `<span class="pill warn">Part received · ${foundOf(p)}</span>` :
+    `<span class="pill warn">Received${day} · ${p.missing.length} doc${p.missing.length > 1 ? "s" : ""} missing</span>`;
+}
 // A required document SQL or the bank statement already shows, e.g. "PV2609-020 (print from SQL)": no upload needed.
 const evidenceChip = ev => `<span class="chip have ev" title="${esc(ev.text)}. No upload needed; you can still add a copy.">✓ ${esc(ev.text)}</span>`;
 // A required document's chip on a payment row: · missing (with why what SQL has doesn't count, e.g. an e-Invoice taken
@@ -157,9 +167,12 @@ function goTo(g) {
 const MARKS = {
   overdue_tasks: { task: t => t.flag?.code === "overdue" },
   due_today_tasks: { task: t => t.flag?.code === "due_today" },
-  part_paid: { pay: p => p.status === "part_paid" },
+  part_paid: { pay: p => p.direction !== "in" && p.status === "part_paid" },
+  "in-part_paid": { pay: p => p.direction === "in" && p.status === "part_paid" },
 };
-const markFor = key => MARKS[key] || { pay: p => p.flag?.code === key };
+// A count of money received has in- in front of its word, so it marks the receipts alone.
+const markFor = key => MARKS[key] || (key.startsWith("in-") ? { pay: p => p.direction === "in" && p.flag?.code === key.slice(3) }
+  : { pay: p => p.direction !== "in" && p.flag?.code === key });
 
 // Brings the first of these into view and marks them all for a moment.
 function flash(els) {
@@ -228,14 +241,18 @@ async function viewOverview(main) {
   const cards = ov.entities.map(x => {
     const budget = (cur, n) => `<div class="stat"><b class="mono">${Math.round(n).toLocaleString("en-MY")}</b><span>budget as at ${shortDate(x.budget_as_at)} (${cur === "MYR" ? "RM" : esc(cur)})</span></div>`;
     if (!x.set_up && !x.payments && !x.tasks) return notSetUp(x.entity, ov.month);
-    const pct = x.payments ? Math.round(x.complete / x.payments * 100) : 0;
+    // The bar counts payments out; money received has its own figure beside it.
+    const outAll = x.payments - x.receipts.payments, outDone = x.complete - x.receipts.complete;
+    const pct = outAll ? Math.round(outDone / outAll * 100) : 0;
     // Each count is a button to what it counts (pillGo).
     const flags = [], count = (kind, tone, text) => flags.push(`<button class="pillbtn" data-pill="${kind}" data-entity="${x.entity.id}" title="Show these"><span class="pill ${tone}">${text}</span></button>`);
     if (x.overdue_tasks) count("overdue_tasks", "bad", `${x.overdue_tasks} checklist overdue`);
     if (x.due_today_tasks) count("due_today_tasks", "warn", `${x.due_today_tasks} checklist due today`);
-    for (const f of x.payment_flags) count(f.code, f.tone, `${f.n} payment${f.n > 1 ? "s" : ""} ${esc(lowerFirst(f.text))}`);
+    for (const f of x.payment_flags) count(f.way === "in" ? `in-${f.code}` : f.code, f.tone, `${f.n} ${f.way === "in" ? "receipt" : "payment"}${f.n > 1 ? "s" : ""} ${esc(lowerFirst(f.text))}`);
     if (x.part_paid) count("part_paid", "warn", `${x.part_paid} part paid`);
+    if (x.receipts.part_paid) count("in-part_paid", "warn", `${x.receipts.part_paid} part received`);
     if (x.paid_missing) count("paid_missing", "warn", `${x.paid_missing} paid, documents missing`);
+    if (x.receipts.paid_missing) count("paid_missing", "warn", `${x.receipts.paid_missing} received, documents missing`);
     if (x.unmatched_lines) count("unmatched_lines", "warn", `${x.unmatched_lines} bank lines not explained`);
     if (x.not_in_sql) count("not_in_sql", "warn", `${x.not_in_sql} paid, not recorded in SQL`);
     // A month filed is done with: the server counts nothing in it as to do.
@@ -247,8 +264,10 @@ async function viewOverview(main) {
       <button class="btn small" data-view="entity" data-entity="${x.entity.id}">Open ${esc(x.entity.code)}</button></div>
       <div class="stats">
         <div class="stat"><b>${x.tasks_done}/${x.tasks}</b><span>checklist done</span></div>
-        <div class="stat"><b>${x.complete}/${x.payments}</b><span>payments fully documented</span></div>
-        <div class="stat"><b>${x.planned}</b><span>not paid yet</span></div>
+        <div class="stat"><b>${outDone}/${outAll}</b><span>payments fully documented</span></div>
+        ${x.receipts.payments ? `<div class="stat"><b>${x.receipts.complete}/${x.receipts.payments}</b><span>receipts fully documented</span></div>` : ""}
+        <div class="stat"><b>${x.planned - x.receipts.planned}</b><span>not paid yet</span></div>
+        ${x.receipts.payments ? `<div class="stat"><b>${x.receipts.planned}</b><span>not received yet</span></div>` : ""}
         ${budget("MYR", x.budget.MYR || 0)}${Object.entries(x.budget).filter(([cur]) => cur !== "MYR").map(([cur, n]) => budget(cur, n)).join("")}
       </div>
       <div class="bar"><i style="width:${pct}%"></i></div>
@@ -265,6 +284,7 @@ async function viewOverview(main) {
       <div class="note">A payment becomes <b>Paid</b> when you enter the paid date or its bank statement line is matched. It becomes <b>Complete</b> when every required document is uploaded, or already shown by a linked SQL voucher, a validated e-Invoice or its bank statement line. Only complete payments are ready to file.</div>
       <div class="note">Past its due date and not paid yet, a payment says why: <b>Not on Oct statement</b> (or the month it fell due in) once that month's bank statement is imported without it; until then <b>Waiting for SQL record</b> while SQL isn't imported up to its due date, or else <b>Waiting for Oct statement</b>. A statutory payment not paid by the 15th of the next month shows <b>Past legal deadline</b>.</div>
       <div class="note">If the bank lines matched add up to less than the amount, it shows <b>Part paid</b> until the rest is matched, or you note why in the payment (e.g. balance paid in October).</div>
+      <div class="note">Money received (a tenant's rent, say) is set up on the Recurring page as <b>Money in</b>. It shows <b>Not received yet</b> until it is due, then <b>Waiting for Nov statement</b> or <b>Not on Nov statement</b> in the same way, and <b>Received 14 Nov</b> once a bank credit is matched or you enter the date. It is counted apart from the payments, and is never in the Budget.</div>
     </div>`;
 }
 
@@ -310,8 +330,7 @@ async function viewEntity(main) {
     return `<tr class="group"><td colspan="3">Due ${fmtDate(dd)}</td><td class="num">${groupTotals(list)}</td><td colspan="2"></td></tr>` +
       list.map(p => {
         // Not paid: the server's word for why (Due today, Waiting for SQL record...); paid: a note when paid late.
-        const st = p.status === "complete" ? `<span class="pill ok">Complete</span>` : p.status === "paid" ? `<span class="pill warn">Paid · ${p.missing.length} doc${p.missing.length > 1 ? "s" : ""} missing</span>` :
-          p.status === "part_paid" ? `<span class="pill warn">Part paid · ${foundOf(p)}</span>` : flagPill(p.flag);
+        const st = statusPill(p);
         const late = p.status !== "planned" && p.flag ? `<div class="note late" title="${esc(p.flag.hint || "")}">${esc(p.flag.text)}</div>` : "";
         // A voucher number shown in its chip (✓ PV2609-020) needs no SQL chip beside it.
         const sqlShown = state.meta.sql_only.some(dt => p.required.includes(dt) && p.evidence[dt] && !p.documents.some(x => x.doc_type === dt));
@@ -335,7 +354,7 @@ async function viewEntity(main) {
     <div id="nextUp">${nextCard(next, d.entity.id)}</div>
     <div class="grid2" style="grid-template-columns:minmax(0,1fr)">
       <div class="card"><div class="row spread"><h2>Payments</h2><span class="note">Click a payment to upload its documents.</span></div>
-        <div class="tbl-wrap"><table><thead><tr><th>Payment</th><th>Type</th><th>Paid</th><th class="num">Amount</th><th>Documents</th><th>Status</th></tr></thead>
+        <div class="tbl-wrap"><table><thead><tr><th>Payment</th><th>Type</th><th>Paid / received</th><th class="num">Amount</th><th>Documents</th><th>Status</th></tr></thead>
         <tbody>${payRows || `<tr><td colspan="6" class="empty">No payments this month yet.</td></tr>`}</tbody></table></div></div>
       <div class="card"><div class="row spread"><h2>Checklist</h2><span class="muted">${doneT} of ${counted.length} done</span></div><div>${tasks}</div></div>
     </div>`;
@@ -386,14 +405,14 @@ function openPayment(id, keep = {}) {
   const extraTypes = Object.keys(dt).filter(t => !p.required.includes(t) && t !== "statement" && !noSql.includes(t));
   const extraPick = extraTypes.includes("approval") ? "approval" : "other";
   const extras = [...new Set(p.documents.map(x => x.doc_type).filter(t => !p.required.includes(t)))].map(t => slotHtml(t, ofType(t))).join("");
-  const lines = p.bank_lines.length ? p.bank_lines.map(l => `<div class="line-desc mono">${shortDate(l.txn_date)} · ${(l.amount > 0) === (p.direction === "out") ? "−" : ""}${money(Math.abs(l.amount), p.currency)} · ${esc(l.description.split(" | ").slice(0, 2).join(" "))}</div>`).join("") : `<div class="note">Not matched to a bank statement line yet.</div>`;
+  const lines = p.bank_lines.length ? p.bank_lines.map(l => `<div class="line-desc mono">${shortDate(l.txn_date)} · ${(l.amount > 0) === (p.direction === "out") ? "−" : ""}${money(Math.abs(l.amount), p.currency)} · ${esc(l.description.split(" | ").slice(0, 2).join(" "))}</div>`).join("") : `<div class="note">${p.direction === "in" ? "No bank credit matched to this yet." : "Not matched to a bank statement line yet."}</div>`;
   const gap = p.bank_total == null || p.amount == null ? 0 : p.amount - p.bank_total;
   const short = gap > 0.01 ? `<div style="grid-column:1/-1"><b>Part paid: ${foundOf(p)}</b>
       <div class="note">${p.difference_note ? "The difference is noted, so this payment counts as paid." : `${money(gap, p.currency)} isn't on the bank statement yet. Match the rest on the Bank statements page, or note why below.`}</div></div>
       <label class="field" style="grid-column:1/-1"><span>Why the rest isn't on the bank statement</span><input id="pf-diff" value="${esc(p.difference_note || "")}" placeholder="e.g. balance paid in October"></label>` : "";
   const over = gap < -0.01 ? `<div class="note">The bank lines add up to ${money(p.bank_total, p.currency)}, ${money(-gap, p.currency)} more than the amount.</div>` : "";
   const est = estimateShort(p) ? `<div class="note">Estimated at ${money(p.planned_amount, p.currency)}; the bank lines linked so far add up to ${money(p.bank_total, p.currency)}. If more was sent, link the rest on the Bank statements page. If not, confirm the amount above; until then the budget counts the estimate.</div>` : "";
-  const vouchers = p.sql_entries.map(x => `<div class="row spread"><span class="mono">${esc(x.doc_no)} · ${shortDate(x.doc_date)} · ${x.direction && x.direction !== p.direction ? "−" : ""}${money(x.amount, p.currency)}</span>
+  const vouchers = p.sql_entries.map(x => `<div class="row spread"><span class="mono">${esc(x.doc_no)}${x.kind === "invoice" ? " (invoice)" : ""} · ${shortDate(x.doc_date)} · ${x.direction && x.direction !== p.direction ? "−" : ""}${money(x.amount, p.currency)}</span>
     <button class="ghost small" data-sql-unlink="${x.id}">Unlink</button></div>`).join("");
   $("#drawer").innerHTML = `
     <div class="row spread"><div><div class="eyebrow">${esc(state.meta.categories[p.category] || p.category)} · due ${fmtDate(p.due_date)}</div><h2>${esc(p.description)}</h2></div>
@@ -402,9 +421,9 @@ function openPayment(id, keep = {}) {
     ${p.bank_details || p.payee_ref ? `<div class="note">Pay to: <span class="mono">${esc(p.bank_details || "")} ${esc(p.payee_ref || "")}</span></div>` : ""}
     <form class="form" id="payForm">
       <label class="field"><span>Amount (${esc(p.currency)})</span><input id="pf-amount" type="number" step="0.01" value="${p.amount ?? ""}"></label>
-      <label class="field"><span>Paid on</span><input id="pf-paid" type="date" value="${p.paid_date || ""}"></label>
+      <label class="field"><span>${p.direction === "in" ? "Received on" : "Paid on"}</span><input id="pf-paid" type="date" value="${p.paid_date || ""}"></label>
       <label class="field"><span>Bank reference</span><input id="pf-bank" value="${esc(p.bank_ref || "")}"></label>
-      <label class="field"><span>${state.data.entity.uses_sql ? "SQL PV / JV no." : "Record ref"}</span><input id="pf-sql" value="${esc(p.sql_ref || "")}"></label>
+      <label class="field"><span>${state.data.entity.uses_sql ? (p.direction === "in" ? "SQL OR no." : "SQL PV / JV no.") : "Record ref"}</span><input id="pf-sql" value="${esc(p.sql_ref || "")}"></label>
       <label class="field"><span>e-Invoice UIN</span><input id="pf-einv" value="${esc(p.einvoice_ref || "")}"></label>
       <label class="field" style="grid-column:1/-1"><span>Notes</span><input id="pf-notes" value="${esc(p.notes || "")}"></label>
       ${short}
@@ -417,7 +436,7 @@ function openPayment(id, keep = {}) {
     <div style="display:grid;gap:8px">${extras}
       <div class="row"><select id="extraType">${extraTypes.map(t => `<option value="${t}" ${t === extraPick ? "selected" : ""}>${esc(dt[t])}</option>`).join("")}</select>
       <button class="ghost small" id="extraUpload">Upload another document</button></div></div>
-    ${state.data.entity.uses_sql ? `<div><h3>SQL Account</h3>${vouchers ? vouchers + `<div class="note">Linked by mistake? Unlink puts the voucher back under SQL entries not linked, and the amount and paid date back to what they were.</div>` : `<div class="note">No SQL voucher linked yet.</div>`}</div>` : ""}
+    ${state.data.entity.uses_sql ? `<div><h3>SQL Account</h3>${vouchers ? vouchers + (p.evidence.einvoice && !p.required.includes("einvoice") ? `<div class="note chip have ev">✓ ${esc(p.evidence.einvoice.text)}</div>` : "") + `<div class="note">Linked by mistake? Unlink puts the voucher back under SQL entries not linked, and the amount and paid date back to what they were.</div>` : `<div class="note">No SQL voucher linked yet.</div>`}</div>` : ""}
     <div><h3>Bank statement</h3>${lines}${over}${est}</div>
     <div class="row"><button class="btn danger small" id="deletePayment">Remove this payment</button></div>`;
   $("#drawer").hidden = false;
@@ -809,7 +828,7 @@ function paymentOptions(cands, x, sel) {
     ? `<optgroup label="${x.direction === "in" ? "Payments out (if this refunds one)" : "Money in (if this pays one back)"}">${opts(other)}</optgroup>` : "");
 }
 // The Import button's text: the entries not imported yet, and how many of them are linked.
-const applyLabel = p => `Import ${p.records.filter(r => !r.exists).length} entries (${p.records.filter(r => (r.payment_id || r.task_id) && !r.exists).length} linked)`;
+const applyLabel = p => `Import ${p.records.filter(r => !r.exists).length} entries (${p.records.filter(r => (r.payment_id || r.task_id) && !r.exists || r.exists && r.kind === "invoice" && r.payment_id).length} linked)`;
 
 async function viewSql(main) {
   const e = ent();
@@ -829,7 +848,7 @@ async function viewSql(main) {
   state.sqlCorrections = corrections.map(u => u.id);
   main.innerHTML = `${entityPicker()}
     <div class="card"><h1>SQL import · ${esc(e.code)}</h1>
-      <div class="note">Paste each SQL listing for the month in turn: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to this tracker; customer invoices are filed against their checklist item (the e-Invoices for the fund received and the office rental), and a payroll journal, if there is one, against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine.</div>
+      <div class="note">Paste each SQL listing for the month in turn: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to this tracker; customer invoices are filed against their checklist item of their own month (the e-Invoices for the fund received and the office rental) and linked to the money in they are for (the tenant's rent), and a payroll journal, if there is one, against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine.</div>
       <div class="grid2">
         <form id="sqlPasteForm" style="display:grid;gap:8px"><h3>Copy and paste (easiest)</h3>
           <div class="note">In SQL, open the Cash Book Listing, click any row, press <b>Ctrl+A</b> then <b>Ctrl+C</b>. Click in the box below and press <b>Ctrl+V</b>.</div>
@@ -867,7 +886,8 @@ async function viewSql(main) {
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>e-Invoice</th><th>Checklist item</th></tr></thead><tbody>
       ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
         <td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
-        <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : `<span class="muted">—</span>`}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
+        <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : `<span class="muted">—</span>`}
+          ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">Receipt: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
       </tbody></table></div></div>
     <div class="card"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it.</div>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Status</th><th></th></tr></thead><tbody>
@@ -887,12 +907,21 @@ function einvPill(x) {
   return x.einvoice_link ? `${pill} <a href="${esc(x.einvoice_link)}" target="_blank" rel="noopener noreferrer">MyInvois ↗</a>` : pill;
 }
 
+// A customer invoice (IV) can be linked to the money-in payment it is for (the tenant's rent): the receipt then shows the
+// invoice and its e-Invoice. Offered when the company has money in; the server suggests one by name and amount.
+function receiptPick(p, r) {
+  if (r.kind !== "invoice" || r.doc_type !== "IV") return "";
+  const ins = p.candidates.filter(c => c.direction === "in");
+  if (!ins.length) return "";
+  return `<div class="row" style="flex-wrap:nowrap;gap:6px"><span class="note">Receipt:</span><select data-sql-row="${r.row}"><option value="">Not linked</option>${paymentOptions(ins, { ...r, direction: "in" }, r.payment_id)}</select></div>`;
+}
+
 function renderSqlPreview(p) {
   state.sqlPreview = p;
   const colOpts = sel => `<option value="">(none)</option>` + p.headers.map((h, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${esc(h || "Column " + (i + 1))}</option>`).join("");
   const kinds = { journal: "Journal", invoice: "Customer invoice" };
-  const target = r => r.exists ? `<span class="pill grey">Already imported</span>`
-    : r.kind !== "payment" ? (r.task_id ? `<span class="pill ok">Checklist: ${esc(r.task_title)}</span>` : `<span class="pill grey">${kinds[r.kind]}, kept on file</span>`)
+  const target = r => r.exists ? `<span class="pill grey">Already imported</span>${receiptPick(p, r)}`
+    : r.kind !== "payment" ? (r.task_id ? `<span class="pill ok">Checklist: ${esc(r.task_title)}</span>` : `<span class="pill grey">${kinds[r.kind]}, kept on file</span>`) + receiptPick(p, r)
     : `<select data-sql-row="${r.row}"><option value="">Not linked</option>${paymentOptions(p.candidates, r, r.payment_id)}</select>${r.task_id ? `<div class="note">Also: ${esc(r.task_title)}</div>` : ""}${changedInSql(r)}`;
   $("#sqlPreview").innerHTML = `<div class="card">
     <div class="row spread"><h2>${esc(p.filename)}</h2><span class="muted">${p.records.length} entries found</span></div>
@@ -922,11 +951,11 @@ async function viewPayees(main) {
   main.innerHTML = `${entityPicker()}${saved}${m.set_up ? "" : notSetUp(m.entity, m.month)}
     <div class="card"><div class="row spread"><h1>Recurring payments · ${esc(e.code)}</h1><button class="btn" data-edit-payee="new">Add recurring payment</button></div>
       <div class="note">Each active row is added to a month when the month is set up. Saving a change also updates the payments not due yet in ${esc(monthName(currentCycle()))} and later months already set up, unless they were paid, linked or changed by hand. Payments already due are left as they were: they were most likely paid already.</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Payee</th><th>Type</th><th>Paid</th><th class="num">Usual amount</th><th>Bank / ref</th><th>Status</th><th></th></tr></thead><tbody>
+      <div class="tbl-wrap"><table><thead><tr><th>Payee</th><th>Type</th><th>Paid / received</th><th class="num">Usual amount</th><th>Bank / ref</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(p => `<tr><td><b>${esc(p.name)}</b><div class="note">${esc(p.desc_template)}</div>
         ${p.start_date ? `<div class="note">Starts ${fmtDate(p.start_date)}</div>` : ""}${p.end_date ? `<div class="note">Ends ${fmtDate(p.end_date)}</div>` : ""}
         ${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}${p.advances.map(a => `<div class="note">Advance: −${money(a.monthly_deduction)} a month, ${a.start_month} to ${a.end_month}</div>`).join("")}</td>
-        <td>${esc(cats[p.category] || p.category)}</td><td>${p.month_offset ? "Next month" : "Same month"}, day ${p.due_day}</td>
+        <td>${p.direction === "in" ? `<span class="pill ok">Money in</span> ` : ""}${esc(cats[p.category] || p.category)}</td><td>${p.month_offset ? "Next month" : "Same month"}, day ${p.due_day}</td>
         <td class="num">${money(p.amount, p.currency)}${p.amount_varies ? `<div class="note">varies</div>` : ""}</td>
         <td class="mono">${esc(p.bank_details || p.reference || "")}</td>
         <td>${p.active ? `<span class="pill ok">Active</span>` : `<span class="pill grey">Stopped</span>`}</td>
@@ -944,11 +973,12 @@ function editPayee(id) {
     <form class="form" id="payeeForm" style="grid-template-columns:1fr 1fr">
       <label class="field" style="grid-column:1/-1"><span>Payee</span><input id="py-name" value="${esc(p.name)}" required></label>
       <label class="field" style="grid-column:1/-1"><span>Description each month ({M} = payroll month, {M+1} = next month)</span><input id="py-desc" value="${esc(p.desc_template)}" placeholder="TNB - {M}"></label>
+      <label class="field"><span>Money</span><select id="py-dir"><option value="out">Money out (a payment)</option><option value="in" ${p.direction === "in" ? "selected" : ""}>Money in (received)</option></select></label>
       <label class="field"><span>Type</span><select id="py-cat">${Object.entries(cats).map(([k, v]) => `<option value="${k}" ${k === p.category ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>
-      <label class="field"><span>Pay from</span><select id="py-acct">${ent().accounts.map(a => `<option value="${a.id}" ${a.id === p.account_id ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></label>
+      <label class="field"><span id="py-acct-lbl">${p.direction === "in" ? "Paid into" : "Pay from"}</span><select id="py-acct">${ent().accounts.map(a => `<option value="${a.id}" ${a.id === p.account_id ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></label>
       <label class="field"><span>Usual amount</span><input id="py-amt" type="number" step="0.01" value="${p.amount ?? ""}"></label>
       <label class="field"><span>Amount changes monthly</span><select id="py-var"><option value="0">No, fixed</option><option value="1" ${p.amount_varies ? "selected" : ""}>Yes, estimate</option></select></label>
-      <label class="field"><span>Paid in</span><select id="py-off"><option value="0">The payroll month</option><option value="1" ${p.month_offset ? "selected" : ""}>The following month</option></select></label>
+      <label class="field"><span id="py-off-lbl">${p.direction === "in" ? "Received in" : "Paid in"}</span><select id="py-off"><option value="0">The payroll month</option><option value="1" ${p.month_offset ? "selected" : ""}>The following month</option></select></label>
       <label class="field"><span>Day of month</span><input id="py-day" type="number" min="1" max="31" value="${p.due_day}"></label>
       <label class="field"><span>Bank details</span><input id="py-bank" value="${esc(p.bank_details || "")}"></label>
       <label class="field"><span>Account / ref no.</span><input id="py-ref" value="${esc(p.reference || "")}"></label>
@@ -961,10 +991,17 @@ function editPayee(id) {
       <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Save</button></div>
     </form>`;
   $("#drawer").hidden = false;
+  // Money in is always the type Money received, and money received is always money in.
+  $("#py-dir").onchange = () => {
+    const into = $("#py-dir").value === "in";
+    if (into) $("#py-cat").value = "receipt"; else if ($("#py-cat").value === "receipt") $("#py-cat").value = "other";
+    $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in";
+  };
+  $("#py-cat").onchange = () => { if ($("#py-cat").value === "receipt") { $("#py-dir").value = "in"; $("#py-dir").onchange(); } };
   $("#payeeForm").onsubmit = async ev => {
     ev.preventDefault();
     const body = { entity_id: state.entity, name: $("#py-name").value.trim(), desc_template: $("#py-desc").value.trim() || $("#py-name").value.trim() + " - {M}",
-      category: $("#py-cat").value, account_id: +$("#py-acct").value, amount: $("#py-amt").value === "" ? null : +$("#py-amt").value,
+      direction: $("#py-dir").value, category: $("#py-cat").value, account_id: +$("#py-acct").value, amount: $("#py-amt").value === "" ? null : +$("#py-amt").value,
       amount_varies: +$("#py-var").value, month_offset: +$("#py-off").value, due_day: +$("#py-day").value || 6,
       bank_details: $("#py-bank").value.trim(), reference: $("#py-ref").value.trim(), match_words: $("#py-match").value.trim(), active: +$("#py-active").value,
       start_date: $("#py-start").value || null, end_date: $("#py-end").value || null, notes: $("#py-notes").value.trim() };
@@ -1117,7 +1154,7 @@ document.addEventListener("click", async ev => {
     }
     if (t.id === "sqlApply") {
       const p = state.sqlPreview; t.disabled = true;
-      const links = {}; for (const r of p.records) if (r.payment_id && !r.exists) links[r.row] = r.payment_id;
+      const links = {}; for (const r of p.records) if (r.payment_id && (!r.exists || r.kind === "invoice")) links[r.row] = r.payment_id;
       const res = await api("/api/sql/apply", { json: { token: p.token, header_row: p.header_row, mapping: p.mapping, links } });
       state.sqlPreview = null; delete state.sqlPaste[state.entity];
       toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}.`);

@@ -368,6 +368,39 @@ def payments_by_ref(con, entity_id):
     return out
 
 
+def receipt_invoice(r):
+    """True for a customer invoice (IV): the sales invoice for money to be received, which can be linked to a receipt."""
+    return r["kind"] == "invoice" and r["doc_type"] == "IV"
+
+
+def _propose_receipts(con, entity_id, recs):
+    """Suggest the money-in payment each customer invoice (IV) is for: a payment made from a Money in payee, with the same
+    payee words (the payee's match words and name against the invoice's description and name; the payment's own description
+    isn't used, as words like Rent would fit any customer) and exactly the amount, in the
+    month the invoice belongs to (db.filing_month), else the nearest due date within 45 days. Each payment takes one
+    invoice. An invoice already linked to a payment (as imported before) is left alone."""
+    from .db import filing_month
+    invoices = sorted((r for r in recs if receipt_invoice(r)), key=lambda r: (r["date"], r["row"]))
+    if not invoices:
+        return
+    taken = {x[0] for x in con.execute("SELECT payment_id FROM sql_entries WHERE entity_id = ? AND payment_id IS NOT NULL "
+                                       "AND doc_type = 'IV'", (entity_id,))}
+    pays = con.execute(
+        """SELECT p.*, py.name AS payee_name, py.match_words FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
+           WHERE p.entity_id = ? AND p.direction = 'in' AND p.payee_id IS NOT NULL AND p.amount IS NOT NULL ORDER BY p.due_date, p.id""", (entity_id,)).fetchall()
+    for r in invoices:
+        if con.execute("SELECT 1 FROM sql_entries WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ? "
+                       "AND payment_id IS NOT NULL", (entity_id, r["doc_no"], r["date"], r["amount"])).fetchone():
+            continue
+        text, month, day = _words(r["description"] + " " + r["payee"]), filing_month(r["description"], r["date"]), date.fromisoformat(r["date"])
+        fits = [p for p in pays if p["id"] not in taken and abs(p["amount"] - r["amount"]) < 0.005
+                and _words(" ".join(filter(None, [p["match_words"], p["payee_name"]]))) & text]
+        best = min(fits, key=lambda p: (p["month"] != month, abs((date.fromisoformat(p["due_date"]) - day).days)), default=None)
+        if best and (best["month"] == month or abs((date.fromisoformat(best["due_date"]) - day).days) <= 45):
+            taken.add(best["id"])
+            r["payment_id"], r["payment_desc"] = best["id"], best["description"]
+
+
 def propose(con, entity_id, recs):
     """Suggest which payment each SQL voucher records.
 
@@ -383,11 +416,12 @@ def propose(con, entity_id, recs):
         task = task_for(con, entity_id, r)
         r["task_id"], r["task_title"] = (task["id"], task["title"]) if task else (None, None)
         r["payment_id"] = r["payment_desc"] = None
+    _propose_receipts(con, entity_id, recs)
     open_recs = [r for r in recs if r["kind"] == "payment"]  # journals and invoices record no bank payment
     pays = con.execute(
         """SELECT p.*, py.name AS payee_name, py.match_words FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
            WHERE p.entity_id = ? AND p.amount IS NOT NULL
-           AND NOT EXISTS (SELECT 1 FROM sql_entries s WHERE s.payment_id = p.id)
+           AND NOT EXISTS (SELECT 1 FROM sql_entries s WHERE s.payment_id = p.id AND COALESCE(s.kind, 'payment') = 'payment')
            ORDER BY p.amount_is_estimate, p.due_date""", (entity_id,)).fetchall()
     def pinfo(p):
         return (date.fromisoformat(p["paid_date"] or p["due_date"]),
@@ -487,11 +521,11 @@ def task_for(con, entity_id, r):
         code = "einv-selfbilled"  # a payment carrying its own e-Invoice is a self-billed one (overseas provider)
     if not code:
         return None
-    # The same task exists every month; take the one whose due date is nearest the document date.
-    rows = con.execute("SELECT id, title, due_date FROM tasks WHERE entity_id = ? AND code = ?", (entity_id, code)).fetchall()
-    rd = date.fromisoformat(r["date"])
-    best = min(rows, key=lambda t: abs((date.fromisoformat(t["due_date"]) - rd).days), default=None)
-    return best if best and abs((date.fromisoformat(best["due_date"]) - rd).days) <= 45 else None
+    # The same task exists every month; take, for an invoice or journal, the one of the month it belongs to (the month its
+    # description names, else the month it is dated in); any other document, or one without that month's item, takes the
+    # item whose due date is nearest the document date.
+    from .db import item_for
+    return item_for(con, entity_id, code, r["description"], r["date"], r["kind"])
 
 
 def candidates(con, entity_id, months, also=()):

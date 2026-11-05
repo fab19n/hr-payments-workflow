@@ -274,9 +274,11 @@ def _statements(e, m, accts, pays, today):
     absent = [a for a in accts if not a["statement"]]
     if not absent or m >= today.isoformat()[:7]:
         return []
-    n = sum(1 for x in pays if x["flag"] and x["flag"]["code"] == "waiting_statement" and x["p"]["due_date"][:7] == m)
+    waiting = [x["p"] for x in pays if x["flag"] and x["flag"]["code"] == "waiting_statement" and x["p"]["due_date"][:7] == m]
+    n, k = (sum(1 for p in waiting if p["direction"] == way) for way in ("out", "in"))  # payments out, apart from money in
+    counted = " and ".join(([f"{n} payment{_s(n)}"] if n else []) + ([f"{k} receipt{_s(k)}"] if k else []))
     text = (f"Import the {_mon(m)} statement{_s(len(absent))} for {db._listed(a['label'] for a in absent)}"
-            + (f": {n} payment{_s(n)} waiting" if n else ""))
+            + (f": {counted} waiting" if counted else ""))
     return [_row(6, e, m, text, db.due(m, *STATEMENT_DUE), P2, {"view": "bank", "account_id": absent[0]["id"]}, "import")]
 
 

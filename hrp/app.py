@@ -164,7 +164,7 @@ def month_view():
         p["bank_lines"] = rows(c.execute("SELECT id, txn_date, amount, description FROM statement_lines WHERE payment_id = ?", (p["id"],)))
         p["bank_total"] = db.linked_total(c, p)
         p["sql_entries"] = rows(c.execute(
-            "SELECT id, doc_no, doc_date, amount, direction FROM sql_entries WHERE payment_id = ? ORDER BY doc_date, id", (p["id"],)))
+            "SELECT id, doc_no, doc_date, amount, direction, kind FROM sql_entries WHERE payment_id = ? ORDER BY doc_date, id", (p["id"],)))
         p["not_in_sql"] = db.not_in_sql(e, p)
     return jsonify({"entity": dict(e), "month": month, "label": db.month_label(month), "tasks": tasks, "payments": pays,
                     "set_up": _set_up(c, eid, month), "before_first": db.before_tracking(e, month),
@@ -315,9 +315,10 @@ def overview():
         task_flags = [f["code"] for f in (db.task_flag(c, e, t, today, s["done"]) for t, s in zip(tasks, sts)) if f]
         counted = [s for s in sts if not s["waiting"]]  # a reminder waiting for its own month isn't counted here
         todo = {
-            "paid_missing": sum(1 for s, _ in st if s == "paid"),
-            "part_paid": sum(1 for s, _ in st if s == "part_paid"),
-            "payment_flags": _flag_counts(flags),
+            # Money out; money received is counted apart in receipts (below).
+            "paid_missing": sum(1 for (s, _), p in zip(st, pays) if s == "paid" and p["direction"] != "in"),
+            "part_paid": sum(1 for (s, _), p in zip(st, pays) if s == "part_paid" and p["direction"] != "in"),
+            "payment_flags": _flag_counts(zip(flags, pays)),
             "overdue_tasks": task_flags.count("overdue"), "due_today_tasks": task_flags.count("due_today"),
             "not_in_sql": sum(1 for p in pays if db.not_in_sql(e, p)),
             # On the month's own statements, as Before you print counts them.
@@ -330,6 +331,12 @@ def overview():
             "entity": dict(e), "set_up": _set_up(c, e["id"], month), "before_first": db.before_tracking(e, month),
             "closed_at": filed, "payments": len(pays),
             "planned": sum(1 for s, _ in st if s == "planned"),
+            # Money received, counted apart (the figures above hold payments out and money in together).
+            "receipts": {"payments": sum(1 for p in pays if p["direction"] == "in"),
+                         "planned": sum(1 for (s, _), p in zip(st, pays) if p["direction"] == "in" and s == "planned"),
+                         "complete": sum(1 for (s, _), p in zip(st, pays) if p["direction"] == "in" and s == "complete"),
+                         "paid_missing": sum(1 for (s, _), p in zip(st, pays) if p["direction"] == "in" and s == "paid"),
+                         "part_paid": sum(1 for (s, _), p in zip(st, pays) if p["direction"] == "in" and s == "part_paid")},
             "complete": sum(1 for s, _ in st if s == "complete"),
             "tasks": len(counted), "tasks_done": sum(s["done"] for s in counted),
             "budget": _budget_totals(c, e["id"], month, as_at), "budget_as_at": as_at,
@@ -351,12 +358,14 @@ def next_up():
 
 
 def _flag_counts(flags):
-    """How many payments show each word (db.payment_flag), the overdue ones first. Not paid is left out, as the count
-    of payments not paid yet holds those."""
+    """How many payments show each word (db.payment_flag), the overdue ones first, money in apart from money out (way:
+    in or out). Not paid is left out, as the count of payments not paid yet holds those. flags: (flag, payment) pairs."""
     out = {}
-    for f in flags:
+    for f, p in flags:
         if f and f["code"] != "not_paid":
-            out.setdefault((f["code"], f["text"]), {"code": f["code"], "text": f["text"], "tone": f["tone"], "n": 0})["n"] += 1
+            way = p["direction"]
+            out.setdefault((f["code"], f["text"], way), {"code": f["code"], "text": f["text"], "tone": f["tone"], "way": way,
+                                                         "n": 0})["n"] += 1
     return sorted(out.values(), key=lambda x: x["tone"] != "bad")
 
 
@@ -551,7 +560,9 @@ def delete_payment(pid):
         # record, noting the payment they were filed on.
         lines = c.execute("UPDATE statement_lines SET payment_id = NULL, status = 'unmatched', undone_payment_id = ? "
                           "WHERE payment_id = ?", (pid, pid)).rowcount
-        c.execute("UPDATE sql_entries SET payment_id = NULL, status = 'unlinked' WHERE payment_id = ?", (pid,))
+        # (A customer invoice or journal keeps its status: only the link goes.)
+        c.execute("UPDATE sql_entries SET payment_id = NULL, status = CASE WHEN kind IN ('invoice', 'journal') THEN status "
+                  "ELSE 'unlinked' END WHERE payment_id = ?", (pid,))
         kept = c.execute("UPDATE documents SET payment_id = NULL, note = COALESCE(note || '; ', '') || ? WHERE payment_id = ?",
                          (f"Filed on payment {p['description']} ({p['month']}), removed {db.now()[:10]}", pid)).rowcount
         c.execute("DELETE FROM payments WHERE id = ?", (pid,))
@@ -658,7 +669,7 @@ def payees():
 
 
 PAYEE_FIELDS = ("name", "category", "desc_template", "amount", "amount_varies", "month_offset", "due_day", "bank_details",
-                "reference", "match_words", "active", "notes", "account_id", "start_date", "end_date")
+                "reference", "match_words", "active", "notes", "account_id", "start_date", "end_date", "direction")
 
 
 @app.post("/api/payees")
@@ -670,6 +681,16 @@ def save_payee():
     if not vals.get("name"):
         return err("Give the payee a name.")
     vals.setdefault("desc_template", vals["name"] + " - {M}")
+    # Money in is a receipt and a receipt is money in; a payment going out is any other type.
+    way = vals.get("direction") or ("in" if vals.get("category") == "receipt" else None)
+    if way not in (None, "in", "out"):
+        return err("Choose Money in or Money out.")
+    if way == "in":
+        vals["direction"], vals["category"] = "in", "receipt"
+    elif way == "out":
+        vals["direction"] = "out"
+        if vals.get("category") == "receipt":
+            vals["category"] = "other"
     old = c.execute("SELECT * FROM payees WHERE id = ?", (b["id"],)).fetchone() if b.get("id") else None
     if b.get("id") and not old:
         return err("This recurring payment has been removed.", 404)
@@ -924,7 +945,7 @@ def sql_preview():
     sqlimport.propose(c, eid, recs)
     made = _preview_made.get(token, {})
     for r in recs:  # links picked by hand stay with their row when the columns are read again
-        if str(r["row"]) in picks and r["kind"] == "payment":
+        if str(r["row"]) in picks and (r["kind"] == "payment" or sqlimport.receipt_invoice(r)):
             r["payment_id"], r["picked"] = _payment_now(c, eid, made, picks[str(r["row"])]), True
     linked = sqlimport.linked_vouchers(c, eid)
     for r in recs:
@@ -980,11 +1001,15 @@ def sql_apply():
         db.auto_open(c, eid, m)
     made = _preview_made.get(b["token"], {})
     links = {int(k): _payment_now(c, eid, made, v) for k, v in (b.get("links") or {}).items()}
+    # A customer invoice links only to money in: the receipt it is for. Its checklist item (task_id) is kept as well.
+    money_in = {x[0] for x in c.execute("SELECT id FROM payments WHERE entity_id = ? AND direction = 'in'", (eid,))}
     sqlimport.propose(c, eid, recs)  # for the checklist task of journals and invoices
     added = linked = skipped = 0
     touched = set()
     for r in recs:
         pid = links.get(r["row"]) if r["kind"] == "payment" else None
+        if sqlimport.receipt_invoice(r) and links.get(r["row"]) in money_in:
+            pid = links[r["row"]]
         status = r["kind"] if r["kind"] != "payment" else ("linked" if pid else "unlinked")
         cur = c.execute(
             """INSERT OR IGNORE INTO sql_entries (import_id, entity_id, doc_no, doc_date, description, payee, amount, direction,
@@ -1008,11 +1033,21 @@ def sql_apply():
                    WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?""",
                 (r.get("einvoice") or None, st, st, st, r.get("einvoice_link") or None,
                  r.get("task_id"), r["doc_type"], r["kind"], r["kind"], r["kind"], eid, r["doc_no"], r["date"], r["amount"]))
+        if not cur.rowcount and pid and sqlimport.receipt_invoice(r):
+            # An invoice imported before, linked to its receipt now (only while it isn't linked to one).
+            hit = c.execute("""UPDATE sql_entries SET payment_id = ? WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?
+                               AND payment_id IS NULL""", (pid, eid, r["doc_no"], r["date"], r["amount"]))
+            linked += hit.rowcount
+            if hit.rowcount:
+                db.log(c, f"Linked SQL invoice {r['doc_no']} to receipt: "
+                          f"{c.execute('SELECT description FROM payments WHERE id = ?', (pid,)).fetchone()[0]}")
         if not cur.rowcount:
             skipped += 1
             continue
         added += 1
-        if pid:
+        if pid and r["kind"] == "invoice":
+            linked += 1  # the invoice is the receipt's sales invoice; nothing is added to its SQL ref (that is the OR's)
+        elif pid:
             _add_sql_ref(c, pid, r["doc_no"], r["amount"], r.get("einvoice"), r["date"], cur.lastrowid)
             linked += 1
             touched.add(int(pid))
@@ -1132,7 +1167,8 @@ def sql_entries():
     months = sorted({u["doc_date"][:7] for u in unlinked})
     cands = sqlimport.candidates(c, eid, sqlimport.months_of([{"date": m + "-01"} for m in months])) if months else []
     other = _taken_back(c, rows(c.execute(
-        """SELECT s.*, t.title AS task_title, t.month AS task_month FROM sql_entries s LEFT JOIN tasks t ON t.id = s.task_id
+        """SELECT s.*, t.title AS task_title, t.month AS task_month, p.description AS payment_desc
+           FROM sql_entries s LEFT JOIN tasks t ON t.id = s.task_id LEFT JOIN payments p ON p.id = s.payment_id
            WHERE s.entity_id = ? AND s.kind IN ('journal', 'invoice') ORDER BY s.doc_date DESC LIMIT 200""", (eid,))))
     einv = _taken_back(c, rows(c.execute(
         """SELECT id, entity_id, doc_no, doc_date, description, payee, amount, einvoice, einvoice_status, einvoice_link, kind,
@@ -1163,6 +1199,9 @@ def _payment_from_entry(c, s, category=None):
 
 
 def _link_entry(c, s, pid):
+    if s["kind"] == "invoice":  # a customer invoice stays an invoice; it is the receipt's sales invoice, not a voucher
+        c.execute("UPDATE sql_entries SET payment_id = ? WHERE id = ?", (pid, s["id"]))
+        return
     c.execute("UPDATE sql_entries SET payment_id = ?, status = 'linked' WHERE id = ?", (pid, s["id"]))
     _add_sql_ref(c, pid, s["doc_no"], s["amount"], s["einvoice"], s["doc_date"] if s["kind"] == "payment" else None, s["id"])
 
@@ -1247,6 +1286,9 @@ def sql_entry_update(sid):
     s = c.execute("SELECT * FROM sql_entries WHERE id = ?", (sid,)).fetchone() or abort(404)
     matched = 0
     if b.get("payment_id"):
+        if s["kind"] == "invoice" and not c.execute("SELECT 1 FROM payments WHERE id = ? AND entity_id = ? AND direction = 'in'",
+                                                    (b["payment_id"], s["entity_id"])).fetchone():
+            return err("A customer invoice can only be linked to money received by the same company.")
         if s["payment_id"] and s["payment_id"] != int(b["payment_id"]):
             _unlink_entry(c, s)
         _link_entry(c, s, b["payment_id"])
@@ -1291,8 +1333,12 @@ def _unlink_entry(c, s):
     A payment made from this voucher (Create payment) with nothing added since is removed. Returns (the payment's
     description, whether it was removed)."""
     pid = s["payment_id"]
-    c.execute("UPDATE sql_entries SET payment_id = NULL, status = 'unlinked' WHERE id = ?", (s["id"],))
     p = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone()
+    if s["kind"] == "invoice":  # only the link goes: the receipt's amount, SQL ref and dates were never taken from it
+        c.execute("UPDATE sql_entries SET payment_id = NULL WHERE id = ?", (s["id"],))
+        db.log(c, f"Unlinked SQL invoice {s['doc_no']} from receipt: {p['description']}")
+        return p["description"], False
+    c.execute("UPDATE sql_entries SET payment_id = NULL, status = 'unlinked' WHERE id = ?", (s["id"],))
     if _made_from(c, p, s):
         c.execute("DELETE FROM payments WHERE id = ?", (pid,))
         db.log(c, f"Unlinked SQL entry {s['doc_no']} and removed the payment made from it: {p['description']}")

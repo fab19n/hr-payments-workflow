@@ -10,7 +10,7 @@ from pypdf.errors import FileNotDecryptedError
 from . import rules
 from .config import PACKS_DIR
 from .db import (_listed, _short_doc, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
-                 not_in_sql, payment_flag, payment_status, short_day, task_status, waits_for)
+                 not_in_sql, payment_flag, payment_status, short_day, status_word, task_status, waits_for)
 from .docstore import path_of, verify
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg"}
@@ -103,7 +103,7 @@ def build(con, entity, month):
         docs = _docs(con, "payment_id", p["id"])
         ev = evidence(con, pay=p)
         status, missing = payment_status(con, p, entity["uses_sql"], ev)
-        label = {"complete": "Complete", "paid": "Paid", "part_paid": "Part paid"}.get(status, "Not paid")
+        label = status_word(p, status)
         flag = payment_flag(con, entity, p, today)
         if flag:
             label = flag["text"] if status == "planned" else f"{label}\n{flag['text']}"
@@ -243,7 +243,7 @@ def readiness(con, entity, month, cached=False):
             continue
         what = []
         if status == "planned":
-            what.append((payment_flag(con, entity, p, today) or {"text": "Not paid"})["text"])
+            what.append((payment_flag(con, entity, p, today) or {"text": status_word(p, status)})["text"])
         elif status == "part_paid":
             what.append(f"Part paid: {money(linked_total(con, p), p['currency'])} of {money(p['amount'], p['currency'])}")
         if missing and status != "planned":  # not paid yet says it all
@@ -273,10 +273,19 @@ def readiness(con, entity, month, cached=False):
 
     absent = [x["title"] for x in items if x["kind"] == "statement"]
     summary = [f"{_listed(absent)} statement{'s' if len(absent) > 1 else ''} not imported"] if absent else []
+    receipts = {p["id"] for p in pays if p["direction"] == "in"}  # money in is counted apart from payments out
     for kind, (one, many) in OPEN.items():
-        n = sum(a["to_explain"] for a in accts) if kind == "lines" else sum(x["kind"] == kind for x in items)
+        if kind == "lines":
+            n = sum(a["to_explain"] for a in accts)
+        elif kind == "payment":
+            n = sum(x["kind"] == kind and x["id"] not in receipts for x in items)
+        else:
+            n = sum(x["kind"] == kind for x in items)
         if n:
             summary.append(f"{n} {one if n == 1 else many}")
+        k = kind == "payment" and sum(x["kind"] == kind and x["id"] in receipts for x in items)
+        if k:
+            summary.append(f"{k} receipt{'s' if k > 1 else ''} not complete")
     pack = latest_pack(con, entity, month)
     n = pack and pack["changed"]
     pack_open = ("No audit pack built yet" if not pack else

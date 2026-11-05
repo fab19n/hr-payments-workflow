@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS payees (
   month_offset INTEGER NOT NULL DEFAULT 0, due_day INTEGER NOT NULL DEFAULT 26,
   bank_details TEXT, reference TEXT, match_words TEXT,
   active INTEGER NOT NULL DEFAULT 1, sort INTEGER NOT NULL DEFAULT 0, notes TEXT,
-  start_date TEXT, end_date TEXT
+  start_date TEXT, end_date TEXT, direction TEXT NOT NULL DEFAULT 'out'
 );
 CREATE TABLE IF NOT EXISTS advances (
   id INTEGER PRIMARY KEY, payee_id INTEGER NOT NULL REFERENCES payees(id),
@@ -209,7 +209,56 @@ MIGRATIONS = [
     # 10. The stored budget of each company and payroll month: its lines (with the payment each is linked to) and its
     #     header (when it was set up, the bank balance and the date it was taken, kept here, not in the browser).
     lambda con: con.executescript(BUDGET_TABLES),
+    # 11. Which way a recurring payment goes (out, or in for money received such as a tenant's rent).
+    lambda con: add_column(con, "payees", "direction", "TEXT NOT NULL DEFAULT 'out'"),
+    # 12. SQL documents filed on the checklist item of the month they belong to (they were filed by the nearest due
+    #     date). Only the link moves; nothing is ticked or unticked.
+    lambda con: refile_documents(con),
 ]
+
+
+def filing_month(description, doc_date):
+    """The payroll month an SQL document belongs to: the month its description names (RENTAL CHARGE FOR OCTOBER 26),
+    else the month it is dated in."""
+    return named_month(description) or doc_date[:7]
+
+
+# The SQL documents filed on the checklist item of the month they belong to: customer invoices and journals. A payment or
+# receipt voucher (a self-billed PV, the OR for the fund received) belongs to the month of its payment, which can be the
+# month before the one it is dated in, so it stays with the item whose due date is nearest.
+FILED_BY_MONTH = ("invoice", "journal")
+
+
+def item_for(con, entity_id, code, description, doc_date, kind="invoice"):
+    """The checklist item (id, title, month, due_date) an SQL document is filed on: for an invoice or journal
+    (FILED_BY_MONTH) the item of its own month (filing_month) when the company has one; else the one whose due date is
+    nearest the document date, within 45 days, else None."""
+    rows = con.execute("SELECT id, title, month, due_date FROM tasks WHERE entity_id = ? AND code = ?", (entity_id, code)).fetchall()
+    month = filing_month(description, doc_date)
+    own = next((t for t in rows if t["month"] == month), None)
+    if own and kind in FILED_BY_MONTH:
+        return own
+    day = date.fromisoformat(doc_date)
+    best = min(rows, key=lambda t: abs((date.fromisoformat(t["due_date"]) - day).days), default=None)
+    return best if best and abs((date.fromisoformat(best["due_date"]) - day).days) <= 45 else None
+
+
+def refile_documents(con):
+    """Moves each SQL invoice and journal (FILED_BY_MONTH) filed on a checklist item of another month than its own
+    (filing_month) to the item of the same kind in its own month, when the company has that item. Ticks stay as they are. Each move is logged. Returns the
+    moves as (doc no, month it was on, month it is on now)."""
+    moved = []
+    for s in con.execute("""SELECT s.id, s.entity_id, s.doc_no, s.doc_date, s.description, t.code, t.month, t.id AS tid
+                            FROM sql_entries s JOIN tasks t ON t.id = s.task_id
+                            WHERE s.kind IN ('invoice', 'journal') ORDER BY s.id""").fetchall():
+        right = con.execute("SELECT id FROM tasks WHERE entity_id = ? AND code = ? AND month = ?",
+                            (s["entity_id"], s["code"], filing_month(s["description"], s["doc_date"]))).fetchone()
+        if right and right["id"] != s["tid"]:
+            con.execute("UPDATE sql_entries SET task_id = ? WHERE id = ?", (right["id"], s["id"]))
+            moved.append((s["doc_no"], s["month"], filing_month(s["description"], s["doc_date"])))
+            log(con, f"Filed SQL document {s['doc_no']} on the {month_label(moved[-1][2])} checklist item, "
+                     f"not {month_label(s['month'])}'s ({s['code']})")
+    return moved
 
 
 def copy_before_update(con):
@@ -518,7 +567,8 @@ def planned(con, p, month):
     acct = con.execute("SELECT currency FROM accounts WHERE id = ?", (p["account_id"],)).fetchone()
     return {"account_id": p["account_id"], "category": p["category"], "description": describe(p["desc_template"], month),
             "amount": amount, "currency": acct["currency"] if acct else "MYR", "amount_is_estimate": p["amount_varies"],
-            "due_date": due(month, p["month_offset"], p["due_day"]), "notes": "; ".join(notes) or None}
+            "due_date": due(month, p["month_offset"], p["due_day"]), "notes": "; ".join(notes) or None,
+            "direction": (p["direction"] if "direction" in p.keys() else None) or "out"}
 
 
 def create_payment_from_payee(con, p, month):
@@ -545,7 +595,7 @@ def recorded(con, pay):
 
 # How each field a recurring payment's update changes is named in the activity log (currency follows the account).
 CHANGED = {"amount": "amount", "amount_is_estimate": "estimate", "due_date": "due date", "category": "type",
-           "description": "description", "account_id": "bank account", "currency": None, "notes": "note"}
+           "description": "description", "account_id": "bank account", "currency": None, "notes": "note", "direction": None}
 
 
 def _due_in(con, p, month):
@@ -570,7 +620,7 @@ def _as_planned(p, was):
     it: a figure typed in or confirmed as the real one, or a payment moved to another date or account by hand, is no
     longer the payee's plan."""
     return bool(was) and same_amount(p["amount"], was["amount"]) and all(
-        p[k] == was[k] for k in ("amount_is_estimate", "due_date", "account_id", "category"))
+        p[k] == was[k] for k in ("amount_is_estimate", "due_date", "account_id", "category", "direction"))
 
 
 def _typed_on(p, was):
@@ -724,6 +774,13 @@ def evidence(con, pay=None, task=None):
     return out
 
 
+def _invoice_proof(sql):
+    """The proof of the customer invoices (IV) among the SQL documents linked to a receipt: Invoice AISB/2026/10/001
+    (print from SQL), or None."""
+    nos = [s["doc_no"] for s in sql if (s["doc_type"] or "").upper() == "IV"]
+    return _proof("Invoice " + ", ".join(dict.fromkeys(nos)), "print from SQL") if nos else None
+
+
 def _own_evidence(con, pay=None, task=None):
     """evidence() of the payment's or item's own records, before what is filed on a checklist item stands in."""
     sql = _linked_sql(con, pay, task)
@@ -733,7 +790,9 @@ def _own_evidence(con, pay=None, task=None):
         if t:
             vouchers.setdefault(t, {})[s["doc_no"]] = True
     out = {t: _proof(", ".join(nos), "print from SQL") for t, nos in vouchers.items()}
-    einv = [s for s, by in _einvoices(con, sql, pay) if not by]
+    if pay and pay["direction"] == "in" and _invoice_proof(sql):
+        out["invoice"] = _invoice_proof(sql)  # the sales invoice issued in SQL for the money received
+    einv =[s for s, by in _einvoices(con, sql, pay) if not by]
     if einv:
         out["einvoice"] = _einvoice_proof(einv)
     if pay:
@@ -798,6 +857,14 @@ def not_in_sql(ent, pay):
     return bool(ent["uses_sql"] and pay["paid_date"] and not pay["sql_ref"])
 
 
+def status_word(pay, status):
+    """A payment's status as a word: Complete, Paid, Part paid or Not paid; for money in Received, Received, Part
+    received and Not received."""
+    if pay["direction"] == "in":
+        return {"complete": "Received", "paid": "Received", "part_paid": "Part received"}.get(status, "Not received")
+    return {"complete": "Complete", "paid": "Paid", "part_paid": "Part paid"}.get(status, "Not paid")
+
+
 def money(n, currency="MYR"):
     """An amount as the screens show it: RM 10,000.00, USD 1,250.00."""
     return f"{'RM' if currency == 'MYR' else currency} {n:,.2f}"
@@ -822,12 +889,16 @@ def payment_flag(con, ent, pay, today):
     once past due why it still shows as not paid: Not on <Mon> statement once a statement of an account of the company
     in its currency is imported for the month it fell due without a line linked; until then Waiting for SQL record
     (companies in SQL) while no SQL voucher is linked and it fell due after the latest voucher imported, else Waiting
-    for <Mon> statement. Paid: a note when a statutory payment was paid after its legal deadline, else None. Nothing
+    for <Mon> statement. Money in says it its own way: Not received yet while it isn't due, Not received where money out
+    says Not paid once past due (a month filed, a bank line cleared by hand), the same variants otherwise. Paid: a note
+    when a statutory payment was paid after its legal deadline, else None. Nothing
     counts in a month before the first month tracked, and nothing is to do in a month marked as filed (it says Not
     paid, or the note for a late payment). Returns {code, text, tone (grey, warn or bad), hint} or None."""
     legal = legal_due(pay)
+    money_in = pay["direction"] == "in"
+    not_paid = "Not received" if money_in else "Not paid"
     if before_tracking(ent, pay["month"]):
-        return None if pay["paid_date"] else _flag("not_paid", "Not paid", "grey")
+        return None if pay["paid_date"] else _flag("not_paid", not_paid, "grey")
     if pay["paid_date"]:
         if legal and pay["paid_date"] > legal:
             return _flag("paid_late", f"Paid after legal deadline ({short_day(legal)})", "bad",
@@ -835,17 +906,16 @@ def payment_flag(con, ent, pay, today):
                          "late-payment notice with this payment.")
         return None
     if closed_at(con, ent["id"], pay["month"]):
-        return _flag("not_paid", "Not paid", "grey")
+        return _flag("not_paid", not_paid, "grey")
     if legal and today > legal:
         return _flag("past_legal", f"Past legal deadline ({short_day(legal)})", "bad",
                      f"Not recorded as paid by the legal deadline of {short_day(legal)}. Pay it now, or link its bank line "
                      "or SQL voucher if it was paid; a late-payment charge may follow.")
     deadline = f" Legal deadline {short_day(legal)}." if legal else ""
     due_on, mon = pay["due_date"], calendar.month_abbr[int(pay["due_date"][5:7])]
-    money_in = pay["direction"] == "in"
     probably = "Probably received" if money_in else "Probably paid"
     if due_on > today:
-        return _flag("not_paid", "Not paid", "grey", deadline.strip() or None)
+        return _flag("not_paid", "Not received yet" if money_in else "Not paid", "grey", deadline.strip() or None)
     if due_on == today:
         todo = ("Expected today: enter the date it was received once it is in." if money_in
                 else "Pay it today, or enter the paid date once it has gone out.")
@@ -854,13 +924,14 @@ def payment_flag(con, ent, pay, today):
                       WHERE a.entity_id = ? AND a.currency = ? AND s.month = ?""",
                    (ent["id"], pay["currency"], due_on[:7])).fetchone():
         if con.execute("SELECT 1 FROM statement_lines WHERE payment_id = ?", (pay["id"],)).fetchone():
-            return _flag("not_paid", "Not paid", "grey", deadline.strip() or None)  # its paid date was cleared by hand
+            return _flag("not_paid", not_paid, "grey", deadline.strip() or None)  # its paid date was cleared by hand
         other_way = ("enter the date it was received if it came in another way" if money_in
                      else "enter the paid date if it went out another way")
         return _flag("not_on_statement", f"Not on {mon} statement", "bad",
                      f"The {mon} bank statement is imported, but no line on it is linked to this payment. Link its line on "
                      f"the Bank statements page, or {other_way}." + deadline)
-    if ent["uses_sql"] and not con.execute("SELECT 1 FROM sql_entries WHERE payment_id = ?", (pay["id"],)).fetchone():
+    if ent["uses_sql"] and not con.execute("SELECT 1 FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment'",
+                                           (pay["id"],)).fetchone():
         latest = con.execute("SELECT MAX(doc_date) FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'",
                              (ent["id"],)).fetchone()[0]
         if not latest or due_on > latest:
@@ -964,7 +1035,9 @@ def named_month(text):
 def _for_month(s, month):
     """True when an SQL document filed on a checklist item is for the item's month: the month its description names,
     else the one being worked on at its date. Filed by the nearest due date, one dated early in a month can sit on the
-    month before's item."""
+    month before's item. An invoice or journal is filed by its own month (filing_month), so it counts there."""
+    if s["kind"] in FILED_BY_MONTH:
+        return filing_month(s["description"], s["doc_date"]) == month
     return (named_month(s["description"]) or current_cycle(date.fromisoformat(s["doc_date"]))) == month
 
 
