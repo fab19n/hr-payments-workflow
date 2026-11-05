@@ -13,7 +13,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import auditpack, config, budget as stored, db, nextup, reports, rules, sqlimport, statements
+from . import auditpack, config, budget as stored, db, nextup, recon, reports, rules, sqlimport, statements
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -561,8 +561,10 @@ def delete_payment(pid):
         # Its bank lines go back to the lines waiting to be explained, marked so matching again doesn't give them to
         # another payment, and its SQL vouchers back under 'not linked'. Documents taken off it or replaced stay on
         # record, noting the payment they were filed on.
+        freed = [r["id"] for r in c.execute("SELECT id FROM statement_lines WHERE payment_id = ?", (pid,))]
         lines = c.execute("UPDATE statement_lines SET payment_id = NULL, status = 'unmatched', undone_payment_id = ? "
                           "WHERE payment_id = ?", (pid, pid)).rowcount
+        recon.line_changed(c, freed)
         # (A customer invoice or journal keeps its status: only the link goes.)
         c.execute("UPDATE sql_entries SET payment_id = NULL, status = CASE WHEN kind IN ('invoice', 'journal') THEN status "
                   "ELSE 'unlinked' END WHERE payment_id = ?", (pid,))
@@ -808,6 +810,17 @@ def update_line(lid):
     l = c.execute(
         """SELECT l.*, s.month, s.account_id, a.entity_id FROM statement_lines l JOIN statements s ON s.id = l.statement_id
            JOIN accounts a ON a.id = s.account_id WHERE l.id = ?""", (lid,)).fetchone() or abort(404)
+    removed = change_line(c, l, b)
+    c.commit()
+    return jsonify({"ok": True, "removed": removed})
+
+
+def change_line(c, l, b):
+    """Link a bank line to a payment, create a payment for it, undo it, or mark it as needing no documents (what the
+    body b says), logging it. A change to the line's link or explanation clears its confirmation and its statement's
+    sign-off. Returns the description of a payment removed because nothing is linked to it now, else None. The caller
+    commits."""
+    lid = l["id"]
     if b.get("create_payment"):
         cp = b["create_payment"]
         if cp.get("month"):
@@ -850,7 +863,10 @@ def update_line(lid):
         if b["status"] == "no_docs" and (l["status"], l["note"]) != ("no_docs", b.get("note")):
             db.log(c, f"Marked bank line {db.short_day(l['txn_date'])} {l['amount']:,.2f} as needing no documents"
                    + (f": {b['note']}" if b.get("note") else ""))
-    new = c.execute("SELECT payment_id FROM statement_lines WHERE id = ?", (lid,)).fetchone()[0]
+    now_ = c.execute("SELECT payment_id, status FROM statement_lines WHERE id = ?", (lid,)).fetchone()
+    new = now_["payment_id"]
+    if (now_["payment_id"], now_["status"]) != (l["payment_id"], l["status"]):
+        recon.line_changed(c, [lid])
     removed = None
     if l["payment_id"] and l["payment_id"] != new:
         p = c.execute("SELECT * FROM payments WHERE id = ?", (l["payment_id"],)).fetchone()
@@ -861,8 +877,7 @@ def update_line(lid):
             removed = p["description"]
         else:
             _after_unlink(c, p["id"])
-    c.commit()
-    return jsonify({"ok": True, "removed": removed})
+    return removed
 
 
 def _made_from_lines(c, p, l):
@@ -885,6 +900,130 @@ def statement_suggestions():
     except ValueError:
         return err("Say which company (entity) the suggestions are for.")
     return jsonify(statements.suggest(con(), eid))
+
+
+# ---------- bank reconciliation (hrp/recon.py) ----------
+
+def _recon_account():
+    """The company and account a reconciliation request is for, from entity and account in the query (or JSON body):
+    the account must belong to the company."""
+    src = request.args if request.method == "GET" else (request.get_json(silent=True) or {})
+    try:
+        eid, aid = int(src.get("entity_id", src.get("entity", ""))), int(src.get("account_id", src.get("account", "")))
+    except (TypeError, ValueError):
+        abort(make_response(*err("Say which company and account.")))
+    c = con()
+    e = c.execute("SELECT * FROM entities WHERE id = ?", (eid,)).fetchone() or abort(404)
+    a = c.execute("SELECT * FROM accounts WHERE id = ? AND entity_id = ?", (aid, eid)).fetchone() or abort(404)
+    return e, a
+
+
+def _recon_statement():
+    """The company and statement a request is for (statement_id and entity_id): the statement must be one of the company's."""
+    src = request.args if request.method == "GET" else (request.get_json(silent=True) or {})
+    try:
+        eid, sid = int(src.get("entity_id", src.get("entity", ""))), int(src.get("statement_id", src.get("statement", "")))
+    except (TypeError, ValueError):
+        abort(make_response(*err("Say which company and statement.")))
+    c = con()
+    e = c.execute("SELECT * FROM entities WHERE id = ?", (eid,)).fetchone() or abort(404)
+    st = c.execute("SELECT s.* FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.id = ? AND a.entity_id = ?",
+                   (sid, eid)).fetchone() or abort(404)
+    return e, st
+
+
+def _recon_do(action):
+    """Runs a reconciliation action as one change: nothing is kept if it stops with an error."""
+    c = con()
+    try:
+        out = action(c)
+        c.commit()
+        return jsonify(dict(out or {}, ok=True))
+    except recon.ReconError as ex:
+        c.rollback()
+        return err(str(ex))
+    except sqlite3.Error:
+        c.rollback()
+        return err("That couldn't be saved, so nothing was changed. Try again.")
+
+
+@app.get("/api/recon/year")
+def recon_year():
+    e, a = _recon_account()
+    try:
+        year = int(request.args.get("year") or 0) or None
+    except ValueError:
+        return err("Say which year.")
+    return jsonify(recon.year_view(con(), e, a, year))
+
+
+@app.get("/api/recon/month")
+def recon_month():
+    e, a = _recon_account()
+    return jsonify(recon.month_summary(con(), e, a, month_from(request.args.get("month"))))
+
+
+@app.get("/api/recon/review")
+def recon_review():
+    e, st = _recon_statement()
+    return jsonify(recon.review(con(), e, st))
+
+
+@app.post("/api/recon/book-opening")
+def recon_book_opening():
+    e, a = _recon_account()
+    b = request.get_json()
+    month = month_from(b.get("month"))
+    return _recon_do(lambda c: recon.set_book_opening(c, e, a, month, b.get("amount")))
+
+
+@app.post("/api/recon/confirm")
+def recon_confirm():
+    e, st = _recon_statement()
+    b = request.get_json()
+    return _recon_do(lambda c: {"confirmed": recon.confirm_lines(c, st, b.get("line_ids") or [])})
+
+
+@app.post("/api/recon/confirm-matched")
+def recon_confirm_matched():
+    e, st = _recon_statement()
+
+    def go(c):
+        done, skipped = recon.confirm_matched(c, st)
+        return {"confirmed": done, "needs_date_tick": skipped}
+    return _recon_do(go)
+
+
+@app.post("/api/recon/apply")
+def recon_apply():
+    e, st = _recon_statement()
+    b = request.get_json()
+
+    def change(c, line, body):
+        joined = c.execute(
+            """SELECT l.*, s.month, s.account_id, a.entity_id FROM statement_lines l JOIN statements s ON s.id = l.statement_id
+               JOIN accounts a ON a.id = s.account_id WHERE l.id = ?""", (line["id"],)).fetchone()
+        change_line(c, joined, body)
+    return _recon_do(lambda c: recon.apply_rows(c, e, st, b.get("rows"), b.get("checked") is True, change))
+
+
+@app.post("/api/recon/sign-off")
+def recon_sign_off():
+    e, st = _recon_statement()
+    return _recon_do(lambda c: recon.sign_off(c, e, st))
+
+
+@app.post("/api/recon/undo-sign-off")
+def recon_undo_sign_off():
+    e, st = _recon_statement()
+    return _recon_do(lambda c: recon.undo_sign_off(c, st))
+
+
+@app.post("/api/recon/before-tracking")
+def recon_before_tracking():
+    e, st = _recon_statement()
+    b = request.get_json()
+    return _recon_do(lambda c: recon.sign_off_before_tracking(c, e, st, b.get("note"), b.get("checked") is True))
 
 
 @app.get("/api/open-payments")

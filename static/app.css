@@ -199,6 +199,40 @@ svg.bchart { width: 100%; min-width: 560px; max-width: 720px; height: auto; disp
 .bchart .pd { fill: var(--accent); }
 .bchart .pd.over { fill: var(--bad); }
 
+/* Bank reconciliation: the month panel, the review rows, the confirm bar */
+.bad-text { color: var(--bad); }
+tr.panelrow > td { background: var(--bg); padding: 12px; }
+.rc-panel { display: grid; gap: 12px; }
+.rc-panel h3 { margin-top: 4px; }
+.rc-panel td.mono { white-space: nowrap; }
+.rc-sign, .rc-before { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.rc-before { display: grid; justify-items: start; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.rc-before .field { width: min(420px, 100%); }
+table.rv-sort { width: auto; justify-self: start; }
+.rv-sortbar { gap: 10px; align-items: baseline; }
+table.rv-sort th { border-bottom: 0; padding: 0 14px 0 0; }
+.rv-wrap { display: block; min-width: 0; }
+.rv-list { display: grid; gap: 8px; }
+.rv-row { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 8px 18px; border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; background: var(--surface); scroll-margin-top: 110px; }
+.rv-row.open { border-left: 4px solid var(--warn); background: var(--warn-soft); }
+.rv-mine { display: grid; gap: 6px; align-content: start; min-width: 0; }
+.rv-mine select, .rv-mine input[type=text], .rv-mine input:not([type]) { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 5px 8px; min-width: 0; }
+.rv-bank { display: grid; gap: 2px; align-content: start; min-width: 0; padding-left: 14px; border-left: 1px solid var(--line); }
+.rv-bank .num { text-align: left; font-size: 1.1rem; }
+.rv-keep { font-size: .86rem; color: var(--warn); flex-wrap: nowrap; align-items: flex-start; gap: 8px; }  /* the tick stays beside its sentence */
+.rv-keep span { flex: 1; min-width: 0; }
+.rv-mhead { padding: 8px 2px; }
+.rv-bar { position: sticky; bottom: 0; z-index: 4; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; margin-top: 12px;
+  background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 14px; box-shadow: 0 -4px 14px rgba(0, 0, 0, .12); }
+.rv-bar .rv-nosql { flex-basis: 100%; margin: 0; }
+.rv-mine input[type=checkbox], .rv-bar input[type=checkbox], .rc-before input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--accent); }
+@media (max-width: 700px) {
+  .rv-row { grid-template-columns: minmax(0, 1fr); }
+  .rv-bank { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); padding-top: 8px; order: -1; }
+  .rv-bar { gap: 6px 14px; }
+}
+
 @media print {
   :root:root, :root[data-theme] { --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8;
     --accent: #1f6f63; --accent-soft: #dcece7; --ok: #2c7a3f; --ok-soft: #e1f1e4; --warn: #9a5c08; --warn-soft: #fbf0dc; --bad: #b3322b; --bad-soft: #f8e1df; color-scheme: light; }

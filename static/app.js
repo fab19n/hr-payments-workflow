@@ -72,7 +72,7 @@ function currentCycle(t = new Date()) { const d = new Date(t.getFullYear(), t.ge
 const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
 
 const state = { meta: null, view: "overview", entity: null, month: currentCycle(), day: dayKey(), data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
-  nextAll: {}, bankOnly: false, lists: {}, counts: {} };
+  nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
   ["Filing", [["audit", "Audit pack"], ["settings", "Backup & log"]]]];
@@ -215,7 +215,7 @@ function renderNav() {
 
 function go(view, entity) {
   if (!closeDrawer()) return;
-  state.view = view; state.bankOnly = false; for (const k in state.lists) state.lists[k].q = ""; if (entity) state.entity = +entity;
+  state.view = view; state.bankOnly = false; state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; if (entity) state.entity = +entity;
   if (!state.entity) state.entity = state.meta.entities[0].id;
   renderNav(); render();
 }
@@ -847,65 +847,326 @@ function budgetTables(d) {
 }
 
 /* ---------------- Bank statements ---------------- */
-// Only lines to explain: the statements with none left are not listed, and the lines explained are left out of the rest.
-const toExplain = s => s.lines.filter(l => l.status === "unmatched");
-const listedStatements = sts => state.bankOnly ? sts.filter(s => toExplain(s).length) : sts;
-
-// What the server thinks a line to explain might be (up to 3 payments, best first). A person confirms each link.
-const suggestions = l => l.payment_id ? "" : (state.suggestions?.[l.id] || []).map(x =>
-  `<div class="note noprint" title="Match score ${x.score} of 100">Suggested: ${esc(x.description)} · ${esc(x.reason)} <button class="ghost small" data-suggest-link="${l.id}" data-suggest-pay="${x.payment_id}">Link</button></div>`).join("");
-
+// The year view of one account (a row per month), a month's panel opened in place, and the review of a statement's lines.
+// What matches, what is in the books and whether a month can be signed off is worked out by the server (hrp/recon.py);
+// nothing here posts anything to SQL Account.
+const RC_PILL = { to_import: "grey", to_review: "warn", difference: "bad", reconciled: "ok" };
+const rcPill = (status, text) => `<span class="pill ${RC_PILL[status] || "grey"}">${esc(text)}</span>`;
+const rcUrl = (what, extra = "") => `/api/recon/${what}?entity_id=${state.entity}${extra}`;
+const signedAmt = (n, cur) => `${n < 0 ? "−" : "+"}${money(Math.abs(n), cur).replace(/^\S+ /, "")}`;
+const dayCount = n => `${n} day${n === 1 ? "" : "s"}`;
 const bankText = (l, cur) => [fmtDate(l.txn_date), l.txn_date, l.description, LT.amount(l.amount), cur, l.payment_desc, l.note, l.status === "no_docs" ? "no documents needed" : l.payment_id ? "" : "not explained"].join(" ");
-function bankBlocks(sts) {
-  const listed = listedStatements(sts), q = listState("bank").q.trim();
-  let n = 0, m = 0;
-  const blocks = listed.map(s => {
-    const un = toExplain(s).length, all = state.bankOnly ? toExplain(s) : s.lines;
-    const lines = listRows("bank", all, l => bankText(l, s.currency));
-    m += all.length; n += lines.length;
-    if (q && !lines.length) return "";
-    return `<div class="card" id="stmt-${s.id}">
-      <div class="row spread"><div><div class="eyebrow">${esc(s.account_label)}</div><h2>${monthName(s.month)} statement</h2></div>
-      <div class="row">${s.check_ok ? `<span class="pill ok">Balances add up</span>` : `<span class="pill bad">Closing balance differs</span>`}
-      ${un ? `<span class="pill warn">${un} lines to explain</span>` : `<span class="pill ok">All lines explained</span>`}
-      <a class="ghost small" href="/api/documents/${s.document_id}/file" target="_blank">View PDF</a></div></div>
-      <div class="note">Opening ${money(s.opening, s.currency)} · Closing ${money(s.closing, s.currency)} · Debits ${money(s.total_debits, s.currency)} · Credits ${money(s.total_credits, s.currency)}</div>
-      <div class="tbl-wrap"><table><thead><tr>${sortTh("bank", "date", "Date")}${sortTh("bank", "desc", "Description")}${sortTh("bank", "amount", "Amount", "num")}${sortTh("bank", "by", "Explained by")}<th></th></tr></thead><tbody>
-      ${lines.map(l => `<tr><td class="mono">${shortDate(l.txn_date)}</td><td class="line-desc">${esc(l.description.replaceAll(" | ", " · "))}</td>
-        <td class="num ${l.amount < 0 ? "" : "muted"}">${l.amount < 0 ? "−" : "+"}${money(Math.abs(l.amount), s.currency).replace(/^\S+ /, "")}</td>
-        <td>${l.payment_id ? `<span class="pill ok">${esc(l.payment_desc)}</span>` : l.status === "no_docs" ? `<span class="pill grey">No documents needed${l.note ? ": " + esc(l.note) : ""}</span>` : `<span class="pill warn">Not explained</span>${suggestions(l)}`}</td>
-        <td class="noprint">${l.payment_id || l.status === "no_docs" ? `<button class="ghost small" data-unlink="${l.id}">Undo</button>` : `<button class="ghost small" data-explain="${l.id}" data-account="${s.account_id}" data-month="${s.month}" data-amount="${l.amount}">Explain</button>`}</td></tr>`).join("")}
-      </tbody></table></div></div>`;
-  }).join("");
-  setCount("bank", n, m);
-  return blocks || `<div class="card empty">${q ? "No statement line matches." : sts.length ? "Every line on the statements is explained." : `No statements imported for ${esc(ent().name)} yet.`}</div>`;
+
+// The books' side of a month as one cell: the balance, or why there is none.
+const bookCell = (b, cur) => b.closing != null ? money(b.closing, cur) : `<span class="muted">${esc(b.note || "—")}</span>`;
+
+// Sign-off controls for a month (s: the month's summary), the same in its panel and at the foot of its review.
+function signBlock(s) {
+  if (!s.statement) return "";
+  const id = s.statement.id;
+  if (s.reconciled_at) {
+    return `<div class="rc-sign"><span class="pill ok">Reconciled ${fmtDate(s.reconciled_at)}${s.reconciled_how === "before tracking" ? " · before tracking" : ""}</span>
+      ${s.reconciled_note ? `<span class="note">${esc(s.reconciled_note)}</span>` : ""}
+      <button class="ghost small" data-rc-undo="${id}">Undo sign-off</button></div>`;
+  }
+  const why = s.why_not.length ? `<div class="note">Not ready: ${esc(s.why_not.join("; "))}.</div>` : "";
+  const before = s.before_tracking ? `<div class="rc-before"><div class="note">This month is before tracking began here. If it was reconciled outside this app, say so.</div>
+      <label class="field"><span>How it was reconciled${s.book_matches ? " (optional: the books agree with the bank)" : ""}</span><input data-rc-note="${id}" maxlength="200" placeholder="e.g. reconciled in SQL Account in August"></label>
+      <label class="row"><input type="checkbox" data-rc-before-tick="${id}"> This month was reconciled before tracking began</label>
+      <button class="ghost" data-rc-before="${id}" ${s.can_sign_before_tracking ? "" : "disabled"}>Reconciled before tracking</button>
+      ${s.can_sign_before_tracking ? "" : `<div class="note">The statement has to add up first.</div>`}</div>` : "";
+  return `<div class="rc-sign"><button class="btn" data-rc-sign="${id}" ${s.can_sign ? "" : "disabled"}>Mark reconciled</button>${why}</div>${before}`;
 }
-const drawBank = () => { $("#stmtList").innerHTML = bankBlocks(state.statements); paintCount("bank"); };
+
+function rcTable(title, rows, cur) {
+  if (!rows.length) return "";
+  return `<div class="tbl-wrap"><h3>${esc(title)} · ${rows.length}</h3><table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th><th>Why</th></tr></thead><tbody>
+    ${rows.map(x => `<tr><td class="mono">${shortDate(x.date)}</td><td class="line-desc">${x.ref ? `<b>${esc(x.ref)}</b> ` : ""}${esc((x.description || "").replaceAll(" | ", " · "))}</td>
+      <td class="num">${signedAmt(x.amount, cur)}</td><td class="note">${esc(x.why)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+function monthPanel(s) {
+  const cur = s.account.currency, st = s.statement, rc = s.reconciliation, c = s.lines;
+  if (!st) return `<div class="rc-panel"><div class="note">The ${esc(s.label)} statement for ${esc(s.account.label)} isn't imported yet. Import it above.</div>
+    <div class="stats"><div class="stat"><b>${bookCell(s.book, cur)}</b><span>Book closing</span></div></div></div>`;
+  const diff = s.difference;
+  const parts = !rc ? [] : [
+    rc.brought_forward ? `${money(rc.brought_forward, cur)} brought forward from last month (bank opening less book opening)` : "",
+    rc.books_out ? `${money(rc.books_out, cur)} paid out in the books, not on the statement` : "",
+    rc.books_in ? `${money(-rc.books_in, cur)} received in the books, not on the statement` : "",
+    rc.bank_net ? `${money(rc.bank_net, cur)} net on the statement, not in the books` : "",
+    rc.differ ? `${money(rc.differ, cur)} from matched amounts that differ` : "",
+    rc.other ? `${money(rc.other, cur)} not explained by any of these` : ""].filter(Boolean);
+  const gone = s.left_out.journals || s.left_out.invoices, unk = s.left_out.unknown;
+  return `<div class="rc-panel">
+    <div class="stats">
+      <div class="stat"><b>${money(st.money_in, cur)}</b><span>Money in</span></div>
+      <div class="stat"><b>${money(st.money_out, cur)}</b><span>Money out</span></div>
+      <div class="stat"><b>${money(st.closing, cur)}</b><span>Bank closing</span></div>
+      <div class="stat"><b>${bookCell(s.book, cur)}</b><span>Book closing</span></div>
+      <div class="stat"><b class="${diff == null ? "" : Math.abs(diff) < 0.005 ? "recv" : "bad-text"}">${diff == null ? "—" : money(diff, cur)}</b><span>Difference (bank less books)</span></div>
+    </div>
+    <div class="row spread"><div>Lines: <b>${c.matched}</b> matched · <b>${c.confirmed}</b> confirmed · <b>${c.to_explain}</b> to explain
+      ${st.adds_up ? "" : `<span class="pill bad">Statement doesn't add up</span>`}</div>
+      <div class="row">${st.document_id ? `<a class="ghost small" href="/api/documents/${st.document_id}/file" target="_blank">Statement PDF</a>` : ""}
+      <button class="btn small" data-rc-review="${st.id}">Review lines</button></div></div>
+    <h3>Reconciliation statement</h3>
+    ${s.book.state !== "ok" ? `<div class="note">${esc(s.book.note)}${s.book.note === "Needs book opening" ? ": type this account's book balance under Book opening below." : ": paste the cash book listing for that month on the SQL import page."}</div>` : ""}
+    ${diff != null && Math.abs(diff) >= 0.005 ? `<div class="note">The books are ${money(Math.abs(diff), cur)} ${diff > 0 ? "below" : "above"} the bank.${parts.length ? " That is: " + esc(parts.join("; ")) + "." : ""}</div>` : ""}
+    ${rcTable("In the books, not on this statement", s.books_only, cur)}${rcTable("On the statement, not in the books", s.bank_only, cur)}
+    ${s.differ.length ? `<div class="tbl-wrap"><h3>Matched, but the amounts differ · ${s.differ.length}</h3><table><thead><tr><th>Payment</th><th class="num">Books</th><th class="num">Statement</th><th class="num">Difference</th></tr></thead><tbody>
+      ${s.differ.map(x => `<tr><td>${x.ref ? `<b>${esc(x.ref)}</b> ` : ""}${esc(x.description)}</td><td class="num">${money(x.book, cur)}</td><td class="num">${money(x.bank, cur)}</td><td class="num">${money(x.amount, cur)}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${!s.books_only.length && !s.bank_only.length && !s.differ.length && s.book.state === "ok" ? `<div class="note">Everything on the statement is in the books, and the other way round.</div>` : ""}
+    ${gone ? `<div class="note">Not counted as bank movements: ${s.left_out.journals} journal${s.left_out.journals === 1 ? "" : "s"} and ${s.left_out.invoices} customer invoice${s.left_out.invoices === 1 ? "" : "s"} (customer refunds included) in the SQL listing.</div>` : ""}
+    ${unk ? `<div class="note">Not counted: ${unk} cash book entr${unk === 1 ? "y" : "ies"} with no money in or out shown, so the books may differ by that amount.</div>` : ""}
+    ${s.uses_sql ? `<div class="note">Paste only the bank's cash book listing for reconciliation: a voucher paid from petty cash or a card would count as a bank movement.</div>` : ""}
+    ${signBlock(s)}
+    <div class="note">Marking a month reconciled is a record kept in this app. Nothing is posted to SQL Account.</div></div>`;
+}
 
 async function viewBank(main) {
-  const e = ent();
-  const sts = await api(`/api/statements?entity=${state.entity}`);
-  state.statements = sts;
-  state.suggestions = await api(`/api/statement-suggestions?entity=${state.entity}`);
-  // Opened from Before you print or Next up: that account is chosen for the import, and its statement for the month shown.
+  const e = ent(), R = state.recon;
+  if (R.entity !== state.entity) Object.assign(R, { entity: state.entity, account: null, year: null, open: null, panel: null, rv: null });
+  // Opened from Before you print or Next up: that account is shown, and with lines to explain its review opens.
   const focus = state.focusBank; state.focusBank = null;
-  const acctOpts = e.accounts.map(a => `<option value="${a.id}" ${a.id === focus?.account ? "selected" : ""}>${esc(a.label)}${a.number ? " · " + esc(a.number) : ""}</option>`).join("");
+  if (focus?.account && e.accounts.some(a => a.id === focus.account)) { if (R.account !== focus.account) R.rv = null; R.account = focus.account; }
+  if (!e.accounts.some(a => a.id === R.account)) R.account = e.accounts[0]?.id;
+  if (focus && state.month) R.year = state.month.slice(0, 4);
+  const acctOpts = e.accounts.map(a => `<option value="${a.id}" ${a.id === R.account ? "selected" : ""}>${esc(a.label)}${a.number ? " · " + esc(a.number) : ""}</option>`).join("");
   main.innerHTML = `${entityPicker()}
     <div class="card"><h1>Bank statements</h1>
-      <div class="note">Import each month's Maybank statement PDF. Every line is then matched to a payment automatically where the payee and amount agree (split DuitNow transfers are added together). Explain the rest: link it to a payment, create a payment for it, or mark it as needing no documents (bank charges). A line you undo, or one whose payment you remove, is left for you to explain: Match again leaves it alone.</div>
+      <div class="note">Import each month's Maybank statement PDF. Every line is matched to a payment automatically where the payee and amount agree (split DuitNow transfers are added together). Then review the month: confirm what was matched, explain the rest, and mark the month reconciled once the books agree with the bank.</div>
       <form class="row" id="stmtForm"><label class="field"><span>Account</span><select id="stmtAcct">${acctOpts}</select></label>
       <label class="field"><span>Statement PDF</span><input id="stmtFile" type="file" accept=".pdf"></label>
       <button class="btn" type="submit" style="align-self:end">Import statement</button>
-      ${sts.length ? `<button class="ghost" type="button" id="rematch" style="align-self:end">Match again</button>` : ""}</form>
-      ${sts.length ? `<label class="row"><input type="checkbox" id="bankOnly" ${state.bankOnly ? "checked" : ""}> Only lines to explain</label>` : ""}
-      ${sts.length ? listBar("bank", "statement lines") : ""}</div>
-    <div id="stmtList">${bankBlocks(sts)}</div>`;
-  paintCount("bank"); LIST_REDRAW.bank = drawBank;
-  const shown = focus && listedStatements(sts).find(s => s.month === state.month && (!focus.account || s.account_id === focus.account));
-  if (shown) $(`#stmt-${shown.id}`)?.scrollIntoView?.({ block: "start" });
+      <button class="ghost" type="button" id="rematch" style="align-self:end">Match again</button></form></div>
+    <div id="stmtList"></div>`;
+  await drawRecon(focus);
 }
 
-// amount: the line's, signed as on the statement (money in above 0).
+async function drawRecon(focus) {
+  const R = state.recon, box = $("#stmtList");
+  if (!box) return;
+  if (R.rv) return reloadReview(false);
+  const e = ent();
+  const y = await api(rcUrl("year", `&account_id=${R.account}${R.year ? `&year=${R.year}` : ""}`));
+  R.year = y.year; R.data = y;
+  if (focus) {
+    const row = y.rows.find(r => r.month === state.month && r.statement_id);
+    if (row && state.bankOnly) return openReview(row.statement_id, false);  // the page is at the top already
+    if (row) R.open = row.month;
+  }
+  R.panel = R.open && y.rows.some(r => r.month === R.open) ? await api(rcUrl("month", `&account_id=${R.account}&month=${R.open}`)) : null;
+  const cur = y.account.currency;
+  const rowHtml = r => `<tr class="${R.open === r.month ? "focus" : ""}"><td><button class="link" data-rc-open="${r.month}" aria-expanded="${R.open === r.month}">${esc(r.label)}</button></td>
+      <td>${rcPill(r.status, r.status_text)}</td>
+      <td class="num">${r.bank_closing != null ? money(r.bank_closing, cur) : "—"}</td><td class="num">${bookCell({ closing: r.book_closing, note: r.book_note }, cur)}</td>
+      <td>${r.reconciled_at ? fmtDate(r.reconciled_at) + (r.reconciled_how === "before tracking" ? ` <span class="muted">· before tracking</span>` : "") : "—"}</td>
+      <td class="noprint">${r.document_id ? `<a href="/api/documents/${r.document_id}/file" target="_blank">PDF</a>` : "—"}</td></tr>
+      ${R.open === r.month && R.panel ? `<tr class="panelrow"><td colspan="6">${monthPanel(R.panel)}</td></tr>` : ""}`;
+  const openings = y.openings.map(o => `${monthName(o.month)}: ${money(o.amount, cur)}`).join(" · ");
+  const firstMonth = y.openings[0]?.month || y.rows.filter(r => r.statement_id).map(r => r.month).sort()[0] || y.rows.map(r => r.month).sort()[0] || "";
+  box.innerHTML = `<div class="card">
+      <div class="row spread"><div><div class="eyebrow">${esc(e.name)}</div><h2>${esc(y.account.label)} · ${esc(y.year)}</h2></div>
+      <div class="row noprint">${e.accounts.length > 1 ? e.accounts.map(a => `<button class="${a.id === R.account ? "btn" : "ghost"} small" data-rc-acct="${a.id}">${esc(a.label)}</button>`).join("") : ""}
+      ${y.years.length > 1 ? y.years.map(yr => `<button class="${yr === y.year ? "btn" : "ghost"} small" data-rc-year="${yr}">${esc(yr)}</button>`).join("") : ""}</div></div>
+      <div class="note">Click a month for its summary. Book closing comes from ${esc(y.source)}.</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Month</th><th>Status</th><th class="num">Bank closing</th><th class="num">Book closing</th><th>Reconciled on</th><th class="noprint">Statement</th></tr></thead><tbody>
+      ${y.rows.map(rowHtml).join("") || `<tr><td colspan="6" class="empty">No months to show for ${esc(y.year)}.</td></tr>`}</tbody></table></div></div>
+    <div class="card noprint"><h2>Book opening</h2>
+      <div class="note">The balance ${esc(y.account.label)} had in your books on the first day of its first month here${e.uses_sql ? " (your SQL Account bank balance)" : ""}. Type it once; each later month carries on from the month before. ${openings ? `Set so far: ${esc(openings)}.` : "None set yet, so book closing shows Needs book opening."}</div>
+      <form class="row" id="openingForm"><label class="field"><span>Month it applies to</span><input id="openMonth" type="month" required value="${esc(firstMonth)}"></label>
+      <label class="field"><span>Book balance (${esc(cur)})</span><input id="openAmount" inputmode="decimal" required placeholder="e.g. 25,367.58"></label>
+      <button class="btn" type="submit" style="align-self:end">Save book opening</button></form></div>`;
+}
+
+/* ---- the review of one statement ---- */
+const RV = () => state.recon.rv;
+
+async function openReview(sid, scroll = true) {
+  const d = await api(rcUrl("review", `&statement_id=${sid}`));
+  const V = state.recon.rv = { sid, d, sel: {}, choice: {}, keep: {}, checked: false, showMatched: false };
+  for (const l of d.lines) if (l.state === "open" && l.suggestions.length) V.choice[l.id] = "p:" + l.suggestions[0].payment_id;
+  drawReview();
+  if (scroll) $("#stmtList")?.scrollIntoView?.({ block: "start" });  // the review replaces the year view, lower on the page
+}
+
+// reset false (the page redrew after a one-line action): the rows chosen, their date ticks, the check tick and the
+// descriptions typed stay for lines that are as they were.
+async function reloadReview(reset = true) {
+  const V = RV(), d = await api(rcUrl("review", `&statement_id=${V.sid}`));
+  const typed = [...document.querySelectorAll("[data-rv-desc],[data-rv-cat],[data-rv-note]")].map(el => [el.matches("[data-rv-desc]") ? "desc" : el.matches("[data-rv-cat]") ? "cat" : "note", el.dataset.rvDesc || el.dataset.rvCat || el.dataset.rvNote, el.value]);
+  const was = Object.fromEntries(V.d.lines.map(l => [l.id, l.state + ":" + l.payment?.id]));
+  if (reset) { V.sel = {}; V.keep = {}; V.checked = false; }
+  else for (const l of d.lines) if (was[l.id] !== l.state + ":" + l.payment?.id) { delete V.sel[l.id]; delete V.keep[l.id]; delete V.choice[l.id]; }
+  V.d = d;
+  for (const l of d.lines) {
+    if (l.state !== "open") delete V.choice[l.id];
+    else if (!V.choice[l.id] && l.suggestions.length) V.choice[l.id] = "p:" + l.suggestions[0].payment_id;
+  }
+  drawReview();
+  if (!reset) for (const [k, id, v] of typed) { const el = document.querySelector(`[data-rv-${k}="${id}"]`); if (el) el.value = v; }
+}
+
+// How far the bank date of a line is from the date the books hold for the payment p: {days, date, kind}, or null.
+function rvGap(line, p) {
+  if (!p) return null;
+  const dates = p.voucher_dates?.length ? p.voucher_dates : p.typed_date ? [p.typed_date] : [];
+  if (!dates.length) return null;
+  const t = Date.parse(line.txn_date);
+  const best = dates.map(x => ({ date: x, days: Math.abs(Math.round((Date.parse(x) - t) / 864e5)) })).sort((a, b) => a.days - b.days)[0];
+  return best.days ? { ...best, kind: p.voucher_dates?.length ? "voucher" : "payment" } : null;
+}
+const rvPay = id => RV().d.payments.find(p => p.id === id);
+// The date difference a row must have ticked before it can be applied: {days, date, kind} or null.
+function rvNeedsTick(l) {
+  const V = RV();
+  if (l.state !== "open") return l.gap_days ? { days: l.gap_days, date: l.book_date, kind: l.book_date_kind } : null;
+  const ch = V.choice[l.id];
+  return ch?.startsWith("p:") ? rvGap(l, rvPay(+ch.slice(2))) : null;
+}
+
+function rvPayOption(p, sel, why) {
+  return `<option value="p:${p.id}" ${sel === "p:" + p.id ? "selected" : ""}>${esc(p.description)} · ${p.direction === "in" ? "+" : ""}${money(p.amount, p.currency)} (${esc(monthName(p.month))})${why ? " · " + esc(why) : ""}${p.linked ? " · already linked " + money(p.linked, p.currency) : ""}</option>`;
+}
+
+function rvMine(l) {
+  const V = RV();
+  if (l.state !== "open") {
+    const v = l.vouchers.map(x => `<span class="chip">${esc(x.doc_no)} · ${shortDate(x.doc_date)}</span>`).join(" ");
+    return `<div class="rv-what">${l.payment ? `<b>${esc(l.payment.description)}</b> <span class="muted">${l.payment.direction === "in" ? "+" : ""}${money(l.payment.amount, l.payment.currency)} · ${esc(monthName(l.payment.month))}</span>`
+      : `<b>No documents needed</b>${l.note ? ` <span class="muted">${esc(l.note)}</span>` : ""}`}</div>
+      <div class="row" style="gap:6px">${v}${l.confirmed_at ? `<span class="pill ok">Confirmed ${shortDate(l.confirmed_at)}</span>` : `<span class="pill warn">Matched, not confirmed</span>`}
+      <button class="ghost small" data-unlink="${l.id}">Undo</button></div>`;
+  }
+  const ch = V.choice[l.id] || "";
+  const sugg = l.suggestions.map(x => ({ p: rvPay(x.payment_id), why: x.reason })).filter(x => x.p);
+  const used = new Set(sugg.map(x => x.p.id));
+  const others = V.d.payments.filter(p => !used.has(p.id) && (p.direction === "in") === (l.amount > 0) && !(p.linked && p.amount && p.linked >= p.amount - 0.005));
+  const opts = `<option value="">Choose what this is…</option>
+    ${sugg.length ? `<optgroup label="Suggested">${sugg.map(x => rvPayOption(x.p, ch, x.why)).join("")}</optgroup>` : ""}
+    ${others.length ? `<optgroup label="Open payments">${others.map(p => rvPayOption(p, ch)).join("")}</optgroup>` : ""}
+    <option value="c" ${ch === "c" ? "selected" : ""}>Create a payment for this line</option>
+    <option value="n" ${ch === "n" ? "selected" : ""}>No documents needed (bank charge)</option>`;
+  const cat = l.amount > 0 ? "receipt" : "other";
+  const extra = ch === "c" ? `<input data-rv-desc="${l.id}" maxlength="120" placeholder="What was this payment for?" aria-label="Description of the payment to create">
+      <select data-rv-cat="${l.id}" aria-label="Type of payment">${Object.entries(state.meta.categories).map(([k, v]) => `<option value="${k}" ${k === cat ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`
+    : ch === "n" ? `<input data-rv-note="${l.id}" maxlength="120" placeholder="Reason, e.g. bank charges" aria-label="Reason no documents are needed">` : "";
+  return `<div class="row" style="gap:6px"><span class="pill warn">To explain</span>
+    <button class="ghost small" data-explain="${l.id}" data-account="${V.d.summary.account.id}" data-month="${V.d.summary.month}" data-amount="${l.amount}">More options</button></div>
+    <select data-rv-choice="${l.id}" aria-label="What this bank line is">${opts}</select>${extra}`;
+}
+
+function rvRow(l) {
+  const V = RV(), cur = V.d.summary.account.currency, tick = rvNeedsTick(l);
+  const open = l.state === "open", can = !open || !!V.choice[l.id];
+  return `<div class="rv-row ${open ? "open" : ""}" id="rv-row-${l.id}">
+    <div class="rv-mine">${rvMine(l)}
+      <label class="row rv-select"><input type="checkbox" data-rv-sel="${l.id}" ${V.sel[l.id] ? "checked" : ""} ${can ? "" : "disabled"}> Select</label>
+      ${tick ? `<label class="row rv-keep"><input type="checkbox" data-rv-keep="${l.id}" ${V.keep[l.id] ? "checked" : ""}><span>Bank date differs by ${dayCount(tick.days)}: keep the ${tick.kind} date (${shortDate(tick.date)})</span></label>` : ""}</div>
+    <div class="rv-bank"><div class="row spread"><span class="mono">${fmtDate(l.txn_date)}</span><span class="eyebrow">${l.amount < 0 ? "Money out" : "Money in"}</span></div>
+      <div class="num ${l.amount < 0 ? "" : "recv"}"><b>${signedAmt(l.amount, cur)}</b></div>
+      <div class="line-desc">${esc(l.description.replaceAll(" | ", " · "))}</div>
+      <div class="note">Balance ${money(l.balance, cur)}</div></div></div>`;
+}
+
+function rvLists() {
+  const V = RV(), d = V.d, cur = d.summary.account.currency;
+  const text = l => bankText(l, cur);
+  const open = listRows("bank", d.lines.filter(l => l.state === "open"), text), done = listRows("bank", d.lines.filter(l => l.state !== "open"), text);
+  setCount("bank", open.length + done.length, d.lines.length);
+  const totalMatched = d.lines.filter(l => l.state !== "open").length, unconf = d.lines.filter(l => l.state !== "open" && !l.confirmed_at).length;
+  return `${open.map(rvRow).join("") || `<div class="empty">${d.lines.some(l => l.state === "open") ? "No open line matches." : "Nothing left to explain."}</div>`}
+    ${totalMatched ? `<div class="row spread rv-mhead"><button class="link" data-rv-toggle="1">${totalMatched} matched · ${V.showMatched ? "Hide" : "Show"}</button>
+      <div class="row">${unconf ? `<span class="note">${unconf} not confirmed yet</span>` : `<span class="pill ok">All confirmed</span>`}
+      <button class="ghost small" data-rv-confirm-all="1" ${unconf ? "" : "disabled"}>Confirm all matched</button></div></div>
+      ${V.showMatched ? (done.map(rvRow).join("") || `<div class="empty">No matched line matches.</div>`) : ""}` : ""}`;
+}
+const drawRvList = () => { const el = $("#rvList"); if (el) { el.innerHTML = rvLists(); paintCount("bank"); paintBar(); } };
+LIST_REDRAW.bank = drawRvList;
+
+// The bar at the foot of the review: what is selected, what is left, the difference once the rows are applied.
+function paintBar() {
+  const V = RV(); if (!V) return;
+  const d = V.d, s = d.summary, cur = s.account.currency;
+  const picked = d.lines.filter(l => V.sel[l.id]), open = d.lines.filter(l => l.state === "open");
+  const left = open.filter(l => !V.sel[l.id]).length;
+  // Creating a payment, or linking one the books don't date in this month, adds it to the books of a company not in SQL.
+  let after = s.difference;
+  if (after != null && !s.uses_sql) {
+    for (const l of picked) {
+      const ch = V.choice[l.id];
+      if (l.state !== "open") continue;
+      const p = ch?.startsWith("p:") ? rvPay(+ch.slice(2)) : null;
+      if (ch === "c") after -= l.amount;
+      else if (p && !(p.paid_date || "").startsWith(s.month)) after -= (p.direction === "in" ? 1 : -1) * (p.amount ?? Math.abs(l.amount));
+    }
+  }
+  const bar = $("#rvBar"), sum = $("#rvSelected");
+  if (sum) sum.innerHTML = `<b>${picked.length}</b><span>Selected · ${money(picked.reduce((a, l) => a + l.amount, 0), cur)}</span>`;
+  if (!bar) return;
+  bar.innerHTML = `<div><b>${picked.length}</b> selected · <b>${left}</b> still to explain</div>
+    <div>Difference after applying: <b class="${after == null ? "" : Math.abs(after) < 0.005 ? "recv" : "bad-text"}">${after == null ? "— (" + esc(s.book.note || "no books") + ")" : money(after, cur)}</b></div>
+    <label class="row"><input type="checkbox" id="rvChecked" ${V.checked ? "checked" : ""}> I've checked these rows</label>
+    <button class="btn" id="rvApply" ${picked.length ? "" : "disabled"}>Apply selected (${picked.length})</button>
+    <div class="note rv-nosql">Applying only links, creates payments or explains lines here. Nothing is posted to SQL Account.</div>`;
+}
+
+function drawReview() {
+  const V = RV(), box = $("#stmtList");
+  if (!box || !V) return;
+  const d = V.d, s = d.summary, cur = s.account.currency, st = s.statement;
+  const diff = s.difference, open = d.lines.filter(l => l.state === "open").length;
+  box.innerHTML = `<div class="card"><div class="row spread"><div><div class="eyebrow">${esc(s.account.label)}</div><h2>${esc(s.label)} statement · review</h2></div>
+      <div class="row noprint"><button class="ghost small" data-rv-back="1">← Back to the year</button>${st.document_id ? `<a class="ghost small" href="/api/documents/${st.document_id}/file" target="_blank">Statement PDF</a>` : ""}</div></div>
+      <div class="stats">
+        <div class="stat"><b>${d.lines.length}</b><span>Bank lines · ${open} to explain</span></div>
+        <div class="stat"><b>${bookCell(s.book, cur)}</b><span>Book closing</span></div>
+        <div class="stat"><b>${money(st.closing, cur)}</b><span>Bank closing${diff == null ? "" : " · difference " + money(diff, cur)}</span></div>
+        <div class="stat" id="rvSelected"></div></div>
+      <div class="row spread"><div>${rcPill(s.status, s.status_text)}</div></div>
+      ${listBar("bank", "statement lines")}
+      <div class="row rv-sortbar noprint"><span class="muted small">Sort by</span><table class="rv-sort"><thead><tr>${sortTh("bank", "date", "Date")}${sortTh("bank", "desc", "Description")}${sortTh("bank", "amount", "Amount", "num")}${sortTh("bank", "by", "Explained by")}</tr></thead></table></div>
+      <div class="rv-wrap"><div id="rvList" class="rv-list">${rvLists()}</div>
+        <div class="rv-bar noprint" id="rvBar"></div></div>
+      ${signBlock(s)}
+      <div class="note">Marking a month reconciled is a record kept in this app. Nothing is posted to SQL Account.</div></div>`;
+  paintCount("bank"); paintBar();
+}
+
+// Applies the rows selected on the review screen (one request: all of them or none).
+async function rvApply() {
+  const V = RV(), rows = [];
+  for (const l of V.d.lines) {
+    if (!V.sel[l.id]) continue;
+    const r = { line_id: l.id }, ch = V.choice[l.id] || "";
+    if (l.state === "open") {
+      if (ch === "c") {
+        const desc = document.querySelector(`[data-rv-desc="${l.id}"]`)?.value.trim();
+        if (!desc) throw new Error(`Give the payment for the line of ${shortDate(l.txn_date)} a description.`);
+        r.create_payment = { description: desc, category: document.querySelector(`[data-rv-cat="${l.id}"]`)?.value || "other" };
+      } else if (ch === "n") { r.no_docs = true; r.note = document.querySelector(`[data-rv-note="${l.id}"]`)?.value.trim() || ""; }
+      else if (ch.startsWith("p:")) r.payment_id = +ch.slice(2);
+      else throw new Error(`Choose what the line of ${shortDate(l.txn_date)} is, or untick it.`);
+    }
+    if (rvNeedsTick(l)) r.keep_date = !!V.keep[l.id];
+    rows.push(r);
+  }
+  const r = await api("/api/recon/apply", { json: { entity_id: state.entity, statement_id: V.sid, checked: V.checked, rows } });
+  toast(`Applied ${rows.length} row${rows.length === 1 ? "" : "s"}: ${r.linked} linked, ${r.created} created, ${r.explained} explained, ${r.confirmed} confirmed.`);
+  return reloadReview();
+}
+
+// Sign-off actions (from the month panel or the review): ask the server, then draw the screen that was open again.
+async function rcAct(path, body, done) {
+  await api(`/api/recon/${path}`, { json: { entity_id: state.entity, ...body } });
+  toast(done);
+  if (state.recon.rv) return reloadReview();
+  return drawRecon();
+}
+
+// The drawer of the one-line actions (link, create a payment, no documents), kept beside the review's dropdown; the line
+// stays to confirm. amount: the line's, signed as on the statement (money in above 0).
 async function explainLine(lineId, accountId, month, amount) {
   const pays = await api(`/api/open-payments?account=${accountId}&month=${month}`);
   const opts = pays.map(p => `<option value="${p.id}">${esc(p.description)} · ${p.direction === "in" ? "+" : ""}${money(p.amount, p.currency)} (${p.month})</option>`).join("");
@@ -1303,9 +1564,23 @@ document.addEventListener("click", async ev => {
     }
     if (t.id === "addPayment") return addPaymentDrawer();
     if (ds.explain) return explainLine(+ds.explain, +ds.account, ds.month, +ds.amount);
-    if (ds.suggestLink) {
-      await api(`/api/statement-lines/${ds.suggestLink}`, { json: { payment_id: +ds.suggestPay } });
-      toast("Line linked"); return render();
+    if (ds.rcAcct) { Object.assign(state.recon, { account: +ds.rcAcct, year: null, open: null, rv: null }); return render(); }
+    if (ds.rcYear) { Object.assign(state.recon, { year: ds.rcYear, open: null }); return drawRecon(); }
+    if (ds.rcOpen) { state.recon.open = state.recon.open === ds.rcOpen ? null : ds.rcOpen; return drawRecon(); }
+    if (ds.rcReview) return openReview(+ds.rcReview);
+    if (ds.rvBack) { state.recon.rv = null; return drawRecon(); }
+    if (ds.rvToggle) { RV().showMatched = !RV().showMatched; return drawRvList(); }
+    if (ds.rvConfirmAll) {
+      const r = await api("/api/recon/confirm-matched", { json: { entity_id: state.entity, statement_id: RV().sid } });
+      toast(`${r.confirmed} line${r.confirmed === 1 ? "" : "s"} confirmed${r.needs_date_tick ? `; ${r.needs_date_tick} with a different date left for you to select and tick` : ""}.`);
+      return reloadReview();
+    }
+    if (t.id === "rvApply") { t.disabled = true; try { return await rvApply(); } finally { t.disabled = false; } }
+    if (ds.rcSign) return rcAct("sign-off", { statement_id: +ds.rcSign }, "Marked as reconciled.");
+    if (ds.rcUndo) return rcAct("undo-sign-off", { statement_id: +ds.rcUndo }, "Sign-off undone.");
+    if (ds.rcBefore) {
+      const id = ds.rcBefore, tick = document.querySelector(`[data-rc-before-tick="${id}"]`)?.checked === true;
+      return rcAct("before-tracking", { statement_id: +id, checked: tick, note: document.querySelector(`[data-rc-note="${id}"]`)?.value || "" }, "Marked as reconciled before tracking.");
     }
     if (ds.unlink) {
       const r = await api(`/api/statement-lines/${ds.unlink}`, { json: { payment_id: null } });
@@ -1423,7 +1698,15 @@ document.addEventListener("change", async ev => {
   const t = ev.target;
   try {
     // Only the statements are drawn again, so the account and file chosen for an import stay.
-    if (t.id === "bankOnly") { state.bankOnly = t.checked; drawBank(); return; }
+    if (t.dataset.rvSel) { RV().sel[t.dataset.rvSel] = t.checked; return paintBar(); }
+    if (t.dataset.rvKeep) { RV().keep[t.dataset.rvKeep] = t.checked; return; }
+    if (t.id === "rvChecked") { RV().checked = t.checked; return; }
+    if (t.dataset.rvChoice) {
+      const V = RV(), id = +t.dataset.rvChoice;
+      V.choice[id] = t.value; if (!t.value) delete V.sel[id];
+      document.getElementById(`rv-row-${id}`).outerHTML = rvRow(V.d.lines.find(l => l.id === id));
+      return paintBar();
+    }
     if (t.dataset.task) {
       // A tick by hand while something is still missing asks first, naming it.
       const task = state.data.tasks.find(x => x.id === +t.dataset.task);
@@ -1464,7 +1747,17 @@ document.addEventListener("submit", async ev => {
     try {
       const r = await api("/api/statements", { form: fd });
       toast(`Imported ${r.lines} lines for ${monthName(r.month)}; ${r.matched} matched, ${r.no_docs} bank charges or own transfers.`);
+      Object.assign(state.recon, { rv: null, account: +$("#stmtAcct").value, year: r.month.slice(0, 4), open: r.month });
       render();
+    } catch (e) { toast(e.message, true); }
+  }
+  if (ev.target.id === "openingForm") {
+    ev.preventDefault();
+    const amount = parseFloat($("#openAmount").value.replace(/,/g, ""));
+    if (!$("#openMonth").value || Number.isNaN(amount)) return toast("Choose the month and type the balance as a number.", true);
+    try {
+      await api("/api/recon/book-opening", { json: { entity_id: state.entity, account_id: state.recon.account, month: $("#openMonth").value, amount } });
+      toast("Book opening saved."); drawRecon();
     } catch (e) { toast(e.message, true); }
   }
   if (ev.target.id === "sqlForm") {

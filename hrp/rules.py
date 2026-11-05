@@ -77,6 +77,10 @@ def required_docs(category, uses_sql):
     return [d for d in docs if uses_sql or d not in SQL_ONLY]
 
 
+# What the Bank reconciliation item says it is: done once every account's statement for the month is signed off.
+RECON_DETAIL = ("Every statement line confirmed and the books agreeing with the bank. Done when the month is marked "
+                "reconciled on the Bank statements page.")
+
 # Monthly checklist per entity code. Each task can also ask for documents (attached to the task itself).
 CHECKLIST = {
     "AISB": [
@@ -109,7 +113,7 @@ CHECKLIST = {
          "Claude, Google and other overseas services, via the SQL Cash Book tab. Done once each overseas claim of the "
          "month has its e-Invoice.", []),
         ("statement", (1, 5), "Download bank statement and import it here", "", []),
-        ("recon", (1, 10), "Bank reconciliation", "Every statement line matched to a payment or receipt.", ["recon"]),
+        ("recon", (1, 10), "Bank reconciliation", RECON_DETAIL, []),
         ("file", (1, 10), "Print and file the audit pack", "Generate the pack from the Audit pack screen.", []),
     ],
     "AI": [
@@ -148,8 +152,8 @@ TASK_PAYMENTS = {
                         "name": ("overseas claim", "overseas claims")},
 }
 # Checklist items the bank statements show done: every account's statement for the month imported, and for True also
-# balancing with no line left to explain.
-TASK_STATEMENTS = {"statement": False, "recon": True, "records": True}
+# balancing with no line left to explain; "reconciled": every account's statement signed off as reconciled (recon.py).
+TASK_STATEMENTS = {"statement": False, "recon": "reconciled", "records": True}
 # The checklist item an audit pack built since the month's documents last changed shows done.
 TASK_PACK = "file"
 

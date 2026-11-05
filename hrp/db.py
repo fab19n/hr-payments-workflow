@@ -60,13 +60,14 @@ CREATE TABLE IF NOT EXISTS documents (
 CREATE TABLE IF NOT EXISTS statements (
   id INTEGER PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), month TEXT NOT NULL,
   statement_date TEXT, opening REAL, closing REAL, total_debits REAL, total_credits REAL,
-  document_id INTEGER REFERENCES documents(id), imported_at TEXT NOT NULL, check_ok INTEGER NOT NULL DEFAULT 0
+  document_id INTEGER REFERENCES documents(id), imported_at TEXT NOT NULL, check_ok INTEGER NOT NULL DEFAULT 0,
+  reconciled_at TEXT, reconciled_how TEXT, reconciled_note TEXT
 );
 CREATE TABLE IF NOT EXISTS statement_lines (
   id INTEGER PRIMARY KEY, statement_id INTEGER NOT NULL REFERENCES statements(id) ON DELETE CASCADE,
   line_no INTEGER NOT NULL, txn_date TEXT NOT NULL, description TEXT NOT NULL, amount REAL NOT NULL,
   balance REAL NOT NULL, payment_id INTEGER REFERENCES payments(id), status TEXT NOT NULL DEFAULT 'unmatched',
-  note TEXT, undone_payment_id INTEGER
+  note TEXT, undone_payment_id INTEGER, confirmed_at TEXT
 );
 CREATE TABLE IF NOT EXISTS sql_imports (
   id INTEGER PRIMARY KEY, entity_id INTEGER NOT NULL REFERENCES entities(id), filename TEXT NOT NULL,
@@ -83,6 +84,10 @@ CREATE TABLE IF NOT EXISTS sql_entries (
 CREATE TABLE IF NOT EXISTS activity (
   id INTEGER PRIMARY KEY, at TEXT NOT NULL, what TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS book_openings (
+  account_id INTEGER NOT NULL REFERENCES accounts(id), month TEXT NOT NULL, amount REAL NOT NULL, set_at TEXT NOT NULL,
+  PRIMARY KEY (account_id, month)
+);
 CREATE TABLE IF NOT EXISTS budgets (
   entity_id INTEGER NOT NULL, month TEXT NOT NULL, set_up_at TEXT NOT NULL, balance REAL, as_at TEXT,
   PRIMARY KEY (entity_id, month)
@@ -95,6 +100,7 @@ CREATE TABLE IF NOT EXISTS budget_lines (
 CREATE UNIQUE INDEX IF NOT EXISTS budget_line_payment ON budget_lines(payment_id) WHERE payment_id IS NOT NULL;
 """
 BUDGET_TABLES = SCHEMA[SCHEMA.index("CREATE TABLE IF NOT EXISTS budgets"):]
+BOOK_OPENINGS = SCHEMA[SCHEMA.index("CREATE TABLE IF NOT EXISTS book_openings"):SCHEMA.index("CREATE TABLE IF NOT EXISTS budgets")]
 
 
 def connect():
@@ -171,6 +177,15 @@ def _checklist_from_data(con):
         sync_reminders(con, p)
 
 
+def _reconciliation(con):
+    for col in ("reconciled_at", "reconciled_how", "reconciled_note"):
+        add_column(con, "statements", col, "TEXT")
+    add_column(con, "statement_lines", "confirmed_at", "TEXT")
+    con.executescript(BOOK_OPENINGS)
+    # The Bank reconciliation item is done by signing the month off (Bank statements page), not by filing a document.
+    con.execute("UPDATE tasks SET detail = ?, required_docs = '[]' WHERE code = 'recon'", (rules.RECON_DETAIL,))
+
+
 def _selfbilled_by_7th(con):
     offset, day = next(d for code, d, *_ in rules.CHECKLIST["AISB"] if code == "einv-selfbilled")
     for t in con.execute("SELECT id, month FROM tasks WHERE code = 'einv-selfbilled' AND done_at IS NULL").fetchall():
@@ -231,6 +246,10 @@ MIGRATIONS = [
     # 14. Each person's payslip is a document of its own (salary and director payments ask for it). Payslips already
     #     uploaded as 'Other' to those payments become Payslip. Only doc_type changes; the files keep their names.
     _payslips_retyped,
+    # 15. Bank reconciliation: when a person confirmed each bank line, when a statement was signed off as reconciled (and
+    #     how: by review, or before tracking, with a note), and the book balance typed in for an account's first month.
+    #     Nothing is signed off or confirmed by this step. The checklist item no longer asks for a document.
+    _reconciliation,
 ]
 
 
@@ -994,7 +1013,9 @@ def task_status(con, ent, task, ev=None):
     else:
         ok, why = None, None
     ev = evidence(con, task=task) if ev is None else ev
-    missing = missing_docs(con, json.loads(task["required_docs"]), "task_id", task["id"], ev)
+    # The reconciliation is the sign-off itself: a company set up before it asked for a filed document keeps none to file.
+    required = [d for d in json.loads(task["required_docs"]) if not (code == "recon" and d == "recon")]
+    missing = missing_docs(con, required, "task_id", task["id"], ev)
     if ok and missing:
         why = why[6].upper() + why[7:]  # what the records show, without 'Done: ': its own document is still to file
     lacking = ([why] if ok is False else []) + ([f"Still missing: {_listed(map(_short_doc, missing))}"] if missing else [])
@@ -1185,6 +1206,12 @@ def _from_statements(con, ent, month, balanced):
     n = len(accts)
     if not balanced:
         return True, "Done: statement imported" if n == 1 else f"Done: {_counted(n, 'statements')} imported"
+    if balanced == "reconciled":
+        from . import recon
+        off = [f"{a['label']}: {w}" for a in accts if (w := recon.not_reconciled(con, ent, a["id"], month))]
+        if off:
+            return False, "; ".join(off)
+        return True, "Done: reconciled" + (f" on {_counted(n, 'statements')}" if n > 1 else "")
     off = [f"balances don't add up on {a['label']}" for a in accts if not a["check_ok"]]
     for a in accts:
         k = a["to_explain"]

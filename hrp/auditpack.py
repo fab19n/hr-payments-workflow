@@ -7,9 +7,9 @@ from fpdf import FPDF
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
 
-from . import rules
+from . import recon, rules
 from .config import PACKS_DIR
-from .db import (_listed, _short_doc, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
+from .db import (_listed, _short_doc, day_label, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
                  not_in_sql, payment_flag, payment_status, short_day, status_word, task_status, waits_for)
 from .docstore import path_of, verify
 
@@ -304,7 +304,7 @@ def reconciliation(con, entity, month):
     """Each account of the company with what its statement for the month shows, for the bank reconciliation pages and the
     Excel report: [{label, currency, statement: the statements row or None, lines: its lines, sum (the lines added up),
     difference (opening + lines - closing), balanced, matched (lines linked to a payment), to_explain (lines left),
-    no_docs (lines marked as needing no documents), no_line: paid payments on the account with no bank line anywhere that were
+    no_docs (lines marked as needing no documents), recon (the month's reconciliation: recon.month_summary), no_line: paid payments on the account with no bank line anywhere that were
     paid in the statement's month (whatever their payroll month) or belong to the month's payroll (paid in another month)}]. A payment with no account of its own counts for the only account in its currency."""
     accts = con.execute("SELECT * FROM accounts WHERE entity_id = ? ORDER BY id", (entity["id"],)).fetchall()
     pays = con.execute(
@@ -324,7 +324,8 @@ def reconciliation(con, entity, month):
                     "balanced": diff is not None and abs(diff) <= 0.01,
                     "matched": [l for l in lines if l["payment_id"]],
                     "to_explain": [l for l in lines if l["status"] == "unmatched" and not l["payment_id"]],
-                    "no_docs": [l for l in lines if l["status"] == "no_docs" and not l["payment_id"]], "no_line": no_line})
+                    "no_docs": [l for l in lines if l["status"] == "no_docs" and not l["payment_id"]], "no_line": no_line,
+                    "recon": recon.month_summary(con, entity, a, month)})
     return out
 
 
@@ -335,6 +336,47 @@ def _no_line_note(p, month):
         return f"{month_label(p['month'])} payment paid in {month_label(paid)}, check that statement"
     base = "paid per SQL, not on the statement" if p["sql_ref"] else "not on the statement"
     return base if p["month"] == month else f"{month_label(p['month'])} payment, {base}"
+
+
+def _reconciled(r, say, table, heading, cur):
+    """The reconciliation of one account: whether it is signed off, book against bank, and the two lists that explain a
+    difference between them."""
+    heading("Reconciled with the books")
+    if r["status"] == "reconciled":
+        how = "before tracking began" + (f" ({r['reconciled_note']})" if r["reconciled_note"] else "")             if r["reconciled_how"] == "before tracking" else "after checking every line"
+        say(f"Reconciled on {day_label(r['reconciled_at'][:10])}, {how}.")
+    else:
+        say(f"Not reconciled yet ({r['status_text'].lower()}). " + ("; ".join(r["why_not"]).capitalize() + "." if r["why_not"] else ""))
+    b = r["book"]
+    if b["state"] == "ok":
+        say(f"Book closing {money(b['closing'], cur)} (opening {money(b['opening'], cur)}, in {money(b['in'], cur)}, out {money(b['out'], cur)}). "
+            f"Bank closing {money(r['bank_closing'], cur) if r['bank_closing'] is not None else 'not on statement'}. "
+            + (f"Difference {money(r['difference'], cur)}." if r["difference"] is not None else ""))
+    else:
+        say(f"Book closing: {b['note']}. Bank closing {money(r['bank_closing'], cur) if r['bank_closing'] is not None else 'not on statement'}.")
+    if r["left_out"]["journals"] or r["left_out"]["invoices"]:
+        j, i = r["left_out"]["journals"], r["left_out"]["invoices"]
+        say(f"Not counted as bank movements: {j} journal{'s' if j != 1 else ''} and {i} customer invoice{'s' if i != 1 else ''} (customer refunds included) in the SQL listing.")
+    if r["left_out"].get("unknown"):
+        u = r["left_out"]["unknown"]
+        say(f"Not counted: {u} cash book entr{'ies' if u != 1 else 'y'} with no money in or out shown, so the books may differ by that amount.")
+    head = ("Date", "Description", "Amount", "Why")
+    if r["books_only"]:
+        table(f"In the books, not on this statement ({len(r['books_only'])})", head,
+              [(x["date"], (x["ref"] + " " if x["ref"] else "") + x["description"], f"{x['amount']:,.2f}", x["why"]) for x in r["books_only"]])
+    else:
+        say("Nothing in the books is missing from this statement.")
+    if r["bank_only"]:
+        table(f"On the statement, not in the books ({len(r['bank_only'])})", head,
+              [(x["date"], x["description"], f"{x['amount']:,.2f}", x["why"]) for x in r["bank_only"]])
+    else:
+        say("Every line on this statement is in the books.")
+    if r["differ"]:
+        table(f"Matched, but the amounts differ ({len(r['differ'])})", ("Payment", "Description", "Bank minus books", "Books / bank"),
+              [(x["ref"] or "", x["description"], f"{x['amount']:,.2f}", f"{x['book']:,.2f} / {x['bank']:,.2f}") for x in r["differ"]])
+    rc = r["reconciliation"]
+    if rc and abs(rc["other"]) > 0.005:
+        say(f"Not explained by the lists: {money(rc['other'], cur)}.")
 
 
 def _reconciliation(con, entity, month):
@@ -395,6 +437,7 @@ def _reconciliation(con, entity, month):
         m = a["matched"]
         say(f"Lines matched to a payment: {len(m)}. Money out {money(-sum(l['amount'] for l in m if l['amount'] < 0), cur)}, "
             f"money in {money(sum(l['amount'] for l in m if l['amount'] > 0), cur)}.")
+        _reconciled(a["recon"], say, table, heading, cur)
         if a["no_docs"]:
             say(f"Lines marked as needing no documents: {len(a['no_docs'])}, total {money(sum(l['amount'] for l in a['no_docs']), cur)}.")
         if a["to_explain"]:

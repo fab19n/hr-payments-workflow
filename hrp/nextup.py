@@ -140,7 +140,9 @@ def _company(con, e, months, past, today):
 
 def _task_go(ts):
     """Go to the month page, to the checklist item (the first one, for a row that stands for several, which are all in
-    task_ids)."""
+    task_ids). The bank reconciliation item goes to the Bank statements page, where it is done."""
+    if len(ts) == 1 and ts[0]["code"] == "recon":
+        return {"view": "bank"}
     go = {"view": "entity", "task_id": ts[0]["id"]}
     return dict(go, task_ids=[t["id"] for t in ts]) if len(ts) > 1 else go
 

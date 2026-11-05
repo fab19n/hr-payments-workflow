@@ -291,7 +291,7 @@ def _name_score(p, line_desc):
     return best if best >= 0.5 else 0.0
 
 
-def suggest(con, entity_id):
+def suggest(con, entity_id, statement_id=None):
     """Up to SUGGEST_MAX open payments for each bank line still to explain (no payment; one undone by hand is
     included, but never offered the payment it was undone from) of the company, as {line id: [{payment_id,
     description, month, score (0-100), reason}]}, best first; a line with nothing plausible is left out. Same account
@@ -299,11 +299,12 @@ def suggest(con, entity_id):
     still open), a payroll month within the statement's month or the month before (as auto_match). Score out of 100:
     amount up to 40 (exact; an estimate within 50% scores less the further off; a line smaller than a firm amount,
     which may be one of several, 10), name up to 40, date up to 20 (3 days or less from the paid or due date, down to
-    0 at 45 days). Reads only."""
+    0 at 45 days). Reads only. With statement_id, only for the lines of that statement."""
     from datetime import date as _d
     out = {}
     for st in con.execute("""SELECT s.* FROM statements s JOIN accounts a ON a.id = s.account_id
-                             WHERE a.entity_id = ? ORDER BY s.month DESC, s.id""", (entity_id,)).fetchall():
+                             WHERE a.entity_id = ? AND (? IS NULL OR s.id = ?) ORDER BY s.month DESC, s.id""",
+                          (entity_id, statement_id, statement_id)).fetchall():
         lines = con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND payment_id IS NULL
                                AND status = 'unmatched' ORDER BY line_no""", (st["id"],)).fetchall()
         if not lines:
