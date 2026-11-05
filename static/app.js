@@ -205,7 +205,7 @@ const forCompany = r => r.entity && !new RegExp(`\\b${r.entity}\\b`).test(r.text
 
 function nextRow(r) {
   return `<div class="next-row"><div>${esc(r.text)}${forCompany(r)}</div><div class="next-due">${dueTag(r)}</div>
-    <div class="row next-act">${r.rule === 13 ? `<button class="btn small" data-next-backup="1">Back up now</button>` : ""}
+    <div class="row next-act">${r.rule === 13 ? `<button class="btn small" data-next-backup="1">Open backup</button>` : ""}
     <button class="ghost small" data-next-go="${esc(r.key)}" aria-label="Go: ${esc(r.text)}">Go</button></div></div>`;
 }
 
@@ -745,6 +745,10 @@ function budgetTables(d) {
 const toExplain = s => s.lines.filter(l => l.status === "unmatched");
 const listedStatements = sts => state.bankOnly ? sts.filter(s => toExplain(s).length) : sts;
 
+// What the server thinks a line to explain might be (up to 3 payments, best first). A person confirms each link.
+const suggestions = l => l.payment_id ? "" : (state.suggestions?.[l.id] || []).map(x =>
+  `<div class="note noprint" title="Match score ${x.score} of 100">Suggested: ${esc(x.description)} · ${esc(x.reason)} <button class="ghost small" data-suggest-link="${l.id}" data-suggest-pay="${x.payment_id}">Link</button></div>`).join("");
+
 function bankBlocks(sts) {
   const blocks = listedStatements(sts).map(s => {
     const un = toExplain(s).length;
@@ -757,7 +761,7 @@ function bankBlocks(sts) {
       <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th><th>Explained by</th><th></th></tr></thead><tbody>
       ${(state.bankOnly ? toExplain(s) : s.lines).map(l => `<tr><td class="mono">${shortDate(l.txn_date)}</td><td class="line-desc">${esc(l.description.replaceAll(" | ", " · "))}</td>
         <td class="num ${l.amount < 0 ? "" : "muted"}">${l.amount < 0 ? "−" : "+"}${money(Math.abs(l.amount), s.currency).replace(/^\S+ /, "")}</td>
-        <td>${l.payment_id ? `<span class="pill ok">${esc(l.payment_desc)}</span>` : l.status === "no_docs" ? `<span class="pill grey">No documents needed${l.note ? ": " + esc(l.note) : ""}</span>` : `<span class="pill warn">Not explained</span>`}</td>
+        <td>${l.payment_id ? `<span class="pill ok">${esc(l.payment_desc)}</span>` : l.status === "no_docs" ? `<span class="pill grey">No documents needed${l.note ? ": " + esc(l.note) : ""}</span>` : `<span class="pill warn">Not explained</span>${suggestions(l)}`}</td>
         <td class="noprint">${l.payment_id || l.status === "no_docs" ? `<button class="ghost small" data-unlink="${l.id}">Undo</button>` : `<button class="ghost small" data-explain="${l.id}" data-account="${s.account_id}" data-month="${s.month}" data-amount="${l.amount}">Explain</button>`}</td></tr>`).join("")}
       </tbody></table></div></div>`;
   }).join("");
@@ -768,6 +772,7 @@ async function viewBank(main) {
   const e = ent();
   const sts = await api(`/api/statements?entity=${state.entity}`);
   state.statements = sts;
+  state.suggestions = await api(`/api/statement-suggestions?entity=${state.entity}`);
   // Opened from Before you print or Next up: that account is chosen for the import, and its statement for the month shown.
   const focus = state.focusBank; state.focusBank = null;
   const acctOpts = e.accounts.map(a => `<option value="${a.id}" ${a.id === focus?.account ? "selected" : ""}>${esc(a.label)}${a.number ? " · " + esc(a.number) : ""}</option>`).join("");
@@ -1054,7 +1059,9 @@ async function markFiled(afterBuild) {
   const r = await api(`/api/audit-readiness?entity_id=${state.entity}&month=${state.month}`);
   if (r.still_open.length && !confirm(`Still open in ${r.entity.code} ${r.label}:\n${r.still_open.map(s => "• " + s).join("\n")}\n\n${afterBuild ? "" : "If this month was already filed outside the app, that is fine. "}Mark it as filed anyway?`)) return;
   await api("/api/months/close", { json: { entity_id: state.entity, month: state.month, closed: true } });
-  toast(`${r.label} marked as filed`); return render();
+  toast(`${r.label} marked as filed`); await render();
+  // The password is typed each time, so a backup is offered, not made.
+  if (confirm("Make an encrypted backup now?")) { state.view = "settings"; renderNav(); await render(); $("#bkPw")?.focus(); }
 }
 
 // A line of Before you print opens the screen that fixes it, for this company and month: the payment's drawer, the
@@ -1070,8 +1077,15 @@ async function viewSettings(main) {
   main.innerHTML = `
     <div class="card"><h1>Backup &amp; records</h1>
       <div class="note">Everything is stored on this PC in <span class="mono">${esc(state.meta.data_dir)}</span>: the database (records.db), uploaded documents and audit packs. Nothing is sent anywhere else.</div>
-      <div class="note">${state.meta.backup_dir ? `Backups are also copied to <span class="mono">${esc(state.meta.backup_dir)}</span>.` : `Backups are saved in the backups folder on this PC. To also copy them to an external drive, set <span class="mono">backup_dir</span> in settings.json.`}</div>
-      <div class="row"><button class="btn" id="doBackup">Back up now</button><button class="ghost" id="doCheck">Check documents haven't changed</button></div>
+      <div class="note">Backups are saved in the backups folder on this PC. Encrypted backups are also copied to the backup folder below, if you set one.</div>
+      <div class="row"><label class="field" style="flex:1"><span>Backup folder (optional)</span><input id="bkDir" value="${esc(state.meta.backup_dir || "")}" placeholder="C:\\Users\\you\\OneDrive\\HR-Backup" autocomplete="off"></label>
+        <button class="ghost" id="saveBackupDir" style="align-self:end">Save folder</button></div>
+      <div class="note">If this folder is inside your OneDrive folder, OneDrive uploads it. Only encrypted backups are copied there. Leave it empty to copy nowhere.</div>
+      <div class="row"><label class="field"><span>Backup password</span><input type="password" id="bkPw" autocomplete="new-password"></label>
+        <label class="field"><span>Type it again</span><input type="password" id="bkPw2" autocomplete="new-password"></label>
+        <button class="btn" id="doBackupEnc" style="align-self:end">Make encrypted backup</button></div>
+      <div class="note">At least 12 characters. Keep the password safe: without it the backup cannot be opened. Open it with 7-Zip (Windows Explorer cannot open AES zips). Only the contents are protected: file names inside the zip can still be seen.</div>
+      <div class="row"><button class="ghost" id="doBackup">Backup on this PC only (not encrypted)</button><button class="ghost" id="doCheck">Check documents haven't changed</button></div>
       <div id="setOut" class="note"></div></div>
     <div class="card"><h2>First month tracked in this app</h2>
       <div class="note">Months before it are never set up on their own, and nothing in them counts as overdue or past due. Leave it empty for no limit. Tidy up removes, from the months before it, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.</div>
@@ -1096,9 +1110,8 @@ document.addEventListener("click", async ev => {
     if (ds.nextAll) { const k = nextScope() || 0; state.nextAll[k] = !state.nextAll[k]; return refreshNext(); }
     if (ds.savedBalance) return render();
     if (ds.nextBackup) {
-      t.disabled = true;
-      try { const r = await api("/api/backup", { json: {} }); toast(r.warning || "Backup saved", !!r.warning); } finally { t.disabled = false; }
-      return refreshNext();
+      state.view = "settings"; renderNav(); await render(); $("#bkPw")?.focus();  // the password is typed there; a plain backup is not offsite
+      return;
     }
     if (ds.pickEntity) { if (!closeDrawer()) return; state.entity = +ds.pickEntity; return render(); }
     if (ds.fix) return fixIt(ds.fix, +ds.id);
@@ -1150,6 +1163,10 @@ document.addEventListener("click", async ev => {
     }
     if (t.id === "addPayment") return addPaymentDrawer();
     if (ds.explain) return explainLine(+ds.explain, +ds.account, ds.month, +ds.amount);
+    if (ds.suggestLink) {
+      await api(`/api/statement-lines/${ds.suggestLink}`, { json: { payment_id: +ds.suggestPay } });
+      toast("Line linked"); return render();
+    }
     if (ds.unlink) {
       const r = await api(`/api/statement-lines/${ds.unlink}`, { json: { payment_id: null } });
       toast(r.removed ? `Undone. ${r.removed} was created from the bank statement and had nothing else on it, so it was removed too.` : "Undone. The line is waiting to be explained.");
@@ -1220,9 +1237,26 @@ document.addEventListener("click", async ev => {
       } catch (e) { $("#packOut").textContent = `The package wasn't built: ${e.message}`; }
       t.disabled = false; t.textContent = "Auditor package"; $("#packOut").hidden = false; return;
     }
-    if (t.id === "doBackup") {
-      t.disabled = true; const r = await api("/api/backup", { json: {} });
-      $("#setOut").textContent = r.warning || `Saved ${r.file}${r.copied ? " and copied to " + r.copied : ""}`; t.disabled = false; return;
+    if (t.id === "doBackup" || t.id === "doBackupEnc") {
+      const enc = t.id === "doBackupEnc", out = $("#setOut");
+      let body = {};
+      if (enc) {
+        const pw = $("#bkPw").value;
+        if (pw.length < 12) return toast("The password needs at least 12 characters.", true);
+        if (pw !== $("#bkPw2").value) return toast("The two passwords are not the same.", true);
+        body = { password: pw };
+      }
+      t.disabled = true;
+      try {
+        const r = await api("/api/backup", { json: body });
+        out.textContent = r.warning || `Saved ${r.file}${r.copied ? " and copied to " + r.copied : ""}${r.not_copied ? ". " + r.not_copied : ""}`;
+      } catch (e) { out.textContent = e.message; }
+      finally { body = null; if ($("#bkPw")) { $("#bkPw").value = ""; $("#bkPw2").value = ""; } t.disabled = false; }
+      return;
+    }
+    if (t.id === "saveBackupDir") {
+      const r = await api("/api/settings/backup-dir", { json: { backup_dir: $("#bkDir").value } });
+      state.meta.backup_dir = r.backup_dir; toast(r.backup_dir ? "Backup folder saved" : "Backup folder cleared"); return;
     }
     if (ds.firstMonth) {
       await api(`/api/entities/${ds.firstMonth}/first-month`, { json: { month: $(`#first-${ds.firstMonth}`).value } });

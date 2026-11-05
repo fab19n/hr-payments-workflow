@@ -9,3 +9,7 @@ review/
 
 # Tests use real names, amounts and account numbers from the records, so they stay on this PC.
 tests/
+
+# Local settings (backup folder path, port): personal to this PC.
+settings.json
+settings.json.tmp

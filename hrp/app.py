@@ -1,17 +1,19 @@
 """Local web app. Listens on 127.0.0.1 only, so nothing outside this PC can reach it."""
 import io
 import json
+import os
 import re
 import secrets
 import shutil
 import sqlite3
 import zipfile
 from datetime import date, datetime
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
+import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import auditpack, budget as stored, db, nextup, reports, rules, sqlimport, statements
+from . import auditpack, config, budget as stored, db, nextup, reports, rules, sqlimport, statements
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -875,6 +877,16 @@ def _made_from_lines(c, p, l):
                             for t in ("statement_lines", "sql_entries", "documents"))
 
 
+@app.get("/api/statement-suggestions")
+def statement_suggestions():
+    """For the lines still to explain: up to 3 open payments each might be (statements.suggest). Nothing is linked."""
+    try:
+        eid = int(request.args.get("entity", ""))
+    except ValueError:
+        return err("Say which company (entity) the suggestions are for.")
+    return jsonify(statements.suggest(con(), eid))
+
+
 @app.get("/api/open-payments")
 def open_payments():
     """Payments a bank line can be linked to: same account, the statement month or the month before."""
@@ -1481,35 +1493,115 @@ def list_packs():
                     for p in found])
 
 
+MIN_PASSWORD = 12
+
+
+def _write_backup(zf, snap):
+    zf.write(snap, "records.db")
+    for p in (DATA_DIR / "documents").rglob("*"):
+        if p.is_file():
+            zf.write(p, str(p.relative_to(DATA_DIR)))
+
+
+def _encrypted_zip(target, snap, password):
+    """Writes the backup as an AES-256 zip (7-Zip opens it) under a temporary name, reopens it with the password and
+    tests every entry, and only then gives it its name. A file that fails is deleted. The password is passed in bytes
+    and not kept."""
+    part = target.with_name(target.name + ".part")
+    try:
+        with pyzipper.AESZipFile(part, "w", compression=zipfile.ZIP_DEFLATED, encryption=pyzipper.WZ_AES) as z:
+            z.setpassword(password)
+            _write_backup(z, snap)
+        with pyzipper.AESZipFile(part) as z:
+            z.setpassword(password)
+            if z.testzip() is not None or "records.db" not in z.namelist():
+                raise ValueError("the finished file did not pass its check")
+        os.replace(part, target)
+    except Exception:
+        part.unlink(missing_ok=True)
+        raise
+
+
 @app.post("/api/backup")
 def backup():
+    """A backup zip in the backups folder: with {"password": ...} (at least MIN_PASSWORD characters, typed each time,
+    never stored or logged) an AES-256 encrypted one, which is also the only kind copied to backup_dir; without, a
+    plain one that stays on this PC."""
+    b = request.get_json(silent=True)
+    password = b.get("password") if isinstance(b, dict) else None
+    if password is not None and (not isinstance(password, str) or len(password) < MIN_PASSWORD):
+        return err(f"The password needs at least {MIN_PASSWORD} characters.")
+    encrypted = password is not None
+    pw = password.encode("utf-8") if encrypted else None
+    del password, b
     stamp = datetime.now().strftime("%Y%m%d-%H%M")
-    target = BACKUP_DIR / f"HR-Records backup {stamp}.zip"
+    target = BACKUP_DIR / f"HR-Records backup {stamp}{' (encrypted)' if encrypted else ''}.zip"
     snap = BACKUP_DIR / "records-snapshot.db"
-    src = db.connect()
-    dst = __import__("sqlite3").connect(snap)
-    src.backup(dst)  # consistent copy even while the app is running
-    dst.close()
-    src.close()
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
-        z.write(snap, "records.db")
-        for p in (DATA_DIR / "documents").rglob("*"):
-            if p.is_file():
-                z.write(p, str(p.relative_to(DATA_DIR)))
-    snap.unlink()
-    copied = failed = None
-    if SETTINGS.get("backup_dir"):
+    try:
+        src = db.connect()
+        dst = sqlite3.connect(snap)
+        src.backup(dst)  # consistent copy even while the app is running
+        dst.close()
+        src.close()
+        if encrypted:
+            _encrypted_zip(target, snap, pw)
+        else:
+            with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as z:
+                _write_backup(z, snap)
+    except Exception as ex:
+        if not encrypted:
+            target.unlink(missing_ok=True)
+        return err(f"The backup was not made: {ex if isinstance(ex, OSError) else 'something went wrong writing the file'}.", 500)
+    finally:
+        snap.unlink(missing_ok=True)  # the unencrypted snapshot never stays on disk
+        pw = None
+    copied = failed = not_copied = None
+    folder = SETTINGS.get("backup_dir")
+    if folder and not encrypted:
+        not_copied = f"Saved on this PC only. It was not copied to {folder} because it is not encrypted."
+    elif folder:
         try:
-            Path(SETTINGS["backup_dir"]).mkdir(parents=True, exist_ok=True)
-            copied = str(shutil.copy2(target, SETTINGS["backup_dir"]))
+            Path(folder).mkdir(parents=True, exist_ok=True)
+            copied = str(shutil.copy2(target, folder))
         except OSError as ex:
             failed = ex
     c = con()  # logged either way: the backup is made on this PC even when the copy fails (nextup reads this line)
-    db.log(c, nextup.BACKED_UP + target.name + (f" (copy to {SETTINGS['backup_dir']} failed)" if failed else ""))
+    db.log(c, nextup.BACKED_UP + target.name + (f" (copy to {folder} failed)" if failed else "")
+           + (" (not copied: not encrypted)" if not_copied else ""))
     c.commit()
     if failed:
-        return jsonify({"file": str(target), "warning": f"Backup saved on this PC, but copying to {SETTINGS['backup_dir']} failed: {failed}"})
-    return jsonify({"file": str(target), "copied": copied})
+        return jsonify({"file": str(target), "encrypted": encrypted, "warning": f"Backup saved on this PC, but copying to {folder} failed: {failed}"})
+    return jsonify({"file": str(target), "encrypted": encrypted, "copied": copied, "not_copied": not_copied})
+
+
+@app.post("/api/settings/backup-dir")
+def set_backup_dir():
+    """Where encrypted backups are also copied (empty: nowhere). An absolute Windows path outside the records folder,
+    made if it doesn't exist. Saved in settings.json with the other keys kept."""
+    b = request.get_json(silent=True)
+    path = b.get("backup_dir") if isinstance(b, dict) else None
+    path = path.strip().strip('"') if isinstance(path, str) else None
+    if path is None:
+        return err("Give the folder as text.")
+    if path:
+        w = PureWindowsPath(path)
+        if not (w.drive and w.root):
+            return err("Give the full path of the folder, starting with the drive letter, for example D: and then the folders.")
+        here, there = os.path.normcase(os.path.realpath(DATA_DIR)), os.path.normcase(os.path.realpath(path))  # junctions followed
+        if there == here or there.startswith(here + os.sep):
+            return err("Choose a folder outside the records folder, so a backup is not kept beside what it protects.")
+        try:
+            Path(path).mkdir(parents=True, exist_ok=True)
+        except OSError as ex:
+            return err(f"That folder can't be used: {ex}")
+    saved = json.loads(config.SETTINGS_FILE.read_text(encoding="utf-8")) if config.SETTINGS_FILE.exists() else {}
+    saved["backup_dir"] = path
+    config.save_settings(saved)
+    SETTINGS["backup_dir"] = path
+    c = con()
+    db.log(c, f"Backup folder set to {path}" if path else "Backup folder cleared")
+    c.commit()
+    return jsonify({"backup_dir": path})
 
 
 @app.get("/api/activity")

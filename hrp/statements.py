@@ -260,3 +260,103 @@ def _combination(cands, amount):
 def shift(month, n):
     from .db import shift_month
     return shift_month(month, n)
+
+
+# ---------- suggestions for lines still to explain (never applied by themselves) ----------
+
+SUGGEST_MIN = 50  # of 100. Exact amount (40) + a date within 3 days of due (20) passes on its own, as does a close name
+# with a date near; a name alone (40) or an exact amount alone (40) does not, so a coincidence is not suggested.
+SUGGEST_MAX = 3
+
+
+def _norm(s):
+    return " ".join(sorted(re.findall(r"[A-Z]{3,}", (s or "").upper())))
+
+
+def _name_score(p, line_desc):
+    """0-1: how close the payee's name (or match words, or the payment's description) is to the bank's text."""
+    from difflib import SequenceMatcher
+    best, ld = 0.0, _norm(line_desc)
+    lw = words(line_desc)
+    for i, src in enumerate((p["payee_name"], p["match_words"], p["description"])):
+        if not src:
+            continue
+        r = SequenceMatcher(None, _norm(src), ld).ratio()
+        # a shared word counts as "matches" only from the payee's name or match words; a word in the payment's own
+        # description (CLAUDE, say) is too common to say it is the same payee. The match words were chosen to pick
+        # this payee out, so they rank above one shared word of a name (RAMAN in two consultants' names).
+        if i < 2 and words(src) and overlaps(words(src), lw):
+            r = max(r, 1.0 if i == 1 else 0.9)
+        best = max(best, r)
+    return best if best >= 0.5 else 0.0
+
+
+def suggest(con, entity_id):
+    """Up to SUGGEST_MAX open payments for each bank line still to explain (no payment; one undone by hand is
+    included, but never offered the payment it was undone from) of the company, as {line id: [{payment_id,
+    description, month, score (0-100), reason}]}, best first; a line with nothing plausible is left out. Same account
+    and direction (money out for a debit), not yet covered by its bank lines (a split payment is offered for what is
+    still open), a payroll month within the statement's month or the month before (as auto_match). Score out of 100:
+    amount up to 40 (exact; an estimate within 50% scores less the further off; a line smaller than a firm amount,
+    which may be one of several, 10), name up to 40, date up to 20 (3 days or less from the paid or due date, down to
+    0 at 45 days). Reads only."""
+    from datetime import date as _d
+    out = {}
+    for st in con.execute("""SELECT s.* FROM statements s JOIN accounts a ON a.id = s.account_id
+                             WHERE a.entity_id = ? ORDER BY s.month DESC, s.id""", (entity_id,)).fetchall():
+        lines = con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND payment_id IS NULL
+                               AND status = 'unmatched' ORDER BY line_no""", (st["id"],)).fetchall()
+        if not lines:
+            continue
+        # A payment paid in several lines (Maybank splits large transfers) stays open for the amount its linked lines
+        # don't cover yet; one fully covered, or with no amount to compare, is not offered.
+        pays = con.execute(
+            """SELECT p.*, py.match_words, py.name AS payee_name,
+                      (SELECT SUM(ABS(s.amount)) FROM statement_lines s WHERE s.payment_id = p.id) AS linked
+               FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
+               WHERE p.account_id = ? AND p.month BETWEEN ? AND ?""",
+            (st["account_id"], shift(st["month"], -1), st["month"])).fetchall()
+        pays = [p for p in pays if not p["linked"] or (p["amount"] and p["linked"] < p["amount"] - 0.005)]
+        for l in lines:
+            amt, found = abs(l["amount"]), []
+            for p in pays:
+                if (l["amount"] < 0) != (p["direction"] == "out") or p["id"] == l["undone_payment_id"]:
+                    continue  # the payment a person just unlinked from this line is not offered back
+                parts, notes = 0.0, []
+                name = _name_score(p, l["description"])
+                if p["linked"] and name < 0.9:
+                    continue  # the rest of a split payment is a round figure (10,000) too common to go on without the name
+                target = p["amount"] - (p["linked"] or 0) if p["amount"] else None  # what is still open
+                if target:
+                    off = abs(amt - target) / target
+                    if off < 0.00005 or abs(amt - target) < 0.005:
+                        parts += 40
+                        notes.append("Same as the amount still open" if p["linked"] else "Same amount")
+                    elif p["amount_is_estimate"] and not p["linked"] and off <= 0.5:
+                        parts += 40 * (1 - off)
+                        notes.append(f"Amount {off * 100:.0f}% off")
+                    elif amt < target and name >= 0.9:  # one of several lines only counts for a strong name
+                        parts += 10
+                        notes.append("Part of the amount")
+                if name:
+                    parts += 40 * name
+                    notes.append("name close" if name < 0.9 else "name matches")
+                try:
+                    gap = abs((_d.fromisoformat(l["txn_date"]) - _d.fromisoformat(p["paid_date"] or p["due_date"])).days)
+                except (TypeError, ValueError):
+                    gap = None
+                if gap is not None and gap <= 45:
+                    parts += 20 * (1 if gap <= 3 else (45 - gap) / 42)
+                    notes.append("same day as due" if gap == 0 else f"{gap} day{'s' if gap > 1 else ''} from due")
+                score = round(parts)
+                if score >= SUGGEST_MIN:
+                    shown = [n for n in notes if n.startswith(("Same", "Amount", "Part"))]
+                    reason = ", ".join(shown + [n for n in notes if n not in shown])
+                    if name and p["payee_name"]:  # the payment's own description is shown beside the reason
+                        payee = p["payee_name"] if len(p["payee_name"]) <= 30 else p["payee_name"][:29] + "..."
+                        reason = reason.replace("name close", f"name close: {payee}").replace("name matches", f"name matches: {payee}")
+                    found.append({"payment_id": p["id"], "description": p["description"], "month": p["month"],
+                                  "score": score, "reason": reason[:1].upper() + reason[1:]})
+            if found:
+                out[l["id"]] = sorted(found, key=lambda f: -f["score"])[:SUGGEST_MAX]
+    return out

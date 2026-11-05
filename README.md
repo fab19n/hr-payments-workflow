@@ -19,8 +19,31 @@ Everything is stored in `C:\HR-Records`, not in this program folder:
 | `backups\` | Zip backups made from the Backup & log page |
 | `seed.json` | Starting payees and accounts, read once on first start |
 
-The app only listens on this PC (127.0.0.1) and makes no internet connections. To also copy backups to an external drive,
-create `settings.json` next to this file: `{"backup_dir": "E:\\HR-Backup"}`. Don't put `C:\HR-Records` inside OneDrive or Google Drive.
+The app only listens on this PC (127.0.0.1) and makes no internet connections. Don't put `C:\HR-Records` inside OneDrive or
+Google Drive.
+
+## Backups
+
+On **Backup & log**, type a password (at least 12 characters) twice and press **Make encrypted backup**. This writes
+`HR-Records backup <date> (encrypted).zip` (AES-256) in the `backups\` folder, then opens it again and checks every file.
+The password is typed each time; it is never saved or logged. **Backup on this PC only (not encrypted)** makes a plain zip.
+
+**Backup folder (optional)** is where encrypted backups are also copied (saved in `settings.json` as `backup_dir`). Put it
+inside your OneDrive folder, for example `C:\Users\<you>\OneDrive\HR-Backup`, and OneDrive uploads it. Only encrypted
+backups are copied there; a plain backup stays on this PC. After you mark a month as filed, the app offers to make an
+encrypted backup.
+
+Only the contents of an encrypted backup are protected. The names of the files inside (the documents folder) can be seen
+without the password, so avoid putting a person's name in a document's file name if the backup goes to OneDrive.
+
+### Restore from an encrypted backup
+
+1. Close HR Payments.
+2. Open the zip with 7-Zip (Windows Explorer cannot open AES zips) and type the password. Without the password the backup
+   cannot be opened.
+3. Copy `records.db` and the `documents` folder from the zip into the records folder (`C:\HR-Records`), replacing what is
+   there (keep a copy of the old folder first).
+4. Start HR Payments again.
 
 ## What to do next
 

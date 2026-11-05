@@ -21,7 +21,9 @@ def load_settings():
 
 
 def save_settings(s):
-    SETTINGS_FILE.write_text(json.dumps(s, indent=2), encoding="utf-8")
+    tmp = SETTINGS_FILE.with_name(SETTINGS_FILE.name + ".tmp")  # written whole, then swapped in, so a crash can't truncate it
+    tmp.write_text(json.dumps(s, indent=2), encoding="utf-8")
+    os.replace(tmp, SETTINGS_FILE)
 
 
 SETTINGS = load_settings()
