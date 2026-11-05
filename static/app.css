@@ -7,12 +7,19 @@
   --f-body: "Segoe UI", system-ui, sans-serif;
   --f-mono: "Cascadia Mono", Consolas, monospace;
 }
+/* Dark follows Windows unless a theme is chosen with the button in the sidebar (data-theme on <html>, set by theme.js). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme]) {
     --bg: #111a1c; --surface: #182427; --ink: #e3ece9; --muted: #95a6a8; --line: #2b3a3d;
     --accent: #5cc0ad; --accent-soft: #1d3633; --ok: #6bc47f; --ok-soft: #1c3322;
     --warn: #e3a64a; --warn-soft: #3a2d16; --bad: #ec7b72; --bad-soft: #3d1f1d; color-scheme: dark;
   }
+}
+:root[data-theme=light] { color-scheme: light; }
+:root[data-theme=dark] {
+    --bg: #111a1c; --surface: #182427; --ink: #e3ece9; --muted: #95a6a8; --line: #2b3a3d;
+    --accent: #5cc0ad; --accent-soft: #1d3633; --ok: #6bc47f; --ok-soft: #1c3322;
+    --warn: #e3a64a; --warn-soft: #3a2d16; --bad: #ec7b72; --bad-soft: #3d1f1d; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -48,7 +55,8 @@ body { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: 1
 .nav button svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .nav button:hover { background: var(--bg); color: var(--ink); }
 .nav button.on { background: var(--accent-soft); color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
-.side-foot { margin-top: auto; font-size: .75rem; padding: 0 12px; }
+.side-foot { margin-top: auto; font-size: .75rem; padding: 0 12px; display: grid; gap: 8px; justify-items: start; }
+.side-foot .muted { color: var(--muted); }
 .content { min-width: 0; }
 .month-pick { display: flex; align-items: center; gap: 6px; }
 .month-pick .label { min-width: 9.5em; text-align: center; font-family: var(--f-display); }
@@ -60,7 +68,8 @@ main { max-width: 1240px; padding: 24px 28px 80px; display: grid; gap: 22px; }
   .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 14px;
     border-right: 0; border-bottom: 1px solid var(--line); }
   .nav { display: flex; flex-wrap: wrap; flex: 1; }
-  .nav .group, .side-foot, .nav button small { display: none; }
+  .nav .group, .side-foot .muted, .nav button small { display: none; }
+  .side-foot { margin-top: 0; padding: 0; }
   .nav button { width: auto; padding: 6px 10px; }
   .top { padding: 10px 14px; }
   main { padding: 18px 14px 80px; }
@@ -171,7 +180,28 @@ td .note { font-size: .78rem; margin-top: 2px; }
 td .pill { margin-top: 4px; }
 .printonly { display: none; }
 
+/* Searching and sorting the flat lists; the budget chart */
+.listbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.listbar input { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 5px 9px; width: min(320px, 100%); }
+.listbar .muted { font-size: .85rem; }
+button.sorth { background: none; border: 0; padding: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+button.sorth:hover { color: var(--ink); }
+th[aria-sort=ascending] button.sorth, th[aria-sort=descending] button.sorth { color: var(--accent); }
+button.sorth .arrow { display: inline-block; min-width: 1.1em; font-size: .8em; }
+.card-in { display: grid; gap: 6px; min-width: 0; }
+.card > * { min-width: 0; }
+svg.bchart { width: 100%; min-width: 560px; max-width: 720px; height: auto; display: block; font-family: var(--f-body); }  /* drawn 640 wide: capped so its text stays near page size */
+.bchart text { fill: var(--ink); font-size: 12px; }
+.bchart .tot { font-size: 13px; font-weight: 600; }
+.bchart .lbl, .bchart .val { fill: var(--muted); }
+.bchart .val.over { fill: var(--bad); font-weight: 600; }
+.bchart .bg { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+.bchart .pd { fill: var(--accent); }
+.bchart .pd.over { fill: var(--bad); }
+
 @media print {
+  :root:root, :root[data-theme] { --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8;
+    --accent: #1f6f63; --accent-soft: #dcece7; --ok: #2c7a3f; --ok-soft: #e1f1e4; --warn: #9a5c08; --warn-soft: #fbf0dc; --bad: #b3322b; --bad-soft: #f8e1df; color-scheme: light; }
   .side, .top, .noprint, .drawer, .toast { display: none !important; }
   body { display: block; background: #fff; color: #000; }
   .card { border: 0; padding: 0; }

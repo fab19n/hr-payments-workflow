@@ -72,7 +72,7 @@ function currentCycle(t = new Date()) { const d = new Date(t.getFullYear(), t.ge
 const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
 
 const state = { meta: null, view: "overview", entity: null, month: currentCycle(), day: dayKey(), data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
-  nextAll: {}, bankOnly: false };
+  nextAll: {}, bankOnly: false, lists: {}, counts: {} };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
   ["Filing", [["audit", "Audit pack"], ["settings", "Backup & log"]]]];
@@ -87,6 +87,112 @@ const ICON = {
   settings: '<path d="M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
 };
 const icon = v => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[v]}</svg>`;
+
+/* ---------------- Search and sort on the flat lists ---------------- */
+// LT-BEGIN (pure helpers: no page access, so they can be run on their own in Node)
+const LT = {
+  // Every word typed must be somewhere in the row's text, in any order, ignoring capitals.
+  match(text, q) { const t = String(text ?? "").toLowerCase(); return String(q ?? "").toLowerCase().split(/\s+/).filter(Boolean).every(w => t.includes(w)); },
+  // Sorted copy by key(row): type "num" compares as numbers, anything else (text, ISO dates) as lower-case text. Blanks go last either way.
+  sort(rows, key, type, dir) {
+    const val = r => { const v = key(r); return v == null || v === "" ? null : type === "num" ? Number(v) : String(v).toLowerCase(); };
+    return rows.map((r, i) => [r, val(r), i]).sort((a, b) => {
+      if (a[1] === null || b[1] === null) return a[1] === b[1] ? a[2] - b[2] : a[1] === null ? 1 : -1;
+      const c = type === "num" ? a[1] - b[1] : a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0;
+      return c ? c * dir : a[2] - b[2];
+    }).map(x => x[0]);
+  },
+  // An amount as it might be typed to find it: 1234.5 and 1,234.50 both match, with or without the sign the table shows (- or the minus sign, +).
+  amount(n) { if (n == null || n === "") return ""; const v = Number(n), a = Math.abs(v), p = a.toFixed(2), q = a.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return `${p} ${q}` + (v < 0 ? ` -${p} -${q} −${p} −${q}` : v > 0 ? ` +${p} +${q}` : ""); },
+  // Bar length in pixels for a value on a scale that ends at max.
+  bar(v, max, width) { return max > 0 && v > 0 ? Math.max(1, Math.round(v / max * width * 100) / 100) : 0; },
+  // The lines of a budget (one currency) as chart rows: the biggest `top` by budget, the rest added up as 'Other lines'.
+  chart(lines, top = 12) {
+    const rows = lines.filter(x => x.amount != null || x.paid != null).map(x => ({ label: x.description || "(no description)", budget: x.amount || 0, paid: x.paid }));
+    const big = LT.sort(rows, r => r.budget, "num", -1), keep = big.slice(0, top), rest = big.slice(top);
+    if (rest.length) keep.push({ label: "Other lines", n: rest.length, budget: Math.round(rest.reduce((a, r) => a + r.budget, 0) * 100) / 100,
+      paid: rest.some(r => r.paid != null) ? Math.round(rest.reduce((a, r) => a + (r.paid || 0), 0) * 100) / 100 : null });
+    return keep;
+  },
+};
+// LT-END
+
+// What each flat list can be sorted by: list -> column -> [type, key of a row]. Rows are the server's plain objects.
+const SORTS = {
+  payees: { name: ["text", p => p.name], type: ["text", p => state.meta.categories[p.category] || p.category], when: ["num", p => p.month_offset * 32 + p.due_day],
+    amount: ["num", p => p.amount], bank: ["text", p => p.bank_details || p.reference], status: ["text", p => p.active ? "Active" : "Stopped"] },
+  bank: { date: ["text", l => l.txn_date], desc: ["text", l => l.description], amount: ["num", l => l.amount],
+    by: ["text", l => l.payment_id ? l.payment_desc : l.status === "no_docs" ? "No documents needed" : "Not explained"] },
+  sql: { doc: ["text", x => x.doc_no], date: ["text", x => x.doc_date], desc: ["text", x => x.description], amount: ["num", x => x.amount],
+    pay: ["text", x => x.payment_desc] },
+};
+const LIST_REDRAW = {};  // list -> function that draws just that list again
+function listState(id) {
+  let st = state.lists[id];
+  if (!st) {
+    st = state.lists[id] = { q: "", col: null, dir: 1 };
+    try { const [c, d] = (localStorage.getItem("hrp-sort-" + id) || "").split(":"); if (SORTS[id][c]) { st.col = c; st.dir = d === "-1" ? -1 : 1; } } catch {}
+  }
+  return st;
+}
+// A list's rows as shown: those the search finds (text(row): all the words of the row), in the sort picked, else in the order given.
+function listRows(id, rows, text) {
+  const st = listState(id), s = st.col && SORTS[id][st.col];
+  const found = st.q.trim() ? rows.filter(r => LT.match(text(r), st.q)) : rows;
+  return s ? LT.sort(found, s[1], s[0], st.dir) : found;
+}
+// A column heading that sorts: a button inside the th, with aria-sort on the th.
+function sortTh(id, col, label, cls = "") {
+  const st = listState(id), on = st.col === col;
+  return `<th${cls ? ` class="${cls}"` : ""} aria-sort="${on ? (st.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" class="sorth" data-sort="${id}" data-col="${col}">${label}<span class="arrow" aria-hidden="true">${on ? (st.dir > 0 ? "▲" : "▼") : ""}</span></button></th>`;
+}
+function listBar(id, what) {
+  return `<div class="listbar noprint"><input type="search" data-search="${id}" value="${esc(listState(id).q)}" placeholder="Search ${what}" aria-label="Search ${what}"><span class="muted" data-count="${id}" aria-live="polite"></span></div>`;
+}
+const setCount = (id, n, m) => { state.counts[id] = [n, m]; };
+function paintCount(id) {
+  const el = document.querySelector(`[data-count="${id}"]`), c = state.counts[id];
+  if (el && c) el.textContent = `${c[0]} of ${c[1]} shown`;
+}
+// A click on a heading: first sorts up, again down, a third time goes back to the list's own order.
+function sortClick(id, col, btn) {
+  const all = [...document.querySelectorAll(`[data-sort="${id}"][data-col="${col}"]`)], at = Math.max(0, all.indexOf(btn));
+  const st = listState(id);
+  if (st.col !== col) { st.col = col; st.dir = 1; } else if (st.dir > 0) st.dir = -1; else { st.col = null; st.dir = 1; }
+  try { if (st.col) localStorage.setItem("hrp-sort-" + id, `${st.col}:${st.dir}`); else localStorage.removeItem("hrp-sort-" + id); } catch {}
+  LIST_REDRAW[id]?.();
+  document.querySelectorAll(`[data-sort="${id}"][data-col="${col}"]`)[at]?.focus({ preventScroll: true });  // the header that was clicked, not the first table's
+}
+
+// Budget against paid, one pair of bars per line (RM lines only), drawn as SVG that takes its colours from the page's tokens.
+function budgetChart(d) {
+  const rows = LT.chart(d.lines.filter(x => x.currency === "MYR")), sums = d.sums.MYR;
+  if (!rows.length || !sums) return "";
+  const plain = n => money(n, "MYR"), W = 640, X0 = 190, BW = 290, RH = 36, TOP = 54;
+  const max = Math.max(...rows.map(r => Math.max(r.budget, r.paid || 0)), sums.budget > 0 ? 0 : 1);
+  const cut = (s, n) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+  const H = TOP + rows.length * RH + 6, diff = Math.round((sums.paid - sums.budget) * 100) / 100;
+  const total = `Total: budget ${plain(sums.budget)}, paid ${plain(sums.paid)}` + (Math.abs(diff) <= 0.01 ? "" : diff < 0 ? `, ${plain(-diff)} under` : `, ${plain(diff)} over`);
+  const label = `Budget against paid, RM lines. ${total}. ${rows.length} bar pairs, biggest budget first.`;
+  const bars = rows.map((r, i) => {
+    const y = TOP + i * RH, over = r.paid != null && r.paid - r.budget > 0.005, bw = LT.bar(r.budget, max, BW), pw = LT.bar(r.paid || 0, max, BW);
+    const name = r.n ? `${r.label} (${r.n})` : r.label;
+    return `<g><title>${esc(name)}: budget ${plain(r.budget)}, ${r.paid == null ? "not paid yet" : "paid " + plain(r.paid)}</title>
+      <text class="lbl" x="${X0 - 8}" y="${y + 17}" text-anchor="end">${esc(cut(name, 25))}</text>
+      <rect class="bg" x="${X0}" y="${y + 2}" width="${bw}" height="12"/><text class="val" x="${X0 + bw + 6}" y="${y + 12}">${plain(r.budget)}</text>
+      <rect class="${over ? "pd over" : "pd"}" x="${X0}" y="${y + 17}" width="${pw}" height="12"/>
+      <text class="val${over ? " over" : ""}" x="${X0 + pw + 6}" y="${y + 27}">${r.paid == null ? "not paid yet" : plain(r.paid) + (over ? " (over)" : "")}</text></g>`;
+  }).join("");
+  const more = d.lines.some(x => x.currency !== "MYR") ? " Lines in other currencies are in the table only." : "";
+  return `<div class="card-in noprint"><div class="tbl-wrap"><svg class="bchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}" xmlns="http://www.w3.org/2000/svg">
+    <title>${esc(label)}</title>
+    <text class="tot" x="0" y="16">${esc(total)}</text>
+    <rect class="bg" x="0" y="30" width="14" height="10"/><text class="lbl" x="20" y="39">Budget</text>
+    <rect class="pd" x="80" y="30" width="14" height="10"/><text class="lbl" x="100" y="39">Paid</text>
+    <rect class="pd over" x="150" y="30" width="14" height="10"/><text class="lbl" x="170" y="39">Paid, over budget</text>
+    ${bars}</svg></div>${more ? `<div class="note">${more.trim()}</div>` : ""}</div>`;
+}
 
 function renderNav() {
   const btn = (v, label, on, extra = "") => `<button data-view="${v}"${extra} class="${on ? "on" : ""}">${icon(v)}<span>${label}</span></button>`;
@@ -109,7 +215,7 @@ function renderNav() {
 
 function go(view, entity) {
   if (!closeDrawer()) return;
-  state.view = view; state.bankOnly = false; if (entity) state.entity = +entity;
+  state.view = view; state.bankOnly = false; for (const k in state.lists) state.lists[k].q = ""; if (entity) state.entity = +entity;
   if (!state.entity) state.entity = state.meta.entities[0].id;
   renderNav(); render();
 }
@@ -657,7 +763,7 @@ async function viewStoredBudget(main, d, here) {
     const inb = Object.entries(d.in_balance);
     $("#bud-in").hidden = !inb.length;
     $("#bud-in b").textContent = inb.map(([cur, n]) => money(n, cur)).join(" · ");
-    $("#bud-body").innerHTML = `<div class="row noprint">
+    $("#bud-body").innerHTML = `${budgetChart(d)}<div class="row noprint">
         <label><input type="checkbox" id="bud-all"${d.lines.length && sel.size === d.lines.length ? " checked" : ""}> Select all</label>
         <button class="ghost small" id="bud-delsel"${sel.size ? "" : " disabled"}>Delete selected${sel.size ? ` (${sel.size})` : ""}</button>
         ${currencies.map(cur => `<button class="btn small" data-add="${esc(cur)}">Add line${currencies.length > 1 ? ` (${cur === "MYR" ? "RM" : esc(cur)})` : ""}</button>`).join("")}</div>
@@ -749,24 +855,32 @@ const listedStatements = sts => state.bankOnly ? sts.filter(s => toExplain(s).le
 const suggestions = l => l.payment_id ? "" : (state.suggestions?.[l.id] || []).map(x =>
   `<div class="note noprint" title="Match score ${x.score} of 100">Suggested: ${esc(x.description)} · ${esc(x.reason)} <button class="ghost small" data-suggest-link="${l.id}" data-suggest-pay="${x.payment_id}">Link</button></div>`).join("");
 
+const bankText = (l, cur) => [fmtDate(l.txn_date), l.txn_date, l.description, LT.amount(l.amount), cur, l.payment_desc, l.note, l.status === "no_docs" ? "no documents needed" : l.payment_id ? "" : "not explained"].join(" ");
 function bankBlocks(sts) {
-  const blocks = listedStatements(sts).map(s => {
-    const un = toExplain(s).length;
+  const listed = listedStatements(sts), q = listState("bank").q.trim();
+  let n = 0, m = 0;
+  const blocks = listed.map(s => {
+    const un = toExplain(s).length, all = state.bankOnly ? toExplain(s) : s.lines;
+    const lines = listRows("bank", all, l => bankText(l, s.currency));
+    m += all.length; n += lines.length;
+    if (q && !lines.length) return "";
     return `<div class="card" id="stmt-${s.id}">
       <div class="row spread"><div><div class="eyebrow">${esc(s.account_label)}</div><h2>${monthName(s.month)} statement</h2></div>
       <div class="row">${s.check_ok ? `<span class="pill ok">Balances add up</span>` : `<span class="pill bad">Closing balance differs</span>`}
       ${un ? `<span class="pill warn">${un} lines to explain</span>` : `<span class="pill ok">All lines explained</span>`}
       <a class="ghost small" href="/api/documents/${s.document_id}/file" target="_blank">View PDF</a></div></div>
       <div class="note">Opening ${money(s.opening, s.currency)} · Closing ${money(s.closing, s.currency)} · Debits ${money(s.total_debits, s.currency)} · Credits ${money(s.total_credits, s.currency)}</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Date</th><th>Description</th><th class="num">Amount</th><th>Explained by</th><th></th></tr></thead><tbody>
-      ${(state.bankOnly ? toExplain(s) : s.lines).map(l => `<tr><td class="mono">${shortDate(l.txn_date)}</td><td class="line-desc">${esc(l.description.replaceAll(" | ", " · "))}</td>
+      <div class="tbl-wrap"><table><thead><tr>${sortTh("bank", "date", "Date")}${sortTh("bank", "desc", "Description")}${sortTh("bank", "amount", "Amount", "num")}${sortTh("bank", "by", "Explained by")}<th></th></tr></thead><tbody>
+      ${lines.map(l => `<tr><td class="mono">${shortDate(l.txn_date)}</td><td class="line-desc">${esc(l.description.replaceAll(" | ", " · "))}</td>
         <td class="num ${l.amount < 0 ? "" : "muted"}">${l.amount < 0 ? "−" : "+"}${money(Math.abs(l.amount), s.currency).replace(/^\S+ /, "")}</td>
         <td>${l.payment_id ? `<span class="pill ok">${esc(l.payment_desc)}</span>` : l.status === "no_docs" ? `<span class="pill grey">No documents needed${l.note ? ": " + esc(l.note) : ""}</span>` : `<span class="pill warn">Not explained</span>${suggestions(l)}`}</td>
         <td class="noprint">${l.payment_id || l.status === "no_docs" ? `<button class="ghost small" data-unlink="${l.id}">Undo</button>` : `<button class="ghost small" data-explain="${l.id}" data-account="${s.account_id}" data-month="${s.month}" data-amount="${l.amount}">Explain</button>`}</td></tr>`).join("")}
       </tbody></table></div></div>`;
   }).join("");
-  return blocks || `<div class="card empty">${sts.length ? "Every line on the statements is explained." : `No statements imported for ${esc(ent().name)} yet.`}</div>`;
+  setCount("bank", n, m);
+  return blocks || `<div class="card empty">${q ? "No statement line matches." : sts.length ? "Every line on the statements is explained." : `No statements imported for ${esc(ent().name)} yet.`}</div>`;
 }
+const drawBank = () => { $("#stmtList").innerHTML = bankBlocks(state.statements); paintCount("bank"); };
 
 async function viewBank(main) {
   const e = ent();
@@ -783,8 +897,10 @@ async function viewBank(main) {
       <label class="field"><span>Statement PDF</span><input id="stmtFile" type="file" accept=".pdf"></label>
       <button class="btn" type="submit" style="align-self:end">Import statement</button>
       ${sts.length ? `<button class="ghost" type="button" id="rematch" style="align-self:end">Match again</button>` : ""}</form>
-      ${sts.length ? `<label class="row"><input type="checkbox" id="bankOnly" ${state.bankOnly ? "checked" : ""}> Only lines to explain</label>` : ""}</div>
+      ${sts.length ? `<label class="row"><input type="checkbox" id="bankOnly" ${state.bankOnly ? "checked" : ""}> Only lines to explain</label>` : ""}
+      ${sts.length ? listBar("bank", "statement lines") : ""}</div>
     <div id="stmtList">${bankBlocks(sts)}</div>`;
+  paintCount("bank"); LIST_REDRAW.bank = drawBank;
   const shown = focus && listedStatements(sts).find(s => s.month === state.month && (!focus.account || s.account_id === focus.account));
   if (shown) $(`#stmt-${shown.id}`)?.scrollIntoView?.({ block: "start" });
 }
@@ -852,6 +968,37 @@ async function viewSql(main) {
         <td><div class="row"><button class="ghost small" data-sql-create="${u.id}">Create payment</button><button class="ghost small" data-sql-ignore="${u.id}">Ignore</button></div></td></tr>`;
   const waiting = d.unlinked.filter(u => !u.correction), corrections = d.unlinked.filter(u => u.correction);
   state.sqlCorrections = corrections.map(u => u.id);
+  const sqlText = x => [x.doc_no, fmtDate(x.doc_date), x.doc_date, x.description, x.payee, LT.amount(x.amount), x.direction === "in" ? "money in" : "", x.payment_desc,
+    x.payment_month ? monthName(x.payment_month) : "", x.einvoice ? "e-invoice" : ""].join(" ");
+  const th = (cols, last) => `<thead><tr>${sortTh("sql", "doc", "Doc No")}${sortTh("sql", "date", "Date")}${sortTh("sql", "desc", "Description")}${sortTh("sql", "amount", "Amount", "num")}${cols}${last}</tr></thead>`;
+  const none = (list, text) => `<tr><td colspan="6" class="empty">${list.length ? "No entry matches." : text}</td></tr>`;
+  const entries = () => {
+    const w = listRows("sql", waiting, sqlText), c = listRows("sql", corrections, sqlText), lk = listRows("sql", d.linked, sqlText), ig = listRows("sql", d.ignored, sqlText);
+    setCount("sql", w.length + c.length + lk.length + ig.length, waiting.length + corrections.length + d.linked.length + d.ignored.length);
+    return `<div class="card"><h2>SQL entries not linked to a payment</h2>
+      <div class="row spread"><div class="note">These are in SQL but not in this tracker. Link each one to a payment, create a payment for it, or ignore it (e.g. a reversal).</div>
+      ${waiting.length > 1 ? `<button class="ghost small" id="sqlCreateAll">Create payments for all ${waiting.length}</button>` : ""}</div>
+      <div class="tbl-wrap"><table>${th(`<th>Link to</th>`, `<th></th>`)}<tbody>
+      ${w.map(unRow).join("") || none(waiting, "Nothing waiting.")}
+      </tbody></table></div>
+      ${corrections.length ? `<div class="row spread"><div><h3>Probably a correction (no money moved)</h3>
+        <div class="note">Reversals and contras made in SQL, or a receipt and a payment for the same amount on the same day. Create payments for all leaves these out. Ignore them, unless money really moved.</div></div>
+        <button class="ghost small" id="sqlIgnoreAll">Ignore all ${corrections.length}</button></div>
+      <div class="tbl-wrap"><table>${th(`<th>Link to</th>`, `<th></th>`)}<tbody>
+      ${c.map(unRow).join("") || none(corrections, "")}</tbody></table></div>` : ""}</div>
+    <div class="card"><details data-sql-open="linked" ${state.sqlOpen.linked ? "open" : ""}><summary><h2 style="display:inline">Linked to payments</h2> <span class="muted">· ${d.linked.length}</span></summary>
+      <div class="note">Linked to the wrong payment? Unlink it: it goes back to the list above, and the payment's amount and paid date go back to what they were. A payment made from the voucher with Create payment, with nothing added since, is removed.</div>
+      <div class="tbl-wrap"><table>${th(sortTh("sql", "pay", "Payment"), `<th></th>`)}<tbody>
+      ${lk.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
+        <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td><td>${esc(x.payment_desc)} <span class="muted">(${monthName(x.payment_month)})</span></td>
+        <td>${unlinkBtn(x)}</td></tr>`).join("") || none(d.linked, "None yet.")}
+      </tbody></table></div></details></div>
+    ${d.ignored.length ? `<div class="card"><details data-sql-open="ignored" ${state.sqlOpen.ignored ? "open" : ""}><summary><h2 style="display:inline">Ignored</h2> <span class="muted">· ${d.ignored.length}</span></summary>
+      <div class="tbl-wrap"><table>${th("", `<th></th>`).replace("<th></th></tr>", "<th></th></tr>")}<tbody>
+      ${ig.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
+        <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td><td><button class="ghost small" data-sql-unignore="${x.id}">Un-ignore</button></td></tr>`).join("") || none(d.ignored, "")}
+      </tbody></table></div></details></div>` : ""}`;
+  };
   main.innerHTML = `${entityPicker()}
     <div class="card"><h1>SQL import · ${esc(e.code)}</h1>
       <div class="note">Paste each SQL listing for the month in turn: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to this tracker; customer invoices are filed against their checklist item of their own month (the e-Invoices for the fund received and the office rental) and linked to the money in they are for (the tenant's rent), and a payroll journal, if there is one, against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine.</div>
@@ -865,29 +1012,8 @@ async function viewSql(main) {
           <div class="row"><button class="btn" type="submit">Read file</button></div></form>
       </div></div>
     <div id="sqlPreview"></div>
-    <div class="card"><h2>SQL entries not linked to a payment</h2>
-      <div class="row spread"><div class="note">These are in SQL but not in this tracker. Link each one to a payment, create a payment for it, or ignore it (e.g. a reversal).</div>
-      ${waiting.length > 1 ? `<button class="ghost small" id="sqlCreateAll">Create payments for all ${waiting.length}</button>` : ""}</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Link to</th><th></th></tr></thead><tbody>
-      ${waiting.map(unRow).join("") || `<tr><td colspan="6" class="empty">Nothing waiting.</td></tr>`}
-      </tbody></table></div>
-      ${corrections.length ? `<div class="row spread"><div><h3>Probably a correction (no money moved)</h3>
-        <div class="note">Reversals and contras made in SQL, or a receipt and a payment for the same amount on the same day. Create payments for all leaves these out. Ignore them, unless money really moved.</div></div>
-        <button class="ghost small" id="sqlIgnoreAll">Ignore all ${corrections.length}</button></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Link to</th><th></th></tr></thead><tbody>
-      ${corrections.map(unRow).join("")}</tbody></table></div>` : ""}</div>
-    <div class="card"><details data-sql-open="linked" ${state.sqlOpen.linked ? "open" : ""}><summary><h2 style="display:inline">Linked to payments</h2> <span class="muted">· ${d.linked.length}</span></summary>
-      <div class="note">Linked to the wrong payment? Unlink it: it goes back to the list above, and the payment's amount and paid date go back to what they were. A payment made from the voucher with Create payment, with nothing added since, is removed.</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Payment</th><th></th></tr></thead><tbody>
-      ${d.linked.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
-        <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td><td>${esc(x.payment_desc)} <span class="muted">(${monthName(x.payment_month)})</span></td>
-        <td>${unlinkBtn(x)}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">None yet.</td></tr>`}
-      </tbody></table></div></details></div>
-    ${d.ignored.length ? `<div class="card"><details data-sql-open="ignored" ${state.sqlOpen.ignored ? "open" : ""}><summary><h2 style="display:inline">Ignored</h2> <span class="muted">· ${d.ignored.length}</span></summary>
-      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th></th></tr></thead><tbody>
-      ${d.ignored.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
-        <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td><td><button class="ghost small" data-sql-unignore="${x.id}">Un-ignore</button></td></tr>`).join("")}
-      </tbody></table></div></details></div>` : ""}
+    <div class="card"><h2>Find an SQL entry</h2>${listBar("sql", "SQL entries")}</div>
+    <div id="sqlEntries">${entries()}</div>
     <div class="card"><h2>Journals and customer invoices</h2>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>e-Invoice</th><th>Checklist item</th></tr></thead><tbody>
       ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
@@ -903,6 +1029,7 @@ async function viewSql(main) {
     <div class="card"><h2>Imported files</h2>${d.imports.map(i => `<div class="row spread"><span>${esc(i.filename)} <span class="muted">· ${i.entries} entries, ${i.linked} linked</span></span><span class="muted">${esc(i.imported_at.replace("T", " "))}</span></div>`).join("") || `<div class="note">None yet.</div>`}</div>`;
   // A listing read but not imported yet stays, with links picked by hand, while you tidy the entries below.
   $("#sqlPaste").value = state.sqlPaste[state.entity] || "";
+  paintCount("sql"); LIST_REDRAW.sql = () => { $("#sqlEntries").innerHTML = entries(); paintCount("sql"); };
   if (state.sqlPreview?.entity_id === state.entity) renderSqlPreview(state.sqlPreview);
 }
 
@@ -954,20 +1081,32 @@ async function viewPayees(main) {
   const saved = ch && (ch.changes.length || ch.kept.length) ? `<div class="card"><h3>Saved. Months already set up:</h3>
     ${ch.changes.map(x => `<div class="note">${esc(x)}</div>`).join("")}
     ${ch.kept.length ? `<div class="note"><b>Left as they were</b> (paid, linked, changed by hand, or already due; change them by hand if needed): ${ch.kept.map(esc).join("; ")}</div>` : ""}</div>` : "";
+  const payeeRow = p => `<tr><td><b>${esc(p.name)}</b><div class="note">${esc(p.desc_template)}</div>
+      ${p.start_date ? `<div class="note">Starts ${fmtDate(p.start_date)}</div>` : ""}${p.end_date ? `<div class="note">Ends ${fmtDate(p.end_date)}</div>` : ""}
+      ${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}${p.advances.map(a => `<div class="note">Advance: −${money(a.monthly_deduction)} a month, ${a.start_month} to ${a.end_month}</div>`).join("")}</td>
+      <td>${p.direction === "in" ? `<span class="pill ok">Money in</span> ` : ""}${esc(cats[p.category] || p.category)}</td><td>${p.month_offset ? "Next month" : "Same month"}, day ${p.due_day}</td>
+      <td class="num">${money(p.amount, p.currency)}${p.amount_varies ? `<div class="note">varies</div>` : ""}</td>
+      <td class="mono">${esc(p.bank_details || p.reference || "")}</td>
+      <td>${p.active ? `<span class="pill ok">Active</span>` : `<span class="pill grey">Stopped</span>`}</td>
+      <td><div class="row"><button class="ghost small" data-edit-payee="${p.id}">Edit</button>${p.in_month ? `<span class="pill ok">In ${mon} ✓</span>`
+        : !p.employed ? `<span class="muted">Not employed in ${mon}</span>` : m.set_up ? `<button class="ghost small" data-add-month="${p.id}">Add to ${mon}</button>` : ""}</div></td></tr>`;
+  const payeeText = p => [p.name, p.desc_template, p.notes, p.start_date, p.end_date, fmtDate(p.start_date), fmtDate(p.end_date), cats[p.category], p.category,
+    p.direction === "in" ? "money in" : "", p.bank_details, p.reference, LT.amount(p.amount), p.currency, p.active ? "active" : "stopped",
+    ...p.advances.map(a => `advance ${LT.amount(a.monthly_deduction)}`)].join(" ");
+  const payeeTable = () => {
+    const rows = listRows("payees", list, payeeText);
+    setCount("payees", rows.length, list.length);
+    return `<table><thead><tr>${sortTh("payees", "name", "Payee")}${sortTh("payees", "type", "Type")}${sortTh("payees", "when", "Paid / received")}${sortTh("payees", "amount", "Usual amount", "num")}${sortTh("payees", "bank", "Bank / ref")}${sortTh("payees", "status", "Status")}<th></th></tr></thead><tbody>
+      ${rows.map(payeeRow).join("") || `<tr><td colspan="7" class="empty">${list.length ? "No recurring payment matches." : "None yet."}</td></tr>`}
+      </tbody></table>`;
+  };
   main.innerHTML = `${entityPicker()}${saved}${m.set_up ? "" : notSetUp(m.entity, m.month)}
     <div class="card"><div class="row spread"><h1>Recurring payments · ${esc(e.code)}</h1><button class="btn" data-edit-payee="new">Add recurring payment</button></div>
       <div class="note">Each active row is added to a month when the month is set up. Saving a change also updates the payments not due yet in ${esc(monthName(currentCycle()))} and later months already set up, unless they were paid, linked or changed by hand. Payments already due are left as they were: they were most likely paid already.</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Payee</th><th>Type</th><th>Paid / received</th><th class="num">Usual amount</th><th>Bank / ref</th><th>Status</th><th></th></tr></thead><tbody>
-      ${list.map(p => `<tr><td><b>${esc(p.name)}</b><div class="note">${esc(p.desc_template)}</div>
-        ${p.start_date ? `<div class="note">Starts ${fmtDate(p.start_date)}</div>` : ""}${p.end_date ? `<div class="note">Ends ${fmtDate(p.end_date)}</div>` : ""}
-        ${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}${p.advances.map(a => `<div class="note">Advance: −${money(a.monthly_deduction)} a month, ${a.start_month} to ${a.end_month}</div>`).join("")}</td>
-        <td>${p.direction === "in" ? `<span class="pill ok">Money in</span> ` : ""}${esc(cats[p.category] || p.category)}</td><td>${p.month_offset ? "Next month" : "Same month"}, day ${p.due_day}</td>
-        <td class="num">${money(p.amount, p.currency)}${p.amount_varies ? `<div class="note">varies</div>` : ""}</td>
-        <td class="mono">${esc(p.bank_details || p.reference || "")}</td>
-        <td>${p.active ? `<span class="pill ok">Active</span>` : `<span class="pill grey">Stopped</span>`}</td>
-        <td><div class="row"><button class="ghost small" data-edit-payee="${p.id}">Edit</button>${p.in_month ? `<span class="pill ok">In ${mon} ✓</span>`
-          : !p.employed ? `<span class="muted">Not employed in ${mon}</span>` : m.set_up ? `<button class="ghost small" data-add-month="${p.id}">Add to ${mon}</button>` : ""}</div></td></tr>`).join("")}
-      </tbody></table></div></div>`;
+      ${listBar("payees", "recurring payments")}
+      <div class="tbl-wrap" id="payeeTable">${payeeTable()}</div></div>`;
+  setCount("payees", list.length, list.length); paintCount("payees");
+  LIST_REDRAW.payees = () => { $("#payeeTable").innerHTML = payeeTable(); paintCount("payees"); };
   state.payees = list;
 }
 
@@ -1102,6 +1241,7 @@ document.addEventListener("click", async ev => {
   const t = ev.target.closest("button, tr[data-payment], a");
   if (!t) return;
   const ds = t.dataset;
+  if (ds.sort) return sortClick(ds.sort, ds.col, t);
   try {
     if (ds.view) return go(ds.view, ds.entity);
     if (ds.pill) return pillGo(ds.pill, +ds.entity);
@@ -1283,7 +1423,7 @@ document.addEventListener("change", async ev => {
   const t = ev.target;
   try {
     // Only the statements are drawn again, so the account and file chosen for an import stay.
-    if (t.id === "bankOnly") { state.bankOnly = t.checked; $("#stmtList").innerHTML = bankBlocks(state.statements); return; }
+    if (t.id === "bankOnly") { state.bankOnly = t.checked; drawBank(); return; }
     if (t.dataset.task) {
       // A tick by hand while something is still missing asks first, naming it.
       const task = state.data.tasks.find(x => x.id === +t.dataset.task);
@@ -1392,6 +1532,10 @@ document.addEventListener("drop", async ev => {
   try { await uploadFiles([...ev.dataTransfer.files], { payment_id: state.openPayment, doc_type: s.dataset.slot }); } catch (e) { toast(e.message, true); }
 });
 document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeDrawer(); });
+document.addEventListener("input", ev => {
+  const id = ev.target.dataset?.search;
+  if (id) { listState(id).q = ev.target.value; LIST_REDRAW[id]?.(); }
+});
 document.addEventListener("input", ev => { if (ev.target.id === "sqlPaste") state.sqlPaste[state.entity] = ev.target.value; });
 // The SQL box holds one listing: pasting replaces what is in it, so a listing left there can't run into the next one.
 document.addEventListener("paste", ev => {
