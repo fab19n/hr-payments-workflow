@@ -118,7 +118,7 @@ tr.group td { background: var(--bg); font-weight: 600; font-size: .85rem; color:
 .slot.add { padding: 4px 10px; }
 .slot .lbl { flex: 1; min-width: 0; }
 .slot .file { font-size: .82rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chip { display: inline-flex; gap: 4px; align-items: center; font-size: .8rem; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; background: var(--surface); }
+.chip { display: inline-flex; white-space: nowrap; gap: 4px; align-items: center; font-size: .8rem; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; background: var(--surface); }
 .chip.need { border-color: var(--bad); color: var(--bad); }
 .chip.have { border-color: var(--ok); color: var(--ok); }
 .chip.ev { display: inline-block; max-width: 24em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }

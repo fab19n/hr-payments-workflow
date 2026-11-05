@@ -171,6 +171,17 @@ def _checklist_from_data(con):
         sync_reminders(con, p)
 
 
+def _selfbilled_by_7th(con):
+    offset, day = next(d for code, d, *_ in rules.CHECKLIST["AISB"] if code == "einv-selfbilled")
+    for t in con.execute("SELECT id, month FROM tasks WHERE code = 'einv-selfbilled' AND done_at IS NULL").fetchall():
+        con.execute("UPDATE tasks SET due_date = ? WHERE id = ?", (due(t["month"], offset, day), t["id"]))
+
+
+def _payslips_retyped(con):
+    con.execute("UPDATE documents SET doc_type = 'payslip' WHERE doc_type = 'other' AND LOWER(original_name) LIKE '%payslip%' "
+                "AND payment_id IN (SELECT id FROM payments WHERE category IN ('salary', 'director'))")
+
+
 # Each step runs once per records.db, in order; PRAGMA user_version holds how many have run.
 # To add one, append it at the end (never reorder or remove a step). Steps also run on a new install,
 # after SCHEMA, so a step must check before it changes anything (add_column does).
@@ -214,6 +225,12 @@ MIGRATIONS = [
     # 12. SQL documents filed on the checklist item of the month they belong to (they were filed by the nearest due
     #     date). Only the link moves; nothing is ticked or unticked.
     lambda con: refile_documents(con),
+    # 13. Self-billed e-Invoices are due by the 7th of the next month (they were set for the 10th). Moves the due date of
+    #     the items not done yet; done ones keep theirs.
+    _selfbilled_by_7th,
+    # 14. Each person's payslip is a document of its own (salary and director payments ask for it). Payslips already
+    #     uploaded as 'Other' to those payments become Payslip. Only doc_type changes; the files keep their names.
+    _payslips_retyped,
 ]
 
 

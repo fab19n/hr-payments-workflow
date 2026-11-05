@@ -354,14 +354,14 @@ def _documents(con, e, m, mine):
 
 
 def _missed(paid):
-    """The documents missing on paid payments, counted by type, most missed first, and past 4 types the 3 most missed
-    and the rest together: 9 bank receipts, 8 approvals, 8 claim forms and 14 other documents."""
+    """The documents missing on paid payments, counted by type, most missed first, and past 5 types the 4 most missed
+    and the rest together: 9 bank receipts, 8 approvals, 8 claim forms, 7 invoices and 7 other documents."""
     order = {d: i for i, d in enumerate(rules.DOC_ORDER)}
     counted = sorted(Counter(t for x in paid for t in x["missing"]).items(), key=lambda kv: (-kv[1], order.get(kv[0], 99)))
     named = [f"{n} {rules.DOC_COUNTED.get(t, (db._short_doc(t),) * 2)[n > 1]}" for t, n in counted]
-    if len(named) > 4:
-        rest = sum(n for _, n in counted[3:])
-        named = named[:3] + [f"{rest} other document{_s(rest)}"]
+    if len(named) > 5:
+        rest = sum(n for _, n in counted[4:])
+        named = named[:4] + [f"{rest} other document{_s(rest)}"]
     return db._listed(named)
 
 

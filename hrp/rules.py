@@ -13,7 +13,8 @@ DOC_TYPES = {
     "portal": "Acknowledgement / portal bill",
     "claim": "Claim form & receipts",
     "approval": "Approval (signed / email)",
-    "payroll": "Payroll summary / payslips",
+    "payroll": "Payroll summary",
+    "payslip": "Payslip",
     "statement": "Bank statement",
     "recon": "Bank reconciliation",
     "sqlexport": "SQL Account export",
@@ -25,10 +26,11 @@ DOC_COUNTED = {"pv": ("payment voucher", "payment vouchers"), "jv": ("journal vo
                "or": ("official receipt", "official receipts"), "invoice": ("invoice", "invoices"),
                "bank": ("bank receipt", "bank receipts"), "einvoice": ("e-Invoice", "e-Invoices"),
                "portal": ("acknowledgement", "acknowledgements"), "claim": ("claim form", "claim forms"),
-               "approval": ("approval", "approvals"), "payroll": ("payroll summary", "payroll summaries")}
+               "approval": ("approval", "approvals"), "payroll": ("payroll summary", "payroll summaries"),
+               "payslip": ("payslip", "payslips")}
 
 # Filing order inside an audit pack.
-DOC_ORDER = ["pv", "jv", "or", "approval", "invoice", "claim", "payroll", "portal", "bank", "einvoice", "other"]
+DOC_ORDER = ["pv", "jv", "or", "approval", "invoice", "claim", "payroll", "payslip", "portal", "bank", "einvoice", "other"]
 
 CATEGORIES = {
     "salary": "Salary",
@@ -47,8 +49,8 @@ CATEGORIES = {
 # Documents a payment must have before it counts as complete. "pv" is only demanded for
 # entities that keep their books in SQL Account (see entities.uses_sql).
 REQUIRED_DOCS = {
-    "salary": ["pv", "bank"],
-    "director": ["pv", "bank"],
+    "salary": ["pv", "payslip", "bank"],
+    "director": ["pv", "payslip", "bank"],
     "consultant": ["invoice", "pv", "bank"],
     "statutory": ["portal", "pv", "bank"],
     "utility": ["invoice", "pv", "bank"],
@@ -103,7 +105,7 @@ CHECKLIST = {
          "Get the payment reference before paying. File the acknowledgement on the PCB payment.", []),
         ("einv-rental", (1, 6), "e-Invoice to the office tenant for rental",
          "SQL Sales tab. Tick it by hand: the app can't tell which month's rent an e-Invoice is for.", ["einvoice"]),
-        ("einv-selfbilled", (1, 10), "Self-billed e-Invoices for overseas providers",
+        ("einv-selfbilled", (1, 7), "Self-billed e-Invoices for overseas providers",
          "Claude, Google and other overseas services, via the SQL Cash Book tab. Done once each overseas claim of the "
          "month has its e-Invoice.", []),
         ("statement", (1, 5), "Download bank statement and import it here", "", []),
