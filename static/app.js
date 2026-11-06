@@ -91,6 +91,17 @@ const icon = v => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[v]}</svg>`
 /* ---------------- Search and sort on the flat lists ---------------- */
 // LT-BEGIN (pure helpers: no page access, so they can be run on their own in Node)
 const LT = {
+  // The payments a bank line can be linked to, likeliest first: the app's suggestions by score, then the closest amount
+  // to what each still has open. Unless all: only those going the same way as the line and not yet covered by their lines.
+  linkList(line, pays, q, all) {
+    const amt = Math.abs(line.amount), sugg = new Map((line.suggestions || []).map(s => [s.payment_id, s]));
+    const open = p => p.amount == null ? null : Math.round((p.amount - (p.linked || 0)) * 100) / 100;
+    const rows = pays.filter(p => all || ((p.direction === "in") === (line.amount > 0) && !(p.linked && p.amount && p.linked >= p.amount - 0.005)))
+      .map(p => ({ p, open: open(p), sugg: sugg.get(p.id) || null, exact: open(p) != null && Math.abs(open(p) - amt) < 0.005 }))
+      .filter(r => LT.match(`${r.p.description} ${LT.amount(r.p.amount)} ${LT.amount(r.open)} ${r.p.month}`, q));
+    const off = r => r.open == null ? Infinity : Math.abs(r.open - amt);
+    return rows.sort((a, b) => (b.sugg?.score ?? -1) - (a.sugg?.score ?? -1) || off(a) - off(b));
+  },
   // Every word typed must be somewhere in the row's text, in any order, ignoring capitals.
   match(text, q) { const t = String(text ?? "").toLowerCase(); return String(q ?? "").toLowerCase().split(/\s+/).filter(Boolean).every(w => t.includes(w)); },
   // Sorted copy by key(row): type "num" compares as numbers, anything else (text, ISO dates) as lower-case text. Blanks go last either way.
@@ -1053,7 +1064,7 @@ function rvMine(l) {
       <select data-rv-cat="${l.id}" aria-label="Type of payment">${Object.entries(state.meta.categories).map(([k, v]) => `<option value="${k}" ${k === cat ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`
     : ch === "n" ? `<input data-rv-note="${l.id}" maxlength="120" placeholder="Reason, e.g. bank charges" aria-label="Reason no documents are needed">` : "";
   return `<div class="row" style="gap:6px"><span class="pill warn">To explain</span>
-    <button class="ghost small" data-explain="${l.id}" data-account="${V.d.summary.account.id}" data-month="${V.d.summary.month}" data-amount="${l.amount}">More options</button></div>
+    <button class="ghost small" data-explain="${l.id}">More options</button></div>
     <select data-rv-choice="${l.id}" aria-label="What this bank line is">${opts}</select>${extra}`;
 }
 
@@ -1167,15 +1178,22 @@ async function rcAct(path, body, done) {
 
 // The drawer of the one-line actions (link, create a payment, no documents), kept beside the review's dropdown; the line
 // stays to confirm. amount: the line's, signed as on the statement (money in above 0).
-async function explainLine(lineId, accountId, month, amount) {
-  const pays = await api(`/api/open-payments?account=${accountId}&month=${month}`);
-  const opts = pays.map(p => `<option value="${p.id}">${esc(p.description)} · ${p.direction === "in" ? "+" : ""}${money(p.amount, p.currency)} (${p.month})</option>`).join("");
+function explainLine(lineId) {
+  const V = RV(), l = V?.d.lines.find(x => x.id === lineId);
+  if (!l) return;
+  const cur = V.d.summary.account.currency, amount = l.amount;
+  const pick = { id: String(V.choice[l.id] || "").startsWith("p:") ? +V.choice[l.id].slice(2) : null, q: "", all: false };
   // Money in is most likely a receipt, money out a one-off payment.
   const cat = amount > 0 ? "receipt" : "other";
   $("#drawer").innerHTML = `
-    <div class="row spread"><h2>Explain bank line</h2><button class="ghost small" id="closeDrawer">Close</button></div>
+    <div class="ex-head"><div class="row spread"><h2>Explain bank line</h2><button class="ghost small" id="closeDrawer">Close</button></div>
+      <div class="ex-line"><div class="row spread"><span class="muted">${shortDate(l.txn_date)} · ${amount > 0 ? "Money in" : "Money out"}</span><b class="mono">${money(Math.abs(amount), cur)}</b></div>
+        <div>${esc(l.description)}</div><div class="note">Balance ${money(l.balance, cur)}</div></div></div>
     <div class="card"><h3>Link to an existing payment</h3>
-      <select id="ex-pay"><option value="">${pays.length ? "Choose a payment…" : "No payments for this account"}</option>${opts}</select>
+      <input id="ex-q" type="search" placeholder="Search by name or amount" autocomplete="off" aria-label="Search payments">
+      <div class="note" id="ex-count"></div>
+      <div class="ex-list" id="ex-list" role="listbox" aria-label="Payments"></div>
+      <label class="row ex-all"><input type="checkbox" id="ex-all"><span>Also show money the other way and payments already covered</span></label>
       <div class="note">One payment can be linked to several lines, e.g. a 22,000 fee sent as 2,000 + 10,000 + 10,000.</div>
       <button class="btn" id="ex-link">Link</button></div>
     <div class="card"><h3>Create a new payment for this line</h3>
@@ -1187,8 +1205,20 @@ async function explainLine(lineId, accountId, month, amount) {
       <label class="field"><span>Reason</span><input id="ex-note" placeholder="e.g. bank charges, own-account transfer"></label>
       <button class="ghost" id="ex-none">Mark as no documents needed</button></div>`;
   $("#drawer").hidden = false;
+  const paint = () => {
+    const rows = LT.linkList(l, V.d.payments, pick.q, pick.all);
+    $("#ex-count").textContent = `${rows.length} payment${rows.length === 1 ? "" : "s"}${pick.q ? " found" : ", likeliest first"}`;
+    $("#ex-list").innerHTML = rows.map(r => `<button type="button" class="ex-pay ${r.p.id === pick.id ? "on" : ""}" role="option" aria-selected="${r.p.id === pick.id}" data-ex-pay="${r.p.id}">
+        <span class="ex-desc">${esc(r.p.description)}</span><span class="mono ex-amt">${r.p.direction === "in" ? "+" : ""}${money(r.p.amount, r.p.currency)}</span>
+        <span class="ex-meta">${esc(monthName(r.p.month))}${r.p.linked ? ` · ${money(r.open, r.p.currency)} still open` : ""}${r.sugg ? ` · <b>Suggested</b>: ${esc(r.sugg.reason)}` : r.exact ? ` · <b>Same amount</b>` : ""}</span></button>`).join("")
+      || `<div class="note">No payment matches. Try a shorter search, or create a new payment below.</div>`;
+  };
+  paint();
+  $("#ex-q").oninput = e => { pick.q = e.target.value; paint(); };
+  $("#ex-all").onchange = e => { pick.all = e.target.checked; paint(); };
+  $("#ex-list").onclick = e => { const b = e.target.closest("[data-ex-pay]"); if (b) { pick.id = +b.dataset.exPay; paint(); } };
   const done = async (body) => { try { await api(`/api/statement-lines/${lineId}`, { json: body }); closeDrawer(); toast("Line explained"); render(); } catch (e) { toast(e.message, true); } };
-  $("#ex-link").onclick = () => $("#ex-pay").value ? done({ payment_id: +$("#ex-pay").value }) : toast("Choose a payment first.", true);
+  $("#ex-link").onclick = () => pick.id ? done({ payment_id: pick.id }) : toast("Choose a payment first.", true);
   $("#ex-create").onclick = () => { if (!$("#ex-desc").value.trim()) return toast("Give the payment a description.", true); done({ create_payment: { description: $("#ex-desc").value.trim(), category: $("#ex-cat").value } }); };
   $("#ex-none").onclick = () => done({ status: "no_docs", note: $("#ex-note").value.trim() });
 }
@@ -1563,7 +1593,7 @@ document.addEventListener("click", async ev => {
         ? `; ${r.lines} bank line${r.lines > 1 ? "s" : ""} back under lines to explain` : ""}`); return render();
     }
     if (t.id === "addPayment") return addPaymentDrawer();
-    if (ds.explain) return explainLine(+ds.explain, +ds.account, ds.month, +ds.amount);
+    if (ds.explain) return explainLine(+ds.explain);
     if (ds.rcAcct) { Object.assign(state.recon, { account: +ds.rcAcct, year: null, open: null, rv: null }); return render(); }
     if (ds.rcYear) { Object.assign(state.recon, { year: ds.rcYear, open: null }); return drawRecon(); }
     if (ds.rcOpen) { state.recon.open = state.recon.open === ds.rcOpen ? null : ds.rcOpen; return drawRecon(); }
