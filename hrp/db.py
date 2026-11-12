@@ -5,7 +5,7 @@ import re
 import sqlite3
 from datetime import date, datetime, timedelta
 
-from . import appsettings, audit, checklistbook, rulebook, rules
+from . import appsettings, audit, checklistbook, partybook, rulebook, rules
 from .config import BACKUP_DIR, DB_PATH, PACKS_DIR, SEED_PATH
 from .sqlimport import MONEY_IN, MONEY_OUT, PURCHASE_DOCS, SALES_DOCS
 
@@ -284,6 +284,17 @@ MIGRATIONS = [
     #     and reminders are dated, so a change from a month on never alters the months before it. Nothing in the
     #     records changes.
     checklistbook.install,
+    # 22. Customers and suppliers and each company's chart of accounts (entered in Setup), a link from a recurring
+    #     payment or an SQL filing rule to a customer or supplier, and the code, payment method, cheque number, document
+    #     key and currency of SQL entries, kept from listings that carry them. Nothing in the records changes.
+    partybook.install,
+    # 23. The chart of accounts keeps all of SQL Account's special account types (cash, accumulated depreciation,
+    #     deposits, the stock accounts), so a chart printed from SQL Account reads in whole. The table is made again
+    #     with every row as it was. Nothing in the records changes.
+    partybook.widen_specials,
+    # 24. Each account in the chart keeps SQL Account's account group (its A/C Type: FA, CA, CL, ...), so the chart can
+    #     be shown as a tree grouped as SQL prints it. Empty for the accounts already there. Nothing else changes.
+    partybook.keep_sql_types,
 ]
 
 

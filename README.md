@@ -130,8 +130,14 @@ after it a note.
 - Monthly checklist, joiner and leaver reminders and matching words (`hrp/checklistbook.py`, update 21; Setup logic in
   `hrp/monthly.py`): kept in the records and edited in **Setup › Monthly work** and **Matching words**; checklist and
   reminder changes apply from a payroll month on and never reach a filed month. Code asks `checklistbook.get(con)`.
+- Customers and suppliers and each company's chart of accounts (`hrp/partybook.py`, updates 22 to 24): entered in Setup
+  by hand or with **Paste a list**, which also reads a list printed from SQL Account to a text file (page by page, with
+  sub-accounts placed under their parent account). The chart shows as a flat list or as a tree under SQL's account
+  groups, each group and parent account opening and closing; a recurring payment can be linked to a supplier or customer, and SQL
+  entries keep their code, payment method, cheque number, document key and currency, so a supplier's code matches its
+  vouchers first.
 - Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test`,
   `.venv\Scripts\python -m synthetic_tests.trail_view_test`, `.venv\Scripts\python -m synthetic_tests.setup_test` and
-  `.venv\Scripts\python -m synthetic_tests.types_test` and `synthetic_tests.checklist_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
+  `.venv\Scripts\python -m synthetic_tests.types_test`, `synthetic_tests.checklist_test` and `synthetic_tests.parties_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
   compares this code's results with a snapshot taken on older code (`--write-golden <file>` on that code makes one).
   `synthetic_tests.checklist_equivalence_test --golden <file>` does the same for update 21.

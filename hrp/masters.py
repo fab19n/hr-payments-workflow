@@ -14,13 +14,15 @@ import re
 
 import sqlite3
 
-from . import appsettings, checklistbook, db, rulebook, rules
+from . import appsettings, checklistbook, db, partybook, rulebook, rules
 
 CODE = re.compile(r"[A-Z0-9][A-Z0-9_-]{0,15}")
 KEY = re.compile(r"[a-z][a-z0-9_]{1,19}")  # a payment or document type's key: also part of stored file names, so strict
 TYPE_KINDS = ("payment_types", "doc_types")
 WORD_KINDS = ("guess_words", "hint_words", "filing_words")
 WORD = re.compile(r"[A-Z0-9][A-Z0-9 '&./-]{0,39}")
+SQLCODE = re.compile(r"[A-Z0-9][A-Z0-9_./-]{0,19}")  # a code as SQL Account keeps it: 300-A001, 4000/0001
+PERSONAL = ("salary", "director")  # paid to a person: staff are never customers or suppliers
 BASE = "MYR"  # the books' currency (SQL Account's cash book listing is in it)
 MONTH = re.compile(r"\d{4}-(0[1-9]|1[0-2])")
 DAY = re.compile(r"[2-9]\d{3}-\d{2}-\d{2}")
@@ -145,11 +147,59 @@ KINDS["filing_words"] = {
         _f("direction", "Money", "select", options=[["in", "Money in"], ["out", "Money out"]], hint="Empty: either."),
         _f("words", "Words", "words", required=True, wide=True, hint="In the description or the company name, in capitals."),
         _f("checklist_code", "Checklist item", "select", required=True, options_from="checklist_codes"),
+        _f("party_id", "Customer or supplier", "select", options_from="parties",
+           hint="An SQL document with its code is filed here, before any words."),
         _f("sort", "Order", "number", hint="Lower is tried first. Empty: after the others."),
         _f("notes", "Notes", "textarea", wide=True),
     ],
 }
-GROUPS = [["Companies and banks", ["entities", "accounts"]], ["People and payments", ["payees"]],
+KINDS["parties"] = {
+    "label": "Customer or supplier", "plural": "customers and suppliers", "table": "parties", "per_entity": True, "or_all": True,
+    "order": "name COLLATE NOCASE, id", "name_field": "name", "paste": True,
+    "help": "Customers pay money in and suppliers are paid money out. An SQL entry carrying a customer's or supplier's code is "
+            "matched by it before any words. Staff are not added here: they stay recurring payments.",
+    "columns": [{"key": "name", "label": "Name"}, {"key": "kind", "label": "Kind"}, {"key": "sql_code", "label": "SQL code"},
+                {"key": "entity_id", "label": "For"}],
+    "fields": [
+        _f("name", "Name", "text", required=True, wide=True, hint="As SQL Account names it."),
+        _f("kind", "Kind", "select", required=True, options=[["customer", "Customer (money in)"], ["supplier", "Supplier (money out)"],
+                                                              ["related", "Related company"], ["statutory", "Statutory body"]]),
+        _f("entity_id", "For", "company", hint="One company, or every company. Each company's SQL Account database keeps its own codes."),
+        _f("sql_code", "SQL code", "sqlcode", hint="Its customer or supplier code in SQL Account, e.g. 300-A001."),
+        _f("short_name", "Short name", "text"),
+        _f("tin", "Tax ID (TIN)", "text", max=20),
+        _f("brn", "Business registration no. (BRN)", "text", max=30),
+        _f("gl_code", "Control account (GL code)", "sqlcode", hint="Its debtor or creditor control account."),
+        _f("match_words", "Words in SQL descriptions", "words", wide=True, hint="Kept for reference; matching uses the code."),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
+KINDS["gl_accounts"] = {
+    "label": "GL account", "plural": "chart of accounts", "table": "gl_accounts", "per_entity": True,
+    "order": "code, id", "name_field": "name", "paste": True,
+    "help": "Each company's chart of accounts in SQL Account, for reference: nothing is posted to it.",
+    "columns": [{"key": "code", "label": "Code"}, {"key": "name", "label": "Name"}, {"key": "type", "label": "Type"},
+                {"key": "sql_type", "label": "SQL group"}, {"key": "special", "label": "Special"}],
+    # The tree view: accounts under SQL's groups (in its order), each under its parent account.
+    "tree": {"groups": [[code, name, t] for code, name, t in partybook.SQL_GROUPS]},
+    "fields": [
+        _f("code", "Code", "sqlcode", required=True, hint="As in SQL Account, e.g. 310-000."),
+        _f("name", "Name", "text", required=True, wide=True),
+        _f("sql_type", "SQL group", "select", options=[[code, f"{name} ({code})"] for code, name, _ in partybook.SQL_GROUPS],
+           hint="SQL Account's A/C Type. The type follows it."),
+        _f("type", "Type", "select", options=[["asset", "Asset"], ["liability", "Liability"], ["equity", "Equity"],
+                                              ["income", "Income"], ["expense", "Expense"]]),
+        _f("special", "Special", "select", options=[["bank", "Bank account"], ["cash", "Cash"], ["debtor_control", "Debtor control"],
+                                                    ["creditor_control", "Creditor control"],
+                                                    ["accumulated_depreciation", "Accumulated depreciation"],
+                                                    ["deposit", "Deposit / prepayment"],
+                                                    ["stock", "Stock (balance sheet)"], ["opening_stock", "Opening stock"],
+                                                    ["closing_stock", "Closing stock"]]),
+        _f("parent_code", "Parent account", "sqlcode", hint="The account it sits under, if any."),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
+GROUPS = [["Companies and banks", ["entities", "accounts", "gl_accounts"]], ["People and payments", ["payees", "parties"]],
           ["Payments and documents", ["payment_types", "doc_types", "required"]],
           ["Monthly work", ["checklist", "reminders"]],
           ["Matching words", ["guess_words", "hint_words", "filing_words"]], ["General", ["settings"]]]
@@ -159,7 +209,9 @@ STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and i
                 "doc_types": "Stopped: not offered for uploads or required documents. Documents of this type keep it.",
                 "guess_words": "Stopped: not used to guess the type of SQL vouchers added as payments.",
                 "hint_words": "Stopped: not used when matching estimated payments with SQL vouchers.",
-                "filing_words": "Stopped: SQL documents aren't filed on the checklist by these words."}
+                "filing_words": "Stopped: SQL documents aren't filed on the checklist by these words.",
+                "parties": "Stopped: not offered for recurring payments. Links and SQL entries already matched keep it.",
+                "gl_accounts": "Stopped: kept for reference; records that name it keep it."}
 
 
 def types():
@@ -238,6 +290,22 @@ def check_value(f, v):
         if any(not WORD.fullmatch(w) for w in v):
             raise Refused(f"{label}: letters, digits, spaces and ' & . / - only, up to 40 characters each.")
         return v
+    if kind == "sqlcode":
+        if not isinstance(v, str) or not SQLCODE.fullmatch(v.strip().upper()):
+            raise Refused(f"{label}: capitals, digits and _ . / - only, up to 20 characters, as SQL Account writes it.")
+        return v.strip().upper()
+    if kind == "company":
+        if isinstance(v, str) and v.isdigit():
+            v = int(v)
+        if isinstance(v, bool) or not isinstance(v, int):
+            raise Refused(f"{label}: choose a company, or every company.")
+        return v
+    if kind == "select" and f.get("options_from") == "parties":
+        if isinstance(v, str) and v.isdigit():
+            v = int(v)
+        if isinstance(v, bool) or not isinstance(v, int):
+            raise Refused(f"{label}: choose one of the options.")
+        return v  # checked against the records by _word_check
     if kind == "select" and f.get("options_from"):
         if not isinstance(v, str):
             raise Refused(f"{label}: choose one of the options.")
@@ -258,9 +326,85 @@ def _row(con, kind, rid):
     return _decoded(kind, dict(r))
 
 
+def _party_check(con, vals, rec=None):
+    """A customer or supplier: its company (or every company), a code no other one the same companies see has, a code on
+    an every-company one only while the companies share one SQL Account database, and a kind that fits the recurring
+    payments linked to it."""
+    rec = rec or {}
+    eid = vals.get("entity_id", rec.get("entity_id")) if ("entity_id" in vals or rec) else None
+    if eid is not None and not con.execute("SELECT 1 FROM entities WHERE id = ?", (eid,)).fetchone():
+        raise Refused("For: choose a company, or every company.")
+    code = vals.get("sql_code", rec.get("sql_code"))
+    if code and (("sql_code" in vals and vals["sql_code"] != rec.get("sql_code")) or ("entity_id" in vals and vals["entity_id"] != rec.get("entity_id"))):
+        if con.execute("""SELECT 1 FROM parties WHERE UPPER(sql_code) = ? AND id IS NOT ?
+                          AND (entity_id IS ? OR entity_id IS NULL OR ? IS NULL)""", (code.upper(), rec.get("id"), eid, eid)).fetchone():
+            raise Refused(f"Another customer or supplier the same company sees already has the SQL code {code}.")
+        if eid is None and len({r[0] or "" for r in con.execute("SELECT sql_database FROM entities")}) > 1:
+            raise Refused("Each company keeps its own codes in SQL Account. Give the code to a customer or supplier of one "
+                          "company, adding one for each company.")
+    kind = vals.get("kind")
+    if rec.get("id") and kind and kind != rec.get("kind"):
+        way = {"customer": "out", "supplier": "in"}.get(kind)
+        if way and con.execute("SELECT 1 FROM payees WHERE party_id = ? AND direction = ?", (rec["id"], way)).fetchone():
+            raise Refused("A customer pays money in and a supplier is paid money out, and recurring payments linked to it "
+                          "go the other way. Change their link first.")
+
+
+def _shared_codes(con, entity_id, database):
+    """Refuses giving a company another SQL Account database while a customer or supplier for every company has an SQL
+    code: the companies would then keep their own codes, and the code would name different ones."""
+    try:
+        coded = [r[0] for r in con.execute("SELECT name FROM parties WHERE entity_id IS NULL AND sql_code IS NOT NULL ORDER BY name")]
+    except sqlite3.OperationalError:
+        return  # below update 22
+    if not coded:
+        return
+    dbs = {(r[1] or "") if r[0] != entity_id else (database or "") for r in con.execute("SELECT id, sql_database FROM entities")}
+    if entity_id is None:
+        dbs.add(database or "")
+    if len(dbs) > 1:
+        raise Refused(f"{', '.join(coded[:3])}{' and more' if len(coded) > 3 else ''} are customers or suppliers for every company "
+                      "with an SQL code. Give their codes to a customer or supplier of each company first.")
+
+
+def _gl_check(con, entity_id, vals, rec=None):
+    """A GL account: a code the company's chart doesn't have yet, and a parent account in it (not itself, no loop).
+    With an SQL group (A/C Type), the type is the one that group falls under: set from it, and a different one refused."""
+    rec = rec or {}
+    group = vals["sql_type"] if "sql_type" in vals else rec.get("sql_type")
+    if group and ("sql_type" in vals or "type" in vals):
+        want = partybook.GROUP_TYPE[group]
+        # a type other than the group's, or an emptied one while the group stays
+        if vals.get("type") not in (None, want) or ("sql_type" not in vals and vals.get("type") is None):
+            name = next(n for c, n, _ in partybook.SQL_GROUPS if c == group)
+            raise Refused(f"Type: an account in SQL's {name} ({group}) group is {'an' if want[0] in 'aeiou' else 'a'} {want}. "
+                          "Choose another SQL group, or none, to give it another type.")
+        vals["type"] = want
+    code = vals.get("code", rec.get("code"))
+    if "code" in vals and vals["code"] != rec.get("code") and con.execute(
+            "SELECT 1 FROM gl_accounts WHERE entity_id = ? AND code = ? AND id IS NOT ?", (entity_id, code, rec.get("id"))).fetchone():
+        raise Refused(f"The chart of accounts already has the code {code}.")
+    parent = vals.get("parent_code")
+    if parent and parent != rec.get("parent_code"):
+        seen, at = {code}, parent
+        for _ in range(30):
+            if at in seen:
+                raise Refused("Parent account: an account can't sit under itself.")
+            seen.add(at)
+            row = con.execute("SELECT parent_code FROM gl_accounts WHERE entity_id = ? AND code = ?", (entity_id, at)).fetchone()
+            if not row:
+                if at == parent:
+                    raise Refused(f"Parent account: the chart of accounts has no account {parent}.")
+                break
+            at = row[0]
+            if not at:
+                break
+
+
 def _decoded(kind, r):
-    if kind in WORD_KINDS and isinstance(r.get("words"), str):
-        r["words"] = json.loads(r["words"])
+    for f in KINDS.get(kind, {}).get("fields", []):
+        if f["type"] == "words" and isinstance(r.get(f["key"]), str):
+            r[f["key"]] = json.loads(r[f["key"]])
     return r
 
 
@@ -275,6 +419,11 @@ def _word_check(con, kind, vals, rec=None):
     if t is not None and t != (rec or {}).get("payment_type"):
         if not R.active_type(t) or (kind == "guess_words" and R.direction(t) != "out"):
             raise Refused("Payment type: choose one in use" + (" for money out." if kind == "guess_words" else "."))
+    pid = vals.get("party_id")
+    if pid is not None and pid != (rec or {}).get("party_id"):
+        p = con.execute("SELECT * FROM parties WHERE id = ?", (pid,)).fetchone()
+        if not p or not p["active"]:
+            raise Refused("Customer or supplier: choose one in use.")
     c = vals.get("checklist_code")
     if c is not None and c != (rec or {}).get("checklist_code") and not con.execute(
             "SELECT 1 FROM checklist_items WHERE code = ?", (c,)).fetchone():
@@ -294,6 +443,8 @@ USES = {  # (one, many, how to count)
         ("SQL import", "SQL imports", "SELECT COUNT(*) FROM sql_imports WHERE entity_id = ?"),
         ("budget", "budgets", "SELECT COUNT(*) FROM budgets WHERE entity_id = ?"),
         ("budget line", "budget lines", "SELECT COUNT(*) FROM budget_lines WHERE entity_id = ?"),
+        ("customer or supplier", "customers and suppliers", "SELECT COUNT(*) FROM parties WHERE entity_id = ?"),
+        ("GL account", "GL accounts", "SELECT COUNT(*) FROM gl_accounts WHERE entity_id = ?"),
     ],
     "payment_types": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
@@ -319,6 +470,22 @@ USES = {  # (one, many, how to count)
          "SELECT COUNT(*) FROM people_task_terms t, json_each(t.docs) j WHERE j.value = (SELECT key FROM doc_types WHERE id = ?)"),
     ],
     "guess_words": [], "hint_words": [], "filing_words": [],
+    "parties": [
+        ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE party_id = ?"),
+        ("SQL entry", "SQL entries", """SELECT COUNT(*) FROM sql_entries s, parties p WHERE p.id = ? AND p.sql_code IS NOT NULL
+                                        AND s.code = p.sql_code AND (p.entity_id IS NULL OR s.entity_id = p.entity_id)"""),
+        ("SQL filing word rule", "SQL filing word rules", "SELECT COUNT(*) FROM filing_words WHERE party_id = ?"),
+    ],
+    "gl_accounts": [
+        ("bank account", "bank accounts", """SELECT COUNT(*) FROM accounts a, gl_accounts g WHERE g.id = ? AND a.entity_id = g.entity_id
+                                             AND a.gl_code = g.code"""),
+        ("customer or supplier", "customers and suppliers", """SELECT COUNT(*) FROM parties p, gl_accounts g WHERE g.id = ?
+                                             AND p.gl_code = g.code AND (p.entity_id IS NULL OR p.entity_id = g.entity_id)"""),
+        ("account under it", "accounts under it", """SELECT COUNT(*) FROM gl_accounts c, gl_accounts g WHERE g.id = ?
+                                             AND c.entity_id = g.entity_id AND c.parent_code = g.code"""),
+        ("SQL entry", "SQL entries", """SELECT COUNT(*) FROM sql_entries s, gl_accounts g WHERE g.id = ? AND s.entity_id = g.entity_id
+                                        AND s.code = g.code"""),
+    ],
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),
         ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE account_id = ?"),
@@ -370,6 +537,14 @@ def locked(con, kind, rec):
         if kind == "doc_types" and (rec.get("system") or used):
             out["from_sql"] = ("The app relies on this." if rec.get("system")
                                else "Documents and rules of this type are filed by it, so it can't change once used.")
+    if kind == "parties" and rec.get("id"):
+        used = dict((what, n) for what, n in usage(con, kind, rec["id"]))
+        if any("SQL entr" in w for w in used):
+            out["sql_code"] = "SQL entries are matched to it by this code, so it can't change once any carry it."
+        if used:
+            out["entity_id"] = "Recurring payments or SQL entries refer to it, so it stays with the companies it is for: add another one instead."
+    if kind == "gl_accounts" and rec.get("id") and usage(con, kind, rec["id"]):
+        out["code"] = "Bank accounts, customers, suppliers, other accounts or SQL entries refer to it by this code, so it can't change once used."
     if kind == "accounts" and rec.get("id"):
         if _count(con, "SELECT COUNT(*) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", rec["entity_id"]):
             out["cash_book"] = ("Filed months were reconciled with the SQL cash book on the account that is the cash book now, so it "
@@ -408,9 +583,11 @@ def listing(con, kind, entity_id=None):
     if s["per_entity"]:
         if entity_id is None:
             raise Refused("Choose a company.")
-        rows = con.execute(f"SELECT * FROM {s['table']} WHERE entity_id = ? ORDER BY sort, id", (entity_id,)).fetchall()
+        every = " OR entity_id IS NULL" if s.get("or_all") else ""
+        rows = con.execute(f"SELECT * FROM {s['table']} WHERE (entity_id = ?{every}) ORDER BY {s.get('order', 'sort, id')}",
+                           (entity_id,)).fetchall()
     else:
-        rows = con.execute(f"SELECT * FROM {s['table']} ORDER BY sort, id").fetchall()
+        rows = con.execute(f"SELECT * FROM {s['table']} ORDER BY {s.get('order', 'sort, id')}").fetchall()
     out = []
     for r in rows:
         r = _decoded(kind, dict(r))
@@ -454,7 +631,7 @@ def _unique_code(con, code, rid=None):
         raise Refused(f"Another company already has the code {code}.")
 
 
-def create(con, kind, fields, entity_id=None):
+def create(con, kind, fields, entity_id=None, quiet=False):
     s = spec(kind)
     vals = _checked(kind, fields)
     for f in s["fields"]:
@@ -463,6 +640,7 @@ def create(con, kind, fields, entity_id=None):
     if kind == "entities":
         _unique_code(con, vals["code"])
         vals.setdefault("uses_sql", 1)
+        _shared_codes(con, None, vals.get("sql_database"))
     elif kind in TYPE_KINDS:
         if con.execute(f"SELECT 1 FROM {s['table']} WHERE key = ?", (vals["key"],)).fetchone():
             raise Refused(f"There is already a {s['label'].lower()} with the key {vals['key']}.")
@@ -472,6 +650,14 @@ def create(con, kind, fields, entity_id=None):
         _word_check(con, kind, vals)
         if vals.get("sort") is None:
             vals["sort"] = con.execute(f"SELECT COALESCE(MAX(sort), 0) + 1 FROM {s['table']}").fetchone()[0]
+    elif kind == "parties":
+        vals.setdefault("entity_id", None)
+        _party_check(con, vals)
+    elif kind == "gl_accounts":
+        if entity_id is None or not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
+            raise Refused("Choose the company whose chart of accounts it is in.")
+        vals["entity_id"] = entity_id
+        _gl_check(con, entity_id, vals)
     else:
         if entity_id is None or not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
             raise Refused("Choose the company the account belongs to.")
@@ -486,7 +672,8 @@ def create(con, kind, fields, entity_id=None):
     rid = cur.lastrowid
     if kind == "accounts" and vals.get("cash_book"):
         _only_cash_book(con, entity_id, rid)
-    db.log(con, f"Added {s['label'].lower()}: {vals[s['name_field']]}")
+    if not quiet:
+        db.log(con, f"Added {s['label'].lower()}: {vals[s['name_field']]}")
     rulebook.forget(con)
     return rid
 
@@ -507,7 +694,7 @@ def _only_cash_book(con, entity_id, rid):
     con.execute("UPDATE accounts SET cash_book = 0 WHERE entity_id = ? AND id != ? AND cash_book = 1", (entity_id, rid))
 
 
-def update(con, kind, rid, fields):
+def update(con, kind, rid, fields, quiet=False):
     s = spec(kind)
     rec = _row(con, kind, rid)
     vals = _checked(kind, fields, rec)
@@ -523,7 +710,13 @@ def update(con, kind, rid, fields):
         return []
     if kind == "entities" and "code" in vals:
         _unique_code(con, vals["code"], rid)
+    if kind == "entities" and "sql_database" in vals:
+        _shared_codes(con, rid, vals["sql_database"])
     _legal_pair(kind, vals, rec)
+    if kind == "parties":
+        _party_check(con, vals, rec)
+    if kind == "gl_accounts":
+        _gl_check(con, rec["entity_id"], vals, rec)
     if kind in WORD_KINDS:
         _word_check(con, kind, vals, rec)
         if "sort" in vals and vals["sort"] is None:  # Order emptied: after the others
@@ -539,7 +732,8 @@ def update(con, kind, rid, fields):
             raise Refused("Each company has one cash book account. Make another account the cash book instead; this one then stops being it.")
     con.execute(f"UPDATE {s['table']} SET {', '.join(k + ' = ?' for k in vals)} WHERE id = ?", (*_stored(vals).values(), rid))
     named = ", ".join(f["label"].lower() for f in s["fields"] if f["key"] in vals)
-    db.log(con, f"Changed {s['label'].lower()} {rec[s['name_field']]}: {named}")
+    if not quiet:
+        db.log(con, f"Changed {s['label'].lower()} {rec[s['name_field']]}: {named}")
     rulebook.forget(con)
     return notes(con, kind, {**rec, **vals})
 
@@ -714,7 +908,37 @@ def payee_check(con, ent, vals, old=None):
             raise Refused(f"That bank account isn't one of {ent['name']}'s accounts.")
         if not acct["active"] and (not old or old["account_id"] != acct["id"]):
             raise Refused("That bank account is stopped. Choose an account in use.")
+    party_check(con, ent, out, old)
     return out
+
+
+def party_check(con, ent, out, old=None):
+    """A recurring payment's link to a supplier or customer (optional): not for a salary or director's fee, one of the
+    company's (or every company's), in use (or the one already linked), and a kind that fits money in or out."""
+    if "party_id" in out and out["party_id"] in ("", 0):
+        out["party_id"] = None
+    if "party_id" in out and isinstance(out["party_id"], str) and out["party_id"].isdigit():
+        out["party_id"] = int(out["party_id"])
+    old_pid = old["party_id"] if old and "party_id" in old.keys() else None
+    pid = out.get("party_id", old_pid)
+    if pid is None:
+        return
+    if isinstance(pid, bool) or not isinstance(pid, int):
+        raise Refused("Supplier or customer: choose one from the list.")
+    cat = out.get("category", old["category"] if old else None)
+    way = out.get("direction", old["direction"] if old else "out") or "out"
+    if cat in PERSONAL:
+        if "party_id" not in out and old_pid:
+            out["party_id"] = None  # it became a salary or director's fee: the link goes
+            return
+        raise Refused("A salary or director's fee is paid to a person, not a supplier or customer. Remove the link first.")
+    p = con.execute("SELECT * FROM parties WHERE id = ?", (pid,)).fetchone()
+    if not p or p["entity_id"] not in (None, ent["id"]):
+        raise Refused(f"That supplier or customer isn't one of {ent['name']}'s.")
+    if not p["active"] and pid != old_pid:
+        raise Refused("That supplier or customer is stopped. Choose one in use.")
+    if (p["kind"] == "customer" and way == "out") or (p["kind"] == "supplier" and way == "in"):
+        raise Refused("A customer pays money in and a supplier is paid money out: choose one that fits.")
 
 
 def payee_usage(con, pid):

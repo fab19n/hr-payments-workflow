@@ -50,7 +50,7 @@ db.MIGRATIONS[:] = full
 db.init()
 with db.connect() as c:
     B = checklistbook.get(c)
-    check("from update 21 they come from the tables", B.from_tables and c.execute("PRAGMA user_version").fetchone()[0] == 21)
+    check("from update 21 they come from the tables", B.from_tables and c.execute("PRAGMA user_version").fetchone()[0] >= 21)
     ent = c.execute("SELECT * FROM entities WHERE code = 'AISB'").fetchone()
     check("and AISB's checklist reads as the code had it",
           [{k: t[k] for k in frozen_list[0]} for t in B.checklist(ent, "2026-11")] == frozen_list)

@@ -23,6 +23,7 @@ TABLE_LABELS = {
     "people_task_terms": ("Joiner or leaver reminder wording", "joiner and leaver reminder wordings"),
     "guess_words": ("Payment type guess", "payment type guesses"), "hint_words": ("Salary words", "salary words"),
     "filing_words": ("SQL filing words", "SQL filing words"),
+    "parties": ("Customer or supplier", "customers and suppliers"), "gl_accounts": ("GL account", "chart of accounts"),
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),
@@ -60,6 +61,9 @@ FIELD_LABELS = {
     "submit_as": "Submitted as", "rule": "Payments that show it done", "sort": "Order", "item_id": "Checklist template item",
     "people_task_id": "Reminder", "days": "Days from the date", "salary_over": "Salary over",
     "words": "Words", "doc_kind": "Documents", "checklist_code": "Checklist item",
+    "sql_code": "SQL code", "brn": "Business registration no. (BRN)", "party_id": "Supplier or customer",
+    "type": "Account type", "sql_type": "SQL group", "special": "Special account", "parent_code": "Parent account", "payment_method": "Payment method",
+    "cheque_no": "Cheque no.", "dockey": "SQL doc key", "currency_code": "Currency (SQL)",
 }
 NAME_FIELDS = ("description", "name", "title", "label", "doc_no", "original_name", "what", "code", "payment_type", "month", "key")
 # Bank details and account numbers, wherever they are kept (a budget line's details are filled from the payee's bank
