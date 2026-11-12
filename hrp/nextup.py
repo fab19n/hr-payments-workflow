@@ -4,7 +4,7 @@ import calendar
 from collections import Counter
 from datetime import date, timedelta
 
-from . import appsettings, auditpack, budget, db, rulebook, rules
+from . import appsettings, auditpack, budget, checklistbook, db, rulebook, rules
 
 # Days (General settings): a row due within SOON is 'soon'; payments and checklist items show from AHEAD days before;
 # a backup is asked for after BACKUP days without one.
@@ -17,16 +17,16 @@ def _ahead():
 P1, P2, P3 = 1, 2, 3
 STATES = ("overdue", "today", "soon", "later")  # most urgent first
 
-# Checklist items with a deadline outside the office, shown from SOON days before (rule 1). KWSP, PERKESO and e-PCB
-# due the same day are one row.
-DEADLINES = ("kwsp", "perkeso", "epcb", "einv-rental", "einv-selfbilled", "budget")
-SUBMIT = {"kwsp": "KWSP", "perkeso": "PERKESO", "epcb": "e-PCB"}
+# Which checklist items are deadlines outside the office (rule 1, shown from SOON days before; those submitted under a
+# name, due the same day, are one row: KWSP, PERKESO and e-PCB) and what each joiner or leaver reminder is called when a
+# person's are listed together come from Setup (checklistbook).
 # Checklist items another row stands for: the statement (import it, rule 6) and the audit pack (rule 12).
 COVERED = ("statement", rules.TASK_PACK)
-STATEMENT_DUE, CLOSE_DUE = (1, 5), (1, 10)  # as the checklist's statement and audit pack items
-# How each joiner or leaver reminder (rules.PEOPLE_TASKS) is named when a person's are listed together.
-PEOPLE = {"ecp22": "e-CP22 to LHDN", "perkeso": "PERKESO registration", "kwsp": "KWSP registration",
-          "stamp": "stamping of the appointment letter", "cp22a": "CP22A to LHDN"}
+# The code's own deadline items, submitted names and reminder names, as they were until update 21.
+DEADLINES, SUBMIT, PEOPLE = checklistbook.DEADLINES, checklistbook.SUBMIT, checklistbook.PEOPLE_NAMES
+# When the statement is due (rule 6) and the month is to be closed (rules 7, 9, 11): as the company's statement and
+# audit pack items are due that month; these for a company without them.
+STATEMENT_DUE, CLOSE_DUE = (1, 5), (1, 10)
 BACKED_UP = "Backup created: "  # how a backup is logged (app.backup)
 
 
@@ -126,20 +126,21 @@ def _company(con, e, months, past, today):
                          (e["id"], ahead)):
         if t["month"] in months and not db.task_status(con, e, t)["done"]:
             tasks.append(t)
-    rows = _deadlines(e, tasks, today, R) + _people(con, e, tasks, iso)
+    B = checklistbook.get(con)
+    rows = _deadlines(e, tasks, today, R, B) + _people(con, e, tasks, iso, B)
     rows += _not_found(e, [x for x in pays if x["p"]["month"] in worked + past], iso, soon, R)
     rows += _to_pay(con, e, pays, iso, ahead)
     for m in worked + past:
         mine = [x for x in pays if x["p"]["month"] == m]
         accts = db.month_statements(con, e, m)
         if m in worked:
-            rows += _statements(e, m, accts, pays, today)
+            rows += _statements(e, m, accts, pays, today, B)
         rows += _explain(con, e, m, accts) + _part_paid(con, e, mine)
         if m in worked:
             rows += _documents(con, e, m, mine) + _ready(con, e, m, accts, mine)
     rows += _in_sql(con, e, worked, pays, cur)
     for m in months:
-        rows += _checklist(e, m, [t for t in tasks if t["month"] == m])
+        rows += _checklist(e, m, [t for t in tasks if t["month"] == m], B)
     return rows
 
 
@@ -159,26 +160,34 @@ def _pay_go(group):
     return {"view": "entity", "payment_ids": [p["id"] for p in group]}
 
 
-def _deadlines(e, tasks, today, R):
-    """Rule 1: KWSP, PERKESO and e-PCB to submit, e-Invoices to issue and the budget, from SOON days before they're due."""
+def _closing(B, e, m):
+    return B.due_of(e["id"], rules.TASK_PACK, m, CLOSE_DUE)
+
+
+def _deadlines(e, tasks, today, R, B=checklistbook.FROZEN):
+    """Rule 1: the checklist's deadlines outside the office (KWSP, PERKESO and e-PCB to submit, e-Invoices to issue, the
+    budget), from SOON days before they're due."""
     soon = (today + timedelta(days=_soon())).isoformat()
     rows, submit = [], {}
     for t in tasks:
-        if t["code"] not in DEADLINES or t["due_date"] > soon:
+        if (checklistbook.is_reminder(t["code"]) or t["code"] in COVERED or not B.deadline(e["id"], t["code"], t["month"])
+                or t["due_date"] > soon):
             continue
-        if t["code"] in SUBMIT:
-            submit.setdefault((t["month"], t["due_date"]), []).append(t)
+        if B.submit_as(e["id"], t["code"], t["month"]):
+            # KWSP, PERKESO and e-PCB share the statutory legal deadline; items of a company's own are submitted apart
+            submit.setdefault((t["month"], t["due_date"], t["code"] in checklistbook.SUBMIT), []).append(t)
         else:
             rows.append(_row(1, e, t["month"], f"{_mon(t['month'])} {e['code']}: {t['title']}", t["due_date"], P1, _task_go([t]), t["code"]))
-    for (m, d), ts in submit.items():
-        names = [SUBMIT[c] for c in SUBMIT if any(t["code"] == c for t in ts)]
-        legal = db.due(m, *R.legal_due("statutory"))
-        rows.append(_row(1, e, m, f"Submit {_mon(m)} {db._listed(names)} (legal deadline {db.short_day(legal)})", d, P1,
-                         _task_go(ts), f"submit-{d}"))
+    for (m, d, statutory), ts in submit.items():
+        names = list(dict.fromkeys(B.submit_as(e["id"], t["code"], m)
+                                   for t in sorted(ts, key=lambda t: B.order(e["id"], t["code"], m))))
+        legal = statutory and R.legal_due("statutory") and db.due(m, *R.legal_due("statutory"))
+        rows.append(_row(1, e, m, f"Submit {_mon(m)} {db._listed(names)}" + (f" (legal deadline {db.short_day(legal)})" if legal else ""),
+                         d, P1, _task_go(ts), f"submit-{d}" if statutory else f"submit-{d}-own"))
     return rows
 
 
-def _people(con, e, tasks, iso):
+def _people(con, e, tasks, iso, B=checklistbook.FROZEN):
     """Rule 2: a joiner's or leaver's filings due within AHEAD days, one row per person and due date. P1, but for a
     leaver who has gone already (a CP22A due before the last day can't be on time any more): P2."""
     groups = {}
@@ -192,7 +201,7 @@ def _people(con, e, tasks, iso):
         day = p and (p["start_date"] if kind == "joiner" else p["end_date"])
         if day:
             verb = ("joined" if day <= iso else "joins") if kind == "joiner" else ("left" if day < iso else "leaves")
-            text = f"{db.short_name(p['name'])} {verb} {db.short_day(day)}: {db._listed(PEOPLE.get(k, t['title']) for k, t in found)}"
+            text = f"{db.short_name(p['name'])} {verb} {db.short_day(day)}: {db._listed(B.people_name(k) or t['title'] for k, t in found)}"
         else:
             text = db._listed(t["title"] for _, t in found)
         gone = kind == "leaver" and day and day < iso
@@ -278,7 +287,7 @@ def _to_pay(con, e, pays, iso, ahead):
     return rows
 
 
-def _statements(e, m, accts, pays, today):
+def _statements(e, m, accts, pays, today, B=checklistbook.FROZEN):
     """Rule 6: the month's statements not imported once the month is over, with how many payments wait for them."""
     absent = [a for a in accts if not a["statement"]]
     if not absent or m >= today.isoformat()[:7]:
@@ -288,7 +297,7 @@ def _statements(e, m, accts, pays, today):
     counted = " and ".join(([f"{n} payment{_s(n)}"] if n else []) + ([f"{k} receipt{_s(k)}"] if k else []))
     text = (f"Import the {_mon(m)} statement{_s(len(absent))} for {db._listed(a['label'] for a in absent)}"
             + (f": {counted} waiting" if counted else ""))
-    return [_row(6, e, m, text, db.due(m, *STATEMENT_DUE), P2, {"view": "bank", "account_id": absent[0]["id"]}, "import")]
+    return [_row(6, e, m, text, db.due(m, *B.due_of(e["id"], "statement", m, STATEMENT_DUE)), P2, {"view": "bank", "account_id": absent[0]["id"]}, "import")]
 
 
 def _explain(con, e, m, accts):
@@ -303,7 +312,7 @@ def _explain(con, e, m, accts):
            AND l.amount > 0 GROUP BY a.currency ORDER BY a.currency""", (e["id"], m)).fetchall()
     got = ", ".join(f"{r['n']} {'RM' if r['currency'] == 'MYR' else r['currency']} receipt{_s(r['n'])}" for r in receipts)
     text = f"Explain {n} line{_s(n)} on the {e['code']} {_mon(m)} statement{_s(len(lines))}" + (f" ({got})" if got else "")
-    return [_row(9, e, m, text, db.due(m, *CLOSE_DUE), P2, {"view": "bank", "account_id": lines[0]["id"], "filter": "to_explain"}, "explain")]
+    return [_row(9, e, m, text, db.due(m, *_closing(checklistbook.get(con), e, m)), P2, {"view": "bank", "account_id": lines[0]["id"], "filter": "to_explain"}, "explain")]
 
 
 def _in_sql(con, e, worked, pays, cur):
@@ -332,7 +341,7 @@ def _in_sql(con, e, worked, pays, cur):
     else:
         text = f"Link or ignore {unlinked}"
     m = min([p["month"] for p in unrecorded] + loose)
-    return [_row(7, e, m, text, db.due(m, *CLOSE_DUE), P2, {"view": "sql"}, "sql")]
+    return [_row(7, e, m, text, db.due(m, *_closing(checklistbook.get(con), e, m)), P2, {"view": "sql"}, "sql")]
 
 
 def _part_paid(con, e, mine):
@@ -360,7 +369,7 @@ def _documents(con, e, m, mine):
     R = rulebook.get(con)
     text = f"{_mon(m)} {e['code']}: {_missed(paid, R)} missing on {len(paid)} paid payment{_s(len(paid))}" + (
         f"; print {auditpack.to_print(nos, R)} from SQL" if nos else "")
-    return [_row(11, e, m, text, db.due(m, *CLOSE_DUE), P3, {"view": "audit"}, "documents")]
+    return [_row(11, e, m, text, db.due(m, *_closing(checklistbook.get(con), e, m)), P3, {"view": "audit"}, "documents")]
 
 
 def _missed(paid, R=None):
@@ -399,9 +408,10 @@ def _ready(con, e, m, accts, mine):
     return [_row(12, e, m, f"{_mon(m)} {e['code']} is ready: {what}", None, P3, {"view": "audit"}, "pack")]
 
 
-def _checklist(e, m, tasks):
+def _checklist(e, m, tasks, B=checklistbook.FROZEN):
     """Rule 10: the month's other checklist items not done that are due within AHEAD days, as one row."""
-    ts = [t for t in tasks if t["code"] not in DEADLINES + COVERED and not t["code"].startswith(("joiner-", "leaver-"))]
+    ts = [t for t in tasks if t["code"] not in COVERED and not checklistbook.is_reminder(t["code"])
+          and not B.deadline(e["id"], t["code"], m)]
     if not ts:
         return []
     names = [t["title"] for t in ts]

@@ -78,7 +78,7 @@ def _tasks(con, entity, month):
     """The checklist items a month's pack covers: all but the one the pack is for, and no reminder waiting here for a
     later month (it belongs to that month's pack)."""
     return [t for t in con.execute("SELECT * FROM tasks WHERE entity_id = ? AND month = ? ORDER BY due_date, sort",
-                                   (entity["id"], month)) if t["code"] != rules.TASK_PACK and not waits_for(t)]
+                                   (entity["id"], month)) if t["code"] != rules.TASK_PACK and not waits_for(t, con)]
 
 
 def _docs(con, field, ident):

@@ -121,7 +121,7 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
   nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
-  setup: { kind: null, id: null, types: null, stopped: false, drawer: null, reqScope: null, req: null, reqOpen: null } };
+  setup: { kind: null, id: null, types: null, stopped: false, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
   ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
@@ -461,7 +461,7 @@ async function viewOverview(main) {
   main.innerHTML = `
     <div id="nextUp">${nextCard(next, null)}</div>
     <div><div class="eyebrow">Payroll month</div><h1>${esc(ov.label)} cycle</h1>
-    <div class="note">Covers inputs from the 15th, payday on the 26th, statutory and bills by the 6th of next month, and closing by the 10th.</div></div>
+    <div class="note">Covers the payroll month's checklist and payments, including the bills and statutory payments paid early in the next month. Each item's due date is set in Setup › Monthly checklist.</div></div>
     <div class="grid2">${cards}</div>
     <div class="card"><h2>How a payment is completed</h2>
       <div class="row"><span class="pill grey">Not paid</span> → <span class="pill warn">Paid, documents missing</span> → <span class="pill ok">Complete</span></div>
@@ -593,7 +593,8 @@ const mayLeave = () => !drawerDirty() || confirm("Discard your changes?");
 // False when you choose to keep changes not saved yet; force closes it anyway (the payment was removed).
 function closeDrawer(force) {
   if (!force && !mayLeave()) return false;
-  $("#drawer").hidden = true; state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null; state.setup.drawer = null;
+  $("#drawer").hidden = true; state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
+  Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null });
   return true;
 }
 
@@ -1550,7 +1551,7 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
       <label class="field" style="grid-column:1/-1"><span>Words that appear in the bank statement (for automatic matching)</span><input id="py-match" value="${esc(p.match_words || "")}"></label>
       <label class="field"><span>Start date (joiners)</span><input id="py-start" type="date" value="${esc(p.start_date || "")}"></label>
       <label class="field"><span>Last day (leavers)</span><input id="py-end" type="date" value="${esc(p.end_date || "")}"></label>
-      <div class="note" style="grid-column:1/-1">Salaries are prorated by calendar days in the joining and leaving months. No payment is created before the start date or after the last day. A salary's start date and last day also add reminders to the checklist, each in the month it falls due: e-CP22, PERKESO and KWSP registration and stamping the appointment letter for a joiner, CP22A for a leaver. One due in a month not set up yet shows in the latest month set up until then, without counting there.</div>
+      <div class="note" style="grid-column:1/-1">Salaries are prorated by calendar days in the joining and leaving months. No payment is created before the start date or after the last day. ${esc(reminderNote())}</div>
       <label class="field" style="grid-column:1/-1"><span>Notes</span><input id="py-notes" value="${esc(p.notes || "")}"></label>
       <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">${id === "new" ? "Add recurring payment" : "Save"}</button></div>
     </form>
@@ -1749,18 +1750,38 @@ async function viewSetup(main) {
   else if (spec.single) await setupSettings(box);
   else if (S.kind === "payees") await viewPayees(box);
   else if (S.kind === "required") await setupRequired(box);
+  else if (S.kind === "checklist") await setupChecklist(box);
+  else if (S.kind === "reminders") await setupReminders(box);
   else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
   else await setupList(box, S.kind);
 }
 
-// A field's choices as [value, label] pairs: payment types in use only, unless all (to name a value already saved).
-const fieldOptions = (f, all) => f.options_from === "categories" ? Object.entries(state.meta.categories).filter(([k]) => all || catActive(k)) : f.options || [];
+// A field's choices as [value, label] pairs: payment types in use only, unless all (to name a value already saved). The
+// payment type a voucher's words give is a money-out one; checklist items are every company's, by code.
+function fieldOptions(f, all) {
+  if (f.options_from === "categories") {
+    const dir = f.direction || (state.setup.kind === "guess_words" ? "out" : null);
+    return Object.entries(state.meta.categories).filter(([k]) => all || catActive(k) && (!dir || catDir(k) === dir));
+  }
+  if (f.options_from === "checklist_codes") return Object.entries(state.meta.checklist_codes || {});
+  return f.options || [];
+}
+// A list kept as a list or as JSON text (documents, words): always a list.
+function asList(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v !== "string" || !v.trim()) return [];
+  try { const j = JSON.parse(v); if (Array.isArray(j)) return j; } catch { /* plain text: a comma list */ }
+  return splitWords(v);
+}
+// Words typed with commas between them, as a list.
+const splitWords = s => String(s ?? "").split(",").map(x => x.trim()).filter(Boolean);
 // An option's value as the input holds it: none (null) is the empty choice.
 const optVal = k => k == null ? "" : String(k);
 // A value as it reads in a list: month names, Yes or No, an option's label.
 function fieldText(f, v) {
   if (v == null || v === "") return "";
   if (!f) return String(v);
+  if (f.type === "words") return asList(v).join(", ");
   if (f.type === "month") return /^\d{4}-\d{2}$/.test(v) ? monthName(v) : String(v);
   if (f.type === "date") return fmtDate(v);
   if (f.type === "bool") return +v ? "Yes" : "No";
@@ -1779,7 +1800,7 @@ async function setupList(box, kind) {
   const isNum = c => NUM_TYPES.includes(fieldOf(c.key)?.type);
   // Registered before the list's first listState, so a sort chosen earlier is kept.
   SORTS[id] ||= Object.fromEntries([...cols.map(c => [c.key, [isNum(c) ? "num" : "text", r => { const f = fieldOf(c.key);
-      return f && (f.type === "select" || f.type === "bool") ? fieldText(f, r[c.key]) : r[c.key]; }]]),
+      return f && ["select", "bool", "words"].includes(f.type) ? fieldText(f, r[c.key]) : r[c.key]; }]]),
     ["used", ["num", r => r.used_total]], ["status", ["text", r => r.status]]]);
   if (spec.per_entity && !e) { box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">Add a company first.</div></div>`; return; }
   const { rows } = await api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`);
@@ -1802,6 +1823,7 @@ async function setupList(box, kind) {
   };
   box.innerHTML = `${spec.per_entity ? entityPicker() : ""}
     <div class="card"><div class="row spread"><h1>${esc(sectionLabel(spec))}${spec.per_entity ? ` · ${esc(e.code)}` : ""}</h1><button class="btn" data-setup-new="${esc(kind)}">Add ${esc(lowerFirst(spec.label))}</button></div>
+      ${spec.help ? `<div class="note">${esc(spec.help)}</div>` : ""}
       <div class="note">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</div>
       <div class="row">${listBar(id, spec.plural)}<label class="row tight"><input type="checkbox" data-setup-stopped ${S.stopped ? "checked" : ""}> Show stopped (${nStopped})</label></div>
       <div class="tbl-wrap" id="setupList">${table()}</div></div>`;
@@ -1817,12 +1839,15 @@ function fieldHtml(f, v, lock, pre) {
   const len = f.max && ["text", "textarea", "code"].includes(f.type) ? ` maxlength="${+f.max}"` : "";
   let input;
   if (f.type === "textarea") input = `<textarea id="${id}" rows="3"${ro}${req}${len}>${esc(val)}</textarea>`;
+  // Words: typed with commas between them, saved as a list.
+  else if (f.type === "words") input = `<input id="${id}" type="text" value="${esc(asList(v).join(", "))}" spellcheck="false" autocomplete="off"${ro}${req}>`;
   else if (f.type === "bool" || f.type === "select") {
     const sel = f.type === "bool" ? (val === "" ? "0" : String(+val ? 1 : 0)) : val;
     let opts = f.type === "bool" ? [[1, "Yes"], [0, "No"]] : fieldOptions(f);
     if (sel !== "" && !opts.some(o => optVal(o[0]) === sel)) {  // a value no longer offered (a type stopped since) stays as it is
       const was = fieldOptions(f, true).find(o => optVal(o[0]) === sel);
-      opts = [...opts, was ? [was[0], `${was[1]} (stopped)`] : [sel, sel]];
+      const gone = f.options_from !== "categories" || !catActive(sel);  // a type in use but not offered here isn't stopped
+      opts = [...opts, was ? [was[0], gone ? `${was[1]} (stopped)` : was[1]] : [sel, sel]];
     }
     // An optional choice has an empty one, unless the server's choices have it already (No legal deadline, say).
     const blank = f.type === "select" && !f.required && !opts.some(o => optVal(o[0]) === "") ? `<option value="">—</option>` : "";
@@ -1833,11 +1858,13 @@ function fieldHtml(f, v, lock, pre) {
       : f.type === "number" ? ` step="any"${f.max != null ? ` max="${+f.max}"` : ""}` : f.type === "code" ? ` class="mono" spellcheck="false" autocomplete="off"` : "";
     input = `<input id="${id}" type="${type}" value="${esc(val)}"${extra}${ro}${req}${len}>`;
   }
-  return `<label class="field${lock ? " locked" : ""}"${wide}><span>${esc(f.label)}</span>${input}${f.hint ? `<span class="note">${esc(f.hint)}</span>` : ""}${lock ? `<span class="note">${esc(lock)}</span>` : ""}</label>`;
+  const hint = f.hint || (f.type === "words" ? "Separate the words with commas." : "");
+  return `<label class="field${lock ? " locked" : ""}"${wide}><span>${esc(f.label)}</span>${input}${hint ? `<span class="note">${esc(hint)}</span>` : ""}${lock ? `<span class="note">${esc(lock)}</span>` : ""}</label>`;
 }
-// What an input holds, as the field's type: numbers, 0 or 1, null for an empty date, month or number.
+// What an input holds, as the field's type: numbers, 0 or 1, null for an empty date, month or number, a list of words.
 function fieldValue(f, el) {
   const v = el.value;
+  if (f.type === "words") return splitWords(v);
   if (f.type === "bool") return +v ? 1 : 0;
   if (NUM_TYPES.includes(f.type)) return v.trim() === "" ? null : Number(v);
   if (f.type === "month" || f.type === "date") return v || null;
@@ -1874,10 +1901,10 @@ async function whySubmit() {
   try { await run(reason); hideWhy(); } catch (e) { toast(e.message, true); } finally { if (goBtn.isConnected) goBtn.disabled = false; }
 }
 
-// After a company, bank account, payment type or document type changes: the page's copy of them is read again (the
-// labels and pickers), and a company stopped or deleted while it was showing gives way to the first one in use.
+// After a company, bank account, payment type, document type or matching words change: the page's copy of them is read
+// again (the labels and pickers), and a company stopped or deleted while it was showing gives way to the first one in use.
 async function afterSetupChange(kind) {
-  if (!["entities", "accounts", "payment_types", "doc_types"].includes(kind)) return;
+  if (!["entities", "accounts", "payment_types", "doc_types", "guess_words", "hint_words", "filing_words"].includes(kind)) return;
   state.meta = await api("/api/meta");
   const e = ent();
   if (!e || !isActive(e)) state.entity = firstEntityId();
@@ -1903,6 +1930,7 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
   $("#drawer").innerHTML = `
     <div class="ex-head"><div class="row spread"><div><div class="eyebrow">${esc(spec.label)}${spec.per_entity ? " · " + esc(e.code) : ""}</div><h2>${esc(name)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
       ${isNew ? "" : `<div class="row">${stopped ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}${systemPill(rec)}</div>`}</div>
+    ${spec.help ? `<div class="note">${esc(spec.help)}</div>` : ""}
     <form class="form setup-form" id="setupForm">${fields.map(f => fieldHtml(f, rec[f.key] ?? null, locked[f.key], "su-")).join("")}
       <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">${isNew ? `Add ${esc(lowerFirst(spec.label))}` : "Save"}</button></div></form>
     ${allNotes.map(n => `<div class="note">${esc(n)}</div>`).join("")}
@@ -2101,6 +2129,513 @@ async function reqSave(follow) {
   const r = await api("/api/setup/required", { json: body });
   closeDrawer(true); toast(reqAffected(r.affected));
   return render();
+}
+
+/* Monthly checklist (per company) and joiner and leaver reminders (every company). Each item or reminder has terms: what
+   it is from a payroll month on. A change starts from a month you choose: the months before it keep what they had,
+   and filed months never change. Every change can be previewed first; the server does it, says what it would do and
+   undoes it. */
+const ordinal = n => { const v = +n, t = v % 100; return `${v}${t >= 11 && t <= 13 ? "th" : { 1: "st", 2: "nd", 3: "rd" }[v % 10] || "th"}`; };
+// "Dec 2026"
+const monShort = k => /^\d{4}-\d{2}$/.test(k || "") ? `${MONTHS[+k.slice(5) - 1]} ${k.slice(0, 4)}` : "";
+// "a, b and c"
+const andList = a => a.length < 2 ? a.join("") : `${a.slice(0, -1).join(", ")} and ${a[a.length - 1]}`;
+const plural = (n, one, many = one + "s") => `${n} ${+n === 1 ? one : many}`;
+// A payments rule as the server keeps it, JSON text or not.
+const asRule = v => { if (typeof v !== "string") return v || null; try { return JSON.parse(v); } catch { return null; } };
+// "18th of the payroll month", "3rd of the month after"
+const dueText = t => t?.due_day ? `${ordinal(t.due_day)} of the ${+t.due_offset ? "month after" : "payroll month"}` : "—";
+// "30 days after the start date", "30 days before the last day"
+function remDays(days, kind) {
+  const d = +days || 0, what = kind === "leaver" ? "the last day" : "the start date";
+  return d ? `${plural(Math.abs(d), "day")} ${d < 0 ? "before" : "after"} ${what}` : `On ${what}`;
+}
+const remSalary = s => s == null || s === "" ? "Any salary" : `Salary over ${money(s)}`;
+const builtInPill = r => +r?.system ? `<span class="pill" title="The app relies on it, so it can't be deleted">Built in</span>` : "";
+// An item's or reminder's terms, newest first (the one in force now among them).
+function terms(x) {
+  const hs = [...(x.history || [])];
+  if (x.now && !hs.some(h => h.from_month === x.now.from_month)) hs.push(x.now);
+  return hs.sort((a, b) => String(b.from_month || "").localeCompare(String(a.from_month || "")));
+}
+// In use from the latest term on (a stop planned for a later month counts as stopped).
+const lastTerm = x => terms(x)[0] || x.now || {};
+const termUse = (x, t) => t?.in_use == null ? !!x.in_use : !!+t.in_use;
+// The term in force in payroll month m: the one whose months hold it (to_month is the month the next one took over);
+// for a month before the first term, the first one after it. No month: the latest.
+function termAt(x, m) {
+  const hs = terms(x);
+  if (!/^\d{4}-\d{2}$/.test(m || "")) return hs[0] || x.now || null;
+  const later = hs.filter(h => String(h.from_month || "") > m);
+  return hs.find(h => String(h.from_month || "") <= m && (!h.to_month || m < h.to_month)) || later[later.length - 1] || hs[0] || x.now || null;
+}
+// In use in month m (no month: from the latest term on).
+const termOn = (x, m) => termUse(x, m ? termAt(x, m) : lastTerm(x));
+// In use or Stopped, from the month the latest term starts when that isn't the first one; Built in. With a month m (the
+// earliest not filed): as it is then, and when a later term stops it or puts it back, from when.
+function termPills(x, m) {
+  const cur = m ? termAt(x, m) : null, on = cur ? termUse(x, cur) : false;
+  const next = cur && terms(x).reverse().find(h => String(h.from_month || "") > m && termUse(x, h) !== on);
+  if (next) return `<div class="row" style="gap:4px">${on ? `<span class="pill ok">In use</span><span class="pill">Stops from ${esc(monShort(next.from_month))}</span>`
+    : `<span class="pill grey">Stopped</span><span class="pill">In use again from ${esc(monShort(next.from_month))}</span>`}${builtInPill(x)}</div>`;
+  const t = lastTerm(x), from = String(t.from_month || "") > "0000-00" ? monShort(t.from_month) : "";
+  return `<div class="row" style="gap:4px">${termOn(x) ? `<span class="pill ok">In use</span>${from ? `<span class="pill">From ${esc(from)}</span>` : ""}`
+    : `<span class="pill grey">Stopped${from ? ` from ${esc(from)}` : ""}</span>`}${builtInPill(x)}</div>`;
+}
+// The terms, month by month, for the drawer.
+function termsHtml(x, line) {
+  const hs = terms(x);
+  return hs.length ? `<div><h3>By month</h3><ul class="used">${hs.map(h => `<li>${esc(reqRange(h))}: ${h.in_use == null || +h.in_use ? esc(line(h)) : "stopped"}</li>`).join("")}</ul></div>` : "";
+}
+// The types offered in a picker: those in use, plus any already chosen that were stopped since.
+function pickTypes(all, chosen) {
+  const list = (all || []).filter(x => isActive(x) || chosen.includes(x.key));
+  for (const k of chosen) if (!list.some(x => x.key === k)) list.push({ key: k, label: k, active: 0 });
+  return list;
+}
+const tickBox = (id, x, on, attrs = "") => `<label class="row tight"${attrs}><input type="checkbox" id="${esc(id)}" ${on ? "checked" : ""}>
+  <span>${esc(x.label || x.key)}${isActive(x) ? "" : ` <span class="muted">(stopped)</span>`}</span></label>`;
+// The keys ticked: those chosen before in their order, then those newly ticked in the picker's order.
+function ticked(pre, list, had) {
+  const on = k => !!document.getElementById(pre + k)?.checked, keys = list.map(x => x.key);
+  return [...had.filter(k => keys.includes(k) && on(k)), ...keys.filter(k => on(k) && !had.includes(k))];
+}
+const docChips = (keys, name) => keys.length ? `<div class="row" style="gap:4px">${keys.map(k => `<span class="chip">${esc(name(k))}</span>`).join("")}</div>` : `<span class="muted">None</span>`;
+const setupDocName = (d, k) => (d?.doc_types || []).find(x => x.key === k)?.label || docLabel(k);
+const fromMonth = id => {
+  const v = $(id)?.value || "";
+  if (!/^\d{4}-\d{2}$/.test(v)) throw new Error("Choose the month the change starts from.");
+  return v;
+};
+// What a change does (or would do) to the months already set up, in words.
+function effectText(a = {}, what) {
+  const n = +a.tasks || 0, p = +a.payments || 0, miss = +a.now_missing || 0, done = +a.now_complete || 0;
+  const out = [n ? `${plural(n, what)} in months already set up ${n === 1 ? "changes" : "change"}` : `No ${what} in months already set up changes`];
+  if (p) out.push(`${plural(p, "payment")} affected`);
+  if (miss) out.push(`${miss} now ${miss === 1 ? "misses" : "miss"} something`);
+  if (done) out.push(`${done} ${done === 1 ? "is" : "are"} now complete`);
+  return out.join("; ") + ".";
+}
+// The server's lines and counts, as a card: a preview (nothing saved yet) or what a save just did.
+const effectCard = (r, head, what) => `<div class="card"><h3>${esc(head)}</h3>
+  ${(r.lines || []).map(x => `<div class="note">${esc(x)}</div>`).join("") || `<div class="note">Nothing in the months already set up changes.</div>`}
+  <div class="note"><b>${esc(effectText(r.affected, what))}</b></div></div>`;
+const showPreview = (sel, r, what) => { const el = $(sel); if (el) el.innerHTML = effectCard(r, "Preview: nothing is saved yet", what); };
+const reloadMeta = async () => { state.meta = await api("/api/meta").catch(() => state.meta); };
+
+// Shows the parts of a checklist or reminder drawer that depend on what is chosen in it.
+function setupPaint() {
+  const comp = $("#cl-completion")?.value ?? state.setup.chkOpen?.completion, noDeadline = NO_DEADLINE.includes(comp);
+  if ($("#cl-rule")) $("#cl-rule").hidden = comp !== "payments";
+  if ($("#cl-deadline-f")) $("#cl-deadline-f").hidden = noDeadline;
+  if ($("#cl-submit-f")) $("#cl-submit-f").hidden = noDeadline || !$("#cl-deadline")?.checked;
+  // A document may be filed on the item instead only when payments need it.
+  let any = false;
+  for (const l of document.querySelectorAll("#drawer [data-ro]")) { const on = !!document.getElementById("cl-rd-" + l.dataset.ro)?.checked; l.hidden = !on; any ||= on; }
+  if ($("#cl-ro-none")) $("#cl-ro-none").hidden = any;
+  const kind = $("#rm-kind")?.value ?? state.setup.remOpen?.kind;
+  if ($("#rm-what")) $("#rm-what").textContent = kind === "leaver" ? "the last day" : "the start date";
+}
+
+// Items done by the statements, the reconciliation or the audit pack have no deadline (the server keeps 0 for them).
+const NO_DEADLINE = ["statements", "statements_balanced", "reconciled", "pack"];
+// The inputs of a drawer's term (what a change sends), by id: not the month, the reason or what is fixed once added.
+const TERM_SKIP = ["cl-from", "cl-reason", "cl-completion", "rm-from", "rm-reason", "rm-short", "rm-key", "rm-kind"];
+function termInputs(pre) {
+  const all = drawerInputs(), out = {};
+  for (const k in all) if (k.startsWith(pre) && !TERM_SKIP.includes(k)) out[k] = all[k];
+  return out;
+}
+// The term's inputs were changed since they were last filled in.
+const termEdited = (pre, filled = {}) => { const now = termInputs(pre); return Object.keys({ ...filled, ...now }).some(k => now[k] !== filled[k]); };
+// After the term's inputs were filled in again: what they hold counts as unchanged (only the month was changed).
+function termBaseline(pre) {
+  const now = termInputs(pre), at = state.drawerAt;
+  if (at) { for (const k of Object.keys(at)) if (k.startsWith(pre) && !TERM_SKIP.includes(k)) delete at[k]; Object.assign(at, now); }
+  return now;
+}
+// The month input of a checklist or reminder drawer changed: the term in force then fills the drawer in, unless the
+// term was edited already (the edits stay and apply from the new month); Stop using or Use again follows the month.
+function termMonth(pre, O, x, fill, acts) {
+  const m = $(`#${pre}from`)?.value || "", note = $(`#${pre}from-note`);
+  for (const el of document.querySelectorAll("#drawer [data-preview-out]")) el.innerHTML = "";
+  if (!x || !/^\d{4}-\d{2}$/.test(m)) return;
+  if (termEdited(pre, O.filled)) { if (note) { note.textContent = `Your edits apply from ${monthName(m)}.`; note.hidden = false; } }
+  else { O.term = termAt(x, m) || {}; fill(O.term); O.filled = termBaseline(pre); if (note) note.hidden = true; }
+  const on = termOn(x, m);
+  if (on !== O.on && state.why) hideWhy();  // the reason box was for the other button
+  O.on = on; acts(x, on);
+  setupPaint();
+}
+
+/* ---- Monthly checklist ---- */
+const chkDocName = k => setupDocName(state.setup.chk, k);
+const chkCompletion = k => (state.setup.chk?.completions || []).find(c => c.key === k)?.label || k;
+
+async function setupChecklist(box) {
+  const S = state.setup, e = ent();
+  if (!e) { box.innerHTML = `<div class="card"><h1>Monthly checklist</h1><div class="note">Add a company first.</div></div>`; return; }
+  const d = S.chk = await api(`/api/setup/checklist?entity=${state.entity}`);
+  const code = d.code || e.code, items = d.items || [];
+  const copy = !items.some(it => it.in_use || termOn(it)) && (d.others || []).length;
+  const row = it => {
+    const t = it.now || {}, rule = asRule(t.rule);
+    return `<tr${termOn(it, d.default_from) ? "" : ` class="muted"`}><td><button class="link" data-chk-open="${it.id}">${esc(t.title || it.code)}</button></td>
+      <td>${esc(dueText(t))}${+t.deadline && !NO_DEADLINE.includes(it.completion) ? `<div class="note">Deadline${t.submit_as ? ` · submitted as ${esc(t.submit_as)}` : ""}</div>` : ""}</td>
+      <td>${esc(chkCompletion(it.completion))}${it.completion === "payments" && rule?.name?.[1] ? `<div class="note">${esc(rule.name[1])}</div>` : ""}</td>
+      <td>${docChips(asList(t.docs), chkDocName)}</td><td>${termPills(it, d.default_from)}</td></tr>`;
+  };
+  box.innerHTML = `${entityPicker()}
+    <div class="card"><div class="row spread"><h1>Monthly checklist · ${esc(code)}</h1>
+      <div class="row">${copy ? `<button class="ghost" data-chk-copy="1">Copy from another company</button>` : ""}<button class="btn" data-chk-new="1">Add item</button></div></div>
+      <div class="note">What each month's checklist holds for ${esc(code)}, in order. Click an item to change it. A change starts from a payroll month you choose: the months before it keep the checklist they had, and filed months never change.</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Due</th><th>Done when</th><th>Documents</th><th>Status</th></tr></thead><tbody>
+        ${items.map(row).join("") || `<tr><td colspan="5" class="empty">${esc(code)} has no monthly checklist yet. Add an item${copy ? ", or copy another company's checklist" : ""}.</td></tr>`}
+      </tbody></table></div></div>`;
+}
+
+// The payments rule of an item done by its payments: which payments it covers and what each needs.
+function ruleHtml(rule) {
+  const d = state.setup.chk, cats = asList(rule.categories), rd = asList(rule.docs), ro = asList(rule.on_item), names = asList(rule.name);
+  const types = pickTypes(d.payment_types, cats), docs = pickTypes((d.doc_types || []), [...rd, ...ro]);
+  const dir = rule.direction || "";
+  return `<fieldset class="chk-rule" id="cl-rule"><legend>Which payments, and what each needs</legend>
+    <div role="group" aria-label="Payment types covered" class="req-docs"><span class="muted">Payment types covered (none ticked: any type)</span>
+      ${types.map(x => tickBox("cl-rt-" + x.key, x, cats.includes(x.key))).join("") || `<div class="note">No payment types in use.</div>`}</div>
+    <label class="field"><span>Money</span><select id="cl-rdir"><option value="">Either</option><option value="out" ${dir === "out" ? "selected" : ""}>Money out</option><option value="in" ${dir === "in" ? "selected" : ""}>Money in</option></select></label>
+    <label class="field"><span>Words in the description or payee</span><input id="cl-rwords" value="${esc(asList(rule.words).join(", "))}" spellcheck="false" autocomplete="off" placeholder="KWSP, KUMPULAN WANG">
+      <span class="note">Whole words, with commas between them. Empty: any payment of the types above.</span></label>
+    <div role="group" aria-label="Documents each payment needs" class="req-docs"><span class="muted">Each payment needs (at least one)</span>
+      ${docs.map(x => tickBox("cl-rd-" + x.key, x, rd.includes(x.key))).join("") || `<div class="note">No document types in use.</div>`}</div>
+    <div role="group" aria-label="Documents that may be filed on the item instead" class="req-docs"><span class="muted">Of these, may be filed on this item instead</span>
+      ${docs.map(x => tickBox("cl-ro-" + x.key, x, ro.includes(x.key), ` data-ro="${esc(x.key)}"`)).join("")}<div class="note" id="cl-ro-none">Tick a document each payment needs first.</div></div>
+    <label class="row tight" style="grid-column:1/-1"><input type="checkbox" id="cl-rpaid" ${rule.paid ? "checked" : ""}><span>A paid payment counts without its documents</span></label>
+    <label class="field" style="grid-column:1/-1"><span>With no such payment in the month, it is done once the statements are in, saying</span><input id="cl-rnone" maxlength="200" value="${esc(rule.none || "")}" placeholder="no overseas claims this month">
+      <span class="note">Leave it empty when the month always has such a payment.</span></label>
+    <label class="field"><span>What one is called</span><input id="cl-rname1" maxlength="80" value="${esc(names[0] || "")}" placeholder="KWSP payment"></label>
+    <label class="field"><span>What several are called</span><input id="cl-rname2" maxlength="80" value="${esc(names[1] || "")}" placeholder="KWSP payments"></label>
+  </fieldset>`;
+}
+
+// The drawer of one checklist item (id "new" to add one). keep: what was typed and not saved, when it is drawn again
+// after a stop or use again; saved: what the last save did.
+function openChecklist(id, { force = false, keep = {}, saved = null } = {}) {
+  if (!force && !mayLeave()) return;
+  const S = state.setup, d = S.chk;
+  if (!d) return;
+  const isNew = id === "new", it = isNew ? null : (d.items || []).find(x => x.id === +id);
+  if (!isNew && !it) return closeDrawer(true);
+  // The month shown: the one typed before it was drawn again, else the earliest not filed; the term in force then.
+  const m0 = /^\d{4}-\d{2}$/.test(keep["cl-from"] || "") ? keep["cl-from"] : d.default_from || "";
+  const t = (it && termAt(it, m0)) || { title: "", detail: "", due_offset: 0, due_day: "", docs: [], deadline: 0, submit_as: null, rule: null };
+  // Built-in completions have a code of their own: a company has each at most once.
+  const offered = (d.completions || []).filter(c => !c.code || !(d.items || []).some(x => x.code === c.code));
+  const completion = isNew ? offered[0]?.key || "hand" : it.completion, on = isNew || termOn(it, m0);
+  const used = +it?.used || 0, code = d.code || ent()?.code || "";
+  state.openPayment = null; state.why = null; S.drawer = null; S.remOpen = null; S.chkOpen = { id: isNew ? "new" : it.id, completion, term: isNew ? null : t, on };
+  $("#drawer").innerHTML = `
+    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">Monthly checklist · ${esc(code)}</div><h2>${isNew ? "Add item" : esc(t.title || it.code)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
+      ${isNew ? "" : termPills(it, d.default_from)}</div>
+    ${saved ? effectCard(saved, saved.head || "Saved", "checklist item") : ""}
+    <form class="form setup-form" id="chkForm">
+      ${isNew ? `<label class="field" style="grid-column:1/-1"><span>Done when</span><select id="cl-completion">${offered.map(c => `<option value="${esc(c.key)}">${esc(c.label)}</option>`).join("")}</select>
+          <span class="note">Fixed once the item is added. A company has each of the built-in ones once at most.</span></label>`
+        : `<label class="field locked" style="grid-column:1/-1"><span>Done when</span><input value="${esc(chkCompletion(completion))}" readonly tabindex="-1"><span class="note">Fixed once the item is added.</span></label>`}
+      <label class="field" style="grid-column:1/-1"><span>Title</span><input id="cl-title" maxlength="200" value="${esc(t.title || "")}" required></label>
+      <label class="field" style="grid-column:1/-1"><span>Detail</span><textarea id="cl-detail" rows="3" maxlength="2000">${esc(t.detail || "")}</textarea></label>
+      <label class="field"><span>Due in</span><select id="cl-off"><option value="0">The payroll month</option><option value="1" ${+t.due_offset ? "selected" : ""}>The month after</option></select></label>
+      <label class="field"><span>Day of the month</span><input id="cl-day" type="number" min="1" max="31" step="1" value="${esc(t.due_day ?? "")}" required><span class="note">A shorter month uses its last day.</span></label>
+      <div role="group" aria-label="Documents for this item" class="req-docs" id="cl-docs">${chkDocsHtml(asList(t.docs))}</div>
+      <label class="row tight" id="cl-deadline-f" style="grid-column:1/-1"><input type="checkbox" id="cl-deadline" ${+t.deadline ? "checked" : ""}><span>A deadline: Next up shows it from a few days before</span></label>
+      <label class="field" id="cl-submit-f" style="grid-column:1/-1"><span>Submitted as (optional)</span><input id="cl-submit" maxlength="30" value="${esc(t.submit_as || "")}" placeholder="KWSP">
+        <span class="note">Items due the same day with a name here are one Next up row, e.g. Submit Oct KWSP, PERKESO and e-PCB.</span></label>
+      ${isNew || completion === "payments" ? ruleHtml(asRule(t.rule) || {}) : ""}
+      <label class="field"><span>From which month?</span><input id="cl-from" type="month" value="${esc(m0)}"${d.first_allowed ? ` min="${esc(d.first_allowed)}"` : ""} required>
+        <span class="note">Months before this keep the checklist they had. Filed months never change.${isNew ? "" : " The item shows as it is in this month."}</span><span class="note" id="cl-from-note" hidden></span></label>
+      <label class="field"><span>Why are you making this change? (optional)</span><input id="cl-reason" maxlength="500" autocomplete="off"></label>
+      <div class="row" style="grid-column:1/-1"><button class="ghost" type="button" data-chk-preview="1">Preview</button><button class="btn" type="submit">${isNew ? "Add item" : "Save"}</button></div></form>
+    <div id="cl-preview" data-preview-out></div>
+    ${isNew ? "" : `<div><h3>Where used</h3><div class="note">${used ? `In ${plural(used, "month")} so far.` : "Not in any month yet."}</div></div>
+    <div class="row" id="cl-act-row">${chkActRow(it, on)}</div>
+    <div class="note" id="cl-act-note">${chkActNote(it, on)}</div>
+    ${whyForm()}
+    ${termsHtml(it, h => `${h.title}, due the ${dueText(h)}${asList(h.docs).length ? `, ${asList(h.docs).map(chkDocName).join(", ")}` : ""}`)}
+    ${histSection("checklist_items", it.id)}`}`;
+  $("#drawer").hidden = false;
+  if (!isNew) S.chkOpen.filled = termInputs("cl-");  // as filled in, before what was typed is put back
+  watchDrawer(keep);
+  setupPaint();  // after keep, as what it put back may show or hide parts
+}
+// The item's documents picker: those in use, plus any chosen that were stopped since.
+const chkDocsHtml = docs => `<span class="muted">Documents for this item</span>
+  ${pickTypes(state.setup.chk?.doc_types, docs).map(x => tickBox("cl-doc-" + x.key, x, docs.includes(x.key))).join("") || `<div class="note">No document types in use.</div>`}`;
+// Stop using when the item is in use in the month chosen, else Use again; Delete while never used.
+const chkActRow = (it, on) => `${on ? `<button class="ghost" type="button" data-chk-act="stop">Stop using</button>` : `<button class="ghost" type="button" data-chk-act="use">Use again</button>`}
+  ${it.can_delete ? `<button class="btn danger small" type="button" data-chk-act="delete">Delete</button>` : ""}`;
+const chkActNote = (it, on) => `${on ? "Stopping it leaves it out of the months from the month above on, changes planned for later months included; where something is filed on it or it is ticked, it stays." : "Use again puts it back from the month above, with the wording it had."}
+  ${it.can_delete ? "" : +it.system ? " The app relies on it, so it can't be deleted." : " It can't be deleted once it has been used; stop using it instead."}`;
+// The term in force in another month, put in the drawer's inputs.
+function chkFill(t) {
+  $("#cl-title").value = t.title || ""; $("#cl-detail").value = t.detail || "";
+  $("#cl-off").value = +t.due_offset ? "1" : "0"; $("#cl-day").value = t.due_day ?? "";
+  $("#cl-docs").innerHTML = chkDocsHtml(asList(t.docs));
+  $("#cl-deadline").checked = !!+t.deadline; $("#cl-submit").value = t.submit_as || "";
+  if ($("#cl-rule")) $("#cl-rule").outerHTML = ruleHtml(asRule(t.rule) || {});
+}
+function chkMonth() {
+  const S = state.setup, O = S.chkOpen;
+  if (!O || O.id === "new" || O.id === "copy") return;
+  termMonth("cl-", O, (S.chk?.items || []).find(x => x.id === O.id), chkFill, (it, on) => {
+    $("#cl-act-row").innerHTML = chkActRow(it, on); $("#cl-act-note").innerHTML = chkActNote(it, on);
+  });
+}
+
+// The item's fields as typed: all of them (a change sends the whole term); the completion only when adding.
+function chkFields(isNew) {
+  // The term the inputs were filled in from: its documents and rule keep their order.
+  const S = state.setup, d = S.chk, O = S.chkOpen, it = (d.items || []).find(x => x.id === O.id), t = O.term || it?.now || {};
+  const comp = $("#cl-completion")?.value ?? O.completion, rule0 = asRule(t.rule) || {}, had = asList(t.docs);
+  const day = $("#cl-day").value.trim(), deadline = $("#cl-deadline").checked && !NO_DEADLINE.includes(comp) ? 1 : 0;
+  const f = { title: $("#cl-title").value.trim(), detail: $("#cl-detail").value.trim(), due_offset: +$("#cl-off").value, due_day: day === "" ? null : +day,
+    docs: ticked("cl-doc-", pickTypes(d.doc_types, had), had), deadline, submit_as: deadline ? $("#cl-submit").value.trim() || null : null, rule: null };
+  if (comp === "payments") {
+    const rd = asList(rule0.docs), ro = asList(rule0.on_item), list = pickTypes(d.doc_types, [...rd, ...ro]), docs = ticked("cl-rd-", list, rd);
+    f.rule = { categories: ticked("cl-rt-", pickTypes(d.payment_types, asList(rule0.categories)), asList(rule0.categories)),
+      direction: $("#cl-rdir").value || null, words: splitWords($("#cl-rwords").value), docs,
+      on_item: ticked("cl-ro-", list, ro).filter(k => docs.includes(k)), paid: $("#cl-rpaid").checked,
+      none: $("#cl-rnone").value.trim() || null, name: [$("#cl-rname1").value.trim(), $("#cl-rname2").value.trim()] };
+  }
+  if (isNew) f.completion = comp;
+  return f;
+}
+
+// After a checklist change: the page's copy of the codes is read again, the list drawn again, and the item's drawer
+// opened again on what the change did.
+async function chkDone(r, id, head, keep = {}) {
+  toast(`${head}. ${effectText(r.affected, "checklist item")}`);
+  await reloadMeta(); await render();
+  if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep, saved: { ...r, head } });
+  closeDrawer(true);
+}
+
+// Preview (nothing kept) or Save: adds the item, or changes it from the month chosen.
+async function chkSave(preview) {
+  const S = state.setup, d = S.chk, O = S.chkOpen;
+  if (!d || !O || O.id === "copy") return;
+  const isNew = O.id === "new";
+  const body = { action: isNew ? "add" : "change", entity_id: d.entity_id ?? state.entity, from_month: fromMonth("#cl-from"), fields: chkFields(isNew), preview: !!preview };
+  if (!isNew) body.item_id = O.id;
+  const reason = $("#cl-reason").value.trim();
+  if (reason) body.reason = reason;
+  const r = await api("/api/setup/checklist", { json: body });
+  if (preview) return showPreview("#cl-preview", r, "checklist item");
+  // Drawn again on the month the change starts from, so it shows the term just saved.
+  return chkDone(r, isNew ? r.item_id : O.id, isNew ? "Item added" : "Saved", { "cl-from": body.from_month });
+}
+
+// Stop using, Use again (from the month chosen) and Delete ask why first.
+async function chkAct(act, btn) {
+  const S = state.setup, d = S.chk, O = S.chkOpen;
+  if (!d || !O || O.id === "new" || O.id === "copy") return;
+  const label = { stop: "Stop using it", use: "Use it again", delete: "Delete it" }[act];
+  if (!label) return;
+  if (act !== "delete") fromMonth("#cl-from");
+  return askWhy(btn, label, async reason => {
+    const body = { action: act, entity_id: d.entity_id ?? state.entity, item_id: O.id, reason };
+    if (act !== "delete") body.from_month = fromMonth("#cl-from");
+    const r = await api("/api/setup/checklist", { json: body });
+    if (act === "delete") { closeDrawer(true); toast("Item deleted"); await reloadMeta(); return render(); }
+    const keep = { ...drawerEdits(), "cl-from": body.from_month };
+    return chkDone(r, O.id, act === "stop" ? "Stopped" : "In use again", keep);
+  });
+}
+
+// Copy another company's checklist, for a company with no item in use.
+function openChkCopy({ force = false } = {}) {
+  if (!force && !mayLeave()) return;
+  const S = state.setup, d = S.chk, others = d?.others || [];
+  if (!others.length) return;
+  const code = d.code || ent()?.code || "";
+  state.openPayment = null; state.why = null; S.drawer = null; S.remOpen = null; S.chkOpen = { id: "copy" };
+  $("#drawer").innerHTML = `
+    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">Monthly checklist · ${esc(code)}</div><h2>Copy from another company</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
+    <form class="form setup-form" id="chkCopyForm">
+      <label class="field" style="grid-column:1/-1"><span>Copy the checklist of</span><select id="cp-from">${others.map(o => `<option value="${o.id}">${esc(o.code)} · ${esc(o.name)} (${plural(+o.items || 0, "item")})</option>`).join("")}</select>
+        <span class="note">Its items in force in the month below are added to ${esc(code)}, with their wording, due dates and documents. You can change them here afterwards.</span></label>
+      <label class="field"><span>From which month?</span><input id="cl-from" type="month" value="${esc(d.default_from || "")}"${d.first_allowed ? ` min="${esc(d.first_allowed)}"` : ""} required>
+        <span class="note">Months before this keep the checklist they had. Filed months never change.</span></label>
+      <label class="field"><span>Why are you making this change? (optional)</span><input id="cl-reason" maxlength="500" autocomplete="off"></label>
+      <div class="row" style="grid-column:1/-1"><button class="ghost" type="button" data-chk-copy-preview="1">Preview</button><button class="btn" type="submit">Copy</button></div></form>
+    <div id="cl-preview" data-preview-out></div>`;
+  $("#drawer").hidden = false;
+  watchDrawer();
+}
+async function chkCopySave(preview) {
+  const d = state.setup.chk;
+  if (!d || state.setup.chkOpen?.id !== "copy") return;
+  const body = { action: "copy", entity_id: d.entity_id ?? state.entity, from_month: fromMonth("#cl-from"), copy_from: +$("#cp-from").value, preview: !!preview };
+  const reason = $("#cl-reason").value.trim();
+  if (reason) body.reason = reason;
+  const r = await api("/api/setup/checklist", { json: body });
+  if (preview) return showPreview("#cl-preview", r, "checklist item");
+  toast(`Checklist copied. ${effectText(r.affected, "checklist item")}`);
+  closeDrawer(true); await reloadMeta(); return render();
+}
+
+/* ---- Joiner and leaver reminders ---- */
+const remDocName = k => setupDocName(state.setup.rem, k);
+const REM_HINT = "{name} in the title becomes the person's short name; {date} in the detail becomes the start date or last day. No other braces can be used. The wording doesn't change by itself when you change the days or the salary.";
+
+async function setupReminders(box) {
+  const d = state.setup.rem = await api("/api/setup/reminders"), rules = d.rules || [];
+  const row = r => {
+    const t = r.now || {};
+    return `<tr${termOn(r, d.default_from) ? "" : ` class="muted"`}><td><button class="link" data-rem-open="${r.id}">${esc(t.title || r.key)}</button>${r.short_name ? `<div class="note">${esc(r.short_name)}</div>` : ""}</td>
+      <td>${r.kind === "leaver" ? "Leaver" : "Joiner"}</td><td>${esc(remDays(t.days, r.kind))}</td><td>${esc(remSalary(t.salary_over))}</td>
+      <td>${docChips(asList(t.docs), remDocName)}</td><td>${termPills(r, d.default_from)}</td></tr>`;
+  };
+  box.innerHTML = `<div class="card"><div class="row spread"><h1>Joiner and leaver reminders</h1><button class="btn" data-rem-new="1">Add reminder</button></div>
+    <div class="note">A recurring salary's start date or last day adds these reminders to the checklist, each in the month it falls due, for every company. Click one to change it. A change applies to people starting (or leaving) from a month you choose, and filed months never change.</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Reminder</th><th>For</th><th>When</th><th>Salary</th><th>Documents</th><th>Status</th></tr></thead><tbody>
+      ${rules.map(row).join("") || `<tr><td colspan="6" class="empty">None yet.</td></tr>`}
+    </tbody></table></div></div>`;
+}
+
+// The drawer of one reminder (id "new" to add one); keep and saved as for a checklist item.
+function openReminder(id, { force = false, keep = {}, saved = null } = {}) {
+  if (!force && !mayLeave()) return;
+  const S = state.setup, d = S.rem;
+  if (!d) return;
+  const isNew = id === "new", r = isNew ? null : (d.rules || []).find(x => x.id === +id);
+  if (!isNew && !r) return closeDrawer(true);
+  // The month shown: the one typed before it was drawn again, else the earliest not filed; the term in force then.
+  const m0 = /^\d{4}-\d{2}$/.test(keep["rm-from"] || "") ? keep["rm-from"] : d.default_from || "";
+  const t = (r && termAt(r, m0)) || { days: "", salary_over: null, title: "", detail: "", docs: [] };
+  const kind = isNew ? "joiner" : r.kind, on = isNew || termOn(r, m0), used = +r?.used || 0, days = +t.days || 0;
+  state.openPayment = null; state.why = null; S.drawer = null; S.chkOpen = null; S.remOpen = { id: isNew ? "new" : r.id, kind, term: isNew ? null : t, on };
+  $("#drawer").innerHTML = `
+    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">Joiner and leaver reminder</div><h2>${isNew ? "Add reminder" : esc(t.title || r.key)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
+      ${isNew ? "" : termPills(r, d.default_from)}</div>
+    ${saved ? effectCard(saved, saved.head || "Saved", "reminder") : ""}
+    <form class="form setup-form" id="remForm">
+      ${isNew ? `<label class="field"><span>Key</span><input id="rm-key" class="mono" maxlength="20" spellcheck="false" autocomplete="off" required placeholder="ecp22">
+          <span class="note">Lower-case letters, digits and _, 2 to 20, starting with a letter. Fixed once added.</span></label>
+        <label class="field"><span>For</span><select id="rm-kind"><option value="joiner">A joiner (from the start date)</option><option value="leaver">A leaver (from the last day)</option></select>
+          <span class="note">Fixed once added.</span></label>`
+        : `<label class="field locked"><span>Key</span><input class="mono" value="${esc(r.key)}" readonly tabindex="-1"><span class="note">Fixed once added.</span></label>
+        <label class="field locked"><span>For</span><input value="${kind === "leaver" ? "A leaver (from the last day)" : "A joiner (from the start date)"}" readonly tabindex="-1"><span class="note">Fixed once added.</span></label>`}
+      <label class="field" style="grid-column:1/-1"><span>Short name</span><input id="rm-short" maxlength="40" value="${esc(r?.short_name || "")}" placeholder="e-CP22">
+        <span class="note">Next up names reminders due together by their short names, and the recurring payment drawer lists them.</span></label>
+      <label class="field"><span>Number of days</span><input id="rm-days" type="number" min="0" max="366" step="1" value="${t.days === "" || t.days == null ? "" : Math.abs(days)}" required>
+        <span class="note">0 is on the day itself.</span></label>
+      <label class="field"><span>Before or after <span id="rm-what">${kind === "leaver" ? "the last day" : "the start date"}</span></span><select id="rm-when"><option value="after">After</option><option value="before" ${days < 0 ? "selected" : ""}>Before</option></select></label>
+      <label class="field" style="grid-column:1/-1"><span>Only when the monthly salary is over (optional)</span><input id="rm-salary" type="number" step="0.01" min="0" value="${esc(t.salary_over ?? "")}">
+        <span class="note">Leave it empty for any salary.</span></label>
+      <label class="field" style="grid-column:1/-1"><span>Title</span><input id="rm-title" maxlength="200" value="${esc(t.title || "")}" required placeholder="Submit e-CP22 for {name}"></label>
+      <label class="field" style="grid-column:1/-1"><span>Detail</span><textarea id="rm-detail" rows="3" maxlength="2000" required>${esc(t.detail || "")}</textarea>
+        <span class="note">${esc(REM_HINT)}</span></label>
+      <div role="group" aria-label="Documents for this reminder" class="req-docs" id="rm-docs">${remDocsHtml(asList(t.docs))}</div>
+      <label class="field" style="grid-column:1/-1"><span>For people starting (or leaving) from which month?</span><input id="rm-from" type="month" value="${esc(m0)}"${d.first_allowed ? ` min="${esc(d.first_allowed)}"` : ""} required>
+        <span class="note">The month of the start date or last day. People starting or leaving before it keep the reminders they had. Filed months never change.${isNew ? "" : " The reminder shows as it is for this month."}</span><span class="note" id="rm-from-note" hidden></span></label>
+      <label class="field" style="grid-column:1/-1"><span>Why are you making this change? (optional)</span><input id="rm-reason" maxlength="500" autocomplete="off"></label>
+      <div class="row" style="grid-column:1/-1"><button class="ghost" type="button" data-rem-preview="1">Preview</button><button class="btn" type="submit">${isNew ? "Add reminder" : "Save"}</button></div></form>
+    <div id="rm-preview" data-preview-out></div>
+    ${isNew ? "" : `<div><h3>Where used</h3><div class="note">${used ? `${plural(used, "reminder")} made so far.` : "No reminder made yet."}</div></div>
+    <div class="row" id="rm-act-row">${remActRow(r, on)}</div>
+    <div class="note" id="rm-act-note">${remActNote(r, on)}</div>
+    ${whyForm()}
+    ${termsHtml(r, h => `${h.title}, ${lowerFirst(remDays(h.days, kind))}${h.salary_over == null || h.salary_over === "" ? "" : `, ${lowerFirst(remSalary(h.salary_over))}`}`)}
+    ${histSection("people_tasks", r.id)}`}`;
+  $("#drawer").hidden = false;
+  if (!isNew) S.remOpen.filled = termInputs("rm-");  // as filled in, before what was typed is put back
+  watchDrawer(keep);
+  setupPaint();
+}
+const remDocsHtml = docs => `<span class="muted">Documents for this reminder</span>
+  ${pickTypes(state.setup.rem?.doc_types, docs).map(x => tickBox("rm-doc-" + x.key, x, docs.includes(x.key))).join("") || `<div class="note">No document types in use.</div>`}`;
+// Stop using when the reminder is in use for the month chosen, else Use again; Delete while never used.
+const remActRow = (r, on) => `${on ? `<button class="ghost" type="button" data-rem-act="stop">Stop using</button>` : `<button class="ghost" type="button" data-rem-act="use">Use again</button>`}
+  ${r.can_delete ? `<button class="btn danger small" type="button" data-rem-act="delete">Delete</button>` : ""}`;
+const remActNote = (r, on) => `${on ? "Stopping it leaves it out for people starting (or leaving) from the month above on, changes planned for later months included; one ticked or with something filed on it stays." : "Use again puts it back for people starting (or leaving) from the month above, with the wording it had."}
+  ${r.can_delete ? "" : +r.system ? " The app relies on it, so it can't be deleted." : " It can't be deleted once it has been used; stop using it instead."}`;
+// The term in force for another month, put in the drawer's inputs.
+function remFill(t) {
+  const days = +t.days || 0;
+  $("#rm-days").value = t.days === "" || t.days == null ? "" : Math.abs(days); $("#rm-when").value = days < 0 ? "before" : "after";
+  $("#rm-salary").value = t.salary_over ?? ""; $("#rm-title").value = t.title || ""; $("#rm-detail").value = t.detail || "";
+  $("#rm-docs").innerHTML = remDocsHtml(asList(t.docs));
+}
+function remMonth() {
+  const S = state.setup, O = S.remOpen;
+  if (!O || O.id === "new") return;
+  termMonth("rm-", O, (S.rem?.rules || []).find(x => x.id === O.id), remFill, (r, on) => {
+    $("#rm-act-row").innerHTML = remActRow(r, on); $("#rm-act-note").innerHTML = remActNote(r, on);
+  });
+}
+
+function remFields() {
+  // The term the inputs were filled in from: its documents keep their order.
+  const S = state.setup, d = S.rem, O = S.remOpen, r = (d.rules || []).find(x => x.id === O.id), had = asList((O.term || r?.now)?.docs);
+  const n = $("#rm-days").value.trim(), sal = $("#rm-salary").value.trim();
+  return { days: n === "" ? null : Math.abs(+n) * ($("#rm-when").value === "before" ? -1 : 1), salary_over: sal === "" ? null : +sal,
+    title: $("#rm-title").value.trim(), detail: $("#rm-detail").value.trim(), docs: ticked("rm-doc-", pickTypes(d.doc_types, had), had) };
+}
+
+async function remDone(r, id, head, keep = {}) {
+  toast(`${head}. ${effectText(r.affected, "reminder")}`);
+  await reloadMeta(); await render();
+  if (id != null && (state.setup.rem?.rules || []).some(x => x.id === +id)) return openReminder(+id, { force: true, keep, saved: { ...r, head } });
+  closeDrawer(true);
+}
+
+// Preview (nothing kept) or Save: adds the reminder, or changes it for people starting (or leaving) from the month chosen.
+async function remSave(preview) {
+  const S = state.setup, d = S.rem, O = S.remOpen;
+  if (!d || !O) return;
+  const isNew = O.id === "new";
+  const body = { action: isNew ? "add" : "change", short_name: $("#rm-short").value.trim() || null, from_month: fromMonth("#rm-from"), fields: remFields(), preview: !!preview };
+  if (isNew) {
+    body.key = $("#rm-key").value.trim().toLowerCase(); body.kind = $("#rm-kind").value;
+    if (!/^[a-z][a-z0-9_]{1,19}$/.test(body.key)) throw new Error("The key needs 2 to 20 lower-case letters, digits or _, starting with a letter.");
+  } else body.id = O.id;
+  const reason = $("#rm-reason").value.trim();
+  if (reason) body.reason = reason;
+  const r = await api("/api/setup/reminders", { json: body });
+  if (preview) return showPreview("#rm-preview", r, "reminder");
+  // Drawn again on the month the change starts from, so it shows the term just saved.
+  const keep = { "rm-from": body.from_month };
+  if (!isNew) return remDone(r, O.id, "Saved", keep);
+  // A new reminder is found by the id the server gives, else by its key.
+  const nid = r.id ?? r.item_id;
+  await remDone(r, nid, "Reminder added", keep);
+  if (nid == null) { const x = (state.setup.rem?.rules || []).find(y => y.key === body.key); if (x) openReminder(x.id, { force: true, keep, saved: { ...r, head: "Reminder added" } }); }
+}
+
+async function remAct(act, btn) {
+  const S = state.setup, O = S.remOpen;
+  if (!S.rem || !O || O.id === "new") return;
+  const label = { stop: "Stop using it", use: "Use it again", delete: "Delete it" }[act];
+  if (!label) return;
+  if (act !== "delete") fromMonth("#rm-from");
+  return askWhy(btn, label, async reason => {
+    const body = { action: act, id: O.id, reason };
+    if (act !== "delete") body.from_month = fromMonth("#rm-from");
+    const r = await api("/api/setup/reminders", { json: body });
+    if (act === "delete") { closeDrawer(true); toast("Reminder deleted"); await reloadMeta(); return render(); }
+    const keep = { ...drawerEdits(), "rm-from": body.from_month };
+    return remDone(r, O.id, act === "stop" ? "Stopped" : "In use again", keep);
+  });
+}
+
+// The reminders a salary's start date and last day add, by their short names, for the recurring payment drawer.
+function reminderNote() {
+  if (!Array.isArray(state.meta.people_tasks)) return "A salary's start date and last day also add reminders to the checklist, each in the month it falls due (Setup › Joiner and leaver reminders).";
+  const live = state.meta.people_tasks.filter(isActive);
+  const name = t => String(t.short_name || t.title || t.key || "").replace(/\{name\}/g, "the person").replace(/\{date\}/g, "the date").trim();
+  const of = kind => live.filter(t => t.kind === kind).map(name).filter(Boolean);
+  const parts = [of("joiner").length ? `${andList(of("joiner"))} for a joiner` : "", of("leaver").length ? `${andList(of("leaver"))} for a leaver` : ""].filter(Boolean);
+  return parts.length ? `A salary's start date and last day also add reminders to the checklist, each in the month it falls due: ${parts.join(", ")}. One due in a month not set up yet shows in the latest month set up until then, without counting there.`
+    : "No joiner or leaver reminders are in use, so a start date or last day adds none to the checklist.";
 }
 
 // The line above the app's name: the organisation's name from General settings, as saved (empty: no line).
@@ -2357,6 +2892,17 @@ document.addEventListener("click", async ev => {
     }
     if (ds.reqEdit) return openRequired(ds.reqEdit);
     if (ds.reqFollow) { t.disabled = true; try { return await reqSave(true); } finally { if (t.isConnected) t.disabled = false; } }
+    if (ds.chkNew) return openChecklist("new");
+    if (ds.chkOpen) return openChecklist(+ds.chkOpen);
+    if (ds.chkCopy) return openChkCopy();
+    if (ds.chkAct) return await chkAct(ds.chkAct, t);
+    if (ds.remNew) return openReminder("new");
+    if (ds.remOpen) return openReminder(+ds.remOpen);
+    if (ds.remAct) return await remAct(ds.remAct, t);
+    if (ds.chkPreview || ds.chkCopyPreview || ds.remPreview) {
+      t.disabled = true;
+      try { return await (ds.chkPreview ? chkSave(true) : ds.chkCopyPreview ? chkCopySave(true) : remSave(true)); } finally { if (t.isConnected) t.disabled = false; }
+    }
     if (ds.payeeAct) return await payeeAct(ds.payeeAct, +ds.payeeId, t);
     if (ds.advAdd) return await advAdd(+ds.advAdd, t);
     if (ds.advSave) return await advSave(+ds.advSave, t);
@@ -2544,11 +3090,13 @@ document.addEventListener("change", async ev => {
 
 document.addEventListener("submit", async ev => {
   if (ev.target.id === "setupWhy") { ev.preventDefault(); return whySubmit(); }
-  if (ev.target.id === "setupForm" || ev.target.id === "settingsForm" || ev.target.id === "reqForm") {
+  const SETUP_SAVES = { setupForm: setupSave, settingsForm: settingsSave, reqForm: () => reqSave(false), chkForm: () => chkSave(false),
+    chkCopyForm: () => chkCopySave(false), remForm: () => remSave(false) };
+  if (SETUP_SAVES[ev.target.id]) {
     ev.preventDefault();
     const btn = ev.target.querySelector("button[type=submit]");
     btn.disabled = true;
-    try { await (ev.target.id === "setupForm" ? setupSave() : ev.target.id === "reqForm" ? reqSave(false) : settingsSave()); } catch (e) { toast(e.message, true); }
+    try { await SETUP_SAVES[ev.target.id](); } catch (e) { toast(e.message, true); }
     finally { if (btn.isConnected) btn.disabled = false; }
     return;
   }
@@ -2687,6 +3235,14 @@ document.addEventListener("change", ev => {
   }
   if (ev.target.id === "trailShow") return trailShow(ev.target.checked);
   if (ev.target.matches?.("[data-setup-stopped]")) { state.setup.stopped = ev.target.checked; return LIST_REDRAW["setup-" + state.setup.kind]?.(); }
+  if (ev.target.id === "cl-from" && ev.target.closest?.("#chkForm")) return chkMonth();
+  if (ev.target.id === "rm-from" && ev.target.closest?.("#remForm")) return remMonth();
+  if (ev.target.closest?.("#chkForm, #remForm")) return setupPaint();
+});
+// A preview shown is of what was typed then: a change typed after it (other than the reason) takes it away.
+document.addEventListener("input", ev => {
+  if (!ev.target.closest?.("#chkForm, #chkCopyForm, #remForm") || /-reason$/.test(ev.target.id)) return;
+  for (const el of document.querySelectorAll("#drawer [data-preview-out]")) el.innerHTML = "";
 });
 
 // The current cycle and the month before are set up on their own; other months when you ask.

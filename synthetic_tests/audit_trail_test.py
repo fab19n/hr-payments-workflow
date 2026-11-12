@@ -69,7 +69,8 @@ after = business_rows(raw)
 # Every original column keeps its value (later updates add columns: compare each row's original part); new rows are listed.
 added = {}
 for t in after:
-    if t in ("app_settings", "payment_types", "doc_types", "required_sets"):  # updates 19 and 20's own tables
+    if t in ("app_settings", "payment_types", "doc_types", "required_sets", "checklist_items", "checklist_terms", "people_tasks",
+             "people_task_terms", "guess_words", "hint_words", "filing_words"):  # updates 19, 20 and 21's own tables
         continue
     old = before.get(t, [])
     if any(new[:len(prev)] != prev for new, prev in zip(after[t], old)) or after[t][len(old):]:

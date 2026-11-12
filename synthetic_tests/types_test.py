@@ -176,8 +176,8 @@ check("a document type an open month still needs (a set that has ended) can't be
 dt = {r["key"]: r for r in j("get", "/api/setup/doc_types")["rows"]}
 for k in ("approval", "portal", "payroll"):
     rec = j("get", f"/api/setup/doc_types/{dt[k]['id']}")
-    j("post", f"/api/setup/doc_types/{dt[k]['id']}/stop", 400, json={"reason": "x"})
-    check(f"the monthly checklist's {k} can't be stopped, and Stop isn't offered", rec["can_stop"] is False)
+    e = j("post", f"/api/setup/doc_types/{dt[k]['id']}/stop", 400, json={"reason": "x"})["error"]
+    check(f"the monthly checklist's {k} can't be stopped while the checklist or reminders ask for it", "monthly checklist" in e, e)
 pt = {r["key"]: r for r in j("get", "/api/setup/payment_types")["rows"]}
 e = j("post", f"/api/setup/payment_types/{pt['utility']['id']}/stop", 400, json={"reason": "x"})["error"]
 check("the type new recurring payments start on can't be stopped", "General settings" in e, e)

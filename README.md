@@ -126,8 +126,12 @@ after it a note.
   for stop, use again and delete. Filed months never change.
 - Payment types, document types and required documents (`hrp/rulebook.py`, update 20): kept in the records and edited
   in **Setup › Payments and documents**; required documents change from a payroll month on, for every company or one.
-  Code asks `rulebook.get(con)` rather than `rules.py` for them (`rules.py` keeps the seed values and the checklist).
+  Code asks `rulebook.get(con)` rather than `rules.py` for them (`rules.py` keeps the seed values).
+- Monthly checklist, joiner and leaver reminders and matching words (`hrp/checklistbook.py`, update 21; Setup logic in
+  `hrp/monthly.py`): kept in the records and edited in **Setup › Monthly work** and **Matching words**; checklist and
+  reminder changes apply from a payroll month on and never reach a filed month. Code asks `checklistbook.get(con)`.
 - Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test`,
   `.venv\Scripts\python -m synthetic_tests.trail_view_test`, `.venv\Scripts\python -m synthetic_tests.setup_test` and
-  `.venv\Scripts\python -m synthetic_tests.types_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
+  `.venv\Scripts\python -m synthetic_tests.types_test` and `synthetic_tests.checklist_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
   compares this code's results with a snapshot taken on older code (`--write-golden <file>` on that code makes one).
+  `synthetic_tests.checklist_equivalence_test --golden <file>` does the same for update 21.

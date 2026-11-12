@@ -5,7 +5,7 @@ import re
 import sqlite3
 from datetime import date, datetime, timedelta
 
-from . import appsettings, audit, rulebook, rules
+from . import appsettings, audit, checklistbook, rulebook, rules
 from .config import BACKUP_DIR, DB_PATH, PACKS_DIR, SEED_PATH
 from .sqlimport import MONEY_IN, MONEY_OUT, PURCHASE_DOCS, SALES_DOCS
 
@@ -278,6 +278,12 @@ MIGRATIONS = [
     #     Required documents become dated sets, so a change from a month on never alters the months before it.
     #     Nothing in the records changes.
     rulebook.install,
+    # 21. The monthly checklist (each company's items, how each is shown done, Next up's deadlines), the joiner and
+    #     leaver reminders and the words SQL imports are guessed and filed by, kept in the records from now on (Setup),
+    #     filled with the values the app has had in code and checked to read back exactly as they were. The checklist
+    #     and reminders are dated, so a change from a month on never alters the months before it. Nothing in the
+    #     records changes.
+    checklistbook.install,
 ]
 
 
@@ -374,6 +380,8 @@ def load_seed(con, seed):
         cur = con.execute("INSERT INTO entities (code, name, uses_sql) VALUES (?, ?, ?)",
                           (e["code"], e["name"], 1 if e.get("uses_sql", True) else 0))
         eid = cur.lastrowid
+        if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'checklist_items'").fetchone():
+            checklistbook.seed_company(con, {"id": eid, "code": e["code"]})  # update 21 ran before any company existed
         acct_ids = {}
         for a in e.get("accounts", []):
             c = con.execute("INSERT INTO accounts (entity_id, label, bank, number, currency) VALUES (?, ?, ?, ?, ?)",
@@ -453,10 +461,10 @@ def ensure_month(con, entity_id, month):
     if con.execute("SELECT 1 FROM months WHERE entity_id = ? AND month = ?", (entity_id, month)).fetchone():
         return False
     ent = con.execute("SELECT * FROM entities WHERE id = ?", (entity_id,)).fetchone()
-    for i, (code, (off, day), title, detail, docs) in enumerate(rules.CHECKLIST.get(ent["code"], [])):
+    for t in checklistbook.get(con).checklist(ent, month):
         con.execute(
             "INSERT OR IGNORE INTO tasks (entity_id, month, code, title, detail, due_date, required_docs, sort) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (entity_id, month, code, title, detail, due(month, off, day), json.dumps(docs), i))
+            (entity_id, month, t["code"], t["title"], t["detail"], due(month, t["due_offset"], t["due_day"]), json.dumps(t["docs"]), t["sort"]))
     for p in con.execute("SELECT * FROM payees WHERE entity_id = ? AND active = 1 ORDER BY sort", (entity_id,)):
         if employed_in(p, month):
             create_payment_from_payee(con, p, month)
@@ -498,22 +506,25 @@ def short_name(name):
 
 
 def reminders_for(con, p):
-    """The joiner and leaver reminders (rules.PEOPLE_TASKS) a payee's start date and last day give: only for a salary,
+    """The joiner and leaver reminders (checklistbook: Setup's, by the month of the date) a payee's start date and last day give: only for a salary,
     on a company that runs Malaysian payroll. {task code: (its fields, the month of the date it comes from)}; its month
     is the one being worked on when it falls due (current_cycle), so a CP22A, due a month before the last day, is in
     the month before."""
     if p["category"] != "salary" or not runs_payroll(con, p["entity_id"]):
         return {}
     out = {}
-    for kind, key, days, over, title, detail, docs in rules.PEOPLE_TASKS:
+    book = checklistbook.get(con)
+    for r in book.people():
+        kind, key = r["kind"], r["key"]
         day = p["start_date"] if kind == "joiner" else p["end_date"]
-        if not day or (over is not None and (p["amount"] or 0) <= over):
+        t = day and book.people_term(key, day[:7])
+        if not t or (t["salary_over"] is not None and (p["amount"] or 0) <= t["salary_over"]):
             continue
-        on = date.fromisoformat(day) + timedelta(days=days)
+        on = date.fromisoformat(day) + timedelta(days=t["days"])
         out[f"{kind}-{key}-{p['id']}"] = ({
-            "month": current_cycle(on), "title": title.format(name=short_name(p["name"])),
-            "detail": detail.format(date=day_label(day)), "due_date": on.isoformat(), "required_docs": json.dumps(docs)},
-            day[:7])
+            "month": current_cycle(on), "title": checklistbook.fill(t["title"], name=short_name(p["name"])),
+            "detail": checklistbook.fill(t["detail"], date=day_label(day)), "due_date": on.isoformat(),
+            "required_docs": json.dumps(t["docs"])}, day[:7])
     return out
 
 
@@ -541,12 +552,14 @@ def reminder_month(con, ent, month, event):
     return (at, None) if at else (None, rows[-1]["month"])
 
 
-def waits_for(task):
+def waits_for(task, con=None):
     """The month a checklist item not ticked falls due in when that is later than the month it is in, else None: a
     joiner or leaver reminder waiting in the latest month set up (reminder_month). It shows on that month's page but
     isn't part of that month: its counts and its audit pack leave it out. A ticked one stays where it is, so it counts."""
     if task["done_at"]:
         return None
+    if not checklistbook.is_reminder(task["code"]) and (con is None or checklistbook.get(con).from_tables):
+        return None  # from update 21 a checklist item belongs to its month whatever day it is due
     own = current_cycle(date.fromisoformat(task["due_date"]))
     return own if own > task["month"] else None
 
@@ -562,12 +575,14 @@ def sync_reminders(con, p):
     is filed, one already set up stays where it is, as it was, until the next month is set up, and the save says so."""
     want = reminders_for(con, p)
     ent = con.execute("SELECT * FROM entities WHERE id = ?", (p["entity_id"],)).fetchone()
-    codes = [f"{kind}-{key}-{p['id']}" for kind, key, *_ in rules.PEOPLE_TASKS]
+    rules_ = checklistbook.get(con).people()  # every rule, stopped ones too: their reminders are looked after as well
+    codes = [f"{r['kind']}-{r['key']}-{p['id']}" for r in rules_]
+    sorts = {c: 100 + r["sort"] for c, r in zip(codes, rules_)}
     changes, notes = [], []
     for code in codes:
         have = con.execute("SELECT * FROM tasks WHERE entity_id = ? AND code = ? ORDER BY month", (ent["id"], code)).fetchall()
         w, event = want.get(code, (None, None))
-        if any(t["done_at"] or (closed_at(con, ent["id"], t["month"]) and not waits_for(t)
+        if any(t["done_at"] or (closed_at(con, ent["id"], t["month"]) and not waits_for(t, con)
                                 and (not w or t["due_date"] == w["due_date"])) for t in have):
             continue
         at, filed = reminder_month(con, ent, w["month"], event) if w else (None, None)
@@ -596,12 +611,12 @@ def sync_reminders(con, p):
             con.execute(f"UPDATE tasks SET {', '.join(k + ' = ?' for k in fields)} WHERE id = ?", (*fields.values(), was["id"]))
             what = (f"now due {day_label(w['due_date'])}" if was["due_date"] != w["due_date"]
                     else f"moved from {month_label(was['month'])}" if was["month"] != at else "updated")
-            if was["month"] != at and closed_at(con, ent["id"], was["month"]) and not waits_for(was):
+            if was["month"] != at and closed_at(con, ent["id"], was["month"]) and not waits_for(was, con):
                 what += f", moved from {month_label(was['month'])}, which is marked as filed"
             changes.append(f"{month_label(at)}: {w['title']} {what}{later}")
         elif not have:
             con.execute(f"INSERT INTO tasks (entity_id, code, sort, {', '.join(fields)}) VALUES (?, ?, ?, {', '.join('?' * len(fields))})",
-                        (ent["id"], code, 100 + codes.index(code), *fields.values()))
+                        (ent["id"], code, sorts[code], *fields.values()))
             changes.append(f"{month_label(at)}: added {w['title']}, due {day_label(w['due_date'])}{later}")
     for x in changes:
         log(con, f"Checklist reminder for {p['name']} in {x}")
@@ -1070,8 +1085,8 @@ def task_flag(con, ent, task, today, done=None):
 
 def task_status(con, ent, task, ev=None):
     """A checklist item's status, worked out here for the month page, the Overview and the audit pack. done: ticked by
-    hand, or what it asks for shows in the records (auto): the month's payments (rules.TASK_PAYMENTS), its bank
-    statements (rules.TASK_STATEMENTS) or an audit pack built since its documents last changed (rules.TASK_PACK), and
+    hand, or what it asks for shows in the records (auto), as the item is for its month (checklistbook): the month's
+    payments, its bank statements or an audit pack built since its documents last changed, and
     the documents it asks for itself are filed. why: what the records show ('Done: both statements imported') or still
     lack ('AI MBB FCA (USD) statement not imported yet'), None for an item they can't show. missing: the documents it
     asks for not filed (ev: its evidence(), looked up when not given). lacking: what a tick by hand would leave out, in
@@ -1079,11 +1094,12 @@ def task_status(con, ent, task, ev=None):
     later month it falls due in while it waits in this one (waits_for), left out of this month's counts and pack."""
     code, month = task["code"], task["month"]
     shown = []
-    if code in rules.TASK_PAYMENTS:
-        ok, why, shown = _from_payments(con, ent, task, rules.TASK_PAYMENTS[code])
-    elif code in rules.TASK_STATEMENTS:
-        ok, why = _from_statements(con, ent, month, rules.TASK_STATEMENTS[code])
-    elif code == rules.TASK_PACK:
+    kind, rule = checklistbook.get(con).completion(ent["id"], code, month)  # as the item is for the task's own month
+    if kind == "payments" and rule:
+        ok, why, shown = _from_payments(con, ent, task, rule)
+    elif kind in checklistbook.STATEMENTS_ARG:
+        ok, why = _from_statements(con, ent, month, checklistbook.STATEMENTS_ARG[kind])
+    elif kind == "pack":
         ok, why = _from_pack(con, ent, month)
     else:
         ok, why = None, None
@@ -1096,7 +1112,7 @@ def task_status(con, ent, task, ev=None):
     lacking = ([why] if ok is False else []) + ([f"Still missing: {_listed(map(rulebook.get(con).short_doc, missing))}"] if missing else [])
     auto = bool(ok) and not missing
     return {"done": bool(task["done_at"]) or auto, "auto": auto, "why": why, "missing": missing, "lacking": lacking,
-            "shown": shown, "waiting": waits_for(task)}
+            "shown": shown, "waiting": waits_for(task, con)}
 
 
 def _counted(n, many):
@@ -1119,7 +1135,7 @@ def _names(group, among):
 
 
 def _covers(rule, p):
-    """True when a checklist item's rule (rules.TASK_PAYMENTS) covers the payment."""
+    """True when a checklist item's payments rule (checklistbook) covers the payment."""
     words = rule.get("words")
     return ((not rule.get("categories") or p["category"] in rule["categories"])
             and (not rule.get("direction") or p["direction"] == rule["direction"])
@@ -1150,7 +1166,7 @@ def _for_month(s, month):
 
 
 def _on_item(con, task, docs):
-    """What the documents filed on a checklist item for its payments (rules.TASK_PAYMENTS on_item) stand for:
+    """What the documents filed on a checklist item for its payments (its payments rule's on_item) stand for:
     ({doc type: None for an upload, which stands for every payment, else the amount the item's validated e-Invoices for
     its month add up to, which stands for payments up to that much}, the proof of those e-Invoices, to print from SQL)."""
     have = _uploaded(con, "task_id", task["id"])
@@ -1165,7 +1181,7 @@ def _on_item(con, task, docs):
 
 
 def _item_payments(con, entity_id, month, rule):
-    """The month's payments a checklist item's rule (rules.TASK_PAYMENTS) covers, in due order."""
+    """The month's payments a checklist item's payments rule covers, in due order."""
     return [p for p in con.execute(
         """SELECT p.*, py.name AS payee_name FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
            WHERE p.entity_id = ? AND p.month = ? ORDER BY p.due_date, p.id""", (entity_id, month)) if _covers(rule, p)]
@@ -1194,8 +1210,8 @@ def _item_proof(con, pay):
     """For a receipt, the proof of the sales e-Invoice filed on the checklist item for the month's receipts that stands
     for it (the item's e-Invoices cover the receipts in order, up to what they add up to, as the item counts them),
     else None."""
-    for code, rule in rules.TASK_PAYMENTS.items():
-        task = "einvoice" in rule.get("on_item", ()) and con.execute(
+    for code, rule in checklistbook.get(con).einvoice_rules(pay["entity_id"], pay["month"]):
+        task = con.execute(
             "SELECT * FROM tasks WHERE entity_id = ? AND month = ? AND code = ?", (pay["entity_id"], pay["month"], code)).fetchone()
         pays = task and _item_payments(con, pay["entity_id"], pay["month"], rule)
         if pays and any(p["id"] == pay["id"] for p in pays):
@@ -1315,7 +1331,7 @@ def latest_pack(con, ent, month):
         """SELECT t.code, t.month, t.due_date, t.done_at FROM documents d LEFT JOIN tasks t ON t.id = d.task_id
            WHERE d.entity_id = ? AND COALESCE(t.month, d.month) = ? AND d.doc_type != 'sqlexport'
            AND (d.uploaded_at > ? OR d.removed_at > ?)""",
-        (ent["id"], month, stamp, stamp)) if t["month"] is None or (t["code"] != rules.TASK_PACK and not waits_for(t)))
+        (ent["id"], month, stamp, stamp)) if t["month"] is None or (t["code"] != rules.TASK_PACK and not waits_for(t, con)))
     return {"path": packs[-1], "when": f"{built.day} {calendar.month_abbr[built.month]} {built:%H:%M}", "changed": n}
 
 

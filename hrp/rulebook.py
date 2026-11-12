@@ -21,8 +21,8 @@ SINCE = 20
 SYSTEM_TYPES = ("salary", "director", "statutory", "claim_overseas", "receipt", "other")
 # Of those, the ones that can't be stopped either (the app would stop working for them).
 UNSTOPPABLE_TYPES = ("salary", "director", "statutory", "receipt", "other")
-# Every seeded document type is the code's own; these may still be stopped (the monthly checklist asks for none of them).
-STOPPABLE_DOCS = ("claim", "payslip")
+# Every seeded document type is the code's own; these may still be stopped once the checklist and reminders (Setup) no longer ask for them.
+STOPPABLE_DOCS = ("approval", "portal", "claim", "payroll", "payslip")
 # What several payments of a type are called in Next up (Pay 8 AISB bills and statutory); none: bills.
 PLURALS = {"salary": "salaries", "director": "salaries", "consultant": "consultant fees", "statutory": "statutory",
            "claim": "claims", "claim_overseas": "claims", "transfer": "transfers", "receipt": "receipts"}
