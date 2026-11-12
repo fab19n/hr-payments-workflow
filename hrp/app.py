@@ -14,7 +14,8 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import audit, auditpack, auditread, config, budget as stored, db, nextup, recon, reports, rules, sqlimport, statements
+from . import (appsettings, audit, auditpack, auditread, config, budget as stored, db, masters, nextup, recon, reports, rules,
+               sqlimport, statements)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -175,13 +176,13 @@ def index():
 @app.get("/api/meta")
 def meta():
     c = con()
-    ents = rows(c.execute("SELECT * FROM entities ORDER BY id"))
+    ents = rows(c.execute("SELECT * FROM entities ORDER BY sort, id"))
     for e in ents:
-        e["accounts"] = rows(c.execute("SELECT * FROM accounts WHERE entity_id = ?", (e["id"],)))
+        e["accounts"] = rows(c.execute("SELECT * FROM accounts WHERE entity_id = ? ORDER BY sort, id", (e["id"],)))
     return jsonify({
         "entities": ents, "doc_types": rules.DOC_TYPES, "categories": rules.CATEGORIES,
         "required": {k: rules.REQUIRED_DOCS[k] for k in rules.REQUIRED_DOCS}, "sql_only": sorted(rules.SQL_ONLY),
-        "data_dir": str(DATA_DIR), "backup_dir": SETTINGS.get("backup_dir") or "",
+        "data_dir": str(DATA_DIR), "backup_dir": SETTINGS.get("backup_dir") or "", "settings": appsettings.values(),
     })
 
 
@@ -365,7 +366,7 @@ def overview():
     c = con()
     out = []
     today = date.today().isoformat()
-    for e in c.execute("SELECT * FROM entities ORDER BY id").fetchall():
+    for e in c.execute("SELECT * FROM entities WHERE active = 1 ORDER BY sort, id").fetchall():
         as_at = iso_day(request.args.get(f"as_at_{e['id']}")) or stored.default_as_at(stored.header(c, e["id"], month))
         pays = c.execute("SELECT * FROM payments WHERE entity_id = ? AND month = ?", (e["id"], month)).fetchall()
         st = [db.payment_status(c, p, e["uses_sql"]) for p in pays]
@@ -487,12 +488,13 @@ def set_first_month(eid):
 def _untracked(c, e):
     """What the months before the first month tracked hold that nothing was ever recorded on: payments with no paid
     date, document, SQL voucher or bank line, and checklist items not ticked with no document."""
-    pays = [p["id"] for p in c.execute("SELECT * FROM payments WHERE entity_id = ? AND month < ?", (e["id"], e["first_month"]))
+    filed = "AND month NOT IN (SELECT month FROM months m WHERE m.entity_id = ? AND m.closed_at IS NOT NULL)"  # never a filed month
+    pays = [p["id"] for p in c.execute(f"SELECT * FROM payments WHERE entity_id = ? AND month < ? {filed}", (e["id"], e["first_month"], e["id"]))
             if not db.recorded(c, p)]
     tasks = [t["id"] for t in c.execute(
-        """SELECT id FROM tasks t WHERE entity_id = ? AND month < ? AND done_at IS NULL
+        f"""SELECT id FROM tasks t WHERE entity_id = ? AND month < ? AND done_at IS NULL {filed}
            AND NOT EXISTS (SELECT 1 FROM documents d WHERE d.task_id = t.id)
-           AND NOT EXISTS (SELECT 1 FROM sql_entries s WHERE s.task_id = t.id)""", (e["id"], e["first_month"]))]
+           AND NOT EXISTS (SELECT 1 FROM sql_entries s WHERE s.task_id = t.id)""", (e["id"], e["first_month"], e["id"]))]
     return pays, tasks
 
 
@@ -508,8 +510,11 @@ def tidy_count():
 
 @app.post("/api/months/tidy")
 def tidy_months():
+    b = _body()
+    if not isinstance(b.get("reason"), str) or not b["reason"].strip():
+        return err("Say why you're making this change.")
     c = con()
-    e = entity(c, int(request.get_json()["entity_id"]))
+    e = entity(c, id_from(str(b.get("entity_id"))))
     if not e["first_month"]:
         return err("Set the first month tracked in this app first.")
     pays, tasks = _untracked(c, e)
@@ -737,13 +742,17 @@ PAYEE_FIELDS = ("name", "category", "desc_template", "amount", "amount_varies", 
 
 @app.post("/api/payees")
 def save_payee():
-    """Saves a recurring payment, and brings the change into the months already set up (db.sync_payee)."""
-    b = request.get_json()
+    """Saves a recurring payment, and brings the change into the months already set up (db.sync_payee). Every field is
+    checked (masters.payee_check). Stopping and using again have routes of their own that ask why; active is still
+    taken here for older callers."""
+    b = _body()
     c = con()
     vals = {k: b.get(k) for k in PAYEE_FIELDS if k in b}
-    if not vals.get("name"):
+    if not isinstance(vals.get("name"), str) or not vals["name"].strip():
         return err("Give the payee a name.")
-    vals.setdefault("desc_template", vals["name"] + " - {M}")
+    vals.setdefault("desc_template", vals["name"].strip() + " - {M}")
+    if not vals.get("desc_template"):
+        vals["desc_template"] = vals["name"].strip() + " - {M}"
     # Money in is a receipt and a receipt is money in; a payment going out is any other type.
     way = vals.get("direction") or ("in" if vals.get("category") == "receipt" else None)
     if way not in (None, "in", "out"):
@@ -757,8 +766,19 @@ def save_payee():
     old = c.execute("SELECT * FROM payees WHERE id = ?", (b["id"],)).fetchone() if b.get("id") else None
     if b.get("id") and not old:
         return err("This recurring payment has been removed.", 404)
-    e = entity(c, old["entity_id"] if old else int(b["entity_id"]))
-    own_account(c, e, vals.get("account_id"))
+    e = entity(c, old["entity_id"] if old else id_from(str(b.get("entity_id"))))
+    if not old:
+        d = appsettings.values()
+        vals.setdefault("category", d["payee_default_category"] if vals.get("direction") != "in" else "receipt")
+        vals.setdefault("due_day", d["payee_default_due_day"])
+        vals.setdefault("month_offset", d["payee_default_month_offset"])
+        if not vals.get("account_id"):
+            acct = masters.first_active_account(c, e["id"])
+            vals["account_id"] = acct["id"] if acct else None
+    try:
+        vals = masters.payee_check(c, e, vals, old)
+    except masters.Refused as x:
+        return err(str(x), x.status)
     if old:
         c.execute(f"UPDATE payees SET {', '.join(k + ' = ?' for k in vals)} WHERE id = ?", (*vals.values(), old["id"]))
         db.log(c, f"Updated recurring payment: {vals['name']}")
@@ -771,7 +791,142 @@ def save_payee():
     changes, kept = db.sync_payee(c, old, new)
     changes += db.sync_reminders(c, new)
     c.commit()
-    return jsonify({"ok": True, "changes": changes, "kept": kept})
+    return jsonify({"ok": True, "id": pid, "changes": changes, "kept": kept})
+
+
+def _payee(c, pid):
+    p = c.execute("SELECT * FROM payees WHERE id = ?", (pid,)).fetchone()
+    if not p:
+        abort(make_response(*err("This recurring payment has been removed.", 404)))
+    return p
+
+
+def _reason():
+    r = _body().get("reason")
+    if not isinstance(r, str) or not r.strip():
+        abort(make_response(*err("Say why you're making this change.")))
+    return r.strip()
+
+
+@app.get("/api/payees/<int:pid>/usage")
+def payee_usage(pid):
+    c = con()
+    _payee(c, pid)
+    used = masters.payee_usage(c, pid)
+    return jsonify({"used_by": used, "used_total": sum(n for _, n in used), "can_delete": not used})
+
+
+def _payee_active(pid, active):
+    _reason()
+    c = con()
+    old = _payee(c, pid)
+    if bool(old["active"]) == active:
+        return jsonify({"changes": [], "kept": []})
+    c.execute("UPDATE payees SET active = ? WHERE id = ?", (int(active), pid))
+    db.log(c, f"{'Using again' if active else 'Stopped'} recurring payment: {old['name']}")
+    new = _payee(c, pid)
+    changes, kept = db.sync_payee(c, old, new)
+    changes += db.sync_reminders(c, new)
+    c.commit()
+    return jsonify({"changes": changes, "kept": kept})
+
+
+@app.post("/api/payees/<int:pid>/stop")
+def payee_stop(pid):
+    """Stops a recurring payment (with the reason given): new months don't add it, and the months already set up lose
+    its payments nobody has touched, from the current cycle on."""
+    return _payee_active(pid, False)
+
+
+@app.post("/api/payees/<int:pid>/use")
+def payee_use(pid):
+    return _payee_active(pid, True)
+
+
+@app.delete("/api/payees/<int:pid>")
+def payee_delete(pid):
+    """Deletes a recurring payment nothing uses yet (no payments, salary advances, budget lines or reminders); one in
+    use is stopped instead. The whole row stays in the audit trail."""
+    _reason()
+    c = con()
+    p = _payee(c, pid)
+    used = masters.payee_usage(c, pid)
+    if used:
+        return err(f"Used by {masters._words(used)}, so it can't be deleted. Stop using it instead.", 409)
+    c.execute("DELETE FROM payees WHERE id = ?", (pid,))
+    db.log(c, f"Deleted recurring payment: {p['name']}")
+    c.commit()
+    return jsonify({"ok": True})
+
+
+def _advance_change(pid, write):
+    """Runs a change to a payee's salary advances and brings it into the months already set up. The plans are taken
+    before the change (db.plans), as the payee's own row doesn't show its advances (the bug the review found: taken
+    after, they already held the change, and nothing was updated)."""
+    c = con()
+    p = _payee(c, pid)
+    was = db.plans(c, p)
+    try:
+        out = write(c, p)
+    except masters.Refused as x:
+        return err(str(x), x.status)
+    changes, kept = db.sync_payee(c, p, p, was_plans=was)
+    changes += db.sync_reminders(c, p)
+    c.commit()
+    return jsonify({**(out or {}), "changes": changes, "kept": kept})
+
+
+def _advance_text(a):
+    return f"{a['monthly_deduction']:,.2f} a month, {a['start_month']} to {a['end_month']}"
+
+
+@app.post("/api/payees/<int:pid>/advances")
+def advance_add(pid):
+    b = _body()
+
+    def write(c, p):
+        if p["category"] not in ("salary", "director"):
+            raise masters.Refused("Salary advances are recovered from a salary or director's fee only.")
+        v = masters.advance_check(c, b)
+        aid = c.execute("INSERT INTO advances (payee_id, monthly_deduction, start_month, end_month, note) VALUES (?, ?, ?, ?, ?)",
+                        (pid, v["monthly_deduction"], v["start_month"], v["end_month"], v.get("note"))).lastrowid
+        db.log(c, f"Added a salary advance recovery for {p['name']}: {_advance_text(v)}")
+        return {"advance": dict(c.execute("SELECT * FROM advances WHERE id = ?", (aid,)).fetchone())}
+    return _advance_change(pid, write)
+
+
+def _advance(c, aid):
+    a = c.execute("SELECT * FROM advances WHERE id = ?", (aid,)).fetchone()
+    if not a:
+        abort(make_response(*err("This salary advance has been removed.", 404)))
+    return a
+
+
+@app.patch("/api/advances/<int:aid>")
+def advance_update(aid):
+    b = _body()
+    c0 = con()
+    a = _advance(c0, aid)
+
+    def write(c, p):
+        v = masters.advance_check(c, {k: b[k] for k in ("monthly_deduction", "start_month", "end_month", "note") if k in b}, old=a)
+        if v:
+            c.execute(f"UPDATE advances SET {', '.join(k + ' = ?' for k in v)} WHERE id = ?", (*v.values(), aid))
+            db.log(c, f"Changed the salary advance recovery for {p['name']}: {_advance_text({**dict(a), **v})}")
+        return {"advance": dict(c.execute("SELECT * FROM advances WHERE id = ?", (aid,)).fetchone())}
+    return _advance_change(a["payee_id"], write)
+
+
+@app.delete("/api/advances/<int:aid>")
+def advance_delete(aid):
+    _reason()
+    c0 = con()
+    a = _advance(c0, aid)
+
+    def write(c, p):
+        c.execute("DELETE FROM advances WHERE id = ?", (aid,))
+        db.log(c, f"Removed the salary advance recovery for {p['name']}: {_advance_text(a)}")
+    return _advance_change(a["payee_id"], write)
 
 
 @app.post("/api/payees/<int:pid>/add-to-month")
@@ -1394,7 +1549,7 @@ def sql_entries():
 
 def _payment_from_entry(c, s, category=None):
     """Adds an SQL voucher that isn't in the tracker (a claim, an advance, a one-off bill) as a paid payment."""
-    acct = c.execute("SELECT id, currency FROM accounts WHERE entity_id = ? ORDER BY id LIMIT 1", (s["entity_id"],)).fetchone()
+    acct = masters.first_active_account(c, s["entity_id"])  # the cash book account, as SQL's cash book listing is for it
     direction = s["direction"] or "out"
     category = "receipt" if direction == "in" else (category or _guess_category(s["description"]))
     pid = c.execute(
@@ -1829,6 +1984,90 @@ def set_backup_dir():
     audit.event(c, "settings", "backup_dir", {"before": before, "after": path})
     c.commit()
     return jsonify({"backup_dir": path})
+
+
+def _setup_call(fn):
+    """Runs a Setup change; a refusal comes back as its plain sentence."""
+    c = con()
+    try:
+        out = fn(c)
+    except masters.Refused as x:
+        c.rollback()
+        return err(str(x), x.status)
+    c.commit()
+    return jsonify(out)
+
+
+@app.get("/api/setup/types")
+def setup_types():
+    return jsonify(masters.types())
+
+
+@app.get("/api/setup/settings")
+def setup_settings():
+    return jsonify({"values": appsettings.values(), "fields": appsettings.fields(rules.CATEGORIES)})
+
+
+@app.patch("/api/setup/settings")
+def setup_settings_save():
+    b = _body()
+
+    def run(c):
+        try:
+            v = appsettings.check(b.get("values") if isinstance(b.get("values"), dict) else {}, rules.CATEGORIES)
+        except ValueError as x:
+            raise masters.Refused(str(x))
+        v = {k: x for k, x in v.items() if x != appsettings.get(k)}
+        if v:
+            appsettings.save(c, v)
+            db.log(c, "Changed general settings: " + ", ".join(appsettings.SPEC[k][1].lower() for k in v))
+        return {"values": appsettings.values()}
+    return _setup_call(run)  # values are checked before anything is saved
+
+
+@app.get("/api/setup/<kind>")
+def setup_list(kind):
+    eid = request.args.get("entity", type=int)
+    return _setup_call(lambda c: masters.listing(c, kind, eid))
+
+
+@app.get("/api/setup/<kind>/<int:rid>")
+def setup_record(kind, rid):
+    return _setup_call(lambda c: masters.record(c, kind, rid))
+
+
+@app.post("/api/setup/<kind>")
+def setup_create(kind):
+    b = _body()
+
+    def run(c):
+        rid = masters.create(c, kind, b.get("fields"), entity_id=b.get("entity_id") if isinstance(b.get("entity_id"), int) else None)
+        return {"id": rid, **masters.record(c, kind, rid)}
+    return _setup_call(run)
+
+
+@app.patch("/api/setup/<kind>/<int:rid>")
+def setup_update(kind, rid):
+    b = _body()
+
+    def run(c):
+        notes = masters.update(c, kind, rid, b.get("fields"))
+        return {**masters.record(c, kind, rid), "notes": notes}
+    return _setup_call(run)
+
+
+@app.post("/api/setup/<kind>/<int:rid>/<act>")
+def setup_active(kind, rid, act):
+    if act not in ("stop", "use"):
+        return err("There is no such action.", 404)
+    _reason()
+    return _setup_call(lambda c: (masters.set_active(c, kind, rid, act == "use"), masters.record(c, kind, rid))[1])
+
+
+@app.delete("/api/setup/<kind>/<int:rid>")
+def setup_delete(kind, rid):
+    _reason()
+    return _setup_call(lambda c: (masters.delete(c, kind, rid), {"ok": True})[1])
 
 
 @app.get("/api/audit/status")

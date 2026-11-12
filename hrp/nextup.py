@@ -4,9 +4,16 @@ import calendar
 from collections import Counter
 from datetime import date, timedelta
 
-from . import auditpack, budget, db, rules
+from . import appsettings, auditpack, budget, db, rules
 
-SOON, AHEAD = 3, 7  # days: a row due within SOON is 'soon'; payments and checklist items show from AHEAD days before
+# Days (General settings): a row due within SOON is 'soon'; payments and checklist items show from AHEAD days before;
+# a backup is asked for after BACKUP days without one.
+def _soon():
+    return appsettings.get("soon_days")
+
+
+def _ahead():
+    return appsettings.get("ahead_days")
 P1, P2, P3 = 1, 2, 3
 STATES = ("overdue", "today", "soon", "later")  # most urgent first
 
@@ -32,7 +39,7 @@ def window(con, today):
     falls due within AHEAD days). Returns ([(company, month)], the older ones still open [(company, month)])."""
     start = db.shift_month(db.current_cycle(today), -1)
     shown, older = [], []
-    for e in con.execute("SELECT * FROM entities ORDER BY id").fetchall():
+    for e in con.execute("SELECT * FROM entities WHERE active = 1 ORDER BY sort, id").fetchall():  # companies in use
         for r in con.execute("SELECT month, closed_at FROM months WHERE entity_id = ? ORDER BY month", (e["id"],)).fetchall():
             if not r["closed_at"] and not db.before_tracking(e, r["month"]):
                 (older if r["month"] < start else shown).append((e, r["month"]))
@@ -56,13 +63,13 @@ def items(con, today, entity_id=None):
     lines to explain (9), and what falls due soon (5)."""
     shown, older = window(con, today)
     out = []
-    for e in con.execute("SELECT * FROM entities ORDER BY id").fetchall():
+    for e in con.execute("SELECT * FROM entities WHERE active = 1 ORDER BY sort, id").fetchall():  # companies in use
         months, past = ([m for x, m in found if x["id"] == e["id"]] for found in (shown, older))
         if entity_id in (None, e["id"]) and (months or past):
             out += _company(con, e, months, past, today)
     if entity_id is None:
         out += _backup(con, today)
-    iso, soon = today.isoformat(), (today + timedelta(days=SOON)).isoformat()
+    iso, soon = today.isoformat(), (today + timedelta(days=_soon())).isoformat()
     for r in out:
         d = r["due"]
         r["state"] = ("later" if not d else "overdue" if d < iso else "today" if d == iso else "soon" if d <= soon else "later")
@@ -107,7 +114,7 @@ def _s(n, many="s", one=""):
 def _company(con, e, months, past, today):
     """The rows of one company, from its months in the window and the older ones still open (past)."""
     iso, cur = today.isoformat(), db.current_cycle(today)
-    ahead, soon = ((today + timedelta(days=n)).isoformat() for n in (AHEAD, SOON))
+    ahead, soon = ((today + timedelta(days=n)).isoformat() for n in (_ahead(), _soon()))
     worked = [m for m in months if m <= cur]  # a later month only gives what falls due soon
     pays = []
     for m in months + past:
@@ -156,7 +163,7 @@ def _pay_go(group):
 
 def _deadlines(e, tasks, today):
     """Rule 1: KWSP, PERKESO and e-PCB to submit, e-Invoices to issue and the budget, from SOON days before they're due."""
-    soon = (today + timedelta(days=SOON)).isoformat()
+    soon = (today + timedelta(days=_soon())).isoformat()
     rows, submit = [], {}
     for t in tasks:
         if t["code"] not in DEADLINES or t["due_date"] > soon:
@@ -416,8 +423,9 @@ def _backup(con, today):
     days = (today - date.fromisoformat(last[:10])).days
     since = sum(con.execute(f"SELECT COUNT(*) FROM {t} WHERE imported_at > ? AND imported_at <= ?", (last, end)).fetchone()[0]
                 for t in ("statements", "sql_imports"))
-    if days < AHEAD and not since:
+    every = appsettings.get("backup_reminder_days")
+    if days < every and not since:
         return []
-    text = (f"Last backup: {db.short_day(last[:10])}" + (f", {days} days ago" if days >= AHEAD else "")
+    text = (f"Last backup: {db.short_day(last[:10])}" + (f", {days} days ago" if days >= every else "")
             + (f"; {since} import{_s(since)} since" if since else ""))
     return [_row(13, None, None, text, None, P3, {"view": "settings"}, "backup")]

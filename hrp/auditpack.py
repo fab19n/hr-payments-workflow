@@ -310,7 +310,10 @@ def reconciliation(con, entity, month):
     difference (opening + lines - closing), balanced, matched (lines linked to a payment), to_explain (lines left),
     no_docs (lines marked as needing no documents), recon (the month's reconciliation: recon.month_summary), no_line: paid payments on the account with no bank line anywhere that were
     paid in the statement's month (whatever their payroll month) or belong to the month's payroll (paid in another month)}]. A payment with no account of its own counts for the only account in its currency."""
-    accts = con.execute("SELECT * FROM accounts WHERE entity_id = ? ORDER BY id", (entity["id"],)).fetchall()
+    all_accts = con.execute("SELECT * FROM accounts WHERE entity_id = ?", (entity["id"],)).fetchall()
+    # a stopped account counts only in a month it has a statement for (as db.month_statements has it)
+    accts = con.execute("""SELECT * FROM accounts WHERE entity_id = ? AND (active = 1 OR id IN (SELECT account_id FROM statements
+                           WHERE month = ?)) ORDER BY id""", (entity["id"], month)).fetchall()
     pays = con.execute(
         """SELECT * FROM payments WHERE entity_id = ? AND paid_date IS NOT NULL AND paid_date <> ''
            AND (substr(paid_date, 1, 7) = ? OR month = ?) AND NOT EXISTS
@@ -322,7 +325,7 @@ def reconciliation(con, entity, month):
         lines = con.execute("SELECT * FROM statement_lines WHERE statement_id = ? ORDER BY line_no", (st["id"],)).fetchall() if st else []
         total = round(sum(l["amount"] for l in lines), 2)
         diff = round(st["opening"] + total - st["closing"], 2) if st and st["opening"] is not None and st["closing"] is not None else None
-        same = [x for x in accts if x["currency"] == a["currency"]]
+        same = [x for x in all_accts if x["currency"] == a["currency"]]  # all accounts, as recon.movements counts them
         no_line = [p for p in pays if p["account_id"] == a["id"] or (p["account_id"] is None and p["currency"] == a["currency"] and len(same) == 1)]
         out.append({"label": a["label"], "currency": a["currency"], "statement": st, "lines": lines, "sum": total, "difference": diff,
                     "balanced": diff is not None and abs(diff) <= 0.01,

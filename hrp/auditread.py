@@ -14,7 +14,7 @@ TABLE_LABELS = {
     "statement_lines": ("Bank line", "bank lines"), "sql_imports": ("SQL import", "SQL imports"),
     "sql_entries": ("SQL entry", "SQL entries"), "activity": ("Activity log line", "activity log lines"),
     "book_openings": ("Book opening", "book openings"), "budgets": ("Budget", "budgets"),
-    "budget_lines": ("Budget line", "budget lines"),
+    "budget_lines": ("Budget line", "budget lines"), "app_settings": ("General setting", "general settings"),
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),
@@ -40,8 +40,12 @@ FIELD_LABELS = {
     "currency": "Currency", "monthly_deduction": "Monthly deduction", "start_month": "From", "end_month": "Until",
     "first_month": "First month tracked", "uses_sql": "Kept in SQL Account", "code": "Code", "what": "Line",
     "balance_as_at": "Balance as at", "as_at": "Balance as at", "details": "Details", "month": "Month",
+    "short_name": "Short name", "reg_no": "Registration no.", "tin": "Tax ID (TIN)", "sst_no": "SST no.",
+    "employer_kwsp": "KWSP employer no.", "employer_perkeso": "PERKESO employer no.", "employer_lhdn": "LHDN employer no.",
+    "sql_database": "SQL Account database", "bank": "Bank", "statement_format": "Statement format", "gl_code": "GL account code",
+    "sql_payment_method": "SQL payment method", "cash_book": "Cash book account", "key": "Setting", "value": "Value",
 }
-NAME_FIELDS = ("description", "name", "title", "label", "doc_no", "original_name", "what", "code", "month")
+NAME_FIELDS = ("description", "name", "title", "label", "doc_no", "original_name", "what", "code", "month", "key")
 # Bank details and account numbers, wherever they are kept (a budget line's details are filled from the payee's bank
 # details): masked in the trail's views and export until someone asks to see them.
 SENSITIVE = {("payees", "bank_details"), ("accounts", "number"), ("budget_lines", "details")}
@@ -230,9 +234,13 @@ def entry(con, tx_id, show=False):
 
 def history(con, tbl, key, show=False):
     """Every change to one record, newest first, each with when, who, how and why."""
-    rows = _fetch(con, """SELECT r.*, t.id AS tx_id, t.actor, t.source, t.action, t.reason, t.late
+    # a recurring payment's history includes its salary advances (rows of their own table, tied by payee_id)
+    child = ("""OR (r.tbl = 'advances' AND r.op != 'event' AND CAST(json_extract(COALESCE(r.after, r.before), '$.payee_id') AS TEXT) = ?)"""
+             if tbl == "payees" else "")
+    rows = _fetch(con, f"""SELECT r.*, t.id AS tx_id, t.actor, t.source, t.action, t.reason, t.late
                           FROM audit_row r LEFT JOIN audit_tx t ON t.token = r.token
-                          WHERE r.tbl = ? AND r.row_key = ? ORDER BY r.id DESC""", (tbl, str(key)))
+                          WHERE (r.tbl = ? AND r.row_key = ?) {child} ORDER BY r.id DESC""",
+                  (tbl, str(key), str(key)) if child else (tbl, str(key)))
     names = _Names(con)
     out = []
     for r in rows:

@@ -5,7 +5,7 @@ import re
 import sqlite3
 from datetime import date, datetime, timedelta
 
-from . import audit, rules
+from . import appsettings, audit, rules
 from .config import BACKUP_DIR, DB_PATH, PACKS_DIR, SEED_PATH
 from .sqlimport import MONEY_IN, MONEY_OUT, PURCHASE_DOCS, SALES_DOCS
 
@@ -123,6 +123,10 @@ def log(con, what):
 
 
 # ---------- updates to an existing records.db ----------
+
+def _has_col(con, table, col):
+    return col in {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}
+
 
 def add_column(con, table, col, decl):
     if col not in {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}:
@@ -264,7 +268,17 @@ MIGRATIONS = [
     # 18. An index of the rows each audit entry seals that another program wrote (accepted outside changes), so the
     #     check for new ones stays quick however many have been accepted. Nothing in the records changes.
     audit.sealed_index,
+    # 19. Setup: companies get a short name, registration, tax and employer numbers, their SQL database, notes, and
+    #     active and sort; bank accounts their statement format, GL code, SQL payment method, cash book, notes, and
+    #     active and sort; General settings get a table, filled with the values used until now. Each company's first
+    #     account becomes its cash book, as the app took it to be. Nothing else in the records changes.
+    lambda con: _setup_columns(con),
 ]
+
+
+def _setup_columns(con):
+    from . import masters
+    masters.install(con)
 
 
 def filing_month(description, doc_date):
@@ -338,6 +352,7 @@ def init():
         con.execute(f"PRAGMA user_version = {n}")
         con.commit()
     con.disarm()
+    appsettings.load(con)
     trail = audit.startup(con)
     if not con.execute("SELECT 1 FROM entities").fetchone() and SEED_PATH.exists():
         con.arm("seed", "Loaded starting data from seed.json")
@@ -360,6 +375,8 @@ def load_seed(con, seed):
                             (eid, a["label"], a.get("bank"), a.get("number"), a.get("currency", "MYR")))
             acct_ids[a["label"]] = c.lastrowid
         default_acct = next(iter(acct_ids.values()), None)
+        if default_acct and "cash_book" in {r["name"] for r in con.execute("PRAGMA table_info(accounts)")}:
+            con.execute("UPDATE accounts SET cash_book = 1 WHERE id = ?", (default_acct,))  # the first account, as until now
         for i, p in enumerate(e.get("payees", [])):
             c = con.execute(
                 """INSERT INTO payees (entity_id, account_id, name, category, desc_template, amount, amount_varies,
@@ -414,9 +431,10 @@ def advance_for(con, payee_id, month):
 
 
 def current_cycle(today=None):
-    """The payroll month being worked on: until the 10th you're still closing last month's cycle."""
+    """The payroll month being worked on: until the rollover day (General settings, the 10th unless changed) you're
+    still closing last month's cycle."""
     t = today or date.today()
-    return shift_month(f"{t.year:04d}-{t.month:02d}", -1 if t.day <= 10 else 0)
+    return shift_month(f"{t.year:04d}-{t.month:02d}", -1 if t.day <= appsettings.get("cycle_rollover_day") else 0)
 
 
 def before_tracking(ent, month):
@@ -687,7 +705,25 @@ def _typed_on(p, was):
     return bool(p["bank_ref"] or p["einvoice_ref"]) or p["notes"] not in (None, was.get("notes"))
 
 
-def sync_payee(con, old, new, today=None):
+def _sync_months(con, entity_id, t, filed=False):
+    """The months a recurring payment's change reaches: set up, from the current cycle (and the first month tracked)
+    on, and not marked as filed; with filed=True, the filed ones in that range instead (left as they were)."""
+    ent = con.execute("SELECT * FROM entities WHERE id = ?", (entity_id,)).fetchone()
+    return [m for (m,) in con.execute(f"""SELECT month FROM months WHERE entity_id = ? AND month >= ?
+                                          AND closed_at IS {'NOT ' if filed else ''}NULL ORDER BY month""",
+                                      (entity_id, max(current_cycle(t), ent["first_month"] or ""))).fetchall()]
+
+
+def plans(con, p, today=None):
+    """{month: what the payee plans then} over the months sync_payee walks, as things stand now: taken before a change
+    the payee's own row doesn't show (a salary advance added, changed or removed), and handed to sync_payee as
+    was_plans, so it compares with the plans from before the change."""
+    t = today or date.today()
+    months = _sync_months(con, p["entity_id"], t) + _sync_months(con, p["entity_id"], t, filed=True)
+    return {m: _due_in(con, p, m) for m in months}
+
+
+def sync_payee(con, old, new, today=None, was_plans=None):
     """Brings a saved recurring payment into the months already set up, from the current cycle on, for the payments
     not due yet. One whose due date has passed is left as it was: it was most likely paid and only waits for the bank
     statement or SQL. A month whose planned payment the save doesn't change is left alone. A month it is now due in,
@@ -698,12 +734,16 @@ def sync_payee(con, old, new, today=None):
     payment added by hand to a month the payee wasn't due in. Returns (what changed, payments left as they were
     although the change would alter them)."""
     t = today or date.today()
-    ent = con.execute("SELECT * FROM entities WHERE id = ?", (new["entity_id"],)).fetchone()
     changes, kept = [], []
-    for (month,) in con.execute("SELECT month FROM months WHERE entity_id = ? AND month >= ? ORDER BY month",
-                                (new["entity_id"], max(current_cycle(t), ent["first_month"] or ""))).fetchall():
+    for month in _sync_months(con, new["entity_id"], t, filed=True):  # filed months never change: say so where it would
+        was = was_plans.get(month, {}) if was_plans is not None else _due_in(con, old, month)
+        if _due_in(con, new, month) != was and con.execute("SELECT 1 FROM payments WHERE payee_id = ? AND month = ?",
+                                                           (new["id"], month)).fetchone():
+            kept.append(f"{month_label(month)}: left as it was, as the month is marked as filed")
+    for month in _sync_months(con, new["entity_id"], t):
         label = month_label(month)
-        want, was = _due_in(con, new, month), _due_in(con, old, month)
+        want = _due_in(con, new, month)
+        was = was_plans.get(month, {}) if was_plans is not None else _due_in(con, old, month)
         if want == was:
             continue
         pays = con.execute("SELECT * FROM payments WHERE payee_id = ? AND month = ? ORDER BY id", (new["id"], month)).fetchall()
@@ -1209,7 +1249,10 @@ def month_statements(con, ent, month):
            AND l.status = 'unmatched') AS to_explain FROM statements s JOIN accounts a ON a.id = s.account_id
            WHERE a.entity_id = ? AND s.month = ?""", (ent["id"], month))}
     out = []
-    for a in con.execute("SELECT id, label FROM accounts WHERE entity_id = ? ORDER BY id", (ent["id"],)).fetchall():
+    # a stopped account counts only in a month it has a statement for (so it stops asking for new ones)
+    stopped = "AND (active = 1 OR id IN (SELECT account_id FROM statements WHERE month = ?))" if _has_col(con, "accounts", "active") else ""
+    for a in con.execute(f"SELECT id, label FROM accounts WHERE entity_id = ? {stopped} ORDER BY id",
+                         (ent["id"], month) if stopped else (ent["id"],)).fetchall():
         s = sts.get(a["id"])
         out.append({"id": a["id"], "label": a["label"], "statement": s["id"] if s else None,
                     "check_ok": bool(s and s["check_ok"]), "to_explain": s["to_explain"] if s else 0})

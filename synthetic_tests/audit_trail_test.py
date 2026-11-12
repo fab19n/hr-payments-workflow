@@ -66,7 +66,14 @@ db.MIGRATIONS[:] = full
 trail = db.init()
 raw = sqlite3.connect(config.DB_PATH)
 after = business_rows(raw)
-added = {t: after[t][len(before[t]):] for t in after if after[t] != before.get(t)}
+# Every original column keeps its value (later updates add columns: compare each row's original part); new rows are listed.
+added = {}
+for t in after:
+    if t == "app_settings":  # update 19's own table
+        continue
+    old = before.get(t, [])
+    if any(new[:len(prev)] != prev for new, prev in zip(after[t], old)) or after[t][len(old):]:
+        added[t] = after[t][len(old):] or "changed"
 check("updating to 17 changes no record (only the update's own activity line is added)",
       set(added) <= {"activity"} and all("Saved a copy" in r[2] for r in added.get("activity", [])), added)
 check("the update reports a clean trail", trail["entries"] >= 1 and trail["outside"] == 0 and not trail["head"]

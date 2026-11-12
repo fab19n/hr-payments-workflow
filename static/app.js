@@ -65,18 +65,25 @@ function docChip(p, dt) {
   return p.evidence[dt] && !p.documents.some(x => x.doc_type === dt) ? evidenceChip(p.evidence[dt]) : `<span class="chip have">✓ ${esc(dt.toUpperCase())}</span>`;
 }
 
-// Payroll cycle: until the 10th you're still closing last month's cycle. Of today, or of the day given (a date).
-function currentCycle(t = new Date()) { const d = new Date(t.getFullYear(), t.getMonth() - (t.getDate() <= 10 ? 1 : 0), 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; }
+// Payroll cycle: until the rollover day (General settings, the 10th unless changed) you're still closing last month's
+// cycle. Of today, or of the day given (a date).
+function currentCycle(t = new Date()) {
+  const r = Number(state.meta?.settings?.cycle_rollover_day ?? 10), roll = r >= 1 && r <= 31 ? r : 10;
+  const d = new Date(t.getFullYear(), t.getMonth() - (t.getDate() <= roll ? 1 : 0), 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 // Today is worked out when it is wanted, never kept: the day the page was last drawn is state.day.
 const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
 
-const state = { meta: null, view: "overview", entity: null, month: currentCycle(), day: dayKey(), data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
+// month and day are set in start(), once the settings (the rollover day) are loaded.
+const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
   nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
-  trail: { f: {}, entries: [], more: false, labels: null, show: false } };
+  trail: { f: {}, entries: [], more: false, labels: null, show: false },
+  setup: { kind: null, id: null, types: null, stopped: false, drawer: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
-  ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup & log"]]]];
+  ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
+  ["Setup", [["setup", "Setup"]]]];
 const ICON = {
   overview: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
   entity: '<path d="M4 21V5l8-3v19M12 9h8v12M8 8h.01M8 12h.01M8 16h.01M16 13h.01M16 17h.01M2 21h20"/>',
@@ -87,6 +94,7 @@ const ICON = {
   audit: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M9 15l2 2 4-4"/>',
   settings: '<path d="M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
   trail: '<path d="M12 3l8 3v6c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V6zM9 12l2 2 4-4"/>',
+  setup: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
 };
 const icon = v => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[v]}</svg>`;
 
@@ -210,8 +218,9 @@ function budgetChart(d) {
 function renderNav() {
   const btn = (v, label, on, extra = "") => `<button data-view="${v}"${extra} class="${on ? "on" : ""}">${icon(v)}<span>${label}</span></button>`;
   const items = [`<div class="group">Dashboard</div>`, btn("overview", "Overview", state.view === "overview"), `<div class="group">Companies</div>`];
-  for (const e of state.meta.entities)
-    items.push(btn("entity", `${esc(e.code)} <small>${esc(e.name.replace(/ (Sdn Bhd|Ltd)$/i, ""))}</small>`, state.view === "entity" && state.entity === e.id, ` data-entity="${e.id}"`));
+  // Stopped companies stay in the records (history needs them) but not in the sidebar.
+  for (const e of state.meta.entities.filter(isActive))
+    items.push(btn("entity", `${esc(e.code)} <small>${esc(e.short_name || e.name.replace(/ (Sdn Bhd|Ltd)$/i, ""))}</small>`, state.view === "entity" && state.entity === e.id, ` data-entity="${e.id}"`));
   for (const [group, views] of VIEWS) {
     items.push(`<div class="group">${group}</div>`);
     for (const [v, l] of views) items.push(btn(v, l, state.view === v));
@@ -223,13 +232,16 @@ function renderNav() {
   const g = VIEWS.find(x => x[1].some(v => v[0] === state.view));
   crumb.textContent = state.view === "overview" ? "Dashboard › Overview"
     : state.view === "entity" ? `Companies › ${state.meta.entities.find(e => e.id === state.entity)?.code || ""}`
+    : state.view === "setup" ? `Setup${setupSpec() ? " › " + sectionLabel(setupSpec()) : ""}`
     : g ? `${g[0]} › ${g[1].find(v => v[0] === state.view)[1]}` : "";
 }
 
 function go(view, entity) {
   if (!closeDrawer()) return;
   state.view = view; state.bankOnly = false; state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; if (entity) state.entity = +entity;
-  if (!state.entity) state.entity = state.meta.entities[0].id;
+  if (!state.entity) state.entity = firstEntityId();
+  if (view === "setup") state.setup.id = null;  // the section stays, so Setup opens where it was left
+  state.payeeSaved = null;
   renderNav(); render();
 }
 
@@ -246,14 +258,23 @@ async function render() {
     else if (state.view === "audit") await viewAudit(main);
     else if (state.view === "settings") await viewSettings(main);
     else if (state.view === "trail") await viewTrail(main);
+    else if (state.view === "setup") await viewSetup(main);
     if (state.view === "overview") trailNotice();
   } catch (e) { main.innerHTML = `<div class="card"><b>Couldn't load this page.</b><div class="note">${esc(e.message)}</div></div>`; }
 }
 
 function entityPicker() {
-  return `<div class="row noprint">${state.meta.entities.map(e => `<button class="${e.id === state.entity ? "btn" : "ghost"} small" data-pick-entity="${e.id}">${esc(e.name)}</button>`).join("")}</div>`;
+  return `<div class="row noprint">${state.meta.entities.filter(e => isActive(e) || e.id === state.entity).map(e => `<button class="${e.id === state.entity ? "btn" : "ghost"} small" data-pick-entity="${e.id}">${esc(e.name)}</button>`).join("")}</div>`;
 }
 const ent = () => state.meta.entities.find(e => e.id === state.entity);
+// A company or bank account is in use unless it was stopped (active 0); one from before Setup has no flag and is in use.
+const isActive = x => x.active == null || !!+x.active;
+const firstEntityId = () => (state.meta.entities.find(isActive) || state.meta.entities[0])?.id ?? null;
+// The accounts to choose from: those in use, and the one already chosen even if it was stopped since.
+const pickAccounts = (e, keep) => (e?.accounts || []).filter(a => isActive(a) || a.id === keep);
+// A company's usual account: its cash book, else its first account in use.
+const defaultAccount = e => { const live = (e?.accounts || []).filter(isActive); return live.find(a => +a.cash_book) || live[0] || e?.accounts?.[0] || null; };
+const acctOption = (a, sel, number) => `<option value="${a.id}" ${a.id === sel ? "selected" : ""}>${esc(a.label)}${number && a.number ? " · " + esc(a.number) : ""}${isActive(a) ? "" : " (stopped)"}</option>`;
 // A month is set up (its checklist and recurring payments added) when you ask, or for the current cycle on loading.
 // One not set up can still hold payments (from an SQL voucher or a bank line), which are shown below this card.
 const notSetUp = (e, month, held) => `<div class="card noprint"><h2>${esc(monthName(month))} isn't set up yet</h2>
@@ -504,19 +525,40 @@ function unsavedEdits() {
   }
   return out;
 }
-const mayLeave = () => !Object.keys(unsavedEdits()).length || confirm("Discard your changes?");
+// Other drawers (Setup, a recurring payment) say what they hold through state.drawerDirty, set by watchDrawer once drawn.
+// What their inputs hold, by id; the reason box has a check of its own.
+function drawerInputs() {
+  const out = {};
+  for (const el of $("#drawer").querySelectorAll("input[id], select[id], textarea[id]")) if (el.id !== "su-reason") out[el.id] = el.type === "checkbox" ? el.checked : el.value;
+  return out;
+}
+// The inputs changed since the drawer was drawn, as {input id: value}.
+function drawerEdits() {
+  const at = state.drawerAt || {}, now = drawerInputs(), out = {};
+  for (const k in at) if (k in now && now[k] !== at[k]) out[k] = now[k];
+  return out;
+}
+// Called once a drawer is drawn: what it holds now counts as saved. keep: what was typed before it was drawn again.
+function watchDrawer(keep = {}) {
+  state.drawerAt = drawerInputs(); state.drawerDirty = () => Object.keys(drawerEdits()).length > 0;
+  for (const [k, v] of Object.entries(keep)) { const el = document.getElementById(k); if (el) el[el.type === "checkbox" ? "checked" : "value"] = v; }
+}
+// A reason typed in the Why box and not used yet.
+const reasonTyped = () => !!$("#su-reason")?.value.trim() && !$("#setupWhy").hidden;
+const drawerDirty = () => !$("#drawer").hidden && (Object.keys(unsavedEdits()).length > 0 || !!state.drawerDirty?.() || reasonTyped());
+const mayLeave = () => !drawerDirty() || confirm("Discard your changes?");
 
 // False when you choose to keep changes not saved yet; force closes it anyway (the payment was removed).
 function closeDrawer(force) {
   if (!force && !mayLeave()) return false;
-  $("#drawer").hidden = true; state.openPayment = null;
+  $("#drawer").hidden = true; state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null; state.setup.drawer = null;
   return true;
 }
 
 function openPayment(id, keep = {}) {
   const p = state.data.payments.find(x => x.id === id);
   if (!p) return closeDrawer(true);
-  state.openPayment = id;
+  state.openPayment = id; state.drawerDirty = null;
   const dt = state.meta.doc_types;
   const ofType = t => p.documents.filter(x => x.doc_type === t);
   const required = p.required.map(t => slotHtml(t, ofType(t), p.evidence[t], p.not_counted[t])).join("");
@@ -947,9 +989,9 @@ async function viewBank(main) {
   // Opened from Before you print or Next up: that account is shown, and with lines to explain its review opens.
   const focus = state.focusBank; state.focusBank = null;
   if (focus?.account && e.accounts.some(a => a.id === focus.account)) { if (R.account !== focus.account) R.rv = null; R.account = focus.account; }
-  if (!e.accounts.some(a => a.id === R.account)) R.account = e.accounts[0]?.id;
+  if (!e.accounts.some(a => a.id === R.account)) R.account = defaultAccount(e)?.id;
   if (focus && state.month) R.year = state.month.slice(0, 4);
-  const acctOpts = e.accounts.map(a => `<option value="${a.id}" ${a.id === R.account ? "selected" : ""}>${esc(a.label)}${a.number ? " · " + esc(a.number) : ""}</option>`).join("");
+  const acctOpts = pickAccounts(e, R.account).map(a => acctOption(a, R.account, true)).join("");
   main.innerHTML = `${entityPicker()}
     <div class="card"><h1>Bank statements</h1>
       <div class="note">Import each month's Maybank statement PDF. Every line is matched to a payment automatically where the payee and amount agree (split DuitNow transfers are added together). Then review the month: confirm what was matched, explain the rest, and mark the month reconciled once the books agree with the bank.</div>
@@ -985,7 +1027,7 @@ async function drawRecon(focus) {
   const firstMonth = y.openings[0]?.month || y.rows.filter(r => r.statement_id).map(r => r.month).sort()[0] || y.rows.map(r => r.month).sort()[0] || "";
   box.innerHTML = `<div class="card">
       <div class="row spread"><div><div class="eyebrow">${esc(e.name)}</div><h2>${esc(y.account.label)} · ${esc(y.year)}</h2></div>
-      <div class="row noprint">${e.accounts.length > 1 ? e.accounts.map(a => `<button class="${a.id === R.account ? "btn" : "ghost"} small" data-rc-acct="${a.id}">${esc(a.label)}</button>`).join("") : ""}
+      <div class="row noprint">${pickAccounts(e, R.account).length > 1 ? pickAccounts(e, R.account).map(a => `<button class="${a.id === R.account ? "btn" : "ghost"} small" data-rc-acct="${a.id}">${esc(a.label)}</button>`).join("") : ""}
       ${y.years.length > 1 ? y.years.map(yr => `<button class="${yr === y.year ? "btn" : "ghost"} small" data-rc-year="${yr}">${esc(yr)}</button>`).join("") : ""}</div></div>
       <div class="note">Click a month for its summary. Book closing comes from ${esc(y.source)}.</div>
       <div class="tbl-wrap"><table><thead><tr><th>Month</th><th>Status</th><th class="num">Bank closing</th><th class="num">Book closing</th><th>Reconciled on</th><th class="noprint">Statement</th></tr></thead><tbody>
@@ -1191,6 +1233,7 @@ function explainLine(lineId) {
   const pick = { id: String(V.choice[l.id] || "").startsWith("p:") ? +V.choice[l.id].slice(2) : null, q: "", all: false };
   // Money in is most likely a receipt, money out a one-off payment.
   const cat = amount > 0 ? "receipt" : "other";
+  state.drawerDirty = null;
   $("#drawer").innerHTML = `
     <div class="ex-head"><div class="row spread"><h2>Explain bank line</h2><button class="ghost small" id="closeDrawer">Close</button></div>
       <div class="ex-line"><div class="row spread"><span class="muted">${shortDate(l.txn_date)} · ${amount > 0 ? "Money in" : "Money out"}</span><b class="mono">${money(Math.abs(amount), cur)}</b></div>
@@ -1367,17 +1410,25 @@ function renderSqlPreview(p) {
 }
 
 /* ---------------- Recurring payees ---------------- */
+// What a change to a recurring payment (a save, stop, use again, a salary advance) did to the months already set up.
+function savedCard(ch, head = "Saved") {
+  if (!ch || !(ch.changes?.length || ch.kept?.length)) return "";
+  return `<div class="card"><h3>${esc(head)}. Months already set up:</h3>
+    ${(ch.changes || []).map(x => `<div class="note">${esc(x)}</div>`).join("")}
+    ${ch.kept?.length ? `<div class="note"><b>Left as they were</b> (paid, linked, changed by hand, or already due; change them by hand if needed): ${ch.kept.map(esc).join("; ")}</div>` : ""}</div>`;
+}
+
+// The Recurring page, or the Recurring payments section of Setup: main is the element it is drawn in.
 async function viewPayees(main) {
   const e = ent();
+  if (!e) { main.innerHTML = `<div class="card"><h1>Recurring payments</h1><div class="note">Add a company first, under Setup › Companies.</div></div>`; return; }
   const list = await api(`/api/payees?entity=${state.entity}&month=${state.month}`);
   // A month not set up gets the card that sets it up, rather than an Add button per row that would set it all up.
   const m = await api(`/api/month?entity=${state.entity}&month=${state.month}`);
   const cats = state.meta.categories, mon = MONTHS[+state.month.slice(5) - 1];
-  // What the last save changed in the months already set up, shown once.
+  // What the last save changed in the months already set up, shown once (a save that couldn't keep its drawer open).
   const ch = state.payeeSaved; state.payeeSaved = null;
-  const saved = ch && (ch.changes.length || ch.kept.length) ? `<div class="card"><h3>Saved. Months already set up:</h3>
-    ${ch.changes.map(x => `<div class="note">${esc(x)}</div>`).join("")}
-    ${ch.kept.length ? `<div class="note"><b>Left as they were</b> (paid, linked, changed by hand, or already due; change them by hand if needed): ${ch.kept.map(esc).join("; ")}</div>` : ""}</div>` : "";
+  const saved = savedCard(ch);
   const payeeRow = p => `<tr><td><b>${esc(p.name)}</b><div class="note">${esc(p.desc_template)}</div>
       ${p.start_date ? `<div class="note">Starts ${fmtDate(p.start_date)}</div>` : ""}${p.end_date ? `<div class="note">Ends ${fmtDate(p.end_date)}</div>` : ""}
       ${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}${p.advances.map(a => `<div class="note">Advance: −${money(a.monthly_deduction)} a month, ${a.start_month} to ${a.end_month}</div>`).join("")}</td>
@@ -1407,17 +1458,45 @@ async function viewPayees(main) {
   state.payees = list;
 }
 
-function editPayee(id) {
-  const p = id === "new" ? { name: "", category: "utility", desc_template: "", amount: "", amount_varies: 0, month_offset: 1, due_day: 6, active: 1, account_id: ent().accounts[0]?.id } : state.payees.find(x => x.id === +id);
+// A number from the settings, or d when it isn't one.
+const numOr = (v, d) => v == null || v === "" || Number.isNaN(+v) ? d : +v;
+// The defaults of a new recurring payment, from General settings.
+function payeeDefaults() {
+  const S = state.meta.settings || {}, cat = S.payee_default_category;
+  return { category: cat && state.meta.categories[cat] ? cat : "utility", month_offset: numOr(S.payee_default_month_offset, 1) ? 1 : 0,
+    due_day: Math.min(31, Math.max(1, numOr(S.payee_default_due_day, 6))) };
+}
+// "12 payments, 3 budget lines", from the server's [label, count] pairs.
+const usedText = u => (u || []).filter(x => +x[1]).map(([l, n]) => `${n} ${l}`).join(", ");
+const usedHtml = u => usedText(u) ? `<ul class="used">${u.filter(x => +x[1]).map(([l, n]) => `<li>${esc(n)} ${esc(l)}</li>`).join("")}</ul>`
+  : `<div class="note">Not used anywhere yet.</div>`;
+
+// The recurring payment's drawer. Opened again after a change made in it (saved: what the change did to the months
+// already set up; keep: what was typed elsewhere in the drawer and not saved yet).
+async function editPayee(id, { saved = null, keep = {} } = {}) {
+  const e = ent(), def = payeeDefaults();
+  const p = id === "new" ? { name: "", category: def.category, desc_template: "", amount: "", amount_varies: 0, month_offset: def.month_offset, due_day: def.due_day,
+    active: 1, account_id: defaultAccount(e)?.id, advances: [] } : state.payees?.find(x => x.id === +id);
+  if (!e || !p) return closeDrawer(true);
+  const usage = id === "new" ? null : await api(`/api/payees/${p.id}/usage`).catch(() => null);
+  state.openPayment = null; state.why = null;
   const cats = state.meta.categories;
+  const acts = id === "new" ? "" : `<div><h3>Where used</h3>${usage ? usedHtml(usage.used_by) : `<div class="note">Couldn't read where it is used.</div>`}</div>
+    <div class="row">${p.active ? `<button class="ghost" type="button" data-payee-act="stop" data-payee-id="${p.id}">Stop using</button>`
+      : `<button class="ghost" type="button" data-payee-act="use" data-payee-id="${p.id}">Use again</button>`}
+      ${usage?.can_delete ? `<button class="btn danger small" type="button" data-payee-act="delete" data-payee-id="${p.id}">Delete</button>` : ""}</div>
+    <div class="note">${p.active ? "Stopping it takes it off the months not due yet and leaves it out of new months; its history stays." : "Stopped: it isn't added to new months. Use again puts it back."}${usage?.can_delete ? "" : " It can't be deleted once it has been used; stop using it instead."}</div>
+    ${whyForm()}`;
   $("#drawer").innerHTML = `
-    <div class="row spread"><h2>${id === "new" ? "Add recurring payment" : "Edit " + esc(p.name)}</h2><button class="ghost small" id="closeDrawer">Close</button></div>
+    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">Recurring payment · ${esc(e.code)}</div><h2>${id === "new" ? "Add recurring payment" : esc(p.name)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
+      ${id === "new" ? "" : `<div class="row">${p.active ? `<span class="pill ok">In use</span>` : `<span class="pill grey">Stopped</span>`}</div>`}</div>
+    ${savedCard(saved, saved?.head || "Saved")}
     <form class="form" id="payeeForm" style="grid-template-columns:1fr 1fr">
       <label class="field" style="grid-column:1/-1"><span>Payee</span><input id="py-name" value="${esc(p.name)}" required></label>
       <label class="field" style="grid-column:1/-1"><span>Description each month ({M} = payroll month, {M+1} = next month)</span><input id="py-desc" value="${esc(p.desc_template)}" placeholder="TNB - {M}"></label>
       <label class="field"><span>Money</span><select id="py-dir"><option value="out">Money out (a payment)</option><option value="in" ${p.direction === "in" ? "selected" : ""}>Money in (received)</option></select></label>
       <label class="field"><span>Type</span><select id="py-cat">${Object.entries(cats).map(([k, v]) => `<option value="${k}" ${k === p.category ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>
-      <label class="field"><span id="py-acct-lbl">${p.direction === "in" ? "Paid into" : "Pay from"}</span><select id="py-acct">${ent().accounts.map(a => `<option value="${a.id}" ${a.id === p.account_id ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></label>
+      <label class="field"><span id="py-acct-lbl">${p.direction === "in" ? "Paid into" : "Pay from"}</span><select id="py-acct">${pickAccounts(e, p.account_id).map(a => acctOption(a, p.account_id)).join("")}</select></label>
       <label class="field"><span>Usual amount</span><input id="py-amt" type="number" step="0.01" value="${p.amount ?? ""}"></label>
       <label class="field"><span>Amount changes monthly</span><select id="py-var"><option value="0">No, fixed</option><option value="1" ${p.amount_varies ? "selected" : ""}>Yes, estimate</option></select></label>
       <label class="field"><span id="py-off-lbl">${p.direction === "in" ? "Received in" : "Paid in"}</span><select id="py-off"><option value="0">The payroll month</option><option value="1" ${p.month_offset ? "selected" : ""}>The following month</option></select></label>
@@ -1429,11 +1508,13 @@ function editPayee(id) {
       <label class="field"><span>Last day (leavers)</span><input id="py-end" type="date" value="${esc(p.end_date || "")}"></label>
       <div class="note" style="grid-column:1/-1">Salaries are prorated by calendar days in the joining and leaving months. No payment is created before the start date or after the last day. A salary's start date and last day also add reminders to the checklist, each in the month it falls due: e-CP22, PERKESO and KWSP registration and stamping the appointment letter for a joiner, CP22A for a leaver. One due in a month not set up yet shows in the latest month set up until then, without counting there.</div>
       <label class="field" style="grid-column:1/-1"><span>Notes</span><input id="py-notes" value="${esc(p.notes || "")}"></label>
-      <label class="field"><span>Status</span><select id="py-active"><option value="1">Active</option><option value="0" ${p.active ? "" : "selected"}>Stopped</option></select></label>
-      <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Save</button></div>
+      <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">${id === "new" ? "Add recurring payment" : "Save"}</button></div>
     </form>
-    ${id === "new" ? "" : histSection("payees", id)}`;
+    ${id === "new" || !(["salary", "director"].includes(p.category) || p.advances?.length) ? "" : advancesHtml(p)}
+    ${acts}
+    ${id === "new" ? "" : histSection("payees", p.id)}`;
   $("#drawer").hidden = false;
+  watchDrawer(keep);
   // Money in is always the type Money received, and money received is always money in.
   $("#py-dir").onchange = () => {
     const into = $("#py-dir").value === "in";
@@ -1441,16 +1522,91 @@ function editPayee(id) {
     $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in";
   };
   $("#py-cat").onchange = () => { if ($("#py-cat").value === "receipt") { $("#py-dir").value = "in"; $("#py-dir").onchange(); } };
+  if (keep["py-dir"]) { const into = keep["py-dir"] === "in"; $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in"; }
   $("#payeeForm").onsubmit = async ev => {
     ev.preventDefault();
     const body = { entity_id: state.entity, name: $("#py-name").value.trim(), desc_template: $("#py-desc").value.trim() || $("#py-name").value.trim() + " - {M}",
       direction: $("#py-dir").value, category: $("#py-cat").value, account_id: +$("#py-acct").value, amount: $("#py-amt").value === "" ? null : +$("#py-amt").value,
-      amount_varies: +$("#py-var").value, month_offset: +$("#py-off").value, due_day: +$("#py-day").value || 6,
-      bank_details: $("#py-bank").value.trim(), reference: $("#py-ref").value.trim(), match_words: $("#py-match").value.trim(), active: +$("#py-active").value,
+      amount_varies: +$("#py-var").value, month_offset: +$("#py-off").value, due_day: +$("#py-day").value || def.due_day,
+      bank_details: $("#py-bank").value.trim(), reference: $("#py-ref").value.trim(), match_words: $("#py-match").value.trim(),
       start_date: $("#py-start").value || null, end_date: $("#py-end").value || null, notes: $("#py-notes").value.trim() };
     if (id !== "new") body.id = +id;
-    try { state.payeeSaved = await api("/api/payees", { json: body }); closeDrawer(); toast("Saved"); render(); } catch (e) { toast(e.message, true); }
+    const btn = ev.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try {
+      const r = await api("/api/payees", { json: body });
+      const keep = Object.fromEntries(Object.entries(drawerEdits()).filter(([k]) => k.startsWith("adv-")));  // an advance being typed stays
+      toast("Saved");
+      await render();  // the list, and state.payees with the row as saved
+      // The drawer stays open on the saved row. A new one is found by its id if the server gives it, else by its name.
+      const same = state.payees?.filter(x => x.name === body.name) || [];
+      const nid = id !== "new" ? +id : r.id ?? (same.length ? Math.max(...same.map(x => x.id)) : null);
+      if (nid && state.payees?.some(x => x.id === nid)) return await editPayee(nid, { saved: r, keep: id === "new" ? {} : keep });
+      state.payeeSaved = r; closeDrawer(true); render();
+    } catch (e) { toast(e.message, true); }
+    finally { if (btn.isConnected) btn.disabled = false; }
   };
+}
+
+// A recurring payment's salary advances (recovered by a monthly deduction), each saved or removed on its own, and a row
+// to add one.
+function advancesHtml(p) {
+  const row = (a, k) => `<div class="adv-row" id="adv-${k}">
+      <label class="field"><span>Monthly deduction</span><input id="adv-${k}-amt" type="number" step="0.01" min="0" value="${a.monthly_deduction ?? ""}"></label>
+      <label class="field"><span>First month</span><input id="adv-${k}-from" type="month" value="${esc(a.start_month || "")}"></label>
+      <label class="field"><span>Last month</span><input id="adv-${k}-to" type="month" value="${esc(a.end_month || "")}"></label>
+      <label class="field adv-note"><span>Note</span><input id="adv-${k}-note" maxlength="200" value="${esc(a.note || "")}"></label>
+      <div class="row adv-act">${k === "new" ? `<button class="ghost small" type="button" data-adv-add="${p.id}">Add advance</button>`
+        : `<button class="ghost small" type="button" data-adv-save="${a.id}">Save</button><button class="btn danger small" type="button" data-adv-del="${a.id}">Remove</button>`}</div></div>`;
+  return `<div class="adv"><h3>Salary advances</h3>
+    <div class="note">An advance is recovered by taking the monthly deduction off this payment from its first month to its last.</div>
+    ${(p.advances || []).map(a => row(a, a.id)).join("") || `<div class="note">None.</div>`}
+    <div class="eyebrow">Add an advance</div>${row({}, "new")}</div>`;
+}
+const advBody = k => {
+  const amt = $(`#adv-${k}-amt`).value;
+  return { monthly_deduction: amt === "" ? null : +amt, start_month: $(`#adv-${k}-from`).value || null, end_month: $(`#adv-${k}-to`).value || null,
+    note: $(`#adv-${k}-note`).value.trim() };
+};
+// After a change made in the recurring payment's drawer: the list is drawn again, then the drawer, showing what the change
+// did and keeping what was typed elsewhere in it (drop: the inputs whose values were just saved).
+async function payeeChanged(pid, r, head, drop = "") {
+  const keep = drawerEdits();
+  if (drop) for (const k in keep) if (k.startsWith(drop)) delete keep[k];
+  await render();
+  return editPayee(pid, { saved: r && { ...r, head }, keep });
+}
+async function payeeAct(act, pid, btn) {
+  const label = { stop: "Stop using it", use: "Use it again", delete: "Delete it" }[act];
+  return askWhy(btn, label, async reason => {
+    if (act === "delete") {
+      await api(`/api/payees/${pid}`, { method: "DELETE", json: { reason } });
+      closeDrawer(true); toast("Recurring payment deleted"); return render();
+    }
+    const r = await api(`/api/payees/${pid}/${act}`, { json: { reason } });
+    toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
+    return payeeChanged(pid, r, act === "stop" ? "Stopped" : "In use again");
+  });
+}
+async function advAdd(pid, btn) {
+  const body = advBody("new");
+  if (body.monthly_deduction == null || !body.start_month || !body.end_month) return toast("Type the monthly deduction and choose its first and last month.", true);
+  btn.disabled = true;
+  try { const r = await api(`/api/payees/${pid}/advances`, { json: body }); toast("Advance added"); return await payeeChanged(pid, r, "Advance added", "adv-new-"); }
+  finally { if (btn.isConnected) btn.disabled = false; }
+}
+async function advSave(aid, btn) {
+  const pid = state.payees?.find(p => (p.advances || []).some(a => a.id === aid))?.id;
+  btn.disabled = true;
+  try { const r = await api(`/api/advances/${aid}`, { method: "PATCH", json: advBody(aid) }); toast("Advance saved"); return await payeeChanged(pid, r, "Advance saved", `adv-${aid}-`); }
+  finally { if (btn.isConnected) btn.disabled = false; }
+}
+function advDelete(aid, btn) {
+  const pid = state.payees?.find(p => (p.advances || []).some(a => a.id === aid))?.id;
+  return askWhy(btn, "Remove it", async reason => {
+    const r = await api(`/api/advances/${aid}`, { method: "DELETE", json: { reason } });
+    toast("Advance removed"); return payeeChanged(pid, r, "Advance removed", `adv-${aid}-`);
+  });
 }
 
 /* ---------------- Audit pack ---------------- */
@@ -1508,11 +1664,11 @@ function fixIt(where, id) {
   return goTo({ view, payment_id: where === "payment" ? id : null, task_id: where === "task" ? id : null, account_id: where === "account" ? id : null });
 }
 
-/* ---------------- Backup & log ---------------- */
+/* ---------------- Backup ---------------- */
 async function viewSettings(main) {
   const log = await api("/api/activity");
   main.innerHTML = `
-    <div class="card"><h1>Backup &amp; records</h1>
+    <div class="card"><h1>Backup</h1>
       <div class="note">Everything is stored on this PC in <span class="mono">${esc(state.meta.data_dir)}</span>: the database (records.db), uploaded documents and audit packs. Nothing is sent anywhere else.</div>
       <div class="note">Backups are saved in the backups folder on this PC. Encrypted backups are also copied to the backup folder below, if you set one.</div>
       <div class="row"><label class="field" style="flex:1"><span>Backup folder (optional)</span><input id="bkDir" value="${esc(state.meta.backup_dir || "")}" placeholder="C:\\Users\\you\\OneDrive\\HR-Backup" autocomplete="off"></label>
@@ -1524,14 +1680,288 @@ async function viewSettings(main) {
       <div class="note">At least 12 characters. Keep the password safe: without it the backup cannot be opened. Open it with 7-Zip (Windows Explorer cannot open AES zips). Only the contents are protected: file names inside the zip can still be seen.</div>
       <div class="row"><button class="ghost" id="doBackup">Backup on this PC only (not encrypted)</button><button class="ghost" id="doCheck">Check documents haven't changed</button></div>
       <div id="setOut" class="note"></div></div>
-    <div class="card"><h2>First month tracked in this app</h2>
-      <div class="note">Months before it are never set up on their own, and nothing in them counts as overdue or past due. Leave it empty for no limit. Tidy up removes, from the months before it, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.</div>
-      ${state.meta.entities.map(e => `<div class="row"><label class="field"><span>${esc(e.name)}</span><input type="month" id="first-${e.id}" value="${esc(e.first_month || "")}"></label>
-        <button class="ghost small" data-first-month="${e.id}" style="align-self:end">Save</button>
-        ${e.first_month ? `<button class="ghost small" data-tidy="${e.id}" style="align-self:end">Tidy up months before this</button>` : ""}</div>`).join("")}</div>
     <div class="card"><h2>Activity log</h2><div class="tbl-wrap"><table><tbody>
       ${log.map(a => `<tr><td class="mono muted" style="white-space:nowrap">${esc(a.at.replace("T", " "))}</td><td>${esc(a.what)}</td></tr>`).join("") || `<tr><td class="empty">Nothing yet.</td></tr>`}
     </tbody></table></div></div>`;
+}
+
+/* ---------------- Setup ---------------- */
+// Companies, bank accounts, recurring payments and general settings, kept in the records and changed here. The sections,
+// their fields and list columns come from the server (/api/setup/types). A stopped record stays, for its history.
+const setupSpec = () => state.setup.types?.kinds?.[state.setup.kind] || null;
+const sectionLabel = spec => spec.single || !spec.plural ? spec.label : spec.plural.charAt(0).toUpperCase() + spec.plural.slice(1);
+const NUM_TYPES = ["number", "money", "day"];
+
+async function viewSetup(main) {
+  const S = state.setup;
+  if (!S.types) S.types = await api("/api/setup/types");
+  const T = S.types;
+  if (!T.kinds[S.kind]) S.kind = T.groups.flatMap(g => g[1]).find(k => T.kinds[k]) || null;
+  renderNav();  // the breadcrumb names the section
+  const sections = T.groups.map(([g, kinds]) => {
+    const ks = kinds.filter(k => T.kinds[k]);
+    return ks.length ? `<div class="setup-group">${esc(g)}</div>${ks.map(k => `<button type="button" data-setup-kind="${esc(k)}"${k === S.kind ? ` class="on" aria-current="page"` : ""}>${esc(sectionLabel(T.kinds[k]))}</button>`).join("")}` : "";
+  }).join("");
+  main.innerHTML = `<div class="setup-grid"><nav class="setup-nav card noprint" aria-label="Setup sections">${sections}</nav><div class="setup-main" id="setupMain"></div></div>`;
+  const box = $("#setupMain"), spec = setupSpec();
+  if (!spec) box.innerHTML = `<div class="card"><div class="note">Nothing to set up yet.</div></div>`;
+  else if (spec.single) await setupSettings(box);
+  else if (S.kind === "payees") await viewPayees(box);
+  else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
+  else await setupList(box, S.kind);
+}
+
+// A field's choices as [value, label] pairs.
+const fieldOptions = f => f.options_from === "categories" ? Object.entries(state.meta.categories) : f.options || [];
+// A value as it reads in a list: month names, Yes or No, an option's label.
+function fieldText(f, v) {
+  if (v == null || v === "") return "";
+  if (!f) return String(v);
+  if (f.type === "month") return /^\d{4}-\d{2}$/.test(v) ? monthName(v) : String(v);
+  if (f.type === "date") return fmtDate(v);
+  if (f.type === "bool") return +v ? "Yes" : "No";
+  if (f.type === "money") return Number(v).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (f.type === "select") return String(fieldOptions(f).find(o => String(o[0]) === String(v))?.[1] ?? v);
+  return String(v);
+}
+
+// The list of one kind (companies, or one company's bank accounts), stopped ones shown when asked.
+async function setupList(box, kind) {
+  const S = state.setup, spec = S.types.kinds[kind], id = "setup-" + kind, e = ent();
+  const cols = spec.columns || [], fieldOf = k => (spec.fields || []).find(f => f.key === k);
+  const isNum = c => NUM_TYPES.includes(fieldOf(c.key)?.type);
+  // Registered before the list's first listState, so a sort chosen earlier is kept.
+  SORTS[id] ||= Object.fromEntries([...cols.map(c => [c.key, [isNum(c) ? "num" : "text", r => { const f = fieldOf(c.key);
+      return f && (f.type === "select" || f.type === "bool") ? fieldText(f, r[c.key]) : r[c.key]; }]]),
+    ["used", ["num", r => r.used_total]], ["status", ["text", r => r.status]]]);
+  if (spec.per_entity && !e) { box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">Add a company first.</div></div>`; return; }
+  const { rows } = await api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`);
+  const stopped = r => r.status === "stopped", nStopped = rows.filter(stopped).length;
+  const text = r => [...cols.map(c => fieldText(fieldOf(c.key), r[c.key])), usedText(r.used_by), stopped(r) ? "stopped" : "in use"].join(" ");
+  const cell = (r, c, i) => {
+    const v = fieldText(fieldOf(c.key), r[c.key]);
+    if (!i) return `<td><button class="link" data-setup-open="${r.id}">${esc(v || "(no name)")}</button></td>`;
+    return `<td${isNum(c) ? ` class="num"` : ""}>${v ? esc(v) : "—"}</td>`;
+  };
+  const table = () => {
+    const shown = S.stopped ? rows : rows.filter(r => !stopped(r)), list = listRows(id, shown, text);
+    setCount(id, list.length, rows.length);
+    return `<table><thead><tr>${cols.map(c => sortTh(id, c.key, esc(c.label), isNum(c) ? "num" : "")).join("")}${sortTh(id, "used", "Used by", "num")}${sortTh(id, "status", "Status")}</tr></thead><tbody>
+      ${list.map(r => `<tr>${cols.map((c, i) => cell(r, c, i)).join("")}
+        <td class="num" title="${esc(usedText(r.used_by) || "Not used yet")}">${+r.used_total || 0}</td>
+        <td>${stopped(r) ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}</td></tr>`).join("")
+      || `<tr><td colspan="${cols.length + 2}" class="empty">${!rows.length ? "None yet." : shown.length ? `No ${esc(spec.plural)} match.` : `Only stopped ${esc(spec.plural)}: tick Show stopped to see them.`}</td></tr>`}
+      </tbody></table>`;
+  };
+  box.innerHTML = `${spec.per_entity ? entityPicker() : ""}
+    <div class="card"><div class="row spread"><h1>${esc(sectionLabel(spec))}${spec.per_entity ? ` · ${esc(e.code)}` : ""}</h1><button class="btn" data-setup-new="${esc(kind)}">Add ${esc(lowerFirst(spec.label))}</button></div>
+      <div class="note">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</div>
+      <div class="row">${listBar(id, spec.plural)}<label class="row tight"><input type="checkbox" data-setup-stopped ${S.stopped ? "checked" : ""}> Show stopped (${nStopped})</label></div>
+      <div class="tbl-wrap" id="setupList">${table()}</div></div>`;
+  paintCount(id);
+  LIST_REDRAW[id] = () => { if (!$("#setupList")) return; $("#setupList").innerHTML = table(); paintCount(id); };
+}
+
+// One input for a field (FieldSpec from the server). lock: why it can't be changed; pre: the id prefix.
+function fieldHtml(f, v, lock, pre) {
+  const id = pre + f.key, val = v == null ? "" : String(v);
+  const wide = f.wide || f.type === "textarea" ? ` style="grid-column:1/-1"` : "";
+  const ro = lock ? " readonly" : "", req = f.required && !lock ? " required" : "";
+  const len = f.max && ["text", "textarea", "code"].includes(f.type) ? ` maxlength="${+f.max}"` : "";
+  let input;
+  if (f.type === "textarea") input = `<textarea id="${id}" rows="3"${ro}${req}${len}>${esc(val)}</textarea>`;
+  else if (f.type === "bool" || f.type === "select") {
+    const sel = f.type === "bool" ? (val === "" ? "0" : String(+val ? 1 : 0)) : val;
+    let opts = f.type === "bool" ? [[1, "Yes"], [0, "No"]] : fieldOptions(f);
+    if (sel !== "" && !opts.some(o => String(o[0]) === sel)) opts = [...opts, [sel, sel]];  // a value no longer offered stays as it is
+    const blank = f.type === "select" && !f.required ? `<option value="">—</option>` : "";
+    input = `<select id="${id}"${lock ? " disabled" : ""}>${blank}${opts.map(([k, l]) => `<option value="${esc(k)}" ${String(k) === sel ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  } else {
+    const type = { number: "number", money: "number", day: "number", month: "month", date: "date" }[f.type] || "text";
+    const extra = f.type === "money" ? ` step="0.01"` : f.type === "day" ? ` min="1" max="31" step="1"`
+      : f.type === "number" ? ` step="any"${f.max != null ? ` max="${+f.max}"` : ""}` : f.type === "code" ? ` class="mono" spellcheck="false" autocomplete="off"` : "";
+    input = `<input id="${id}" type="${type}" value="${esc(val)}"${extra}${ro}${req}${len}>`;
+  }
+  return `<label class="field${lock ? " locked" : ""}"${wide}><span>${esc(f.label)}</span>${input}${f.hint ? `<span class="note">${esc(f.hint)}</span>` : ""}${lock ? `<span class="note">${esc(lock)}</span>` : ""}</label>`;
+}
+// What an input holds, as the field's type: numbers, 0 or 1, null for an empty date, month or number.
+function fieldValue(f, el) {
+  const v = el.value;
+  if (f.type === "bool") return +v ? 1 : 0;
+  if (NUM_TYPES.includes(f.type)) return v.trim() === "" ? null : Number(v);
+  if (f.type === "month" || f.type === "date") return v || null;
+  if (f.type === "select") { if (v === "") return null; const o = fieldOptions(f).find(x => String(x[0]) === v); return o ? o[0] : v; }
+  return v.trim();
+}
+function formValues(fields, pre) {
+  const out = {};
+  for (const f of fields) { const el = document.getElementById(pre + f.key); if (el) out[f.key] = fieldValue(f, el); }
+  return out;
+}
+
+// The reason asked before a stop, use again, delete or tidy up: its own form, so Enter in it doesn't save the record.
+const whyForm = () => `<form id="setupWhy" class="row setup-why" hidden><label class="field"><span>Why are you making this change?</span><input id="su-reason" maxlength="500" autocomplete="off"></label>
+  <button class="btn" type="submit" id="su-why-go"></button><button class="ghost" type="button" data-why-cancel="1">Cancel</button></form>`;
+// Shows the reason box under the button clicked; run(reason) does the change once a reason is given.
+function askWhy(btn, label, run) {
+  const f = $("#setupWhy");
+  if (!f) return;
+  (btn.closest(".adv-row") || btn.closest(".row") || btn).after(f);
+  $("#su-why-go").textContent = label; f.hidden = false; state.why = run; $("#su-reason").focus();
+}
+function hideWhy() {
+  const f = $("#setupWhy");
+  if (f) { f.hidden = true; $("#su-reason").value = ""; }
+  state.why = null;
+}
+async function whySubmit() {
+  const inp = $("#su-reason"), goBtn = $("#su-why-go"), reason = inp.value.trim();
+  if (!reason) { toast("Say why you're making this change.", true); inp.focus(); return; }
+  const run = state.why;
+  if (!run) return hideWhy();
+  goBtn.disabled = true;
+  try { await run(reason); hideWhy(); } catch (e) { toast(e.message, true); } finally { if (goBtn.isConnected) goBtn.disabled = false; }
+}
+
+// After a company or bank account changes: the page's copy of them is read again, and a company stopped or deleted
+// while it was showing gives way to the first one in use.
+async function afterSetupChange(kind) {
+  if (kind !== "entities" && kind !== "accounts") return;
+  state.meta = await api("/api/meta");
+  const e = ent();
+  if (!e || !isActive(e)) state.entity = firstEntityId();
+  renderNav();
+}
+
+// The drawer of one company or bank account (id "new" to add one). keep: what was typed in it and not saved yet, when
+// it is drawn again after a stop or use again; notes: what the server said about the save just made.
+async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}) {
+  if (!force && !mayLeave()) return;
+  const spec = state.setup.types?.kinds?.[kind];
+  if (!spec) return;
+  const isNew = id === "new", e = ent();
+  if (spec.per_entity && !e) return toast("Add a company first.", true);
+  const fresh = Object.fromEntries((spec.fields || []).filter(f => f.default !== undefined).map(f => [f.key, f.default]));
+  const r = isNew ? { record: fresh, used_by: [], locked: {}, can_delete: false, notes: [] } : await api(`/api/setup/${kind}/${id}`);
+  const rec = r.record || {}, locked = r.locked || {}, fields = spec.fields || [];
+  const stopped = !isNew && (rec.status === "stopped" || !isActive(rec));
+  state.openPayment = null; state.why = null; state.setup.id = id;
+  const name = isNew ? `New ${lowerFirst(spec.label)}` : rec[spec.name_field] || "(no name)";
+  const allNotes = [...(r.notes || []), ...(notes || []).filter(n => !(r.notes || []).includes(n))];
+  const tidy = kind === "entities" && !isNew && rec.first_month;
+  $("#drawer").innerHTML = `
+    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">${esc(spec.label)}${spec.per_entity ? " · " + esc(e.code) : ""}</div><h2>${esc(name)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
+      ${isNew ? "" : `<div class="row">${stopped ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}</div>`}</div>
+    <form class="form setup-form" id="setupForm">${fields.map(f => fieldHtml(f, rec[f.key] ?? null, locked[f.key], "su-")).join("")}
+      <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">${isNew ? `Add ${esc(lowerFirst(spec.label))}` : "Save"}</button></div></form>
+    ${allNotes.map(n => `<div class="note">${esc(n)}</div>`).join("")}
+    ${isNew ? "" : `<div><h3>Where used</h3>${usedHtml(r.used_by)}</div>
+    <div class="row">${stopped ? `<button class="ghost" type="button" data-setup-act="use">Use again</button>` : `<button class="ghost" type="button" data-setup-act="stop">Stop using</button>`}
+      ${r.can_delete ? `<button class="btn danger small" type="button" data-setup-act="delete">Delete</button>` : ""}
+      ${tidy ? `<button class="ghost" type="button" data-setup-act="tidy">Tidy up months before this</button>` : ""}</div>
+    ${tidy ? `<div class="note">Tidy up removes, from the months before the first month tracked, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.</div>` : ""}
+    ${whyForm()}
+    ${histSection(spec.table, id)}`}`;
+  $("#drawer").hidden = false;
+  state.setup.drawer = { kind, id, locked, loaded: formValues(fields, "su-") };
+  watchDrawer(keep);
+}
+
+// Save: a new record is added; one already there sends only the fields changed.
+async function setupSave() {
+  const D = state.setup.drawer;
+  if (!D) return;
+  const spec = state.setup.types.kinds[D.kind], now = formValues(spec.fields || [], "su-");
+  if (D.id === "new") {
+    const body = { fields: Object.fromEntries(Object.entries(now).filter(([, v]) => v !== null && v !== "")) };
+    if (spec.per_entity) body.entity_id = state.entity;
+    const r = await api(`/api/setup/${D.kind}`, { json: body });
+    toast(`${spec.label} added`);
+    await afterSetupChange(D.kind); await render();
+    return r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true });
+  }
+  const fields = {};
+  for (const k in now) if (!(k in D.locked) && JSON.stringify(now[k]) !== JSON.stringify(D.loaded[k])) fields[k] = now[k];
+  if (!Object.keys(fields).length) return toast("Nothing has changed.");
+  const r = await api(`/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields } });
+  toast("Saved");
+  await afterSetupChange(D.kind); await render();
+  return openSetup(D.kind, D.id, { force: true, notes: r.notes });
+}
+
+// Stop using, Use again and Delete ask why first; Tidy up counts first, then asks.
+async function setupAct(act, btn) {
+  const D = state.setup.drawer;
+  if (!D) return;
+  const spec = state.setup.types.kinds[D.kind];
+  if (act === "tidy") return tidyMonths(D.id, btn);
+  const label = { stop: "Stop using it", use: "Use it again", delete: "Delete it" }[act];
+  if (!label) return;
+  return askWhy(btn, label, async reason => {
+    if (act === "delete") {
+      await api(`/api/setup/${D.kind}/${D.id}`, { method: "DELETE", json: { reason } });
+      closeDrawer(true); toast(`${spec.label} deleted`);
+      await afterSetupChange(D.kind); return render();
+    }
+    await api(`/api/setup/${D.kind}/${D.id}/${act}`, { json: { reason } });
+    toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
+    const keep = drawerEdits();
+    await afterSetupChange(D.kind); await render();
+    return openSetup(D.kind, D.id, { force: true, keep });
+  });
+}
+
+// Tidy up before a company's first month tracked: the first click counts what would go, the second asks why.
+async function tidyMonths(eid, btn) {
+  const e = state.meta.entities.find(x => x.id === +eid);
+  if (btn.dataset.armed !== "1") {
+    const n = await api(`/api/months/tidy?entity=${eid}`), before = n.before ? monthName(n.before) : "the first month tracked";
+    if (!n.payments && !n.tasks) return toast(`Nothing to tidy up before ${before}.`);
+    btn.dataset.armed = "1"; btn.textContent = `Click again to remove ${n.payments} payments and ${n.tasks} checklist items before ${before}`; return;
+  }
+  return askWhy(btn, "Remove them", async reason => {
+    const r = await api("/api/months/tidy", { json: { entity_id: +eid, reason } });
+    toast(`Removed ${r.payments} payments and ${r.tasks} checklist items from ${e?.code || "the company"}`);
+    const keep = drawerEdits();
+    await render(); return openSetup("entities", eid, { force: true, keep });
+  });
+}
+
+// General settings: one form; Save sends only what changed.
+async function setupSettings(box) {
+  const s = await api("/api/setup/settings"), fields = s.fields || setupSpec()?.fields || [];
+  box.innerHTML = `<div class="card"><h1>General settings</h1>
+    <div class="note">These apply to every company. Each change is kept in the audit trail.</div>
+    <form class="form setup-form" id="settingsForm">${fields.map(f => fieldHtml(f, s.values?.[f.key], null, "gs-")).join("")}
+      <label class="field" style="grid-column:1/-1"><span>Why are you making this change? (optional)</span><input id="gs-reason" maxlength="500" autocomplete="off"></label>
+      <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Save</button></div></form></div>`;
+  state.setup.settings = { fields, loaded: formValues(fields, "gs-") };
+}
+async function settingsSave() {
+  const G = state.setup.settings;
+  if (!G) return;
+  const now = formValues(G.fields, "gs-"), values = {};
+  for (const k in now) if (JSON.stringify(now[k]) !== JSON.stringify(G.loaded[k])) values[k] = now[k];
+  if (!Object.keys(values).length) return toast("Nothing has changed.");
+  const reason = $("#gs-reason").value.trim(), body = { values };
+  if (reason) body.reason = reason;
+  const was = currentCycle();
+  await api("/api/setup/settings", { method: "PATCH", json: body });
+  state.meta = await api("/api/meta"); paintOrg();
+  if ("cycle_rollover_day" in values && currentCycle() !== was) {
+    if (state.month === was) state.month = currentCycle();
+    await openCycleMonths();
+  }
+  renderNav();
+  toast("Saved"); return render();
+}
+
+// The line above the app's name: the organisation's name from General settings, as saved (empty: no line).
+function paintOrg() {
+  const el = $("#orgName");
+  if (!el || !state.meta?.settings) return;
+  const n = String(state.meta.settings.organisation_name || "").trim();
+  el.textContent = n; el.hidden = !n;
 }
 
 /* ---------------- Audit trail ---------------- */
@@ -1701,7 +2131,8 @@ async function trailShow(on) {
 // A record's history, newest first (in a drawer section, or in a drawer of its own for a budget line).
 function historyHtml(h) {
   if (!h.changes.length) return `<div class="note">Nothing recorded yet.</div>`;
-  return h.changes.map(ch => `<div class="tr-hist"><div><span class="mono muted">${esc(fmtWhen(ch.at))}</span> · <b>${esc(ch.op_label)}</b>
+  // A row of a related record (a recurring payment's salary advance) says what it is; the record's own rows don't need to.
+  return h.changes.map(ch => `<div class="tr-hist"><div><span class="mono muted">${esc(fmtWhen(ch.at))}</span> · <b>${esc(ch.op_label)}</b>${ch.table !== h.table ? ` ${esc(ch.table_label.toLowerCase())}` : ""}
       · <span class="pill ${SRC_TONE[ch.source] ?? "grey"}">${esc(ch.source_label || "")}</span> ${esc(ch.actor || "")}${ch.reason ? ` · Why: ${esc(ch.reason)}` : ""}</div>
     ${ch.op === "baseline" ? `<div class="note">As it stood when the audit trail started.</div>` : changeHtml(ch, true)}</div>`).join("");
 }
@@ -1765,6 +2196,18 @@ document.addEventListener("click", async ev => {
       renderNav(); return render();
     }
     if (t.id === "closeDrawer") return closeDrawer();
+    if (ds.setupKind) {
+      if (!closeDrawer()) return;
+      Object.assign(state.setup, { kind: ds.setupKind, id: null }); renderNav(); return render();
+    }
+    if (ds.setupNew) return await openSetup(ds.setupNew, "new");
+    if (ds.setupOpen) return await openSetup(state.setup.kind, +ds.setupOpen);
+    if (ds.setupAct) return await setupAct(ds.setupAct, t);
+    if (ds.whyCancel) return hideWhy();
+    if (ds.payeeAct) return await payeeAct(ds.payeeAct, +ds.payeeId, t);
+    if (ds.advAdd) return await advAdd(+ds.advAdd, t);
+    if (ds.advSave) return await advSave(+ds.advSave, t);
+    if (ds.advDel) return advDelete(+ds.advDel, t);
     if (t.id === "printPage") return window.print();
     if (ds.payment) {
       // Clicking the open payment again keeps what was typed in it.
@@ -1857,7 +2300,7 @@ document.addEventListener("click", async ev => {
         : `${r.doc_no} unlinked from ${r.payment}; it's back under SQL entries not linked`); return render();
     }
     if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under SQL entries not linked`); return render(); }
-    if (ds.editPayee) return editPayee(ds.editPayee);
+    if (ds.editPayee) { if (!mayLeave()) return; return await editPayee(ds.editPayee); }
     if (ds.addMonth) {
       const r = await api(`/api/payees/${ds.addMonth}/add-to-month`, { json: { month: state.month } });
       toast(r.opened ? `${monthName(state.month)} is set up: its checklist and recurring payments were added` : `Added to ${monthName(state.month)}`);
@@ -1907,20 +2350,6 @@ document.addEventListener("click", async ev => {
       const r = await api("/api/settings/backup-dir", { json: { backup_dir: $("#bkDir").value } });
       state.meta.backup_dir = r.backup_dir; toast(r.backup_dir ? "Backup folder saved" : "Backup folder cleared"); return;
     }
-    if (ds.firstMonth) {
-      await api(`/api/entities/${ds.firstMonth}/first-month`, { json: { month: $(`#first-${ds.firstMonth}`).value } });
-      state.meta = await api("/api/meta"); toast("Saved"); return render();
-    }
-    if (ds.tidy) {
-      const e = state.meta.entities.find(x => x.id === +ds.tidy);
-      if (t.dataset.confirm !== "1") {
-        const n = await api(`/api/months/tidy?entity=${e.id}`);
-        if (!n.payments && !n.tasks) return toast(`Nothing to tidy up before ${monthName(n.before)}.`);
-        t.dataset.confirm = "1"; t.textContent = `Click again to remove ${n.payments} payments and ${n.tasks} checklist items before ${monthName(n.before)}`; return;
-      }
-      const r = await api("/api/months/tidy", { json: { entity_id: e.id } });
-      toast(`Removed ${r.payments} payments and ${r.tasks} checklist items from ${e.code}`); return render();
-    }
     if (t.id === "doCheck") {
       const r = await api("/api/integrity");
       $("#setOut").textContent = r.problems.length ? `${r.problems.length} of ${r.checked} documents are missing or changed: ${r.problems.map(p => p.stored_path).join(", ")}` : `All ${r.checked} documents match their upload fingerprints.`;
@@ -1961,6 +2390,15 @@ document.addEventListener("change", async ev => {
 });
 
 document.addEventListener("submit", async ev => {
+  if (ev.target.id === "setupWhy") { ev.preventDefault(); return whySubmit(); }
+  if (ev.target.id === "setupForm" || ev.target.id === "settingsForm") {
+    ev.preventDefault();
+    const btn = ev.target.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try { await (ev.target.id === "setupForm" ? setupSave() : settingsSave()); } catch (e) { toast(e.message, true); }
+    finally { if (btn.isConnected) btn.disabled = false; }
+    return;
+  }
   if (ev.target.id === "payForm") {
     ev.preventDefault();
     try {
@@ -2019,8 +2457,8 @@ document.addEventListener("submit", async ev => {
 
 function addPaymentDrawer() {
   if (!mayLeave()) return;
-  state.openPayment = null;
-  const e = ent();
+  state.openPayment = null; state.drawerDirty = null;
+  const e = ent(), acct = defaultAccount(e)?.id;
   $("#drawer").innerHTML = `
     <div class="row spread"><h2>Add a payment</h2><button class="ghost small" id="closeDrawer">Close</button></div>
     <div class="note">For ad hoc payments, claims and receipts in ${monthName(state.month)}.</div>
@@ -2030,7 +2468,7 @@ function addPaymentDrawer() {
       <label class="field"><span>Money</span><select id="ap-dir"><option value="out">Paid out</option><option value="in">Received</option></select></label>
       <label class="field"><span>Amount</span><input id="ap-amt" type="number" step="0.01"></label>
       <label class="field"><span>Due date</span><input id="ap-due" type="date"></label>
-      <label class="field" style="grid-column:1/-1"><span>Account</span><select id="ap-acct">${e.accounts.map(a => `<option value="${a.id}">${esc(a.label)}</option>`).join("")}</select></label>
+      <label class="field" style="grid-column:1/-1"><span>Account</span><select id="ap-acct">${pickAccounts(e).map(a => acctOption(a, acct)).join("")}</select></label>
       <div class="row"><button class="btn" type="submit">Add payment</button></div>
     </form>`;
   $("#drawer").hidden = false;
@@ -2058,7 +2496,12 @@ document.addEventListener("drop", async ev => {
   s.classList.remove("drag");
   try { await uploadFiles([...ev.dataTransfer.files], { payment_id: state.openPayment, doc_type: s.dataset.slot }); } catch (e) { toast(e.message, true); }
 });
-document.addEventListener("keydown", ev => { if (ev.key === "Escape") closeDrawer(); });
+// Escape closes the drawer (asking first if something typed would be lost); in the reason box it closes only that.
+document.addEventListener("keydown", ev => {
+  if (ev.key !== "Escape") return;
+  if (ev.target.closest?.("#setupWhy")) return hideWhy();
+  closeDrawer();
+});
 document.addEventListener("input", ev => {
   const id = ev.target.dataset?.search;
   if (id) { listState(id).q = ev.target.value; LIST_REDRAW[id]?.(); }
@@ -2089,12 +2532,13 @@ document.addEventListener("change", ev => {
     state.trail.f[k] = v; return refreshTrailList();
   }
   if (ev.target.id === "trailShow") return trailShow(ev.target.checked);
+  if (ev.target.matches?.("[data-setup-stopped]")) { state.setup.stopped = ev.target.checked; return LIST_REDRAW["setup-" + state.setup.kind]?.(); }
 });
 
 // The current cycle and the month before are set up on their own; other months when you ask.
 async function openCycleMonths() {
   try {
-    for (const e of state.meta.entities) for (const m of [shiftMonth(currentCycle(), -1), currentCycle()])
+    for (const e of state.meta.entities.filter(isActive)) for (const m of [shiftMonth(currentCycle(), -1), currentCycle()])
       await api("/api/months/open", { json: { entity_id: e.id, month: m, auto: true } });
     return true;
   } catch (e) { toast(e.message, true); return false; }
@@ -2122,7 +2566,9 @@ document.addEventListener("visibilitychange", async () => {
 
 (async function start() {
   state.meta = await api("/api/meta");
-  state.entity = state.meta.entities[0]?.id;
+  state.month = currentCycle(); state.day = dayKey();  // the rollover day comes with the settings
+  state.entity = firstEntityId();
+  paintOrg();
   await openCycleMonths();
   renderNav(); render();
 })();

@@ -49,8 +49,9 @@ def _name(a, month):
 # ---------- the books ----------
 
 def _primary(con, ent):
-    """The account the SQL cash book listing is taken to be for: the company's first one."""
-    r = con.execute("SELECT id FROM accounts WHERE entity_id = ? ORDER BY id LIMIT 1", (ent["id"],)).fetchone()
+    """The account the SQL cash book listing is for: the company's cash book account (Setup › Bank accounts)."""
+    from . import masters
+    r = masters.first_active_account(con, ent["id"])
     return r["id"] if r else None
 
 
@@ -82,6 +83,7 @@ def movements(con, ent, acct, month):
         listing = any((r["kind"] or "payment") == "payment" for r in rows)
         source = "sql"
     else:
+        # every account in the currency, stopped ones too: stopping an account must not move past payments between books
         same = con.execute("SELECT COUNT(*) FROM accounts WHERE entity_id = ? AND currency = ?", (ent["id"], acct["currency"])).fetchone()[0]
         rows = con.execute(
             """SELECT * FROM payments WHERE entity_id = ? AND substr(paid_date, 1, 7) = ? AND amount IS NOT NULL

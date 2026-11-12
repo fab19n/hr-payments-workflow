@@ -113,8 +113,10 @@ def present(con):
 
 
 def started(con):
-    """The trail has its baseline (update 17 has run)."""
-    return present(con) and con.execute("SELECT 1 FROM audit_row WHERE op = 'baseline' LIMIT 1").fetchone() is not None
+    """Capture is on (update 17 has run): the capture triggers exist. Not "a baseline exists", as a records.db that was
+    empty when the trail started has none."""
+    return present(con) and con.execute(
+        r"SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'audit\_%\_i' ESCAPE '\'").fetchone() is not None
 
 
 # ---------- the connection ----------
@@ -185,6 +187,9 @@ class Connection(sqlite3.Connection):
             self.commit()
         else:
             self.rollback()
+        # The block is over: drop the fresh context commit()/rollback() put in, or the still-open connection would hold
+        # records.db's write lock and every other writer would wait for it.
+        self.disarm()
         return False
 
     def disarm(self):
@@ -361,8 +366,9 @@ def start(con):
     """Step 17: triggers on every table, and one baseline row per row as the records stand, so the trail starts
     from the real records on the day it was turned on. The activity log so far is part of the baseline."""
     con.arm("migration", "Audit trail started")
+    already = started(con)
     changed = ensure_triggers(con)
-    if started(con):  # the step ran before (a records.db whose update count was set back): the trail has its start
+    if already:  # the step ran before (a records.db whose update count was set back): the trail has its start
         if changed:
             event(con, "audit", "triggers", {"updated": changed, "why": "update 17 run again"})
         return

@@ -121,5 +121,8 @@ after it a note.
   In the app: **Filing › Audit trail** lists every entry (filters, search, Excel export, **Check the audit trail**,
   and accepting changes made outside the app); payments and recurring payments have a **History** section, and budget
   lines a **History** button. Audit pack covers carry the trail's check code, and each backup zip a `manifest.json`.
-- Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test` and
-  `.venv\Scripts\python -m synthetic_tests.trail_view_test`.
+- Setup (`hrp/masters.py`, `hrp/appsettings.py`): companies, bank accounts (one MYR cash book each), recurring payments
+  with salary advances, and general settings, each added, changed, stopped or (only while unused) deleted, with a reason
+  for stop, use again and delete. Filed months never change.
+- Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test`,
+  `.venv\Scripts\python -m synthetic_tests.trail_view_test` and `.venv\Scripts\python -m synthetic_tests.setup_test`.
