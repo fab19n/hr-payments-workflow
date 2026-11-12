@@ -69,7 +69,7 @@ after = business_rows(raw)
 # Every original column keeps its value (later updates add columns: compare each row's original part); new rows are listed.
 added = {}
 for t in after:
-    if t == "app_settings":  # update 19's own table
+    if t in ("app_settings", "payment_types", "doc_types", "required_sets"):  # updates 19 and 20's own tables
         continue
     old = before.get(t, [])
     if any(new[:len(prev)] != prev for new, prev in zip(after[t], old)) or after[t][len(old):]:
@@ -78,8 +78,11 @@ check("updating to 17 changes no record (only the update's own activity line is 
       set(added) <= {"activity"} and all("Saved a copy" in r[2] for r in added.get("activity", [])), added)
 check("the update reports a clean trail", trail["entries"] >= 1 and trail["outside"] == 0 and not trail["head"]
       and not trail["triggers_repaired"] and trail["late_sealed"] == 0 and not trail["head_behind"], trail)
-n_base = raw.execute("SELECT COUNT(*) FROM audit_row WHERE op = 'baseline'").fetchone()[0]
-check("baseline covers every record", n_base == sum(len(v) for v in after.values()), (n_base, {t: len(v) for t, v in after.items()}))
+# Every record is in the trail: as it stood when the trail started (baseline), or as added by a later update (update 20
+# records its seeded rows as inserts).
+seen = dict(raw.execute("SELECT tbl, COUNT(DISTINCT row_key) FROM audit_row WHERE op IN ('baseline', 'insert') GROUP BY tbl").fetchall())
+missing = {t: (len(v), seen.get(t, 0)) for t, v in after.items() if len(v) > seen.get(t, 0)}
+check("baseline covers every record", not missing, missing)
 raw.close()
 
 # ---------- 2. the app's own requests ----------

@@ -15,6 +15,8 @@ TABLE_LABELS = {
     "sql_entries": ("SQL entry", "SQL entries"), "activity": ("Activity log line", "activity log lines"),
     "book_openings": ("Book opening", "book openings"), "budgets": ("Budget", "budgets"),
     "budget_lines": ("Budget line", "budget lines"), "app_settings": ("General setting", "general settings"),
+    "payment_types": ("Payment type", "payment types"), "doc_types": ("Document type", "document types"),
+    "required_sets": ("Required documents", "sets of required documents"),
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),
@@ -43,9 +45,13 @@ FIELD_LABELS = {
     "short_name": "Short name", "reg_no": "Registration no.", "tin": "Tax ID (TIN)", "sst_no": "SST no.",
     "employer_kwsp": "KWSP employer no.", "employer_perkeso": "PERKESO employer no.", "employer_lhdn": "LHDN employer no.",
     "sql_database": "SQL Account database", "bank": "Bank", "statement_format": "Statement format", "gl_code": "GL account code",
-    "sql_payment_method": "SQL payment method", "cash_book": "Cash book account", "key": "Setting", "value": "Value",
+    "sql_payment_method": "SQL payment method", "cash_book": "Cash book account", "key": "Key", "value": "Value",
+    "plural": "Several are called", "singular": "One is called", "pack_order": "Place in the audit pack",
+    "from_sql": "Issued by SQL Account", "legal_due_offset": "Legal deadline in", "legal_due_day": "Legal deadline day",
+    "system": "Used by the app", "payment_type": "Payment type", "from_month": "From", "to_month": "Until",
+    "docs": "Documents", "set_at": "Set",
 }
-NAME_FIELDS = ("description", "name", "title", "label", "doc_no", "original_name", "what", "code", "month", "key")
+NAME_FIELDS = ("description", "name", "title", "label", "doc_no", "original_name", "what", "code", "payment_type", "month", "key")
 # Bank details and account numbers, wherever they are kept (a budget line's details are filled from the payee's bank
 # details): masked in the trail's views and export until someone asks to see them.
 SENSITIVE = {("payees", "bank_details"), ("accounts", "number"), ("budget_lines", "details")}

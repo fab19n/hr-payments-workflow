@@ -14,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, config, budget as stored, db, masters, nextup, recon, reports, rules,
+from . import (appsettings, audit, auditpack, auditread, config, budget as stored, db, masters, nextup, recon, reports, rulebook, rules,
                sqlimport, statements)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
@@ -177,11 +177,14 @@ def index():
 def meta():
     c = con()
     ents = rows(c.execute("SELECT * FROM entities ORDER BY sort, id"))
+    R = rulebook.get(c)
     for e in ents:
         e["accounts"] = rows(c.execute("SELECT * FROM accounts WHERE entity_id = ? ORDER BY sort, id", (e["id"],)))
     return jsonify({
-        "entities": ents, "doc_types": rules.DOC_TYPES, "categories": rules.CATEGORIES,
-        "required": {k: rules.REQUIRED_DOCS[k] for k in rules.REQUIRED_DOCS}, "sql_only": sorted(rules.SQL_ONLY),
+        "entities": ents, "doc_types": R.doc_types, "categories": R.categories,
+        "category_info": {k: {"active": t["active"], "direction": t["direction"], "system": t["system"]} for k, t in R.types.items()},
+        "doc_info": {k: {"active": d["active"], "from_sql": d["from_sql"], "system": d["system"]} for k, d in R.docs.items()},
+        "required": {k: (R.set_for(k) or R.set_for("other") or {"docs": []})["docs"] for k in R.types}, "sql_only": sorted(R.sql_only),
         "data_dir": str(DATA_DIR), "backup_dir": SETTINGS.get("backup_dir") or "", "settings": appsettings.values(),
     })
 
@@ -190,7 +193,7 @@ def docs_for(c, field, ident):
     out = rows(c.execute(f"""SELECT * FROM documents WHERE {field} = ? AND replaced_by IS NULL AND removed_at IS NULL
                              ORDER BY uploaded_at""", (ident,)))
     for d in out:
-        d["label"] = rules.DOC_TYPES.get(d["doc_type"], d["doc_type"])
+        d["label"] = rulebook.get(c).doc_label(d["doc_type"])
     return out
 
 
@@ -221,7 +224,7 @@ def month_view():
         p["not_counted"] = db.not_counted(c, pay=p)
         p["flag"] = db.payment_flag(c, e, p, today)
         p["documents"] = docs_for(c, "payment_id", p["id"])
-        p["required"] = rules.required_docs(p["category"], e["uses_sql"])
+        p["required"] = rulebook.get(c).required_docs(p["category"], e["uses_sql"], p["month"], p["entity_id"])
         p["bank_lines"] = rows(c.execute("SELECT id, txn_date, amount, description FROM statement_lines WHERE payment_id = ?", (p["id"],)))
         p["bank_total"] = db.linked_total(c, p)
         p["sql_entries"] = rows(c.execute(
@@ -561,6 +564,15 @@ def own_account(c, e, account_id):
     return acct
 
 
+def valid_cat(c, cat, direction):
+    """The payment type to store for a payment made from a bank line or an SQL voucher: the one chosen when it is in
+    use and of the payment's direction, else Money received (money in) or Other payment (money out)."""
+    R = rulebook.get(c)
+    if cat and R.active_type(cat) and R.direction(cat) == direction:
+        return cat
+    return "receipt" if direction == "in" else "other"
+
+
 @app.post("/api/payments")
 def create_payment():
     b = request.get_json()
@@ -570,12 +582,17 @@ def create_payment():
     acct = own_account(c, e, b.get("account_id"))
     if not b.get("description"):
         return err("Give the payment a description.")
+    cat = b.get("category", "other")
+    if not rulebook.get(c).active_type(cat):
+        return err("Choose one of the payment types in use.")
+    # Money in or out as posted (the page sends its type's, older callers may pair them freely); else the type's.
+    way = b.get("direction") if b.get("direction") in ("in", "out") else rulebook.get(c).direction(cat)
     cur = c.execute(
         """INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date,
            paid_source, direction, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (e["id"], month, acct["id"] if acct else None, b.get("category", "other"), b["description"],
+        (e["id"], month, acct["id"] if acct else None, cat, b["description"],
          b.get("amount"), acct["currency"] if acct else "MYR", b.get("due_date") or b.get("paid_date") or date.today().isoformat(),
-         b.get("paid_date"), "manual" if b.get("paid_date") else None, b.get("direction", "out"), b.get("notes"), db.now()))
+         b.get("paid_date"), "manual" if b.get("paid_date") else None, way, b.get("notes"), db.now()))
     db.log(c, f"Added payment: {b['description']} ({month})")
     c.commit()
     return jsonify({"id": cur.lastrowid})
@@ -587,6 +604,11 @@ def update_payment(pid):
     c = con()
     p = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone() or abort(404)
     sets = {k: (v if v != "" else None) for k, v in b.items() if k in PAY_FIELDS}
+    if "category" in sets and sets["category"] != p["category"]:
+        if not rulebook.get(c).active_type(sets["category"]):
+            return err("Choose one of the payment types in use.")
+        if rulebook.get(c).direction(sets["category"]) != p["direction"]:
+            return err(f"This payment is money {p['direction']}, so choose a payment type for money {p['direction']}.")
     if "account_id" in sets:
         acct = own_account(c, entity(c, p["entity_id"]), sets["account_id"])
         sets["account_id"] = acct["id"] if acct else None
@@ -650,9 +672,12 @@ def upload():
     if not f or not f.filename:
         return err("Choose a file to upload.")
     doc_type = request.form.get("doc_type", "other")
-    if doc_type not in rules.DOC_TYPES:
-        return err("Unknown document type.")
     c = con()
+    R = rulebook.get(c)
+    if doc_type not in R.docs:
+        return err("Unknown document type.")
+    if not R.docs[doc_type]["active"]:
+        return err(f"{R.doc_label(doc_type)} is a document type no longer in use. Choose another.")
     pid, tid = request.form.get("payment_id"), request.form.get("task_id")
     if pid:
         owner = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone() or abort(404)
@@ -671,7 +696,7 @@ def upload():
     replaces = request.form.get("replaces")
     if replaces:
         c.execute("UPDATE documents SET replaced_by = ? WHERE id = ?", (did, replaces))
-    db.log(c, f"Uploaded {rules.DOC_TYPES[doc_type]} '{f.filename}' to {folder}")
+    db.log(c, f"Uploaded {R.doc_label(doc_type)} '{f.filename}' to {folder}")
     c.commit()
     return jsonify({"id": did})
 
@@ -700,7 +725,7 @@ def remove_document(did):
     owner = (c.execute("SELECT description AS name, month FROM payments WHERE id = ?", (d["payment_id"],)) if d["payment_id"]
              else c.execute("SELECT title AS name, month FROM tasks WHERE id = ?", (d["task_id"],))).fetchone()
     c.execute("UPDATE documents SET removed_at = ? WHERE id = ?", (db.now(), did))
-    db.log(c, f"Removed {rules.DOC_TYPES.get(d['doc_type'], d['doc_type'])} '{d['original_name']}' from {owner['name']} "
+    db.log(c, f"Removed {rulebook.get(c).doc_label(d['doc_type'])} '{d['original_name']}' from {owner['name']} "
               f"({owner['month']}); the file is kept")
     c.commit()
     return jsonify({"ok": True})
@@ -753,15 +778,20 @@ def save_payee():
     vals.setdefault("desc_template", vals["name"].strip() + " - {M}")
     if not vals.get("desc_template"):
         vals["desc_template"] = vals["name"].strip() + " - {M}"
-    # Money in is a receipt and a receipt is money in; a payment going out is any other type.
-    way = vals.get("direction") or ("in" if vals.get("category") == "receipt" else None)
+    # Money in takes a money-in payment type (Money received unless another is chosen) and a money-in type is money
+    # in; money out takes a money-out type (Other payment instead of a money-in one).
+    R = rulebook.get(c)
+    is_in = lambda cat: cat in R.categories and R.direction(cat) == "in"
+    way = vals.get("direction") or ("in" if is_in(vals.get("category")) else None)
     if way not in (None, "in", "out"):
         return err("Choose Money in or Money out.")
     if way == "in":
-        vals["direction"], vals["category"] = "in", "receipt"
+        vals["direction"] = "in"
+        if not is_in(vals.get("category")):
+            vals["category"] = "receipt"
     elif way == "out":
         vals["direction"] = "out"
-        if vals.get("category") == "receipt":
+        if is_in(vals.get("category")):
             vals["category"] = "other"
     old = c.execute("SELECT * FROM payees WHERE id = ?", (b["id"],)).fetchone() if b.get("id") else None
     if b.get("id") and not old:
@@ -769,7 +799,7 @@ def save_payee():
     e = entity(c, old["entity_id"] if old else id_from(str(b.get("entity_id"))))
     if not old:
         d = appsettings.values()
-        vals.setdefault("category", d["payee_default_category"] if vals.get("direction") != "in" else "receipt")
+        vals.setdefault("category", "receipt" if vals.get("direction") == "in" else valid_cat(c, d["payee_default_category"], "out"))
         vals.setdefault("due_day", d["payee_default_due_day"])
         vals.setdefault("month_offset", d["payee_default_month_offset"])
         if not vals.get("account_id"):
@@ -1043,7 +1073,8 @@ def change_line(c, l, b):
             """INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date,
                paid_source, planned_is_estimate, direction, created_at)
                VALUES (?, ?, ?, ?, ?, ?, (SELECT currency FROM accounts WHERE id = ?), ?, ?, 'bank', 0, ?, ?)""",
-            (l["entity_id"], cp.get("month") or l["month"], l["account_id"], cp.get("category", "other"), cp["description"],
+            (l["entity_id"], cp.get("month") or l["month"], l["account_id"],
+             valid_cat(c, cp.get("category", "other"), "in" if l["amount"] > 0 else "out"), cp["description"],
              abs(l["amount"]), l["account_id"], l["txn_date"], l["txn_date"], "in" if l["amount"] > 0 else "out", db.now()))
         c.execute("UPDATE statement_lines SET payment_id = ?, status = 'matched' WHERE id = ?", (cur.lastrowid, lid))
         db.log(c, f"Created payment from bank line {l['txn_date']} {l['amount']:,.2f}: {cp['description']}")
@@ -1551,7 +1582,7 @@ def _payment_from_entry(c, s, category=None):
     """Adds an SQL voucher that isn't in the tracker (a claim, an advance, a one-off bill) as a paid payment."""
     acct = masters.first_active_account(c, s["entity_id"])  # the cash book account, as SQL's cash book listing is for it
     direction = s["direction"] or "out"
-    category = "receipt" if direction == "in" else (category or _guess_category(s["description"]))
+    category = "receipt" if direction == "in" else valid_cat(c, category or _guess_category(s["description"]), "out")
     pid = c.execute(
         """INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date,
            paid_source, sql_ref, einvoice_ref, direction, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'sql', ?, ?, ?, ?)""",
@@ -1998,6 +2029,26 @@ def _setup_call(fn):
     return jsonify(out)
 
 
+def _out_types(c):
+    """The money-out payment types in use: what a new recurring payment may default to."""
+    R = rulebook.get(c)
+    return {k: t["label"] for k, t in R.types.items() if t["active"] and t["direction"] == "out"}
+
+
+@app.get("/api/setup/required")
+def setup_required():
+    eid = request.args.get("entity", type=int)
+    return _setup_call(lambda c: masters.required_view(c, eid))
+
+
+@app.post("/api/setup/required")
+def setup_required_save():
+    b = _body()
+    eid = b.get("entity_id") if isinstance(b.get("entity_id"), int) and not isinstance(b.get("entity_id"), bool) else None
+    return _setup_call(lambda c: {"ok": True, "affected": masters.required_save(
+        c, b.get("payment_type"), eid, b.get("docs"), b.get("from_month"))})
+
+
 @app.get("/api/setup/types")
 def setup_types():
     return jsonify(masters.types())
@@ -2005,7 +2056,7 @@ def setup_types():
 
 @app.get("/api/setup/settings")
 def setup_settings():
-    return jsonify({"values": appsettings.values(), "fields": appsettings.fields(rules.CATEGORIES)})
+    return jsonify({"values": appsettings.values(), "fields": appsettings.fields(_out_types(con()))})
 
 
 @app.patch("/api/setup/settings")
@@ -2014,7 +2065,7 @@ def setup_settings_save():
 
     def run(c):
         try:
-            v = appsettings.check(b.get("values") if isinstance(b.get("values"), dict) else {}, rules.CATEGORIES)
+            v = appsettings.check(b.get("values") if isinstance(b.get("values"), dict) else {}, _out_types(c))
         except ValueError as x:
             raise masters.Refused(str(x))
         v = {k: x for k, x in v.items() if x != appsettings.get(k)}

@@ -5,7 +5,7 @@ import re
 import sqlite3
 from datetime import date, datetime, timedelta
 
-from . import appsettings, audit, rules
+from . import appsettings, audit, rulebook, rules
 from .config import BACKUP_DIR, DB_PATH, PACKS_DIR, SEED_PATH
 from .sqlimport import MONEY_IN, MONEY_OUT, PURCHASE_DOCS, SALES_DOCS
 
@@ -273,6 +273,11 @@ MIGRATIONS = [
     #     active and sort; General settings get a table, filled with the values used until now. Each company's first
     #     account becomes its cash book, as the app took it to be. Nothing else in the records changes.
     lambda con: _setup_columns(con),
+    # 20. Payment types, document types and the documents each payment type needs, kept in the records from now on
+    #     (Setup), filled with the values the app has had in code, and checked to read back exactly as they were.
+    #     Required documents become dated sets, so a change from a month on never alters the months before it.
+    #     Nothing in the records changes.
+    rulebook.install,
 ]
 
 
@@ -937,7 +942,8 @@ def payment_status(con, pay, uses_sql, ev=None):
     note accepts the difference. A required document counts when uploaded or shown by evidence (ev, from evidence(),
     looked up when not given). Returns (status, missing doc types)."""
     ev = evidence(con, pay=pay) if ev is None else ev
-    missing = missing_docs(con, rules.required_docs(pay["category"], uses_sql), "payment_id", pay["id"], ev)
+    required = rulebook.get(con).required_docs(pay["category"], uses_sql, pay["month"], pay["entity_id"])  # as in force then
+    missing = missing_docs(con, required, "payment_id", pay["id"], ev)
     if not pay["paid_date"]:
         return "planned", missing
     if part_paid(pay, linked_total(con, pay)):
@@ -969,12 +975,18 @@ def money(n, currency="MYR"):
     return f"{'RM' if currency == 'MYR' else currency} {n:,.2f}"
 
 
+def _short_doc(t, R=None):
+    """A document type's short name: Payment Voucher for Payment Voucher (SQL). R: rulebook.get(con) (without, rules.py's)."""
+    return (R or rulebook.FROZEN).short_doc(t)
+
+
 # ---------- what the dates mean today ----------
 
-def legal_due(pay):
-    """A payment's legal deadline (rules.LEGAL_DUE: statutory payments by the 15th after the payroll month), else None.
-    It takes the payment's month as the payroll month; a payment created from an SQL voucher has the voucher's month."""
-    r = rules.LEGAL_DUE.get(pay["category"])
+def legal_due(pay, R=None):
+    """A payment's legal deadline (its payment type's: statutory payments by the 15th after the payroll month), else
+    None. It takes the payment's month as the payroll month; a payment created from an SQL voucher has the voucher's
+    month. R: rulebook.get(con) (the app always passes it; without, rules.py's values, for callers with no records at hand)."""
+    r = (R or rulebook.FROZEN).legal_due(pay["category"])
     return due(pay["month"], *r) if r else None
 
 
@@ -993,7 +1005,7 @@ def payment_flag(con, ent, pay, today):
     when a statutory payment was paid after its legal deadline, else None. Nothing
     counts in a month before the first month tracked, and nothing is to do in a month marked as filed (it says Not
     paid, or the note for a late payment). Returns {code, text, tone (grey, warn or bad), hint} or None."""
-    legal = legal_due(pay)
+    legal = legal_due(pay, rulebook.get(con))
     money_in = pay["direction"] == "in"
     not_paid = "Not received" if money_in else "Not paid"
     if before_tracking(ent, pay["month"]):
@@ -1081,15 +1093,10 @@ def task_status(con, ent, task, ev=None):
     missing = missing_docs(con, required, "task_id", task["id"], ev)
     if ok and missing:
         why = why[6].upper() + why[7:]  # what the records show, without 'Done: ': its own document is still to file
-    lacking = ([why] if ok is False else []) + ([f"Still missing: {_listed(map(_short_doc, missing))}"] if missing else [])
+    lacking = ([why] if ok is False else []) + ([f"Still missing: {_listed(map(rulebook.get(con).short_doc, missing))}"] if missing else [])
     auto = bool(ok) and not missing
     return {"done": bool(task["done_at"]) or auto, "auto": auto, "why": why, "missing": missing, "lacking": lacking,
             "shown": shown, "waiting": waits_for(task)}
-
-
-def _short_doc(t):
-    """A document type's short name: Payment Voucher for Payment Voucher (SQL)."""
-    return rules.DOC_TYPES.get(t, t).split(" (")[0]
 
 
 def _counted(n, many):
@@ -1222,11 +1229,11 @@ def _from_payments(con, ent, task, rule):
             filed = cover[d] is None if d in took else d in up
             from_files, from_sql = from_files or filed, from_sql or not filed
         if miss:
-            group, takers = lacking.setdefault(_listed(map(_short_doc, miss)), ([], []))
+            group, takers = lacking.setdefault(_listed(map(rulebook.get(con).short_doc, miss)), ([], []))
             group.append(p)
             if "einvoice" in miss:
                 takers += [by for _, by in _einvoices(con, _linked_sql(con, p, None), p) if by]
-    n, docs = len(pays), _listed(map(_short_doc, rule["docs"]))
+    n, docs = len(pays), _listed(map(rulebook.get(con).short_doc, rule["docs"]))
     who = f"the {one}" if n == 1 else _counted(n, many)
     if lacking:
         unpaid = ", not paid yet" if rule.get("paid") else ""

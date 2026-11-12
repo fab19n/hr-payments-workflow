@@ -35,6 +35,48 @@ function groupTotals(list) {
 }
 // A document type's short name, e.g. "Official Receipt" for "Official Receipt (SQL)"
 const docLabel = t => (state.meta.doc_types[t] || t).split(" (")[0];
+// Document types: in use (not stopped), and kept in SQL Account (from_sql). A server without doc_info: all in use, sql_only.
+const docInfo = k => state.meta.doc_info?.[k] || null;
+const docActive = k => docInfo(k)?.active == null || !!+docInfo(k).active;
+const docFromSql = k => docInfo(k) ? !!+docInfo(k).from_sql : (state.meta.sql_only || []).includes(k);
+// Payment types: the way the money goes (in or out) and whether they are in use (meta.category_info; a server without it:
+// Money received is money in, every other type money out).
+const catInfo = k => state.meta.category_info?.[k] || {};
+const catDir = k => catInfo(k).direction || (k === "receipt" ? "in" : "out");
+const catActive = k => catInfo(k).active == null || !!+catInfo(k).active;
+// The type a new payment going this way starts on: money in, Money received; money out, Other, or with setting the type
+// General settings gives new recurring payments. Failing those, the first type in use going that way.
+function defaultType(dir, setting) {
+  const cats = state.meta.categories || {}, ok = k => k && k in cats && catActive(k) && catDir(k) === dir;
+  const want = dir === "in" ? ["receipt"] : [setting ? state.meta.settings?.payee_default_category : null, "other"];
+  return want.find(ok) || Object.keys(cats).find(ok) || (dir === "in" ? "receipt" : "other");
+}
+// A one-off payment added by hand starts as a claim (when claims are in use), else as defaultType gives.
+const oneOffType = () => catActive("claim") && catDir("claim") === "out" ? "claim" : defaultType("out");
+// A payment type picker's options: the types in use going this way (any way without dir), and sel and keep (the record's
+// own type) even when stopped, so a record keeps its type until it is changed.
+function typeOptions(sel, dir, keep) {
+  const cats = state.meta.categories || {};
+  const keys = Object.keys(cats).filter(k => k === sel || (catActive(k) || k === keep) && (!dir || catDir(k) === dir));
+  if (sel && !keys.includes(sel)) keys.push(sel);
+  return keys.map(k => `<option value="${esc(k)}" ${k === sel ? "selected" : ""}>${esc(cats[k] || k)}${catActive(k) ? "" : " (stopped)"}</option>`).join("");
+}
+// A type picker beside a money in / money out picker: choosing a direction offers only the types going that way (the one
+// chosen stays if it goes that way too, else the default); choosing a type sets the direction to the type's. then(): after
+// either changes. setting and keep as for defaultType and typeOptions.
+function pairTypeDir(catSel, dirSel, { setting = false, keep = null, then = () => {} } = {}) {
+  const fill = sel => { catSel.innerHTML = typeOptions(sel, dirSel.value, keep); };
+  dirSel.onchange = () => {
+    const dir = dirSel.value, cur = catSel.value;
+    fill(cur && catDir(cur) === dir ? cur : keep && catDir(keep) === dir ? keep : defaultType(dir, setting)); then();
+  };
+  catSel.onchange = () => {
+    const d = catDir(catSel.value);
+    if (d !== dirSel.value) { dirSel.value = d; fill(catSel.value); }
+    then();
+  };
+  return fill;
+}
 const matchedNote = r => r.bank_lines_matched ? `; ${r.bank_lines_matched} bank lines matched` : "";
 const changedInSql = x => x.linked_to ? `<div class="note">Changed in SQL? This number is already linked to ${esc(x.linked_to)} at ${money(x.linked_amount)}.</div>` : "";
 // "RM 10,000.00 of 20,000.00": what the linked bank lines add up to, against the payment's amount
@@ -79,7 +121,7 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
   nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
-  setup: { kind: null, id: null, types: null, stopped: false, drawer: null } };
+  setup: { kind: null, id: null, types: null, stopped: false, drawer: null, reqScope: null, req: null, reqOpen: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
   ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
@@ -562,11 +604,12 @@ function openPayment(id, keep = {}) {
   const dt = state.meta.doc_types;
   const ofType = t => p.documents.filter(x => x.doc_type === t);
   const required = p.required.map(t => slotHtml(t, ofType(t), p.evidence[t], p.not_counted[t])).join("");
-  // A company not kept in SQL has no SQL documents. Approval is the usual extra; where it is required already, Other,
-  // so a document added without a look at the list is never filed as a voucher.
-  const noSql = state.data.entity.uses_sql ? [] : [...state.meta.sql_only, "sqlexport"];
-  const extraTypes = Object.keys(dt).filter(t => !p.required.includes(t) && t !== "statement" && !noSql.includes(t));
-  const extraPick = extraTypes.includes("approval") ? "approval" : "other";
+  // The document types in use, but not the ones the app files itself (statements, reconciliations, SQL listings), and for
+  // a company not kept in SQL no SQL documents. Approval is the usual extra; where it is required already, Other, so a
+  // document added without a look at the list is never filed as a voucher.
+  const noSql = !state.data.entity.uses_sql;
+  const extraTypes = Object.keys(dt).filter(t => !p.required.includes(t) && docActive(t) && !["statement", "recon", "sqlexport"].includes(t) && !(noSql && docFromSql(t)));
+  const extraPick = ["approval", "other"].find(t => extraTypes.includes(t)) || extraTypes[0];
   const extras = [...new Set(p.documents.map(x => x.doc_type).filter(t => !p.required.includes(t)))].map(t => slotHtml(t, ofType(t))).join("");
   const lines = p.bank_lines.length ? p.bank_lines.map(l => `<div class="line-desc mono">${shortDate(l.txn_date)} · ${(l.amount > 0) === (p.direction === "out") ? "−" : ""}${money(Math.abs(l.amount), p.currency)} · ${esc(l.description.split(" | ").slice(0, 2).join(" "))}</div>`).join("") : `<div class="note">${p.direction === "in" ? "No bank credit matched to this yet." : "Not matched to a bank statement line yet."}</div>`;
   const gap = p.bank_total == null || p.amount == null ? 0 : p.amount - p.bank_total;
@@ -597,8 +640,8 @@ function openPayment(id, keep = {}) {
     <div style="display:grid;gap:8px">${required}</div>
     <div><h3>Other documents</h3></div>
     <div style="display:grid;gap:8px">${extras}
-      <div class="row"><select id="extraType">${extraTypes.map(t => `<option value="${t}" ${t === extraPick ? "selected" : ""}>${esc(dt[t])}</option>`).join("")}</select>
-      <button class="ghost small" id="extraUpload">Upload another document</button></div></div>
+      ${extraTypes.length ? `<div class="row"><select id="extraType">${extraTypes.map(t => `<option value="${esc(t)}" ${t === extraPick ? "selected" : ""}>${esc(dt[t] || t)}</option>`).join("")}</select>
+      <button class="ghost small" id="extraUpload">Upload another document</button></div>` : ""}</div>
     ${state.data.entity.uses_sql ? `<div><h3>SQL Account</h3>${vouchers ? vouchers + (p.evidence.einvoice && !p.required.includes("einvoice") ? `<div class="note chip have ev">✓ ${esc(p.evidence.einvoice.text)}</div>` : "") + `<div class="note">Linked by mistake? Unlink puts the voucher back under SQL entries not linked, and the amount and paid date back to what they were.</div>` : `<div class="note">No SQL voucher linked yet.</div>`}</div>` : ""}
     <div><h3>Bank statement</h3>${lines}${over}${est}</div>
     ${histSection("payments", p.id)}
@@ -618,7 +661,7 @@ function payFormValues() {
 // uploaded, ev (what SQL or the bank statement already shows, e.g. PV2609-020) ticks the box, which can still take a file;
 // without it, why says why what SQL has doesn't count (an e-Invoice cancelled by a refund note).
 function slotHtml(type, docs, ev, why) {
-  const label = esc(state.meta.doc_types[type]);
+  const label = esc(state.meta.doc_types[type] || type);
   if (!docs.length) return `<div class="slot ${ev ? "have" : "need"}" data-slot="${type}"><div class="lbl"><b>${label}</b><div class="file"${ev ? ` title="${esc(ev.text)}"` : ""}>${ev ? `✓ ${esc(ev.text)}` : "Not uploaded"}</div>${!ev && why ? `<div class="note">${esc(why.hint)}</div>` : ""}</div><button class="ghost small" data-upload="${type}">Upload</button></div>`;
   return docs.map(d => `<div class="slot have" data-slot="${type}"><div class="lbl"><b>${label}</b><div class="file">${esc(d.original_name)} · ${fmtDate(d.uploaded_at)}</div></div>
     <a class="ghost small" href="/api/documents/${d.id}/file" target="_blank">View</a><button class="ghost small" data-upload="${type}" data-replaces="${d.id}" data-name="${esc(d.original_name)}">Replace</button>
@@ -1107,9 +1150,10 @@ function rvMine(l) {
     ${others.length ? `<optgroup label="Open payments">${others.map(p => rvPayOption(p, ch)).join("")}</optgroup>` : ""}
     <option value="c" ${ch === "c" ? "selected" : ""}>Create a payment for this line</option>
     <option value="n" ${ch === "n" ? "selected" : ""}>No documents needed (bank charge)</option>`;
-  const cat = l.amount > 0 ? "receipt" : "other";
+  // Only the types going the line's way: Money received for money in, Other for money out unless changed.
+  const dir = l.amount > 0 ? "in" : "out";
   const extra = ch === "c" ? `<input data-rv-desc="${l.id}" maxlength="120" placeholder="What was this payment for?" aria-label="Description of the payment to create">
-      <select data-rv-cat="${l.id}" aria-label="Type of payment">${Object.entries(state.meta.categories).map(([k, v]) => `<option value="${k}" ${k === cat ? "selected" : ""}>${esc(v)}</option>`).join("")}</select>`
+      <select data-rv-cat="${l.id}" aria-label="Type of payment">${typeOptions(defaultType(dir), dir)}</select>`
     : ch === "n" ? `<input data-rv-note="${l.id}" maxlength="120" placeholder="Reason, e.g. bank charges" aria-label="Reason no documents are needed">` : "";
   return `<div class="row" style="gap:6px"><span class="pill warn">To explain</span>
     <button class="ghost small" data-explain="${l.id}">More options</button></div>
@@ -1203,7 +1247,7 @@ async function rvApply() {
       if (ch === "c") {
         const desc = document.querySelector(`[data-rv-desc="${l.id}"]`)?.value.trim();
         if (!desc) throw new Error(`Give the payment for the line of ${shortDate(l.txn_date)} a description.`);
-        r.create_payment = { description: desc, category: document.querySelector(`[data-rv-cat="${l.id}"]`)?.value || "other" };
+        r.create_payment = { description: desc, category: document.querySelector(`[data-rv-cat="${l.id}"]`)?.value || defaultType(l.amount > 0 ? "in" : "out") };
       } else if (ch === "n") { r.no_docs = true; r.note = document.querySelector(`[data-rv-note="${l.id}"]`)?.value.trim() || ""; }
       else if (ch.startsWith("p:")) r.payment_id = +ch.slice(2);
       else throw new Error(`Choose what the line of ${shortDate(l.txn_date)} is, or untick it.`);
@@ -1231,8 +1275,8 @@ function explainLine(lineId) {
   if (!l) return;
   const cur = V.d.summary.account.currency, amount = l.amount;
   const pick = { id: String(V.choice[l.id] || "").startsWith("p:") ? +V.choice[l.id].slice(2) : null, q: "", all: false };
-  // Money in is most likely a receipt, money out a one-off payment.
-  const cat = amount > 0 ? "receipt" : "other";
+  // Money in is most likely a receipt, money out a one-off payment; only the types going the line's way are offered.
+  const dir = amount > 0 ? "in" : "out";
   state.drawerDirty = null;
   $("#drawer").innerHTML = `
     <div class="ex-head"><div class="row spread"><h2>Explain bank line</h2><button class="ghost small" id="closeDrawer">Close</button></div>
@@ -1248,7 +1292,7 @@ function explainLine(lineId) {
     <div class="card"><h3>Create a new payment for this line</h3>
       <div class="note">For one-off transactions such as web hosting, flights or receipts.</div>
       <label class="field"><span>Description</span><input id="ex-desc"></label>
-      <label class="field"><span>Type</span><select id="ex-cat">${Object.entries(state.meta.categories).map(([k, v]) => `<option value="${k}" ${k === cat ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>
+      <label class="field"><span>Type</span><select id="ex-cat">${typeOptions(defaultType(dir), dir)}</select></label>
       <button class="btn" id="ex-create">Create payment and link</button></div>
     <div class="card"><h3>No documents needed</h3>
       <label class="field"><span>Reason</span><input id="ex-note" placeholder="e.g. bank charges, own-account transfer"></label>
@@ -1462,8 +1506,8 @@ async function viewPayees(main) {
 const numOr = (v, d) => v == null || v === "" || Number.isNaN(+v) ? d : +v;
 // The defaults of a new recurring payment, from General settings.
 function payeeDefaults() {
-  const S = state.meta.settings || {}, cat = S.payee_default_category;
-  return { category: cat && state.meta.categories[cat] ? cat : "utility", month_offset: numOr(S.payee_default_month_offset, 1) ? 1 : 0,
+  const S = state.meta.settings || {};
+  return { category: defaultType("out", true), month_offset: numOr(S.payee_default_month_offset, 1) ? 1 : 0,
     due_day: Math.min(31, Math.max(1, numOr(S.payee_default_due_day, 6))) };
 }
 // "12 payments, 3 budget lines", from the server's [label, count] pairs.
@@ -1480,7 +1524,7 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
   if (!e || !p) return closeDrawer(true);
   const usage = id === "new" ? null : await api(`/api/payees/${p.id}/usage`).catch(() => null);
   state.openPayment = null; state.why = null;
-  const cats = state.meta.categories;
+  const pdir = p.direction || catDir(p.category), into = pdir === "in";
   const acts = id === "new" ? "" : `<div><h3>Where used</h3>${usage ? usedHtml(usage.used_by) : `<div class="note">Couldn't read where it is used.</div>`}</div>
     <div class="row">${p.active ? `<button class="ghost" type="button" data-payee-act="stop" data-payee-id="${p.id}">Stop using</button>`
       : `<button class="ghost" type="button" data-payee-act="use" data-payee-id="${p.id}">Use again</button>`}
@@ -1494,12 +1538,12 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
     <form class="form" id="payeeForm" style="grid-template-columns:1fr 1fr">
       <label class="field" style="grid-column:1/-1"><span>Payee</span><input id="py-name" value="${esc(p.name)}" required></label>
       <label class="field" style="grid-column:1/-1"><span>Description each month ({M} = payroll month, {M+1} = next month)</span><input id="py-desc" value="${esc(p.desc_template)}" placeholder="TNB - {M}"></label>
-      <label class="field"><span>Money</span><select id="py-dir"><option value="out">Money out (a payment)</option><option value="in" ${p.direction === "in" ? "selected" : ""}>Money in (received)</option></select></label>
-      <label class="field"><span>Type</span><select id="py-cat">${Object.entries(cats).map(([k, v]) => `<option value="${k}" ${k === p.category ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>
-      <label class="field"><span id="py-acct-lbl">${p.direction === "in" ? "Paid into" : "Pay from"}</span><select id="py-acct">${pickAccounts(e, p.account_id).map(a => acctOption(a, p.account_id)).join("")}</select></label>
+      <label class="field"><span>Money</span><select id="py-dir"><option value="out">Money out (a payment)</option><option value="in" ${into ? "selected" : ""}>Money in (received)</option></select></label>
+      <label class="field"><span>Type</span><select id="py-cat">${typeOptions(p.category, pdir, id === "new" ? null : p.category)}</select></label>
+      <label class="field"><span id="py-acct-lbl">${into ? "Paid into" : "Pay from"}</span><select id="py-acct">${pickAccounts(e, p.account_id).map(a => acctOption(a, p.account_id)).join("")}</select></label>
       <label class="field"><span>Usual amount</span><input id="py-amt" type="number" step="0.01" value="${p.amount ?? ""}"></label>
       <label class="field"><span>Amount changes monthly</span><select id="py-var"><option value="0">No, fixed</option><option value="1" ${p.amount_varies ? "selected" : ""}>Yes, estimate</option></select></label>
-      <label class="field"><span id="py-off-lbl">${p.direction === "in" ? "Received in" : "Paid in"}</span><select id="py-off"><option value="0">The payroll month</option><option value="1" ${p.month_offset ? "selected" : ""}>The following month</option></select></label>
+      <label class="field"><span id="py-off-lbl">${into ? "Received in" : "Paid in"}</span><select id="py-off"><option value="0">The payroll month</option><option value="1" ${p.month_offset ? "selected" : ""}>The following month</option></select></label>
       <label class="field"><span>Day of month</span><input id="py-day" type="number" min="1" max="31" value="${p.due_day}"></label>
       <label class="field"><span>Bank details</span><input id="py-bank" value="${esc(p.bank_details || "")}"></label>
       <label class="field"><span>Account / ref no.</span><input id="py-ref" value="${esc(p.reference || "")}"></label>
@@ -1515,14 +1559,11 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
     ${id === "new" ? "" : histSection("payees", p.id)}`;
   $("#drawer").hidden = false;
   watchDrawer(keep);
-  // Money in is always the type Money received, and money received is always money in.
-  $("#py-dir").onchange = () => {
-    const into = $("#py-dir").value === "in";
-    if (into) $("#py-cat").value = "receipt"; else if ($("#py-cat").value === "receipt") $("#py-cat").value = "other";
-    $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in";
-  };
-  $("#py-cat").onchange = () => { if ($("#py-cat").value === "receipt") { $("#py-dir").value = "in"; $("#py-dir").onchange(); } };
-  if (keep["py-dir"]) { const into = keep["py-dir"] === "in"; $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in"; }
+  // Money in offers the types of money received, money out the others; a type chosen sets the way the money goes.
+  const labels = () => { const into = $("#py-dir").value === "in"; $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in"; };
+  const fill = pairTypeDir($("#py-cat"), $("#py-dir"), { setting: true, keep: id === "new" ? null : p.category, then: labels });
+  // A direction typed before the drawer was drawn again needs its own types before the type typed can be chosen.
+  if (keep["py-dir"] || keep["py-cat"]) { fill(keep["py-cat"] || $("#py-cat").value); labels(); }
   $("#payeeForm").onsubmit = async ev => {
     ev.preventDefault();
     const body = { entity_id: state.entity, name: $("#py-name").value.trim(), desc_template: $("#py-desc").value.trim() || $("#py-name").value.trim() + " - {M}",
@@ -1707,12 +1748,15 @@ async function viewSetup(main) {
   if (!spec) box.innerHTML = `<div class="card"><div class="note">Nothing to set up yet.</div></div>`;
   else if (spec.single) await setupSettings(box);
   else if (S.kind === "payees") await viewPayees(box);
+  else if (S.kind === "required") await setupRequired(box);
   else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
   else await setupList(box, S.kind);
 }
 
-// A field's choices as [value, label] pairs.
-const fieldOptions = f => f.options_from === "categories" ? Object.entries(state.meta.categories) : f.options || [];
+// A field's choices as [value, label] pairs: payment types in use only, unless all (to name a value already saved).
+const fieldOptions = (f, all) => f.options_from === "categories" ? Object.entries(state.meta.categories).filter(([k]) => all || catActive(k)) : f.options || [];
+// An option's value as the input holds it: none (null) is the empty choice.
+const optVal = k => k == null ? "" : String(k);
 // A value as it reads in a list: month names, Yes or No, an option's label.
 function fieldText(f, v) {
   if (v == null || v === "") return "";
@@ -1721,9 +1765,12 @@ function fieldText(f, v) {
   if (f.type === "date") return fmtDate(v);
   if (f.type === "bool") return +v ? "Yes" : "No";
   if (f.type === "money") return Number(v).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  if (f.type === "select") return String(fieldOptions(f).find(o => String(o[0]) === String(v))?.[1] ?? v);
+  if (f.type === "select") return String(fieldOptions(f, true).find(o => optVal(o[0]) === String(v))?.[1] ?? v);
   return String(v);
 }
+
+// A record the app's own rules rely on (a payment or document type it came with): it can't be deleted.
+const systemPill = r => +r?.system ? ` <span class="pill" title="The app relies on it, so it can't be deleted">Used by the app</span>` : "";
 
 // The list of one kind (companies, or one company's bank accounts), stopped ones shown when asked.
 async function setupList(box, kind) {
@@ -1737,7 +1784,7 @@ async function setupList(box, kind) {
   if (spec.per_entity && !e) { box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">Add a company first.</div></div>`; return; }
   const { rows } = await api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`);
   const stopped = r => r.status === "stopped", nStopped = rows.filter(stopped).length;
-  const text = r => [...cols.map(c => fieldText(fieldOf(c.key), r[c.key])), usedText(r.used_by), stopped(r) ? "stopped" : "in use"].join(" ");
+  const text = r => [...cols.map(c => fieldText(fieldOf(c.key), r[c.key])), usedText(r.used_by), stopped(r) ? "stopped" : "in use", +r.system ? "used by the app" : ""].join(" ");
   const cell = (r, c, i) => {
     const v = fieldText(fieldOf(c.key), r[c.key]);
     if (!i) return `<td><button class="link" data-setup-open="${r.id}">${esc(v || "(no name)")}</button></td>`;
@@ -1749,7 +1796,7 @@ async function setupList(box, kind) {
     return `<table><thead><tr>${cols.map(c => sortTh(id, c.key, esc(c.label), isNum(c) ? "num" : "")).join("")}${sortTh(id, "used", "Used by", "num")}${sortTh(id, "status", "Status")}</tr></thead><tbody>
       ${list.map(r => `<tr>${cols.map((c, i) => cell(r, c, i)).join("")}
         <td class="num" title="${esc(usedText(r.used_by) || "Not used yet")}">${+r.used_total || 0}</td>
-        <td>${stopped(r) ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}</td></tr>`).join("")
+        <td>${stopped(r) ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}${systemPill(r)}</td></tr>`).join("")
       || `<tr><td colspan="${cols.length + 2}" class="empty">${!rows.length ? "None yet." : shown.length ? `No ${esc(spec.plural)} match.` : `Only stopped ${esc(spec.plural)}: tick Show stopped to see them.`}</td></tr>`}
       </tbody></table>`;
   };
@@ -1773,9 +1820,13 @@ function fieldHtml(f, v, lock, pre) {
   else if (f.type === "bool" || f.type === "select") {
     const sel = f.type === "bool" ? (val === "" ? "0" : String(+val ? 1 : 0)) : val;
     let opts = f.type === "bool" ? [[1, "Yes"], [0, "No"]] : fieldOptions(f);
-    if (sel !== "" && !opts.some(o => String(o[0]) === sel)) opts = [...opts, [sel, sel]];  // a value no longer offered stays as it is
-    const blank = f.type === "select" && !f.required ? `<option value="">—</option>` : "";
-    input = `<select id="${id}"${lock ? " disabled" : ""}>${blank}${opts.map(([k, l]) => `<option value="${esc(k)}" ${String(k) === sel ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+    if (sel !== "" && !opts.some(o => optVal(o[0]) === sel)) {  // a value no longer offered (a type stopped since) stays as it is
+      const was = fieldOptions(f, true).find(o => optVal(o[0]) === sel);
+      opts = [...opts, was ? [was[0], `${was[1]} (stopped)`] : [sel, sel]];
+    }
+    // An optional choice has an empty one, unless the server's choices have it already (No legal deadline, say).
+    const blank = f.type === "select" && !f.required && !opts.some(o => optVal(o[0]) === "") ? `<option value="">—</option>` : "";
+    input = `<select id="${id}"${lock ? " disabled" : ""}>${blank}${opts.map(([k, l]) => `<option value="${esc(optVal(k))}" ${optVal(k) === sel ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
   } else {
     const type = { number: "number", money: "number", day: "number", month: "month", date: "date" }[f.type] || "text";
     const extra = f.type === "money" ? ` step="0.01"` : f.type === "day" ? ` min="1" max="31" step="1"`
@@ -1790,7 +1841,7 @@ function fieldValue(f, el) {
   if (f.type === "bool") return +v ? 1 : 0;
   if (NUM_TYPES.includes(f.type)) return v.trim() === "" ? null : Number(v);
   if (f.type === "month" || f.type === "date") return v || null;
-  if (f.type === "select") { if (v === "") return null; const o = fieldOptions(f).find(x => String(x[0]) === v); return o ? o[0] : v; }
+  if (f.type === "select") { if (v === "") return null; const o = fieldOptions(f, true).find(x => optVal(x[0]) === v); return o ? o[0] : v; }
   return v.trim();
 }
 function formValues(fields, pre) {
@@ -1823,10 +1874,10 @@ async function whySubmit() {
   try { await run(reason); hideWhy(); } catch (e) { toast(e.message, true); } finally { if (goBtn.isConnected) goBtn.disabled = false; }
 }
 
-// After a company or bank account changes: the page's copy of them is read again, and a company stopped or deleted
-// while it was showing gives way to the first one in use.
+// After a company, bank account, payment type or document type changes: the page's copy of them is read again (the
+// labels and pickers), and a company stopped or deleted while it was showing gives way to the first one in use.
 async function afterSetupChange(kind) {
-  if (kind !== "entities" && kind !== "accounts") return;
+  if (!["entities", "accounts", "payment_types", "doc_types"].includes(kind)) return;
   state.meta = await api("/api/meta");
   const e = ent();
   if (!e || !isActive(e)) state.entity = firstEntityId();
@@ -1851,14 +1902,15 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
   const tidy = kind === "entities" && !isNew && rec.first_month;
   $("#drawer").innerHTML = `
     <div class="ex-head"><div class="row spread"><div><div class="eyebrow">${esc(spec.label)}${spec.per_entity ? " · " + esc(e.code) : ""}</div><h2>${esc(name)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
-      ${isNew ? "" : `<div class="row">${stopped ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}</div>`}</div>
+      ${isNew ? "" : `<div class="row">${stopped ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}${systemPill(rec)}</div>`}</div>
     <form class="form setup-form" id="setupForm">${fields.map(f => fieldHtml(f, rec[f.key] ?? null, locked[f.key], "su-")).join("")}
       <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">${isNew ? `Add ${esc(lowerFirst(spec.label))}` : "Save"}</button></div></form>
     ${allNotes.map(n => `<div class="note">${esc(n)}</div>`).join("")}
     ${isNew ? "" : `<div><h3>Where used</h3>${usedHtml(r.used_by)}</div>
-    <div class="row">${stopped ? `<button class="ghost" type="button" data-setup-act="use">Use again</button>` : `<button class="ghost" type="button" data-setup-act="stop">Stop using</button>`}
-      ${r.can_delete ? `<button class="btn danger small" type="button" data-setup-act="delete">Delete</button>` : ""}
+    <div class="row">${stopped ? `<button class="ghost" type="button" data-setup-act="use">Use again</button>` : r.can_stop === false ? "" : `<button class="ghost" type="button" data-setup-act="stop">Stop using</button>`}
+      ${r.can_delete && !+rec.system ? `<button class="btn danger small" type="button" data-setup-act="delete">Delete</button>` : ""}
       ${tidy ? `<button class="ghost" type="button" data-setup-act="tidy">Tidy up months before this</button>` : ""}</div>
+    ${+rec.system ? `<div class="note">The app's own rules rely on this ${esc(lowerFirst(spec.label))}, so it can't be deleted.</div>` : ""}
     ${tidy ? `<div class="note">Tidy up removes, from the months before the first month tracked, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.</div>` : ""}
     ${whyForm()}
     ${histSection(spec.table, id)}`}`;
@@ -1954,6 +2006,101 @@ async function settingsSave() {
   }
   renderNav();
   toast("Saved"); return render();
+}
+
+/* Required documents: the documents each payment type needs before a payment counts as complete, for every company or
+   for one company of its own. A change starts from a month after the last one filed: the months before it keep the
+   rules they had, and filed months never change. */
+const reqDocName = k => (state.setup.req?.doc_types || []).find(x => x.key === k)?.label || docLabel(k);
+// Since when the set showing has been in force; a type with no set of its own needs what Other needs.
+const reqSince = t => t.follows_other ? "Same as Other" : !t.since || t.since === "0000-00" ? "From the start" : `Since ${monthName(t.since)}`;
+// The months a set was in force: from from_month until to_month, the month the next set took over (either end open).
+function reqRange(h) {
+  const from = !h.from_month || h.from_month === "0000-00" ? null : monthName(h.from_month), to = h.to_month ? monthName(shiftMonth(h.to_month, -1)) : null;
+  return from && to ? (from === to ? from : `${from} to ${to}`) : from ? `From ${from}` : to ? `Until ${to}` : "From the start";
+}
+const reqWho = id => id == null ? "all companies" : state.meta.entities.find(e => e.id === +id)?.code || "one company";
+// What a change did to the open payments, in words.
+function reqAffected(a = {}) {
+  const miss = +a.now_missing || 0, done = +a.now_complete || 0, s = n => n === 1 ? "" : "s", is = n => n === 1 ? "is" : "are";
+  if (!miss && !done) return "Saved. No open payment changes status.";
+  const m = miss ? `${miss} open payment${s(miss)} now miss${miss === 1 ? "es" : ""} a document` : "";
+  const c = !done ? "" : miss ? `${done} ${is(done)} now complete` : `${done} open payment${s(done)} ${is(done)} now complete`;
+  return `Saved. ${[m, c].filter(Boolean).join("; ")}.`;
+}
+
+async function setupRequired(box) {
+  const S = state.setup, live = state.meta.entities.filter(isActive);
+  if (S.reqScope != null && !live.some(e => e.id === S.reqScope)) S.reqScope = null;
+  const d = S.req = await api(`/api/setup/required?entity=${S.reqScope ?? ""}`);
+  const co = S.reqScope != null ? live.find(e => e.id === S.reqScope) : null;
+  const scopeBtn = (v, label, on, title = "") => `<button class="${on ? "btn" : "ghost"} small" data-req-scope="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
+  const types = [...d.types.filter(isActive), ...d.types.filter(t => !isActive(t))];
+  const chips = t => t.docs?.length ? `<div class="row" style="gap:4px">${t.docs.map(k => `<span class="chip">${esc(reqDocName(k))}</span>`).join("")}</div>` : `<span class="muted">None</span>`;
+  const row = t => `<tr${isActive(t) ? "" : ` class="muted"`}>
+      <td><b>${esc(t.label || t.key)}</b>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}</td>
+      <td>${chips(t)}</td><td>${esc(reqSince(t))}</td>
+      ${co ? `<td>${t.own ? `<span class="pill">Its own set</span>` : `<span class="muted">Follows all companies</span>`}</td>` : ""}
+      <td><button class="ghost small" data-req-edit="${esc(t.key)}">Edit</button></td></tr>`;
+  box.innerHTML = `<div class="card"><h1>Required documents</h1>
+    <div class="note">The documents each type of payment needs before it counts as complete. A change starts from a month you choose: the months before it keep the documents they needed, and filed months never change.</div>
+    <div class="row noprint">${scopeBtn("all", "All companies", !co)}${live.map(e => scopeBtn(e.id, e.code, co?.id === e.id, e.name)).join("")}</div>
+    ${co ? `<div class="note">${esc(co.code)} follows the documents set for all companies, unless it has its own set for a type.</div>` : ""}
+    <div class="tbl-wrap"><table><thead><tr><th>Type of payment</th><th>Documents needed</th><th>In force</th>${co ? `<th>For ${esc(co.code)}</th>` : ""}<th></th></tr></thead><tbody>
+      ${types.map(row).join("") || `<tr><td colspan="${co ? 5 : 4}" class="empty">No payment types yet.</td></tr>`}
+    </tbody></table></div></div>`;
+}
+
+// The drawer of one payment type's documents, for the scope showing: the document types in use in pack order, ticked
+// when in the set; the month the change starts; its history.
+function openRequired(key, { force = false, keep = {} } = {}) {
+  if (!force && !mayLeave()) return;
+  const S = state.setup, d = S.req, t = d?.types.find(x => x.key === key);
+  if (!t) return;
+  const co = d.scope != null ? state.meta.entities.find(e => e.id === +d.scope) : null;
+  const pack = (d.doc_types || []).filter(isActive), set = t.docs || [];
+  const gone = set.filter(k => !pack.some(x => x.key === k));  // stopped since: they can't be listed again
+  const box = x => `<label class="row tight"><input type="checkbox" id="rq-doc-${esc(x.key)}" ${set.includes(x.key) ? "checked" : ""}>
+      <span>${esc(x.label || x.key)}${+x.from_sql ? ` <span class="muted">(from SQL, only for companies kept in SQL)</span>` : ""}</span></label>`;
+  const hist = (t.history || []).map(h => `<li>${esc(reqRange(h))}, ${esc(reqWho(h.entity_id))}: ${h.docs?.length ? h.docs.map(k => esc(reqDocName(k))).join(", ") : "none"}</li>`).join("");
+  state.openPayment = null; state.why = null; S.drawer = null; S.reqOpen = key;
+  $("#drawer").innerHTML = `
+    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">Required documents · ${co ? esc(co.code) : "All companies"}</div><h2>${esc(t.label || t.key)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
+      <div class="row">${isActive(t) ? "" : `<span class="pill grey">Stopped</span>`}${co ? (t.own ? `<span class="pill">Its own set</span>` : `<span class="pill grey">Follows all companies</span>`) : ""}<span class="muted">${esc(reqSince(t))}</span></div></div>
+    <form class="form setup-form" id="reqForm">
+      <div role="group" aria-label="Documents needed" class="req-docs"><span class="muted">Documents needed</span>
+        ${pack.map(box).join("") || `<div class="note">No document types in use.</div>`}</div>
+      ${gone.length ? `<div class="note" style="grid-column:1/-1">No longer in use, so left out when you save: ${gone.map(k => esc(reqDocName(k))).join(", ")}.</div>` : ""}
+      <label class="field"><span>From which month?</span><input id="rq-from" type="month" value="${esc(d.default_from || "")}"${d.first_allowed ? ` min="${esc(d.first_allowed)}"` : ""} required>
+        <span class="note">Months before this keep their current rules. Filed months never change.</span></label>
+      <label class="field"><span>Why are you making this change? (optional)</span><input id="rq-reason" maxlength="500" autocomplete="off"></label>
+      <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Save</button>
+        ${co && t.own ? `<button class="ghost" type="button" data-req-follow="${esc(key)}">Follow all companies again</button>` : ""}</div></form>
+    ${co ? `<div class="note">${t.own ? `Follow all companies again ends ${esc(co.code)}'s own set from the month above.` : `Saving gives ${esc(co.code)} its own set for this type from the month above.`}</div>` : ""}
+    ${t.follows_other ? `<div class="note">This type has no documents set of its own, so it needs what Other needs. Saving gives it its own set.</div>` : ""}
+    ${isActive(t) ? "" : `<div class="note">This type is stopped. Its payments still need the documents set for it.</div>`}
+    <div><h3>History</h3>${hist ? `<ul class="used">${hist}</ul>` : `<div class="note">Nothing recorded yet.</div>`}</div>`;
+  $("#drawer").hidden = false;
+  watchDrawer(keep);
+}
+
+// Save (follow: the company follows all companies again): the ticked documents, in the set's order with those newly
+// ticked after them in pack order.
+async function reqSave(follow) {
+  const S = state.setup, d = S.req, key = S.reqOpen, t = d?.types.find(x => x.key === key);
+  if (!t) return;
+  const from = $("#rq-from").value;
+  if (!/^\d{4}-\d{2}$/.test(from)) throw new Error("Choose the month the change starts from.");
+  let docs = null;
+  if (!follow) {
+    const on = k => !!document.getElementById("rq-doc-" + k)?.checked, pack = (d.doc_types || []).filter(isActive).map(x => x.key), set = t.docs || [];
+    docs = [...set.filter(k => pack.includes(k) && on(k)), ...pack.filter(k => on(k) && !set.includes(k))];
+  }
+  const body = { payment_type: key, entity_id: d.scope ?? null, docs, from_month: from }, reason = $("#rq-reason").value.trim();
+  if (reason) body.reason = reason;
+  const r = await api("/api/setup/required", { json: body });
+  closeDrawer(true); toast(reqAffected(r.affected));
+  return render();
 }
 
 // The line above the app's name: the organisation's name from General settings, as saved (empty: no line).
@@ -2204,6 +2351,12 @@ document.addEventListener("click", async ev => {
     if (ds.setupOpen) return await openSetup(state.setup.kind, +ds.setupOpen);
     if (ds.setupAct) return await setupAct(ds.setupAct, t);
     if (ds.whyCancel) return hideWhy();
+    if (ds.reqScope) {
+      if (!closeDrawer()) return;
+      state.setup.reqScope = ds.reqScope === "all" ? null : +ds.reqScope; return render();
+    }
+    if (ds.reqEdit) return openRequired(ds.reqEdit);
+    if (ds.reqFollow) { t.disabled = true; try { return await reqSave(true); } finally { if (t.isConnected) t.disabled = false; } }
     if (ds.payeeAct) return await payeeAct(ds.payeeAct, +ds.payeeId, t);
     if (ds.advAdd) return await advAdd(+ds.advAdd, t);
     if (ds.advSave) return await advSave(+ds.advSave, t);
@@ -2391,11 +2544,11 @@ document.addEventListener("change", async ev => {
 
 document.addEventListener("submit", async ev => {
   if (ev.target.id === "setupWhy") { ev.preventDefault(); return whySubmit(); }
-  if (ev.target.id === "setupForm" || ev.target.id === "settingsForm") {
+  if (ev.target.id === "setupForm" || ev.target.id === "settingsForm" || ev.target.id === "reqForm") {
     ev.preventDefault();
     const btn = ev.target.querySelector("button[type=submit]");
     btn.disabled = true;
-    try { await (ev.target.id === "setupForm" ? setupSave() : settingsSave()); } catch (e) { toast(e.message, true); }
+    try { await (ev.target.id === "setupForm" ? setupSave() : ev.target.id === "reqForm" ? reqSave(false) : settingsSave()); } catch (e) { toast(e.message, true); }
     finally { if (btn.isConnected) btn.disabled = false; }
     return;
   }
@@ -2464,7 +2617,7 @@ function addPaymentDrawer() {
     <div class="note">For ad hoc payments, claims and receipts in ${monthName(state.month)}.</div>
     <form class="form" id="addForm" style="grid-template-columns:1fr 1fr">
       <label class="field" style="grid-column:1/-1"><span>Description</span><input id="ap-desc" required placeholder="e.g. Oct 2026 Claims - Soon"></label>
-      <label class="field"><span>Type</span><select id="ap-cat">${Object.entries(state.meta.categories).map(([k, v]) => `<option value="${k}" ${k === "claim" ? "selected" : ""}>${esc(v)}</option>`).join("")}</select></label>
+      <label class="field"><span>Type</span><select id="ap-cat">${typeOptions(oneOffType(), "out")}</select></label>
       <label class="field"><span>Money</span><select id="ap-dir"><option value="out">Paid out</option><option value="in">Received</option></select></label>
       <label class="field"><span>Amount</span><input id="ap-amt" type="number" step="0.01"></label>
       <label class="field"><span>Due date</span><input id="ap-due" type="date"></label>
@@ -2472,6 +2625,7 @@ function addPaymentDrawer() {
       <div class="row"><button class="btn" type="submit">Add payment</button></div>
     </form>`;
   $("#drawer").hidden = false;
+  pairTypeDir($("#ap-cat"), $("#ap-dir"), { keep: oneOffType() });  // Received offers the types of money received; Paid out, the one-off default again
 }
 
 // Drag-and-drop files onto a document box in the payment drawer: each file is added, never replacing one. Files dropped

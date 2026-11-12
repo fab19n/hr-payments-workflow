@@ -4,7 +4,7 @@ import calendar
 from collections import Counter
 from datetime import date, timedelta
 
-from . import appsettings, auditpack, budget, db, rules
+from . import appsettings, auditpack, budget, db, rulebook, rules
 
 # Days (General settings): a row due within SOON is 'soon'; payments and checklist items show from AHEAD days before;
 # a backup is asked for after BACKUP days without one.
@@ -27,9 +27,6 @@ STATEMENT_DUE, CLOSE_DUE = (1, 5), (1, 10)  # as the checklist's statement and a
 # How each joiner or leaver reminder (rules.PEOPLE_TASKS) is named when a person's are listed together.
 PEOPLE = {"ecp22": "e-CP22 to LHDN", "perkeso": "PERKESO registration", "kwsp": "KWSP registration",
           "stamp": "stamping of the appointment letter", "cp22a": "CP22A to LHDN"}
-# What several payments of a type are called in a sentence (Pay 8 AISB bills and statutory); any other type is a bill.
-KINDS = {"salary": "salaries", "director": "salaries", "consultant": "consultant fees", "statutory": "statutory",
-         "claim": "claims", "claim_overseas": "claims", "transfer": "transfers", "receipt": "receipts"}
 BACKED_UP = "Backup created: "  # how a backup is logged (app.backup)
 
 
@@ -114,6 +111,7 @@ def _s(n, many="s", one=""):
 def _company(con, e, months, past, today):
     """The rows of one company, from its months in the window and the older ones still open (past)."""
     iso, cur = today.isoformat(), db.current_cycle(today)
+    R = rulebook.get(con)
     ahead, soon = ((today + timedelta(days=n)).isoformat() for n in (_ahead(), _soon()))
     worked = [m for m in months if m <= cur]  # a later month only gives what falls due soon
     pays = []
@@ -128,8 +126,8 @@ def _company(con, e, months, past, today):
                          (e["id"], ahead)):
         if t["month"] in months and not db.task_status(con, e, t)["done"]:
             tasks.append(t)
-    rows = _deadlines(e, tasks, today) + _people(con, e, tasks, iso)
-    rows += _not_found(e, [x for x in pays if x["p"]["month"] in worked + past], iso, soon)
+    rows = _deadlines(e, tasks, today, R) + _people(con, e, tasks, iso)
+    rows += _not_found(e, [x for x in pays if x["p"]["month"] in worked + past], iso, soon, R)
     rows += _to_pay(con, e, pays, iso, ahead)
     for m in worked + past:
         mine = [x for x in pays if x["p"]["month"] == m]
@@ -161,7 +159,7 @@ def _pay_go(group):
     return {"view": "entity", "payment_ids": [p["id"] for p in group]}
 
 
-def _deadlines(e, tasks, today):
+def _deadlines(e, tasks, today, R):
     """Rule 1: KWSP, PERKESO and e-PCB to submit, e-Invoices to issue and the budget, from SOON days before they're due."""
     soon = (today + timedelta(days=_soon())).isoformat()
     rows, submit = [], {}
@@ -174,7 +172,7 @@ def _deadlines(e, tasks, today):
             rows.append(_row(1, e, t["month"], f"{_mon(t['month'])} {e['code']}: {t['title']}", t["due_date"], P1, _task_go([t]), t["code"]))
     for (m, d), ts in submit.items():
         names = [SUBMIT[c] for c in SUBMIT if any(t["code"] == c for t in ts)]
-        legal = db.due(m, *rules.LEGAL_DUE["statutory"])
+        legal = db.due(m, *R.legal_due("statutory"))
         rows.append(_row(1, e, m, f"Submit {_mon(m)} {db._listed(names)} (legal deadline {db.short_day(legal)})", d, P1,
                          _task_go(ts), f"submit-{d}"))
     return rows
@@ -202,24 +200,24 @@ def _people(con, e, tasks, iso):
     return rows
 
 
-def _code(x, iso, soon):
+def _code(x, iso, soon, R):
     """What a payment not paid yet is in rules 3 and 4: not_on_statement, past_legal, or legal_soon (its legal deadline
     today or within SOON days, and no word of it yet: it is past due, or due after the deadline; rule 5 asks for one
     that falls due before it), else None."""
     f, p = x["flag"], x["p"]
     if f and f["code"] in ("not_on_statement", "past_legal"):
         return f["code"]
-    legal = db.legal_due(p)
+    legal = db.legal_due(p, R)
     return "legal_soon" if f and legal and iso <= legal <= soon and (p["due_date"] < iso or p["due_date"] > legal) else None
 
 
-def _not_found(e, pays, iso, soon):
+def _not_found(e, pays, iso, soon, R):
     """Rules 3 and 4, one row per company, month and direction: payments past due that aren't on a statement already
     imported (Not on <Mon> statement), and statutory payments not paid by the legal deadline (Past legal deadline), or
     past due with the deadline a few days away. Up to 3 are named, more are counted by type."""
     groups = {}
     for x in pays:
-        code = _code(x, iso, soon)
+        code = _code(x, iso, soon, R)
         if code:
             groups.setdefault((code, x["p"]["month"], x["p"]["direction"]), []).append(x["p"])
     rows = []
@@ -228,7 +226,7 @@ def _not_found(e, pays, iso, soon):
         same = len({p["currency"] for p in ps}) == 1 and all(p["amount"] is not None for p in ps)
         total = round(sum(p["amount"] for p in ps), 2) if same else None
         if code != "not_on_statement":
-            legal = db.legal_due(ps[0])
+            legal = db.legal_due(ps[0], R)
             what = (f"{n} {e['code']} statutory payments are" if n > 3
                     else f"{db._names(ps, ps)} for {e['code']} {'is' if one else 'are'}")
             text = (f"{what} past the legal deadline of {db.short_day(legal)}: pay now or record the payment{_s(n)} (penalty risk)"
@@ -238,7 +236,7 @@ def _not_found(e, pays, iso, soon):
             rows.append(_row(4, e, m, text, legal, P1, _pay_go(ps), code, total, ps[0]["currency"]))
         else:
             mons = list(dict.fromkeys(_mon(p["due_date"]) for p in ps))
-            what = f"{n} {_kinds(ps)} are" if n > 3 else f"{db._names(ps, ps)} {'is' if one else 'are'}"
+            what = f"{n} {_kinds(ps, R)} are" if n > 3 else f"{db._names(ps, ps)} {'is' if one else 'are'}"
             other = (f"enter the date{_s(n)} received" if way == "in" else f"enter the paid date{_s(n)}")
             text = (f"{what} not on the {e['code']} {db._listed(mons)} statement{_s(len(mons))}: link "
                     f"{'its bank line' if one else 'their bank lines'} or {other}")
@@ -247,8 +245,10 @@ def _not_found(e, pays, iso, soon):
     return rows
 
 
-def _kinds(ps):
-    return db._listed(KINDS.get(p["category"], "bills") for p in ps)
+def _kinds(ps, R=None):
+    R = R or rulebook.FROZEN
+    """What several payments are called in a sentence, by their types' words (Pay 8 AISB bills and statutory)."""
+    return db._listed(R.plural(p["category"]) for p in ps)
 
 
 def _to_pay(con, e, pays, iso, ahead):
@@ -270,7 +270,7 @@ def _to_pay(con, e, pays, iso, ahead):
         est = sum(1 for p, v in zip(ps, left) if p["amount_is_estimate"] and v is not None)
         notes = ([("estimate" if one else f"{est} estimate{_s(est)}")] if est else []) + (
             [f"no amount{_s(len(ps))} yet"] if not known else [f"{blank} without an amount"] if blank else [])
-        what = f"{db._names(ps, ps)} from {e['code']}" if one else f"{len(ps)} {e['code']} {_kinds(ps)}"
+        what = f"{db._names(ps, ps)} from {e['code']}" if one else f"{len(ps)} {e['code']} {_kinds(ps, rulebook.get(con))}"
         month = f" for {_mon(m)}" if shared[d, cur] > 1 else ""
         text = (f"Pay {what}{month} by {db.short_day(d)}" + (f": {db.money(total, cur)}" if known else "")
                 + (f" ({', '.join(notes)})" if notes else ""))
@@ -326,7 +326,7 @@ def _in_sql(con, e, worked, pays, cur):
         n = len(unrecorded)
         mons = list(dict.fromkeys(_mon(d) for d in sorted(p["paid_date"] or p["due_date"] for p in unrecorded)))
         kinds = list(dict.fromkeys("Official Receipt" if p["direction"] == "in" else "Payment Voucher" for p in unrecorded))
-        what = db._names(unrecorded, unrecorded) if n == 1 else f"{n} {_kinds(unrecorded)}"
+        what = db._names(unrecorded, unrecorded) if n == 1 else f"{n} {_kinds(unrecorded, rulebook.get(con))}"
         text = (f"Paste the {db._listed(mons)} {db._listed(kinds)} listing{_s(len(mons) * len(kinds))}: {what} not recorded"
                 + (f"; {unlinked}" if k else ""))
     else:
@@ -357,17 +357,18 @@ def _documents(con, e, m, mine):
     if not paid:
         return []
     nos = auditpack.sql_to_print(con, e, [(x["p"], x["ev"]) for x in mine])
-    text = f"{_mon(m)} {e['code']}: {_missed(paid)} missing on {len(paid)} paid payment{_s(len(paid))}" + (
-        f"; print {auditpack.to_print(nos)} from SQL" if nos else "")
+    R = rulebook.get(con)
+    text = f"{_mon(m)} {e['code']}: {_missed(paid, R)} missing on {len(paid)} paid payment{_s(len(paid))}" + (
+        f"; print {auditpack.to_print(nos, R)} from SQL" if nos else "")
     return [_row(11, e, m, text, db.due(m, *CLOSE_DUE), P3, {"view": "audit"}, "documents")]
 
 
-def _missed(paid):
+def _missed(paid, R=None):
+    R = R or rulebook.FROZEN
     """The documents missing on paid payments, counted by type, most missed first, and past 5 types the 4 most missed
     and the rest together: 9 bank receipts, 8 approvals, 8 claim forms, 7 invoices and 7 other documents."""
-    order = {d: i for i, d in enumerate(rules.DOC_ORDER)}
-    counted = sorted(Counter(t for x in paid for t in x["missing"]).items(), key=lambda kv: (-kv[1], order.get(kv[0], 99)))
-    named = [f"{n} {rules.DOC_COUNTED.get(t, (db._short_doc(t),) * 2)[n > 1]}" for t, n in counted]
+    counted = sorted(Counter(t for x in paid for t in x["missing"]).items(), key=lambda kv: (-kv[1], R.order(kv[0])))
+    named = [f"{n} {R.counted(t, n)}" for t, n in counted]
     if len(named) > 5:
         rest = sum(n for _, n in counted[4:])
         named = named[:4] + [f"{rest} other document{_s(rest)}"]

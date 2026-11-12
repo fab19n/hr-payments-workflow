@@ -7,9 +7,9 @@ from fpdf import FPDF
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
 
-from . import audit, recon, rules
+from . import audit, recon, rulebook, rules
 from .config import PACKS_DIR
-from .db import (_listed, _short_doc, day_label, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
+from .db import (_listed, day_label, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
                  not_in_sql, payment_flag, payment_status, short_day, status_word, task_status, waits_for)
 from .docstore import path_of, verify
 
@@ -93,7 +93,8 @@ def _statement_docs(con, entity, month):
 
 
 def build(con, entity, month):
-    order = {d: i for i, d in enumerate(rules.DOC_ORDER)}
+    R = rulebook.get(con)
+    order = R.doc_order
 
     today = date.today().isoformat()
     # (title, [docs], status, missing, what SQL or the bank statement shows instead of an upload, why what SQL shows
@@ -109,7 +110,8 @@ def build(con, entity, month):
             label = flag["text"] if status == "planned" else f"{label}\n{flag['text']}"
         amt = f"{p['currency']} {p['amount']:,.2f}" if p["amount"] is not None else "amount not set"
         sections.append((f"{p['description']}  ({amt})", sorted(docs, key=lambda d: order.get(d["doc_type"], 99)), label, missing,
-                         _proofs(rules.required_docs(p["category"], entity["uses_sql"]), docs, ev), not_counted(con, pay=p)))
+                         _proofs(R.required_docs(p["category"], entity["uses_sql"], p["month"], p["entity_id"]), docs, ev),
+                         not_counted(con, pay=p)))
     for t in _tasks(con, entity, month):
         docs = _docs(con, "task_id", t["id"])
         ev = evidence(con, task=t)
@@ -138,12 +140,12 @@ def build(con, entity, month):
             if why:
                 not_merged.append((title, d["original_name"], why))
             else:
-                parts.append((f"{title} - {rules.DOC_TYPES.get(d['doc_type'], d['doc_type'])}", d, pages))
+                parts.append((f"{title} - {R.doc_label(d['doc_type'])}", d, pages))
         index_rows.append((title, status, missing, docs, proofs, nc))
 
     out = PdfWriter()
     trail = audit.status(con) if audit.present(con) else None  # the trail as it stood when this pack was built
-    for pg in PdfReader(io.BytesIO(_cover(entity, month, index_rows, not_merged, trail))).pages:
+    for pg in PdfReader(io.BytesIO(_cover(entity, month, index_rows, not_merged, trail, R))).pages:
         out.add_page(pg)
     out.add_outline_item("Index", 0)
     first = len(out.pages)
@@ -182,22 +184,24 @@ OPEN = {"lines": ("bank line to explain", "bank lines to explain"), "payment": (
 def sql_to_print(con, entity, pays):
     """The SQL vouchers that stand for a document a payment must have, in place of an upload, so the pack doesn't hold
     them: {doc type: voucher numbers}. pays: [(payment, its evidence)]."""
+    R = rulebook.get(con)
     nos = {}
     for p, ev in pays:
         up = {d["doc_type"] for d in _docs(con, "payment_id", p["id"])}
-        for t in rules.required_docs(p["category"], entity["uses_sql"]):
-            if t in rules.SQL_ONLY and t in ev and t not in up:
+        for t in R.required_docs(p["category"], entity["uses_sql"], p["month"], p["entity_id"]):
+            if t in R.sql_only and t in ev and t not in up:
                 nos.setdefault(t, set()).update(ev[t]["ref"].split(", "))  # the voucher numbers linked (db.evidence)
     return nos
 
 
-def to_print(nos):
+def to_print(nos, R=None):
+    R = R or rulebook.FROZEN
     """The SQL vouchers to print (sql_to_print), per type as up to 3 runs (PV2609-001 to PV2609-007, PV2609-017 and
     PV2610-004 to PV2610-006), or counted from the first to the last (23 payment vouchers, PV2609-001 to PV2610-019)."""
     out = []
     for t, found in sorted(nos.items(), key=lambda kv: min(kv[1])):
         runs = _runs(found)
-        out += runs if len(runs) <= 3 else [f"{len(found)} {rules.DOC_COUNTED.get(t, (t, t))[1]} ({min(found)} to {max(found)})"]
+        out += runs if len(runs) <= 3 else [f"{len(found)} {R.doc_counted.get(t, (t, t))[1]} ({min(found)} to {max(found)})"]
     return _listed(out) if out else ""
 
 
@@ -228,6 +232,7 @@ def readiness(con, entity, month, cached=False):
     pack_open: no pack built or one out of date, in words (None when it is up to date), still_open: the summary and
     pack_open, which marking the month as filed warns of and logs, to_print: the SQL vouchers the pack doesn't hold,
     to print from SQL (to_print), or an empty string}."""
+    R = rulebook.get(con)
     today = date.today().isoformat()
     items = []
 
@@ -256,13 +261,13 @@ def readiness(con, entity, month, cached=False):
             what.append(f"Part paid: {money(linked_total(con, p), p['currency'])} of {money(p['amount'], p['currency'])}")
         if missing and status != "planned":  # not paid yet says it all
             nc = not_counted(con, pay=p)
-            what.append("Missing " + _listed(_short_doc(m) + (f" ({nc[m]['why']})" if m in nc else "") for m in missing))
+            what.append("Missing " + _listed(R.short_doc(m) + (f" ({nc[m]['why']})" if m in nc else "") for m in missing))
         add("payment", p["description"], ". ".join(what), "payment", p["id"])
     tasks = _tasks(con, entity, month)
     sts = [task_status(con, entity, t) for t in tasks]
     for t, st in zip(tasks, sts):
         if st["missing"]:
-            add("task", t["title"], "Missing " + _listed(map(_short_doc, st["missing"])), "task", t["id"])
+            add("task", t["title"], "Missing " + _listed(map(R.short_doc, st["missing"])), "task", t["id"])
     for t, st in zip(tasks, sts):
         if not st["done"] and not st["missing"]:
             add("task_open", t["title"], f"{st['why'] or 'Not ticked yet'}, due {short_day(t['due_date'])}", "task", t["id"])
@@ -301,7 +306,7 @@ def readiness(con, entity, month, cached=False):
     return {"items": items, "summary": summary, "ready": not items,
             "pack": pack and {"name": pack["path"].name, "when": pack["when"], "changed": n},
             "pack_open": pack_open, "still_open": summary + ([pack_open] if pack_open else []),
-            "to_print": to_print(sql_to_print(con, entity, [(p, evs[p["id"]]) for p in pays]))}
+            "to_print": to_print(sql_to_print(con, entity, [(p, evs[p["id"]]) for p in pays]), R)}
 
 
 def reconciliation(con, entity, month):
@@ -476,7 +481,8 @@ def _index_head(pdf):
     pdf.set_font("Helvetica", "", 8.5)
 
 
-def _cover(entity, month, rows, not_merged, trail=None):
+def _cover(entity, month, rows, not_merged, trail=None, R=None):
+    R = R or rulebook.FROZEN
     pdf = FPDF(unit="mm", format="A4")
     pdf.set_auto_page_break(True, 15)
     pdf.add_page()
@@ -490,7 +496,7 @@ def _cover(entity, month, rows, not_merged, trail=None):
         pdf.cell(0, 5, _latin(f"Audit trail entry {trail['entries']} · check code {trail['check_code']}"), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(3)
     _index_head(pdf)
-    short = lambda t: rules.DOC_TYPES.get(t, t).split(" (")[0].split(" /")[0]
+    short = lambda t: R.doc_label(t).split(" (")[0].split(" /")[0]
     for title, label, missing, docs, proofs, nc in rows:
         doc_txt = "; ".join(filter(None, [", ".join(short(d["doc_type"]) for d in docs), *proofs]))
         if missing:
