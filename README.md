@@ -113,3 +113,9 @@ after it a note.
 - Python 3.14 with a private environment in `.venv` (see `requirements.txt`).
 - Tests (each uses a throwaway records folder): `.venv\Scripts\python -m tests.smoke_test samples` and `.venv\Scripts\python -m tests.sql_test`.
 - `samples\` and all records are excluded from git.
+- Audit trail (`hrp/audit.py`): SQLite triggers record every change to every table (the whole row before and after) in
+  the same save, sealed per save into a hash chain with who (the Windows user), what and why. Check it with
+  `.venv\Scripts\python -m hrp.trail status` (or `verify` for the whole trail); changes made to `records.db` with another
+  program are accepted with `.venv\Scripts\python -m hrp.trail accept "why"`. An update step that drops a column or
+  rebuilds a table calls `audit.drop_triggers(con)` first (see the module's notes).
+- Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test`.

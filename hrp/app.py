@@ -13,7 +13,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import auditpack, config, budget as stored, db, nextup, recon, reports, rules, sqlimport, statements
+from . import audit, auditpack, config, budget as stored, db, nextup, recon, reports, rules, sqlimport, statements
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -49,7 +49,29 @@ def con():
         if request.method in ("GET", "HEAD"):
             # Looking at a page never changes the records, so another website can't make it do so through a link.
             g.con.execute("PRAGMA query_only = ON")
+        else:
+            g.con.arm(**_trail_context())
     return g.con
+
+
+IMPORTS = ("/api/statements", "/api/sql/apply")  # requests whose changes the trail shows as an import
+
+
+def _trail_context():
+    """Who, how and why for the audit trail, for a request that may change the records: the Windows user (audit.who),
+    the source (an automatic set-up the page asks for, an import, else the user), the route, the company and the reason
+    the page sent. Only those keys are read from the body (a backup's password is never touched)."""
+    b = request.get_json(silent=True) if request.is_json else None
+    b = b if isinstance(b, dict) else {}
+    source = "import" if request.path in IMPORTS else "auto" if b.get("auto") is True else "user"
+    try:
+        eid = int(b.get("entity_id") if b.get("entity_id") is not None else request.form.get("entity_id"))
+    except (TypeError, ValueError):
+        eid = None
+    reason = b.get("reason") if isinstance(b.get("reason"), str) and b.get("reason").strip() else None
+    return {"source": source, "action": f"{request.method} {request.path}",
+            "route": request.url_rule.rule if request.url_rule else None, "entity_id": eid,
+            "reason": reason.strip()[:500] if reason else None}
 
 
 @app.teardown_appcontext
@@ -1534,6 +1556,8 @@ def audit_pack():
     except auditpack.PackError as ex:
         return err(str(ex))
     db.log(c, f"Built audit pack {path.name}")
+    audit.event(c, "pack", path.name, {"company": e["code"], "month": b.get("month"), "file": path.name,
+                                       "sha256": audit.file_sha256(path), "size": path.stat().st_size}, entity_id=e["id"])
     c.commit()
     return jsonify({"name": path.name, "url": _pack_url(path)})
 
@@ -1608,6 +1632,12 @@ def auditor_export():
     except auditpack.PackError as ex:
         return err(str(ex))
     db.log(c, f"Built auditor package {path.name} ({n} files{f', {left_out} left out' if left_out else ''}), with a fresh audit pack")
+    pack = db.packs_of(e, month)[-1]  # the fresh audit pack the package was built with, also kept in audit-packs
+    audit.event(c, "pack", pack.name, {"company": e["code"], "month": month, "file": pack.name, "via": "auditor package",
+                                       "sha256": audit.file_sha256(pack), "size": pack.stat().st_size}, entity_id=e["id"])
+    audit.event(c, "export", path.name, {"kind": "auditor package", "company": e["code"], "month": month, "file": path.name,
+                                         "files": n, "left_out": left_out, "sha256": audit.file_sha256(path),
+                                         "size": path.stat().st_size}, entity_id=e["id"])
     c.commit()
     return jsonify({"name": path.name, "url": f"/api/auditor-export/file?name={path.parent.name}/{path.name}", "files": n,
                     "left_out": left_out})
@@ -1675,6 +1705,10 @@ def backup():
     del password, b
     stamp = datetime.now().strftime("%Y%m%d-%H%M")
     target = BACKUP_DIR / f"HR-Records backup {stamp}{' (encrypted)' if encrypted else ''}.zip"
+    n = 1  # a second backup in the same minute keeps the first (the trail records each by fingerprint)
+    while target.exists():
+        n += 1
+        target = BACKUP_DIR / f"HR-Records backup {datetime.now():%Y%m%d-%H%M%S}{f'-{n}' if n > 2 else ''}{' (encrypted)' if encrypted else ''}.zip"
     snap = BACKUP_DIR / "records-snapshot.db"
     try:
         src = db.connect()
@@ -1707,6 +1741,9 @@ def backup():
     c = con()  # logged either way: the backup is made on this PC even when the copy fails (nextup reads this line)
     db.log(c, nextup.BACKED_UP + target.name + (f" (copy to {folder} failed)" if failed else "")
            + (" (not copied: not encrypted)" if not_copied else ""))
+    audit.event(c, "backup", target.name, {"file": target.name, "encrypted": encrypted, "sha256": audit.file_sha256(target),
+                                           "size": target.stat().st_size, "copied_to": folder if copied else None,
+                                           "copy_failed": str(failed) if failed else None})
     c.commit()
     if failed:
         return jsonify({"file": str(target), "encrypted": encrypted, "warning": f"Backup saved on this PC, but copying to {folder} failed: {failed}"})
@@ -1734,13 +1771,35 @@ def set_backup_dir():
         except OSError as ex:
             return err(f"That folder can't be used: {ex}")
     saved = json.loads(config.SETTINGS_FILE.read_text(encoding="utf-8")) if config.SETTINGS_FILE.exists() else {}
+    before = SETTINGS.get("backup_dir") or ""
     saved["backup_dir"] = path
     config.save_settings(saved)
     SETTINGS["backup_dir"] = path
     c = con()
     db.log(c, f"Backup folder set to {path}" if path else "Backup folder cleared")
+    audit.event(c, "settings", "backup_dir", {"before": before, "after": path})
     c.commit()
     return jsonify({"backup_dir": path})
+
+
+@app.get("/api/audit/status")
+def audit_status():
+    """The audit trail's state: entries, changes made outside the app waiting to be accepted, the head-file check, and
+    a check of the last 200 entries."""
+    c = con()
+    return jsonify({**audit.status(c), "check": audit.verify(c, last=200)})
+
+
+@app.post("/api/audit/accept-outside")
+def audit_accept_outside():
+    """Seals the changes made to records.db outside this app into the trail, with the reason typed (required)."""
+    reason = _body().get("reason")
+    if not isinstance(reason, str) or not reason.strip():
+        return err("Say why these changes were made outside the app.")
+    c = con()
+    n = audit.accept_outside(c, reason.strip()[:500])
+    c.commit()
+    return jsonify({"accepted": n})
 
 
 @app.get("/api/activity")
@@ -1755,6 +1814,29 @@ def integrity():
     c = con()
     bad = [dict(d) for d in c.execute("SELECT * FROM documents") if not verify(d)]
     return jsonify({"checked": c.execute("SELECT COUNT(*) FROM documents").fetchone()[0], "problems": bad})
+
+
+def audit_warnings(trail):
+    """What start-up found in the audit trail that the user should know, in plain words (printed in the app window).
+    Each is also recorded in the trail itself."""
+    if not trail:
+        return []
+    out = []
+    if trail["outside"]:
+        out.append(f"{trail['outside']} change(s) to records.db were made outside this app. Accept them with a reason:\n"
+                   '  .venv\\Scripts\\python -m hrp.trail accept "why they were made"')
+    head = trail.get("head") or {}
+    if head.get("kind") == "behind":
+        out.append("records.db is older than the last entry recorded beside it. That is expected after restoring a backup;\n"
+                   "  otherwise entries may have been removed.")
+    if head.get("kind") == "rewritten":
+        out.append("the last entry recorded beside records.db has a different fingerprint inside it: the trail may have been rebuilt.")
+    if trail.get("triggers_repaired"):
+        out.append(f"{len(trail['triggers_repaired'])} audit trigger(s) were missing or changed and have been put back. Unless the app\n"
+                   "  was just updated, records.db was edited outside the app, and changes made meanwhile were not recorded.")
+    if trail.get("late_sealed"):
+        out.append(f"{trail['late_sealed']} change(s) left unsealed by an unexpected stop were sealed now.")
+    return out
 
 
 def already_running(port):
@@ -1778,7 +1860,9 @@ def main():
         print(f"\n  HR Payments is already running at http://127.0.0.1:{SETTINGS['port']}.\n"
               "  Close the other HR Payments window first if you want to restart it.\n")
         return
-    db.init()
+    trail = db.init()
+    for line in audit_warnings(trail):
+        print("\n  Audit trail: " + line)
     print(f"\n  HR Payments is running at http://127.0.0.1:{SETTINGS['port']}\n  Records folder: {DATA_DIR}\n  Close this window to stop it.\n")
     app.run(host="127.0.0.1", port=SETTINGS["port"], debug=False, threaded=False)
 

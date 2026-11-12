@@ -5,7 +5,7 @@ import re
 import sqlite3
 from datetime import date, datetime, timedelta
 
-from . import rules
+from . import audit, rules
 from .config import BACKUP_DIR, DB_PATH, PACKS_DIR, SEED_PATH
 from .sqlimport import MONEY_IN, MONEY_OUT, PURCHASE_DOCS, SALES_DOCS
 
@@ -104,9 +104,13 @@ BOOK_OPENINGS = SCHEMA[SCHEMA.index("CREATE TABLE IF NOT EXISTS book_openings"):
 
 
 def connect():
-    con = sqlite3.connect(DB_PATH)
+    """A connection whose writes are captured in the audit trail (audit.Connection). Request handlers arm it with who
+    and why (app.con); the update steps and the seed are armed in init."""
+    con = sqlite3.connect(DB_PATH, factory=audit.Connection)
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA foreign_keys = ON")
+    con.execute("PRAGMA recursive_triggers = ON")  # so a future INSERT OR REPLACE still records the row it replaces
+    con.mark()
     return con
 
 
@@ -123,6 +127,7 @@ def log(con, what):
 def add_column(con, table, col, decl):
     if col not in {r["name"] for r in con.execute(f"PRAGMA table_info({table})")}:
         con.execute(f"ALTER TABLE {table} ADD COLUMN {col} {decl}")
+        audit.refresh(con)  # once the trail has started, so the step's own changes to the new column are captured
 
 
 def _later_columns(con):
@@ -250,6 +255,12 @@ MIGRATIONS = [
     #     how: by review, or before tracking, with a note), and the book balance typed in for an account's first month.
     #     Nothing is signed off or confirmed by this step. The checklist item no longer asks for a document.
     _reconciliation,
+    # 16. The audit trail's store: the change rows, the sealed entries (a hash chain) and the one-row context that says
+    #     who is making a change. Nothing in the records changes.
+    audit.install,
+    # 17. Audit capture turned on: triggers on every table write each change, before and after, into the trail, and
+    #     one baseline row per existing row records the records as they stand. Nothing in the records changes.
+    audit.start,
 ]
 
 
@@ -312,17 +323,26 @@ def init():
     holds_data = (con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'entities'").fetchone()
                   and con.execute("SELECT 1 FROM entities").fetchone())
     copy = copy_before_update(con) if pending and holds_data else None
-    con.executescript(SCHEMA)
+    con.executescript(SCHEMA)  # before arming: executescript commits whatever is pending first
     if copy:
+        con.arm("migration", "Saved a copy before updating")
         log(con, f"Saved a copy of the records before updating them: backups\\{copy.name}")
+        con.commit()
     for n, step in enumerate(pending, version + 1):
+        con.arm("migration", f"Update {n}")
         step(con)
+        audit.refresh(con)  # a step that changed a table's columns, or added a table, is captured from here on
         con.execute(f"PRAGMA user_version = {n}")
         con.commit()
+    con.disarm()
+    trail = audit.startup(con)
     if not con.execute("SELECT 1 FROM entities").fetchone() and SEED_PATH.exists():
+        con.arm("seed", "Loaded starting data from seed.json")
         load_seed(con, json.loads(SEED_PATH.read_text(encoding="utf-8")))
     con.commit()
+    con.disarm()
     con.close()
+    return trail
 
 
 def load_seed(con, seed):

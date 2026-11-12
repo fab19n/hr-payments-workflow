@@ -161,7 +161,10 @@ def build(con, entity, month):
         out.add_outline_item(label, first)
     target = PACKS_DIR / entity["code"]
     target.mkdir(parents=True, exist_ok=True)
-    fname = target / f"Audit pack {entity['code']} {month} ({datetime.now():%Y%m%d-%H%M}).pdf"
+    stamp = datetime.now()
+    fname = target / f"Audit pack {entity['code']} {month} ({stamp:%Y%m%d-%H%M}).pdf"
+    if fname.exists():  # a second build in the same minute keeps the first (each is recorded in the audit trail)
+        fname = target / f"Audit pack {entity['code']} {month} ({stamp:%Y%m%d-%H%M%S}).pdf"
     with open(fname, "wb") as f:
         out.write(f)
     return fname
