@@ -12,7 +12,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.properties import PageSetupProperties
 
-from . import auditpack, budget as stored, db, rules
+from . import auditpack, budget as stored, db, rulebook, rules
 from .config import EXPORTS_DIR
 from .docstore import path_of, safe
 from pathlib import Path
@@ -23,8 +23,8 @@ BOLD = Font(bold=True)
 OUT, IN = "Money out", "Money in"
 
 
-def _short(t):
-    return rules.DOC_TYPES.get(t, t).split(" (")[0].split(" /")[0]
+def _short(t, R):
+    return R.doc_label(t).split(" (")[0].split(" /")[0]
 
 
 def _day(iso):
@@ -99,6 +99,7 @@ def _quoted(v):
 def _gather(con, entity, month):
     """Everything the month report shows, worked out once."""
     today = date.today().isoformat()
+    R = rulebook.get(con)
     pays = []
     for p in auditpack._payments(con, entity, month):
         ev = db.evidence(con, pay=p)
@@ -108,19 +109,19 @@ def _gather(con, entity, month):
         have = {d["doc_type"] for d in docs}
         entries = con.execute("SELECT doc_no FROM sql_entries WHERE payment_id = ? ORDER BY doc_date, id", (p["id"],)).fetchall()
         lines = con.execute("SELECT txn_date FROM statement_lines WHERE payment_id = ? ORDER BY txn_date", (p["id"],)).fetchall()
-        order = {t: i for i, t in enumerate(rules.DOC_ORDER)}
-        on_file = [_short(d["doc_type"]) for d in sorted(docs, key=lambda d: order.get(d["doc_type"], 99))]
-        on_file += [ev[t]["text"] for t in rules.required_docs(p["category"], entity["uses_sql"]) if t in ev and t not in have]
+        on_file = [_short(d["doc_type"], R) for d in sorted(docs, key=lambda d: R.order(d["doc_type"]))]
+        on_file += [ev[t]["text"] for t in R.required_docs(p["category"], entity["uses_sql"], p["month"], p["entity_id"])
+                    if t in ev and t not in have]
         nc = db.not_counted(con, pay=p)
         pays.append({"p": p, "status": status, "word": db.status_word(p, status), "flag": flag and flag["text"],
-                     "missing": [_short(m) + (f" ({nc[m]['why']})" if m in nc else "") for m in missing],
+                     "missing": [_short(m, R) + (f" ({nc[m]['why']})" if m in nc else "") for m in missing],
                      "on_file": on_file,
                      "sql": ", ".join(dict.fromkeys(([p["sql_ref"]] if p["sql_ref"] else []) + [e["doc_no"] for e in entries])),
                      "bank": ", ".join(dict.fromkeys(l["txn_date"] for l in lines))})
     tasks = []
     for t in con.execute("SELECT * FROM tasks WHERE entity_id = ? AND month = ? ORDER BY due_date, sort", (entity["id"], month)):
         st = db.task_status(con, entity, t)
-        lack = ["Missing: " + db._listed(map(db._short_doc, st["missing"]))] if st["missing"] else []
+        lack = ["Missing: " + db._listed(map(R.short_doc, st["missing"]))] if st["missing"] else []
         if not st["done"] and st["why"]:
             lack.append(st["why"])
         tasks.append({"t": t, "st": st, "lack": "; ".join(lack)})
@@ -146,7 +147,7 @@ def month_workbook(con, entity, month, files=None):
 
     # Payments
     ws = wb.create_sheet("Payments")
-    rows = [(_day(x["p"]["due_date"]), x["p"]["description"], rules.CATEGORIES.get(x["p"]["category"], x["p"]["category"]),
+    rows = [(_day(x["p"]["due_date"]), x["p"]["description"], rulebook.get(con).label(x["p"]["category"]),
              IN if x["p"]["direction"] == "in" else OUT, x["p"]["currency"], x["p"]["amount"], x["word"], x["flag"] or "",
              _day(x["p"]["paid_date"]), x["sql"], x["bank"], "; ".join(x["on_file"]), "; ".join(x["missing"])) for x in pays]
     first, last = _table(ws, 1, ["Due date", "Description", "Type", "Direction", "Currency", "Amount", "Status", "Note", "Paid date",
@@ -345,7 +346,7 @@ def auditor_package(con, entity, month):
              {"name": report_name, "folder": "", "belongs": "Month report", "type": "Excel report", "sha256": "", "note": "This file"}]
     blobs, left_out = [], 0
     for folder, belongs, d in _folders(con, entity, month):
-        label = rules.DOC_TYPES.get(d["doc_type"], d["doc_type"])
+        label = rulebook.get(con).doc_label(d["doc_type"])
         src = path_of(d)
         if _fingerprint(src) != d["sha256"]:
             left_out += 1

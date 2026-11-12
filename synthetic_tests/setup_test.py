@@ -84,7 +84,7 @@ def last_tx():
 # ---------- 2. registry and meta ----------
 t = j("get", "/api/setup/types")
 check("the registry lists companies, bank accounts, recurring payments and general settings",
-      set(t["kinds"]) == {"entities", "accounts", "payees", "settings"} and t["kinds"]["entities"]["fields"][0]["key"] == "code")
+      {"entities", "accounts", "payees", "settings"} <= set(t["kinds"]) and t["kinds"]["entities"]["fields"][0]["key"] == "code")
 m = j("get", "/api/meta")
 check("meta carries the general settings", m["settings"]["cycle_rollover_day"] == 10 and m["settings"]["payee_default_due_day"] == 6)
 

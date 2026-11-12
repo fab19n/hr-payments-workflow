@@ -12,9 +12,11 @@ import json
 import math
 import re
 
-from . import appsettings, db, rules
+from . import appsettings, db, rulebook, rules
 
 CODE = re.compile(r"[A-Z0-9][A-Z0-9_-]{0,15}")
+KEY = re.compile(r"[a-z][a-z0-9_]{1,19}")  # a payment or document type's key: also part of stored file names, so strict
+TYPE_KINDS = ("payment_types", "doc_types")
 BASE = "MYR"  # the books' currency (SQL Account's cash book listing is in it)
 MONTH = re.compile(r"\d{4}-(0[1-9]|1[0-2])")
 DAY = re.compile(r"[2-9]\d{3}-\d{2}-\d{2}")
@@ -71,15 +73,46 @@ KINDS = {
         ],
     },
 }
-GROUPS = [["Companies and banks", ["entities", "accounts"]], ["People and payments", ["payees"]], ["General", ["settings"]]]
+KINDS["payment_types"] = {
+    "label": "Payment type", "plural": "payment types", "table": "payment_types", "per_entity": False, "name_field": "label",
+    "columns": [{"key": "key", "label": "Key"}, {"key": "label", "label": "Name"}, {"key": "direction", "label": "Money"}],
+    "fields": [
+        _f("key", "Key", "key", required=True, hint="Short, lower case: water_bill. Records refer to it, so it can't change once added."),
+        _f("label", "Name", "text", required=True, wide=True),
+        _f("plural", "Several of them are called", "text", hint="In Next up: Pay 8 AISB bills. Empty: bills."),
+        _f("direction", "Money", "select", required=True, options=[["out", "Money out (a payment)"], ["in", "Money in (received)"]]),
+        _f("legal_due_offset", "Legal deadline in", "select", options=[[0, "The payroll month"], [1, "The month after"]],
+           hint="For payments with a legal deadline, like statutory ones. Empty: none."),
+        _f("legal_due_day", "Legal deadline day", "day"),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
+KINDS["doc_types"] = {
+    "label": "Document type", "plural": "document types", "table": "doc_types", "per_entity": False, "name_field": "label",
+    "columns": [{"key": "key", "label": "Key"}, {"key": "label", "label": "Name"}, {"key": "from_sql", "label": "From SQL"}],
+    "fields": [
+        _f("key", "Key", "key", required=True, hint="Short, lower case: tax_form. Stored file names begin with it, so it can't change once added."),
+        _f("label", "Name", "text", required=True, wide=True),
+        _f("singular", "One of them is called", "text", hint="In Next up and the audit pack: 1 tax form."),
+        _f("plural", "Several of them are called", "text", hint="3 tax forms."),
+        _f("pack_order", "Place in the audit pack", "number", hint="Lower comes first. Empty: after the others."),
+        _f("from_sql", "Issued by SQL Account", "bool", hint="Not asked for from a company that isn't kept in SQL Account."),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
+GROUPS = [["Companies and banks", ["entities", "accounts"]], ["People and payments", ["payees"]],
+          ["Payments and documents", ["payment_types", "doc_types", "required"]], ["General", ["settings"]]]
 STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and its months aren't set up any more. Everything recorded stays.",
-                "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one."}
+                "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one.",
+                "payment_types": "Stopped: not offered for new payments or recurring payments. Payments of this type keep it.",
+                "doc_types": "Stopped: not offered for uploads or required documents. Documents of this type keep it."}
 
 
 def types():
     kinds = {k: {kk: vv for kk, vv in v.items()} for k, v in KINDS.items()}
     kinds["payees"] = {"label": "Recurring payment", "plural": "recurring payments", "table": "payees", "per_entity": True, "bespoke": True}
     kinds["settings"] = {"label": "General settings", "single": True, "table": "app_settings"}
+    kinds["required"] = {"label": "Required documents", "bespoke": True, "table": "required_sets"}
     return {"groups": GROUPS, "kinds": kinds}
 
 
@@ -112,6 +145,10 @@ def check_value(f, v):
         if len(v) > (2000 if kind == "textarea" else f.get("max", 200)):
             raise Refused(f"{label}: that is too long.")
         return v
+    if kind == "key":
+        if not isinstance(v, str) or not KEY.fullmatch(v.strip().lower()):
+            raise Refused(f"{label}: lower-case letters, digits and _ only, 2 to 20 characters, starting with a letter.")
+        return v.strip().lower()
     if kind == "bool":
         if v in (True, 1, "1"):
             return 1
@@ -135,6 +172,8 @@ def check_value(f, v):
             raise Refused(f"{label}: dates are written like 2026-10-20.")
         return v
     if kind == "select":
+        if isinstance(v, str) and v.isdigit() and int(v) in [o[0] for o in f.get("options", [])]:
+            v = int(v)  # a select's value comes back from the page as text
         if v not in [o[0] for o in f.get("options", [])]:
             raise Refused(f"{label}: choose one of the options.")
         return v
@@ -161,6 +200,18 @@ USES = {  # (one, many, how to count)
         ("SQL import", "SQL imports", "SELECT COUNT(*) FROM sql_imports WHERE entity_id = ?"),
         ("budget", "budgets", "SELECT COUNT(*) FROM budgets WHERE entity_id = ?"),
         ("budget line", "budget lines", "SELECT COUNT(*) FROM budget_lines WHERE entity_id = ?"),
+    ],
+    "payment_types": [
+        ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
+        ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
+        ("budget line", "budget lines", "SELECT COUNT(*) FROM budget_lines WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
+    ],
+    "doc_types": [
+        ("document", "documents", "SELECT COUNT(*) FROM documents WHERE doc_type = (SELECT key FROM doc_types WHERE id = ?)"),
+        ("set of required documents", "sets of required documents",
+         "SELECT COUNT(*) FROM required_sets r, json_each(r.docs) j WHERE j.value = (SELECT key FROM doc_types WHERE id = ?)"),
+        ("checklist item", "checklist items",
+         "SELECT COUNT(*) FROM tasks t, json_each(t.required_docs) j WHERE j.value = (SELECT key FROM doc_types WHERE id = ?)"),
     ],
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),
@@ -194,6 +245,20 @@ def locked(con, kind, rec):
         if _count(con, "SELECT COUNT(*) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", rec["id"]):
             out["uses_sql"] = ("Months already filed were checked with this setting, so it can't change once a month is filed. "
                                "Reopen the filed months first if it really must.")
+    if kind in TYPE_KINDS and rec.get("id"):
+        out["key"] = "Records refer to it by this key, so it can't change once added."
+        used = bool(usage(con, kind, rec["id"]))
+        if kind == "payment_types" and (rec.get("system") or used):
+            out["direction"] = ("The app relies on this type being money " + rec["direction"] + "." if rec.get("system")
+                                else "Payments of this type are money " + rec["direction"] + ", so it can't change once it has any.")
+        if kind == "payment_types" and _count(con, """SELECT COUNT(*) FROM payments p JOIN months m ON m.entity_id = p.entity_id
+                AND m.month = p.month WHERE p.category = ? AND m.closed_at IS NOT NULL""", rec["key"]):
+            out["legal_due_offset"] = out["legal_due_day"] = (
+                "Filed months judged their payments of this type by this deadline, so it can't change once one is filed. "
+                "Reopen the filed months first if it really must.")
+        if kind == "doc_types" and (rec.get("system") or used):
+            out["from_sql"] = ("The app relies on this." if rec.get("system")
+                               else "Documents and rules of this type are filed by it, so it can't change once used.")
     if kind == "accounts" and rec.get("id"):
         if _count(con, "SELECT COUNT(*) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", rec["entity_id"]):
             out["cash_book"] = ("Filed months were reconciled with the SQL cash book on the account that is the cash book now, so it "
@@ -239,7 +304,16 @@ def record(con, kind, rid):
     rec = _row(con, kind, rid)
     used = usage(con, kind, rid)
     return {"record": rec, "used_by": used, "used_total": sum(n for _, n in used), "locked": locked(con, kind, rec),
-            "can_delete": not used, "notes": notes(con, kind, rec)}
+            "can_delete": not used and not rec.get("system"), "can_stop": _can_stop(kind, rec), "notes": notes(con, kind, rec)}
+
+
+def _can_stop(kind, rec):
+    """Whether Stop using is offered: not for the payment types and document types the app itself relies on."""
+    if kind == "payment_types":
+        return rec["key"] not in rulebook.UNSTOPPABLE_TYPES
+    if kind == "doc_types":
+        return not rec["system"] or rec["key"] in rulebook.STOPPABLE_DOCS
+    return True
 
 
 # ---------- changing ----------
@@ -270,6 +344,11 @@ def create(con, kind, fields, entity_id=None):
     if kind == "entities":
         _unique_code(con, vals["code"])
         vals.setdefault("uses_sql", 1)
+    elif kind in TYPE_KINDS:
+        if con.execute(f"SELECT 1 FROM {s['table']} WHERE key = ?", (vals["key"],)).fetchone():
+            raise Refused(f"There is already a {s['label'].lower()} with the key {vals['key']}.")
+        _legal_pair(kind, vals)
+        vals["sort"] = con.execute(f"SELECT COALESCE(MAX(sort), 0) + 1 FROM {s['table']}").fetchone()[0]
     else:
         if entity_id is None or not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
             raise Refused("Choose the company the account belongs to.")
@@ -285,7 +364,20 @@ def create(con, kind, fields, entity_id=None):
     if kind == "accounts" and vals.get("cash_book"):
         _only_cash_book(con, entity_id, rid)
     db.log(con, f"Added {s['label'].lower()}: {vals[s['name_field']]}")
+    rulebook.forget(con)
     return rid
+
+
+def _legal_pair(kind, vals, rec=None):
+    """A payment type's legal deadline: both the month and the day, or neither; statutory payments keep theirs."""
+    if kind != "payment_types":
+        return
+    off = vals.get("legal_due_offset", rec.get("legal_due_offset") if rec else None)
+    day = vals.get("legal_due_day", rec.get("legal_due_day") if rec else None)
+    if (off is None) != (day is None):
+        raise Refused("Legal deadline: give both the month and the day, or neither.")
+    if rec and rec["key"] == "statutory" and day is None:
+        raise Refused("Statutory payments keep their legal deadline (KWSP, PERKESO and PCB are due by a set day).")
 
 
 def _only_cash_book(con, entity_id, rid):
@@ -308,6 +400,7 @@ def update(con, kind, rid, fields):
         return []
     if kind == "entities" and "code" in vals:
         _unique_code(con, vals["code"], rid)
+    _legal_pair(kind, vals, rec)
     if kind == "accounts" and "cash_book" in vals:
         if vals["cash_book"]:
             if not rec["active"]:
@@ -320,6 +413,7 @@ def update(con, kind, rid, fields):
     con.execute(f"UPDATE {s['table']} SET {', '.join(k + ' = ?' for k in vals)} WHERE id = ?", (*vals.values(), rid))
     named = ", ".join(f["label"].lower() for f in s["fields"] if f["key"] in vals)
     db.log(con, f"Changed {s['label'].lower()} {rec[s['name_field']]}: {named}")
+    rulebook.forget(con)
     return notes(con, kind, {**rec, **vals})
 
 
@@ -330,6 +424,20 @@ def set_active(con, kind, rid, active):
         return
     if kind == "entities" and not active and not con.execute("SELECT 1 FROM entities WHERE active = 1 AND id != ?", (rid,)).fetchone():
         raise Refused("This is the only company in use, so it can't be stopped. Add or use another company first.")
+    if kind == "payment_types" and not active and rec["key"] in rulebook.UNSTOPPABLE_TYPES:
+        raise Refused("The app relies on this payment type, so it can't be stopped.")
+    if kind == "payment_types" and not active:
+        _default_type(con, rec)
+    if kind == "doc_types" and not active:
+        if rec["system"] and rec["key"] not in rulebook.STOPPABLE_DOCS:
+            raise Refused("The app relies on this document type, so it can't be stopped.")
+        if rec["key"] in _checklist_docs():
+            raise Refused("The monthly checklist asks for this document type, so it can't be stopped yet.")
+        asked = [rulebook.get(con).label(s["payment_type"]) for s in rulebook.get(con).sets
+                 if rec["key"] in s["docs"] and _reaches_open(con, s)]
+        if asked:
+            raise Refused(f"It is still required for {_words([[a, 1] for a in dict.fromkeys(asked)]).replace('1 ', '')}. "
+                          "Take it off their required documents first.")
     if kind == "accounts" and not active and rec["cash_book"] and con.execute(
             "SELECT 1 FROM accounts WHERE entity_id = ? AND active = 1 AND id != ?", (rec["entity_id"], rid)).fetchone():
         raise Refused("This is the company's cash book account. Make another account the cash book first.")
@@ -349,6 +457,35 @@ def set_active(con, kind, rid, active):
             con.execute("UPDATE accounts SET cash_book = 1 WHERE id = ?", (rid,))
             _only_cash_book(con, rec["entity_id"], rid)
     db.log(con, f"{'Using again' if active else 'Stopped using'} {s['label'].lower()} {rec[s['name_field']]}")
+    rulebook.forget(con)
+
+
+def _checklist_docs():
+    """The document types the monthly checklist, its payment rules and the joiner and leaver reminders ask for."""
+    out = {d for items in rules.CHECKLIST.values() for *_, docs in items for d in docs}
+    out |= {d for *_, docs in rules.PEOPLE_TASKS for d in docs}
+    for r in rules.TASK_PAYMENTS.values():
+        out |= set(r.get("docs", ())) | set(r.get("on_item", ()))
+    return out
+
+
+def _reaches_open(con, s):
+    """Whether a set of required documents is still in force for a month that isn't filed (its company's, or any
+    company's for a set for every company): open months come after the last filed one."""
+    if s["to_month"] is None:
+        return True
+    ids = [s["entity_id"]] if s["entity_id"] is not None else [r[0] for r in con.execute("SELECT id FROM entities")]
+    for e in ids:
+        last = _last_filed(con, e)
+        if not last or s["to_month"] > db.shift_month(last, 1):
+            return True
+    return False
+
+
+def _default_type(con, rec):
+    """Refuses stopping or deleting the payment type new recurring payments start on (General settings)."""
+    if rec["key"] == appsettings.get("payee_default_category"):
+        raise Refused("New recurring payments start on this payment type. Choose another in General settings first.")
 
 
 def delete(con, kind, rid):
@@ -359,6 +496,12 @@ def delete(con, kind, rid):
         raise Refused(f"Used by {_words(used)}, so it can't be deleted. Stop using it instead.", 409)
     if kind == "entities" and not con.execute("SELECT 1 FROM entities WHERE active = 1 AND id != ?", (rid,)).fetchone():
         raise Refused("This is the only company in use, so it can't be deleted.")
+    if rec.get("system"):
+        raise Refused("The app relies on this, so it can't be deleted.")
+    if kind == "payment_types":
+        _default_type(con, rec)
+    if kind == "payment_types":  # its own sets of required documents go with it (they are part of the type)
+        con.execute("DELETE FROM required_sets WHERE payment_type = ?", (rec["key"],))
     con.execute(f"DELETE FROM {s['table']} WHERE id = ?", (rid,))
     if kind == "accounts" and rec["cash_book"]:
         nxt = con.execute("SELECT id FROM accounts WHERE entity_id = ? AND active = 1 AND currency = ? ORDER BY sort, id LIMIT 1",
@@ -366,6 +509,7 @@ def delete(con, kind, rid):
         if nxt:
             con.execute("UPDATE accounts SET cash_book = 1 WHERE id = ?", (nxt["id"],))
     db.log(con, f"Deleted {s['label'].lower()} {rec[s['name_field']]}")
+    rulebook.forget(con)
 
 
 def _words(used):
@@ -392,8 +536,9 @@ def payee_check(con, ent, vals, old=None):
                 raise Refused(f"{k.replace('_', ' ').capitalize()}: that is too long.")
     if "name" in out and not out["name"]:
         raise Refused("Give the payee a name.")
-    if "category" in out and out["category"] not in rules.CATEGORIES:
-        raise Refused("Choose one of the payment types.")
+    R = rulebook.get(con)
+    if "category" in out and not (R.active_type(out["category"]) or (old and out["category"] == old["category"] and out["category"] in R.categories)):
+        raise Refused("Choose one of the payment types.")  # as before Setup (the list offers only the ones in use)
     if "account_id" in out and not out["account_id"]:
         out["account_id"] = None  # an empty picker is no account, not account 0
     if out.get("account_id") is not None and (isinstance(out["account_id"], bool) or not isinstance(out["account_id"], int)):
@@ -498,3 +643,99 @@ def first_active_account(con, entity_id):
     r = con.execute("""SELECT id, currency FROM accounts WHERE entity_id = ? ORDER BY active DESC, cash_book DESC, sort, id LIMIT 1""",
                     (entity_id,)).fetchone()
     return r
+
+
+# ---------- required documents (dated sets, rulebook) ----------
+
+INTERNAL_DOCS = ("statement", "recon", "sqlexport")  # the app's own: a bank statement, its reconciliation, an SQL listing
+
+def _last_filed(con, entity_id):
+    """The latest month marked as filed, for the company (or any company): a change starts after it."""
+    if entity_id is None:
+        return con.execute("SELECT MAX(month) FROM months WHERE closed_at IS NOT NULL").fetchone()[0]
+    return con.execute("SELECT MAX(month) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", (entity_id,)).fetchone()[0]
+
+
+def _first_open(con, entity_id):
+    last = _last_filed(con, entity_id)
+    return max(db.shift_month(last, 1), db.current_cycle()) if last else db.current_cycle()
+
+
+def required_view(con, entity_id=None):
+    """What each payment type needs now, for every company or one, with its sets over time (newest first)."""
+    if entity_id is not None and not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
+        raise Refused("There is no such company.", 404)
+    R = rulebook.get(con)
+    types = []
+    for k, t in R.types.items():
+        now = R.set_for(k, None, entity_id)
+        follows = now is None
+        if follows:
+            now = R.set_for("other", None, entity_id)
+        hist = sorted((s for s in R.sets if s["payment_type"] == k and (s["entity_id"] is None or s["entity_id"] == entity_id)),
+                      key=lambda s: (s["from_month"], s["entity_id"] is not None), reverse=True)
+        types.append({"key": k, "label": t["label"], "active": t["active"], "direction": t["direction"],
+                      "docs": now["docs"] if now else [], "own": bool(now and not follows and now["entity_id"] is not None),
+                      "follows_other": follows and k != "other", "since": now["from_month"] if now and not follows else None,
+                      "history": [{**s} for s in hist]})
+    docs = sorted(((k, d) for k, d in R.docs.items() if k not in INTERNAL_DOCS), key=lambda kv: (R.order(kv[0], 999), kv[1]["sort"]))
+    last = _last_filed(con, entity_id)
+    return {"scope": entity_id, "default_from": _first_open(con, entity_id),
+            "first_allowed": db.shift_month(last, 1) if last else None, "types": types,
+            "doc_types": [{"key": k, "label": d["label"], "active": d["active"], "from_sql": d["from_sql"]} for k, d in docs]}
+
+
+def _statuses(con, entity_id, month):
+    """{payment id: status} for the payments of the open months from that month on, for the company (or every company)."""
+    sql = """SELECT p.*, e.uses_sql AS e_uses_sql FROM payments p JOIN entities e ON e.id = p.entity_id
+             WHERE p.month >= ? AND NOT EXISTS (SELECT 1 FROM months m WHERE m.entity_id = p.entity_id AND m.month = p.month
+             AND m.closed_at IS NOT NULL)""" + (" AND p.entity_id = ?" if entity_id is not None else "")
+    rows = con.execute(sql, (month, entity_id) if entity_id is not None else (month,)).fetchall()
+    return {p["id"]: db.payment_status(con, p, p["e_uses_sql"])[0] for p in rows}
+
+
+def required_save(con, payment_type, entity_id, docs, from_month):
+    """A new set of required documents for a payment type, from a payroll month on, for every company (entity_id None)
+    or one; docs None for a company: it follows every company's set again from that month. The months before keep
+    their sets; a filed month is never reached. Returns {payments, now_missing, now_complete} for the open months."""
+    R = rulebook.get(con)
+    if payment_type not in R.types:
+        raise Refused("There is no such payment type.", 404)
+    if entity_id is not None and not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
+        raise Refused("There is no such company.", 404)
+    if not isinstance(from_month, str) or not MONTH.fullmatch(from_month):
+        raise Refused("From which month: months are written like 2026-10.")
+    last = _last_filed(con, entity_id)
+    if last and from_month <= last:
+        raise Refused(f"{db.month_label(last)} is filed, and filed months never change. Choose {db.month_label(db.shift_month(last, 1))} or later.")
+    if docs is None and entity_id is None:
+        raise Refused("Choose the documents.")
+    if docs is not None:
+        if not isinstance(docs, list) or len(set(docs)) != len(docs):
+            raise Refused("Choose each document once.")
+        for d in docs:
+            if not isinstance(d, str) or not (d in R.docs and R.docs[d]["active"]) or d in INTERNAL_DOCS:
+                raise Refused(f"{d} isn't a document type a payment can need.")
+    exact = [s for s in R.sets if s["payment_type"] == payment_type and s["entity_id"] == entity_id
+             and s["from_month"] <= from_month and (s["to_month"] is None or from_month < s["to_month"])]
+    later = [s for s in R.sets if s["payment_type"] == payment_type and s["entity_id"] == entity_id and s["from_month"] > from_month]
+    if docs is None and not exact and not later:
+        raise Refused("This company already follows the documents set for every company.")
+    if docs is not None and exact and exact[0]["docs"] == docs and not later:
+        raise Refused("Nothing changes: these are the documents already required from that month.")
+    before = _statuses(con, entity_id, from_month)
+    con.execute("""UPDATE required_sets SET to_month = ? WHERE payment_type = ? AND entity_id IS ? AND from_month < ?
+                   AND (to_month IS NULL OR to_month > ?)""", (from_month, payment_type, entity_id, from_month, from_month))
+    con.execute("DELETE FROM required_sets WHERE payment_type = ? AND entity_id IS ? AND from_month >= ?", (payment_type, entity_id, from_month))
+    if docs is not None:
+        con.execute("INSERT INTO required_sets (payment_type, entity_id, from_month, to_month, docs, set_at) VALUES (?, ?, ?, NULL, ?, ?)",
+                    (payment_type, entity_id, from_month, json.dumps(docs), db.now()))
+    rulebook.forget(con)
+    after = _statuses(con, entity_id, from_month)
+    code = con.execute("SELECT code FROM entities WHERE id = ?", (entity_id,)).fetchone()[0] if entity_id is not None else "every company"
+    what = ("follows every company's documents again" if docs is None
+            else "needs " + (", ".join(R.short_doc(d) for d in docs) or "no documents"))
+    db.log(con, f"Required documents: {R.label(payment_type)} ({code}) {what}, from {db.month_label(from_month)}")
+    moved = [pid for pid in after if after[pid] != before.get(pid)]
+    return {"payments": len(moved), "now_missing": sum(before[p] == "complete" for p in moved),
+            "now_complete": sum(after[p] == "complete" for p in moved)}
