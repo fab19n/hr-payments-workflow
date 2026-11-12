@@ -14,8 +14,8 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, config, budget as stored, db, masters, nextup, recon, reports, rulebook, rules,
-               sqlimport, statements)
+from . import (appsettings, audit, auditpack, auditread, checklistbook, config, budget as stored, db, masters, nextup, recon, reports,
+               monthly, rulebook, rules, sqlimport, statements)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -186,7 +186,25 @@ def meta():
         "doc_info": {k: {"active": d["active"], "from_sql": d["from_sql"], "system": d["system"]} for k, d in R.docs.items()},
         "required": {k: (R.set_for(k) or R.set_for("other") or {"docs": []})["docs"] for k in R.types}, "sql_only": sorted(R.sql_only),
         "data_dir": str(DATA_DIR), "backup_dir": SETTINGS.get("backup_dir") or "", "settings": appsettings.values(),
+        **_meta_monthly(c),
     })
+
+
+def _meta_monthly(c):
+    """The joiner and leaver reminders (for the recurring payment drawer's note) and every checklist code in use with
+    its latest title and companies (for Setup's filing words)."""
+    B = checklistbook.get(c)
+    people = []
+    for p in B.people():
+        t = B.people_term(p["key"], "9999-12")
+        people.append({"key": p["key"], "kind": p["kind"], "short_name": p.get("short_name"),
+                       "title": t["title"] if t else None, "active": bool(t)})
+    codes = {}
+    if B.from_tables:
+        names = {r["id"]: r["code"] for r in c.execute("SELECT id, code FROM entities")}
+        for (eid, code), it in sorted(B.items.items(), key=lambda kv: kv[1]["id"]):
+            codes.setdefault(code, [it["name"] or code, []])[1].append(names.get(eid, "?"))
+    return {"people_tasks": people, "checklist_codes": {k: f"{n} ({', '.join(cs)})" for k, (n, cs) in codes.items()}}
 
 
 def docs_for(c, field, ident):
@@ -1536,15 +1554,11 @@ def _after_unlink(c, pid, entry=None):
     c.execute("UPDATE payments SET paid_date = ?, paid_source = ? WHERE id = ?", (paid, source, pid))
 
 
-OVERSEAS_PROVIDERS = ("ANTHROPIC", "CLAUDE", "GOOGLE", "OPENAI", "CHATGPT", "MICROSOFT", "ADOBE", "ZOOM", "CANVA", "DROPBOX", "HOSTGATOR")
-
-
-def _guess_category(text):
+def _guess_category(text, c=None):
+    """The payment type an SQL voucher's description suggests: the first of Setup's guesses (checklistbook; the code's
+    own without a connection) with a word anywhere in it, in capitals; else other."""
     t = (text or "").upper()
-    for words, cat in ((OVERSEAS_PROVIDERS + ("SUBSCRIPTION",), "claim_overseas"), (("CLAIM",), "claim"), (("SALARY",), "salary"),
-                       (("STAMP", "SETEM", "CP204", "CP500", "TAX INSTAL"), "other"),  # LHDN, but not the month's PCB
-                       (("KWSP", "PERKESO", "LHDN", "HASIL", "SOCSO"), "statutory"),
-                       (("RENTAL",), "rental"), (("TNB", "UNIFI", "TM TECHNOLOGY"), "utility")):
+    for words, cat in (checklistbook.get(c) if c is not None else checklistbook.FROZEN).guess:
         if any(w in t for w in words):
             return cat
     return "other"
@@ -1582,7 +1596,7 @@ def _payment_from_entry(c, s, category=None):
     """Adds an SQL voucher that isn't in the tracker (a claim, an advance, a one-off bill) as a paid payment."""
     acct = masters.first_active_account(c, s["entity_id"])  # the cash book account, as SQL's cash book listing is for it
     direction = s["direction"] or "out"
-    category = "receipt" if direction == "in" else valid_cat(c, category or _guess_category(s["description"]), "out")
+    category = "receipt" if direction == "in" else valid_cat(c, category or _guess_category(s["description"], c), "out")
     pid = c.execute(
         """INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date,
            paid_source, sql_ref, einvoice_ref, direction, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'sql', ?, ?, ?, ?)""",
@@ -2017,16 +2031,24 @@ def set_backup_dir():
     return jsonify({"backup_dir": path})
 
 
-def _setup_call(fn):
-    """Runs a Setup change; a refusal comes back as its plain sentence."""
+def _setup_call(fn, preview=None):
+    """Runs a Setup change; a refusal comes back as its plain sentence. preview: the change is made, what it did is
+    returned, and it is all undone."""
     c = con()
     try:
         out = fn(c)
     except masters.Refused as x:
         c.rollback()
+        rulebook.forget(c)
+        checklistbook.forget(c)
         return err(str(x), x.status)
+    if preview:
+        c.rollback()
+        rulebook.forget(c)
+        checklistbook.forget(c)
+        return jsonify({**out, "preview": True})
     c.commit()
-    return jsonify(out)
+    return jsonify(out if preview is None else {**out, "preview": False})
 
 
 def _out_types(c):
@@ -2047,6 +2069,33 @@ def setup_required_save():
     eid = b.get("entity_id") if isinstance(b.get("entity_id"), int) and not isinstance(b.get("entity_id"), bool) else None
     return _setup_call(lambda c: {"ok": True, "affected": masters.required_save(
         c, b.get("payment_type"), eid, b.get("docs"), b.get("from_month"))})
+
+
+@app.get("/api/setup/checklist")
+def setup_checklist():
+    eid = request.args.get("entity", type=int)
+    return _setup_call(lambda c: monthly.checklist_view(c, eid))
+
+
+@app.post("/api/setup/checklist")
+def setup_checklist_save():
+    b = _body()
+    if b.get("action") in ("stop", "use", "delete"):
+        _reason()
+    return _setup_call(lambda c: monthly.checklist_save(c, b), preview=b.get("preview") is True)
+
+
+@app.get("/api/setup/reminders")
+def setup_reminders():
+    return _setup_call(monthly.reminders_view)
+
+
+@app.post("/api/setup/reminders")
+def setup_reminders_save():
+    b = _body()
+    if b.get("action") in ("stop", "use", "delete"):
+        _reason()
+    return _setup_call(lambda c: monthly.reminders_save(c, b), preview=b.get("preview") is True)
 
 
 @app.get("/api/setup/types")

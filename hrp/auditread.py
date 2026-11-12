@@ -17,6 +17,12 @@ TABLE_LABELS = {
     "budget_lines": ("Budget line", "budget lines"), "app_settings": ("General setting", "general settings"),
     "payment_types": ("Payment type", "payment types"), "doc_types": ("Document type", "document types"),
     "required_sets": ("Required documents", "sets of required documents"),
+    "checklist_items": ("Checklist template item", "checklist template items"),
+    "checklist_terms": ("Checklist template wording", "checklist template wordings"),
+    "people_tasks": ("Joiner or leaver reminder", "joiner and leaver reminders"),
+    "people_task_terms": ("Joiner or leaver reminder wording", "joiner and leaver reminder wordings"),
+    "guess_words": ("Payment type guess", "payment type guesses"), "hint_words": ("Salary words", "salary words"),
+    "filing_words": ("SQL filing words", "SQL filing words"),
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),
@@ -50,6 +56,10 @@ FIELD_LABELS = {
     "from_sql": "Issued by SQL Account", "legal_due_offset": "Legal deadline in", "legal_due_day": "Legal deadline day",
     "system": "Used by the app", "payment_type": "Payment type", "from_month": "From", "to_month": "Until",
     "docs": "Documents", "set_at": "Set",
+    "completion": "Shown done by", "in_use": "In use", "due_offset": "Due in", "deadline": "A deadline in Next up",
+    "submit_as": "Submitted as", "rule": "Payments that show it done", "sort": "Order", "item_id": "Checklist template item",
+    "people_task_id": "Reminder", "days": "Days from the date", "salary_over": "Salary over",
+    "words": "Words", "doc_kind": "Documents", "checklist_code": "Checklist item",
 }
 NAME_FIELDS = ("description", "name", "title", "label", "doc_no", "original_name", "what", "code", "payment_type", "month", "key")
 # Bank details and account numbers, wherever they are kept (a budget line's details are filled from the payee's bank
@@ -241,8 +251,11 @@ def entry(con, tx_id, show=False):
 def history(con, tbl, key, show=False):
     """Every change to one record, newest first, each with when, who, how and why."""
     # a recurring payment's history includes its salary advances (rows of their own table, tied by payee_id)
-    child = ("""OR (r.tbl = 'advances' AND r.op != 'event' AND CAST(json_extract(COALESCE(r.after, r.before), '$.payee_id') AS TEXT) = ?)"""
-             if tbl == "payees" else "")
+    # and a checklist template item's or reminder's history its wordings over time (checklist_terms, people_task_terms)
+    parent = {"payees": ("advances", "payee_id"), "checklist_items": ("checklist_terms", "item_id"),
+              "people_tasks": ("people_task_terms", "people_task_id")}.get(tbl)
+    child = (f"""OR (r.tbl = '{parent[0]}' AND r.op != 'event'
+                 AND CAST(json_extract(COALESCE(r.after, r.before), '$.{parent[1]}') AS TEXT) = ?)""" if parent else "")
     rows = _fetch(con, f"""SELECT r.*, t.id AS tx_id, t.actor, t.source, t.action, t.reason, t.late
                           FROM audit_row r LEFT JOIN audit_tx t ON t.token = r.token
                           WHERE (r.tbl = ? AND r.row_key = ?) {child} ORDER BY r.id DESC""",

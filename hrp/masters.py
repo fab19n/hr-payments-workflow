@@ -12,11 +12,15 @@ import json
 import math
 import re
 
-from . import appsettings, db, rulebook, rules
+import sqlite3
+
+from . import appsettings, checklistbook, db, rulebook, rules
 
 CODE = re.compile(r"[A-Z0-9][A-Z0-9_-]{0,15}")
 KEY = re.compile(r"[a-z][a-z0-9_]{1,19}")  # a payment or document type's key: also part of stored file names, so strict
 TYPE_KINDS = ("payment_types", "doc_types")
+WORD_KINDS = ("guess_words", "hint_words", "filing_words")
+WORD = re.compile(r"[A-Z0-9][A-Z0-9 '&./-]{0,39}")
 BASE = "MYR"  # the books' currency (SQL Account's cash book listing is in it)
 MONTH = re.compile(r"\d{4}-(0[1-9]|1[0-2])")
 DAY = re.compile(r"[2-9]\d{3}-\d{2}-\d{2}")
@@ -100,12 +104,62 @@ KINDS["doc_types"] = {
         _f("notes", "Notes", "textarea", wide=True),
     ],
 }
+KINDS["guess_words"] = {
+    "label": "Payment type from SQL vouchers", "plural": "payment type guesses", "table": "guess_words", "per_entity": False,
+    "name_field": "label",
+    "help": "When an SQL voucher is added as a payment, its description is checked against these in order; the first match "
+            "gives its type. Words match anywhere in the description, in capitals.",
+    "columns": [{"key": "sort", "label": "Order"}, {"key": "label", "label": "Name"}, {"key": "payment_type", "label": "Payment type"},
+                {"key": "words", "label": "Words"}],
+    "fields": [
+        _f("label", "Name", "text", required=True, wide=True),
+        _f("words", "Words", "words", required=True, wide=True, hint="Separated by commas: KWSP, PERKESO, LHDN."),
+        _f("payment_type", "Payment type", "select", required=True, options_from="categories"),
+        _f("sort", "Order", "number", hint="Lower is tried first. Empty: after the others."),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
+KINDS["hint_words"] = {
+    "label": "Salary words for SQL matching", "plural": "salary words", "table": "hint_words", "per_entity": False,
+    "name_field": "label",
+    "help": "When an estimated salary or director payment is matched with SQL vouchers, a voucher must contain one of these words.",
+    "columns": [{"key": "label", "label": "Name"}, {"key": "payment_type", "label": "Payment type"}, {"key": "words", "label": "Words"}],
+    "fields": [
+        _f("label", "Name", "text", required=True, wide=True),
+        _f("payment_type", "Payment type", "select", required=True, options_from="categories"),
+        _f("words", "Words", "words", required=True, wide=True, hint="Separated by commas: SALARY, GAJI, WAGES."),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
+KINDS["filing_words"] = {
+    "label": "SQL documents on the checklist", "plural": "filing words", "table": "filing_words", "per_entity": False,
+    "name_field": "label",
+    "help": "An SQL document with one of these words is filed on that checklist item of its month. They act on SQL imports "
+            "from now on; documents already filed stay where they are.",
+    "columns": [{"key": "sort", "label": "Order"}, {"key": "label", "label": "Name"}, {"key": "doc_kind", "label": "Documents"},
+                {"key": "checklist_code", "label": "Checklist item"}, {"key": "words", "label": "Words"}],
+    "fields": [
+        _f("label", "Name", "text", required=True, wide=True),
+        _f("doc_kind", "Documents", "select", required=True,
+           options=[["invoice", "Invoices"], ["journal", "Journals"], ["payment", "Payments"]]),
+        _f("direction", "Money", "select", options=[["in", "Money in"], ["out", "Money out"]], hint="Empty: either."),
+        _f("words", "Words", "words", required=True, wide=True, hint="In the description or the company name, in capitals."),
+        _f("checklist_code", "Checklist item", "select", required=True, options_from="checklist_codes"),
+        _f("sort", "Order", "number", hint="Lower is tried first. Empty: after the others."),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
 GROUPS = [["Companies and banks", ["entities", "accounts"]], ["People and payments", ["payees"]],
-          ["Payments and documents", ["payment_types", "doc_types", "required"]], ["General", ["settings"]]]
+          ["Payments and documents", ["payment_types", "doc_types", "required"]],
+          ["Monthly work", ["checklist", "reminders"]],
+          ["Matching words", ["guess_words", "hint_words", "filing_words"]], ["General", ["settings"]]]
 STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and its months aren't set up any more. Everything recorded stays.",
                 "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one.",
                 "payment_types": "Stopped: not offered for new payments or recurring payments. Payments of this type keep it.",
-                "doc_types": "Stopped: not offered for uploads or required documents. Documents of this type keep it."}
+                "doc_types": "Stopped: not offered for uploads or required documents. Documents of this type keep it.",
+                "guess_words": "Stopped: not used to guess the type of SQL vouchers added as payments.",
+                "hint_words": "Stopped: not used when matching estimated payments with SQL vouchers.",
+                "filing_words": "Stopped: SQL documents aren't filed on the checklist by these words."}
 
 
 def types():
@@ -113,6 +167,8 @@ def types():
     kinds["payees"] = {"label": "Recurring payment", "plural": "recurring payments", "table": "payees", "per_entity": True, "bespoke": True}
     kinds["settings"] = {"label": "General settings", "single": True, "table": "app_settings"}
     kinds["required"] = {"label": "Required documents", "bespoke": True, "table": "required_sets"}
+    kinds["checklist"] = {"label": "Monthly checklist", "bespoke": True, "per_entity": True, "table": "checklist_items"}
+    kinds["reminders"] = {"label": "Joiner and leaver reminders", "bespoke": True, "table": "people_tasks"}
     return {"groups": GROUPS, "kinds": kinds}
 
 
@@ -171,6 +227,21 @@ def check_value(f, v):
         if not isinstance(v, str) or not DAY.fullmatch(v):
             raise Refused(f"{label}: dates are written like 2026-10-20.")
         return v
+    if kind == "words":
+        if isinstance(v, str):
+            v = v.split(",")
+        if not isinstance(v, list) or not all(isinstance(w, str) for w in v):
+            raise Refused(f"{label}: give the words separated by commas.")
+        v = list(dict.fromkeys(w.strip().upper() for w in v if w.strip()))
+        if not v:
+            raise Refused(f"{label}: give at least one word.")
+        if any(not WORD.fullmatch(w) for w in v):
+            raise Refused(f"{label}: letters, digits, spaces and ' & . / - only, up to 40 characters each.")
+        return v
+    if kind == "select" and f.get("options_from"):
+        if not isinstance(v, str):
+            raise Refused(f"{label}: choose one of the options.")
+        return v.strip()  # checked against the records by _word_check
     if kind == "select":
         if isinstance(v, str) and v.isdigit() and int(v) in [o[0] for o in f.get("options", [])]:
             v = int(v)  # a select's value comes back from the page as text
@@ -184,7 +255,30 @@ def _row(con, kind, rid):
     r = con.execute(f"SELECT * FROM {spec(kind)['table']} WHERE id = ?", (rid,)).fetchone()
     if not r:
         raise Refused(f"This {spec(kind)['label'].lower()} has been removed.", 404)
-    return dict(r)
+    return _decoded(kind, dict(r))
+
+
+def _decoded(kind, r):
+    if kind in WORD_KINDS and isinstance(r.get("words"), str):
+        r["words"] = json.loads(r["words"])
+    return r
+
+
+def _stored(vals):
+    return {k: json.dumps(v) if isinstance(v, list) else v for k, v in vals.items()}
+
+
+def _word_check(con, kind, vals, rec=None):
+    """A word rule's payment type in use (a guess: a money-out one) and checklist item that exists; unchanged ones stay."""
+    R = rulebook.get(con)
+    t = vals.get("payment_type")
+    if t is not None and t != (rec or {}).get("payment_type"):
+        if not R.active_type(t) or (kind == "guess_words" and R.direction(t) != "out"):
+            raise Refused("Payment type: choose one in use" + (" for money out." if kind == "guess_words" else "."))
+    c = vals.get("checklist_code")
+    if c is not None and c != (rec or {}).get("checklist_code") and not con.execute(
+            "SELECT 1 FROM checklist_items WHERE code = ?", (c,)).fetchone():
+        raise Refused("Checklist item: choose one of the companies' checklist items.")
 
 
 # ---------- what uses a record, and what that locks ----------
@@ -205,6 +299,11 @@ USES = {  # (one, many, how to count)
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
         ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
         ("budget line", "budget lines", "SELECT COUNT(*) FROM budget_lines WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
+        ("checklist rule", "checklist rules", """SELECT COUNT(*) FROM checklist_terms t, json_each(json_extract(t.rule, '$.categories')) j
+                                                    WHERE t.rule IS NOT NULL AND j.value = (SELECT key FROM payment_types WHERE id = ?)"""),
+        ("matching word rule", "matching word rules", """SELECT (SELECT COUNT(*) FROM guess_words WHERE payment_type = k.key)
+                                                           + (SELECT COUNT(*) FROM hint_words WHERE payment_type = k.key)
+                                                           FROM payment_types k WHERE k.id = ?"""),
     ],
     "doc_types": [
         ("document", "documents", "SELECT COUNT(*) FROM documents WHERE doc_type = (SELECT key FROM doc_types WHERE id = ?)"),
@@ -212,7 +311,14 @@ USES = {  # (one, many, how to count)
          "SELECT COUNT(*) FROM required_sets r, json_each(r.docs) j WHERE j.value = (SELECT key FROM doc_types WHERE id = ?)"),
         ("checklist item", "checklist items",
          "SELECT COUNT(*) FROM tasks t, json_each(t.required_docs) j WHERE j.value = (SELECT key FROM doc_types WHERE id = ?)"),
+        ("checklist template", "checklist templates",
+         """SELECT COUNT(*) FROM checklist_terms t WHERE (SELECT key FROM doc_types WHERE id = ?1) IN
+            (SELECT value FROM json_each(t.docs) UNION SELECT value FROM json_each(COALESCE(json_extract(t.rule, '$.docs'), '[]'))
+             UNION SELECT value FROM json_each(COALESCE(json_extract(t.rule, '$.on_item'), '[]')))"""),
+        ("joiner or leaver reminder rule", "joiner or leaver reminder rules",
+         "SELECT COUNT(*) FROM people_task_terms t, json_each(t.docs) j WHERE j.value = (SELECT key FROM doc_types WHERE id = ?)"),
     ],
+    "guess_words": [], "hint_words": [], "filing_words": [],
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),
         ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE account_id = ?"),
@@ -226,7 +332,12 @@ def usage(con, kind, rid):
     """[(what, how many)] for the uses that are not zero."""
     out = []
     for one, many, sql in USES[kind]:
-        n = con.execute(sql, (rid,)).fetchone()[0]
+        try:
+            n = con.execute(sql, (rid,)).fetchone()[0]
+        except sqlite3.OperationalError as x:  # a table a later update adds (a records.db still below it)
+            if "no such table" not in str(x):
+                raise
+            n = 0
         if n:
             out.append([one if n == 1 else many, n])
     return out
@@ -273,13 +384,21 @@ def notes(con, kind, rec):
     out = []
     if not rec.get("active", 1):
         out.append(STOPPED_NOTE[kind])
-    if kind == "entities" and rec.get("code") and rec["code"] not in rules.CHECKLIST:
+    if kind == "entities" and rec.get("code") and not _has_checklist(con, rec):
         out.append("This company has no monthly checklist yet: its months are set up with its recurring payments only. "
-                   "Checklists will be edited in Setup in a later update.")
+                   "Add its items in Setup › Monthly checklist, or copy another company's.")
     if kind == "accounts" and rec.get("id") and _count(con, "SELECT COUNT(*) FROM statements WHERE account_id = ?", rec["id"]):
         out.append("Statements have been imported for this account. If you change the account number, the next import is refused "
                    "unless the statement shows the new number.")
     return out
+
+
+def _has_checklist(con, rec):
+    B = checklistbook.get(con)
+    if not B.from_tables:
+        return rec["code"] in rules.CHECKLIST
+    return bool(rec.get("id")) and any(eid == rec["id"] and ts and ts[-1]["in_use"]
+                                       for (eid, _), it in B.items.items() for ts in [B.terms.get(it["id"], [])])
 
 
 # ---------- reading ----------
@@ -294,7 +413,7 @@ def listing(con, kind, entity_id=None):
         rows = con.execute(f"SELECT * FROM {s['table']} ORDER BY sort, id").fetchall()
     out = []
     for r in rows:
-        r = dict(r)
+        r = _decoded(kind, dict(r))
         used = usage(con, kind, r["id"])
         out.append({**r, "used_by": used, "used_total": sum(n for _, n in used), "status": "in_use" if r.get("active", 1) else "stopped"})
     return {"rows": out}
@@ -349,6 +468,10 @@ def create(con, kind, fields, entity_id=None):
             raise Refused(f"There is already a {s['label'].lower()} with the key {vals['key']}.")
         _legal_pair(kind, vals)
         vals["sort"] = con.execute(f"SELECT COALESCE(MAX(sort), 0) + 1 FROM {s['table']}").fetchone()[0]
+    elif kind in WORD_KINDS:
+        _word_check(con, kind, vals)
+        if vals.get("sort") is None:
+            vals["sort"] = con.execute(f"SELECT COALESCE(MAX(sort), 0) + 1 FROM {s['table']}").fetchone()[0]
     else:
         if entity_id is None or not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
             raise Refused("Choose the company the account belongs to.")
@@ -358,7 +481,7 @@ def create(con, kind, fields, entity_id=None):
         if vals.get("currency") == BASE and not con.execute(
                 "SELECT 1 FROM accounts WHERE entity_id = ? AND cash_book = 1 AND active = 1", (entity_id,)).fetchone():
             vals["cash_book"] = 1  # a company's first account in MYR is its cash book until another is chosen
-    vals = {k: v for k, v in vals.items() if v is not None}
+    vals = _stored({k: v for k, v in vals.items() if v is not None})
     cur = con.execute(f"INSERT INTO {s['table']} ({', '.join(vals)}) VALUES ({', '.join('?' * len(vals))})", tuple(vals.values()))
     rid = cur.lastrowid
     if kind == "accounts" and vals.get("cash_book"):
@@ -401,6 +524,10 @@ def update(con, kind, rid, fields):
     if kind == "entities" and "code" in vals:
         _unique_code(con, vals["code"], rid)
     _legal_pair(kind, vals, rec)
+    if kind in WORD_KINDS:
+        _word_check(con, kind, vals, rec)
+        if "sort" in vals and vals["sort"] is None:  # Order emptied: after the others
+            vals["sort"] = con.execute(f"SELECT COALESCE(MAX(sort), 0) + 1 FROM {s['table']}").fetchone()[0]
     if kind == "accounts" and "cash_book" in vals:
         if vals["cash_book"]:
             if not rec["active"]:
@@ -410,7 +537,7 @@ def update(con, kind, rid, fields):
             _only_cash_book(con, rec["entity_id"], rid)
         else:
             raise Refused("Each company has one cash book account. Make another account the cash book instead; this one then stops being it.")
-    con.execute(f"UPDATE {s['table']} SET {', '.join(k + ' = ?' for k in vals)} WHERE id = ?", (*vals.values(), rid))
+    con.execute(f"UPDATE {s['table']} SET {', '.join(k + ' = ?' for k in vals)} WHERE id = ?", (*_stored(vals).values(), rid))
     named = ", ".join(f["label"].lower() for f in s["fields"] if f["key"] in vals)
     db.log(con, f"Changed {s['label'].lower()} {rec[s['name_field']]}: {named}")
     rulebook.forget(con)
@@ -431,7 +558,7 @@ def set_active(con, kind, rid, active):
     if kind == "doc_types" and not active:
         if rec["system"] and rec["key"] not in rulebook.STOPPABLE_DOCS:
             raise Refused("The app relies on this document type, so it can't be stopped.")
-        if rec["key"] in _checklist_docs():
+        if rec["key"] in _checklist_docs(con):
             raise Refused("The monthly checklist asks for this document type, so it can't be stopped yet.")
         asked = [rulebook.get(con).label(s["payment_type"]) for s in rulebook.get(con).sets
                  if rec["key"] in s["docs"] and _reaches_open(con, s)]
@@ -460,12 +587,24 @@ def set_active(con, kind, rid, active):
     rulebook.forget(con)
 
 
-def _checklist_docs():
-    """The document types the monthly checklist, its payment rules and the joiner and leaver reminders ask for."""
-    out = {d for items in rules.CHECKLIST.values() for *_, docs in items for d in docs}
-    out |= {d for *_, docs in rules.PEOPLE_TASKS for d in docs}
-    for r in rules.TASK_PAYMENTS.values():
-        out |= set(r.get("docs", ())) | set(r.get("on_item", ()))
+def _checklist_docs(con):
+    """The document types the monthly checklist (its items and their payment rules) and the joiner and leaver reminders
+    ask for in a month not filed."""
+    B = checklistbook.get(con)
+    if not B.from_tables:
+        out = {d for items in rules.CHECKLIST.values() for *_, docs in items for d in docs}
+        out |= {d for *_, docs in rules.PEOPLE_TASKS for d in docs}
+        for r in rules.TASK_PAYMENTS.values():
+            out |= set(r.get("docs", ())) | set(r.get("on_item", ()))
+        return out
+    out = set()
+    for (eid, _), it in B.items.items():
+        for t in B.terms.get(it["id"], []):
+            if t["in_use"] and _reaches_open(con, {"entity_id": eid, "to_month": t["to_month"]}):
+                r = t["rule"] or {}
+                out |= set(t["docs"]) | set(r.get("docs", ())) | set(r.get("on_item", ()))
+    for ts in B._pterms.values():
+        out |= {d for t in ts if t["in_use"] and _reaches_open(con, {"entity_id": None, "to_month": t["to_month"]}) for d in t["docs"]}
     return out
 
 
@@ -581,13 +720,12 @@ def payee_check(con, ent, vals, old=None):
 def payee_usage(con, pid):
     """[(what, how many)] using a recurring payment: payments made from it, salary advances, budget lines and joiner or
     leaver reminders."""
-    codes = [f"{kind}-{key}-{pid}" for kind, key, *_ in rules.PEOPLE_TASKS]  # as db.sync_reminders names them
     found = [
         ("payment", "payments", _count(con, "SELECT COUNT(*) FROM payments WHERE payee_id = ?", pid)),
         ("salary advance", "salary advances", _count(con, "SELECT COUNT(*) FROM advances WHERE payee_id = ?", pid)),
         ("budget line", "budget lines", _count(con, "SELECT COUNT(*) FROM budget_lines WHERE payee_id = ?", pid)),
         ("joiner or leaver reminder", "joiner or leaver reminders",
-         _count(con, f"SELECT COUNT(*) FROM tasks WHERE code IN ({','.join('?' * len(codes))})", *codes)),
+         _count(con, "SELECT COUNT(*) FROM tasks WHERE code GLOB ? OR code GLOB ?", f"joiner-*-{pid}", f"leaver-*-{pid}")),
     ]
     return [[one if n == 1 else many, n] for one, many, n in found if n]
 

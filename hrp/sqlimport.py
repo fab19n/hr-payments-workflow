@@ -320,6 +320,7 @@ def _words(s):
     return {w for w in re.findall(r"[A-Z]{3,}", (s or "").upper()) if w not in NOISE}
 
 
+# Words an estimated salary or director payment's SQL vouchers must hold (until update 21; Setup's from then on).
 CATEGORY_HINTS = {"salary": ("SALARY", "GAJI", "WAGES", "PAYROLL"),
                   "director": ("DIRECTOR", "ALLOWANCE", "ALL'CE", "SALARY")}
 
@@ -418,6 +419,8 @@ def propose(con, entity_id, recs):
         r["payment_id"] = r["payment_desc"] = None
     _propose_receipts(con, entity_id, recs)
     open_recs = [r for r in recs if r["kind"] == "payment"]  # journals and invoices record no bank payment
+    from . import checklistbook
+    book = checklistbook.get(con)
     pays = con.execute(
         """SELECT p.*, py.name AS payee_name, py.match_words FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
            WHERE p.entity_id = ? AND p.amount IS NOT NULL
@@ -465,7 +468,7 @@ def propose(con, entity_id, recs):
         if have and abs(base - p["amount"]) < 0.005:
             continue
         pd, pwords = pinfo(p)
-        hints = CATEGORY_HINTS.get(p["category"])
+        hints = book.hints.get(p["category"])
         near = [r for r in open_recs if r["row"] not in taken
                 and not (r.get("direction") and p["direction"] != r["direction"])
                 and abs((date.fromisoformat(r["date"]) - pd).days) <= 15
@@ -501,7 +504,8 @@ def _sum_to(recs, amount, exact, base=None):
     return best
 
 
-# Which checklist task an SQL document is evidence for: (kinds, direction, words any of which must appear, task code)
+# Which checklist task an SQL document is evidence for: (kinds, direction, words any of which must appear, task code).
+# The words SQL documents were filed by until update 21 (checklistbook: Setup's from then on, filled with these).
 TASK_RULES = [
     ({"journal"}, None, ("PAYROLL", "SALARY", "SALARIES", "WAGES", "GAJI"), "payroll-jv"),
     ({"invoice"}, None, ("AGRINEXUS INTERNATIONAL",), "fund-received"),
@@ -513,7 +517,8 @@ TASK_RULES = [
 def task_for(con, entity_id, r):
     text = f"{r['description']} {r['payee']}".upper()
     code = None
-    for kinds, direction, words, c in TASK_RULES:
+    from . import checklistbook
+    for kinds, direction, words, c in checklistbook.get(con).filing:
         if r["kind"] in kinds and (direction is None or r.get("direction") == direction) and any(w in text for w in words):
             code = c
             break

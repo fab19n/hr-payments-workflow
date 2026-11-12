@@ -304,6 +304,13 @@ ul.used { margin: 4px 0 0; padding-left: 18px; font-size: .88rem; }
 .req-docs { grid-column: 1 / -1; display: grid; gap: 4px; }
 .req-docs .row { align-items: flex-start; }
 .req-docs input[type=checkbox] { width: 17px; height: 17px; margin-top: 1px; flex: none; accent-color: var(--accent); }
+/* Monthly checklist and reminders: a tick box on its own line (a deadline, paid counts), and the payments rule's box */
+.setup-form > .row.tight, .chk-rule > .row.tight { align-items: flex-start; }
+.setup-form .row.tight input[type=checkbox] { width: 17px; height: 17px; margin-top: 1px; flex: none; accent-color: var(--accent); }
+fieldset.chk-rule { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; min-width: 0; margin: 0;
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px 12px; }
+fieldset.chk-rule legend { padding: 0 4px; font-size: .85rem; font-weight: 600; }
+@media (max-width: 520px) { fieldset.chk-rule { grid-template-columns: minmax(0, 1fr); } }
 /* Salary advances in the recurring payment's drawer: one row each */
 .adv { display: grid; gap: 8px; }
 .adv-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 10px; padding: 8px 0; border-top: 1px solid var(--line); }
