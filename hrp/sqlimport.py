@@ -22,6 +22,16 @@ FIELDS = {
     "einvoice_status": ("e-invoice status",),
     "einvoice_link": ("e-invoice link", "irbm validationlink"),
 }
+# Columns kept from update 22 when a listing has them, found on the heading row once the columns above are (so the
+# heading row and the columns above are chosen exactly as before). A "Code" heading may also be the payee's.
+EXTRA_FIELDS = {
+    "code": ("sql code", "code", "account code", "creditor code", "debtor code", "customer code", "supplier code"),
+    "payment_method": ("payment method", "paymentmethoddesc", "payment method desc"),
+    "cheque_no": ("cheque no", "cheque no.", "chequenumber", "cheque number", "chq no", "chq no."),
+    "dockey": ("doc key", "dockey"),
+    "currency_code": ("currency", "currencycode", "currency code"),
+}
+ALL_FIELDS = list(FIELDS) + list(EXTRA_FIELDS)
 
 # SQL document types and what they mean here
 MONEY_IN = {"OR", "RV", "CS"}          # official receipt / receipt voucher / cash sale
@@ -71,7 +81,8 @@ def read_rows(filename, data):
 
 
 DATAPACKET_COLUMNS = ["Doc No", "Doc Type", "Doc Date", "Description", "Company Name", "DR", "CR", "Amount",
-                      "Cheque No", "e-Invoice UUID", "e-Invoice status", "e-Invoice link"]
+                      "Cheque No", "e-Invoice UUID", "e-Invoice status", "e-Invoice link",
+                      "SQL code", "Payment method", "Doc key", "Currency"]
 
 
 def _first(a, *keys):
@@ -137,7 +148,8 @@ def _read_datapacket(data):
                      _first(a, "DOCDATE", "POSTDATE"), desc, _first(a, "COMPANYNAME", "COMPANY", "CODE"),
                      _first(a, "LOCALDR", "DR"), _first(a, "LOCALCR", "CR"),
                      _amount(a),
-                     _first(a, "CHEQUENUMBER"), uuid, status, _first(a, "IRBM_VALIDATIONLINK")])
+                     _first(a, "CHEQUENUMBER"), uuid, status, _first(a, "IRBM_VALIDATIONLINK"),
+                     _first(a, "CODE"), _first(a, "PAYMENTMETHODDESC"), _first(a, "DOCKEY"), _first(a, "CURRENCYCODE")])
     return rows
 
 
@@ -198,7 +210,20 @@ def guess_header(rows):
         if mapping:
             return -1, mapping  # no heading row: data starts at the first row
         raise SqlImportError("Couldn't find the column headings. The export needs a heading row such as Doc No, Date, Description, Amount.")
-    return best
+    return best[0], extra_columns(rows[best[0]], best[1])
+
+
+def extra_columns(header, mapping):
+    """The mapping with the columns kept from update 22 (EXTRA_FIELDS) added from the heading row, the others as they were."""
+    out = dict(mapping)
+    used = set(mapping.values())
+    for col, cell in enumerate(header):
+        n = _norm(cell)
+        for field, names in EXTRA_FIELDS.items():
+            if field not in out and n in names and (col not in used or (field == "code" and n == "code")):
+                out[field] = col
+                break
+    return out
 
 
 DOC_NO = re.compile(r"^[A-Z]{2,4}[-/]?\d{2,}[-/]?\d*$")
@@ -300,10 +325,19 @@ def records(rows, header_row, mapping):
                     "payee": str(get("payee") or "").strip(), "amount": round(abs(amount), 2), "direction": direction,
                     "einvoice": str(get("einvoice") or "").strip(), "doc_type": doc_type, "kind": kind,
                     "einvoice_status": str(get("einvoice_status") or "").strip(),
-                    "einvoice_link": str(get("einvoice_link") or "").strip()})
+                    "einvoice_link": str(get("einvoice_link") or "").strip(),
+                    **{f: _text(get(f), upper=f in ("code", "currency_code")) for f in EXTRA_FIELDS}})
     if not out:
         raise SqlImportError("No entries were found under the heading row. Check that Doc No, Date and Amount point to the right columns.")
     return out
+
+
+def _text(v, upper=False):
+    """A cell as text: a whole number read from a spreadsheet as 123.0 becomes 123."""
+    if isinstance(v, float) and v.is_integer():
+        v = int(v)
+    v = str(v if v is not None else "").strip()
+    return v.upper() if upper else v
 
 
 # ---------- matching ----------
@@ -380,10 +414,12 @@ def _propose_receipts(con, entity_id, recs):
     isn't used, as words like Rent would fit any customer) and exactly the amount, in the
     month the invoice belongs to (db.filing_month), else the nearest due date within 45 days. Each payment takes one
     invoice. An invoice already linked to a payment (as imported before) is left alone."""
+    from . import partybook
     from .db import filing_month
     invoices = sorted((r for r in recs if receipt_invoice(r)), key=lambda r: (r["date"], r["row"]))
     if not invoices:
         return
+    codes = partybook.payee_codes(con, entity_id)  # a customer's SQL code names the payments of its recurring payments
     taken = {x[0] for x in con.execute("SELECT payment_id FROM sql_entries WHERE entity_id = ? AND payment_id IS NOT NULL "
                                        "AND doc_type = 'IV'", (entity_id,))}
     pays = con.execute(
@@ -395,7 +431,7 @@ def _propose_receipts(con, entity_id, recs):
             continue
         text, month, day = _words(r["description"] + " " + r["payee"]), filing_month(r["description"], r["date"]), date.fromisoformat(r["date"])
         fits = [p for p in pays if p["id"] not in taken and abs(p["amount"] - r["amount"]) < 0.005
-                and _words(" ".join(filter(None, [p["match_words"], p["payee_name"]]))) & text]
+                and (_words(" ".join(filter(None, [p["match_words"], p["payee_name"]]))) & text or partybook.coded(codes, p, r))]
         best = min(fits, key=lambda p: (p["month"] != month, abs((date.fromisoformat(p["due_date"]) - day).days)), default=None)
         if best and (best["month"] == month or abs((date.fromisoformat(best["due_date"]) - day).days) <= 45):
             taken.add(best["id"])
@@ -419,8 +455,9 @@ def propose(con, entity_id, recs):
         r["payment_id"] = r["payment_desc"] = None
     _propose_receipts(con, entity_id, recs)
     open_recs = [r for r in recs if r["kind"] == "payment"]  # journals and invoices record no bank payment
-    from . import checklistbook
+    from . import checklistbook, partybook
     book = checklistbook.get(con)
+    codes = partybook.payee_codes(con, entity_id)  # a supplier's or customer's SQL code names its recurring payments' payments
     pays = con.execute(
         """SELECT p.*, py.name AS payee_name, py.match_words FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
            WHERE p.entity_id = ? AND p.amount IS NOT NULL
@@ -452,7 +489,7 @@ def propose(con, entity_id, recs):
             if (r.get("direction") and p["direction"] != r["direction"]) or abs(r["amount"] - p["amount"]) >= 0.005:
                 continue
             gap = abs((date.fromisoformat(r["date"]) - pd).days)
-            named = bool(pwords & _words(r["description"] + " " + r["payee"]))
+            named = bool(pwords & _words(r["description"] + " " + r["payee"])) or partybook.coded(codes, p, r)
             if gap <= 15 or (named and gap <= 31):  # up to 31 days late (a leaver's final pay) only with the name
                 pairs.append((gap, not named, p["amount_is_estimate"], p["id"], r["row"], p, r))
     for gap, _, _, pid, row, p, r in sorted(pairs, key=lambda x: x[:5]):
@@ -472,7 +509,7 @@ def propose(con, entity_id, recs):
         near = [r for r in open_recs if r["row"] not in taken
                 and not (r.get("direction") and p["direction"] != r["direction"])
                 and abs((date.fromisoformat(r["date"]) - pd).days) <= 15
-                and pwords & _words(r["description"] + " " + r["payee"])]
+                and (pwords & _words(r["description"] + " " + r["payee"]) or partybook.coded(codes, p, r))]
         chosen = _sum_to(near, p["amount"], exact=True, base=base)
         if not chosen and p["amount_is_estimate"]:
             text_ok = [r for r in near if not hints or any(h in (r["description"] + " " + r["payee"]).upper() for h in hints)]
@@ -518,10 +555,20 @@ def task_for(con, entity_id, r):
     text = f"{r['description']} {r['payee']}".upper()
     code = None
     from . import checklistbook
-    for kinds, direction, words, c in checklistbook.get(con).filing:
-        if r["kind"] in kinds and (direction is None or r.get("direction") == direction) and any(w in text for w in words):
+    book = checklistbook.get(con)
+    rcode = (r.get("code") or "").upper()
+    fits = lambda kinds, direction: r["kind"] in kinds and (direction is None or r.get("direction") == direction)
+    # A rule naming a customer or supplier whose SQL code the document carries comes first; then the words, in order.
+    for i, (kinds, direction, words, c) in enumerate(book.filing):
+        party = book.filing_codes[i] if i < len(book.filing_codes) else None  # (company or None, SQL code) of a party named
+        if rcode and party and party[1] == rcode and party[0] in (None, entity_id) and fits(kinds, direction):
             code = c
             break
+    else:
+        for kinds, direction, words, c in book.filing:
+            if fits(kinds, direction) and any(w in text for w in words):
+                code = c
+                break
     if not code and r["kind"] == "payment" and r.get("einvoice") and r.get("direction") == "out":
         code = "einv-selfbilled"  # a payment carrying its own e-Invoice is a self-billed one (overseas provider)
     if not code:

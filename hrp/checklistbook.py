@@ -66,7 +66,7 @@ def _live(t, month):
 class Book:
     """The checklist, reminders and words as one records.db (or the code) has them."""
 
-    def __init__(self, items=None, terms=None, people=None, pterms=None, guess=None, hints=None, filing=None):
+    def __init__(self, items=None, terms=None, people=None, pterms=None, guess=None, hints=None, filing=None, filing_codes=None):
         self.from_tables = items is not None
         self.items = items or {}            # (entity_id, code) -> {id, entity_id, code, completion, system, name}
         self.terms = terms or {}            # item id -> [term] by from_month
@@ -75,6 +75,7 @@ class Book:
         self.guess = guess if guess is not None else [(words, cat) for _, words, cat in GUESS]
         self.hints = hints if hints is not None else dict(sqlimport.CATEGORY_HINTS)
         self.filing = filing if filing is not None else list(sqlimport.TASK_RULES)
+        self.filing_codes = filing_codes or [None] * len(self.filing)  # per rule: (company or None, a party's SQL code)
 
     # ---- the checklist ----
     def checklist(self, ent, month):
@@ -200,9 +201,14 @@ def from_tables(con):
     hints = {}
     for r in _rows(con, "SELECT * FROM hint_words WHERE active = 1 ORDER BY sort, id"):
         hints[r["payment_type"]] = hints.get(r["payment_type"], ()) + tuple(json.loads(r["words"]))
-    filing = [({r["doc_kind"]}, r["direction"], tuple(json.loads(r["words"])), r["checklist_code"])
-              for r in _rows(con, "SELECT * FROM filing_words WHERE active = 1 ORDER BY sort, id")]
-    return Book(items, terms, people, pterms, guess, hints, filing)
+    rows = _rows(con, "SELECT * FROM filing_words WHERE active = 1 ORDER BY sort, id")
+    filing = [({r["doc_kind"]}, r["direction"], tuple(json.loads(r["words"])), r["checklist_code"]) for r in rows]
+    parties = {}
+    if any(r.get("party_id") for r in rows):  # update 22: a rule can name a customer or supplier
+        parties = {p["id"]: (p["entity_id"], (p["sql_code"] or "").upper())
+                   for p in _rows(con, "SELECT id, entity_id, sql_code FROM parties WHERE active = 1 AND sql_code IS NOT NULL")}
+    codes = [parties.get(r.get("party_id")) for r in rows]
+    return Book(items, terms, people, pterms, guess, hints, filing, codes)
 
 
 def get(con):

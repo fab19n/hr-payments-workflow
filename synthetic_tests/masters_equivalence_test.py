@@ -598,10 +598,29 @@ def same(name, a, b, ignore=("/meta_new_keys",)):
     check(name, not diff, f"{len(diff)} paths differ; the first {min(len(diff), 30)}:\n     {detail}")
 
 
+# The columns each table had the first time it was read (before the remaining updates): a later update may add columns,
+# which are compared apart: they must still be empty.
+_COLS = {}
+
+
+def _known(r, t):
+    have = [c[1] for c in r.execute(f'PRAGMA table_info("{t}")')]
+    cols = _COLS.setdefault(t, have)
+    rows = [tuple(x) for x in r.execute(f'SELECT {", ".join(chr(34) + c + chr(34) for c in cols)} FROM "{t}" ORDER BY rowid')]
+    new = [c for c in have if c not in cols]
+    filled = bool(new) and r.execute(f'SELECT 1 FROM "{t}" WHERE {" OR ".join(chr(34) + c + chr(34) + " IS NOT NULL" for c in new)}').fetchone()
+    return rows, filled
+
+
 def rows_of(tables=("payments", "tasks", "documents", "sql_entries", "statement_lines", "statements", "months", "payees",
                     "budget_lines", "budgets")):
+    out = {}
     with sqlite3.connect(config.DB_PATH) as r:
-        return {t: [tuple(x) for x in r.execute(f'SELECT * FROM "{t}" ORDER BY rowid')] for t in tables}
+        for t in tables:
+            out[t], filled = _known(r, t)
+            if filled:
+                out[t + " (columns a later update added)"] = "not empty"
+    return out
 
 
 # ---------- coverage: the seed can't quietly lose a case ----------

@@ -121,7 +121,7 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
   nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
-  setup: { kind: null, id: null, types: null, stopped: false, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null } };
+  setup: { kind: null, id: null, types: null, stopped: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
   ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
@@ -317,6 +317,19 @@ const pickAccounts = (e, keep) => (e?.accounts || []).filter(a => isActive(a) ||
 // A company's usual account: its cash book, else its first account in use.
 const defaultAccount = e => { const live = (e?.accounts || []).filter(isActive); return live.find(a => +a.cash_book) || live[0] || e?.accounts?.[0] || null; };
 const acctOption = (a, sel, number) => `<option value="${a.id}" ${a.id === sel ? "selected" : ""}>${esc(a.label)}${number && a.number ? " · " + esc(a.number) : ""}${isActive(a) ? "" : " (stopped)"}</option>`;
+// Customers and suppliers (state.meta.parties; none on a server without them). A party of entity_id null is every company's.
+const PARTY_KIND = { customer: "Customer", supplier: "Supplier", related: "Related company", statutory: "Statutory body" };
+const partyById = id => id == null || id === "" ? null : (state.meta.parties || []).find(x => x.id === +id) || null;
+// Money out may go to a supplier, money in come from a customer; a related company or a statutory body either way.
+const partyFits = (pt, dir) => pt.kind === "related" || pt.kind === "statutory" || pt.kind === (dir === "in" ? "customer" : "supplier");
+// A recurring payment of these types is paid to a person, never to a supplier or customer.
+const PERSONAL_TYPES = ["salary", "director"];
+// The parties a company's recurring payment going this way can be linked to: its own and every company's, in use, of a
+// kind that fits; and the one already linked (linked) even when stopped. sel: the one chosen.
+function partyOptions(e, dir, sel, linked) {
+  const list = (state.meta.parties || []).filter(pt => (pt.entity_id == null || pt.entity_id === e?.id) && partyFits(pt, dir) && (isActive(pt) || pt.id === linked));
+  return `<option value="">None</option>` + list.map(pt => `<option value="${pt.id}" ${pt.id === sel ? "selected" : ""}>${esc(pt.name)}${pt.sql_code ? " · " + esc(pt.sql_code) : ""}${isActive(pt) ? "" : " (stopped)"}</option>`).join("");
+}
 // A month is set up (its checklist and recurring payments added) when you ask, or for the current cycle on loading.
 // One not set up can still hold payments (from an SQL voucher or a bank line), which are shown below this card.
 const notSetUp = (e, month, held) => `<div class="card noprint"><h2>${esc(monthName(month))} isn't set up yet</h2>
@@ -594,7 +607,7 @@ const mayLeave = () => !drawerDirty() || confirm("Discard your changes?");
 function closeDrawer(force) {
   if (!force && !mayLeave()) return false;
   $("#drawer").hidden = true; state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
-  Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null });
+  Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null, paste: null });
   return true;
 }
 
@@ -1319,7 +1332,13 @@ function explainLine(lineId) {
 
 /* ---------------- SQL Account exports ---------------- */
 const SQL_FIELD_LABELS = { doc_no: "Doc No", date: "Date", description: "Description", payee: "Payee / name", amount: "Amount", debit: "Debit", credit: "Credit",
-  einvoice: "e-Invoice UUID", doc_type: "Doc type", einvoice_status: "e-Invoice status", einvoice_link: "e-Invoice link" };
+  einvoice: "e-Invoice UUID", doc_type: "Doc type", einvoice_status: "e-Invoice status", einvoice_link: "e-Invoice link",
+  code: "SQL code", payment_method: "Payment method", cheque_no: "Cheque no.", dockey: "Doc key", currency_code: "Currency" };
+// What SQL also says of an entry, under its payee: "Code 400-A001 · Chq 12345 · Method Maybank" (only what it has).
+const sqlCodes = x => {
+  const bits = [x.code && `Code ${x.code}`, x.cheque_no && `Chq ${x.cheque_no}`, x.payment_method && `Method ${x.payment_method}`].filter(Boolean);
+  return bits.length ? `<div class="note">${esc(bits.join(" · "))}</div>` : "";
+};
 // The voucher numbers in a payment's SQL ref box, as the server reads them (sqlimport.refs_of).
 const sqlRefs = t => (t || "").toUpperCase().split(/[,;\s]+/).filter(Boolean);
 
@@ -1346,14 +1365,14 @@ async function viewSql(main) {
   const d = await api(`/api/sql/entries?entity=${state.entity}`);
   const candOpts = u => `<option value="">Choose a payment…</option>${paymentOptions(d.candidates, u)}`;
   const unlinkBtn = x => `<button class="ghost small" data-sql-unlink="${x.id}">Unlink</button>`;
-  const unRow = u => `<tr><td class="mono">${esc(u.doc_no)}</td><td>${shortDate(u.doc_date)}</td><td>${esc(u.description)}${u.payee ? `<div class="note">${esc(u.payee)}</div>` : ""}
+  const unRow = u => `<tr><td class="mono">${esc(u.doc_no)}</td><td>${shortDate(u.doc_date)}</td><td>${esc(u.description)}${u.payee ? `<div class="note">${esc(u.payee)}</div>` : ""}${sqlCodes(u)}
         ${u.direction === "in" ? `<span class="pill">Money in</span>` : ""}${u.einvoice ? ` <span class="pill ok">e-Invoice ${esc(u.einvoice.slice(0, 8))}…</span>` : ""}${changedInSql(u)}</td>
         <td class="num">${money(u.amount)}</td>
         <td><div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${u.id}" style="max-width:240px">${candOpts(u)}</select><button class="ghost small" data-sql-link-go="${u.id}">Link</button></div></td>
         <td><div class="row"><button class="ghost small" data-sql-create="${u.id}">Create payment</button><button class="ghost small" data-sql-ignore="${u.id}">Ignore</button></div></td></tr>`;
   const waiting = d.unlinked.filter(u => !u.correction), corrections = d.unlinked.filter(u => u.correction);
   state.sqlCorrections = corrections.map(u => u.id);
-  const sqlText = x => [x.doc_no, fmtDate(x.doc_date), x.doc_date, x.description, x.payee, LT.amount(x.amount), x.direction === "in" ? "money in" : "", x.payment_desc,
+  const sqlText = x => [x.doc_no, fmtDate(x.doc_date), x.doc_date, x.description, x.payee, x.code, x.cheque_no, x.payment_method, LT.amount(x.amount), x.direction === "in" ? "money in" : "", x.payment_desc,
     x.payment_month ? monthName(x.payment_month) : "", x.einvoice ? "e-invoice" : ""].join(" ");
   const th = (cols, last) => `<thead><tr>${sortTh("sql", "doc", "Doc No")}${sortTh("sql", "date", "Date")}${sortTh("sql", "desc", "Description")}${sortTh("sql", "amount", "Amount", "num")}${cols}${last}</tr></thead>`;
   const none = (list, text) => `<tr><td colspan="6" class="empty">${list.length ? "No entry matches." : text}</td></tr>`;
@@ -1374,13 +1393,13 @@ async function viewSql(main) {
     <div class="card"><details data-sql-open="linked" ${state.sqlOpen.linked ? "open" : ""}><summary><h2 style="display:inline">Linked to payments</h2> <span class="muted">· ${d.linked.length}</span></summary>
       <div class="note">Linked to the wrong payment? Unlink it: it goes back to the list above, and the payment's amount and paid date go back to what they were. A payment made from the voucher with Create payment, with nothing added since, is removed.</div>
       <div class="tbl-wrap"><table>${th(sortTh("sql", "pay", "Payment"), `<th></th>`)}<tbody>
-      ${lk.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
+      ${lk.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}</td>
         <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td><td>${esc(x.payment_desc)} <span class="muted">(${monthName(x.payment_month)})</span></td>
         <td>${unlinkBtn(x)}</td></tr>`).join("") || none(d.linked, "None yet.")}
       </tbody></table></div></details></div>
     ${d.ignored.length ? `<div class="card"><details data-sql-open="ignored" ${state.sqlOpen.ignored ? "open" : ""}><summary><h2 style="display:inline">Ignored</h2> <span class="muted">· ${d.ignored.length}</span></summary>
       <div class="tbl-wrap"><table>${th("", `<th></th>`).replace("<th></th></tr>", "<th></th></tr>")}<tbody>
-      ${ig.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
+      ${ig.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}</td>
         <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td><td><button class="ghost small" data-sql-unignore="${x.id}">Un-ignore</button></td></tr>`).join("") || none(d.ignored, "")}
       </tbody></table></div></details></div>` : ""}`;
   };
@@ -1401,7 +1420,7 @@ async function viewSql(main) {
     <div id="sqlEntries">${entries()}</div>
     <div class="card"><h2>Journals and customer invoices</h2>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>e-Invoice</th><th>Checklist item</th></tr></thead><tbody>
-      ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}</td>
+      ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}</td>
         <td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
         <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : `<span class="muted">—</span>`}
           ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">Receipt: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
@@ -1444,9 +1463,9 @@ function renderSqlPreview(p) {
   $("#sqlPreview").innerHTML = `<div class="card">
     <div class="row spread"><h2>${esc(p.filename)}</h2><span class="muted">${p.records.length} entries found</span></div>
     <div class="note">Check the columns were read correctly, then check each suggested payment.</div>
-    <div class="form">${p.fields.map(f => `<label class="field"><span>${SQL_FIELD_LABELS[f]}</span><select data-sql-map="${f}">${colOpts(p.mapping[f])}</select></label>`).join("")}</div>
+    <div class="form">${p.fields.map(f => `<label class="field"><span>${esc(SQL_FIELD_LABELS[f] ?? f)}</span><select data-sql-map="${f}">${colOpts(p.mapping[f])}</select></label>`).join("")}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Records this payment</th></tr></thead><tbody>
-    ${p.records.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td>${shortDate(r.date)}</td><td>${esc(r.description)}${r.payee ? `<div class="note">${esc(r.payee)}</div>` : ""}
+    ${p.records.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td>${shortDate(r.date)}</td><td>${esc(r.description)}${r.payee ? `<div class="note">${esc(r.payee)}</div>` : ""}${sqlCodes(r)}
       ${r.einvoice || r.einvoice_status ? `<div>${einvPill(r)}</div>` : ""}</td>
       <td class="num">${r.direction === "in" ? "+" : ""}${money(r.amount)}</td>
       <td>${target(r)}</td></tr>`).join("")}
@@ -1474,7 +1493,11 @@ async function viewPayees(main) {
   // What the last save changed in the months already set up, shown once (a save that couldn't keep its drawer open).
   const ch = state.payeeSaved; state.payeeSaved = null;
   const saved = savedCard(ch);
-  const payeeRow = p => `<tr><td><b>${esc(p.name)}</b><div class="note">${esc(p.desc_template)}</div>
+  // The supplier or customer it is linked to, if any: from the page's list, else as the server names it.
+  const partyOf = p => { const pt = partyById(p.party_id); return pt || (p.party_id != null && p.party_name ? { name: p.party_name, sql_code: p.party_code, kind: p.party_kind } : null); };
+  const partyNote = p => { const pt = partyOf(p);
+    return pt ? `<div class="note">${esc(PARTY_KIND[pt.kind] || "Supplier or customer")}: ${esc(pt.name)}${pt.sql_code ? ` · <span class="mono">${esc(pt.sql_code)}</span>` : ""}</div>` : ""; };
+  const payeeRow = p => `<tr><td><b>${esc(p.name)}</b><div class="note">${esc(p.desc_template)}</div>${partyNote(p)}
       ${p.start_date ? `<div class="note">Starts ${fmtDate(p.start_date)}</div>` : ""}${p.end_date ? `<div class="note">Ends ${fmtDate(p.end_date)}</div>` : ""}
       ${p.notes ? `<div class="note">${esc(p.notes)}</div>` : ""}${p.advances.map(a => `<div class="note">Advance: −${money(a.monthly_deduction)} a month, ${a.start_month} to ${a.end_month}</div>`).join("")}</td>
       <td>${p.direction === "in" ? `<span class="pill ok">Money in</span> ` : ""}${esc(cats[p.category] || p.category)}</td><td>${p.month_offset ? "Next month" : "Same month"}, day ${p.due_day}</td>
@@ -1485,7 +1508,7 @@ async function viewPayees(main) {
         : !p.employed ? `<span class="muted">Not employed in ${mon}</span>` : m.set_up ? `<button class="ghost small" data-add-month="${p.id}">Add to ${mon}</button>` : ""}</div></td></tr>`;
   const payeeText = p => [p.name, p.desc_template, p.notes, p.start_date, p.end_date, fmtDate(p.start_date), fmtDate(p.end_date), cats[p.category], p.category,
     p.direction === "in" ? "money in" : "", p.bank_details, p.reference, LT.amount(p.amount), p.currency, p.active ? "active" : "stopped",
-    ...p.advances.map(a => `advance ${LT.amount(a.monthly_deduction)}`)].join(" ");
+    partyOf(p)?.name, partyOf(p)?.sql_code, ...p.advances.map(a => `advance ${LT.amount(a.monthly_deduction)}`)].join(" ");
   const payeeTable = () => {
     const rows = listRows("payees", list, payeeText);
     setCount("payees", rows.length, list.length);
@@ -1541,6 +1564,8 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
       <label class="field" style="grid-column:1/-1"><span>Description each month ({M} = payroll month, {M+1} = next month)</span><input id="py-desc" value="${esc(p.desc_template)}" placeholder="TNB - {M}"></label>
       <label class="field"><span>Money</span><select id="py-dir"><option value="out">Money out (a payment)</option><option value="in" ${into ? "selected" : ""}>Money in (received)</option></select></label>
       <label class="field"><span>Type</span><select id="py-cat">${typeOptions(p.category, pdir, id === "new" ? null : p.category)}</select></label>
+      <label class="field" id="py-party-f" style="grid-column:1/-1"${PERSONAL_TYPES.includes(p.category) ? " hidden" : ""}><span id="py-party-lbl">${into ? "Customer (optional)" : "Supplier (optional)"}</span>
+        <select id="py-party">${partyOptions(e, pdir, p.party_id ?? null, p.party_id ?? null)}</select><span class="note">SQL entries with its code are matched to this payment first.</span></label>
       <label class="field"><span id="py-acct-lbl">${into ? "Paid into" : "Pay from"}</span><select id="py-acct">${pickAccounts(e, p.account_id).map(a => acctOption(a, p.account_id)).join("")}</select></label>
       <label class="field"><span>Usual amount</span><input id="py-amt" type="number" step="0.01" value="${p.amount ?? ""}"></label>
       <label class="field"><span>Amount changes monthly</span><select id="py-var"><option value="0">No, fixed</option><option value="1" ${p.amount_varies ? "selected" : ""}>Yes, estimate</option></select></label>
@@ -1562,16 +1587,27 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
   watchDrawer(keep);
   // Money in offers the types of money received, money out the others; a type chosen sets the way the money goes.
   const labels = () => { const into = $("#py-dir").value === "in"; $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in"; };
-  const fill = pairTypeDir($("#py-cat"), $("#py-dir"), { setting: true, keep: id === "new" ? null : p.category, then: labels });
-  // A direction typed before the drawer was drawn again needs its own types before the type typed can be chosen.
+  // The supplier or customer: hidden for a salary or director's fee (paid to a person); its label and choices follow the
+  // way the money goes; the one chosen stays when it still fits (want: a value typed before the drawer was drawn again).
+  const party = want => {
+    const s = $("#py-party"), dir = $("#py-dir").value, v = want !== undefined ? want : s.value;
+    $("#py-party-f").hidden = PERSONAL_TYPES.includes($("#py-cat").value);
+    $("#py-party-lbl").textContent = dir === "in" ? "Customer (optional)" : "Supplier (optional)";
+    s.innerHTML = partyOptions(e, dir, v === "" || v == null ? null : +v, p.party_id ?? null);
+  };
+  const fill = pairTypeDir($("#py-cat"), $("#py-dir"), { setting: true, keep: id === "new" ? null : p.category, then: () => { labels(); party(); } });
+  // A direction typed before the drawer was drawn again needs its own types before the type typed can be chosen, and its
+  // own suppliers or customers before the one typed can be chosen.
   if (keep["py-dir"] || keep["py-cat"]) { fill(keep["py-cat"] || $("#py-cat").value); labels(); }
+  party("py-party" in keep ? keep["py-party"] : undefined);
   $("#payeeForm").onsubmit = async ev => {
     ev.preventDefault();
     const body = { entity_id: state.entity, name: $("#py-name").value.trim(), desc_template: $("#py-desc").value.trim() || $("#py-name").value.trim() + " - {M}",
       direction: $("#py-dir").value, category: $("#py-cat").value, account_id: +$("#py-acct").value, amount: $("#py-amt").value === "" ? null : +$("#py-amt").value,
       amount_varies: +$("#py-var").value, month_offset: +$("#py-off").value, due_day: +$("#py-day").value || def.due_day,
       bank_details: $("#py-bank").value.trim(), reference: $("#py-ref").value.trim(), match_words: $("#py-match").value.trim(),
-      start_date: $("#py-start").value || null, end_date: $("#py-end").value || null, notes: $("#py-notes").value.trim() };
+      start_date: $("#py-start").value || null, end_date: $("#py-end").value || null, notes: $("#py-notes").value.trim(),
+      party_id: $("#py-party-f").hidden || $("#py-party").value === "" ? null : +$("#py-party").value };
     if (id !== "new") body.id = +id;
     const btn = ev.target.querySelector("button[type=submit]");
     btn.disabled = true;
@@ -1764,8 +1800,16 @@ function fieldOptions(f, all) {
     return Object.entries(state.meta.categories).filter(([k]) => all || catActive(k) && (!dir || catDir(k) === dir));
   }
   if (f.options_from === "checklist_codes") return Object.entries(state.meta.checklist_codes || {});
+  // Customers and suppliers, by id: in use only, unless all. In a per-company list, that company's and every company's.
+  if (f.options_from === "parties") {
+    const perEntity = !!state.setup.types?.kinds?.[state.setup.kind]?.per_entity;
+    return (state.meta.parties || []).filter(pt => all || isActive(pt) && (!perEntity || pt.entity_id == null || pt.entity_id === state.entity))
+      .map(pt => [pt.id, `${pt.name}${pt.sql_code ? ` · ${pt.sql_code}` : ""}${pt.entity_id == null ? "" : ` (${state.meta.entities.find(x => x.id === pt.entity_id)?.code ?? "?"})`}`]);
+  }
   return f.options || [];
 }
+// The companies a "company" field offers, by code: those in use, and the one chosen even if stopped since.
+const companyChoices = sel => state.meta.entities.filter(x => isActive(x) || String(x.id) === sel);
 // A list kept as a list or as JSON text (documents, words): always a list.
 function asList(v) {
   if (Array.isArray(v)) return v;
@@ -1779,8 +1823,11 @@ const splitWords = s => String(s ?? "").split(",").map(x => x.trim()).filter(Boo
 const optVal = k => k == null ? "" : String(k);
 // A value as it reads in a list: month names, Yes or No, an option's label.
 function fieldText(f, v) {
+  // A company field's empty value is a choice of its own: every company.
+  if (f?.type === "company") return v == null || v === "" ? "Every company" : String(state.meta.entities.find(x => x.id === +v)?.code ?? v);
   if (v == null || v === "") return "";
   if (!f) return String(v);
+  if (f.options_from === "parties") return String(partyById(v)?.name ?? v);
   if (f.type === "words") return asList(v).join(", ");
   if (f.type === "month") return /^\d{4}-\d{2}$/.test(v) ? monthName(v) : String(v);
   if (f.type === "date") return fmtDate(v);
@@ -1793,6 +1840,78 @@ function fieldText(f, v) {
 // A record the app's own rules rely on (a payment or document type it came with): it can't be deleted.
 const systemPill = r => +r?.system ? ` <span class="pill" title="The app relies on it, so it can't be deleted">Used by the app</span>` : "";
 
+// A list's view (Flat or Tree, for a kind that has a tree), kept in this browser.
+function setupView(kind, spec) {
+  if (!spec.tree) return "flat";
+  if (!state.setup.view[kind]) { let v = null; try { v = localStorage.getItem("hrp-setup-view-" + kind); } catch {} state.setup.view[kind] = v === "tree" ? "tree" : "flat"; }
+  return state.setup.view[kind];
+}
+const TREE_TYPES = [["asset", "Assets"], ["liability", "Liabilities"], ["equity", "Equity"], ["income", "Income"], ["expense", "Expenses"]];
+
+// The chart of accounts as a tree: SQL's groups in the order it prints them, each with the accounts under no other
+// account, each account with the ones under it (by code). An account without an SQL group goes under its type. A
+// heading or an account with others under it opens and closes (closed: the keys closed, "g:CA" or "a:310-000"). A
+// search shows the accounts it finds with the ones they sit under, all open. Returns [rows html, accounts in it].
+function setupTree(spec, shown, hit, closed, ncol, rowHtml) {
+  const up = v => String(v || "").toUpperCase();
+  const byCode = new Map(shown.map(r => [up(r.code), r]));
+  const parentOf = r => { const p = up(r.parent_code); return p && p !== up(r.code) && byCode.has(p) ? p : null; };
+  const keep = new Set();
+  for (const r of shown) {
+    if (hit && !hit.has(r.id)) continue;
+    for (let x = r, seen = new Set(); x && !seen.has(x.id); x = byCode.get(parentOf(x))) { seen.add(x.id); keep.add(x.id); }
+  }
+  const kids = new Map();
+  const roots = [];
+  for (const r of shown.filter(r => keep.has(r.id)).sort((a, b) => String(a.code).localeCompare(String(b.code), undefined, { numeric: true }))) {
+    const p = parentOf(r);
+    // an account whose parent chain loops back is shown at the top of its group
+    let loops = false;
+    for (let x = p, seen = new Set([up(r.code)]); x; x = parentOf(byCode.get(x))) { if (seen.has(x)) { loops = true; break; } seen.add(x); }
+    if (p && !loops) { if (!kids.has(p)) kids.set(p, []); kids.get(p).push(r); } else roots.push(r);
+  }
+  const groups = (spec.tree.groups || []).map(([code, name]) => ({ key: code, label: `${name} · ${code}` }))
+    .concat(TREE_TYPES.map(([t, label]) => ({ key: "~" + t, label: `${label} · no SQL group` })), [{ key: "~", label: "No type or SQL group" }]);
+  const groupOf = r => r.sql_type || "~" + (r.type || "");
+  const size = r => 1 + (kids.get(up(r.code)) || []).reduce((n, k) => n + size(k), 0);
+  // While searching everything found is shown open, and the arrows are only marks: opening or closing then would
+  // change what shows after the search with nothing to see now.
+  const searching = !!hit;
+  let html = "";
+  const walk = (list, depth, parent) => {
+    for (const r of list) {
+      const ch = kids.get(up(r.code)) || [], key = "a:" + up(r.code), open = searching || !closed.has(key);
+      const tg = !ch.length ? `<span class="tree-tg" aria-hidden="true"></span>`
+        : searching ? `<span class="tree-tg" aria-hidden="true">▾</span>`
+        : `<button type="button" class="tree-tg" data-tree="${esc(key)}" aria-expanded="${open}" title="${open ? "Close" : "Open"} the ${ch.length} account${ch.length === 1 ? "" : "s"} under it"><span aria-hidden="true">${open ? "▾" : "▸"}</span><span class="sr-only">${open ? "Close" : "Open"} ${esc(r.code)}</span></button>`;
+      const said = (parent ? `, under ${parent.code}` : "") + (hit && !hit.has(r.id) ? ", shown for an account found under it" : "");
+      html += rowHtml(r, `<span class="tree-cell" style="--depth:${depth}">${tg}<button class="link" data-setup-open="${r.id}">${esc(r.code || "(no code)")}</button>${said ? `<span class="sr-only">${esc(said)}</span>` : ""}${ch.length && !open ? ` <span class="muted">+${size(r) - 1}</span>` : ""}</span>`);
+      if (ch.length && open) walk(ch, depth + 1, r);
+    }
+  };
+  for (const g of groups) {
+    const list = roots.filter(r => groupOf(r) === g.key);
+    if (!list.length) continue;
+    const key = "g:" + g.key, open = searching || !closed.has(key), count = list.reduce((s, r) => s + size(r), 0);
+    const head = searching ? `<span class="tree-head"><span aria-hidden="true">▾</span> ${esc(g.label)}</span>`
+      : `<button type="button" class="tree-head" data-tree="${esc(key)}" aria-expanded="${open}"><span aria-hidden="true">${open ? "▾" : "▸"}</span> ${esc(g.label)}</button>`;
+    html += `<tr class="tree-group"><th colspan="${ncol}" scope="rowgroup">${head} <span class="muted">${count} account${count === 1 ? "" : "s"}</span></th></tr>`;
+    if (open) walk(list, 0, null);
+  }
+  return [html, keep.size];  // every account in the tree, open or closed
+}
+
+// Which tree a list is: a kind kept per company (the chart of accounts) has one for each company.
+const treeId = (kind, spec) => spec?.per_entity ? `${kind}:${state.entity}` : kind;
+
+// The keys a tree can close: every group heading and every account with others under it.
+function treeKeys(rows) {
+  const up = v => String(v || "").toUpperCase(), codes = new Set(rows.map(r => up(r.code)));
+  const out = new Set(rows.map(r => "g:" + (r.sql_type || "~" + (r.type || ""))));
+  for (const r of rows) if (r.parent_code && codes.has(up(r.parent_code))) out.add("a:" + up(r.parent_code));
+  return out;
+}
+
 // The list of one kind (companies, or one company's bank accounts), stopped ones shown when asked.
 async function setupList(box, kind) {
   const S = state.setup, spec = S.types.kinds[kind], id = "setup-" + kind, e = ent();
@@ -1800,7 +1919,7 @@ async function setupList(box, kind) {
   const isNum = c => NUM_TYPES.includes(fieldOf(c.key)?.type);
   // Registered before the list's first listState, so a sort chosen earlier is kept.
   SORTS[id] ||= Object.fromEntries([...cols.map(c => [c.key, [isNum(c) ? "num" : "text", r => { const f = fieldOf(c.key);
-      return f && ["select", "bool", "words"].includes(f.type) ? fieldText(f, r[c.key]) : r[c.key]; }]]),
+      return f && ["select", "bool", "words", "company"].includes(f.type) ? fieldText(f, r[c.key]) : r[c.key]; }]]),
     ["used", ["num", r => r.used_total]], ["status", ["text", r => r.status]]]);
   if (spec.per_entity && !e) { box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">Add a company first.</div></div>`; return; }
   const { rows } = await api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`);
@@ -1811,7 +1930,22 @@ async function setupList(box, kind) {
     if (!i) return `<td><button class="link" data-setup-open="${r.id}">${esc(v || "(no name)")}</button></td>`;
     return `<td${isNum(c) ? ` class="num"` : ""}>${v ? esc(v) : "—"}</td>`;
   };
-  const table = () => {
+  const view = setupView(kind, spec), closed = S.closed[treeId(kind, spec)] ||= new Set();
+  const table = () => view === "tree" ? treeTable() : flatTable();
+  // The tree: the same columns, unsorted (accounts by code under their group and parent).
+  const treeTable = () => {
+    const shown = S.stopped ? rows : rows.filter(r => !stopped(r)), q = listState(id).q.trim();
+    const hit = q ? new Set(shown.filter(r => LT.match(text(r), q)).map(r => r.id)) : null;
+    const rowHtml = (r, first) => `<tr class="tree-row${hit && !hit.has(r.id) ? " tree-context" : ""}"><td>${first}</td>${cols.slice(1).map((c, i) => cell(r, c, i + 1)).join("")}
+        <td class="num" title="${esc(usedText(r.used_by) || "Not used yet")}">${+r.used_total || 0}</td>
+        <td>${stopped(r) ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}${systemPill(r)}</td></tr>`;
+    const [body, n] = setupTree(spec, shown, hit, closed, cols.length + 2, rowHtml);
+    setCount(id, hit ? hit.size : n, rows.length);
+    return `<table class="tree"><thead><tr>${cols.map(c => `<th${isNum(c) ? ` class="num"` : ""}>${esc(c.label)}</th>`).join("")}<th class="num">Used by</th><th>Status</th></tr></thead><tbody>
+      ${body || `<tr><td colspan="${cols.length + 2}" class="empty">${!rows.length ? "None yet." : shown.length ? `No ${esc(spec.plural)} match.` : `Only stopped ${esc(spec.plural)}: tick Show stopped to see them.`}</td></tr>`}
+      </tbody></table>`;
+  };
+  const flatTable = () => {
     const shown = S.stopped ? rows : rows.filter(r => !stopped(r)), list = listRows(id, shown, text);
     setCount(id, list.length, rows.length);
     return `<table><thead><tr>${cols.map(c => sortTh(id, c.key, esc(c.label), isNum(c) ? "num" : "")).join("")}${sortTh(id, "used", "Used by", "num")}${sortTh(id, "status", "Status")}</tr></thead><tbody>
@@ -1822,13 +1956,27 @@ async function setupList(box, kind) {
       </tbody></table>`;
   };
   box.innerHTML = `${spec.per_entity ? entityPicker() : ""}
-    <div class="card"><div class="row spread"><h1>${esc(sectionLabel(spec))}${spec.per_entity ? ` · ${esc(e.code)}` : ""}</h1><button class="btn" data-setup-new="${esc(kind)}">Add ${esc(lowerFirst(spec.label))}</button></div>
+    <div class="card"><div class="row spread"><h1>${esc(sectionLabel(spec))}${spec.per_entity ? ` · ${esc(e.code)}` : ""}</h1>
+        <div class="row">${spec.paste ? `<button class="ghost" data-setup-paste="${esc(kind)}">Paste a list</button>` : ""}<button class="btn" data-setup-new="${esc(kind)}">Add ${esc(lowerFirst(spec.label))}</button></div></div>
       ${spec.help ? `<div class="note">${esc(spec.help)}</div>` : ""}
       <div class="note">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</div>
-      <div class="row">${listBar(id, spec.plural)}<label class="row tight"><input type="checkbox" data-setup-stopped ${S.stopped ? "checked" : ""}> Show stopped (${nStopped})</label></div>
+      <div class="row">${listBar(id, spec.plural)}<label class="row tight"><input type="checkbox" data-setup-stopped ${S.stopped ? "checked" : ""}> Show stopped (${nStopped})</label>
+        ${spec.tree ? `<div class="seg" role="group" aria-label="Show the ${esc(spec.plural)} as">${[["flat", "Flat list"], ["tree", "Tree"]].map(([v, l]) =>
+          `<button type="button" data-setup-view="${v}" aria-pressed="${view === v}">${l}</button>`).join("")}</div>` : ""}
+        ${view === "tree" ? `<button type="button" class="ghost small" data-tree-all="open">Open all</button><button type="button" class="ghost small" data-tree-all="close">Close all</button>` : ""}</div>
+      ${view === "tree" ? `<div class="note" id="treeSearchNote" hidden>While searching, everything found is shown open. Clear the search to open or close the groups.</div>` : ""}
       <div class="tbl-wrap" id="setupList">${table()}</div></div>`;
   paintCount(id);
-  LIST_REDRAW[id] = () => { if (!$("#setupList")) return; $("#setupList").innerHTML = table(); paintCount(id); };
+  // While a search is on, the tree's Open all / Close all are off and a note says why.
+  const treeBar = () => {
+    const on = !!listState(id).q.trim();
+    document.querySelectorAll("[data-tree-all]").forEach(b => { b.disabled = on; });
+    const note = $("#treeSearchNote");
+    if (note) note.hidden = !on;
+  };
+  LIST_REDRAW[id] = () => { if (!$("#setupList")) return; $("#setupList").innerHTML = table(); paintCount(id); if (view === "tree") treeBar(); };
+  if (view === "tree") treeBar();
+  if (spec.tree) (S.treeKeys ||= {})[treeId(kind, spec)] = treeKeys(rows);  // what Close all closes
 }
 
 // One input for a field (FieldSpec from the server). lock: why it can't be changed; pre: the id prefix.
@@ -1836,9 +1984,14 @@ function fieldHtml(f, v, lock, pre) {
   const id = pre + f.key, val = v == null ? "" : String(v);
   const wide = f.wide || f.type === "textarea" ? ` style="grid-column:1/-1"` : "";
   const ro = lock ? " readonly" : "", req = f.required && !lock ? " required" : "";
-  const len = f.max && ["text", "textarea", "code"].includes(f.type) ? ` maxlength="${+f.max}"` : "";
+  const len = f.max && ["text", "textarea", "code", "sqlcode"].includes(f.type) ? ` maxlength="${+f.max}"` : "";
   let input;
   if (f.type === "textarea") input = `<textarea id="${id}" rows="3"${ro}${req}${len}>${esc(val)}</textarea>`;
+  // A company, or every company (the empty choice): the companies in use by code, and the one saved even if stopped.
+  else if (f.type === "company") input = `<select id="${id}"${lock ? " disabled" : ""}><option value="">Every company</option>${companyChoices(val).map(x =>
+    `<option value="${x.id}" ${String(x.id) === val ? "selected" : ""}>${esc(x.code)} · ${esc(x.name)}${isActive(x) ? "" : " (stopped)"}</option>`).join("")}</select>`;
+  // A code as SQL Account has it: typed in capitals (data-upper).
+  else if (f.type === "sqlcode") input = `<input id="${id}" type="text" class="mono" value="${esc(val)}" spellcheck="false" autocomplete="off" data-upper${ro}${req}${len}>`;
   // Words: typed with commas between them, saved as a list.
   else if (f.type === "words") input = `<input id="${id}" type="text" value="${esc(asList(v).join(", "))}" spellcheck="false" autocomplete="off"${ro}${req}>`;
   else if (f.type === "bool" || f.type === "select") {
@@ -1850,7 +2003,7 @@ function fieldHtml(f, v, lock, pre) {
       opts = [...opts, was ? [was[0], gone ? `${was[1]} (stopped)` : was[1]] : [sel, sel]];
     }
     // An optional choice has an empty one, unless the server's choices have it already (No legal deadline, say).
-    const blank = f.type === "select" && !f.required && !opts.some(o => optVal(o[0]) === "") ? `<option value="">—</option>` : "";
+    const blank = f.type === "select" && !f.required && !opts.some(o => optVal(o[0]) === "") ? `<option value="">${f.options_from === "parties" ? "(none)" : "—"}</option>` : "";
     input = `<select id="${id}"${lock ? " disabled" : ""}>${blank}${opts.map(([k, l]) => `<option value="${esc(optVal(k))}" ${optVal(k) === sel ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
   } else {
     const type = { number: "number", money: "number", day: "number", month: "month", date: "date" }[f.type] || "text";
@@ -1868,6 +2021,8 @@ function fieldValue(f, el) {
   if (f.type === "bool") return +v ? 1 : 0;
   if (NUM_TYPES.includes(f.type)) return v.trim() === "" ? null : Number(v);
   if (f.type === "month" || f.type === "date") return v || null;
+  if (f.type === "company") return v === "" ? null : +v;
+  if (f.type === "sqlcode") return v.trim().toUpperCase() || null;
   if (f.type === "select") { if (v === "") return null; const o = fieldOptions(f, true).find(x => optVal(x[0]) === v); return o ? o[0] : v; }
   return v.trim();
 }
@@ -1901,10 +2056,11 @@ async function whySubmit() {
   try { await run(reason); hideWhy(); } catch (e) { toast(e.message, true); } finally { if (goBtn.isConnected) goBtn.disabled = false; }
 }
 
-// After a company, bank account, payment type, document type or matching words change: the page's copy of them is read
-// again (the labels and pickers), and a company stopped or deleted while it was showing gives way to the first one in use.
+// After a company, bank account, payment type, document type, matching words, customer or supplier, or GL account
+// change: the page's copy of them is read again (the labels and pickers), and a company stopped or deleted while it was
+// showing gives way to the first one in use.
 async function afterSetupChange(kind) {
-  if (!["entities", "accounts", "payment_types", "doc_types", "guess_words", "hint_words", "filing_words"].includes(kind)) return;
+  if (!["entities", "accounts", "payment_types", "doc_types", "guess_words", "hint_words", "filing_words", "parties", "gl_accounts"].includes(kind)) return;
   state.meta = await api("/api/meta");
   const e = ent();
   if (!e || !isActive(e)) state.entity = firstEntityId();
@@ -1920,6 +2076,8 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
   const isNew = id === "new", e = ent();
   if (spec.per_entity && !e) return toast("Add a company first.", true);
   const fresh = Object.fromEntries((spec.fields || []).filter(f => f.default !== undefined).map(f => [f.key, f.default]));
+  // A new record's company field starts on the company being viewed (every company is chosen in it).
+  for (const f of spec.fields || []) if (f.type === "company" && fresh[f.key] == null && e) fresh[f.key] = e.id;
   const r = isNew ? { record: fresh, used_by: [], locked: {}, can_delete: false, notes: [] } : await api(`/api/setup/${kind}/${id}`);
   const rec = r.record || {}, locked = r.locked || {}, fields = spec.fields || [];
   const stopped = !isNew && (rec.status === "stopped" || !isActive(rec));
@@ -1953,7 +2111,9 @@ async function setupSave() {
   if (!D) return;
   const spec = state.setup.types.kinds[D.kind], now = formValues(spec.fields || [], "su-");
   if (D.id === "new") {
-    const body = { fields: Object.fromEntries(Object.entries(now).filter(([, v]) => v !== null && v !== "")) };
+    // Empty fields are left out, but a company field always goes: empty there means every company.
+    const isCompany = k => (spec.fields || []).some(f => f.key === k && f.type === "company");
+    const body = { fields: Object.fromEntries(Object.entries(now).filter(([k, v]) => v !== null && v !== "" || isCompany(k))) };
     if (spec.per_entity) body.entity_id = state.entity;
     const r = await api(`/api/setup/${D.kind}`, { json: body });
     toast(`${spec.label} added`);
@@ -2005,6 +2165,140 @@ async function tidyMonths(eid, btn) {
     const keep = drawerEdits();
     await render(); return openSetup("entities", eid, { force: true, keep });
   });
+}
+
+/* ---- Paste a list (customers and suppliers, the chart of accounts) ---- */
+// How the server split the pasted text into columns.
+const PASTE_HOW = { tab: "columns separated by tabs", pipe: "columns separated by |", semicolon: "columns separated by ;", comma: "columns separated by commas",
+  fixed: "columns lined up with spaces", sql: "a grid copied from SQL Account", report: "a report printed from SQL Account",
+  one: "one column (no separator found)" };
+// "12 added, 3 changed, 1 skipped" (a save), or what a preview would do.
+function pasteCounts(c = {}, preview) {
+  const n = k => +c[k] || 0, out = [];
+  if (preview) {
+    if (n("add")) out.push(`${n("add")} new`);
+    if (n("update")) out.push(`${n("update")} to change`);
+    if (n("same")) out.push(`${n("same")} already the same`);
+    if (n("error")) out.push(`${plural(n("error"), "problem")} (skipped)`);
+    return out.join(", ") || "No rows found.";
+  }
+  if (n("add")) out.push(`${n("add")} added`);
+  if (n("update")) out.push(`${n("update")} changed`);
+  if (n("error")) out.push(`${n("error")} skipped`);
+  return out.length ? out.join(", ") : "Nothing changed: every row was already the same";
+}
+
+// The drawer: paste the text, Read the list (a preview, nothing saved), check the columns and each row, then Save.
+function openPaste(kind, { force = false } = {}) {
+  if (!force && !mayLeave()) return;
+  const spec = state.setup.types?.kinds?.[kind], e = ent();
+  if (!spec) return;
+  if (spec.per_entity && !e) return toast("Add a company first.", true);
+  state.openPayment = null; state.why = null;
+  Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null, paste: { kind, preview: null, seq: 0 } });
+  const parties = kind === "parties";
+  $("#drawer").innerHTML = `
+    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">${esc(spec.label)}${e ? " · " + esc(e.code) : ""}</div><h2>Paste a list</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
+    <form class="form setup-form" id="pasteForm">
+      <div class="note" style="grid-column:1/-1">In SQL Account, open Maintain Customer (or Supplier, or Account), click a row, press <b>Ctrl+A</b> then <b>Ctrl+C</b>, and paste below. A text file exported from SQL Account, or a list from Excel, works too: columns separated by tabs, commas, | or spaces.</div>
+      <label class="field" style="grid-column:1/-1"><span>The list</span><textarea id="ps-text" rows="8" class="mono" spellcheck="false" autocomplete="off" placeholder="Paste the rows here"></textarea>
+        <span class="note">Rows are matched by their code: a new code is added, one already here is updated. Empty cells change nothing, and nothing missing from the list is stopped or deleted.</span></label>
+      ${parties ? `<label class="field"><span>For</span><select id="ps-scope"><option value="company">This company${e ? ` (${esc(e.code)})` : ""}</option><option value="all">Every company</option></select></label>
+      <label class="field"><span>These are</span><select id="ps-kind"><option value="customer">Customers</option><option value="supplier">Suppliers</option><option value="related">Related companies</option>
+        <option value="statutory">Statutory bodies</option><option value="">From a Kind column</option></select></label>` : ""}
+      <div class="row" style="grid-column:1/-1"><button class="ghost" type="button" data-paste-read="1">Read the list</button></div>
+      <div id="ps-preview" class="paste-out" style="grid-column:1/-1"></div>
+      <label class="field" style="grid-column:1/-1"><span>Why are you making this change? (optional)</span><input id="ps-reason" maxlength="500" autocomplete="off"></label>
+      <div class="row" style="grid-column:1/-1"><button class="btn" type="submit" id="ps-save" disabled>Save</button><span class="note" id="ps-save-note">Read the list first.</span></div></form>`;
+  $("#drawer").hidden = false;
+  watchDrawer();
+  $("#ps-text").focus();
+}
+
+// What the paste form says now: the text, who it is for and what they are (a preview is only good for these).
+function pasteForm() {
+  return { text: $("#ps-text")?.value ?? "", scope: $("#ps-scope")?.value ?? null, kind: $("#ps-kind")?.value ?? null };
+}
+const pasteSameForm = (a, b) => !!a && !!b && a.text === b.text && a.scope === b.scope && a.kind === b.kind;
+// Save is only for a preview of the form as it is now, with no message, that adds or changes at least one row.
+function pasteCanSave(P) {
+  const p = P?.preview;
+  if (!p || p.message || !pasteSameForm(P.previewFor, pasteForm())) return false;
+  const c = p.counts || {};
+  return (+c.add || 0) + (+c.update || 0) > 0 || (p.rows || []).some(r => r.action === "add" || r.action === "update");
+}
+// The Save button and the note beside it (also while a column picked by hand is read again).
+function paintPasteSave(reading = false) {
+  const P = state.setup.paste, p = P?.preview, btn = $("#ps-save"), note = $("#ps-save-note");
+  if (!btn || !note) return;
+  const ok = !reading && pasteCanSave(P);
+  btn.disabled = !ok;
+  note.hidden = ok;
+  note.textContent = reading ? "Reading the list again…" : !p ? "Read the list first."
+    : p.message ? "Choose the right columns above first." : "Nothing to add or change.";
+}
+
+// The preview of what Save would do: how the text was read, a column picker per field, the counts, and each row.
+function paintPaste() {
+  const p = state.setup.paste?.preview, box = $("#ps-preview");
+  if (!box) return;
+  paintPasteSave();
+  if (!p) { box.innerHTML = ""; return; }
+  const headers = p.headers || [], rows = p.rows || [], mapping = p.mapping || {};
+  const colOpts = sel => `<option value="">(none)</option>` + headers.map((h, i) => `<option value="${i}" ${sel != null && sel !== "" && i === +sel ? "selected" : ""}>${esc(h || "Column " + (i + 1))}</option>`).join("");
+  const shown = v => v == null || v === "" ? "—" : Array.isArray(v) ? v.join(", ") : String(v);
+  const what = r => {
+    const msg = r.message ? `<div class="note">${esc(r.message)}</div>` : "";
+    if (r.action === "add") return `<span class="pill ok">New</span>${msg}`;
+    if (r.action === "update") return `<span class="pill warn">Changes</span>${(r.changes || []).map(([label, was, now]) =>
+      `<div class="note">${esc(label)}: ${esc(shown(was))} → ${esc(shown(now))}</div>`).join("")}${msg}`;
+    if (r.action === "same") return `<span class="pill grey">Same</span>${msg}`;
+    return `<span class="pill bad">Problem</span>${msg}`;
+  };
+  const table = list => `<div class="tbl-wrap"><table><thead><tr><th class="num">Row</th><th>Code</th><th>Name</th><th>What happens</th></tr></thead><tbody>
+    ${list.map(r => `<tr><td class="num">${esc(r.row ?? "")}</td><td class="mono">${esc(r.code || "—")}</td><td>${esc(r.name || "—")}</td><td>${what(r)}</td></tr>`).join("")}</tbody></table></div>`;
+  const same = rows.filter(r => r.action === "same"), others = rows.filter(r => r.action !== "same");
+  box.innerHTML = `<div class="card paste-preview"><h3>Preview: nothing is saved yet</h3>
+    <div class="note">Read as: ${esc(PASTE_HOW[p.how] || p.how || "columns")}${p.header_row === -1 ? ", with no heading row" : ""}${p.read_note ? `. ${esc(p.read_note)}` : "."} If a column was read wrongly, choose the right one below.</div>
+    <div class="form">${(p.fields || []).map(f => `<label class="field"><span>${esc(f.label)}${f.required ? " (needed)" : ""}</span><select data-paste-map="${esc(f.key)}">${colOpts(mapping[f.key])}</select></label>`).join("")}</div>
+    ${p.message ? `<div class="note warn"><b>${esc(p.message)}</b></div>` : `<div class="note"><b>${esc(pasteCounts(p.counts, true))}</b></div>`}
+    ${others.length ? table(others) : ""}
+    ${same.length ? `<details><summary>${esc(plural(same.length, "row"))} already the same</summary>${table(same)}</details>` : ""}</div>`;
+}
+
+// Read the list (preview: true) or Save it. The text goes every time; the columns as last read (or as just picked: over).
+async function pasteSave(preview, over = {}) {
+  const P = state.setup.paste;
+  if (!P || !$("#pasteForm")) return;
+  const form = pasteForm(), text = form.text;
+  if (!text.trim()) { $("#ps-text").focus(); return toast("Paste the list first.", true); }
+  if (!preview) {
+    if (!P.preview || !pasteSameForm(P.previewFor, form)) return toast("Read the list first, and check what happens to each row.", true);
+    if (P.preview.message) return toast(P.preview.message, true);
+    if (!pasteCanSave(P)) return toast("Nothing to add or change.", true);
+  }
+  const base = over.base || P.preview;
+  const body = { entity_id: state.entity, text, preview: !!preview, header_row: base?.header_row ?? null, mapping: base?.mapping ?? null, ...over };
+  delete body.base;
+  if (P.kind === "parties") { body.scope = form.scope; body.kind = form.kind || null; }
+  const reason = $("#ps-reason").value.trim();
+  if (reason) body.reason = reason;
+  if (preview) {
+    // Each read is numbered: only the latest counts, and only while the form still says what it was read for.
+    const seq = P.seq = (P.seq || 0) + 1;
+    const current = () => state.setup.paste === P && P.seq === seq && pasteSameForm(form, pasteForm());
+    let r;
+    try { r = await api(`/api/setup/${P.kind}/paste`, { json: body }); }
+    catch (e) { if (current()) paintPaste(); throw e; }
+    if (!current()) return;  // changed (or read again) while it was read: that preview is stale
+    P.preview = r; P.previewFor = form; return paintPaste();
+  }
+  const r = await api(`/api/setup/${P.kind}/paste`, { json: body });
+  if (r.message) return toast(r.message, true);  // nothing was saved: the drawer stays open
+  const kind = P.kind;
+  toast(pasteCounts(r.counts));
+  closeDrawer(true);
+  await afterSetupChange(kind); return render();
 }
 
 // General settings: one form; Save sends only what changed.
@@ -2883,7 +3177,26 @@ document.addEventListener("click", async ev => {
       Object.assign(state.setup, { kind: ds.setupKind, id: null }); renderNav(); return render();
     }
     if (ds.setupNew) return await openSetup(ds.setupNew, "new");
+    if (ds.setupPaste) return openPaste(ds.setupPaste);
+    if (ds.pasteRead) { t.disabled = true; try { return await pasteSave(true); } finally { if (t.isConnected) t.disabled = false; } }
     if (ds.setupOpen) return await openSetup(state.setup.kind, +ds.setupOpen);
+    if (ds.setupView) {
+      const kind = state.setup.kind;
+      state.setup.view[kind] = ds.setupView === "tree" ? "tree" : "flat";
+      try { localStorage.setItem("hrp-setup-view-" + kind, state.setup.view[kind]); } catch {}
+      await render();
+      return document.querySelector(`[data-setup-view="${state.setup.view[kind]}"]`)?.focus({ preventScroll: true });
+    }
+    if (ds.tree || ds.treeAll) {
+      // Opening or closing a heading or an account draws just the list again, and keeps the focus on that button.
+      const kind = state.setup.kind, id = "setup-" + kind, tid = treeId(kind, state.setup.types?.kinds?.[kind]);
+      const closed = state.setup.closed[tid] ||= new Set();
+      if (ds.tree) closed.has(ds.tree) ? closed.delete(ds.tree) : closed.add(ds.tree);
+      else if (ds.treeAll === "open") closed.clear();
+      else (state.setup.treeKeys?.[tid] || []).forEach(k => closed.add(k));
+      LIST_REDRAW[id]?.();
+      return (ds.tree ? document.querySelector(`[data-tree="${CSS.escape(ds.tree)}"]`) : t)?.focus({ preventScroll: true });
+    }
     if (ds.setupAct) return await setupAct(ds.setupAct, t);
     if (ds.whyCancel) return hideWhy();
     if (ds.reqScope) {
@@ -3085,13 +3398,22 @@ document.addEventListener("change", async ev => {
       const picks = Object.fromEntries(p.records.filter(r => r.picked).map(r => [r.row, r.payment_id]));
       renderSqlPreview(await api("/api/sql/preview", { json: { token: p.token, header_row: p.header_row, mapping, picks } }));
     }
+    if (t.dataset.pasteMap) {
+      // A column picked by hand: the list is read again with it (nothing saved).
+      // The preview goes (Save with it) until the new read comes back; the pickers stay on screen meanwhile.
+      const P = state.setup.paste, p = P?.preview || P?.shown;
+      if (!p) return;
+      const mapping = { ...(p.mapping || {}), [t.dataset.pasteMap]: t.value === "" ? null : +t.value };
+      P.shown = { ...p, mapping }; P.preview = null; paintPasteSave(true);  // a second pick while reading keeps this one
+      await pasteSave(true, { base: P.shown, header_row: p.header_row ?? null, mapping });
+    }
   } catch (e) { toast(e.message, true); }
 });
 
 document.addEventListener("submit", async ev => {
   if (ev.target.id === "setupWhy") { ev.preventDefault(); return whySubmit(); }
   const SETUP_SAVES = { setupForm: setupSave, settingsForm: settingsSave, reqForm: () => reqSave(false), chkForm: () => chkSave(false),
-    chkCopyForm: () => chkCopySave(false), remForm: () => remSave(false) };
+    chkCopyForm: () => chkCopySave(false), remForm: () => remSave(false), pasteForm: () => pasteSave(false) };
   if (SETUP_SAVES[ev.target.id]) {
     ev.preventDefault();
     const btn = ev.target.querySelector("button[type=submit]");
@@ -3243,6 +3565,20 @@ document.addEventListener("change", ev => {
 document.addEventListener("input", ev => {
   if (!ev.target.closest?.("#chkForm, #chkCopyForm, #remForm") || /-reason$/.test(ev.target.id)) return;
   for (const el of document.querySelectorAll("#drawer [data-preview-out]")) el.innerHTML = "";
+});
+// Paste a list: a change to the text, who it is for or what they are takes the preview away (and Save with it); a
+// column picked in the preview reads it again instead (the change listener).
+document.addEventListener("input", ev => {
+  if (!["ps-text", "ps-scope", "ps-kind"].includes(ev.target.id) || !state.setup.paste) return;
+  Object.assign(state.setup.paste, { preview: null, previewFor: null, shown: null }); paintPaste();
+});
+// A code as SQL Account has it is typed in capitals; the cursor stays where it was.
+document.addEventListener("input", ev => {
+  const t = ev.target;
+  if (!t.matches?.("input[data-upper]") || t.value === t.value.toUpperCase()) return;
+  const a = t.selectionStart, b = t.selectionEnd;
+  t.value = t.value.toUpperCase();
+  try { t.setSelectionRange(a, b); } catch { /* not a text input */ }
 });
 
 // The current cycle and the month before are set up on their own; other months when you ask.

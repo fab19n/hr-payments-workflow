@@ -15,7 +15,7 @@ import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
 from . import (appsettings, audit, auditpack, auditread, checklistbook, config, budget as stored, db, masters, nextup, recon, reports,
-               monthly, rulebook, rules, sqlimport, statements)
+               monthly, partybook, rulebook, rules, sqlimport, statements)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -187,6 +187,8 @@ def meta():
         "required": {k: (R.set_for(k) or R.set_for("other") or {"docs": []})["docs"] for k in R.types}, "sql_only": sorted(R.sql_only),
         "data_dir": str(DATA_DIR), "backup_dir": SETTINGS.get("backup_dir") or "", "settings": appsettings.values(),
         **_meta_monthly(c),
+        "parties": rows(c.execute("""SELECT id, entity_id, kind, name, short_name, sql_code, active FROM parties
+                                     ORDER BY name COLLATE NOCASE, id""")) if partybook.ready(c) else [],
     })
 
 
@@ -780,7 +782,7 @@ def payees():
 
 
 PAYEE_FIELDS = ("name", "category", "desc_template", "amount", "amount_varies", "month_offset", "due_day", "bank_details",
-                "reference", "match_words", "active", "notes", "account_id", "start_date", "end_date", "direction")
+                "reference", "match_words", "active", "notes", "account_id", "start_date", "end_date", "direction", "party_id")
 
 
 @app.post("/api/payees")
@@ -790,7 +792,7 @@ def save_payee():
     taken here for older callers."""
     b = _body()
     c = con()
-    vals = {k: b.get(k) for k in PAYEE_FIELDS if k in b}
+    vals = {k: b.get(k) for k in PAYEE_FIELDS if k in b and (k != "party_id" or partybook.ready(c))}
     if not isinstance(vals.get("name"), str) or not vals["name"].strip():
         return err("Give the payee a name.")
     vals.setdefault("desc_template", vals["name"].strip() + " - {M}")
@@ -1376,7 +1378,7 @@ def sql_preview():
         "SELECT id, payee_id, month FROM payments WHERE id > ?", (top,))}
     c.rollback()
     return jsonify({"token": token, "entity_id": eid, "filename": filename, "header_row": header_row, "headers": headers,
-                    "mapping": mapping, "fields": list(sqlimport.FIELDS), "records": recs, "candidates": cands})
+                    "mapping": mapping, "fields": sqlimport.ALL_FIELDS, "records": recs, "candidates": cands})
 
 
 def _payment_now(c, eid, made, pid):
@@ -1447,6 +1449,11 @@ def sql_apply():
                    WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?""",
                 (r.get("einvoice") or None, st, st, st, r.get("einvoice_link") or None,
                  r.get("task_id"), r["doc_type"], r["kind"], r["kind"], r["kind"], eid, r["doc_no"], r["date"], r["amount"]))
+        extra = {f: r.get(f) or None for f in partybook.SQL_EXTRA}
+        if any(extra.values()) and partybook.ready(c):  # kept from update 22; a later listing fills what an earlier lacked
+            c.execute(f"""UPDATE sql_entries SET {', '.join(f'{f} = COALESCE({f}, ?)' for f in extra)}
+                          WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?""",
+                      (*extra.values(), eid, r["doc_no"], r["date"], r["amount"]))
         if not cur.rowcount and pid and sqlimport.receipt_invoice(r):
             # An invoice imported before, linked to its receipt now (only while it isn't linked to one).
             hit = c.execute("""UPDATE sql_entries SET payment_id = ? WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?
@@ -2096,6 +2103,12 @@ def setup_reminders_save():
     if b.get("action") in ("stop", "use", "delete"):
         _reason()
     return _setup_call(lambda c: monthly.reminders_save(c, b), preview=b.get("preview") is True)
+
+
+@app.post("/api/setup/<kind>/paste")
+def setup_paste(kind):
+    b = _body()
+    return _setup_call(lambda c: partybook.paste(c, kind, b), preview=b.get("preview") is True)
 
 
 @app.get("/api/setup/types")

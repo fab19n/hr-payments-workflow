@@ -39,8 +39,23 @@ def check(name, ok, detail=""):
     print(f"PASS {name}")
 
 
+# The columns each table had the first time it was read (before the remaining updates): a later update may add columns,
+# which are compared apart: they must still be empty.
+_COLS = {}
+
+
+def _known(r, t):
+    have = [c[1] for c in r.execute(f'PRAGMA table_info("{t}")')]
+    cols = _COLS.setdefault(t, have)
+    rows = [tuple(x) for x in r.execute(f'SELECT {", ".join(chr(34) + c + chr(34) for c in cols)} FROM "{t}" ORDER BY rowid')]
+    new = [c for c in have if c not in cols]
+    filled = bool(new) and r.execute(f'SELECT 1 FROM "{t}" WHERE {" OR ".join(chr(34) + c + chr(34) + " IS NOT NULL" for c in new)}').fetchone()
+    return rows, filled
+
+
 def rows_of(con, table):
-    return [tuple(r) for r in con.execute(f'SELECT * FROM "{table}" ORDER BY rowid')]
+    rows, filled = _known(con, table)
+    return rows + (["columns a later update added are not empty"] if filled else [])
 
 
 # ---------- 1. update 19 on records already in use ----------

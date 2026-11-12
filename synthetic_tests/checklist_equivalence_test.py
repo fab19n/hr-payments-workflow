@@ -884,7 +884,7 @@ def probe_sql_preview():
     out = {}
     for eid, rows in ((AISB, SQL_AISB), (AI, SQL_AI)):
         r = j("post", "/api/sql/preview", json={"entity_id": eid, "text": listing(rows)})
-        out[eid] = {"header_row": r["header_row"], "headers": r["headers"], "mapping": r["mapping"], "fields": r["fields"],
+        out[eid] = {"header_row": r["header_row"], "headers": r["headers"], "mapping": r["mapping"], "fields": [f for f in r["fields"] if f not in LATER_SQL_FIELDS],
                     "records": [pick(x, REC_KEYS) for x in r["records"]], "candidates": r["candidates"]}
     out["records_unchanged"] = rows_of() == before
     return out
@@ -999,11 +999,35 @@ def same(name, a, b, ignore=("/meta_new_keys",)):
     check(name, not diff, f"{len(diff)} paths differ; the first {min(len(diff), 30)}:\n     {detail}")
 
 
+# Column pickers a later update adds to the SQL page (update 22 keeps an entry's SQL code, payment method, cheque number,
+# document key and currency): left out of the snapshot, as the column guesses and records themselves are compared.
+LATER_SQL_FIELDS = ("code", "payment_method", "cheque_no", "dockey", "currency_code")
+
+
+# The columns each table had the first time it was read (before the remaining updates): a later update may add columns,
+# which are compared apart: they must still be empty.
+_COLS = {}
+
+
+def _known(r, t):
+    have = [c[1] for c in r.execute(f'PRAGMA table_info("{t}")')]
+    cols = _COLS.setdefault(t, have)
+    rows = [tuple(x) for x in r.execute(f'SELECT {", ".join(chr(34) + c + chr(34) for c in cols)} FROM "{t}" ORDER BY rowid')]
+    new = [c for c in have if c not in cols]
+    filled = bool(new) and r.execute(f'SELECT 1 FROM "{t}" WHERE {" OR ".join(chr(34) + c + chr(34) + " IS NOT NULL" for c in new)}').fetchone()
+    return rows, filled
+
+
 def rows_of(tables=("payments", "tasks", "documents", "sql_entries", "statement_lines", "statements", "months", "payees",
                     "budget_lines", "budgets")):
     r = sqlite3.connect(config.DB_PATH)
+    out = {}
     try:
-        return {t: [tuple(x) for x in r.execute(f'SELECT * FROM "{t}" ORDER BY rowid')] for t in tables}
+        for t in tables:
+            out[t], filled = _known(r, t)
+            if filled:
+                out[t + " (columns a later update added)"] = "not empty"
+        return out
     finally:
         r.close()
 

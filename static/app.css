@@ -197,6 +197,22 @@ td .pill { margin-top: 4px; }
 /* Searching and sorting the flat lists; the budget chart */
 .listbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .listbar input { border: 1px solid var(--line-strong); background: var(--bg); border-radius: 6px; padding: 5px 9px; width: min(320px, 100%); }
+/* Flat list / Tree: two buttons that read as one control */
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; }
+.seg button { background: var(--surface); color: var(--ink); border: 0; padding: 4px 12px; font: inherit; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+@media (forced-colors: active) { .seg button[aria-pressed="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; } }
+.seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px; }
+/* The chart of accounts as a tree */
+table.tree tr.tree-group th { background: var(--accent-soft); color: var(--ink); text-align: left; font-weight: 600; padding: 6px 10px; }
+table.tree .tree-head { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: inherit; cursor: pointer; text-transform: uppercase; letter-spacing: .02em; }
+table.tree .tree-head span { display: inline-block; width: 1.1em; }
+table.tree .tree-cell { display: inline-flex; align-items: center; gap: 4px; padding-left: calc(var(--depth, 0) * 1.4rem); white-space: nowrap; }
+table.tree .tree-tg { display: inline-flex; justify-content: center; width: 1.3em; flex: none; background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; font: inherit; }
+table.tree button.tree-tg:hover, table.tree .tree-head:hover { color: var(--accent); }
+table.tree tr.tree-context td { color: var(--muted); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .listbar .muted { font-size: .85rem; }
 button.sorth { background: none; border: 0; padding: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
 button.sorth:hover { color: var(--ink); }
@@ -317,6 +333,12 @@ fieldset.chk-rule legend { padding: 0 4px; font-size: .85rem; font-weight: 600; 
 .adv-row .adv-note { grid-column: 1 / 3; }
 .adv-row .adv-act { align-self: end; flex-wrap: nowrap; gap: 6px; }
 @media (max-width: 520px) { .adv-row { grid-template-columns: minmax(0, 1fr); } .adv-row .adv-note { grid-column: auto; } }
+/* Paste a list: a wider drawer for the preview's table, and the pasted text kept small */
+.drawer:has(#pasteForm) { width: min(860px, 100vw); }
+#ps-text { font-size: .8rem; resize: vertical; }
+.paste-preview { display: grid; gap: 10px; min-width: 0; }
+.paste-preview details summary { cursor: pointer; color: var(--muted); font-size: .88rem; }
+.paste-preview details .tbl-wrap { margin-top: 6px; }
 
 @media print {
   :root:root, :root[data-theme] { --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8; --line-strong: #778588;
