@@ -1296,7 +1296,7 @@ async function viewSql(main) {
       <div class="grid2">
         <form id="sqlPasteForm" style="display:grid;gap:8px"><h3>Copy and paste (easiest)</h3>
           <div class="note">In SQL, open the Cash Book Listing, click any row, press <b>Ctrl+A</b> then <b>Ctrl+C</b>. Click in the box below and press <b>Ctrl+V</b>.</div>
-          <textarea id="sqlPaste" rows="5" placeholder="Paste the SQL rows here" style="font-family:var(--f-mono);font-size:.8rem;border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:6px 8px"></textarea>
+          <textarea id="sqlPaste" rows="5" placeholder="Paste the SQL rows here" style="font-family:var(--f-mono);font-size:.8rem;border:1px solid var(--line-strong);background:var(--bg);border-radius:6px;padding:6px 8px"></textarea>
           <div class="row"><button class="btn" type="submit">Read pasted rows</button></div></form>
         <form id="sqlForm" style="display:grid;gap:8px;align-content:start"><h3>Or choose an exported file</h3>
           <label class="field"><span>SQL export (.xlsx, .xls, .csv)</span><input id="sqlFile" type="file" accept=".xlsx,.xls,.csv,.ods,.txt"></label>

@@ -1,6 +1,6 @@
 /* Ledger-paper palette; system fonts only so the app works with no internet connection. */
 :root {
-  --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8;
+  --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8; --line-strong: #778588;
   --accent: #1f6f63; --accent-soft: #dcece7;
   --ok: #2c7a3f; --ok-soft: #e1f1e4; --warn: #9a5c08; --warn-soft: #fbf0dc; --bad: #b3322b; --bad-soft: #f8e1df;
   --f-display: "Segoe UI Semibold", "Segoe UI", system-ui, sans-serif;
@@ -10,14 +10,14 @@
 /* Dark follows Windows unless a theme is chosen with the button in the sidebar (data-theme on <html>, set by theme.js). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --bg: #111a1c; --surface: #182427; --ink: #e3ece9; --muted: #95a6a8; --line: #2b3a3d;
+    --bg: #111a1c; --surface: #182427; --ink: #e3ece9; --muted: #95a6a8; --line: #2b3a3d; --line-strong: #708083;
     --accent: #5cc0ad; --accent-soft: #1d3633; --ok: #6bc47f; --ok-soft: #1c3322;
     --warn: #e3a64a; --warn-soft: #3a2d16; --bad: #ec7b72; --bad-soft: #3d1f1d; color-scheme: dark;
   }
 }
 :root[data-theme=light] { color-scheme: light; }
 :root[data-theme=dark] {
-    --bg: #111a1c; --surface: #182427; --ink: #e3ece9; --muted: #95a6a8; --line: #2b3a3d;
+    --bg: #111a1c; --surface: #182427; --ink: #e3ece9; --muted: #95a6a8; --line: #2b3a3d; --line-strong: #708083;
     --accent: #5cc0ad; --accent-soft: #1d3633; --ok: #6bc47f; --ok-soft: #1c3322;
     --warn: #e3a64a; --warn-soft: #3a2d16; --bad: #ec7b72; --bad-soft: #3d1f1d; color-scheme: dark;
 }
@@ -159,7 +159,7 @@ button.link { background: none; border: 0; padding: 0 2px; color: var(--accent);
 
 .field { display: grid; gap: 3px; font-size: .85rem; min-width: 0; }
 .field span { color: var(--muted); }
-.field input, .field select, .field textarea { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 6px 8px; min-width: 0; }
+.field input, .field select, .field textarea { border: 1px solid var(--line-strong); background: var(--bg); border-radius: 6px; padding: 6px 8px; min-width: 0; }
 .form { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px 14px; }
 
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100vw); background: var(--surface); border-left: 1px solid var(--line);
@@ -180,10 +180,10 @@ button.link { background: none; border: 0; padding: 0 2px; color: var(--accent);
 .ex-all input { width: auto; }
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px;
   border-radius: 8px; z-index: 30; max-width: 90vw; }
-.toast.bad { background: var(--bad); color: #fff; }
+.toast.bad { background: var(--bad); color: var(--surface); }
 .line-desc { font-size: .84rem; }
 .empty { padding: 18px; text-align: center; color: var(--muted); }
-.cell { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 4px 6px; width: 100%; min-width: 7ch; }
+.cell { border: 1px solid var(--line-strong); background: var(--bg); border-radius: 6px; padding: 4px 6px; width: 100%; min-width: 7ch; }
 .cell.amt { text-align: right; width: 8.5rem; }
 .cell[data-f=description] { min-width: 26ch; }
 .cell.sub { margin-top: 4px; font-size: .82rem; padding: 2px 6px; }
@@ -196,7 +196,7 @@ td .pill { margin-top: 4px; }
 
 /* Searching and sorting the flat lists; the budget chart */
 .listbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
-.listbar input { border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 5px 9px; width: min(320px, 100%); }
+.listbar input { border: 1px solid var(--line-strong); background: var(--bg); border-radius: 6px; padding: 5px 9px; width: min(320px, 100%); }
 .listbar .muted { font-size: .85rem; }
 button.sorth { background: none; border: 0; padding: 0; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
 button.sorth:hover { color: var(--ink); }
@@ -231,7 +231,7 @@ table.rv-sort th { border-bottom: 0; padding: 0 14px 0 0; }
   padding: 10px 12px; background: var(--surface); scroll-margin-top: 110px; }
 .rv-row.open { border-left: 4px solid var(--warn); background: var(--warn-soft); }
 .rv-mine { display: grid; gap: 6px; align-content: start; min-width: 0; }
-.rv-mine select, .rv-mine input[type=text], .rv-mine input:not([type]) { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 6px; padding: 5px 8px; min-width: 0; }
+.rv-mine select, .rv-mine input[type=text], .rv-mine input:not([type]) { width: 100%; border: 1px solid var(--line-strong); background: var(--bg); border-radius: 6px; padding: 5px 8px; min-width: 0; }
 .rv-bank { display: grid; gap: 2px; align-content: start; min-width: 0; padding-left: 14px; border-left: 1px solid var(--line); }
 .rv-bank .num { text-align: left; font-size: 1.1rem; }
 .rv-keep { font-size: .86rem; color: var(--warn); flex-wrap: nowrap; align-items: flex-start; gap: 8px; }  /* the tick stays beside its sentence */
@@ -248,7 +248,7 @@ table.rv-sort th { border-bottom: 0; padding: 0 14px 0 0; }
 }
 
 @media print {
-  :root:root, :root[data-theme] { --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8;
+  :root:root, :root[data-theme] { --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8; --line-strong: #778588;
     --accent: #1f6f63; --accent-soft: #dcece7; --ok: #2c7a3f; --ok-soft: #e1f1e4; --warn: #9a5c08; --warn-soft: #fbf0dc; --bad: #b3322b; --bad-soft: #f8e1df; color-scheme: light; }
   .side, .top, .noprint, .drawer, .toast { display: none !important; }
   body { display: block; background: #fff; color: #000; }
