@@ -40,8 +40,8 @@ from .config import DATA_DIR
 GENESIS = "0" * 64
 HEAD_FILE = DATA_DIR / "audit-head.json"
 CTX = "(SELECT token FROM audit_context WHERE only = 1)"
-SKIP = ("audit_row", "audit_tx", "audit_context")  # the audit store itself
-APPEND_ONLY = ("audit_row", "audit_tx", "activity")
+SKIP = ("audit_row", "audit_tx", "audit_context", "audit_sealed")  # the audit store itself
+APPEND_ONLY = ("audit_row", "audit_tx", "activity", "audit_sealed")
 # Tables whose rows belong to a company through a parent row (the rest have entity_id, or are entities themselves).
 ENTITY_VIA = {
     "advances": "(SELECT entity_id FROM payees WHERE id = {X}.payee_id)",
@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS audit_tx (
   hash TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS audit_context (only INTEGER PRIMARY KEY CHECK (only = 1), token TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS audit_sealed (row_id INTEGER PRIMARY KEY, tx_id INTEGER NOT NULL);
 CREATE INDEX IF NOT EXISTS audit_row_rec ON audit_row (tbl, row_key, id);
 CREATE INDEX IF NOT EXISTS audit_row_token ON audit_row (token);
 CREATE INDEX IF NOT EXISTS audit_row_entity ON audit_row (entity_id, id);
@@ -272,10 +273,16 @@ def triggers(con):
                                + _row_sql(t, "delete", okey, oent, oobj, "NULL") + " END")
     for t in APPEND_ONLY:
         what = "The activity log" if t == "activity" else "The audit trail"
+        if t == "audit_sealed" and not _exists(con, t):
+            continue
         for op, word in (("u", "UPDATE"), ("d", "DELETE")):
             out[f"audit_guard_{t}_{op}"] = (f"CREATE TRIGGER audit_guard_{t}_{op} BEFORE {word} ON {_q(t)} "
                                             f"BEGIN SELECT RAISE(ABORT, '{what} can''t be changed.'); END")
     return out
+
+
+def _exists(con, table):
+    return con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (table,)).fetchone() is not None
 
 
 def _have(con):
@@ -341,6 +348,15 @@ def install(con):
             con.execute(stmt)
 
 
+def sealed_index(con):
+    """Step 18: an index of the token-less rows each entry seals (audit_tx.null_rows stays the record that is hashed),
+    so finding the changes made outside the app stays quick however many have been accepted."""
+    con.execute("CREATE TABLE IF NOT EXISTS audit_sealed (row_id INTEGER PRIMARY KEY, tx_id INTEGER NOT NULL)")
+    con.execute("""INSERT OR IGNORE INTO audit_sealed (row_id, tx_id)
+                   SELECT j.value, t.id FROM audit_tx t, json_each(t.null_rows) j WHERE t.null_rows IS NOT NULL""")
+    ensure_triggers(con)  # its append-only guard
+
+
 def start(con):
     """Step 17: triggers on every table, and one baseline row per row as the records stand, so the trail starts
     from the real records on the day it was turned on. The activity log so far is part of the baseline."""
@@ -388,14 +404,23 @@ def _last(con):
     return (r[0], r[1]) if r else (0, GENESIS)
 
 
-UNCOVERED = """token IS NULL AND NOT EXISTS (SELECT 1 FROM audit_tx t, json_each(t.null_rows) j
+UNCOVERED_LISTS = """token IS NULL AND NOT EXISTS (SELECT 1 FROM audit_tx t, json_each(t.null_rows) j
                                          WHERE t.null_rows IS NOT NULL AND j.value = audit_row.id)"""
+UNCOVERED_INDEXED = "token IS NULL AND NOT EXISTS (SELECT 1 FROM audit_sealed s WHERE s.row_id = audit_row.id)"
+
+
+def uncovered(con):
+    """SQL for token-less rows nobody has sealed: through audit_sealed (update 18 on), else the id lists in audit_tx."""
+    return UNCOVERED_INDEXED if _exists(con, "audit_sealed") else UNCOVERED_LISTS
 
 
 def _add_tx(con, rows, meta, token=None, null_ids=None, late=0):
     last_id, prev = _last(con)
     summary, counts = _summary(rows)
     user, machine = who()
+    if meta.get("entity_id") is None:  # a request that didn't name its company (an edit by id): the one its rows belong to
+        ents = {r["entity_id"] for r in rows if r["entity_id"] is not None}
+        meta = {**meta, "entity_id": ents.pop() if len(ents) == 1 else None}
     tx = {"token": token or uuid.uuid4().hex, "at": stamp(), "actor": meta.get("actor") or user,
           "machine": meta.get("machine") or machine, "source": meta["source"], "action": meta["action"],
           "route": meta.get("route"), "entity_id": meta.get("entity_id"), "reason": meta.get("reason"),
@@ -404,6 +429,8 @@ def _add_tx(con, rows, meta, token=None, null_ids=None, late=0):
     tx["hash"] = entry_hash(prev, rows, tx)
     con.execute(f"INSERT INTO audit_tx ({', '.join(TX_FIELDS)}, hash) VALUES ({', '.join('?' * (len(TX_FIELDS) + 1))})",
                 [tx[f] for f in TX_FIELDS] + [tx["hash"]])
+    if null_ids and _exists(con, "audit_sealed"):
+        con.executemany("INSERT INTO audit_sealed (row_id, tx_id) VALUES (?, ?)", [(i, last_id + 1) for i in null_ids])
     con._head = {"last_tx": last_id + 1, "hash": tx["hash"], "at": tx["at"]}
     return tx
 
@@ -437,7 +464,7 @@ def _seal_unattributed(con):
     last committed are taken, and only when this connection has written something."""
     if not con.in_transaction:
         return
-    rows = _rows(con, f"id > ? AND {UNCOVERED}", (con._mark,))
+    rows = _rows(con, f"id > ? AND {uncovered(con)}", (con._mark,))
     if rows:
         _add_tx(con, rows, {"source": "system", "action": "Unattributed app write"}, null_ids=[r["id"] for r in rows])
 
@@ -544,12 +571,14 @@ def startup(con):
 
 def outside_rows(con):
     """Rows written by another program (no token) that nobody has accepted yet."""
-    return con.execute(f"SELECT COUNT(*) FROM audit_row WHERE {UNCOVERED}").fetchone()[0]
+    return con.execute(f"SELECT COUNT(*) FROM audit_row WHERE {uncovered(con)}").fetchone()[0]
 
 
-def accept_outside(con, reason):
-    """Seals the changes made outside this app into the chain, with the reason given. The rows themselves never change."""
-    rows = _rows(con, UNCOVERED, ())
+def accept_outside(con, reason, upto=None):
+    """Seals the changes made outside this app into the chain, with the reason given; with upto, only those up to that
+    row (the last one the person was shown), so a change that arrived since, or wasn't on screen, is never accepted
+    unseen. The rows themselves never change."""
+    rows = _rows(con, uncovered(con) + (" AND id <= ?" if upto is not None else ""), (upto,) if upto is not None else ())
     if rows:
         _add_tx(con, rows, {"source": "outside", "action": "Accepted changes made outside this app", "reason": reason},
                 null_ids=[r["id"] for r in rows])
@@ -593,6 +622,15 @@ def verify(con, last=None):
     want, have = triggers(con), _have(con)
     if any(have.get(n) != s for n, s in want.items()):
         problems.append("The audit triggers have been changed or removed.")
+    if _exists(con, "audit_sealed"):
+        odd = con.execute("""SELECT COUNT(*) FROM (
+                               SELECT j.value AS row_id, t.id AS tx_id FROM audit_tx t, json_each(t.null_rows) j WHERE t.null_rows IS NOT NULL
+                               EXCEPT SELECT row_id, tx_id FROM audit_sealed
+                               UNION ALL
+                               SELECT row_id, tx_id FROM audit_sealed
+                               EXCEPT SELECT j.value, t.id FROM audit_tx t, json_each(t.null_rows) j WHERE t.null_rows IS NOT NULL)""").fetchone()[0]
+        if odd:
+            problems.append("The index of accepted outside changes doesn't match the entries that accepted them.")
     st = status(con)
     if st["head_behind"]:
         problems.append("records.db is older than the last entry recorded outside it (expected after restoring a backup).")

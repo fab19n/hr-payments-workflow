@@ -247,6 +247,36 @@ table.rv-sort th { border-bottom: 0; padding: 0 14px 0 0; }
   .rv-bar { gap: 6px 14px; }
 }
 
+/* Audit trail: the entries list, an entry's changes, a record's history */
+.banner.bad { background: var(--bad-soft); color: var(--bad); display: grid; justify-items: start; gap: 4px; }
+.banner.bad span { color: var(--ink); font-size: .9rem; }
+.row.tight { gap: 6px; flex-wrap: nowrap; font-size: .85rem; }
+.trail-filters { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+.tr-list { display: grid; }
+.tr-row { border-top: 1px solid var(--line); }
+.tr-row:first-child { border-top: 0; }
+.tr-head { display: grid; grid-template-columns: 10.5em minmax(0, 1fr) auto; gap: 4px 14px; align-items: baseline; width: 100%;
+  text-align: left; background: none; border: 0; padding: 9px 4px; color: var(--ink); }
+.tr-head:hover { background: var(--accent-soft); }
+.tr-head[aria-expanded=true] { background: var(--bg); }
+.tr-what { min-width: 0; overflow-wrap: anywhere; }
+.tr-who { white-space: nowrap; font-size: .85rem; color: var(--muted); }
+.tr-body { display: grid; gap: 10px; padding: 8px 4px 14px 11.5em; }
+.tr-change, .tr-hist { display: grid; gap: 4px; font-size: .88rem; min-width: 0; }
+.tr-hist { padding: 8px 0; border-top: 1px solid var(--line); }
+.tr-hist:first-child { border-top: 0; }
+table.diff { width: auto; max-width: 100%; }
+table.diff th, table.diff td { padding: 3px 12px 3px 0; border-bottom: 0; font-size: .85rem; overflow-wrap: anywhere; }
+table.diff td:first-child { color: var(--muted); white-space: nowrap; }
+details.hist summary { cursor: pointer; }
+details.hist summary h3 { display: inline; }
+details.hist .hist-body { margin-top: 6px; }
+@media (max-width: 700px) {
+  .tr-head { grid-template-columns: minmax(0, 1fr); }
+  .tr-who { white-space: normal; }
+  .tr-body { padding-left: 4px; }
+}
+
 @media print {
   :root:root, :root[data-theme] { --bg: #eef2ef; --surface: #fff; --ink: #17242b; --muted: #5b6b70; --line: #d3ddd8; --line-strong: #778588;
     --accent: #1f6f63; --accent-soft: #dcece7; --ok: #2c7a3f; --ok-soft: #e1f1e4; --warn: #9a5c08; --warn-soft: #fbf0dc; --bad: #b3322b; --bad-soft: #f8e1df; color-scheme: light; }

@@ -26,7 +26,7 @@ def main(argv):
             print('Say why the changes were made, e.g.: python -m hrp.trail accept "Corrected a payee name in DB Browser"')
             return 2
         con.arm("user", "Accepted changes made outside this app (command line)", reason=reason)
-        n = audit.accept_outside(con, reason)
+        n = audit.accept_outside(con, reason)  # the command line names the count first: python -m hrp.trail status
         con.commit()
         con.disarm()
         print(f"Accepted {n} change(s) made outside the app." if n else "There were no changes made outside the app to accept.")

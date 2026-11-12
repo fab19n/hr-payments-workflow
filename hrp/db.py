@@ -261,6 +261,9 @@ MIGRATIONS = [
     # 17. Audit capture turned on: triggers on every table write each change, before and after, into the trail, and
     #     one baseline row per existing row records the records as they stand. Nothing in the records changes.
     audit.start,
+    # 18. An index of the rows each audit entry seals that another program wrote (accepted outside changes), so the
+    #     check for new ones stays quick however many have been accepted. Nothing in the records changes.
+    audit.sealed_index,
 ]
 
 

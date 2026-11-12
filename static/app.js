@@ -72,10 +72,11 @@ function currentCycle(t = new Date()) { const d = new Date(t.getFullYear(), t.ge
 const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`; };
 
 const state = { meta: null, view: "overview", entity: null, month: currentCycle(), day: dayKey(), data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
-  nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null } };
+  nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
+  trail: { f: {}, entries: [], more: false, labels: null, show: false } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
-  ["Filing", [["audit", "Audit pack"], ["settings", "Backup & log"]]]];
+  ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup & log"]]]];
 const ICON = {
   overview: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
   entity: '<path d="M4 21V5l8-3v19M12 9h8v12M8 8h.01M8 12h.01M8 16h.01M16 13h.01M16 17h.01M2 21h20"/>',
@@ -85,6 +86,7 @@ const ICON = {
   payees: '<path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',
   audit: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M9 15l2 2 4-4"/>',
   settings: '<path d="M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
+  trail: '<path d="M12 3l8 3v6c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V6zM9 12l2 2 4-4"/>',
 };
 const icon = v => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[v]}</svg>`;
 
@@ -243,6 +245,8 @@ async function render() {
     else if (state.view === "payees") await viewPayees(main);
     else if (state.view === "audit") await viewAudit(main);
     else if (state.view === "settings") await viewSettings(main);
+    else if (state.view === "trail") await viewTrail(main);
+    if (state.view === "overview") trailNotice();
   } catch (e) { main.innerHTML = `<div class="card"><b>Couldn't load this page.</b><div class="note">${esc(e.message)}</div></div>`; }
 }
 
@@ -555,6 +559,7 @@ function openPayment(id, keep = {}) {
       <button class="ghost small" id="extraUpload">Upload another document</button></div></div>
     ${state.data.entity.uses_sql ? `<div><h3>SQL Account</h3>${vouchers ? vouchers + (p.evidence.einvoice && !p.required.includes("einvoice") ? `<div class="note chip have ev">✓ ${esc(p.evidence.einvoice.text)}</div>` : "") + `<div class="note">Linked by mistake? Unlink puts the voucher back under SQL entries not linked, and the amount and paid date back to what they were.</div>` : `<div class="note">No SQL voucher linked yet.</div>`}</div>` : ""}
     <div><h3>Bank statement</h3>${lines}${over}${est}</div>
+    ${histSection("payments", p.id)}
     <div class="row"><button class="btn danger small" id="deletePayment">Remove this payment</button></div>`;
   $("#drawer").hidden = false;
   state.payLoaded = payFormValues();
@@ -750,7 +755,8 @@ async function viewStoredBudget(main, d, here) {
       <td class="bl-pay"><select class="cell noprint" data-f="payment_id" aria-label="Payment"><option value="">Not linked</option>${d.payments.filter(p => p.currency === x.currency && (!p.line_id || p.line_id === x.id)).map(p =>
         `<option value="${p.id}"${p.id === x.payment_id ? " selected" : ""}>${esc(p.description)} · ${plain(p.amount, p.currency)}</option>`).join("")}</select>
         <div class="note">${x.due_date ? fmtDate(x.due_date) : ""}</div></td>
-      <td class="noprint"><button class="ghost small" data-del="${x.id}" aria-label="Delete line ${i + 1}" title="Delete line">×</button></td></tr>`;
+      <td class="noprint"><div class="row tight"><button class="ghost small" data-hist-open="budget_lines:${x.id}" data-hist-title="${esc(x.description || `Line ${i + 1}`)}" aria-label="History of line ${i + 1}" title="History">History</button>
+        <button class="ghost small" data-del="${x.id}" aria-label="Delete line ${i + 1}" title="Delete line">×</button></div></td></tr>`;
   const table = cur => {
     const list = d.lines.filter(x => x.currency === cur), sums = d.sums[cur] || { budget: 0, paid: 0, diff: 0 };
     return `<table><thead><tr><th class="noprint"></th><th>No.</th><th>Description</th><th class="num">${cur === "MYR" ? "RM" : esc(cur)} budget</th><th class="num noprint">Paid · against budget</th><th>Payment · date</th><th class="noprint"></th></tr></thead><tbody>
@@ -1425,7 +1431,8 @@ function editPayee(id) {
       <label class="field" style="grid-column:1/-1"><span>Notes</span><input id="py-notes" value="${esc(p.notes || "")}"></label>
       <label class="field"><span>Status</span><select id="py-active"><option value="1">Active</option><option value="0" ${p.active ? "" : "selected"}>Stopped</option></select></label>
       <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Save</button></div>
-    </form>`;
+    </form>
+    ${id === "new" ? "" : histSection("payees", id)}`;
   $("#drawer").hidden = false;
   // Money in is always the type Money received, and money received is always money in.
   $("#py-dir").onchange = () => {
@@ -1527,6 +1534,198 @@ async function viewSettings(main) {
     </tbody></table></div></div>`;
 }
 
+/* ---------------- Audit trail ---------------- */
+// Every change to the records, as the server recorded it when it was saved (hrp/audit.py), newest first. An entry opens
+// to show what changed field by field; a record's own history shows in its drawer (payments, recurring payments) or from
+// its History button (budget lines). The page is drawn once; the filters redraw only the list.
+const SRC_TONE = { user: "", auto: "grey", import: "grey", migration: "grey", seed: "grey", system: "grey", outside: "bad" };
+const fmtWhen = iso => iso ? `${fmtDate(iso)} ${iso.slice(11, 16)}` : "—";
+const trailVal = v => v == null || v === "" ? `<span class="muted">empty</span>` : esc(typeof v === "object" ? JSON.stringify(v) : v);
+
+function trailQuery(extra = {}) {
+  const f = { ...state.trail.f, ...extra }, q = new URLSearchParams();
+  for (const [k, v] of Object.entries(f)) if (v !== "" && v != null) q.set(k, v);
+  if (state.trail.show) q.set("show", "1");
+  return q.toString();
+}
+
+// One change (a row of the trail): what kind of record, which, and its fields before and after. In a record's own
+// history the record is known, so only the fields show.
+function changeHtml(ch, own) {
+  const rows = ch.fields.map(f => ch.op === "update"
+    ? `<tr><td>${esc(f.label)}</td><td>${trailVal(f.before)}</td><td>${trailVal(f.after)}</td></tr>`
+    : `<tr><td>${esc(f.label)}</td><td colspan="2">${trailVal(ch.op === "delete" ? f.before : f.after)}</td></tr>`).join("");
+  const head = ch.op === "update" ? `<tr><th>Field</th><th>Before</th><th>After</th></tr>` : "";
+  return `<div class="tr-change">${own ? "" : `<div><b>${esc(ch.op_label)}</b> · ${esc(ch.table_label)} · ${esc(ch.record)}</div>`}
+    ${rows ? `<table class="diff">${head}${rows}</table>` : ""}</div>`;
+}
+
+function entryHead(e) {
+  return `<span class="mono muted">${esc(fmtWhen(e.at))}</span>
+    <span class="tr-what">${esc(e.headline)}${e.reason ? `<span class="note"> · Why: ${esc(e.reason)}</span>` : ""}</span>
+    <span class="tr-who"><span class="pill ${SRC_TONE[e.source] ?? "grey"}">${esc(e.source_label)}</span> ${esc(e.actor)}${e.company ? ` · ${esc(e.company)}` : ""}${e.late ? ` <span class="pill warn" title="Sealed at a later start, after the app stopped unexpectedly">Sealed late</span>` : ""}</span>`;
+}
+const entryHtml = e => `<div class="tr-row" id="tx-${e.id}"><button type="button" class="tr-head" data-tx="${e.id}" aria-expanded="false">${entryHead(e)}</button><div class="tr-body" hidden></div></div>`;
+
+async function toggleEntry(id, btn) {
+  const body = btn.nextElementSibling, open = btn.getAttribute("aria-expanded") === "true";
+  btn.setAttribute("aria-expanded", String(!open));
+  if (open) { body.hidden = true; return; }
+  body.hidden = false; body.innerHTML = `<div class="note">Loading…</div>`;
+  try {
+    const e = await api(`/api/audit/tx/${id}${state.trail.show ? "?show=1" : ""}`);
+    // The activity log's own line is the entry's headline already; it shows here only when nothing else changed.
+    const shown = e.changes.some(ch => ch.table !== "activity") ? e.changes.filter(ch => ch.table !== "activity") : e.changes;
+    body.innerHTML = `${shown.map(ch => changeHtml(ch)).join("") || `<div class="note">Nothing changed in the records (an event only).</div>`}
+      ${e.not_shown ? `<div class="note">And ${e.not_shown} more records as they stood.</div>` : ""}
+      <div class="note mono">Entry ${e.id} · ${esc(e.action)}${e.machine ? ` · ${esc(e.machine)}` : ""} · check code ${esc(e.check_code)}</div>`;
+  } catch (err) { body.innerHTML = `<div class="note bad-text">${esc(err.message)}</div>`; }
+}
+
+function statusHtml(st) {
+  const items = [];
+  if (st.head_behind) items.push("records.db is older than the last entry recorded beside it. That is expected after restoring a backup; otherwise entries may have been removed.");
+  if (st.head_rewritten) items.push("The last entry recorded beside records.db has a different fingerprint inside it: the trail may have been rebuilt.");
+  for (const p of st.check?.problems || []) items.push(p);
+  const last = st.last_full_check;
+  const lastLine = last ? `Last full check: ${last.ok ? "everything checked out" : "problems were found"}.` : "The whole trail hasn't been checked yet.";
+  return items.length
+    ? `<div class="banner bad"><b>The audit trail needs attention</b>${items.map(i => `<span>${esc(i)}</span>`).join("")}</div>`
+    : `<div class="banner ok"><b>${st.entries} entries · check code ${esc(st.check_code || "—")}</b><span>The last ${st.check?.checked ?? 0} entries check out. ${esc(lastLine)}</span></div>`;
+}
+
+// The changes made outside the app waiting to be accepted. Accept seals up to the last one listed (upto_id), never more.
+function outsideHtml(o) {
+  const T = state.trail;
+  T.upto = o.upto_id;
+  if (!o.total) return "";
+  const more = o.total - o.changes.length;
+  return `<div class="card" id="trailOutside"><h2>Changes made outside this app · ${o.total}</h2>
+    <div class="note">These were saved to records.db by another program (such as DB Browser for SQLite), or found by the check to differ from the trail, not made through this app. Check them, then accept them with the reason they were made. They stay in the trail either way.</div>
+    ${o.changes.map(ch => changeHtml(ch)).join("")}
+    ${more > 0 ? `<div class="note">${more} more are not listed. Accepting seals only the ${o.changes.length} listed above; the next ones then show here.</div>` : ""}
+    <div class="row"><label class="field" style="flex:1"><span>Why were they made?</span><input id="trailReason" maxlength="500" value="${esc(T.reason || "")}" placeholder="e.g. Corrected a payee's name in DB Browser"></label>
+      <button class="btn" id="trailAccept" style="align-self:end">Accept ${more > 0 ? `these ${o.changes.length}` : "these changes"}</button></div></div>`;
+}
+
+async function viewTrail(main) {
+  const T = state.trail;
+  const [st, page, outside] = await Promise.all([api("/api/audit/status"), api("/api/audit?" + trailQuery()),
+    api("/api/audit/outside" + (T.show ? "?show=1" : ""))]);
+  T.entries = page.entries; T.more = page.more; T.labels = page.labels; T.seq = (T.seq || 0) + 1;
+  const opt = (v, label, cur) => `<option value="${esc(v)}"${String(cur ?? "") === String(v) ? " selected" : ""}>${esc(label)}</option>`;
+  main.innerHTML = `
+    <div class="card"><div class="eyebrow">Filing</div><h1>Audit trail</h1>
+      <div class="note">Every change to the records is recorded here as it is saved: what changed, before and after, who made it, how and why. Entries can't be changed or removed, and each is sealed to the one before, so a change made afterwards shows up when the trail is checked. "Made by" is the Windows user running the app; there is no sign-in yet.</div>
+      ${statusHtml(st)}
+      <div class="row"><button class="btn" id="trailCheck">Check the audit trail</button>
+        <a class="ghost" id="trailExport" href="/api/audit/export.xlsx?${trailQuery()}">Export to Excel</a>
+        <label class="row tight"><input type="checkbox" id="trailShow"${T.show ? " checked" : ""}> Show bank details and account numbers</label></div>
+      <div id="trailOut" class="note"></div></div>
+    <div id="trailOutsideSlot">${outsideHtml(outside)}</div>
+    <div class="card">
+      <div class="form trail-filters">
+        <label class="field"><span>From</span><input type="date" data-tf="from" value="${esc(T.f.from || "")}"></label>
+        <label class="field"><span>To</span><input type="date" data-tf="to" value="${esc(T.f.to || "")}"></label>
+        <label class="field"><span>Company</span><select data-tf="entity_id">${opt("", "All")}${state.meta.entities.map(e => opt(e.id, e.code, T.f.entity_id)).join("")}</select></label>
+        <label class="field"><span>Record</span><select data-tf="tbl">${opt("", "All")}${Object.entries(T.labels.tables).map(([k, v]) => opt(k, v, T.f.tbl)).join("")}</select></label>
+        <label class="field"><span>Made by</span><select data-tf="source">${opt("", "All")}${Object.entries(T.labels.sources).map(([k, v]) => opt(k, v, T.f.source)).join("")}</select></label>
+        <label class="field"><span>Search</span><input type="search" data-tf="q" value="${esc(T.f.q || "")}" placeholder="A name, amount, ref or reason"></label>
+      </div>
+      <div id="trailList" class="tr-list" aria-live="polite">${listHtml(T.entries)}</div>
+      <div class="row" id="trailMoreRow"${T.more ? "" : " hidden"}><button class="ghost" data-trail-more="1">Show older</button></div>
+    </div>`;
+}
+const listHtml = list => list.map(entryHtml).join("") || `<div class="empty">No entries match.</div>`;
+
+// A filter changed: the list again from the newest, without redrawing the page (the box being typed in keeps its focus).
+async function refreshTrailList() {
+  const T = state.trail, seq = T.seq = (T.seq || 0) + 1;
+  try {
+    const page = await api("/api/audit?" + trailQuery());
+    if (seq !== T.seq || !$("#trailList")) return;  // a newer change, or another page, came first
+    T.entries = page.entries; T.more = page.more;
+    $("#trailList").innerHTML = listHtml(T.entries);
+    $("#trailMoreRow").hidden = !T.more;
+    $("#trailExport").href = "/api/audit/export.xlsx?" + trailQuery();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function trailMore(btn) {
+  const T = state.trail, seq = T.seq, last = T.entries[T.entries.length - 1];
+  if (!last || btn.disabled) return;
+  btn.disabled = true;
+  try {
+    const page = await api("/api/audit?" + trailQuery({ before_id: last.id }));
+    if (seq !== T.seq || !$("#trailList")) return;  // the filters changed meanwhile: that list is gone
+    T.entries.push(...page.entries); T.more = page.more;
+    $("#trailList").insertAdjacentHTML("beforeend", page.entries.map(entryHtml).join(""));
+    $("#trailMoreRow").hidden = !T.more;
+  } catch (e) { toast(e.message, true); }
+  finally { btn.disabled = false; }
+}
+
+async function trailCheck(btn) {
+  btn.disabled = true; btn.textContent = "Checking…";
+  try {
+    const r = await api("/api/audit/check", { json: {} });
+    const text = r.ok ? `All ${r.checked} entries check out, and all ${r.replay.checked} records match the trail. Check code ${esc(r.check_code)}.`
+      : `<b class="bad-text">Problems found.</b> ${[...r.problems, ...r.replay.problems.map(p => `${p.table_label} ${p.record} ${p.problem}.`)].map(esc).join(" ")}${r.replay.more ? ` And ${r.replay.more} more.` : ""}${r.replay.count ? " Records that differ are listed under Changes made outside this app." : ""}`;
+    if (!$("#trailOut")) { toast(r.ok ? `Audit trail checked: all ${r.checked} entries check out.` : "The audit trail check found problems. Open the audit trail to see them.", !r.ok); return; }
+    if (r.replay.count) { await render(); }  // the differences now wait to be accepted
+    $("#trailOut").innerHTML = text;
+  } catch (e) { toast(e.message, true); }
+  finally { btn.disabled = false; btn.textContent = "Check the audit trail"; }
+}
+
+async function trailAccept(btn) {
+  const reason = $("#trailReason").value.trim();
+  if (!reason) { toast("Say why these changes were made.", true); $("#trailReason").focus(); return; }
+  btn.disabled = true;
+  try {
+    const r = await api("/api/audit/accept-outside", { json: { reason, upto_id: state.trail.upto } });
+    state.trail.reason = ""; toast(`Accepted ${r.accepted} change${r.accepted === 1 ? "" : "s"}`); render();
+  } catch (e) { toast(e.message, true); btn.disabled = false; }
+}
+
+// Bank details on or off: the open entries and the outside card again; the list itself doesn't show them.
+async function trailShow(on) {
+  state.trail.show = on;
+  try {
+    const o = await api("/api/audit/outside" + (on ? "?show=1" : ""));
+    if ($("#trailOutsideSlot")) $("#trailOutsideSlot").innerHTML = outsideHtml(o);
+    for (const b of document.querySelectorAll('.tr-head[aria-expanded="true"]')) { b.setAttribute("aria-expanded", "false"); await toggleEntry(+b.dataset.tx, b); }
+  } catch (e) { toast(e.message, true); }
+}
+
+// A record's history, newest first (in a drawer section, or in a drawer of its own for a budget line).
+function historyHtml(h) {
+  if (!h.changes.length) return `<div class="note">Nothing recorded yet.</div>`;
+  return h.changes.map(ch => `<div class="tr-hist"><div><span class="mono muted">${esc(fmtWhen(ch.at))}</span> · <b>${esc(ch.op_label)}</b>
+      · <span class="pill ${SRC_TONE[ch.source] ?? "grey"}">${esc(ch.source_label || "")}</span> ${esc(ch.actor || "")}${ch.reason ? ` · Why: ${esc(ch.reason)}` : ""}</div>
+    ${ch.op === "baseline" ? `<div class="note">As it stood when the audit trail started.</div>` : changeHtml(ch, true)}</div>`).join("");
+}
+const histSection = (tbl, key) => `<details class="hist" data-hist="${tbl}:${key}"><summary><h3>History</h3></summary><div class="hist-body"></div></details>`;
+
+async function openHistory(tbl, key, title) {
+  if (!closeDrawer()) return;
+  $("#drawer").innerHTML = `<div class="row spread"><div><div class="eyebrow">History</div><h2>${esc(title || "Record")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div><div id="histOnly" class="note">Loading…</div>`;
+  $("#drawer").hidden = false;
+  try { const h = await api(`/api/audit/record/${encodeURIComponent(tbl)}/${encodeURIComponent(key)}`); if ($("#histOnly")) $("#histOnly").outerHTML = `<div>${historyHtml(h)}</div>`; }
+  catch (e) { if ($("#histOnly")) $("#histOnly").textContent = e.message; }
+}
+
+// The Overview says when the trail needs attention (changes made outside the app, a records.db behind or rebuilt).
+async function trailNotice() {
+  try {
+    const st = await api("/api/audit/status?quick=1");
+    if (!(st.outside || st.head_behind || st.head_rewritten) || state.view !== "overview" || $("#trailNotice")) return;
+    $("#main").insertAdjacentHTML("afterbegin", `<div class="banner bad noprint" id="trailNotice"><b>The audit trail needs attention</b>
+      <span>${st.outside ? `${st.outside} change(s) were made to the records outside this app.` : "records.db doesn't match the last entry recorded beside it."}</span>
+      <button class="ghost small" data-view="trail">Open the audit trail</button></div>`);
+  } catch { /* the notice is a convenience; the page works without it */ }
+}
+
 /* ---------------- Events ---------------- */
 document.addEventListener("click", async ev => {
   const t = ev.target.closest("button, tr[data-payment], a");
@@ -1535,6 +1734,11 @@ document.addEventListener("click", async ev => {
   if (ds.sort) return sortClick(ds.sort, ds.col, t);
   try {
     if (ds.view) return go(ds.view, ds.entity);
+    if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
+    if (ds.tx) return toggleEntry(+ds.tx, t);
+    if (ds.trailMore) return trailMore(t);
+    if (t.id === "trailCheck") return trailCheck(t);
+    if (t.id === "trailAccept") return trailAccept(t);
     if (ds.pill) return pillGo(ds.pill, +ds.entity);
     if (ds.nextGo) { const r = state.next?.get(ds.nextGo); return r && goTo(r.go); }
     if (ds.older) { const [e, m] = ds.older.split(" "); return goTo({ view: "entity", entity_id: +e, month: m }); }
@@ -1860,6 +2064,7 @@ document.addEventListener("input", ev => {
   if (id) { listState(id).q = ev.target.value; LIST_REDRAW[id]?.(); }
 });
 document.addEventListener("input", ev => { if (ev.target.id === "sqlPaste") state.sqlPaste[state.entity] = ev.target.value; });
+document.addEventListener("input", ev => { if (ev.target.id === "trailReason") state.trail.reason = ev.target.value; });  // kept across redraws
 // The SQL box holds one listing: pasting replaces what is in it, so a listing left there can't run into the next one.
 document.addEventListener("paste", ev => {
   const text = ev.target.id === "sqlPaste" && ev.clipboardData?.getData("text");
@@ -1868,6 +2073,23 @@ document.addEventListener("paste", ev => {
 });
 // Keeps the SQL page's lists open across a refresh (after Unlink); toggle doesn't bubble, so it is caught on the way down.
 document.addEventListener("toggle", ev => { const k = ev.target.dataset?.sqlOpen; if (k) state.sqlOpen[k] = ev.target.open; }, true);
+document.addEventListener("toggle", async ev => {
+  const d = ev.target, k = d.dataset?.hist;
+  if (!k || !d.open || d.dataset.loaded) return;
+  const [tbl, key] = k.split(":"), body = d.querySelector(".hist-body");
+  body.innerHTML = `<div class="note">Loading…</div>`;
+  try { body.innerHTML = historyHtml(await api(`/api/audit/record/${tbl}/${key}`)); d.dataset.loaded = "1"; }
+  catch (e) { body.innerHTML = `<div class="note">${esc(e.message)}</div>`; }
+}, true);
+document.addEventListener("change", ev => {
+  const k = ev.target.dataset?.tf;
+  if (k) {
+    const v = ev.target.value;
+    if (ev.target.type === "date" && v && !(v >= "2000-01-01" && v <= "2999-12-31")) return;  // a year still being typed
+    state.trail.f[k] = v; return refreshTrailList();
+  }
+  if (ev.target.id === "trailShow") return trailShow(ev.target.checked);
+});
 
 // The current cycle and the month before are set up on their own; other months when you ask.
 async function openCycleMonths() {

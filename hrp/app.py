@@ -1,4 +1,5 @@
 """Local web app. Listens on 127.0.0.1 only, so nothing outside this PC can reach it."""
+import functools
 import io
 import json
 import os
@@ -13,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import audit, auditpack, config, budget as stored, db, nextup, recon, reports, rules, sqlimport, statements
+from . import audit, auditpack, auditread, config, budget as stored, db, nextup, recon, reports, rules, sqlimport, statements
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -39,6 +40,40 @@ def headers(resp):
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Content-Security-Policy"] = ("default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
                                                "frame-src 'self'; object-src 'self'; frame-ancestors 'none'")
+    return resp
+
+
+def audited_read(kind):
+    """Marks a GET route that hands over a file (a document, an audit pack, an export): when it succeeds, an 'opened'
+    event goes into the audit trail. Only for requests the browser says come from this app itself (Sec-Fetch-Site
+    same-origin, or none for a link typed or opened from a bookmark), so another website can't fill the trail."""
+    def deco(fn):
+        @functools.wraps(fn)
+        def wrapper(*a, **kw):
+            g.read_kind = kind
+            return fn(*a, **kw)
+        wrapper.audited_read = kind
+        return wrapper
+    return deco
+
+
+@app.after_request
+def log_read(resp):
+    kind = g.pop("read_kind", None)
+    if kind and 200 <= resp.status_code < 300 and request.headers.get("Sec-Fetch-Site", "none") in ("same-origin", "none"):
+        try:
+            c = db.connect()
+            try:
+                eid = request.args.get("entity_id", type=int)
+                c.arm("user", f"Opened {kind}", route=request.url_rule.rule if request.url_rule else None, entity_id=eid)
+                name = resp.headers.get("Content-Disposition", "")
+                audit.event(c, "read", kind, {"path": request.full_path.rstrip("?"), "file": name.split("filename=")[-1].strip('"') if "filename=" in name else None},
+                            entity_id=eid)
+                c.commit()
+            finally:
+                c.close()
+        except sqlite3.Error:
+            pass  # a busy records.db never stops a download; the read just isn't noted
     return resp
 
 
@@ -637,6 +672,7 @@ def upload():
 
 
 @app.get("/api/documents/<int:did>/file")
+@audited_read("document")
 def doc_file(did):
     c = con()
     d = c.execute("SELECT * FROM documents WHERE id = ?", (did,)).fetchone() or abort(404)
@@ -1581,6 +1617,7 @@ def audit_readiness():
 
 
 @app.get("/api/audit-pack/file")
+@audited_read("audit pack")
 def audit_pack_file():
     p = (PACKS_DIR / request.args["name"]).resolve()
     if PACKS_DIR.resolve() not in p.parents or not p.exists():
@@ -1596,6 +1633,7 @@ def _entity_arg(c):
 
 
 @app.get("/api/export/month.xlsx")
+@audited_read("month export")
 def export_month():
     """The month report as an Excel file, built in memory (reports.month_workbook)."""
     c = con()
@@ -1606,6 +1644,7 @@ def export_month():
 
 
 @app.get("/api/export/budget.xlsx")
+@audited_read("budget export")
 def export_budget():
     """The month's stored budget as an Excel file; the usual error when none is set up."""
     c = con()
@@ -1644,6 +1683,7 @@ def auditor_export():
 
 
 @app.get("/api/auditor-export/file")
+@audited_read("auditor package")
 def auditor_export_file():
     p = (EXPORTS_DIR / request.args["name"]).resolve()
     if EXPORTS_DIR.resolve() not in p.parents or p.suffix != ".zip" or not p.exists():
@@ -1667,6 +1707,15 @@ MIN_PASSWORD = 12
 
 def _write_backup(zf, snap):
     zf.write(snap, "records.db")
+    # manifest.json: the audit trail's last entry and the snapshot's fingerprint, so a records.db or a trail rebuilt
+    # later can be checked against what this backup holds.
+    s = sqlite3.connect(snap)
+    try:
+        last = s.execute("SELECT id, hash, at FROM audit_tx ORDER BY id DESC LIMIT 1").fetchone() if audit.present(s) else None
+    finally:
+        s.close()
+    zf.writestr("manifest.json", json.dumps({"made": datetime.now().isoformat(timespec="seconds"), "records_sha256": audit.file_sha256(snap),
+                                             "audit_trail": {"last_entry": last[0], "hash": last[1], "at": last[2]} if last else None}, indent=2))
     for p in (DATA_DIR / "documents").rglob("*"):
         if p.is_file():
             zf.write(p, str(p.relative_to(DATA_DIR)))
@@ -1784,20 +1833,113 @@ def set_backup_dir():
 
 @app.get("/api/audit/status")
 def audit_status():
-    """The audit trail's state: entries, changes made outside the app waiting to be accepted, the head-file check, and
-    a check of the last 200 entries."""
+    """The audit trail's state: entries, changes made outside the app waiting to be accepted and the head-file check;
+    with ?quick=1 (the Overview) only those, else also a check of the last 200 entries."""
     c = con()
-    return jsonify({**audit.status(c), "check": audit.verify(c, last=200)})
+    st = audit.status(c)
+    if request.args.get("quick"):
+        return jsonify(st)
+    last = c.execute("SELECT after FROM audit_row WHERE tbl = 'audit' AND row_key = 'check' ORDER BY id DESC LIMIT 1").fetchone()
+    return jsonify({**st, "check": audit.verify(c, last=200), "last_full_check": json.loads(last[0]) if last else None})
+
+
+def _trail_filters():
+    a = request.args
+    f = {"q": (a.get("q") or "").strip()[:200], "source": a.get("source") or None, "tbl": a.get("tbl") or None,
+         "before_id": a.get("before_id", type=int)}
+    for k in ("from", "to"):
+        f[k] = iso_day(a.get(k)) if a.get(k) else None
+    eid = a.get("entity_id", type=int)
+    f["entity_id"] = eid
+    if f["source"] and f["source"] not in auditread.SOURCES:
+        abort(make_response(*err("That isn't a source of changes.")))
+    if f["tbl"] and f["tbl"] not in auditread.TABLE_LABELS:
+        abort(make_response(*err("That isn't a kind of record.")))
+    return f
+
+
+@app.get("/api/audit")
+def audit_entries():
+    """Audit trail entries, newest first: filters from, to, entity_id, tbl, source, q; before_id for the next page."""
+    labels = {"tables": {k: v[0] for k, v in auditread.TABLE_LABELS.items()}, "sources": auditread.SOURCES}
+    return jsonify({**auditread.entries(con(), _trail_filters()), "labels": labels})
+
+
+@app.get("/api/audit/tx/<int:tid>")
+def audit_entry(tid):
+    out = auditread.entry(con(), tid, show=bool(request.args.get("show")))
+    return jsonify(out) if out else err("There is no such entry.", 404)
+
+
+@app.get("/api/audit/record/<tbl>/<key>")
+def audit_record(tbl, key):
+    """One record's history (a payment, a recurring payment, a budget line...)."""
+    if tbl not in auditread.TABLE_LABELS or len(key) > 100:
+        return err("That isn't a record.", 404)
+    return jsonify(auditread.history(con(), tbl, key, show=bool(request.args.get("show"))))
+
+
+@app.get("/api/audit/outside")
+def audit_outside():
+    return jsonify(auditread.outside(con(), show=bool(request.args.get("show"))))
+
+
+@app.post("/api/audit/check")
+def audit_check():
+    """The full check: every entry's fingerprint, the triggers, the head file, and each record against the trail.
+    Recorded in the trail."""
+    c = con()
+    out = auditread.check(c)
+    db.log(c, "Checked the audit trail: " + ("every entry checks out and every record matches it" if out["ok"] else
+           f"{len(out['problems']) + out['replay']['count']} problem(s) found"))
+    c.commit()
+    return jsonify(out)
+
+
+@app.get("/api/audit/export.xlsx")
+@audited_read("audit trail export")
+def audit_export():
+    """The entries the filters find, as an Excel file: one row per field changed. Bank details and account numbers are
+    left masked unless show=1."""
+    from openpyxl import Workbook
+    from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+    from openpyxl.styles import Font
+    c = con()
+    rows, cut = auditread.export_rows(c, _trail_filters(), show=bool(request.args.get("show")))
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Audit trail"
+    ws.append(auditread.EXPORT_HEAD)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+    for r in rows:
+        ws.append([ILLEGAL_CHARACTERS_RE.sub("�", v) if isinstance(v, str) else v for v in r])  # control characters
+        for cell in ws[ws.max_row]:
+            if isinstance(cell.value, str) and cell.value[:1] in ("=", "+", "-", "@"):
+                cell.data_type = "s"  # text as it is, never a formula (as the month report does)
+    if cut:
+        ws.append(["Only the newest 5,000 entries are in this file. Choose earlier dates to export the rest."])
+    ws.freeze_panes = "A2"
+    for col, width in zip("ABCDEFGHIJKLMN", (19, 14, 12, 9, 50, 30, 7, 10, 18, 30, 10, 22, 24, 24)):
+        ws.column_dimensions[col].width = width
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name=f"Audit trail {date.today():%Y-%m-%d}.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 
 @app.post("/api/audit/accept-outside")
 def audit_accept_outside():
     """Seals the changes made to records.db outside this app into the trail, with the reason typed (required)."""
-    reason = _body().get("reason")
+    b = _body()
+    reason, upto = b.get("reason"), b.get("upto_id")
     if not isinstance(reason, str) or not reason.strip():
         return err("Say why these changes were made outside the app.")
+    if not isinstance(upto, int) or isinstance(upto, bool):
+        return err("Say which changes were checked: open the audit trail again and accept from there.")
     c = con()
-    n = audit.accept_outside(c, reason.strip()[:500])
+    n = audit.accept_outside(c, reason.strip()[:500], upto=upto)
     c.commit()
     return jsonify({"accepted": n})
 

@@ -178,7 +178,7 @@ with sqlite3.connect(config.DB_PATH) as r:
     txs = r.execute("SELECT action, late FROM audit_tx WHERE id > ? ORDER BY id", (n_tx,)).fetchall()
     grade = r.execute("SELECT COUNT(*) FROM audit_row WHERE tbl = 'payees' AND op = 'update' AND json_extract(after, '$.grade') = 'G1'").fetchone()[0]
     notes = r.execute("SELECT op FROM audit_row WHERE tbl = 'step18_notes'").fetchall()
-check("a later update's copy line is sealed as itself, not as a crash", [t["action"] for t in txs][:2] == ["Saved a copy before updating", "Update 18"]
+check("a later update's copy line is sealed as itself, not as a crash", [t["action"] for t in txs][:2] == ["Saved a copy before updating", f"Update {len(db.MIGRATIONS)}"]
       and not any(t["late"] for t in txs) and trail["late_sealed"] == 0, [tuple(t) for t in txs])
 check("a later step's backfill of a new column is captured", grade == len(SEED["entities"][0]["payees"]) + 1, grade)
 check("a table a later step creates and fills is recorded (as a baseline) and captured from then on",
@@ -245,8 +245,10 @@ raw = sqlite3.connect(config.DB_PATH)
 raw.execute("UPDATE payees SET notes = 'edited elsewhere' WHERE id = 1")
 raw.commit()
 raw.close()
-call("post", "/api/audit/accept-outside", expect=400, json={"reason": "  "})
-call("post", "/api/audit/accept-outside", json={"reason": "Note fixed in DB Browser"})
+upto = client.get(BASE + "/api/audit/outside").get_json()["upto_id"]
+call("post", "/api/audit/accept-outside", expect=400, json={"reason": "  ", "upto_id": upto})
+call("post", "/api/audit/accept-outside", expect=400, json={"reason": "Note fixed in DB Browser"})  # which ones were checked?
+call("post", "/api/audit/accept-outside", json={"reason": "Note fixed in DB Browser", "upto_id": upto})
 st = client.get(BASE + "/api/audit/status").get_json()
 check("outside changes are accepted only with a reason, then the trail is clean", st["outside"] == 0 and st["check"]["ok"]
       and last_tx()["reason"] == "Note fixed in DB Browser", st)

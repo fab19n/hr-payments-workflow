@@ -7,7 +7,7 @@ from fpdf import FPDF
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
 
-from . import recon, rules
+from . import audit, recon, rules
 from .config import PACKS_DIR
 from .db import (_listed, _short_doc, day_label, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
                  not_in_sql, payment_flag, payment_status, short_day, status_word, task_status, waits_for)
@@ -142,7 +142,8 @@ def build(con, entity, month):
         index_rows.append((title, status, missing, docs, proofs, nc))
 
     out = PdfWriter()
-    for pg in PdfReader(io.BytesIO(_cover(entity, month, index_rows, not_merged))).pages:
+    trail = audit.status(con) if audit.present(con) else None  # the trail as it stood when this pack was built
+    for pg in PdfReader(io.BytesIO(_cover(entity, month, index_rows, not_merged, trail))).pages:
         out.add_page(pg)
     out.add_outline_item("Index", 0)
     first = len(out.pages)
@@ -472,7 +473,7 @@ def _index_head(pdf):
     pdf.set_font("Helvetica", "", 8.5)
 
 
-def _cover(entity, month, rows, not_merged):
+def _cover(entity, month, rows, not_merged, trail=None):
     pdf = FPDF(unit="mm", format="A4")
     pdf.set_auto_page_break(True, 15)
     pdf.add_page()
@@ -480,6 +481,10 @@ def _cover(entity, month, rows, not_merged):
     pdf.cell(0, 8, _latin(f"{entity['name']} - Audit pack {month_label(month)}"), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 9)
     pdf.cell(0, 6, _latin(f"Generated {datetime.now():%d %b %Y %H:%M}. Documents follow in the order below."), new_x="LMARGIN", new_y="NEXT")
+    if trail and trail["entries"]:
+        # Ties the printed pack to the audit trail as it stood: the check code is the start of the last entry's
+        # fingerprint, so a trail rebuilt later no longer matches what was printed.
+        pdf.cell(0, 5, _latin(f"Audit trail entry {trail['entries']} · check code {trail['check_code']}"), new_x="LMARGIN", new_y="NEXT")
     pdf.ln(3)
     _index_head(pdf)
     short = lambda t: rules.DOC_TYPES.get(t, t).split(" (")[0].split(" /")[0]
