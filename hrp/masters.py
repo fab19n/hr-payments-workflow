@@ -11,6 +11,7 @@ use payee_check, payee_usage and the advances helpers below."""
 import json
 import math
 import re
+from datetime import date
 
 import sqlite3
 
@@ -26,6 +27,17 @@ PERSONAL = ("salary", "director")  # paid to a person: staff are never customers
 BASE = "MYR"  # the books' currency (SQL Account's cash book listing is in it)
 MONTH = re.compile(r"\d{4}-(0[1-9]|1[0-2])")
 DAY = re.compile(r"[2-9]\d{3}-\d{2}-\d{2}")
+
+
+def is_day(v):
+    """Whether v is a date written like 2026-10-20 that is on the calendar (not 2026-11-31 or 2026-13-45)."""
+    if not isinstance(v, str) or not DAY.fullmatch(v):
+        return False
+    try:
+        date.fromisoformat(v)
+    except ValueError:
+        return False
+    return True
 
 
 class Refused(Exception):
@@ -202,7 +214,7 @@ KINDS["gl_accounts"] = {
 GROUPS = [["Companies and banks", ["entities", "accounts", "gl_accounts"]], ["People and payments", ["payees", "parties"]],
           ["Payments and documents", ["payment_types", "doc_types", "required"]],
           ["Monthly work", ["checklist", "reminders"]],
-          ["Matching words", ["guess_words", "hint_words", "filing_words"]], ["General", ["settings"]]]
+          ["Matching words", ["guess_words", "hint_words", "filing_words"]], ["General", ["settings", "move"]]]
 STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and its months aren't set up any more. Everything recorded stays.",
                 "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one.",
                 "payment_types": "Stopped: not offered for new payments or recurring payments. Payments of this type keep it.",
@@ -221,6 +233,7 @@ def types():
     kinds["required"] = {"label": "Required documents", "bespoke": True, "table": "required_sets"}
     kinds["checklist"] = {"label": "Monthly checklist", "bespoke": True, "per_entity": True, "table": "checklist_items"}
     kinds["reminders"] = {"label": "Joiner and leaver reminders", "bespoke": True, "table": "people_tasks"}
+    kinds["move"] = {"label": "Move setup", "bespoke": True}  # export and import setup.json (setupfile)
     return {"groups": GROUPS, "kinds": kinds}
 
 
@@ -276,7 +289,7 @@ def check_value(f, v):
             raise Refused(f"{label}: months are written like 2026-10.")
         return v
     if kind == "date":
-        if not isinstance(v, str) or not DAY.fullmatch(v):
+        if not is_day(v):
             raise Refused(f"{label}: dates are written like 2026-10-20.")
         return v
     if kind == "words":
@@ -674,8 +687,24 @@ def create(con, kind, fields, entity_id=None, quiet=False):
         _only_cash_book(con, entity_id, rid)
     if not quiet:
         db.log(con, f"Added {s['label'].lower()}: {vals[s['name_field']]}")
+    if kind == "entities" and _has_table(con, "checklist_items"):
+        _starter_checklist(con, rid, vals, quiet)
     rulebook.forget(con)
     return rid
+
+
+def _has_table(con, name):
+    return bool(con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?", (name,)).fetchone())
+
+
+def _starter_checklist(con, rid, vals, quiet):
+    """A company added here starts with a monthly checklist (checklistbook.seed_company: the starter list, or the list
+    the code has for its code), in the same change, so its first month set up has one. Setup changes it from there."""
+    checklistbook.seed_company(con, {"id": rid, "code": vals["code"], "uses_sql": vals.get("uses_sql", 1)}, starter=True)
+    checklistbook.forget(con)
+    n = con.execute("SELECT COUNT(*) FROM checklist_items WHERE entity_id = ?", (rid,)).fetchone()[0]
+    if n and not quiet:
+        db.log(con, f"Checklist {vals['code']}: started with {n} items")
 
 
 def _legal_pair(kind, vals, rec=None):
@@ -835,6 +864,13 @@ def delete(con, kind, rid):
         _default_type(con, rec)
     if kind == "payment_types":  # its own sets of required documents go with it (they are part of the type)
         con.execute("DELETE FROM required_sets WHERE payment_type = ?", (rec["key"],))
+    if kind == "entities":  # so does a company's own checklist and its own sets: no month was set up with them
+        if _has_table(con, "checklist_items"):
+            con.execute("DELETE FROM checklist_terms WHERE item_id IN (SELECT id FROM checklist_items WHERE entity_id = ?)", (rid,))
+            con.execute("DELETE FROM checklist_items WHERE entity_id = ?", (rid,))
+            checklistbook.forget(con)
+        if _has_table(con, "required_sets"):
+            con.execute("DELETE FROM required_sets WHERE entity_id = ?", (rid,))
     con.execute(f"DELETE FROM {s['table']} WHERE id = ?", (rid,))
     if kind == "accounts" and rec["cash_book"]:
         nxt = con.execute("SELECT id FROM accounts WHERE entity_id = ? AND active = 1 AND currency = ? ORDER BY sort, id LIMIT 1",
@@ -896,7 +932,7 @@ def payee_check(con, ent, vals, old=None):
     for k in ("start_date", "end_date"):
         if k in out:
             out[k] = out[k] or None
-            if out[k] is not None and (not isinstance(out[k], str) or not DAY.fullmatch(out[k])):
+            if out[k] is not None and not is_day(out[k]):
                 raise Refused(f"{'Start date' if k == 'start_date' else 'Last day'}: dates are written like 2026-10-20.")
     start = out.get("start_date", old["start_date"] if old else None)
     end = out.get("end_date", old["end_date"] if old else None)
@@ -996,7 +1032,7 @@ def install(con):
         db.add_column(con, "accounts", col, decl)
     con.execute("""UPDATE accounts SET cash_book = 1 WHERE id IN (SELECT MIN(id) FROM accounts GROUP BY entity_id)
                    AND NOT EXISTS (SELECT 1 FROM accounts a2 WHERE a2.entity_id = accounts.entity_id AND a2.cash_book = 1)""")
-    appsettings.install(con, bool(con.execute("SELECT 1 FROM entities").fetchone()))
+    appsettings.install(con)
 
 
 def first_active_account(con, entity_id):

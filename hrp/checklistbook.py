@@ -16,6 +16,7 @@ were checked with. Reminders are kept the same way, their terms picked by the mo
 day. The matching words aren't dated: they act on SQL imports from now on, and nothing stored is guessed or filed again.
 """
 import json
+import sqlite3
 
 from . import rules, sqlimport
 
@@ -40,7 +41,7 @@ GUESS = [("Overseas services", OVERSEAS_PROVIDERS + ("SUBSCRIPTION",), "claim_ov
          ("Salaries", ("SALARY",), "salary"),
          ("Stamp duty and tax instalments (not the month's PCB)", ("STAMP", "SETEM", "CP204", "CP500", "TAX INSTAL"), "other"),
          ("Statutory", ("KWSP", "PERKESO", "LHDN", "HASIL", "SOCSO"), "statutory"), ("Rental", ("RENTAL",), "rental"),
-         ("Utilities and telco", ("TNB", "UNIFI", "TM TECHNOLOGY"), "utility")]
+         ("Utilities and telco", ("ELECTRIC", "WATER", "INTERNET", "BROADBAND", "TELCO", "TELEPHONE"), "utility")]
 FILING_LABELS = {"payroll-jv": "Payroll journals", "fund-received": "From the related company",
                  "einv-rental": "Invoices to the office tenant"}
 
@@ -313,21 +314,108 @@ def _frozen_term(code, i, off, day, title, detail, docs):
                   "rule": json.loads(json.dumps(rule)) if rule else None, "sort": i}
 
 
-def seed_company(con, ent):
-    """A company whose code the code had a checklist for gets those items, as it would have before update 21 (update
-    21 itself, and a new install's seed.json, which is loaded after the update steps)."""
+def seed_company(con, ent, starter=False):
+    """Without starter (update 21 itself, and a new install's seed.json, which is loaded after the update steps), a
+    company whose code the code had a checklist for gets those items, built in, as it would have before update 21; any
+    other company is left without one, as before. With starter (a company added in Setup, or imported without a
+    checklist of its own) every company, whatever its code, gets the starter checklist (starter_items) as items it may
+    change, stop or delete: the per-code lists name the first install's own arrangements. Nothing for a company that
+    has items."""
     if con.execute("SELECT 1 FROM checklist_items WHERE entity_id = ?", (ent["id"],)).fetchone():
         return
-    for i, (code, (off, day), title, detail, docs) in enumerate(rules.CHECKLIST.get(ent["code"], [])):
-        kind, term = _frozen_term(code, i, off, day, title, detail, docs)
-        add_item(con, ent["id"], code, kind, 1, term)
+    frozen = None if starter else rules.CHECKLIST.get(ent["code"])
+    if frozen is not None:
+        for i, (code, (off, day), title, detail, docs) in enumerate(frozen):
+            kind, term = _frozen_term(code, i, off, day, title, detail, docs)
+            add_item(con, ent["id"], code, kind, 1, term)
+    elif starter:
+        for code, kind, term in starter_items(con, ent.get("uses_sql", 1)):
+            add_item(con, ent["id"], code, kind, 0, term)
+
+
+# A setup template's starter checklist (setupfile), kept in app_settings under this key, which General settings doesn't
+# show (appsettings.SPEC leaves it out): a JSON list of {code, completion, title, detail, due_offset, due_day, docs,
+# deadline, submit_as, rule}, in order. Kept there rather than in a table of its own so no update step is needed; it is
+# audited and backed up with the other settings.
+STARTER_KEY = "starter_checklist"
+
+
+def stored_starter(con):
+    """The starter checklist a setup template brought, or None (the code's, rules.STARTER, is used)."""
+    try:
+        r = con.execute("SELECT value FROM app_settings WHERE key = ?", (STARTER_KEY,)).fetchone()
+    except sqlite3.OperationalError:  # below update 19: no settings table
+        return None
+    return json.loads(r[0]) if r else None
+
+
+def starter_items(con, uses_sql=1):
+    """The starter checklist a new company gets, as [(code, completion, term)] in order: the one a setup template brought,
+    else rules.STARTER. A company not kept in SQL Account goes without the items asking for SQL vouchers."""
+    stored = stored_starter(con)
+    if stored is None:
+        items = [(code, *_frozen_term(code, i, off, day, title, detail, docs))
+                 for i, (code, (off, day), title, detail, docs) in enumerate(rules.STARTER)]
+    else:
+        items = [(x["code"], x["completion"], {k: x.get(k) for k in ("due_offset", "due_day", "title", "detail", "docs",
+                                                                      "deadline", "submit_as", "rule")}) for x in stored]
+    items = [x for x in items if uses_sql or x[0] not in rules.STARTER_SQL_ONLY]
+    return [(code, kind, {**term, "sort": i}) for i, (code, kind, term) in enumerate(items)]
+
+
+def _filing_codes(con):
+    """The checklist codes the code's SQL filing words are seeded for: the starter checklist's (every company added in
+    Setup has them) and any a company's checklist has. The words for the related company and the tenant
+    (sqlimport.TASK_RULES) are only meaningful for the codes of rules.CHECKLIST, so a new install doesn't get them."""
+    return {code for code, *_ in rules.STARTER} | {r[0] for r in con.execute("SELECT DISTINCT code FROM checklist_items")}
+
+
+def seed_filing(con, codes):
+    """The code's SQL filing words (sqlimport.TASK_RULES) for these checklist codes, for each code with none yet: update
+    21, and a company from seed.json given a checklist of rules.CHECKLIST."""
+    have = {r[0] for r in con.execute("SELECT DISTINCT checklist_code FROM filing_words")}
+    for i, (kinds, direction, words, code) in enumerate(sqlimport.TASK_RULES):
+        if code in codes and code not in have:
+            for kind in sorted(kinds):
+                con.execute("""INSERT INTO filing_words (label, words, doc_kind, direction, checklist_code, sort)
+                               VALUES (?, ?, ?, ?, ?, ?)""",
+                            (FILING_LABELS.get(code, code), json.dumps(list(words)), kind, direction, code, i))
+
+
+# Where the placeholder names (rules.PLACEHOLDERS) can be: text columns, and JSON ones (rule, words).
+NAME_COLUMNS = (("checklist_items", "name", False), ("checklist_terms", "title", False),
+                ("checklist_terms", "detail", False), ("checklist_terms", "rule", True), ("filing_words", "words", True))
+
+
+def fill_names(con, names):
+    """seed.json's real names for the placeholders (rules.PLACEHOLDERS), written into the checklists and filing words
+    just seeded: the placeholder as written gets the name as given, the placeholder in capitals gets it in capitals.
+    Each placeholder is first swapped for a marker the text can't hold (private-use characters, valid in JSON), then
+    each marker for its name, so a name that itself holds a placeholder's words is written as given. Names for anything
+    else are refused, as is an empty name."""
+    if not names:
+        return
+    if (not isinstance(names, dict) or any(k not in rules.PLACEHOLDERS for k in names)
+            or any(not isinstance(v, str) or not v.strip() or "\ue000" in v or "\ue001" in v for v in names.values())):
+        raise ValueError("seed.json: \"names\" gives a real name for one of " + ", ".join(rules.PLACEHOLDERS))
+    pairs = []
+    for k, v in names.items():
+        pairs += [(k, v.strip()), (k.upper(), v.strip().upper())]
+    pairs.sort(key=lambda p: -len(p[0]))  # a longer placeholder first, so none is found inside another
+    for table, col, is_json in NAME_COLUMNS:
+        enc = (lambda t: json.dumps(t)[1:-1]) if is_json else (lambda t: t)
+        steps = [(enc(old), f"\ue000{i}\ue001") for i, (old, _) in enumerate(pairs)]
+        steps += [(f"\ue000{i}\ue001", enc(new)) for i, (_, new) in enumerate(pairs)]
+        for old, new in steps:
+            con.execute(f"UPDATE {table} SET {col} = replace({col}, ?, ?) WHERE instr({col}, ?) > 0", (old, new, old))
 
 
 def install(con):
     """Update 21: the tables, filled with the values the code has had: each company's checklist (for the companies the
     code had one for) with how each item is shown done and Next up's deadlines; an item for any other checklist code a
     company's months hold, not added to new months, so those items are judged as before; the five joiner and leaver
-    reminders; and the matching words. Then a check that the tables read back exactly as the code has them: any
+    reminders; and the matching words (the SQL filing words only for the codes a checklist has or the starter
+    checklist brings). Then a check that the tables read back exactly as the code has them: any
     difference stops the update."""
     from . import audit
     for stmt in TABLES.split(";"):
@@ -363,11 +451,7 @@ def install(con):
         for i, (cat, words) in enumerate(sqlimport.CATEGORY_HINTS.items()):
             con.execute("INSERT INTO hint_words (label, words, payment_type, sort) VALUES (?, ?, ?, ?)",
                         ({"salary": "Salaries", "director": "Director payments"}.get(cat, cat), json.dumps(list(words)), cat, i))
-        for i, (kinds, direction, words, code) in enumerate(sqlimport.TASK_RULES):
-            for kind in sorted(kinds):
-                con.execute("""INSERT INTO filing_words (label, words, doc_kind, direction, checklist_code, sort)
-                               VALUES (?, ?, ?, ?, ?, ?)""",
-                            (FILING_LABELS.get(code, code), json.dumps(list(words)), kind, direction, code, i))
+        seed_filing(con, _filing_codes(con))
     check(con, from_tables(con), ents)
     forget(con)
 
@@ -407,6 +491,7 @@ def check(con, b, ents):
                 {k: norm(b.people_term(p["key"], "2026-01"))[k] for k in ("days", "salary_over", "title", "detail", "docs")} != \
                 norm(f.people_term(p["key"], "2026-01")):
             stop(f"terms of the {p['key']} reminder")
+    codes = _filing_codes(con)
     if b.guess != f.guess or b.hints != f.hints or [(set(k), d, w, c) for k, d, w, c in b.filing] != \
-            [(set(k), d, w, c) for k, d, w, c in f.filing for _ in sorted(k)]:
+            [(set(k), d, w, c) for k, d, w, c in f.filing if c in codes for _ in sorted(k)]:
         stop("matching words")

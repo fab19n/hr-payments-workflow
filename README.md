@@ -1,6 +1,6 @@
 # HR Payments
 
-A personal tracker for the monthly payroll, statutory and supplier payment cycle at AISB and Agrinexus International.
+A personal tracker for a group of companies' monthly payroll, statutory and supplier payment cycle.
 It keeps every supporting document with its payment, so the month can be printed and filed as one audit pack.
 
 ## Start it
@@ -17,7 +17,7 @@ Everything is stored in `C:\HR-Records`, not in this program folder:
 | `documents\<AISB or AI>\<YYYY-MM>\` | Uploaded documents, one folder per payment. Files are made read-only and fingerprinted at upload. |
 | `audit-packs\` | Generated audit pack PDFs |
 | `backups\` | Zip backups made from the Backup & log page |
-| `seed.json` | Starting payees and accounts, read once on first start |
+| `seed.json` | Starting payees and accounts, read once on first start. An optional `"names"` gives the real names for the made-up related company and tenant in the built-in checklists (`rules.PLACEHOLDERS`), so they never sit in the program |
 
 The app only listens on this PC (127.0.0.1) and makes no internet connections. Don't put `C:\HR-Records` inside OneDrive or
 Google Drive.
@@ -123,9 +123,20 @@ after it a note.
   In the app: **Filing › Audit trail** lists every entry (filters, search, Excel export, **Check the audit trail**,
   and accepting changes made outside the app); payments and recurring payments have a **History** section, and budget
   lines a **History** button. Audit pack covers carry the trail's check code, and each backup zip a `manifest.json`.
+  **Check this pack** under Recent packs on the Audit pack page (`hrp/packcheck.py`) says whether the file is still the
+  one built and what changed since in what it reads, each change with its trail entry; a pack's entry records what
+  built it (program version, the day, and the trail entry and check code on its cover).
 - Setup (`hrp/masters.py`, `hrp/appsettings.py`): companies, bank accounts (one MYR cash book each), recurring payments
   with salary advances, and general settings, each added, changed, stopped or (only while unused) deleted, with a reason
   for stop, use again and delete. Filed months never change.
+  A company added in Setup starts with a starter monthly checklist (`rules.STARTER`), its own to change, or replaced
+  by a copy of another company's until a month is set up.
+  **Setup › Move setup** (`hrp/setupfile.py`) saves the setup as one file: a template (the rules and a starter
+  checklist) or everything (the companies and what belongs to them; recurring payments only when ticked), and imports
+  one into a new install, previewed first and all or nothing.
+  A record deleted in Setup can be put back (`hrp/restore.py`): **Put it back** on the delete in the Audit trail, or
+  under **Show deleted** in its Setup list; previewed first, with a reason, refused when its key is taken or its company
+  is gone.
 - Payment types, document types and required documents (`hrp/rulebook.py`, update 20): kept in the records and edited
   in **Setup › Payments and documents**; required documents change from a payroll month on, for every company or one.
   Code asks `rulebook.get(con)` rather than `rules.py` for them (`rules.py` keeps the seed values).
@@ -140,6 +151,6 @@ after it a note.
   vouchers first.
 - Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test`,
   `.venv\Scripts\python -m synthetic_tests.trail_view_test`, `.venv\Scripts\python -m synthetic_tests.setup_test` and
-  `.venv\Scripts\python -m synthetic_tests.types_test`, `synthetic_tests.checklist_test` and `synthetic_tests.parties_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
+  `.venv\Scripts\python -m synthetic_tests.types_test`, `synthetic_tests.checklist_test`, `synthetic_tests.parties_test`, `synthetic_tests.extras_test`, `synthetic_tests.restore_test` and `synthetic_tests.pack_check_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
   compares this code's results with a snapshot taken on older code (`--write-golden <file>` on that code makes one).
   `synthetic_tests.checklist_equivalence_test --golden <file>` does the same for update 21.

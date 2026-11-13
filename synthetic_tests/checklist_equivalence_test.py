@@ -48,6 +48,15 @@ a key added by the new code (such as /api/meta's people_tasks or checklist_codes
 keys are listed, and any of them named like "inactive" must be empty. Table rows are read by their column names as of
 update 20.
 
+Allowance for names taken out (Phase 7): the golden was written when this file named a real utility and two real telcos
+(and the frozen rules held the real related company and tenant, which the masks above already cover; the names the
+rules hold now are made up, of the same length). They are made up here too. Before the golden is compared, each old
+name is read from the golden by key (the utility from the first word of the October payment at the place the new one
+is, the telcos from the descriptions of the vouchers PV2611-118 and PV2611-119 added as payments) and masked in the
+golden as its new name is masked in the snapshot; the guess inputs that named a real supplier (GUESS_RENAMED, by index)
+are compared by the type guessed only, and the first company's budget item's detail (which named suppliers) not at
+all. No name is written in this file.
+
 Run (from the program folder):
     .venv\\Scripts\\python -m synthetic_tests.checklist_equivalence_test [--write-golden PATH] [--golden PATH]
 """
@@ -158,7 +167,7 @@ def check(name, ok, detail=""):
           "desc_template": "LHDN PCB - {M}"},
          {"name": "CLAUDE subscription claim", "category": "claim_overseas", "amount": 95, "due_day": 25,
           "start_date": "2026-10-01"},
-         {"name": "TNB electricity", "category": "utility", "amount": 250, "due_day": 6, "month_offset": 1},
+         {"name": "OHM electricity", "category": "utility", "amount": 250, "due_day": 6, "month_offset": 1},
          {"name": "Office rental", "category": "rental", "amount": 3000, "due_day": 1, "month_offset": 1},
          {"name": "Delta Consulting", "category": "consultant", "amount": 5000, "due_day": 26},
          # Estimates the SQL salary words decide between (probe D).
@@ -511,8 +520,8 @@ NEXT_DATES = ["2026-10-28", "2026-11-01", "2026-11-04", "2026-11-13", "2026-11-1
 GUESS_WORDS = ["CLAUDE.AI subscription", "Google Workspace", "ANTHROPIC", "OPENAI API", "CHATGPT PLUS", "MICROSOFT 365", "ADOBE CC",
                "ZOOM", "CANVA", "DROPBOX", "HOSTGATOR", "Annual SUBSCRIPTION", "Staff claim", "SALARY OCT", "Stamp duty",
                "SETEM", "CP204 instalment", "CP500", "TAX INSTALMENT", "KWSP Oct", "PERKESO", "LHDN PCB", "HASIL", "SOCSO",
-               "Office RENTAL", "TNB bill", "UNIFI", "TM TECHNOLOGY", "Printer toner", "PCB", "SALARY CLAIM", "KWSP CLAIM",
-               "LHDN STAMP DUTY", "CLAIM FOR ZOOM SUBSCRIPTION", "SALARY KWSP", "RENTAL TNB", "TIMESTAMP", "zooming", "reclaims",
+               "Office RENTAL", "ELECTRIC bill", "BROADBAND", "TELEPHONE", "Printer toner", "PCB", "SALARY CLAIM", "KWSP CLAIM",
+               "LHDN STAMP DUTY", "CLAIM FOR ZOOM SUBSCRIPTION", "SALARY KWSP", "RENTAL ELECTRIC", "TIMESTAMP", "zooming", "reclaims",
                "", None]
 ACCOUNTS = [(AISB, MAIN), (AISB, FCA), (AI, CURRENT), (XCO, OPS)]
 # Table columns as of update 20, so a column added later is not compared.
@@ -906,10 +915,10 @@ GUESS_SQL = [  # doc no, date, description, payee, amount, direction, e-Invoice:
     ("PV2611-113", "2026-11-08", "HASIL PCB", None, 123.23, "out", None),
     ("PV2611-114", "2026-11-08", "SOCSO ARREARS", None, 124.24, "out", None),
     ("PV2611-115", "2026-11-08", "LHDN PCB NOV", None, 125.25, "out", None),
-    ("PV2611-116", "2026-11-08", "RENTAL TNB RECHARGE", None, 126.26, "out", None),
-    ("PV2611-117", "2026-11-09", "TNB ELECTRIC NOV", None, 127.27, "out", None),
-    ("PV2611-118", "2026-11-09", "UNIFI BIZ NOV", None, 128.28, "out", None),
-    ("PV2611-119", "2026-11-09", "TM TECHNOLOGY NOV", None, 129.29, "out", None),
+    ("PV2611-116", "2026-11-08", "RENTAL OHM RECHARGE", None, 126.26, "out", None),
+    ("PV2611-117", "2026-11-09", "OHM ELECTRIC NOV", None, 127.27, "out", None),
+    ("PV2611-118", "2026-11-09", "BROADBAND BIZ NOV", None, 128.28, "out", None),
+    ("PV2611-119", "2026-11-09", "TELEPHONE NOV", None, 129.29, "out", None),
     ("PV2611-120", "2026-11-09", "PRINTER TONER", None, 130.30, "out", None),
     ("PV2611-121", "2026-11-10", "TIMESTAMP SERVICE", None, 131.31, "out", None),
     ("PV2611-122", "2026-11-10", "OFFICE RENTAL NOV", None, 132.32, "out", None),
@@ -1131,7 +1140,7 @@ def coverage(s):
     check("coverage: every type guess group and the precedence examples",
           {"claim_overseas", "claim", "salary", "other", "statutory", "rental", "utility"} == set(guess.values())
           and guess["SALARY CLAIM"] == "claim" and guess["LHDN STAMP DUTY"] == "other" and guess["SALARY KWSP"] == "salary"
-          and guess["CLAIM FOR ZOOM SUBSCRIPTION"] == "claim_overseas" and guess["RENTAL TNB"] == "rental", guess)
+          and guess["CLAIM FOR ZOOM SUBSCRIPTION"] == "claim_overseas" and guess["RENTAL ELECTRIC"] == "rental", guess)
     check_no_names("coverage: no snapshot holds the related company's or the tenant's name", s)
 
 
@@ -1222,6 +1231,47 @@ def probe_coverage(p):
           e["stop_rental"] == 200 and made.get("PV2611-131") == "other" and made.get("PV2611-132") == "other")
 
 
+# ---------- names taken out (Phase 7) ----------
+GUESS_RENAMED = (25, 35)  # GUESS_WORDS: the utility example and the rental one that named it
+
+
+def renamed(golden, s, p):
+    """[(old name, new name, mask)]: each old name read from the golden by key (see the docstring)."""
+    new_pays, old_pays = s["month"]["1:2026-10"]["payments"], golden["S"]["month"]["1:2026-10"]["payments"]
+    k = next(i for i, x in enumerate(new_pays) if x["description"].split()[0] == "OHM")
+    check("the golden has the payment <UTILITY> stands for at the same place",
+          old_pays[k]["id"] == new_pays[k]["id"] and old_pays[k]["category"] == new_pays[k]["category"] == "utility")
+    out = [(old_pays[k]["description"].split()[0], "OHM", "<UTILITY>")]
+    made = lambda x, no: next(r["description"] for r in x["create"]["payments"] if r["sql_ref"] == no)
+    for no, mask in (("PV2611-118", "<TELCO1>"), ("PV2611-119", "<TELCO2>")):
+        old, new = made(golden["P"], no).split(), made(p, no).split()
+        n = 0
+        while n < min(len(old), len(new)) - 1 and old[-1 - n] == new[-1 - n]:
+            n += 1  # the words both end with (BIZ NOV) are not the name
+        out.append((" ".join(old[:len(old) - n]), " ".join(new[:len(new) - n]), mask))
+    return out
+
+
+def masked(x, names):
+    """x with each name masked as a whole word or words, in keys and values, any case; the first company's budget
+    item's detail blanked (the other company's is compared)."""
+    rxs = [(re.compile(r"\b" + r"\s+".join(map(re.escape, n.split())) + r"\b", re.I), m) for n, m in names]
+
+    def walk(v):
+        if isinstance(v, dict):
+            out = {walk(k): walk(w) for k, w in v.items()}
+            if out.get("code") == "budget" and "detail" in out and out.get("entity_id") == AISB:
+                out["detail"] = "<budget detail>"
+            return out
+        if isinstance(v, list):
+            return [walk(w) for w in v]
+        if isinstance(v, str):
+            for rx, m in rxs:
+                v = rx.sub(m, v)
+        return v
+    return walk(x)
+
+
 # ---------- run ----------
 S0 = snapshot()
 same("the snapshot is deterministic (S0 taken twice)", S0, snapshot())
@@ -1256,10 +1306,17 @@ P1 = probes(base1)
 same(f"P0 (probes at update {CUT}) equals P1 (the same probes after every update)", P0, P1)
 if OPTS.golden:
     golden = json.loads(Path(OPTS.golden).read_text(encoding="utf-8"))
-    same("S0 equals the golden snapshot from before Phase 5", golden["S"], S0)
-    same("S1 equals the golden snapshot from before Phase 5", golden["S"], S1)
-    same("P0 equals the golden probes from before Phase 5", golden["P"], P0)
-    same("P1 equals the golden probes from before Phase 5", golden["P"], P1)
+    pairs = renamed(golden, S0, P0)
+    keep = ("/meta_new_keys",) + tuple(f"/guess[{i}][0]" for i in GUESS_RENAMED)
+    golden = masked(golden, [(old, m) for old, _, m in pairs])
+    check("the golden holds none of the old names once masked", not any(
+        re.search(r"\b" + re.escape(old.split()[0]) + r"\b", f"{k} {v}", re.I) for old, _, _ in pairs
+        for k, v in flat(golden).items() if not k.startswith(tuple("/S" + x for x in keep))))
+    new = lambda x: masked(x, [(n, m) for _, n, m in pairs])
+    same("S0 equals the golden snapshot from before Phase 5", golden["S"], new(S0), keep)
+    same("S1 equals the golden snapshot from before Phase 5", golden["S"], new(S1), keep)
+    same("P0 equals the golden probes from before Phase 5", golden["P"], new(P0))
+    same("P1 equals the golden probes from before Phase 5", golden["P"], new(P1))
 for d in (base0, base1):
     remove(d)
 

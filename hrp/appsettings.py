@@ -82,9 +82,9 @@ def check(changes, categories):
         elif kind == "number":
             if isinstance(v, bool) or not isinstance(v, int) or not 0 <= v <= 60:
                 raise ValueError(f"{label}: give a number of days from 0 to 60.")
-        elif k == "payee_default_category" and (v not in categories or v == "receipt"):
+        elif k == "payee_default_category" and (not isinstance(v, str) or v not in categories or v == "receipt"):
             raise ValueError(f"{label}: choose one of the payment types.")
-        elif k == "payee_default_month_offset" and v not in (0, 1):
+        elif k == "payee_default_month_offset" and (isinstance(v, bool) or v not in (0, 1)):
             raise ValueError(f"{label}: choose the same month or the next month.")
         out[k] = v
     return out
@@ -98,12 +98,10 @@ def save(con, changes):
     _values.update(changes)
 
 
-def install(con, has_records):
-    """Update 19's part: the table, and today's values written out (for a records.db already in use the organisation
-    name the sidebar showed until now, so nothing on screen changes)."""
+def install(con):
+    """Update 19's part: the table, and today's values written out. The organisation name starts empty, also for a
+    records.db already in use: the sidebar line it showed until update 19 was built into the page, and the program
+    holds no organisation's name any more; it is typed in Setup › General."""
     con.execute("CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL CHECK (json_valid(value)))")
-    seed = dict(DEFAULTS)
-    if has_records:
-        seed["organisation_name"] = "Agrinexus · HR & Finance"
-    for k, v in seed.items():
+    for k, v in DEFAULTS.items():
         con.execute("INSERT OR IGNORE INTO app_settings (key, value) VALUES (?, ?)", (k, json.dumps(v)))

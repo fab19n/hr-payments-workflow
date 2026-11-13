@@ -78,7 +78,7 @@ check("payments, checklist items, recurring payments and months are unchanged by
       all(rows_of(raw, t) == before[t] for t in before))
 check("each company's first account becomes its cash book", [tuple(r) for r in raw.execute(
     "SELECT entity_id, label FROM accounts WHERE cash_book = 1 ORDER BY entity_id")] == [(1, "Main"), (2, "Current")])
-check("the sidebar keeps the organisation name it showed", appsettings.get("organisation_name") == "Agrinexus · HR & Finance")
+check("the organisation name starts empty (the program holds none; it is typed in Setup)", appsettings.get("organisation_name") == "")
 raw.close()
 with db.connect() as r:
     check("the trail still checks out after the update", audit.verify(r)["ok"] and trail["outside"] == 0)
@@ -108,7 +108,10 @@ j("post", "/api/setup/entities", 400, json={"fields": {"code": "bad code!", "nam
 j("post", "/api/setup/entities", 400, json={"fields": {"code": "AISB", "name": "Copy"}})
 new = j("post", "/api/setup/entities", json={"fields": {"code": "test-co", "name": "Test Company Sdn Bhd", "uses_sql": False}})
 check("a company is added, its code tidied to capitals", new["record"]["code"] == "TEST-CO" and new["record"]["uses_sql"] == 0)
-check("a company without a checklist says so", any("no monthly checklist" in n for n in new["notes"]))
+chk = j("get", f"/api/setup/checklist?entity={new['id']}")
+check("a company added starts with the starter checklist (without the SQL vouchers item, as it isn't in SQL), its own to change",
+      not any("no monthly checklist" in n for n in new["notes"]) and "payroll-jv" not in [i["code"] for i in chk["items"]]
+      and {"kwsp", "statement", "recon", "file"} <= {i["code"] for i in chk["items"]} and all(i["can_delete"] for i in chk["items"]))
 rec = j("get", "/api/setup/entities/1")
 check("a company with records has its code locked, with the reason", "code" in rec["locked"] and "can't change" in rec["locked"]["code"])
 j("patch", "/api/setup/entities/1", 400, json={"fields": {"code": "NEW"}})

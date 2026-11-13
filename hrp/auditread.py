@@ -28,6 +28,7 @@ TABLE_LABELS = {
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),
+    "restore": ("Put back", "records put back"),
 }
 SOURCES = {"user": "You", "auto": "Automatic", "import": "Import", "migration": "Update", "seed": "Starting data",
            "system": "System", "outside": "Outside this app"}
@@ -65,6 +66,14 @@ FIELD_LABELS = {
     "sql_code": "SQL code", "brn": "Business registration no. (BRN)", "party_id": "Supplier or customer",
     "type": "Account type", "sql_type": "SQL group", "special": "Special account", "parent_code": "Parent account", "payment_method": "Payment method",
     "cheque_no": "Cheque no.", "dockey": "SQL doc key", "currency_code": "Currency (SQL)",
+    # a record put back (restore.put_back's event)
+    "record": "Record", "from_entry": "Put back from entry", "from_row": "Trail row of the delete", "as_key": "Put back as", "deleted_at": "Deleted",
+    "with": "Put back with it",
+    # an audit pack built (app._pack_event): its file and what built it
+    "file": "File", "sha256": "Fingerprint (SHA-256)", "size": "Size in bytes", "via": "Built for", "today": "Statuses worked out on",
+    "generated": "Generated (printed on the cover)", "trail_entry": "Audit trail entry (printed on the cover)",
+    "check_code": "Check code", "code_commit": "Program version (git commit)", "code_files": "Program files' fingerprint",
+    "python": "Python", "fpdf2": "fpdf2", "pypdf": "pypdf",
 }
 NAME_FIELDS = ("description", "name", "title", "label", "doc_no", "original_name", "what", "code", "payment_type", "month", "key")
 # Bank details and account numbers, wherever they are kept (a budget line's details are filled from the payee's bank
@@ -261,10 +270,14 @@ def history(con, tbl, key, show=False):
               "people_tasks": ("people_task_terms", "people_task_id")}.get(tbl)
     child = (f"""OR (r.tbl = '{parent[0]}' AND r.op != 'event'
                  AND CAST(json_extract(COALESCE(r.after, r.before), '$.{parent[1]}') AS TEXT) = ?)""" if parent else "")
+    # a record put back (restore.put_back): the event naming the delete it came from, under the key it had then and the
+    # key it came back with (a new one when its id had been given to another record since)
+    put = """OR (r.tbl = 'restore' AND r.op = 'event' AND json_extract(r.after, '$.table') = ?
+              AND (json_extract(r.after, '$.key') = ? OR json_extract(r.after, '$.as_key') = ?))"""
     rows = _fetch(con, f"""SELECT r.*, t.id AS tx_id, t.actor, t.source, t.action, t.reason, t.late
                           FROM audit_row r LEFT JOIN audit_tx t ON t.token = r.token
-                          WHERE (r.tbl = ? AND r.row_key = ?) {child} ORDER BY r.id DESC""",
-                  (tbl, str(key), str(key)) if child else (tbl, str(key)))
+                          WHERE (r.tbl = ? AND r.row_key = ?) {child} {put} ORDER BY r.id DESC""",
+                  (tbl, str(key)) + ((str(key),) if child else ()) + (tbl, str(key), str(key)))
     names = _Names(con)
     out = []
     for r in rows:

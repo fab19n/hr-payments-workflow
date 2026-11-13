@@ -1,14 +1,19 @@
 """Builds one printable PDF per entity and month: an index page, then every document in filing order."""
+import hashlib
 import io
 import json
+import platform
 from datetime import date, datetime
+from importlib import metadata
 
+import fpdf
+import pypdf
 from fpdf import FPDF
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
 
 from . import audit, recon, rulebook, rules
-from .config import PACKS_DIR
+from .config import PACKS_DIR, PROGRAM_DIR
 from .db import (_listed, day_label, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
                  not_in_sql, payment_flag, payment_status, short_day, status_word, task_status, waits_for)
 from .docstore import path_of, verify
@@ -20,6 +25,73 @@ LINE = 5
 
 class PackError(ValueError):
     """The pack could not be built. The message names the document at fault, for showing to the user."""
+
+
+_PROGRAM = None
+
+
+def _git_commit():
+    """The commit the program folder is checked out at, read from .git's files (git itself may not be installed), or
+    None: no .git, a worktree's pointer that leads nowhere, or anything unreadable. Never fails."""
+    try:
+        git = PROGRAM_DIR / ".git"
+        if git.is_file():  # a worktree: .git names the real folder
+            git = (PROGRAM_DIR / git.read_text(encoding="utf-8").split("gitdir:", 1)[1].strip()).resolve()
+        common = git
+        if (git / "commondir").is_file():
+            common = (git / (git / "commondir").read_text(encoding="utf-8").strip()).resolve()
+        head = (git / "HEAD").read_text(encoding="utf-8").strip()
+        if not head.startswith("ref:"):
+            return head or None  # a detached checkout names the commit itself
+        ref = head[4:].strip()
+        for folder in (git, common):
+            f = folder / ref
+            if f.is_file():
+                return f.read_text(encoding="utf-8").strip() or None
+        packed = common / "packed-refs"
+        if packed.is_file():
+            for line in packed.read_text(encoding="utf-8").splitlines():
+                parts = line.split()
+                if len(parts) == 2 and parts[1] == ref:
+                    return parts[0]
+    except (OSError, IndexError, UnicodeDecodeError, ValueError):  # ValueError: a NUL or other bad path text
+        pass
+    return None
+
+
+def _version(dist, module):
+    try:
+        return metadata.version(dist)
+    except Exception:
+        return getattr(module, "__version__", None)
+
+
+def _program():
+    h = hashlib.sha256()
+    try:
+        for f in sorted((PROGRAM_DIR / "hrp").glob("*.py")):
+            data = f.read_bytes()
+            h.update(f"{f.name}|{len(data)}|".encode("utf-8") + data)
+        files = h.hexdigest()
+    except OSError:
+        files = None
+    try:
+        commit = _git_commit()
+    except Exception:  # what built a pack must never stop the app starting or a pack being built
+        commit = None
+    return {"code_commit": commit, "code_files": files, "python": platform.python_version(),
+            "fpdf2": _version("fpdf2", fpdf), "pypdf": _version("pypdf", pypdf)}
+
+
+def program():
+    """What a pack is built with, recorded in its audit event so it can be rebuilt exactly later: the git commit (None
+    without .git), a fingerprint of the program's own Python files (it also tells apart a commit with changes not
+    committed, and works with no .git), and the versions of Python, fpdf2 and pypdf. Worked out when the app starts and
+    kept: the code that builds packs is the code loaded then, not a file edited on disk since."""
+    global _PROGRAM
+    if _PROGRAM is None:
+        _PROGRAM = _program()
+    return dict(_PROGRAM)
 
 
 def _latin(s):
@@ -69,6 +141,9 @@ def _unprintable(d):
     return _PRINTS[key]
 
 
+program()  # now, while the files on disk are the ones just loaded
+
+
 def _payments(con, entity, month):
     return con.execute(
         "SELECT * FROM payments WHERE entity_id = ? AND month = ? ORDER BY due_date, id", (entity["id"], month)).fetchall()
@@ -92,7 +167,10 @@ def _statement_docs(con, entity, month):
            WHERE a.entity_id = ? AND s.month = ? ORDER BY a.id""", (entity["id"], month)).fetchall()
 
 
-def build(con, entity, month):
+def build(con, entity, month, built=None):
+    """Builds the pack and returns its path. built: a dict to fill with what went into it beyond the records, for its
+    audit event (program() and the day the statuses were worked out on, the Generated line and the trail entry and
+    check code printed on the cover), so the same pack can be built again exactly later."""
     R = rulebook.get(con)
     order = R.doc_order
 
@@ -145,7 +223,13 @@ def build(con, entity, month):
 
     out = PdfWriter()
     trail = audit.status(con) if audit.present(con) else None  # the trail as it stood when this pack was built
-    for pg in PdfReader(io.BytesIO(_cover(entity, month, index_rows, not_merged, trail, R))).pages:
+    generated = datetime.now()
+    if built is not None:
+        built.update(program())
+        built.update({"today": today, "generated": _generated(generated),
+                      "trail_entry": trail["entries"] if trail and trail["entries"] else None,
+                      "check_code": trail["check_code"] if trail and trail["entries"] else None})
+    for pg in PdfReader(io.BytesIO(_cover(entity, month, index_rows, not_merged, trail, R, generated))).pages:
         out.add_page(pg)
     out.add_outline_item("Index", 0)
     first = len(out.pages)
@@ -196,8 +280,8 @@ def sql_to_print(con, entity, pays):
 
 def to_print(nos, R=None):
     R = R or rulebook.FROZEN
-    """The SQL vouchers to print (sql_to_print), per type as up to 3 runs (PV2609-001 to PV2609-007, PV2609-017 and
-    PV2610-004 to PV2610-006), or counted from the first to the last (23 payment vouchers, PV2609-001 to PV2610-019)."""
+    """The SQL vouchers to print (sql_to_print), per type as up to 3 runs (PV2601-001 to PV2601-007, PV2601-017 and
+    PV2602-004 to PV2602-006), or counted from the first to the last (23 payment vouchers, PV2601-001 to PV2602-019)."""
     out = []
     for t, found in sorted(nos.items(), key=lambda kv: min(kv[1])):
         runs = _runs(found)
@@ -206,7 +290,7 @@ def to_print(nos, R=None):
 
 
 def _runs(nos):
-    """Voucher numbers as the runs to print: PV2609-001 to PV2609-007, PV2609-017, PV2610-004 to PV2610-006."""
+    """Voucher numbers as the runs to print: PV2601-001 to PV2601-007, PV2601-017, PV2602-004 to PV2602-006."""
     runs = []
     for no in sorted(set(nos)):
         head, _, n = no.rpartition("-")
@@ -468,7 +552,7 @@ def _reconciliation(con, entity, month):
 
 
 def _proofs(required, docs, ev):
-    """What stands for the documents required but not uploaded (from db.evidence), e.g. PV2609-020 (print from SQL)."""
+    """What stands for the documents required but not uploaded (from db.evidence), e.g. PV2601-020 (print from SQL)."""
     have = {d["doc_type"] for d in docs}
     return [ev[t]["text"] for t in required if t in ev and t not in have]
 
@@ -481,7 +565,12 @@ def _index_head(pdf):
     pdf.set_font("Helvetica", "", 8.5)
 
 
-def _cover(entity, month, rows, not_merged, trail=None, R=None):
+def _generated(when):
+    """The time printed on the cover, to the minute."""
+    return f"{when:%d %b %Y %H:%M}"
+
+
+def _cover(entity, month, rows, not_merged, trail=None, R=None, generated=None):
     R = R or rulebook.FROZEN
     pdf = FPDF(unit="mm", format="A4")
     pdf.set_auto_page_break(True, 15)
@@ -489,7 +578,7 @@ def _cover(entity, month, rows, not_merged, trail=None, R=None):
     pdf.set_font("Helvetica", "B", 15)
     pdf.cell(0, 8, _latin(f"{entity['name']} - Audit pack {month_label(month)}"), new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("Helvetica", "", 9)
-    pdf.cell(0, 6, _latin(f"Generated {datetime.now():%d %b %Y %H:%M}. Documents follow in the order below."), new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 6, _latin(f"Generated {_generated(generated or datetime.now())}. Documents follow in the order below."), new_x="LMARGIN", new_y="NEXT")
     if trail and trail["entries"]:
         # Ties the printed pack to the audit trail as it stood: the check code is the start of the last entry's
         # fingerprint, so a trail rebuilt later no longer matches what was printed.

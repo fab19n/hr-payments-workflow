@@ -94,7 +94,7 @@ def _first(a, *keys):
 
 
 def _doc_type_from(a, doc_no):
-    """Listings without a DOCTYPE field. Customer invoice numbers can be free-form (AISB/2026/10/001), but the
+    """Listings without a DOCTYPE field. Customer invoice numbers can be free-form (ABC/2026/10/001), but the
     account code tells them apart: customers are 3xx-xxxx and suppliers 4xx-xxxx in SQL Account's chart."""
     prefix = re.match(r"[A-Za-z]*", doc_no).group(0).upper()
     if prefix in MONEY_IN | MONEY_OUT | JOURNAL | SALES_DOCS | PURCHASE_DOCS:
@@ -426,8 +426,8 @@ def _text(v, upper=False):
 
 # ---------- matching ----------
 
-# Words that say nothing about who was paid: months, years and accounting terms. "AUG" in a claim and in a TNB
-# bill must not make them look alike.
+# Words that say nothing about who was paid: months, years and accounting terms. "AUG" in a claim and in an
+# electricity bill must not make them look alike.
 NOISE = {"JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "SEPT", "OCT", "NOV", "DEC",
          "PAYMENT", "SALARY", "FEE", "FOR", "THE", "AND", "SDN", "BHD", "LTD", "MONTH", "CLAIM", "CLAIMS",
          "EXPENSES", "EXPENSE", "CONTRIBUTION", "CHARGE", "CHARGES", "RENTAL", "DEDUCTION", "ACCOUNT",
@@ -444,7 +444,7 @@ CATEGORY_HINTS = {"salary": ("SALARY", "GAJI", "WAGES", "PAYROLL"),
 
 
 def refs_of(text):
-    """The voucher numbers in a payment's SQL ref box, e.g. "PV2611-012, PV2611-016"."""
+    """The voucher numbers in a payment's SQL ref box, e.g. "PV2601-003, PV2601-007"."""
     return [x for x in re.split(r"[,;\s]+", (text or "").upper()) if x]
 
 
@@ -464,7 +464,7 @@ CORRECTION_WORDS = re.compile(r"\b(REVERS(E|ED|AL|ING)\b(?!\W+CHARGE)|CONTRA\b)"
 def corrections(con, entity_id):
     """Ids of the vouchers not linked yet that look like corrections made only in the books, where no money moved: a
     reversal or contra by its description, or one of a receipt and a payment for the same amount on the same day
-    (OR2610-002 refunding a duplicated self-billed e-Invoice, PV2610-026 replacing the PV). An entry with no direction
+    (an OR refunding a duplicated self-billed e-Invoice, a second PV replacing the first). An entry with no direction
     (neither a receipt nor a payment) is never one of a pair."""
     entries = con.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'",
                           (entity_id,)).fetchall()
@@ -530,7 +530,7 @@ def propose(con, entity_id, recs):
     estimate can never take a voucher a fixed payment needs:
     1. one voucher with exactly the amount (named, or unnamed within 15 days);
     2. several named vouchers adding up exactly (SOCSO and SKBBK paid separately for one payment);
-    3. for an estimate, the named voucher(s) closest to it within ±50% (TNB, PCB, KWSP vary every month).
+    3. for an estimate, the named voucher(s) closest to it within ±50% (electricity, PCB, KWSP vary every month).
     A voucher must share a real name word with the payment; months and accounting terms don't count.
     """
     for r in recs:
@@ -579,7 +579,7 @@ def propose(con, entity_id, recs):
     for gap, _, _, pid, row, p, r in sorted(pairs, key=lambda x: x[:5]):
         if pid not in done and row not in taken:
             assign(p, [r])
-    # Pass 2: several named vouchers adding up (SOCSO + SKBBK), then estimates (TNB, PCB) within ±50%. A payment
+    # Pass 2: several named vouchers adding up (SOCSO + SKBBK), then estimates (bills, PCB) within ±50%. A payment
     # with only some of its numbers typed (SOCSO's but not SKBBK's) is topped up the same way.
     for p in pays:
         have = typed.get(p["id"])
@@ -626,12 +626,14 @@ def _sum_to(recs, amount, exact, base=None):
 
 
 # Which checklist task an SQL document is evidence for: (kinds, direction, words any of which must appear, task code).
-# The words SQL documents were filed by until update 21 (checklistbook: Setup's from then on, filled with these).
+# The words SQL documents were filed by until update 21 (checklistbook: Setup's from then on, filled with these). The
+# rules for the related company's fund and the tenant's rent belong to the checklist codes only rules.CHECKLIST has
+# (its names are made up); update 21 and seed.json add them only for a company whose checklist has those codes.
 TASK_RULES = [
     ({"journal"}, None, ("PAYROLL", "SALARY", "SALARIES", "WAGES", "GAJI"), "payroll-jv"),
-    ({"invoice"}, None, ("AGRINEXUS INTERNATIONAL",), "fund-received"),
-    ({"payment"}, "in", ("AGRINEXUS INTERNATIONAL",), "fund-received"),
-    ({"invoice"}, None, ("WE LOAF",), "einv-rental"),
+    ({"invoice"}, None, ("NORTHWIND INTERNATIONAL",), "fund-received"),
+    ({"payment"}, "in", ("NORTHWIND INTERNATIONAL",), "fund-received"),
+    ({"invoice"}, None, ("CONTOSO CAFE",), "einv-rental"),
 ]
 
 

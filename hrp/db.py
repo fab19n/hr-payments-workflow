@@ -195,8 +195,13 @@ def _reconciliation(con):
     con.execute("UPDATE tasks SET detail = ?, required_docs = '[]' WHERE code = 'recon'", (rules.RECON_DETAIL,))
 
 
+# Update 13's due date for the self-billed e-Invoice item, frozen here: it was read from the first company's checklist
+# in rules.CHECKLIST, whose codes and wording may change, while what the step does must not.
+SELFBILLED_DUE = (1, 7)
+
+
 def _selfbilled_by_7th(con):
-    offset, day = next(d for code, d, *_ in rules.CHECKLIST["AISB"] if code == "einv-selfbilled")
+    offset, day = SELFBILLED_DUE
     for t in con.execute("SELECT id, month FROM tasks WHERE code = 'einv-selfbilled' AND done_at IS NULL").fetchall():
         con.execute("UPDATE tasks SET due_date = ? WHERE id = ?", (due(t["month"], offset, day), t["id"]))
 
@@ -228,7 +233,7 @@ MIGRATIONS = [
     #    one is left out of the lists, the counts and the audit pack.
     lambda con: add_column(con, "documents", "removed_at", "TEXT"),
     # 6. Estimates matched to bank lines before linked lines made up an estimate's amount take their lines' total now,
-    #    as a link made today would (the AI fund requisition, matched as seven 10,000 lines, still showed 'estimate').
+    #    as a link made today would (a fund requisition, matched as several 10,000 lines, still showed 'estimate').
     _line_totals,
     # 7. What was planned for payments whose estimate an SQL voucher or bank lines replaced before planned figures were
     #    kept: the payee's plan for the month as it stands, so undoing those links brings the estimate back as it does
@@ -410,6 +415,7 @@ def load_seed(con, seed):
         eid = cur.lastrowid
         if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'checklist_items'").fetchone():
             checklistbook.seed_company(con, {"id": eid, "code": e["code"]})  # update 21 ran before any company existed
+            checklistbook.seed_filing(con, {r[0] for r in con.execute("SELECT code FROM checklist_items WHERE entity_id = ?", (eid,))})
         acct_ids = {}
         for a in e.get("accounts", []):
             c = con.execute("INSERT INTO accounts (entity_id, label, bank, number, currency) VALUES (?, ?, ?, ?, ?)",
@@ -430,6 +436,8 @@ def load_seed(con, seed):
             for adv in p.get("advances", []):
                 con.execute("INSERT INTO advances (payee_id, monthly_deduction, start_month, end_month, note) VALUES (?, ?, ?, ?, ?)",
                             (c.lastrowid, adv["monthly_deduction"], adv["start_month"], adv["end_month"], adv.get("note")))
+    if seed.get("names") and con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'checklist_items'").fetchone():
+        checklistbook.fill_names(con, seed["names"])  # the real names for the placeholders (rules.PLACEHOLDERS)
     log(con, "Loaded starting data from seed.json")
 
 
@@ -838,15 +846,15 @@ def _proof(ref, note):
     return {"ref": ref, "text": f"{ref} ({note})"}
 
 
-# How a refund or credit note e-Invoice says it takes back another document's e-Invoice (OR2610-002: 'SELF-BILLED
-# REFUND FOR DUPLICATED SELF-BILLED E-INVOICE ... (PV2609-002 ...)'). A refund alone may be partial, so it isn't enough.
+# How a refund or credit note e-Invoice says it takes back another document's e-Invoice (OR2601-004: 'SELF-BILLED
+# REFUND FOR DUPLICATED SELF-BILLED E-INVOICE ... (PV2601-002 ...)'). A refund alone may be partial, so it isn't enough.
 TAKES_BACK = re.compile(r"\b(REVERS(E|ED|AL|ING)\b(?!\W+CHARGE)|DUPLICATE[DS]?\b|CANCEL)", re.I)
 
 
 def taken_back_by(con, s):
     """The refund or credit note that takes back the e-Invoice on an SQL document (s): another document of the company
-    that is itself an e-Invoice and names this one, saying it reverses, cancels or duplicates it (OR2610-002 for
-    PV2609-002). Its doc no, or None."""
+    that is itself an e-Invoice and names this one, saying it reverses, cancels or duplicates it (OR2601-004 for
+    PV2601-002). Its doc no, or None."""
     if not (s["einvoice"] or s["einvoice_status"]):
         return None
     named = re.compile(rf"(?<![\w-]){re.escape(s['doc_no'])}(?![\w-])", re.I)
@@ -922,7 +930,7 @@ def evidence(con, pay=None, task=None):
 
 
 def _invoice_proof(sql):
-    """The proof of the customer invoices (IV) among the SQL documents linked to a receipt: Invoice AISB/2026/10/001
+    """The proof of the customer invoices (IV) among the SQL documents linked to a receipt: Invoice ABC/2026/10/001
     (print from SQL), or None."""
     nos = [s["doc_no"] for s in sql if (s["doc_type"] or "").upper() == "IV"]
     return _proof("Invoice " + ", ".join(dict.fromkeys(nos)), "print from SQL") if nos else None
@@ -955,7 +963,7 @@ def _own_evidence(con, pay=None, task=None):
 def not_counted(con, pay=None, task=None):
     """Why the validated e-Invoices on a payment's or checklist item's SQL documents don't stand for the one it needs,
     when evidence() leaves them all out: a refund or credit note took them back. For the screens and the audit pack to
-    show beside an e-Invoice still missing. Returns {"einvoice": {"why": "on PV2609-002, cancelled by OR2610-002",
+    show beside an e-Invoice still missing. Returns {"einvoice": {"why": "on PV2601-002, cancelled by OR2601-004",
     "hint": what it means and what to do}}, or {}."""
     found = _einvoices(con, _linked_sql(con, pay, task), pay)
     if not found or any(by is None for _, by in found):

@@ -97,7 +97,7 @@ function statusPill(p) {
   return p.status === "complete" ? `<span class="pill ok">Received${day}</span>` : p.status === "part_paid" ? `<span class="pill warn">Part received · ${foundOf(p)}</span>` :
     `<span class="pill warn">Received${day} · ${p.missing.length} doc${p.missing.length > 1 ? "s" : ""} missing</span>`;
 }
-// A required document SQL or the bank statement already shows, e.g. "PV2609-020 (print from SQL)": no upload needed.
+// A required document SQL or the bank statement already shows, e.g. "PV2601-020 (print from SQL)": no upload needed.
 const evidenceChip = ev => `<span class="chip have ev" title="${esc(ev.text)}. No upload needed; you can still add a copy.">✓ ${esc(ev.text)}</span>`;
 // A required document's chip on a payment row: · missing (with why what SQL has doesn't count, e.g. an e-Invoice taken
 // back), ✓ uploaded, or ✓ what already shows it.
@@ -121,7 +121,7 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
   nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
-  setup: { kind: null, id: null, types: null, stopped: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
+  setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
   ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
@@ -529,7 +529,7 @@ async function viewEntity(main) {
         // Not paid: the server's word for why (Due today, Waiting for SQL record...); paid: a note when paid late.
         const st = statusPill(p);
         const late = p.status !== "planned" && p.flag ? `<div class="note late" title="${esc(p.flag.hint || "")}">${esc(p.flag.text)}</div>` : "";
-        // A voucher number shown in its chip (✓ PV2609-020) needs no SQL chip beside it.
+        // A voucher number shown in its chip (✓ PV2601-020) needs no SQL chip beside it.
         const sqlShown = state.meta.sql_only.some(dt => p.required.includes(dt) && p.evidence[dt] && !p.documents.some(x => x.doc_type === dt));
         const docs = p.required.map(dt => docChip(p, dt)).join(" ") +
           (d.entity.uses_sql && p.paid_date && (p.not_in_sql || !sqlShown) ? ` <span class="chip ${p.not_in_sql ? "need" : "have"}" title="${esc(p.sql_ref || "Not recorded in SQL yet")}">${p.not_in_sql ? "·" : "✓"} SQL</span>` : "");
@@ -672,7 +672,7 @@ function payFormValues() {
 }
 
 // One box per document of the type, then one to add another (several transfer slips for one payment, say). With none
-// uploaded, ev (what SQL or the bank statement already shows, e.g. PV2609-020) ticks the box, which can still take a file;
+// uploaded, ev (what SQL or the bank statement already shows, e.g. PV2601-020) ticks the box, which can still take a file;
 // without it, why says why what SQL has doesn't count (an e-Invoice cancelled by a refund note).
 function slotHtml(type, docs, ev, why) {
   const label = esc(state.meta.doc_types[type] || type);
@@ -1301,7 +1301,7 @@ function explainLine(lineId) {
       <div class="note" id="ex-count"></div>
       <div class="ex-list" id="ex-list" role="listbox" aria-label="Payments"></div>
       <label class="row ex-all"><input type="checkbox" id="ex-all"><span>Also show money the other way and payments already covered</span></label>
-      <div class="note">One payment can be linked to several lines, e.g. a 22,000 fee sent as 2,000 + 10,000 + 10,000.</div>
+      <div class="note">One payment can be linked to several lines, e.g. a 25,000 fee sent as 5,000 + 10,000 + 10,000.</div>
       <button class="btn" id="ex-link">Link</button></div>
     <div class="card"><h3>Create a new payment for this line</h3>
       <div class="note">For one-off transactions such as web hosting, flights or receipts.</div>
@@ -1536,8 +1536,9 @@ async function viewPayees(main) {
   main.innerHTML = `${entityPicker()}${saved}${m.set_up ? "" : notSetUp(m.entity, m.month)}
     <div class="card"><div class="row spread"><h1>Recurring payments · ${esc(e.code)}</h1><button class="btn" data-edit-payee="new">Add recurring payment</button></div>
       <div class="note">Each active row is added to a month when the month is set up. Saving a change also updates the payments not due yet in ${esc(monthName(currentCycle()))} and later months already set up, unless they were paid, linked or changed by hand. Payments already due are left as they were: they were most likely paid already.</div>
-      ${listBar("payees", "recurring payments")}
-      <div class="tbl-wrap" id="payeeTable">${payeeTable()}</div></div>`;
+      <div class="row">${listBar("payees", "recurring payments")}${deletedToggle("payees")}</div>
+      <div class="tbl-wrap" id="payeeTable">${payeeTable()}</div><div id="setupDeleted"></div></div>`;
+  drawDeleted("payees");
   setCount("payees", list.length, list.length); paintCount("payees");
   LIST_REDRAW.payees = () => { $("#payeeTable").innerHTML = payeeTable(); paintCount("payees"); };
   state.payees = list;
@@ -1578,7 +1579,7 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
     ${savedCard(saved, saved?.head || "Saved")}
     <form class="form" id="payeeForm" style="grid-template-columns:1fr 1fr">
       <label class="field" style="grid-column:1/-1"><span>Payee</span><input id="py-name" value="${esc(p.name)}" required></label>
-      <label class="field" style="grid-column:1/-1"><span>Description each month ({M} = payroll month, {M+1} = next month)</span><input id="py-desc" value="${esc(p.desc_template)}" placeholder="TNB - {M}"></label>
+      <label class="field" style="grid-column:1/-1"><span>Description each month ({M} = payroll month, {M+1} = next month)</span><input id="py-desc" value="${esc(p.desc_template)}" placeholder="Electricity - {M}"></label>
       <label class="field"><span>Money</span><select id="py-dir"><option value="out">Money out (a payment)</option><option value="in" ${into ? "selected" : ""}>Money in (received)</option></select></label>
       <label class="field"><span>Type</span><select id="py-cat">${typeOptions(p.category, pdir, id === "new" ? null : p.category)}</select></label>
       <label class="field" id="py-party-f" style="grid-column:1/-1"${PERSONAL_TYPES.includes(p.category) ? " hidden" : ""}><span id="py-party-lbl">${into ? "Customer (optional)" : "Supplier (optional)"}</span>
@@ -1737,7 +1738,50 @@ async function viewAudit(main) {
         <a class="ghost" id="excelReport" href="/api/export/month.xlsx?entity_id=${state.entity}&month=${state.month}">Excel report</a>
         <button class="ghost" id="auditorPack">Auditor package</button></div><div id="packOut" class="note" hidden></div>
       ${built ? `<div class="row"><b>Printed and filed?</b><button class="btn" data-close-month="built">Yes, mark month as filed</button></div>` : ""}</div>
-    <div class="card"><h2>Recent packs</h2>${packs.length ? packs.map(p => `<div class="row spread"><a href="${p.url}" target="_blank">${esc(p.name)}</a><span class="muted">${esc(p.at.replace("T", " "))}</span></div>`).join("") : `<div class="note">None built for ${esc(r.label)} yet.</div>`}</div>`;
+    <div class="card"><h2>Recent packs</h2>${packs.length ? packs.map(packRow).join("") : `<div class="note">None built for ${esc(r.label)} yet.</div>`}</div>`;
+}
+
+// A pack built for the month: its file (or that it has gone), when, and Check this pack (by its trail row, or by its
+// file for one built before the trail recorded packs).
+const packRow = p => `<div class="row spread"><span>${p.url ? `<a href="${esc(p.url)}" target="_blank">${esc(p.name)}</a>` : esc(p.name)}${p.missing ? ` <span class="pill bad">File missing</span>` : ""}${p.via ? ` <span class="muted">· for the ${esc(p.via)}</span>` : ""}</span>
+  <span class="row tight"><span class="muted">${esc(p.at.replace("T", " "))}</span><button class="ghost small" type="button" data-pack-check="${esc(p.event ?? "")}" data-pack-file="${esc(p.name)}">Check this pack</button></span></div>`;
+
+/* ---- Check this pack (hrp/packcheck.py) ---- */
+const PACK_FILE = { unchanged: ["ok", "File unchanged"], changed: ["bad", "File changed"], missing: ["bad", "File missing"],
+  not_recorded: ["warn", "Not recorded in the trail"] };
+// A trail entry, opened in place (toggleEntry draws it below the button).
+const entryLink = (id, text) => id ? `<div><button class="ghost small" type="button" data-tx="${esc(id)}" aria-expanded="false">${esc(text)}</button><div class="tr-body" hidden></div></div>` : "";
+
+// The drawer: whether the file is the one built, what built it, and what changed since in what it reads (grouped, each
+// change with its trail entry), then what the check can't tell.
+async function openPackCheck(event, file) {
+  if (!closeDrawer()) return;
+  $("#drawer").innerHTML = `<div class="ex-head"><div class="row spread"><div><div class="eyebrow">Check this pack</div><h2>${esc(file || "Audit pack")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
+    <div id="pcBody"><div class="note">Loading…</div></div>`;
+  $("#drawer").hidden = false;
+  let r;
+  try {
+    r = await api(event ? `/api/audit-pack/check?event=${encodeURIComponent(event)}`
+      : `/api/audit-pack/check?entity=${state.entity}&month=${state.month}&file=${encodeURIComponent(file)}`);
+  } catch (e) { if ($("#pcBody")) $("#pcBody").innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; return; }
+  if (!$("#pcBody")) return;
+  const p = r.pack, pr = p.printed || {}, [tone, word] = PACK_FILE[r.file.state];
+  const cover = pr.trail_entry ? `On its cover: ${pr.generated ? `generated ${esc(pr.generated)}, ` : ""}audit trail entry ${esc(pr.trail_entry)} · check code ${esc(pr.check_code)}${pr.worked_out ? " (worked out from the trail)" : ""}.` : "";
+  const prog = p.same_program === true ? "Built by the version of the program running now." : p.same_program === false ? "Built by another version of the program." : "";
+  const row = (g, x) => `<div class="tr-hist"><div><span class="mono muted">${esc(fmtWhen(x.at))}</span> · <span class="pill ${SRC_TONE[x.source] ?? "grey"}">${esc(x.source_label || "")}</span> ${esc(x.actor || "")}${x.reason ? ` · Why: ${esc(x.reason)}` : ""}${x.late ? ` <span class="pill warn">Sealed late</span>` : ""}</div>
+    ${g.key === "packs" ? `<div class="tr-change"><b>Built ${esc(x.record)}</b></div>` : changeHtml(x)}
+    ${entryLink(x.entry, `Entry ${x.entry}${x.headline ? `: ${x.headline}` : ""}`)}</div>`;
+  const groups = r.changes.groups.map(g => `<h3>${esc(g.label)} · ${esc(g.count)}</h3>${g.rows.map(x => row(g, x)).join("")}
+    ${g.more ? `<div class="note">And ${esc(g.more)} more, not listed here.</div>` : ""}`).join("");
+  const docs = r.documents.problems.length
+    ? `<h3>Its documents' files now · ${esc(r.documents.problems.length)}</h3>${r.documents.problems.map(d => `<div class="note"><b>${esc(d.name)}</b> on ${esc(d.owner)}: ${esc(d.why)}</div>`).join("")}`
+    : r.documents.checked ? `<div class="note">The ${esc(r.documents.checked)} document file${r.documents.checked === 1 ? "" : "s"} it would hold now still match${r.documents.checked === 1 ? "es" : ""} the fingerprint taken at upload.</div>` : "";
+  $("#pcBody").innerHTML = `<div class="row"><span class="pill ${tone}">${esc(word)}</span></div>
+    <div class="note">${esc(r.file.text)}</div>
+    <div class="note">${esc(r.company)} · ${esc(r.label)}. ${r.recorded ? `Built ${esc(fmtWhen(p.at))}${p.actor ? ` by ${esc(p.actor)}` : ""}${p.via ? ` for the ${esc(p.via)}` : ""}.` : `File saved ${esc(fmtWhen(p.at))}.`} ${cover} ${prog}</div>
+    ${entryLink(p.entry, `Entry ${p.entry}: the pack built`)}
+    <h2>Since it was built</h2><div class="note">${esc(r.changes.summary)}</div>${groups}${docs}
+    <h2>What this check can't tell</h2>${r.cannot_tell.map(t => `<div class="note">${esc(t)}</div>`).join("")}`;
 }
 
 // Marks the month on show as filed. With anything still open (Before you print, or the pack not built or out of date)
@@ -1805,6 +1849,7 @@ async function viewSetup(main) {
   else if (S.kind === "required") await setupRequired(box);
   else if (S.kind === "checklist") await setupChecklist(box);
   else if (S.kind === "reminders") await setupReminders(box);
+  else if (S.kind === "move") await setupMove(box);
   else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
   else await setupList(box, S.kind);
 }
@@ -1978,12 +2023,14 @@ async function setupList(box, kind) {
       ${spec.help ? `<div class="note">${esc(spec.help)}</div>` : ""}
       <div class="note">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</div>
       <div class="row">${listBar(id, spec.plural)}<label class="row tight"><input type="checkbox" data-setup-stopped ${S.stopped ? "checked" : ""}> Show stopped (${nStopped})</label>
+        ${deletedToggle(kind)}
         ${spec.tree ? `<div class="seg" role="group" aria-label="Show the ${esc(spec.plural)} as">${[["flat", "Flat list"], ["tree", "Tree"]].map(([v, l]) =>
           `<button type="button" data-setup-view="${v}" aria-pressed="${view === v}">${l}</button>`).join("")}</div>` : ""}
         ${view === "tree" ? `<button type="button" class="ghost small" data-tree-all="open">Open all</button><button type="button" class="ghost small" data-tree-all="close">Close all</button>` : ""}</div>
       ${view === "tree" ? `<div class="note" id="treeSearchNote" hidden>While searching, everything found is shown open. Clear the search to open or close the groups.</div>` : ""}
-      <div class="tbl-wrap" id="setupList">${table()}</div></div>`;
+      <div class="tbl-wrap" id="setupList">${table()}</div><div id="setupDeleted"></div></div>`;
   paintCount(id);
+  drawDeleted(kind);
   // While a search is on, the tree's Open all / Close all are off and a note says why.
   const treeBar = () => {
     const on = !!listState(id).q.trim();
@@ -2347,6 +2394,62 @@ async function settingsSave() {
   toast("Saved"); return render();
 }
 
+/* Move setup: this install's setup saved as one file (setup.json) to start another install with, and such a file
+   imported into records that hold no company yet (hrp/setupfile.py). The template holds the rules only; everything adds
+   the companies and what belongs to them, and the recurring payments only when ticked. Saving one is an ordinary
+   download (the server notes it in the audit trail); an import is previewed first and asks why. */
+const moveHref = (what, extra) => `/api/setup/export?what=${what}${extra}`;
+async function setupMove(box) {
+  const st = await api("/api/setup/import"), M = state.setup.move ||= { payees: false, from: "", preview: null };
+  const list = state.meta.entities || [];
+  box.innerHTML = `<div class="card"><h1>Move setup</h1>
+    <div class="note">Save this install's setup as a file, to start another install with it. Each file saved is noted in the audit trail.</div>
+    <h3>Template</h3>
+    <div class="note">The rules only: payment types, document types and the documents each needs, a starter checklist, the joiner and leaver reminders, the matching words and the general settings. No company, bank account, customer, supplier or person.</div>
+    <div class="form setup-form"><label class="field" style="grid-column:1/-1"><span>Starter checklist</span><select id="mv-from"><option value="">The one new companies get here</option>${list.map(e => `<option value="${e.id}"${String(e.id) === M.from ? " selected" : ""}>${esc(e.code)} · ${esc(e.name)}'s checklist</option>`).join("")}</select>
+      <span class="note">Companies added in the other install start with it.</span></label></div>
+    <div class="row"><a class="btn" id="mvTemplate" href="${esc(moveHref("template", M.from ? `&entity=${M.from}` : ""))}">Export template</a></div>
+    <h3>Everything</h3>
+    <div class="note">The template, plus the companies, their bank accounts with the account numbers, charts of accounts, customers and suppliers, and each company's checklist. Keep the file safe.</div>
+    <label class="row"><input type="checkbox" id="mv-payees"${M.payees ? " checked" : ""}><span>Include recurring payments (staff names, amounts, bank details)</span></label>
+    <div class="note warn" id="mv-warn"${M.payees ? "" : " hidden"}>The file then holds personal data. Keep it as safe as a backup and delete it once it has been imported.</div>
+    <div class="row"><a class="btn" id="mvFull" href="${esc(moveHref("full", M.payees ? "&payees=1" : ""))}">Export everything</a></div></div>
+  <div class="card"><h1>Import a setup file</h1>
+    ${st.empty ? `<div class="note">For a new install, before any company is added. A template's rules are added to the app's own; everything also adds its companies and what belongs to them. Each row is checked as Setup checks it, and nothing is saved unless every row passes.</div>
+      <div class="row"><button class="btn" type="button" data-move-pick="1">Choose a setup file…</button></div>
+      <div id="mvPreview">${movePreviewHtml()}</div>${whyForm()}`
+    : `<div class="note">A setup file is imported only into new records, before any company is added. These hold ${esc((st.holding || []).map(([w, n]) => `${n} ${w}`).join(", "))}.</div>`}</div>`;
+}
+// What the file chosen would add (the server made the import and undid it), with Import and Cancel.
+function movePreviewHtml() {
+  const M = state.setup.move, p = M?.preview;
+  if (!p) return "";
+  const rows = (p.counts || []).filter(([, n]) => +n).map(([w, n]) => `<tr><td>${esc(w.charAt(0).toUpperCase() + w.slice(1))}</td><td class="num">${esc(n)}</td></tr>`).join("");
+  return `<h3>${esc(M.name)}</h3><div class="note">${p.what === "full" ? "Everything" : "A template"}, saved ${esc(fmtDate(p.made))}. Importing it adds or changes:</div>
+    <div class="tbl-wrap"><table><tbody>${rows}</tbody></table></div>${(p.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("")}
+    <div class="row"><button class="btn" type="button" data-move-go="1">Import</button><button class="ghost" type="button" data-move-cancel="1">Cancel</button></div>`;
+}
+async function movePick() {
+  const [f] = await pickFile(false);
+  if (!f) return;
+  const M = state.setup.move;
+  let setup;
+  try { setup = JSON.parse(await f.text()); } catch { return toast("That file can't be read as a setup file.", true); }
+  M.preview = null; M.file = null;
+  const p = await api("/api/setup/import", { json: { setup, preview: true } });
+  Object.assign(M, { file: setup, name: f.name, preview: p });
+  $("#mvPreview").innerHTML = movePreviewHtml();
+}
+async function moveImport(reason) {
+  const M = state.setup.move;
+  if (!M?.file) return;
+  await api("/api/setup/import", { json: { setup: M.file, reason } });
+  Object.assign(M, { file: null, preview: null, name: "" });
+  state.meta = await api("/api/meta"); paintOrg();
+  state.entity = firstEntityId(); state.setup.types = null;
+  toast("Setup imported"); renderNav(); return render();
+}
+
 /* Required documents: the documents each payment type needs before a payment counts as complete, for every company or
    for one company of its own. A change starts from a month after the last one filed: the months before it keep the
    rules they had, and filed months never change. */
@@ -2588,7 +2691,8 @@ async function setupChecklist(box) {
   if (!e) { box.innerHTML = `<div class="card"><h1>Monthly checklist</h1><div class="note">Add a company first.</div></div>`; return; }
   const d = S.chk = await api(`/api/setup/checklist?entity=${state.entity}`);
   const code = d.code || e.code, items = d.items || [];
-  const copy = !items.some(it => it.in_use || termOn(it)) && (d.others || []).length;
+  // A company added in Setup starts with the starter checklist: while it is untouched and no month is set up, a copy may replace it.
+  const copy = (d.replaceable || !items.some(it => it.in_use || termOn(it))) && (d.others || []).length;
   const row = it => {
     const t = it.now || {}, rule = asRule(t.rule);
     return `<tr${termOn(it, d.default_from) ? "" : ` class="muted"`}><td><button class="link" data-chk-open="${it.id}">${esc(t.title || it.code)}</button></td>
@@ -2600,9 +2704,11 @@ async function setupChecklist(box) {
     <div class="card"><div class="row spread"><h1>Monthly checklist · ${esc(code)}</h1>
       <div class="row">${copy ? `<button class="ghost" data-chk-copy="1">Copy from another company</button>` : ""}<button class="btn" data-chk-new="1">Add item</button></div></div>
       <div class="note">What each month's checklist holds for ${esc(code)}, in order. Click an item to change it. A change starts from a payroll month you choose: the months before it keep the checklist they had, and filed months never change.</div>
+      <div class="row">${deletedToggle("checklist")}</div>
       <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Due</th><th>Done when</th><th>Documents</th><th>Status</th></tr></thead><tbody>
         ${items.map(row).join("") || `<tr><td colspan="5" class="empty">${esc(code)} has no monthly checklist yet. Add an item${copy ? ", or copy another company's checklist" : ""}.</td></tr>`}
-      </tbody></table></div></div>`;
+      </tbody></table></div><div id="setupDeleted"></div></div>`;
+  drawDeleted("checklist");
 }
 
 // The payments rule of an item done by its payments: which payments it covers and what each needs.
@@ -2772,7 +2878,7 @@ function openChkCopy({ force = false } = {}) {
     <div class="ex-head"><div class="row spread"><div><div class="eyebrow">Monthly checklist · ${esc(code)}</div><h2>Copy from another company</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
     <form class="form setup-form" id="chkCopyForm">
       <label class="field" style="grid-column:1/-1"><span>Copy the checklist of</span><select id="cp-from">${others.map(o => `<option value="${o.id}">${esc(o.code)} · ${esc(o.name)} (${plural(+o.items || 0, "item")})</option>`).join("")}</select>
-        <span class="note">Its items in force in the month below are added to ${esc(code)}, with their wording, due dates and documents. You can change them here afterwards.</span></label>
+        <span class="note">Its items in force in the month below are added to ${esc(code)}, with their wording, due dates and documents.${d.replaceable ? ` They replace the starter checklist ${esc(code)} was given.` : ""} You can change them here afterwards.</span></label>
       <label class="field"><span>From which month?</span><input id="cl-from" type="month" value="${esc(d.default_from || "")}"${d.first_allowed ? ` min="${esc(d.first_allowed)}"` : ""} required>
         <span class="note">Months before this keep the checklist they had. Filed months never change.</span></label>
       <label class="field"><span>Why are you making this change? (optional)</span><input id="cl-reason" maxlength="500" autocomplete="off"></label>
@@ -2807,9 +2913,11 @@ async function setupReminders(box) {
   };
   box.innerHTML = `<div class="card"><div class="row spread"><h1>Joiner and leaver reminders</h1><button class="btn" data-rem-new="1">Add reminder</button></div>
     <div class="note">A recurring salary's start date or last day adds these reminders to the checklist, each in the month it falls due, for every company. Click one to change it. A change applies to people starting (or leaving) from a month you choose, and filed months never change.</div>
+    <div class="row">${deletedToggle("reminders")}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Reminder</th><th>For</th><th>When</th><th>Salary</th><th>Documents</th><th>Status</th></tr></thead><tbody>
       ${rules.map(row).join("") || `<tr><td colspan="6" class="empty">None yet.</td></tr>`}
-    </tbody></table></div></div>`;
+    </tbody></table></div><div id="setupDeleted"></div></div>`;
+  drawDeleted("reminders");
 }
 
 // The drawer of one reminder (id "new" to add one); keep and saved as for a checklist item.
@@ -2975,12 +3083,29 @@ function trailQuery(extra = {}) {
 // One change (a row of the trail): what kind of record, which, and its fields before and after. In a record's own
 // history the record is known, so only the fields show.
 function changeHtml(ch, own) {
+  if (ch.table === "restore") return restoreHtml(ch, null);
   const rows = ch.fields.map(f => ch.op === "update"
     ? `<tr><td>${esc(f.label)}</td><td>${trailVal(f.before)}</td><td>${trailVal(f.after)}</td></tr>`
     : `<tr><td>${esc(f.label)}</td><td colspan="2">${trailVal(ch.op === "delete" ? f.before : f.after)}</td></tr>`).join("");
   const head = ch.op === "update" ? `<tr><th>Field</th><th>Before</th><th>After</th></tr>` : "";
   return `<div class="tr-change">${own ? "" : `<div><b>${esc(ch.op_label)}</b> · ${esc(ch.table_label)} · ${esc(ch.record)}</div>`}
-    ${rows ? `<table class="diff">${head}${rows}</table>` : ""}</div>`;
+    ${rows ? `<table class="diff">${head}${rows}</table>` : ""}${putBackHtml(ch)}</div>`;
+}
+
+// A deleted Setup record (the server marks the deletes it could put back): Put it back, or the entry that put it back.
+const putBackHtml = ch => ch.put_back_in ? `<div class="note">Put back in entry ${esc(ch.put_back_in)}.</div>`
+  : ch.put_back ? `<div class="row"><button class="ghost small" type="button" data-restore="${esc(ch.id)}" data-restore-title="${esc(ch.record)}">Put it back</button></div>` : "";
+
+// A record put back (the event hrp/restore.py records): from which entry, and under which number. Its history under
+// its other number (it came back with a new one when its own had been given to another record) is a click away; in the
+// trail (shownKey null) the link opens the record's history.
+function restoreHtml(ch, shownKey) {
+  const f = Object.fromEntries((ch.fields || []).map(x => [x.name, x.after]));
+  const moved = f.as_key != null && String(f.as_key) !== String(f.key);
+  const other = shownKey == null || String(shownKey) !== String(f.as_key) ? f.as_key : f.key;
+  const label = shownKey == null ? "Its history" : String(other) === String(f.key) ? "Its history before it was deleted" : "Its history since";
+  return `<div class="tr-change"><div><b>Put back</b>${f.record ? ` · ${esc(f.record)}` : ""} · from entry ${esc(f.from_entry)}${moved ? ` · as #${esc(f.as_key)}, as #${esc(f.key)} had been given to another record` : ""}</div>
+    ${shownKey == null || moved ? `<div class="row"><button class="ghost small" type="button" data-hist-open="${esc(f.table)}:${esc(other)}" data-hist-title="${esc(f.record || "")}">${label}</button></div>` : ""}</div>`;
 }
 
 function entryHead(e) {
@@ -3125,9 +3250,10 @@ async function trailShow(on) {
 function historyHtml(h) {
   if (!h.changes.length) return `<div class="note">Nothing recorded yet.</div>`;
   // A row of a related record (a recurring payment's salary advance) says what it is; the record's own rows don't need to.
-  return h.changes.map(ch => `<div class="tr-hist"><div><span class="mono muted">${esc(fmtWhen(ch.at))}</span> · <b>${esc(ch.op_label)}</b>${ch.table !== h.table ? ` ${esc(ch.table_label.toLowerCase())}` : ""}
+  // A record put back has a row of its own: from which entry (restoreHtml).
+  return h.changes.map(ch => `<div class="tr-hist"><div><span class="mono muted">${esc(fmtWhen(ch.at))}</span> · <b>${esc(ch.table === "restore" ? "Put back" : ch.op_label)}</b>${ch.table !== h.table && ch.table !== "restore" ? ` ${esc(ch.table_label.toLowerCase())}` : ""}
       · <span class="pill ${SRC_TONE[ch.source] ?? "grey"}">${esc(ch.source_label || "")}</span> ${esc(ch.actor || "")}${ch.reason ? ` · Why: ${esc(ch.reason)}` : ""}</div>
-    ${ch.op === "baseline" ? `<div class="note">As it stood when the audit trail started.</div>` : changeHtml(ch, true)}</div>`).join("");
+    ${ch.op === "baseline" ? `<div class="note">As it stood when the audit trail started.</div>` : ch.table === "restore" ? restoreHtml(ch, h.key) : changeHtml(ch, true)}</div>`).join("");
 }
 const histSection = (tbl, key) => `<details class="hist" data-hist="${tbl}:${key}"><summary><h3>History</h3></summary><div class="hist-body"></div></details>`;
 
@@ -3137,6 +3263,64 @@ async function openHistory(tbl, key, title) {
   $("#drawer").hidden = false;
   try { const h = await api(`/api/audit/record/${encodeURIComponent(tbl)}/${encodeURIComponent(key)}`); if ($("#histOnly")) $("#histOnly").outerHTML = `<div>${historyHtml(h)}</div>`; }
   catch (e) { if ($("#histOnly")) $("#histOnly").textContent = e.message; }
+}
+
+/* ---- Put back a deleted Setup record (hrp/restore.py) ---- */
+// The "Show deleted" tick of a Setup section (kept for every section, as Show stopped is).
+const deletedToggle = kind => `<label class="row tight"><input type="checkbox" data-setup-deleted="${esc(kind)}" ${state.setup.deleted ? "checked" : ""}> Show deleted</label>`;
+
+// Show deleted: the section's records deleted in this app and not put back since, newest first, with when, who and why,
+// and Put it back, or why it can't be now.
+async function drawDeleted(kind) {
+  const box = $("#setupDeleted");
+  if (!box) return;
+  if (!state.setup.deleted) { box.innerHTML = ""; return; }
+  const per = ["accounts", "parties", "gl_accounts", "checklist", "payees"].includes(kind);
+  if (per && !state.entity) { box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="note">Loading…</div>`;
+  try {
+    const d = await api(`/api/setup/restore?kind=${encodeURIComponent(kind)}${per ? `&entity=${state.entity}` : ""}`);
+    if ($("#setupDeleted") !== box) return;  // another page or section was drawn meanwhile
+    const row = r => `<tr><td>${esc(r.name)}</td><td>${esc(fmtWhen(r.at))}<div class="note">Entry ${esc(r.entry)}</div></td><td>${esc(r.actor || "")}</td><td>${esc(r.reason || "")}</td>
+      <td><div class="row tight">${r.problem ? "" : `<button class="ghost small" type="button" data-restore="${esc(r.row_id)}" data-restore-title="${esc(r.name)}">Put it back</button>`}
+        <button class="ghost small" type="button" data-hist-open="${esc(r.table)}:${esc(r.key)}" data-hist-title="${esc(r.name)}">History</button></div>
+        ${r.problem ? `<div class="note">${esc(r.problem)}</div>` : ""}</td></tr>`;
+    box.innerHTML = `<h2>Deleted ${esc(d.plural)}</h2>
+      <div class="note">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Deleted</th><th>By</th><th>Why</th><th></th></tr></thead><tbody>
+        ${d.rows.map(row).join("") || `<tr><td colspan="5" class="empty">None deleted.</td></tr>`}</tbody></table></div>`;
+  } catch (e) { box.innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; }
+}
+
+// Put it back (from the audit trail, a record's History or Show deleted): a drawer shows what it would do first (a
+// preview: nothing is kept), or why it can't be put back; Put it back then asks why.
+async function openRestore(rowId, title) {
+  if (!closeDrawer()) return;
+  $("#drawer").innerHTML = `<div class="ex-head"><div class="row spread"><div><div class="eyebrow">Put back</div><h2>${esc(title || "Deleted record")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
+    <div id="rsBody"><div class="note">Loading…</div></div>`;
+  $("#drawer").hidden = false;
+  let p;
+  try { p = await api(`/api/setup/restore/${rowId}`, { json: { preview: true } }); }
+  catch (e) { if ($("#rsBody")) $("#rsBody").innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; return; }
+  if (!$("#rsBody")) return;
+  const del = p.deleted || {}, a = p.affected || {};
+  const touches = (p.lines || []).length || +a.tasks || +a.payments;
+  $("#rsBody").innerHTML = `<div class="note">${esc(p.label)} deleted ${esc(fmtWhen(del.at))}${del.actor ? ` by ${esc(del.actor)}` : ""}, in entry ${esc(del.entry)}${del.reason ? `. Why: ${esc(del.reason)}` : ""}.</div>
+    <div class="note">It comes back as it was when it was deleted, ${p.same_id ? "with the same number" : `as #${esc(p.id)}`}.</div>
+    ${(p.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("")}
+    ${touches ? effectCard(p, "Putting it back also changes", p.kind === "checklist" ? "checklist item" : "reminder") : `<div class="note">Nothing in the months already set up changes.</div>`}
+    <div class="row"><button class="btn" type="button" data-restore-go="${esc(rowId)}">Put it back</button>
+      <button class="ghost" type="button" data-hist-open="${esc(p.table)}:${esc(del.key)}" data-hist-title="${esc(title || p.name)}">History</button></div>
+    ${whyForm()}`;
+}
+function restoreGo(rowId, btn) {
+  return askWhy(btn, "Put it back", async reason => {
+    const r = await api(`/api/setup/restore/${rowId}`, { json: { reason } });
+    closeDrawer(true);
+    toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
+    if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);
+    return render();
+  });
 }
 
 // The Overview says when the trail needs attention (changes made outside the app, a records.db behind or rebuilt).
@@ -3159,6 +3343,9 @@ document.addEventListener("click", async ev => {
   try {
     if (ds.view) return go(ds.view, ds.entity);
     if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
+    if (ds.restore) return await openRestore(+ds.restore, ds.restoreTitle);
+    if (ds.restoreGo) return restoreGo(+ds.restoreGo, t);
+    if (ds.packFile) return await openPackCheck(ds.packCheck, ds.packFile);
     if (ds.tx) return toggleEntry(+ds.tx, t);
     if (ds.trailMore) return trailMore(t);
     if (t.id === "trailCheck") return trailCheck(t);
@@ -3229,6 +3416,9 @@ document.addEventListener("click", async ev => {
     if (ds.remNew) return openReminder("new");
     if (ds.remOpen) return openReminder(+ds.remOpen);
     if (ds.remAct) return await remAct(ds.remAct, t);
+    if (ds.movePick) { t.disabled = true; try { return await movePick(); } finally { if (t.isConnected) t.disabled = false; } }
+    if (ds.moveGo) return askWhy(t, "Import it", moveImport);
+    if (ds.moveCancel) { Object.assign(state.setup.move, { file: null, preview: null }); hideWhy(); $("#mvPreview").innerHTML = ""; return; }
     if (ds.chkPreview || ds.chkCopyPreview || ds.remPreview) {
       t.disabled = true;
       try { return await (ds.chkPreview ? chkSave(true) : ds.chkCopyPreview ? chkCopySave(true) : remSave(true)); } finally { if (t.isConnected) t.disabled = false; }
@@ -3394,6 +3584,12 @@ document.addEventListener("change", async ev => {
     // Only the statements are drawn again, so the account and file chosen for an import stay.
     if (t.dataset.rvSel) { RV().sel[t.dataset.rvSel] = t.checked; return paintBar(); }
     if (t.dataset.rvKeep) { RV().keep[t.dataset.rvKeep] = t.checked; return; }
+    // Move setup: the links save what is chosen.
+    if (t.id === "mv-from") { state.setup.move.from = t.value; $("#mvTemplate").href = moveHref("template", t.value ? `&entity=${t.value}` : ""); return; }
+    if (t.id === "mv-payees") {
+      state.setup.move.payees = t.checked; $("#mv-warn").hidden = !t.checked;
+      $("#mvFull").href = moveHref("full", t.checked ? "&payees=1" : ""); return;
+    }
     if (t.id === "rvChecked") { RV().checked = t.checked; return; }
     if (t.dataset.rvChoice) {
       const V = RV(), id = +t.dataset.rvChoice;
@@ -3579,6 +3775,7 @@ document.addEventListener("change", ev => {
   }
   if (ev.target.id === "trailShow") return trailShow(ev.target.checked);
   if (ev.target.matches?.("[data-setup-stopped]")) { state.setup.stopped = ev.target.checked; return LIST_REDRAW["setup-" + state.setup.kind]?.(); }
+  if (ev.target.matches?.("[data-setup-deleted]")) { state.setup.deleted = ev.target.checked; return drawDeleted(ev.target.dataset.setupDeleted); }
   if (ev.target.id === "cl-from" && ev.target.closest?.("#chkForm")) return chkMonth();
   if (ev.target.id === "rm-from" && ev.target.closest?.("#remForm")) return remMonth();
   if (ev.target.closest?.("#chkForm, #remForm")) return setupPaint();
