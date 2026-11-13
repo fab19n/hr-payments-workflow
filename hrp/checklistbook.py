@@ -16,6 +16,7 @@ were checked with. Reminders are kept the same way, their terms picked by the mo
 day. The matching words aren't dated: they act on SQL imports from now on, and nothing stored is guessed or filed again.
 """
 import json
+import re
 import sqlite3
 
 from . import rules, sqlimport
@@ -408,6 +409,47 @@ def fill_names(con, names):
         steps += [(f"\ue000{i}\ue001", enc(new)) for i, (_, new) in enumerate(pairs)]
         for old, new in steps:
             con.execute(f"UPDATE {table} SET {col} = replace({col}, ?, ?) WHERE instr({col}, ?) > 0", (old, new, old))
+    if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'app_settings'").fetchone():
+        con.execute("INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+                    (NAMES_KEY, json.dumps({k: v.strip() for k, v in names.items()})))
+
+
+# The names fill_names wrote, kept in app_settings under this key (General settings doesn't show it, and a setup file
+# doesn't carry it: they belong to this install), so the code's per-code lists can be read as this install has them.
+NAMES_KEY = "placeholder_names"
+
+
+def stored_names(con):
+    """seed.json's names for the placeholders, as fill_names wrote them into this install, or {}."""
+    try:
+        r = con.execute("SELECT value FROM app_settings WHERE key = ?", (NAMES_KEY,)).fetchone()
+    except sqlite3.OperationalError:  # below update 19: no settings table
+        return {}
+    return json.loads(r[0]) if r else {}
+
+
+def named(x, names):
+    """x (text, or lists, tuples and dicts holding it) with the placeholders written as fill_names writes them: the
+    placeholder as written gets the name as given, in capitals the name in capitals. One pass, longest first, so a name
+    holding a placeholder's words is never changed again. Dict keys and anything not text are left as they are."""
+    if not names:
+        return x
+    pairs = {}
+    for k, v in names.items():
+        pairs[k], pairs[k.upper()] = v, v.upper()
+    pat = re.compile("|".join(re.escape(o) for o in sorted(pairs, key=len, reverse=True)))
+
+    def walk(v):
+        if isinstance(v, str):
+            return pat.sub(lambda m: pairs[m.group(0)], v)
+        if isinstance(v, list):
+            return [walk(i) for i in v]
+        if isinstance(v, tuple):
+            return tuple(walk(i) for i in v)
+        if isinstance(v, dict):
+            return {k: walk(i) for k, i in v.items()}
+        return v
+    return walk(x)
 
 
 def install(con):
@@ -457,8 +499,11 @@ def install(con):
 
 
 def check(con, b, ents):
-    """Raises unless the book b answers as the code did (update 21 stops then, so nothing is judged by other rules)."""
+    """Raises unless the book b answers as the code did (update 21 stops then, so nothing is judged by other rules). The
+    code's lists are read with the names seed.json gave this install in place of the placeholders (named), as
+    fill_names wrote them, so running the update again on records made that way still reads back the same."""
     f = FROZEN
+    nm = (lambda x, _n=stored_names(con): named(x, _n))
 
     def stop(what):
         raise RuntimeError(f"Update 21 stopped: the {what} it wrote don't read back as the code has them.")
@@ -466,18 +511,18 @@ def check(con, b, ents):
     for e in ents:
         for month in ("2026-01", "2027-06"):
             if [{k: t[k] for k in ("code", "due_offset", "due_day", "title", "detail", "docs", "sort")} for t in b.checklist(e, month)] \
-                    != f.checklist(e, month):
+                    != nm(f.checklist(e, month)):
                 stop(f"checklist items of {e['code']}")
     pairs = {(r[0], r[1]) for r in con.execute("SELECT entity_id, code FROM tasks")}
     pairs |= {(e["id"], code) for e in ents for code, *_ in rules.CHECKLIST.get(e["code"], [])}
     for eid, code in pairs:
         for month in ("2026-01", "2027-06"):
-            if norm(b.completion(eid, code, month)) != norm(f.completion(eid, code, month)):
+            if norm(b.completion(eid, code, month)) != norm(nm(f.completion(eid, code, month))):
                 stop(f"rules for checklist item {code}")
             if not is_reminder(code) and (b.deadline(eid, code, month), b.submit_as(eid, code, month)) != \
                     (f.deadline(eid, code, month), f.submit_as(eid, code, month)):
                 stop(f"deadlines for checklist item {code}")
-        if norm(b.einvoice_rules(eid, "2026-01")) != norm([x for x in f.einvoice_rules(eid, "2026-01")
+        if norm(b.einvoice_rules(eid, "2026-01")) != norm([x for x in nm(f.einvoice_rules(eid, "2026-01"))
                                                             if (eid, x[0]) in b.items and b.items[(eid, x[0])]["completion"] == "payments"]):
             stop("e-Invoice rules")
     for e in ents:
@@ -493,5 +538,5 @@ def check(con, b, ents):
             stop(f"terms of the {p['key']} reminder")
     codes = _filing_codes(con)
     if b.guess != f.guess or b.hints != f.hints or [(set(k), d, w, c) for k, d, w, c in b.filing] != \
-            [(set(k), d, w, c) for k, d, w, c in f.filing if c in codes for _ in sorted(k)]:
+            [(set(k), d, w, c) for k, d, w, c in nm(f.filing) if c in codes for _ in sorted(k)]:
         stop("matching words")

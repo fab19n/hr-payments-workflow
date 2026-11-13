@@ -151,6 +151,6 @@ after it a note.
   vouchers first.
 - Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test`,
   `.venv\Scripts\python -m synthetic_tests.trail_view_test`, `.venv\Scripts\python -m synthetic_tests.setup_test` and
-  `.venv\Scripts\python -m synthetic_tests.types_test`, `synthetic_tests.checklist_test`, `synthetic_tests.parties_test`, `synthetic_tests.extras_test`, `synthetic_tests.restore_test` and `synthetic_tests.pack_check_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
+  `.venv\Scripts\python -m synthetic_tests.types_test`, `synthetic_tests.checklist_test`, `synthetic_tests.parties_test`, `synthetic_tests.extras_test`, `synthetic_tests.restore_test`, `synthetic_tests.pack_check_test` and `synthetic_tests.seed_names_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
   compares this code's results with a snapshot taken on older code (`--write-golden <file>` on that code makes one).
   `synthetic_tests.checklist_equivalence_test --golden <file>` does the same for update 21.
