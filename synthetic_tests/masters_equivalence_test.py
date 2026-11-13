@@ -22,6 +22,13 @@ Allowances for keys the new code may add (documented, as the brief allows): each
 before Phase 4 (OLD_* below), so a key added by the new code (such as /api/meta's category_info or doc_info) is not
 compared; /api/meta's added keys are listed, and any of them named like "inactive" must be empty.
 
+Allowance for names taken out (Phase 7): the golden was written when the frozen rules, and this file, held real names
+(the related company, a utility, a consultant, two telcos). They are made up now: the related company is read from
+hrp.rules at run time. Before the golden is compared, each old name is read from the golden by key (the related company
+from the fund-received item's title, the utility and the consultant from the first word of the October payment at the
+place the new one is) and masked in the golden as its new name is masked in the snapshot; the guess inputs that named
+real suppliers (GUESS_RENAMED, by index) are compared by the type guessed only. No name is written in this file.
+
 Run (from the program folder):
     .venv\\Scripts\\python -m synthetic_tests.masters_equivalence_test [--write-golden PATH] [--golden PATH]
 """
@@ -41,7 +48,7 @@ os.environ["HRP_DATA_DIR"] = str(tmp)
 
 import hrp  # noqa: E402
 import hrp.app as appmod  # noqa: E402
-from hrp import auditpack, config, db, docstore, nextup, reports  # noqa: E402
+from hrp import auditpack, config, db, docstore, nextup, reports, rules  # noqa: E402
 from hrp.app import app  # noqa: E402
 from pypdf import PdfReader, PdfWriter  # noqa: E402
 
@@ -55,6 +62,11 @@ OPTS = ARGS.parse_args()
 
 print(f"hrp imported from {hrp.__file__}")
 print(f"records folder: {tmp}")
+
+# The related company the fund-received item looks for, read from the frozen rules (never written in this file), and
+# what the recurring receipt from it is called.
+RELATED = rules.TASK_PAYMENTS["fund-received"]["words"][0]
+FUND = f"Fund from {RELATED.split()[0]}"
 
 # ---------- the fixed clock ----------
 REAL_DATE, REAL_NOW = _dt.date, db.now
@@ -119,9 +131,9 @@ def check(name, ok, detail=""):
           "desc_template": "LHDN PCB - {M}"},
          {"name": "CLAUDE subscription claim", "category": "claim_overseas", "amount": 95, "due_day": 25,
           "start_date": "2026-10-01"},
-         {"name": "TNB electricity", "category": "utility", "amount": 250, "due_day": 6, "month_offset": 1},
+         {"name": "OHM electricity", "category": "utility", "amount": 250, "due_day": 6, "month_offset": 1},
          {"name": "Office rental", "category": "rental", "amount": 3000, "due_day": 1, "month_offset": 1},
-         {"name": "Raman Consulting", "category": "consultant", "amount": 5000, "due_day": 26},
+         {"name": "Delta Consulting", "category": "consultant", "amount": 5000, "due_day": 26},
      ]},
     {"code": "AI", "name": "Example International Ltd", "uses_sql": False,
      "accounts": [{"label": "Current", "bank": "Example Bank", "number": "000-222"}]},
@@ -203,8 +215,8 @@ def upload(doc_type, name, payment_id=None, task_id=None, data=None, replaces=No
     return j("post", "/api/upload", data=form, content_type="multipart/form-data")["id"]
 
 
-# 1. Money received from Agrinexus International, a recurring receipt (money in: only the route sets the direction).
-j("post", "/api/payees", json={"entity_id": AISB, "name": "Fund from AGRINEXUS INTERNATIONAL", "category": "receipt",
+# 1. Money received from the related company, a recurring receipt (money in: only the route sets the direction).
+j("post", "/api/payees", json={"entity_id": AISB, "name": f"Fund from {RELATED}", "category": "receipt",
                                "amount": 50000, "due_day": 24, "month_offset": 0, "account_id": MAIN})
 
 # 2. Months: AISB August (filed at the end) to November (opened ahead); AI August to October, tracked from September.
@@ -221,7 +233,7 @@ for eid, month, acct, cat, desc, amount, due, way in (
         (AISB, "2026-10", MAIN, "transfer", "Transfer to AI October", 10000, "2026-10-20", "out"),
         (AISB, "2026-10", MAIN, "claim", "Staff claim Ahmad October", 230, "2026-10-22", "out"),
         (AISB, "2026-10", MAIN, "claim_overseas", "GOOGLE Workspace claim October", 60, "2026-10-27", "out"),
-        (AISB, "2026-10", MAIN, "receipt", "Second fund from AGRINEXUS INTERNATIONAL", 20000, "2026-10-30", "in"),
+        (AISB, "2026-10", MAIN, "receipt", f"Second fund from {RELATED}", 20000, "2026-10-30", "in"),
         (AI, "2026-08", CURRENT, "other", "Old bill August", 100, "2026-08-20", "out"),
         (AI, "2026-09", CURRENT, "consultant", "Consultant Lim September", 3000, "2026-09-15", "out"),
         (AI, "2026-09", CURRENT, "receipt", "Customer receipt September", 8000, "2026-09-20", "in"),
@@ -238,8 +250,8 @@ raw("payment with an unknown type", lambda con: con.execute(
 
 # 4. Bank statements and their lines (no route builds them without a real bank PDF).
 STATEMENTS = [  # (account, month, opening, closing or None to add up, check_ok, [(date, description, amount)])
-    (MAIN, "2026-09", 100000, None, 1, [("2026-09-24", "IBG CREDIT AGRINEXUS INTERNATIONAL", 50000),
-                                        ("2026-09-26", "IBG RAMAN CONSULTING", -5000),
+    (MAIN, "2026-09", 100000, None, 1, [("2026-09-24", f"IBG CREDIT {RELATED}", 50000),
+                                        ("2026-09-26", "IBG DELTA CONSULTING", -5000),
                                         ("2026-09-28", "IBG STAFF TWO SALARY", -2800),
                                         ("2026-09-28", "IBG DIRECTOR FEE", -2000)]),
     (FCA, "2026-09", 5000, None, 1, []),
@@ -247,7 +259,7 @@ STATEMENTS = [  # (account, month, opening, closing or None to add up, check_ok,
                                         ("2026-10-16", "COURIER SVC", -450),
                                         ("2026-10-20", "KWSP CONTRIBUTION SEP", -1200),
                                         ("2026-10-20", "IBG TRANSFER TO AI", -10000),
-                                        ("2026-10-24", "IBG CREDIT AGRINEXUS INTERNATIONAL", 50000),
+                                        ("2026-10-24", f"IBG CREDIT {RELATED}", 50000),
                                         ("2026-10-28", "IBG ALI SALARY", -2935.48),
                                         ("2026-10-28", "IBG SITI SALARY", -2800),
                                         ("2026-10-29", "INWARD TRANSFER UNKNOWN", 1500),
@@ -292,11 +304,11 @@ def line(acct, month, n):
 
 # 5. Bank lines linked to their payments (the route sets the paid dates and takes the lines' totals).
 for acct, month, n, eid, pmonth, desc in (
-        (MAIN, "2026-09", 1, AISB, "2026-09", "Fund from AGRINEXUS"), (MAIN, "2026-09", 2, AISB, "2026-09", "Raman Consulting"),
+        (MAIN, "2026-09", 1, AISB, "2026-09", FUND), (MAIN, "2026-09", 2, AISB, "2026-09", "Delta Consulting"),
         (MAIN, "2026-09", 3, AISB, "2026-09", "Salary Siti"), (MAIN, "2026-09", 4, AISB, "2026-09", "Director allowance"),
         (MAIN, "2026-10", 1, AISB, "2026-10", "Printer lease"), (MAIN, "2026-10", 2, AISB, "2026-10", "Courier charges"),
         (MAIN, "2026-10", 3, AISB, "2026-09", "KWSP"), (MAIN, "2026-10", 4, AISB, "2026-10", "Transfer to AI"),
-        (MAIN, "2026-10", 5, AISB, "2026-10", "Fund from AGRINEXUS"), (MAIN, "2026-10", 6, AISB, "2026-10", "Salary Ali"),
+        (MAIN, "2026-10", 5, AISB, "2026-10", FUND), (MAIN, "2026-10", 6, AISB, "2026-10", "Salary Ali"),
         (MAIN, "2026-10", 7, AISB, "2026-10", "Salary Siti"),
         (FCA, "2026-10", 1, AISB, "2026-10", "CLAUDE subscription claim"),  # a USD line on a ringgit payment
         (CURRENT, "2026-09", 1, AI, "2026-09", "Consultant Lim"), (CURRENT, "2026-09", 2, AI, "2026-09", "Customer receipt")):
@@ -307,15 +319,15 @@ j("patch", f"/api/payments/{pay(AISB, '2026-10', 'Courier charges')}", json={"di
 SQL = [  # doc no, date, description, amount, direction, doc type, kind, e-Invoice UIN, e-Invoice status, item (month, code)
     ("PV2609-001", "2026-09-28", "SALARY SITI SEP 2026", 2800, "out", "PV", "payment", None, None, None),
     ("PV2609-002", "2026-09-28", "DIRECTOR FEE SEP 2026", 2000, "out", "PV", "payment", None, None, None),
-    ("PV2609-003", "2026-09-26", "RAMAN CONSULTING SEP 2026", 5000, "out", "PV", "payment", None, None, None),
-    ("OR2609-001", "2026-09-24", "FUND FROM AGRINEXUS INTERNATIONAL SEP 2026", 50000, "in", "OR", "payment", None, None, None),
+    ("PV2609-003", "2026-09-26", "DELTA CONSULTING SEP 2026", 5000, "out", "PV", "payment", None, None, None),
+    ("OR2609-001", "2026-09-24", f"FUND FROM {RELATED} SEP 2026", 50000, "in", "OR", "payment", None, None, None),
     ("PV2610-001", "2026-10-20", "KWSP SEP 2026", 1200, "out", "PV", "payment", None, None, None),
     ("PV2610-002", "2026-10-06", "LHDN PCB SEP 2026", 400, "out", "PV", "payment", None, None, None),
     ("PV2610-003", "2026-10-28", "SALARY ALI OCT 2026", 2935.48, "out", "PV", "payment", None, None, None),
     ("PV2610-004", "2026-10-28", "SALARY SITI OCT 2026", 2800, "out", "PV", "payment", None, None, None),
     ("PV2610-005", "2026-10-27", "GOOGLE WORKSPACE CLAIM", 60, "out", "PV", "payment", "UIN-SB-005", "Validated", None),
     ("PV2610-010", "2026-10-25", "CLAUDE SUBSCRIPTION CLAIM", 95, "out", "PV", "payment", "UIN-SB-010", "Validated", None),
-    ("OR2610-001", "2026-10-24", "FUND FROM AGRINEXUS INTERNATIONAL OCT 2026", 50000, "in", "OR", "payment", None, None, None),
+    ("OR2610-001", "2026-10-24", f"FUND FROM {RELATED} OCT 2026", 50000, "in", "OR", "payment", None, None, None),
     ("OR2610-002", "2026-10-30", "SELF-BILLED REFUND FOR DUPLICATED SELF-BILLED E-INVOICE (PV2610-005)", 60, "in", "OR", "payment",
      "UIN-REF-002", "Validated", None),
     ("JV2610-001", "2026-10-31", "PAYROLL ACCRUAL OCTOBER 26", 7735.48, None, "JV", "journal", None, None, ("2026-10", "payroll-jv")),
@@ -341,11 +353,11 @@ def add_sql(con):
 
 SQLID = raw("SQL listing rows", add_sql)
 for no, month, desc in (("PV2609-001", "2026-09", "Salary Siti"), ("PV2609-002", "2026-09", "Director allowance"),
-                        ("PV2609-003", "2026-09", "Raman Consulting"), ("OR2609-001", "2026-09", "Fund from AGRINEXUS"),
+                        ("PV2609-003", "2026-09", "Delta Consulting"), ("OR2609-001", "2026-09", FUND),
                         ("PV2610-001", "2026-09", "KWSP"), ("PV2610-002", "2026-09", "LHDN PCB"),
                         ("PV2610-003", "2026-10", "Salary Ali"), ("PV2610-004", "2026-10", "Salary Siti"),
                         ("PV2610-005", "2026-10", "GOOGLE Workspace"), ("PV2610-010", "2026-10", "CLAUDE subscription"),
-                        ("OR2610-001", "2026-10", "Fund from AGRINEXUS")):  # OR2610-002 stays unlinked (Next up rule 7)
+                        ("OR2610-001", "2026-10", FUND)):  # OR2610-002 stays unlinked (Next up rule 7)
     j("post", f"/api/sql/entries/{SQLID[no]}", json={"payment_id": pay(AISB, month, desc)})
 
 # 7. Paid dates typed in.
@@ -356,7 +368,7 @@ j("patch", f"/api/payments/{pay(AISB, '2026-10', 'Staff claim Ahmad')}", json={"
 old_slip = upload("payslip", "payslip Siti Sep v1.pdf", payment_id=pay(AISB, "2026-09", "Salary Siti"))
 upload("payslip", "payslip Siti Sep v2.pdf", payment_id=pay(AISB, "2026-09", "Salary Siti"), replaces=old_slip)
 upload("payslip", "payslip director Sep.pdf", payment_id=pay(AISB, "2026-09", "Director allowance"))
-upload("invoice", "invoice Raman Sep.pdf", payment_id=pay(AISB, "2026-09", "Raman Consulting"))
+upload("invoice", "invoice Delta Sep.pdf", payment_id=pay(AISB, "2026-09", "Delta Consulting"))
 upload("invoice", "invoice Lim Sep.pdf", payment_id=pay(AI, "2026-09", "Consultant Lim"))
 upload("payslip", "payslip Ali Oct.pdf", payment_id=pay(AISB, "2026-10", "Salary Ali"))
 for t in ("pv", "payslip", "bank"):
@@ -371,16 +383,16 @@ upload("approval", "transfer approval.pdf", payment_id=pay(AISB, "2026-10", "Tra
 upload("approval", "budget approval Oct.pdf", task_id=task(AISB, "2026-10", "budget"))
 upload("payroll", "payroll summary Oct.pdf", task_id=task(AISB, "2026-10", "payroll-calc"))
 upload("invoice", "AI invoices Oct.pdf", task_id=task(AI, "2026-10", "invoices"))
-gone = upload("bank", "raman bank slip wrong.pdf", payment_id=pay(AISB, "2026-10", "Raman Consulting"))
+gone = upload("bank", "delta bank slip wrong.pdf", payment_id=pay(AISB, "2026-10", "Delta Consulting"))
 j("post", f"/api/documents/{gone}/remove", json={})
-upload("other", "raman notes.txt", payment_id=pay(AISB, "2026-10", "Raman Consulting"), data=b"Notes, not a PDF.\n")
+upload("other", "delta notes.txt", payment_id=pay(AISB, "2026-10", "Delta Consulting"), data=b"Notes, not a PDF.\n")
 
 
 def unknown_doc(con):
     ent = con.execute("SELECT * FROM entities WHERE id = 1").fetchone()
-    pid = con.execute("SELECT id FROM payments WHERE entity_id = 1 AND month = '2026-10' AND description LIKE 'Raman%'").fetchone()[0]
-    docstore.store(con, entity=ent, month="2026-10", folder="misc", doc_type="misc", filename="raman misc.pdf",
-                   data=pdf("raman misc"), payment_id=pid)
+    pid = con.execute("SELECT id FROM payments WHERE entity_id = 1 AND month = '2026-10' AND description LIKE 'Delta%'").fetchone()[0]
+    docstore.store(con, entity=ent, month="2026-10", folder="misc", doc_type="misc", filename="delta misc.pdf",
+                   data=pdf("delta misc"), payment_id=pid)
 
 
 raw("document with an unknown type", unknown_doc)
@@ -434,7 +446,7 @@ ROW_KEYS = ("key", "rule", "entity_id", "entity", "month", "text", "due", "state
 READY_KEYS = ("set_up", "payments", "closed_at", "items", "summary", "ready", "pack", "pack_open", "still_open", "to_print")
 NEXT_DATES = ["2026-10-28", "2026-11-04", "2026-11-13", "2026-11-16", "2026-12-08"]
 GUESS_WORDS = ["CLAUDE.AI subscription", "Google Workspace", "ANTHROPIC", "Staff claim", "SALARY OCT", "Stamp duty", "CP204 instalment",
-               "KWSP Oct", "PERKESO", "LHDN PCB", "HASIL", "SOCSO", "Office RENTAL", "TNB bill", "UNIFI", "TM TECHNOLOGY", "Printer toner",
+               "KWSP Oct", "PERKESO", "LHDN PCB", "HASIL", "SOCSO", "Office RENTAL", "ELECTRIC bill", "BROADBAND", "TELEPHONE", "Printer toner",
                "", None]
 ACCOUNTS = [(AISB, MAIN), (AISB, FCA), (AI, CURRENT), (XCO, OPS)]
 
@@ -549,7 +561,7 @@ def snapshot():
     s["settings_fields"] = j("get", "/api/setup/settings")["fields"]
     s["guess"] = [[w, appmod._guess_category(w)] for w in GUESS_WORDS]
     r1 = call("post", "/api/payees", 400, json={"entity_id": AISB, "name": "Bogus", "category": "bogus"})
-    r2 = call("post", "/api/upload", 400, data={"doc_type": "bogus", "payment_id": str(pay(AISB, "2026-10", "Raman Consulting")),
+    r2 = call("post", "/api/upload", 400, data={"doc_type": "bogus", "payment_id": str(pay(AISB, "2026-10", "Delta Consulting")),
                                                 "file": (io.BytesIO(pdf("bogus")), "bogus.pdf")}, content_type="multipart/form-data")
     s["refused"] = [[r.status_code, r.get_json()] for r in (r1, r2)]
 
@@ -704,6 +716,42 @@ def coverage(s):
     check("coverage: both refused writes refused", [r[0] for r in s["refused"]] == [400, 400])
 
 
+# ---------- names taken out (Phase 7) ----------
+GUESS_RENAMED = (13, 14, 15)  # GUESS_WORDS: the three utility and telco examples
+
+
+def renamed(golden, s):
+    """[(old name, new name, mask)]: each old name read from the golden by key (see the docstring)."""
+    def fund_title(x):
+        return next(t["title"] for t in x["month"]["1:2026-10"]["tasks"] if t["code"] == "fund-received")
+    rx = re.compile(r"^Fund received from (.+): issue OR and e-Invoice$")
+    out = [(rx.match(fund_title(golden)).group(1), rx.match(fund_title(s)).group(1), "<RELATED>")]
+    new_pays, old_pays = s["month"]["1:2026-10"]["payments"], golden["month"]["1:2026-10"]["payments"]
+    for word, mask in (("OHM", "<UTILITY>"), ("Delta", "<CONSULTANT>")):
+        k = next(i for i, p in enumerate(new_pays) if p["description"].split()[0] == word)
+        check(f"the golden has the payment {mask} stands for at the same place",
+              old_pays[k]["id"] == new_pays[k]["id"] and old_pays[k]["category"] == new_pays[k]["category"])
+        out.append((old_pays[k]["description"].split()[0], word, mask))
+    return out
+
+
+def masked(x, names):
+    """x with each name (the whole name, and its first word alone) masked, in keys and values, any case."""
+    rxs = [(re.compile(r"\s+".join(map(re.escape, n.split())), re.I), m) for n, m in names]
+    rxs += [(re.compile(rf"\b{re.escape(n.split()[0])}\b", re.I), m) for n, m in names]
+
+    def walk(v):
+        if isinstance(v, dict):
+            return {walk(k): walk(w) for k, w in v.items()}
+        if isinstance(v, list):
+            return [walk(w) for w in v]
+        if isinstance(v, str):
+            for rx, m in rxs:
+                v = rx.sub(m, v)
+        return v
+    return walk(x)
+
+
 # ---------- run ----------
 S0 = snapshot()
 same("the snapshot is deterministic (S0 taken twice)", S0, snapshot())
@@ -728,7 +776,13 @@ check("the records' rows are unchanged by the remaining updates", raw0 == raw1,
       [t for t in raw0 if raw0[t] != raw1.get(t)])
 if OPTS.golden:
     golden = json.loads(Path(OPTS.golden).read_text(encoding="utf-8"))
-    same("S0 equals the golden snapshot from before Phase 4", golden, S0)
-    same("S1 equals the golden snapshot from before Phase 4", golden, S1)
+    pairs = renamed(golden, S0)
+    keep = ("/meta_new_keys",) + tuple(f"/guess[{i}][0]" for i in GUESS_RENAMED)
+    golden = masked(golden, [(old, ph) for old, _, ph in pairs])
+    check("the golden holds none of the old names once masked", not any(
+        re.search(rf"\b{re.escape(old.split()[0])}\b", f"{k} {v}", re.I) for old, _, _ in pairs for k, v in flat(golden).items()
+        if not k.startswith(keep)))
+    for name, s in (("S0", S0), ("S1", S1)):
+        same(f"{name} equals the golden snapshot from before Phase 4", golden, masked(s, [(new, ph) for _, new, ph in pairs]), keep)
 
 print(f"\nAll {len(passed)} checks passed. Records folder used: {tmp}")

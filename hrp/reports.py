@@ -333,11 +333,14 @@ def _folders(con, entity, month):
     return out
 
 
-def auditor_package(con, entity, month):
+def auditor_package(con, entity, month, built=None):
     """Builds a fresh audit pack and the zip for the auditor: the pack, the month report with a Files sheet, and the
     original files. A file whose fingerprint no longer matches is left out and listed. Returns (zip path, files in it,
-    files left out)."""
-    pack = auditpack.build(con, entity, month)
+    files left out). built: filled with what built the pack, as auditpack.build does, and with pack_path, the pack
+    file just built (for its trail event; take it out before the event is written)."""
+    pack = auditpack.build(con, entity, month, built)
+    if built is not None:
+        built["pack_path"] = pack
     pack_bytes = pack.read_bytes()
     report_name = month_report_name(entity, month)
     taken = {pack.name.lower(), report_name.lower()}

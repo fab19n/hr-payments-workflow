@@ -81,19 +81,21 @@ def required_docs(category, uses_sql):
 RECON_DETAIL = ("Every statement line confirmed and the books agreeing with the bank. Done when the month is marked "
                 "reconciled on the Bank statements page.")
 
-# Monthly checklist per entity code. Each task can also ask for documents (attached to the task itself).
+# Monthly checklist per entity code. Each task can also ask for documents (attached to the task itself). From update 21
+# on the checklist lives in the records (Setup); these lists only fill it for a records.db updated from before then,
+# and for a company whose code has one here (older seed.json files and the tests). The names in them are made up.
 CHECKLIST = {
     "AISB": [
         ("inputs", (0, 18), "Collect payroll changes",
          "Joiners, leavers, unpaid leave, allowance changes. Update the leave record for the month.", []),
         ("budget", (0, 20), "Prepare budget and fund requisition",
-         "Payroll, consultant fees, claims, office rental, copier, TNB, Unifi. Send the requisition for approval.", ["approval"]),
+         "Payroll, consultant fees, claims, office rental, copier, electricity, internet. Send the requisition for approval.", ["approval"]),
         ("payroll-calc", (0, 22), "Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB",
          "Net pay per employee and the employer contributions for the month.", ["payroll"]),
         ("payroll-approve", (0, 24), "Payroll approved",
          "Approval of the payroll summary before the bank transfer.", ["approval"]),
-        ("fund-received", (0, 24), "Fund received from Agrinexus International: issue OR and e-Invoice",
-         "SQL Sales tab: e-Invoice to Agrinexus International for monthly operating expenses. Done once the receipt has "
+        ("fund-received", (0, 24), "Fund received from Northwind International: issue OR and e-Invoice",
+         "SQL Sales tab: e-Invoice to Northwind International for monthly operating expenses. Done once the receipt has "
          "its OR and the e-Invoice is validated.", []),
         ("payroll-jv", (0, 28), "Salary PVs in SQL (one per person)",
          "A Payment Voucher in SQL for each salary and the director allowance, then send the payslips.", []),
@@ -117,31 +119,72 @@ CHECKLIST = {
         ("file", (1, 10), "Print and file the audit pack", "Generate the pack from the Audit pack screen.", []),
     ],
     "AI": [
-        ("budget", (0, 20), "Prepare Agrinexus International budget", "Consultant fees and the AISB fund requisition.", ["approval"]),
+        ("budget", (0, 20), "Prepare Northwind International budget", "Consultant fees and the AISB fund requisition.", ["approval"]),
         ("invoices", (0, 26), "Issue invoices to customers", "", ["invoice"]),
         ("statement", (1, 5), "Download MBB statements (CA and FCA) and import them here", "", []),
         ("records", (1, 8), "Update MBB bank records", "Record every payment and receipt for the month.", []),
         ("file", (1, 10), "Print and file the audit pack", "", []),
     ],
 }
+# Made-up names standing in, in the lists above and in TASK_PAYMENTS / sqlimport.TASK_RULES, for the first install's
+# related company and office tenant, so no real name is kept in the program. A seed.json may give the real ones
+# ("names": {"Northwind International": "...", "Contoso Cafe": "..."}); checklistbook.fill_names writes them in, in
+# the same case (and in capitals where the placeholder is in capitals, as in matching words).
+PLACEHOLDERS = ("Northwind International", "Contoso Cafe")
+
 # The checklist items whose wording or documents changed since the first release; the update gives the items already
 # set up the wording and documents above.
 CHECKLIST_CHANGED = {"fund-received", "payroll-jv", "kwsp", "perkeso", "epcb", "einv-rental", "einv-selfbilled"}
+
+# The checklist a company added in Setup starts with (checklistbook.seed_company), whatever its code (the lists above
+# are only for update 21 and seed.json): the first company's list without the items only that group needed (money from
+# a related company, rent from a tenant), worded for any company. The codes are the ones the app knows (TASK_PAYMENTS, TASK_STATEMENTS, TASK_PACK), so the
+# items are shown done the same way. It is only a start: every item can be changed, stopped or deleted in Setup.
+STARTER = [
+    ("inputs", (0, 18), "Collect payroll changes",
+     "Joiners, leavers, unpaid leave, allowance changes. Update the leave record for the month.", []),
+    ("budget", (0, 20), "Prepare the month's budget",
+     "Payroll, consultant fees, claims, rental and bills. Send it for approval.", ["approval"]),
+    ("payroll-calc", (0, 22), "Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB",
+     "Net pay per employee and the employer contributions for the month.", ["payroll"]),
+    ("payroll-approve", (0, 24), "Payroll approved",
+     "Approval of the payroll summary before the bank transfer.", ["approval"]),
+    ("payroll-jv", (0, 28), "Salary PVs in SQL (one per person)",
+     "A Payment Voucher in SQL for each salary and director payment, then send the payslips.", []),
+    ("claims", (1, 2), "Staff claims compiled and approved",
+     "Compiled and approved, then paid. Add each claim as a payment.", []),
+    ("kwsp", (1, 3), "KWSP: submit contribution data",
+     "i-Akaun: contribution month = next month, wages month = payroll month. File the acknowledgement on the KWSP "
+     "payment.", []),
+    ("perkeso", (1, 3), "PERKESO: submit SOCSO, EIS and SKBBK",
+     "ASSIST portal. SOCSO, EIS and SKBBK (Lindung 24 Jam) are separate lines. File the acknowledgement on each "
+     "payment.", []),
+    ("epcb", (1, 3), "LHDN: submit PCB (e-PCB Plus)",
+     "Get the payment reference before paying. File the acknowledgement on the PCB payment.", []),
+    ("einv-selfbilled", (1, 7), "Self-billed e-Invoices for overseas providers",
+     "Overseas services that issue no Malaysian e-Invoice. Done once each overseas claim of the month has its "
+     "e-Invoice.", []),
+    ("statement", (1, 5), "Download bank statements and import them here", "", []),
+    ("recon", (1, 10), "Bank reconciliation", RECON_DETAIL, []),
+    ("file", (1, 10), "Print and file the audit pack", "Generate the pack from the Audit pack screen.", []),
+]
+# Starter items left out for a company not kept in SQL Account: they ask for SQL vouchers.
+STARTER_SQL_ONLY = {"payroll-jv"}
 
 # Checklist items the month's payments show done (db.task_status), once each payment they cover has the documents
 # named (uploaded, or shown by SQL or the bank). Which payments: types, money in or out, and words (whole words) in the
 # description or payee. on_item: documents that may be filed on the checklist item itself instead: an upload there
 # stands for every payment (the acknowledgement the item used to ask for), and the item's validated e-Invoices for its
-# month stand for payments up to what they add up to (the e-Invoice to Agrinexus International is an SQL sales invoice
+# month stand for payments up to what they add up to (the e-Invoice to the related company is an SQL sales invoice
 # filed on the item). paid: a paid one counts too, as statutory data is submitted before it can be paid. none: done
 # with no such payment once the month's bank statements are imported, saying this. name: what one and several are
 # called.
 TASK_PAYMENTS = {
     "payroll-jv": {"categories": ("salary", "director"), "docs": ["pv"],
                    "name": ("salary or director payment", "salary and director payments")},
-    "fund-received": {"direction": "in", "words": ("AGRINEXUS INTERNATIONAL",), "docs": ["or", "einvoice"],
+    "fund-received": {"direction": "in", "words": ("NORTHWIND INTERNATIONAL",), "docs": ["or", "einvoice"],
                       "on_item": ["einvoice"],
-                      "name": ("receipt from Agrinexus International", "receipts from Agrinexus International")},
+                      "name": ("receipt from Northwind International", "receipts from Northwind International")},
     "kwsp": {"categories": ("statutory",), "words": ("KWSP", "KUMPULAN WANG"), "docs": ["portal"], "on_item": ["portal"],
              "paid": True, "name": ("KWSP payment", "KWSP payments")},
     "perkeso": {"categories": ("statutory",), "words": ("PERKESO", "SOCSO", "EIS", "SIP", "SKBBK"), "docs": ["portal"],

@@ -15,7 +15,7 @@ import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
 from . import (appsettings, audit, auditpack, auditread, checklistbook, config, budget as stored, db, masters, nextup, recon, reports,
-               monthly, partybook, rulebook, rules, sqlimport, statements)
+               monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlimport, statements)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -90,7 +90,7 @@ def con():
     return g.con
 
 
-IMPORTS = ("/api/statements", "/api/sql/apply")  # requests whose changes the trail shows as an import
+IMPORTS = ("/api/statements", "/api/sql/apply", "/api/setup/import")  # requests whose changes the trail shows as an import
 
 
 def _trail_context():
@@ -1583,7 +1583,7 @@ def sql_apply():
              r.get("einvoice") or None, r["doc_type"], r["kind"], r.get("einvoice_status") or None,
              r.get("einvoice_link") or None, r.get("task_id"), pid, status))
         if not cur.rowcount:
-            # Already imported from another listing (e.g. the cash book and the PV listing both hold PV2610-001):
+            # Already imported from another listing (e.g. the cash book and the PV listing both hold PV2601-001):
             # fill in anything the earlier listing lacked, and an e-Invoice validated since.
             # A document first read without its type (e.g. a customer invoice) is reclassified while still unlinked.
             st = r.get("einvoice_status") or None
@@ -2001,19 +2001,44 @@ def audit_pack():
     b = request.get_json()
     c = con()
     e = entity(c, int(b["entity_id"]))
+    built = {}
     try:
-        path = auditpack.build(c, e, month_from(b.get("month")))
+        path = auditpack.build(c, e, month_from(b.get("month")), built)
     except auditpack.PackError as ex:
         return err(str(ex))
     db.log(c, f"Built audit pack {path.name}")
-    audit.event(c, "pack", path.name, {"company": e["code"], "month": b.get("month"), "file": path.name,
-                                       "sha256": audit.file_sha256(path), "size": path.stat().st_size}, entity_id=e["id"])
+    _pack_event(c, e, b.get("month"), path, built)
     c.commit()
     return jsonify({"name": path.name, "url": _pack_url(path)})
 
 
+def _pack_event(c, e, month, path, built, **more):
+    """The pack built, in the audit trail: the file and its fingerprint, and what built it (auditpack.build's built:
+    the program, the day the statuses were worked out on, and the Generated line, trail entry and check code printed
+    on its cover), so Check this pack can say what changed since and the same pack can be built again exactly."""
+    audit.event(c, "pack", path.name, {"company": e["code"], "month": month, "file": path.name, **more,
+                                       "sha256": audit.file_sha256(path), "size": path.stat().st_size, **built},
+                entity_id=e["id"])
+
+
 def _pack_url(path):
     return f"/api/audit-pack/file?name={path.parent.name}/{path.name}"
+
+
+@app.get("/api/audit-pack/check")
+def audit_pack_check():
+    """Check this pack (packcheck.check): the file against the fingerprint recorded when it was built, and what changed
+    since in what it reads. By the pack's trail row (event), or by company, month and file name. Reads only."""
+    c = con()
+    if request.args.get("event"):
+        v = request.args["event"]
+        if not (v.isascii() and v.isdigit() and len(v) <= 18):  # ASCII digits only, small enough for a SQLite INTEGER
+            return err("No such audit pack.", 404)
+        r = packcheck.check(c, event=int(request.args["event"]))
+    else:
+        r = packcheck.check(c, ent=entity(c, id_from(request.args.get("entity") or "")), month=month_from(request.args.get("month")),
+                            name=request.args.get("file") or "")
+    return jsonify(r) if r else err("No such audit pack.", 404)
 
 
 @app.get("/api/audit-readiness")
@@ -2080,14 +2105,14 @@ def auditor_export():
     c = con()
     e = entity(c, id_from(str(b.get("entity_id"))))
     month = month_from(b.get("month"))
+    built = {}
     try:
-        path, n, left_out = reports.auditor_package(c, e, month)
+        path, n, left_out = reports.auditor_package(c, e, month, built)
     except auditpack.PackError as ex:
         return err(str(ex))
     db.log(c, f"Built auditor package {path.name} ({n} files{f', {left_out} left out' if left_out else ''}), with a fresh audit pack")
-    pack = db.packs_of(e, month)[-1]  # the fresh audit pack the package was built with, also kept in audit-packs
-    audit.event(c, "pack", pack.name, {"company": e["code"], "month": month, "file": pack.name, "via": "auditor package",
-                                       "sha256": audit.file_sha256(pack), "size": pack.stat().st_size}, entity_id=e["id"])
+    pack = built.pop("pack_path")  # the fresh audit pack the package was built with, also kept in audit-packs
+    _pack_event(c, e, month, pack, built, via="auditor package")
     audit.event(c, "export", path.name, {"kind": "auditor package", "company": e["code"], "month": month, "file": path.name,
                                          "files": n, "left_out": left_out, "sha256": audit.file_sha256(path),
                                          "size": path.stat().st_size}, entity_id=e["id"])
@@ -2107,9 +2132,14 @@ def auditor_export_file():
 
 @app.get("/api/audit-packs")
 def list_packs():
-    """The packs built, newest first: for one company and month (entity, month), else the 30 latest of all."""
+    """The packs built, newest first: for one company and month (entity, month), else the 30 latest of all. For one
+    month, each pack also names its trail row (event: None for one built before the trail recorded packs) for Check
+    this pack, and a pack the trail recorded whose file has gone is listed too (missing, no url)."""
     if request.args.get("entity"):
-        found = db.packs_of(entity(con(), int(request.args["entity"])), month_from(request.args.get("month")))[::-1]
+        c = con()
+        out = packcheck.packs(c, entity(c, int(request.args["entity"])), month_from(request.args.get("month")))
+        return jsonify([{**{k: v for k, v in p.items() if k != "path"}, "url": _pack_url(p["path"]) if p["path"] else None}
+                        for p in out])
     else:
         found = sorted(PACKS_DIR.glob("*/*.pdf"), key=lambda x: x.stat().st_mtime, reverse=True)[:30]
     return jsonify([{"name": p.name, "url": _pack_url(p), "at": datetime.fromtimestamp(p.stat().st_mtime).isoformat(timespec="minutes")}
@@ -2256,6 +2286,16 @@ def _setup_call(fn, preview=None):
         rulebook.forget(c)
         checklistbook.forget(c)
         return err(str(x), x.status)
+    except sqlite3.IntegrityError as x:  # a check the records make that Setup's own missed: refused, never a 500
+        c.rollback()
+        rulebook.forget(c)
+        checklistbook.forget(c)
+        return err(f"The records refuse this change ({x}), so nothing was saved.", 409)
+    except Exception:  # anything else is still a 500, but what it half-made is undone first, so caches reload from kept rows
+        c.rollback()
+        rulebook.forget(c)
+        checklistbook.forget(c)
+        raise
     if preview:
         c.rollback()
         rulebook.forget(c)
@@ -2345,6 +2385,61 @@ def setup_settings_save():
     return _setup_call(run)  # values are checked before anything is saved
 
 
+@app.get("/api/setup/export")
+@audited_read("setup export")
+def setup_export():
+    """setup.json (setupfile.export): ?what=template (the rules, with the starter checklist of ?entity= or the one new
+    companies get) or ?what=full (everything; &payees=1 adds the recurring payments). Opening it is kept in the trail."""
+    what = request.args.get("what", "template")
+    try:
+        data = setupfile.export(con(), what, payees=request.args.get("payees") == "1",
+                                entity_id=request.args.get("entity", type=int) if what == "template" else None)
+    except masters.Refused as x:
+        return err(str(x), x.status)
+    body = json.dumps(data, ensure_ascii=False, indent=1).encode("utf-8")
+    name = f"Setup {'template' if what == 'template' else 'everything'} {date.today():%Y-%m-%d}.json"
+    return send_file(io.BytesIO(body), mimetype="application/json", as_attachment=True, download_name=name)
+
+
+@app.get("/api/setup/import")
+def setup_import_state():
+    """Whether a setup file can be imported: only into records holding no company data yet (setupfile.holding)."""
+    held = setupfile.holding(con())
+    return jsonify({"empty": not held, "holding": held})
+
+
+@app.post("/api/setup/import")
+def setup_import():
+    """Imports setup.json ({setup, preview, reason}) into new records, all or nothing; a preview makes the import and
+    undoes it to show what it would add. The trail shows it as an import, with the reason."""
+    b = _body()
+    preview = b.get("preview") is True
+    if not preview:
+        _reason()
+    try:
+        return _setup_call(lambda c: setupfile.load(c, b.get("setup")), preview=preview)
+    finally:
+        appsettings.load(con())  # the settings the import saved went into the cache: it follows what was kept
+
+
+@app.get("/api/setup/restore")
+def setup_deleted():
+    """The records of a Setup section (?kind=, ?entity= for one kept per company) deleted in this app and not put back,
+    each with why it can't be put back now, if it can't (restore.deleted)."""
+    return _setup_call(lambda c: restore.deleted(c, request.args.get("kind"), request.args.get("entity", type=int)))
+
+
+@app.post("/api/setup/restore/<int:row_id>")
+def setup_restore(row_id):
+    """Puts back the record the trail's delete row row_id removed ({preview, reason}): a preview makes the change and
+    undoes it, to show what it would do; otherwise a reason is asked. Refused with a plain reason (restore.put_back)."""
+    b = _body()
+    preview = b.get("preview") is True
+    if not preview:
+        _reason()
+    return _setup_call(lambda c: restore.put_back(c, row_id), preview=preview)
+
+
 @app.get("/api/setup/<kind>")
 def setup_list(kind):
     eid = request.args.get("entity", type=int)
@@ -2427,6 +2522,8 @@ def audit_entries():
 @app.get("/api/audit/tx/<int:tid>")
 def audit_entry(tid):
     out = auditread.entry(con(), tid, show=bool(request.args.get("show")))
+    if out:
+        restore.mark(con(), out["changes"])  # a deleted Setup record can be put back from here
     return jsonify(out) if out else err("There is no such entry.", 404)
 
 
@@ -2435,7 +2532,9 @@ def audit_record(tbl, key):
     """One record's history (a payment, a recurring payment, a budget line...)."""
     if tbl not in auditread.TABLE_LABELS or len(key) > 100:
         return err("That isn't a record.", 404)
-    return jsonify(auditread.history(con(), tbl, key, show=bool(request.args.get("show"))))
+    out = auditread.history(con(), tbl, key, show=bool(request.args.get("show")))
+    restore.mark(con(), out["changes"])
+    return jsonify(out)
 
 
 @app.get("/api/audit/outside")

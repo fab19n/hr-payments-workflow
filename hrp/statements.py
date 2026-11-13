@@ -121,7 +121,7 @@ def words(s):
 
 
 def overlaps(a, b):
-    """Shared word, allowing the bank's truncation and longer legal names (AHMAD ~ AHMADI, KUMAR ~ KUMARAN)."""
+    """Shared word, allowing the bank's truncation and longer legal names (ROBIN ~ ROBINSON, DANIEL ~ DANIELS)."""
     return any(x == y or (min(len(x), len(y)) >= 5 and (x.startswith(y) or y.startswith(x))) for x in a for y in b)
 
 
@@ -129,9 +129,9 @@ def auto_match(con, statement_id, only=None):
     """Link statement lines to payments of the same account (or only to the payments whose ids are in only).
 
     Lines are first narrowed to the payee's name. Then the lines that make up the payment are found: one line with
-    the exact amount, or several adding up to it (Maybank splits large DuitNow transfers: 22,000 = 2,000 + 10,000
+    the exact amount, or several adding up to it (Maybank splits large DuitNow transfers: 25,000 = 5,000 + 10,000
     + 10,000). The same person can appear on several lines (claim, salary), so only the right combination is taken.
-    An estimated bill (TNB, PCB) matches a single named line within ±50% and takes the bank's figure (take_line_total).
+    An estimated bill (electricity, PCB) matches a single named line within ±50% and takes the bank's figure (take_line_total).
     The bank's date replaces a paid date that came from an SQL voucher, but never one typed in. A line undone by hand,
     or freed by removing its payment, is left for a person to explain.
     """
@@ -186,7 +186,7 @@ def auto_match(con, statement_id, only=None):
 
 def take_line_total(con, payment_id):
     """An estimate, a blank amount, or an amount that came from bank lines becomes what the linked lines add up to:
-    a flight paid as 3,410 + 10,000 is 13,410. The figures planned before are kept (planned_amount), so undoing the
+    a payment made as 2,500 + 10,000 is 12,500. The figures planned before are kept (planned_amount), so undoing the
     links can put them back. An amount recorded by an SQL voucher stays, and so does one typed in, and lines in
     another currency than the payment's, or lines that take off as much as they add, leave it alone."""
     from .db import linked_total
@@ -248,7 +248,7 @@ def _combination(cands, amount):
     """The smallest set of candidate lines adding up exactly to the amount, or None."""
     from itertools import combinations
     if cands and abs(round(sum(abs(l["amount"]) for l in cands), 2) - amount) < 0.005:
-        return list(cands)  # all of them, e.g. RM70,000 sent as seven RM10,000 transfers
+        return list(cands)  # all of them, e.g. RM50,000 sent as five RM10,000 transfers
     cands = cands[:12]  # keeps the search small; a payee rarely has more lines in one month
     for size in range(1, min(len(cands), 6) + 1):
         for combo in combinations(cands, size):
@@ -284,7 +284,7 @@ def _name_score(p, line_desc):
         r = SequenceMatcher(None, _norm(src), ld).ratio()
         # a shared word counts as "matches" only from the payee's name or match words; a word in the payment's own
         # description (CLAUDE, say) is too common to say it is the same payee. The match words were chosen to pick
-        # this payee out, so they rank above one shared word of a name (RAMAN in two consultants' names).
+        # this payee out, so they rank above one shared word of a name (a word two consultants' names share).
         if i < 2 and words(src) and overlaps(words(src), lw):
             r = max(r, 1.0 if i == 1 else 0.9)
         best = max(best, r)

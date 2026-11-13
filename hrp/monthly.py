@@ -135,6 +135,31 @@ def _used(con, entity_id, code):
     return con.execute("SELECT COUNT(*) FROM tasks WHERE entity_id = ? AND code = ?", (entity_id, code)).fetchone()[0]
 
 
+def _starter_norm(t):
+    """A term's wording, due date, documents and rule, as comparable with a starter item's as given."""
+    return (t.get("due_offset"), t.get("due_day"), t.get("title"), t.get("detail") or "", list(t.get("docs") or []),
+            int(bool(t.get("deadline"))), t.get("submit_as") or None, _norm_rule(t.get("rule")), t.get("sort"))
+
+
+def _replaceable(con, B, entity_id):
+    """Whether a company's checklist may be replaced by a copy of another's: it is still, untouched, the starter list a
+    company added in Setup was given (checklistbook.starter_items: the same items in the same order, each with one term,
+    in use, worded as given; nothing built in), and no month has been set up with it yet. Any other checklist is kept:
+    the copy adds to it, or is refused, as before."""
+    mine = [it for (eid, _), it in B.items.items() if eid == entity_id]
+    if not mine or any(it["system"] for it in mine) or con.execute("SELECT 1 FROM tasks WHERE entity_id = ?", (entity_id,)).fetchone():
+        return False
+    for it in mine:
+        ts = B.terms.get(it["id"], [])
+        if len(ts) != 1 or not ts[0]["in_use"] or ts[0]["to_month"] is not None:
+            return False
+    have = {it["code"]: (it["completion"], _starter_norm(B.terms[it["id"]][0])) for it in mine}
+    uses_sql = con.execute("SELECT uses_sql FROM entities WHERE id = ?", (entity_id,)).fetchone()[0]
+    # the list it was given went by whether it was kept in SQL Account then, which may have been changed since
+    return any(have == {code: (kind, _starter_norm(term)) for code, kind, term in checklistbook.starter_items(con, u)}
+               for u in dict.fromkeys((uses_sql, 1 - uses_sql)))
+
+
 def _latest(B, it):
     ts = B.terms.get(it["id"], [])
     return ts[-1] if ts else None
@@ -170,7 +195,7 @@ def checklist_view(con, entity_id):
             "completions": [{"key": k, "label": label, "code": code} for k, label, code in checklistbook.COMPLETIONS],
             "doc_types": [{"key": k, "label": d["label"], "active": d["active"]} for k, d in docs],
             "payment_types": [{"key": k, "label": t["label"], "active": t["active"], "direction": t["direction"]} for k, t in R.types.items()],
-            "others": others}
+            "others": others, "replaceable": _replaceable(con, B, entity_id)}
 
 
 def _rule(con, v, keep):
@@ -248,9 +273,29 @@ def _slug(title, taken):
     return code
 
 
-def _same_title(B, ent, m, title, code):
-    if any(t["title"].strip().lower() == title.lower() and t["code"] != code for t in B.checklist(ent, m)):
-        raise Refused(f"Another item in use is called {title}. Give this one another title.")
+def _in_use_spans(B, ent, skip=()):
+    """{code: [(title, from, until)]}: the spans in which each of the company's items (but those in skip) is in use."""
+    out = {}
+    for (eid, c), it in B.items.items():
+        if eid == ent["id"] and c not in skip:
+            out[c] = [(t["title"], t["from_month"], t["to_month"]) for t in B.terms.get(it["id"], []) if t["in_use"]]
+    return out
+
+
+def _clash(spans, others):
+    """Refuses when a title in spans ([(title, from, until)], an until of None runs on) is one in others has in an
+    overlapping span: the lower-cased titles are compared, the same rule as the setup file's import
+    (setupfile._same_title)."""
+    for title, f, to in spans:
+        low = title.strip().lower()
+        if any(t2.strip().lower() == low and (to is None or to > f2) and (to2 is None or to2 > f) for t2, f2, to2 in others):
+            raise Refused(f"Another item in use is called {title}. Give this one another title.")
+
+
+def _same_title(B, ent, spans, code):
+    """Refuses when a title this item will have in use after the write (spans: [(title, from, until)]) is one another of
+    the company's items has in use in an overlapping span, so no two items in use ever share a title."""
+    _clash(spans, [s for c, ss in _in_use_spans(B, ent, {code}).items() for s in ss])
 
 
 def _bring_into_line(con, ent, code, m):
@@ -341,16 +386,34 @@ def checklist_save(con, b):
         src = _ent(con, src_id) if src_id != eid else None
         if not src:
             raise Refused("Choose another company to copy from.")
-        if B.checklist(ent, m):
+        replace = _replaceable(con, B, eid)
+        if B.checklist(ent, m) and not replace:
             raise Refused(f"{ent['code']} already has a checklist from {db.month_label(m)}. Change its items instead.")
         terms = B.checklist(src, m)
         if not terms:
             raise Refused(f"{src['code']} has no checklist in {db.month_label(m)}.")
+        # each copied item is in use from m until the next change planned for the company's own item of that code, if
+        # any; its titles then may not be another item's in use over the same months (the items replaced don't count)
+        new = {}
+        for t in terms:
+            mine = None if replace else B.items.get((eid, t["code"]))
+            nxt = mine and _live_at(B.terms.get(mine["id"], []), m)[1]
+            new[t["code"]] = (t["title"], m, nxt["from_month"] if nxt else None)
+        kept = {} if replace else _in_use_spans(B, ent)
+        for c in new:
+            if c in kept:  # what this copy writes over goes from m: its terms planned later stay
+                kept[c] = [s for s in kept[c] if s[1] > m]
+        for c, span in new.items():
+            _clash([span], [s for c2, ss in kept.items() if c2 != c for s in ss] + [s for c2, s in new.items() if c2 != c])
+        if replace:  # the starter list goes: the copy takes its place
+            con.execute("DELETE FROM checklist_terms WHERE item_id IN (SELECT id FROM checklist_items WHERE entity_id = ?)", (eid,))
+            con.execute("DELETE FROM checklist_items WHERE entity_id = ?", (eid,))
+            db.log(con, f"Checklist {ent['code']}: the starter checklist removed, to be replaced by {src['code']}'s")
         for t in terms:
             sit = B.items[(src["id"], t["code"])]
             vals = {k: t[k] for k in TERM_COLS}
             vals["docs"] = list(t["docs"])
-            mine = B.items.get((eid, t["code"]))
+            mine = None if replace else B.items.get((eid, t["code"]))
             if mine:
                 if mine["completion"] != sit["completion"]:
                     raise Refused(f"{ent['code']} already has an item {t['code']} shown done another way.")
@@ -367,7 +430,7 @@ def checklist_save(con, b):
             if completion not in [k for k, _, _ in checklistbook.COMPLETIONS]:
                 raise Refused("Say how the item is shown done.")
             vals = _term_fields(con, f, completion)
-            _same_title(B, ent, m, vals["title"], None)
+            _same_title(B, ent, [(vals["title"], m, None)], None)
             taken = {code for (e2, code) in B.items if e2 == eid}
             code = next((c for c, k in checklistbook.BUILT_IN.items() if k == completion), None)
             if code and code in taken:
@@ -387,8 +450,8 @@ def checklist_save(con, b):
                 same = cur and all((_norm_rule(vals[k]) == _norm_rule(cur[k])) if k == "rule" else vals[k] == cur[k] for k in TERM_COLS)
                 if same:
                     raise Refused("Nothing changes: this is what the item is from that month already.")
-                if in_use:
-                    _same_title(B, ent, m, vals["title"], it["code"])
+                if in_use:  # the new wording runs from m until the next change planned, which stays as it was
+                    _same_title(B, ent, [(vals["title"], m, nxt["from_month"] if nxt else None)], it["code"])
                 what = "changed"
             else:
                 in_use = 1 if action == "use" else 0
@@ -397,8 +460,9 @@ def checklist_save(con, b):
                 if in_use and cur and cur["in_use"]:
                     raise Refused("It is already in use from then.")
                 vals = {k: base[k] for k in TERM_COLS}
-                if in_use:
-                    _same_title(B, ent, m, vals["title"], it["code"])
+                if in_use:  # the changes planned later are put in use too: each title checked over its own months
+                    _same_title(B, ent, [(vals["title"], m, nxt["from_month"] if nxt else None)]
+                                + [(t["title"], t["from_month"], t["to_month"]) for t in ts if t["from_month"] > m], it["code"])
                 what = "in use again" if in_use else "stopped"
             lines += _write_term(con, it["id"], vals, m, in_use, spread=action in ("stop", "use"))
             db.log(con, f"Checklist {ent['code']}: {vals['title']} {what}, from {db.month_label(m)}")
