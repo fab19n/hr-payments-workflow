@@ -1033,7 +1033,7 @@ function monthPanel(s) {
     ${s.differ.length ? `<div class="tbl-wrap"><h3>Matched, but the amounts differ · ${s.differ.length}</h3><table><thead><tr><th>Payment</th><th class="num">Books</th><th class="num">Statement</th><th class="num">Difference</th></tr></thead><tbody>
       ${s.differ.map(x => `<tr><td>${x.ref ? `<b>${esc(x.ref)}</b> ` : ""}${esc(x.description)}</td><td class="num">${money(x.book, cur)}</td><td class="num">${money(x.bank, cur)}</td><td class="num">${money(x.amount, cur)}</td></tr>`).join("")}</tbody></table></div>` : ""}
     ${!s.books_only.length && !s.bank_only.length && !s.differ.length && s.book.state === "ok" ? `<div class="note">Everything on the statement is in the books, and the other way round.</div>` : ""}
-    ${gone ? `<div class="note">Not counted as bank movements: ${s.left_out.journals} journal${s.left_out.journals === 1 ? "" : "s"} and ${s.left_out.invoices} customer invoice${s.left_out.invoices === 1 ? "" : "s"} (customer refunds included) in the SQL listing.</div>` : ""}
+    ${gone ? `<div class="note">Not counted as bank movements: ${s.left_out.journals} journal${s.left_out.journals === 1 ? "" : "s"} and ${s.left_out.invoices} customer invoice${s.left_out.invoices === 1 ? "" : "s"} (customer refunds included) in the SQL listing. Paste a journal's lines on the SQL page to count one that moves the bank.</div>` : ""}
     ${unk ? `<div class="note">Not counted: ${unk} cash book entr${unk === 1 ? "y" : "ies"} with no money in or out shown, so the books may differ by that amount.</div>` : ""}
     ${s.uses_sql ? `<div class="note">Paste only the bank's cash book listing for reconciliation: a voucher paid from petty cash or a card would count as a bank movement.</div>` : ""}
     ${signBlock(s)}
@@ -1423,7 +1423,9 @@ async function viewSql(main) {
       ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}</td>
         <td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
         <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : `<span class="muted">—</span>`}
-          ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">Receipt: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
+          ${x.kind === "journal" && x.bank_move != null ? `<div class="note">Moves ${money(Math.abs(x.bank_move))} ${x.bank_move > 0 ? "into" : "out of"} the bank, so it counts in the bank reconciliation.</div>` : ""}
+          ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">${x.kind === "journal" ? "Payment" : "Receipt"}: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>`
+            : x.kind === "journal" && x.bank_move != null ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
       </tbody></table></div></div>
     <div class="card"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it.</div>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Status</th><th></th></tr></thead><tbody>
@@ -1455,6 +1457,21 @@ function receiptPick(p, r) {
 
 function renderSqlPreview(p) {
   state.sqlPreview = p;
+  if (p.journal_lines) {  // the lines of a journal: kept for the bank reconciliation, nothing to match
+    const jl = p.journal_lines, fmt = x => Number(x).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Lines pasted as plain text carry no document key, so the person says which journal they are from.
+    const pick = !jl.text_form ? "" : !jl.balanced ? `<div class="note">${esc(jl.message)}</div>` : `
+      <label class="field"><span>Which journal are these lines from?</span><select id="sqlJournalPick"><option value="">Choose a journal</option>${jl.options.map(o =>
+        `<option value="${o.id}" ${o.id === jl.chosen ? "selected" : ""}>${esc(o.doc_no)}, ${esc(o.doc_date)}, ${fmt(o.amount)}${o.match ? " (same total)" : ""}</option>`).join("")}</select></label>
+      ${jl.message ? `<div class="note">${esc(jl.message)}</div>` : ""}`;
+    const ok = !jl.text_form || (jl.balanced && jl.chosen);
+    $("#sqlPreview").innerHTML = `<div class="card">
+      <div class="row spread"><h2>${esc(p.filename)}</h2><span class="muted">${jl.lines} journal lines found</span></div>
+      ${pick}
+      ${jl.notes.map(n => `<div class="note">${esc(n.text)}</div>`).join("")}
+      <div class="row"><button class="btn" id="sqlApply" ${ok ? "" : "disabled"}>Keep ${jl.lines} journal lines</button><button class="ghost" id="sqlCancel">Cancel</button></div></div>`;
+    return;
+  }
   const colOpts = sel => `<option value="">(none)</option>` + p.headers.map((h, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${esc(h || "Column " + (i + 1))}</option>`).join("");
   const kinds = { journal: "Journal", invoice: "Customer invoice" };
   const target = r => r.exists ? `<span class="pill grey">Already imported</span>${receiptPick(p, r)}`
@@ -3279,8 +3296,9 @@ document.addEventListener("click", async ev => {
     if (t.id === "sqlApply") {
       const p = state.sqlPreview; t.disabled = true;
       const links = {}; for (const r of p.records) if (r.payment_id && (!r.exists || r.kind === "invoice")) links[r.row] = r.payment_id;
-      const res = await api("/api/sql/apply", { json: { token: p.token, header_row: p.header_row, mapping: p.mapping, links } });
+      const res = await api("/api/sql/apply", { json: { token: p.token, header_row: p.header_row, mapping: p.mapping, links, journal_id: p.journal_lines?.chosen } });
       state.sqlPreview = null; delete state.sqlPaste[state.entity];
+      if (res.journal_lines) { toast(`Kept ${res.journal_lines} journal lines.`); return render(); }
       toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}.`);
       return render();
     }
@@ -3308,7 +3326,8 @@ document.addEventListener("click", async ev => {
     }
     if (ds.sqlUnlink) {
       const r = await api(`/api/sql/entries/${ds.sqlUnlink}/unlink`, { json: {} });
-      toast(r.removed ? `${r.doc_no} is back under SQL entries not linked, and the payment made from it was removed`
+      toast(r.kind === "journal" ? `${r.doc_no} unlinked${r.removed ? `, and the payment made from it was removed` : ` from ${r.payment}`}`
+        : r.removed ? `${r.doc_no} is back under SQL entries not linked, and the payment made from it was removed`
         : `${r.doc_no} unlinked from ${r.payment}; it's back under SQL entries not linked`); return render();
     }
     if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under SQL entries not linked`); return render(); }
@@ -3391,6 +3410,9 @@ document.addEventListener("change", async ev => {
     if (t.dataset.sqlRow) {
       const r = state.sqlPreview.records.find(x => x.row === +t.dataset.sqlRow); r.payment_id = t.value ? +t.value : null; r.picked = true;
       $("#sqlApply").textContent = applyLabel(state.sqlPreview);
+    }
+    if (t.id === "sqlJournalPick") {  // the note is worked out again for the journal chosen
+      renderSqlPreview(await api("/api/sql/preview", { json: { token: state.sqlPreview.token, journal_id: t.value || null } }));
     }
     if (t.dataset.sqlMap) {
       // The links picked by hand go along, so reading the columns again keeps them for the rows still there.

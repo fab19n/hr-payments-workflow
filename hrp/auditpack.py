@@ -368,7 +368,7 @@ def _reconciled(r, say, table, heading, cur):
         say(f"Book closing: {b['note']}. Bank closing {money(r['bank_closing'], cur) if r['bank_closing'] is not None else 'not on statement'}.")
     if r["left_out"]["journals"] or r["left_out"]["invoices"]:
         j, i = r["left_out"]["journals"], r["left_out"]["invoices"]
-        say(f"Not counted as bank movements: {j} journal{'s' if j != 1 else ''} and {i} customer invoice{'s' if i != 1 else ''} (customer refunds included) in the SQL listing.")
+        say(f"Not counted as bank movements: {j} journal{'s' if j != 1 else ''} and {i} customer invoice{'s' if i != 1 else ''} (customer refunds included) in the SQL listing (a journal's lines pasted on the SQL page count one that moves the bank).")
     if r["left_out"].get("unknown"):
         u = r["left_out"]["unknown"]
         say(f"Not counted: {u} cash book entr{'ies' if u != 1 else 'y'} with no money in or out shown, so the books may differ by that amount.")

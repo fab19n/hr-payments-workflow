@@ -295,7 +295,24 @@ MIGRATIONS = [
     # 24. Each account in the chart keeps SQL Account's account group (its A/C Type: FA, CA, CL, ...), so the chart can
     #     be shown as a tree grouped as SQL prints it. Empty for the accounts already there. Nothing else changes.
     partybook.keep_sql_types,
+    # 25. The lines of SQL journals pasted from SQL Account's journal detail grid (the account, debit and credit of each
+    #     line, by the journal's document key and the import that brought them), so a journal that moves the bank
+    #     counts in the bank reconciliation. Empty to begin with. Nothing in the records changes.
+    lambda con: _journal_lines_table(con),
 ]
+
+
+JOURNAL_LINES = """
+CREATE TABLE IF NOT EXISTS sql_journal_lines (
+  id INTEGER PRIMARY KEY, entity_id INTEGER NOT NULL REFERENCES entities(id), dockey TEXT NOT NULL,
+  import_id INTEGER NOT NULL REFERENCES sql_imports(id), dtlkey TEXT, seq INTEGER, code TEXT NOT NULL,
+  description TEXT, project TEXT, dr REAL NOT NULL DEFAULT 0, cr REAL NOT NULL DEFAULT 0
+)"""
+
+
+def _journal_lines_table(con):
+    con.execute(JOURNAL_LINES)
+    con.execute("CREATE INDEX IF NOT EXISTS sql_journal_lines_key ON sql_journal_lines (entity_id, dockey)")
 
 
 def _setup_columns(con):
@@ -1067,7 +1084,8 @@ def payment_flag(con, ent, pay, today):
         return _flag("not_on_statement", f"Not on {mon} statement", "bad",
                      f"The {mon} bank statement is imported, but no line on it is linked to this payment. Link its line on "
                      f"the Bank statements page, or {other_way}." + deadline)
-    if ent["uses_sql"] and not con.execute("SELECT 1 FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment'",
+    # (a journal is linked to a payment only when its lines move the bank, so it records the payment in SQL like a voucher)
+    if ent["uses_sql"] and not con.execute("SELECT 1 FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')",
                                            (pay["id"],)).fetchone():
         latest = con.execute("SELECT MAX(doc_date) FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'",
                              (ent["id"],)).fetchone()[0]

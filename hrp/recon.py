@@ -55,14 +55,62 @@ def _primary(con, ent):
     return r["id"] if r else None
 
 
+def cash_book_account(con, entity_id):
+    """The company's cash book account (its row), the account SQL's cash book listing and journals are counted for; or None."""
+    acct_id = _primary(con, {"id": entity_id})
+    return _acct(con, acct_id) if acct_id else None
+
+
+def bank_gl_code(con, acct):
+    """The account's code in SQL Account's chart of accounts, which a journal line names when it moves the bank: the GL
+    code set for the account in Setup; else the code of the company's chart entry named as the payment method most of
+    its cash vouchers carry (a voucher keeps the bank's name as its payment method); else None."""
+    code = (acct["gl_code"] or "").strip()
+    if code:
+        return code
+    own = (acct["sql_payment_method"] or "").strip() if "sql_payment_method" in acct.keys() else ""
+    if own:  # the account's own name for itself on vouchers, as set in Setup
+        hit = con.execute("SELECT code FROM gl_accounts WHERE entity_id = ? AND LOWER(TRIM(name)) = LOWER(?) ORDER BY active DESC, code LIMIT 1",
+                          (acct["entity_id"], own)).fetchone()
+        if hit:
+            return hit["code"]
+    top = con.execute("""SELECT payment_method FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'
+                         AND direction IN ('in', 'out') AND TRIM(COALESCE(payment_method, '')) <> ''
+                         GROUP BY payment_method ORDER BY COUNT(*) DESC, payment_method LIMIT 1""", (acct["entity_id"],)).fetchone()
+    if not top:
+        return None
+    hit = con.execute("SELECT code FROM gl_accounts WHERE entity_id = ? AND LOWER(TRIM(name)) = LOWER(TRIM(?)) ORDER BY active DESC, code LIMIT 1",
+                      (acct["entity_id"], top["payment_method"])).fetchone()
+    return hit["code"] if hit else None
+
+
+def journal_moves(con, entity_id, dockeys, code):
+    """What the pasted lines of each journal (by SQL's document key) move on the bank account whose GL code is given:
+    {dockey: net amount, money in above 0}. A journal with no lines, no line on that code or a net of nothing isn't in it."""
+    keys = sorted({str(k) for k in dockeys if k not in (None, "")})
+    if not code or not keys or not con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sql_journal_lines'").fetchone():
+        return {}
+    got = con.execute(f"""SELECT dockey, ROUND(SUM(dr - cr), 2) AS net FROM sql_journal_lines WHERE entity_id = ? AND UPPER(TRIM(code)) = ?
+                          AND dockey IN ({','.join('?' * len(keys))}) GROUP BY dockey""", (entity_id, code.strip().upper(), *keys)).fetchall()
+    return {r["dockey"]: r["net"] for r in got if abs(r["net"]) >= TOL}
+
+
+def journal_move(con, entity_id, dockey):
+    """What one journal moves on the company's cash book account (see journal_moves), or None when it moves nothing there."""
+    acct = cash_book_account(con, entity_id)
+    return journal_moves(con, entity_id, [dockey], bank_gl_code(con, acct) if acct else None).get(str(dockey))
+
+
 def movements(con, ent, acct, month):
     """What the books hold for the account in the month: {source ('sql' or 'payments'), listing (False when an SQL
     company has no cash book entry for the month: the listing isn't pasted), items [{kind, id, ref, date, description,
     amount (money in above 0, out below), payment_id, status, doc_type}], in, out, left_out (what an SQL listing holds
     that isn't a bank movement: {journals, invoices (customer refunds too), unknown (cash book entries with no direction)}}.
     SQL: every receipt (OR) and payment (PV) dated in the month, whatever its status here: an ignored correction is in
-    SQL's books too. Customer invoices (IV) and journals (JV) are left out: they move no bank balance by themselves, and
-    a journal's bank side can't be told from its amounts. A company's other accounts have no SQL listing of their own and
+    SQL's books too. Customer invoices (IV) are left out: they move no bank balance by themselves. So is a journal (JV)
+    whose bank side can't be told: its header carries only one total, so it counts only once its lines have been pasted
+    (sql_journal_lines) and some of them are on the bank account's GL code (bank_gl_code); it then counts as the net of
+    those lines, in or out, like a voucher. A company's other accounts have no SQL listing of their own and
     are worked out from payments, as a company that isn't in SQL is: every payment recorded for the account with a paid
     date in the month, plus the account's statement lines dated in the month that need no documents (bank charges and
     own-account transfers, marked by statements.classify or by a person): money the bank moved with nothing to record,
@@ -74,11 +122,23 @@ def movements(con, ent, acct, month):
                              AND NOT (COALESCE(doc_no, '') <> '' AND EXISTS (SELECT 1 FROM sql_entries n WHERE n.entity_id = e.entity_id
                                       AND n.doc_no = e.doc_no AND n.import_id > e.import_id)) ORDER BY doc_date, doc_no, id""",
                            (ent["id"], month)).fetchall()
-        cash = [r for r in rows if (r["kind"] or "payment") == "payment" and r["direction"] in ("in", "out")]
-        items = [{"kind": "sql", "id": r["id"], "ref": r["doc_no"], "date": r["doc_date"], "description": r["description"] or r["payee"] or "",
-                  "amount": _r(r["amount"] if r["direction"] == "in" else -r["amount"]), "payment_id": r["payment_id"],
-                  "status": r["status"], "doc_type": r["doc_type"]} for r in cash]
-        left = {"journals": sum(r["kind"] == "journal" for r in rows), "invoices": sum(r["kind"] == "invoice" for r in rows),
+        # A journal counts as the bank movement of its lines, so its sign gives the direction; one that moves nothing there stays out.
+        # (Records not updated yet have no document keys, so no journal can have lines.)
+        keyed = [r for r in rows if r["kind"] == "journal" and "dockey" in r.keys() and r["dockey"]]
+        moves = journal_moves(con, ent["id"], [r["dockey"] for r in keyed], bank_gl_code(con, acct) if keyed else None)
+        counted = {r["id"]: moves[r["dockey"]] for r in keyed if r["dockey"] in moves}
+        items = []
+        for r in rows:
+            if r["id"] in counted:
+                amount = counted[r["id"]]
+            elif (r["kind"] or "payment") == "payment" and r["direction"] in ("in", "out"):
+                amount = r["amount"] if r["direction"] == "in" else -r["amount"]
+            else:
+                continue
+            items.append({"kind": "sql", "id": r["id"], "ref": r["doc_no"], "date": r["doc_date"], "description": r["description"] or r["payee"] or "",
+                          "amount": _r(amount), "payment_id": r["payment_id"], "status": r["status"], "doc_type": r["doc_type"]})
+        left = {"journals": sum(r["kind"] == "journal" and r["id"] not in counted for r in rows),
+                "invoices": sum(r["kind"] == "invoice" for r in rows),
                 "unknown": sum((r["kind"] or "payment") == "payment" and r["direction"] not in ("in", "out") for r in rows)}
         listing = any((r["kind"] or "payment") == "payment" for r in rows)
         source = "sql"
@@ -311,7 +371,7 @@ def _lists(con, ent, acct, month, st, mv):
             why = ("No payment needed: " + l["note"]) if l["status"] == "no_docs" and l["note"] else \
                 "No documents needed" if l["status"] == "no_docs" else "Not explained yet"
         elif mv["source"] == "sql":
-            v = con.execute("SELECT doc_no, doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment' "
+            v = con.execute("SELECT doc_no, doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal') "
                             "ORDER BY doc_date LIMIT 1", (pid,)).fetchone()
             why = f"SQL {v['doc_no']} is dated {db.day_label(v['doc_date'])}, in another month" if v else "No SQL voucher for it yet"
         else:
@@ -389,7 +449,7 @@ def date_gap(con, line, payment_id):
         return 0, None, None
     d = date.fromisoformat(line["txn_date"])
     vs = [r["doc_date"] for r in con.execute(
-        "SELECT doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment'", (payment_id,))]
+        "SELECT doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')", (payment_id,))]
     if vs:
         best = min(vs, key=lambda v: abs((date.fromisoformat(v) - d).days))
         return abs((date.fromisoformat(best) - d).days), best, "voucher"
@@ -417,7 +477,7 @@ def review(con, ent, st):
             p = con.execute("SELECT id, description, month, amount, currency, paid_date, direction FROM payments WHERE id = ?", (pid,)).fetchone()
             row["payment"], row["payment_desc"] = dict(p), p["description"]
             row["vouchers"] = [dict(r) for r in con.execute(
-                """SELECT doc_no, doc_date, doc_type FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment'
+                """SELECT doc_no, doc_date, doc_type FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')
                    ORDER BY doc_date""", (pid,))]
             row["gap_days"], row["book_date"], row["book_date_kind"] = date_gap(con, l, pid)
         rows.append(row)
@@ -429,7 +489,7 @@ def review(con, ent, st):
         (st["account_id"], db.shift_month(st["month"], -1), st["month"]))]
     for p in pays:  # the dates the books hold for it, so the page can tell when a bank date differs
         p["voucher_dates"] = [r["doc_date"] for r in con.execute(
-            "SELECT doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment'", (p["id"],))]
+            "SELECT doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')", (p["id"],))]
     return {"summary": summary, "lines": rows, "payments": pays, "statement_id": st["id"]}
 
 

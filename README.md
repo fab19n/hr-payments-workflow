@@ -90,6 +90,8 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
 5. **SQL import** (AISB) – sign in to SQL Account yourself, export the PV / JV / Cash Book listing to Excel, and import it here.
    Each entry's doc no. is saved on the payment it records; estimated bills take SQL's actual amount. Entries in SQL but not
    in the tracker are listed so nothing is missed. Re-importing the same export is safe.
+   A journal that moves the bank counts in the reconciliation once its lines (SQL's journal detail grid) are pasted on the SQL page
+   and the bank account's GL code is set in Setup.
 6. **Audit pack** – **Before you print** lists what the month still needs: bank statements not imported, lines to
    explain, payments not complete and what each lacks, checklist documents missing, checklist items not done, payments
    paid but not in SQL (AISB), and files that won't print (emails, Excel, password PDFs, missing files). Click a line to

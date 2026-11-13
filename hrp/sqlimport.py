@@ -153,6 +153,90 @@ def _read_datapacket(data):
     return rows
 
 
+def journal_lines(data):
+    """The lines of a journal copied from SQL Account's journal detail grid, or None when the data is anything else.
+
+    Expanding a journal in SQL and copying its detail grid gives a DATAPACKET of its own whose rows have a DTLKEY and the
+    DOCKEY of the journal (the document key its header row carries too), the account CODE and DR and CR, but no DOCNO.
+    Returns [{dockey, dtlkey, seq, code, description, project, dr, cr}], the amounts in the company's currency (LOCALDR
+    and LOCALCR, else DR and CR). A listing of documents, which has a DOCNO on every row, is never read as lines."""
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    if b"<DATAPACKET" not in data[:500]:
+        return None
+    try:
+        root = ET.fromstring(data.decode("utf-8-sig", errors="replace").strip().encode("utf-8"))
+    except ET.ParseError:
+        return None
+    out = []
+    for r in root.iter("ROW"):
+        a = dict(r.attrib)
+        if _first(a, "DOCNO") or not (_first(a, "DTLKEY") and _first(a, "DOCKEY") and _first(a, "CODE")):
+            return None
+        seq = _first(a, "SEQ")
+        out.append({"dockey": _first(a, "DOCKEY"), "dtlkey": _first(a, "DTLKEY"), "seq": int(seq) if seq.isdigit() else None,
+                    "code": _first(a, "CODE").upper(), "description": _first(a, "DESCRIPTION", "DESCRIPTION2"),
+                    "project": _first(a, "PROJECT"), "dr": to_amount(_first(a, "LOCALDR", "DR")) or 0.0,
+                    "cr": to_amount(_first(a, "LOCALCR", "CR")) or 0.0})
+    return out or None
+
+
+ACCOUNT_HEADINGS = ("account", "account code", "gl code", "code", "acc code", "account no")
+DOC_NO_HEADINGS = ("doc no", "docno", "document no", "doc. no", "doc number", "document number", "voucher no")
+
+
+def text_journal_lines(data):
+    """The lines of a journal copied as plain text from SQL Account's expanded journal, or None when the text is anything else.
+
+    The text is tab-separated with a heading row that has an account column (Account, Account Code, GL Code or Code) and
+    debit and credit columns, and no document number column: it carries no document key, so the caller must be told
+    which journal the lines belong to. The local amounts (Local DR, Local CR) are preferred to DR and CR, and the tax
+    columns (DR (Tax)) are used only when nothing else is there. Returns [{dockey: None, dtlkey: None, seq, code,
+    description, project, dr, cr}] in the order pasted, blank rows left out."""
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    # A file that isn't text (an Excel .xlsx is a zip, starting PK) is never pasted lines, whatever bytes it holds
+    if data[:2] == b"PK" or b"\x00" in data[:4096]:
+        return None
+    text = data.decode("utf-8-sig", errors="replace")
+    if "	" not in text[:3000] or "<DATAPACKET" in text[:500]:
+        return None
+    try:
+        rows = [r for r in csv.reader(io.StringIO(text), delimiter="	", quoting=csv.QUOTE_NONE)]
+    except csv.Error:  # not tab-separated text after all
+        return None
+    for h, row in enumerate(rows[:10]):
+        names = [_norm(x) for x in row]
+        if any(n in DOC_NO_HEADINGS for n in names):
+            return None
+        acct = next((i for i, n in enumerate(names) if n in ACCOUNT_HEADINGS), None)
+        if acct is None:
+            continue
+
+        def pick(*wanted):
+            return next((i for w in wanted for i, n in enumerate(names) if n == w), None)
+        dr, cr = pick("local dr", "dr", "debit"), pick("local cr", "cr", "credit")
+        if dr is None or cr is None:
+            dr, cr = pick("local dr (tax)", "dr (tax)"), pick("local cr (tax)", "cr (tax)")
+        if dr is None or cr is None:
+            continue
+        desc, proj = pick("description", "desc"), pick("project")
+
+        def cell(r, i):
+            return (r[i] if i is not None and i < len(r) else "").strip()
+        out = []
+        for r in rows[h + 1:]:
+            code = cell(r, acct).upper()
+            if not code and not (cell(r, dr) or cell(r, cr)):
+                continue
+            if not code:
+                return None
+            out.append({"dockey": None, "dtlkey": None, "seq": len(out) + 1, "code": code, "description": cell(r, desc),
+                        "project": cell(r, proj), "dr": to_amount(cell(r, dr)) or 0.0, "cr": to_amount(cell(r, cr)) or 0.0})
+        return out or None
+    return None
+
+
 def _read_ods(data):
     T = "{urn:oasis:names:tc:opendocument:xmlns:table:1.0}"
     O = "{urn:oasis:names:tc:opendocument:xmlns:office:1.0}"
@@ -461,7 +545,7 @@ def propose(con, entity_id, recs):
     pays = con.execute(
         """SELECT p.*, py.name AS payee_name, py.match_words FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
            WHERE p.entity_id = ? AND p.amount IS NOT NULL
-           AND NOT EXISTS (SELECT 1 FROM sql_entries s WHERE s.payment_id = p.id AND COALESCE(s.kind, 'payment') = 'payment')
+           AND NOT EXISTS (SELECT 1 FROM sql_entries s WHERE s.payment_id = p.id AND COALESCE(s.kind, 'payment') IN ('payment', 'journal'))
            ORDER BY p.amount_is_estimate, p.due_date""", (entity_id,)).fetchall()
     def pinfo(p):
         return (date.fromisoformat(p["paid_date"] or p["due_date"]),

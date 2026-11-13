@@ -249,6 +249,12 @@ def month_view():
         p["bank_total"] = db.linked_total(c, p)
         p["sql_entries"] = rows(c.execute(
             "SELECT id, doc_no, doc_date, amount, direction, kind FROM sql_entries WHERE payment_id = ? ORDER BY doc_date, id", (p["id"],)))
+        journals = [x for x in p["sql_entries"] if x["kind"] == "journal"] if partybook.ready(c) else []
+        for x in journals:  # a journal is shown for what it moves on the bank, as a voucher for its amount
+            x["dockey"] = c.execute("SELECT dockey FROM sql_entries WHERE id = ?", (x["id"],)).fetchone()[0]
+        _journal_moves(c, p["entity_id"], journals, as_amount=True)
+        for x in journals:
+            del x["dockey"]
         p["not_in_sql"] = db.not_in_sql(e, p)
     return jsonify({"entity": dict(e), "month": month, "label": db.month_label(month), "tasks": tasks, "payments": pays,
                     "set_up": _set_up(c, eid, month), "before_first": db.before_tracking(e, month),
@@ -1345,6 +1351,17 @@ def sql_preview():
             token, hr, mp = b["token"], b.get("header_row"), b.get("mapping")
             pasted = _pending_sql.get(token, (None, ""))[1].startswith(PASTED)
         picks = (request.get_json(silent=True) or {}).get("picks") or {}
+        lines = sqlimport.journal_lines(_pending_sql[token][2]) if token in _pending_sql else None
+        text_lines = None if lines or token not in _pending_sql else sqlimport.text_journal_lines(_pending_sql[token][2])
+        if text_lines:  # the lines as plain text have no document key: the person says which journal they belong to
+            eid, filename = _pending_sql[token][:2]
+            chosen = (request.get_json(silent=True) or {}).get("journal_id")
+            return jsonify({"token": token, "entity_id": eid, "filename": filename, "records": [],
+                            "journal_lines": _text_lines_preview(c, eid, text_lines, chosen)})
+        if lines:  # the detail grid of a journal, not a listing: its lines are kept, not matched to payments
+            eid, filename = _pending_sql[token][:2]
+            return jsonify({"token": token, "entity_id": eid, "filename": filename, "records": [],
+                            "journal_lines": _journal_notes(c, eid, lines)})
         eid, filename, _, rows_, header_row, mapping = _parse_sql(token, hr, mp)
         recs = sqlimport.records(rows_, header_row, mapping)
     except sqlimport.SqlImportError as ex:
@@ -1381,6 +1398,112 @@ def sql_preview():
                     "mapping": mapping, "fields": sqlimport.ALL_FIELDS, "records": recs, "candidates": cands})
 
 
+def _journal_header(c, eid, dockey):
+    """The journal (its latest pasted row) that has this SQL document key, or None while its header isn't imported."""
+    return c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND kind = 'journal' AND dockey = ? ORDER BY import_id DESC, id DESC LIMIT 1",
+                     (eid, dockey)).fetchone()
+
+
+def _journal_text(c, mine, name, head, acct):
+    """One sentence on what these lines of a journal do, in words for the person pasting: what they move on the bank
+    account, and whether that counts in the bank reconciliation now or once the journal itself is pasted."""
+    code = recon.bank_gl_code(c, acct) if acct else None
+    net = round(sum(l["dr"] - l["cr"] for l in mine if code and l["code"] == code.strip().upper()), 2)
+    if not code:
+        text = f"Journal lines for {name}: Set the bank account's GL code in Setup. The lines are kept, and count once it is set."
+    elif abs(net) < recon.TOL:
+        on = sum(1 for l in mine if l["code"] == code.strip().upper())
+        text = (f"Journal lines for {name}: none of the {len(mine)} lines is on the bank account {code}, so it moves no money. The lines are kept."
+                if not on else f"Journal lines for {name}: its {on} lines on the bank account {code} net to nothing, so it moves no money. The lines are kept.")
+    else:
+        text = (f"Journal lines for {name}: bank account {code} {'+' if net > 0 else '-'}{abs(net):,.2f} "
+                f"({'money in' if net > 0 else 'money out'}). "
+                + ("Counts in the bank reconciliation once applied." if head
+                   else "The journal itself isn't imported yet: the lines are kept and will count once the journal is pasted."))
+    if head and head["payment_id"]:
+        text += " It is linked to a payment, which keeps the amount it has: check that payment."
+    return text
+
+
+def _journal_notes(c, eid, lines):
+    """What pasting these journal lines does, one sentence per journal."""
+    acct = recon.cash_book_account(c, eid)
+    notes = []
+    for key in dict.fromkeys(l["dockey"] for l in lines):
+        mine = [l for l in lines if l["dockey"] == key]
+        head = _journal_header(c, eid, key)
+        name = head["doc_no"] if head else f"journal key {key}"
+        notes.append({"dockey": key, "doc_no": head["doc_no"] if head else None, "lines": len(mine),
+                      "text": _journal_text(c, mine, name, head, acct)})
+    return {"lines": len(lines), "notes": notes}
+
+
+def _text_totals(lines):
+    dr, cr = round(sum(l["dr"] for l in lines), 2), round(sum(l["cr"] for l in lines), 2)
+    return dr, cr, abs(dr - cr) < 0.005
+
+
+def _text_lines_preview(c, eid, lines, chosen):
+    """The preview of journal lines pasted as plain text, which carry no document key. It offers the journals they could
+    belong to (the latest paste of each journal that has a document key, those with the lines' total first), preselects
+    the one journal with that total when there is only one, and gives the note for the journal chosen."""
+    dr, cr, balanced = _text_totals(lines)
+    out = {"lines": len(lines), "text_form": True, "total": dr, "balanced": balanced, "options": [], "chosen": None,
+           "notes": [], "message": ""}
+    if not balanced:
+        out["message"] = f"These lines don't balance: debits add up to {dr:,.2f} and credits to {cr:,.2f}. They can't be kept."
+        return out
+    js = rows(c.execute("""SELECT id, doc_no, doc_date, amount FROM sql_entries s WHERE entity_id = ? AND kind = 'journal'
+                           AND dockey IS NOT NULL AND dockey <> '' AND NOT EXISTS (SELECT 1 FROM sql_entries t
+                           WHERE t.entity_id = s.entity_id AND t.kind = 'journal' AND t.doc_no = s.doc_no
+                           AND (t.import_id > s.import_id OR (t.import_id = s.import_id AND t.id > s.id)))
+                           ORDER BY doc_date DESC, id DESC LIMIT 300""", (eid,)))
+    for j in js:
+        j["match"] = abs(j["amount"] - dr) < 0.005
+    out["options"] = sorted(js, key=lambda j: not j["match"])
+    hits = [j for j in js if j["match"]]
+    try:
+        chosen = int(chosen) if chosen not in (None, "") else None
+    except (TypeError, ValueError):
+        chosen = None
+    if chosen is None and len(hits) == 1:
+        chosen = hits[0]["id"]
+        out["message"] = f"Only {hits[0]['doc_no']} has a total of {dr:,.2f}, so it is chosen. Change it if these lines are from another journal."
+    elif chosen is None:
+        out["message"] = (f"{len(hits)} journals have a total of {dr:,.2f}: choose the one these lines are from." if hits
+                          else f"No imported journal has a total of {dr:,.2f}: choose the journal these lines are from.")
+    head = c.execute("SELECT * FROM sql_entries WHERE id = ? AND entity_id = ?", (chosen, eid)).fetchone() if chosen else None
+    if head:
+        out["chosen"] = head["id"]
+        text = _journal_text(c, lines, head["doc_no"], head, recon.cash_book_account(c, eid))
+        if abs(head["amount"] - dr) >= 0.005:
+            text += f" These lines add up to {dr:,.2f}, but {head['doc_no']} is {head['amount']:,.2f}: choose the journal they come from."
+        out["notes"] = [{"dockey": head["dockey"], "doc_no": head["doc_no"], "lines": len(lines), "text": text}]
+    return out
+
+
+def _apply_journal_lines(c, eid, filename, data, lines):
+    """Keeps the pasted journal lines: the file as a document, as a listing is, and the lines by the journal's document
+    key. Lines pasted again for a journal replace its earlier ones. The import's entries are the lines kept."""
+    e = entity(c, eid)
+    head = next(filter(None, (_journal_header(c, eid, l["dockey"]) for l in lines)), None)
+    did = store(c, entity=e, month=head["doc_date"][:7] if head else f"{datetime.now():%Y-%m}", folder="_SQL exports",
+                doc_type="sqlexport", filename=filename, data=data)
+    imp = c.execute("INSERT INTO sql_imports (entity_id, filename, document_id, imported_at, entries, linked) VALUES (?, ?, ?, ?, ?, 0)",
+                    (eid, filename, did, db.now(), len(lines))).lastrowid
+    keys = list(dict.fromkeys(l["dockey"] for l in lines))
+    for key in keys:
+        c.execute("DELETE FROM sql_journal_lines WHERE entity_id = ? AND dockey = ?", (eid, key))
+    for l in lines:
+        c.execute("""INSERT INTO sql_journal_lines (entity_id, dockey, import_id, dtlkey, seq, code, description, project, dr, cr)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                  (eid, l["dockey"], imp, l["dtlkey"], l["seq"], l["code"], l["description"], l["project"], l["dr"], l["cr"]))
+    names = ", ".join((_journal_header(c, eid, k) or {"doc_no": f"key {k}"})["doc_no"] for k in keys)
+    db.log(c, f"Imported SQL journal lines '{filename}' for {e['code']}: {len(lines)} lines kept for {names}")
+    c.commit()
+    return len(lines)
+
+
 def _payment_now(c, eid, made, pid):
     """The payment a link picked in a preview means now. One the preview set up only for its suggestions (made: id ->
     payee and month) is found again by payee and month, as setting the month up again may number it differently;
@@ -1403,6 +1526,31 @@ def _note_linked(r, linked):
 def sql_apply():
     b = request.get_json()
     c = con()
+    pending = _pending_sql.get(b["token"])
+    lines = sqlimport.journal_lines(pending[2]) if pending else None
+    text_lines = None if lines or not pending else sqlimport.text_journal_lines(pending[2])
+    if text_lines:
+        dr, cr, balanced = _text_totals(text_lines)
+        if not balanced:
+            return err(f"These lines don't balance: debits add up to {dr:,.2f} and credits to {cr:,.2f}. They can't be kept.")
+        try:
+            jid = int(b.get("journal_id"))
+        except (TypeError, ValueError):
+            return err("Choose the journal these lines are from.")
+        head = c.execute("SELECT * FROM sql_entries WHERE id = ? AND kind = 'journal'", (jid,)).fetchone()
+        if not head or head["entity_id"] != pending[0]:
+            return err("That isn't one of this company's journals. Choose the journal these lines are from.")
+        if not head["dockey"]:
+            return err("Paste the journal list again so its document key is recorded, then paste the lines.")
+        if abs(head["amount"] - dr) >= 0.005:
+            return err(f"These lines add up to {dr:,.2f}, but {head['doc_no']} is {head['amount']:,.2f}: choose the journal they come from.")
+        kept = _apply_journal_lines(c, pending[0], pending[1], pending[2], [{**l, "dockey": head["dockey"]} for l in text_lines])
+        _pending_sql.pop(b["token"], None)
+        return jsonify({"added": kept, "linked": 0, "skipped": 0, "bank_lines_matched": 0, "journal_lines": kept})
+    if lines:
+        kept = _apply_journal_lines(c, pending[0], pending[1], pending[2], lines)
+        _pending_sql.pop(b["token"], None)
+        return jsonify({"added": kept, "linked": 0, "skipped": 0, "bank_lines_matched": 0, "journal_lines": kept})
     try:
         eid, filename, data, rows_, header_row, mapping = _parse_sql(b["token"], b["header_row"], b["mapping"])
         recs = sqlimport.records(rows_, header_row, mapping)
@@ -1554,7 +1702,7 @@ def _after_unlink(c, pid, entry=None):
         return
     lines = statements.paying_dates(c, pid)
     vouchers = [r[0] for r in c.execute(
-        "SELECT doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment'", (pid,))]
+        "SELECT doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')", (pid,))]
     if p["paid_date"] in (lines if p["paid_source"] == "bank" else vouchers):
         return
     paid, source = (max(lines), "bank") if lines else (min(vouchers), "sql") if vouchers else (None, None)
@@ -1581,22 +1729,44 @@ def sql_entries():
     for u in unlinked:
         _note_linked(u, linked)
         u["correction"] = u["id"] in corrections
-    months = sorted({u["doc_date"][:7] for u in unlinked})
-    cands = sqlimport.candidates(c, eid, sqlimport.months_of([{"date": m + "-01"} for m in months])) if months else []
     other = _taken_back(c, rows(c.execute(
         """SELECT s.*, t.title AS task_title, t.month AS task_month, p.description AS payment_desc
            FROM sql_entries s LEFT JOIN tasks t ON t.id = s.task_id LEFT JOIN payments p ON p.id = s.payment_id
            WHERE s.entity_id = ? AND s.kind IN ('journal', 'invoice') ORDER BY s.doc_date DESC LIMIT 200""", (eid,))))
+    on_payments = rows(c.execute(
+        """SELECT s.*, p.description AS payment_desc, p.month AS payment_month FROM sql_entries s JOIN payments p ON p.id = s.payment_id
+           WHERE s.entity_id = ? ORDER BY s.doc_date DESC, s.id DESC LIMIT 300""", (eid,)))
+    for x in other:  # a journal pasted again after a change in SQL is a new row: say when its number is already linked
+        if x["kind"] == "journal" and not x["payment_id"]:
+            _note_linked(x, linked)
+    _journal_moves(c, eid, other)
+    _journal_moves(c, eid, on_payments, as_amount=True)
+    # A journal that moves the bank is linked like a voucher, so the months of its payments are offered as well.
+    months = sorted({u["doc_date"][:7] for u in unlinked} | {x["doc_date"][:7] for x in other
+                                                            if x["kind"] == "journal" and x["bank_move"] and not x["payment_id"]})
+    cands = sqlimport.candidates(c, eid, sqlimport.months_of([{"date": m + "-01"} for m in months])) if months else []
     einv = _taken_back(c, rows(c.execute(
         """SELECT id, entity_id, doc_no, doc_date, description, payee, amount, einvoice, einvoice_status, einvoice_link, kind,
            payment_id FROM sql_entries WHERE entity_id = ? AND (einvoice IS NOT NULL OR einvoice_status IS NOT NULL)
            ORDER BY doc_date DESC LIMIT 200""", (eid,))))
-    on_payments = rows(c.execute(
-        """SELECT s.*, p.description AS payment_desc, p.month AS payment_month FROM sql_entries s JOIN payments p ON p.id = s.payment_id
-           WHERE s.entity_id = ? ORDER BY s.doc_date DESC, s.id DESC LIMIT 300""", (eid,)))
     ignored = rows(c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'ignored' ORDER BY doc_date DESC", (eid,)))
     return jsonify({"imports": imports, "unlinked": unlinked, "candidates": cands, "documents": other, "einvoices": einv,
                     "linked": on_payments, "ignored": ignored})
+
+
+def _journal_moves(c, eid, entries, as_amount=False):
+    """Gives each journal in the rows bank_move: what its pasted lines move on the bank account (money in above 0), or None
+    when it moves nothing there. With as_amount (the rows are linked ones), a journal shows that as its amount and direction, as a voucher does."""
+    if not any(x["kind"] == "journal" for x in entries):
+        return
+    acct = recon.cash_book_account(c, eid)
+    moves = recon.journal_moves(c, eid, [x.get("dockey") for x in entries if x["kind"] == "journal"],
+                                recon.bank_gl_code(c, acct) if acct else None)
+    for x in entries:
+        if x["kind"] == "journal":
+            x["bank_move"] = moves.get(x.get("dockey"))
+            if as_amount and x["bank_move"] is not None:
+                x["amount"], x["direction"] = abs(x["bank_move"]), "in" if x["bank_move"] > 0 else "out"
 
 
 def _payment_from_entry(c, s, category=None):
@@ -1610,14 +1780,36 @@ def _payment_from_entry(c, s, category=None):
         (s["entity_id"], s["doc_date"][:7], acct["id"] if acct else None, category,
          s["description"] or s["payee"] or s["doc_no"], s["amount"], acct["currency"] if acct else "MYR",
          s["doc_date"], s["doc_date"], s["doc_no"], s["einvoice"], direction, db.now())).lastrowid
-    c.execute("UPDATE sql_entries SET payment_id = ?, status = 'linked' WHERE id = ?", (pid, s["id"]))
+    # (a journal keeps its status, as an invoice does: it is still a journal, only linked)
+    c.execute("UPDATE sql_entries SET payment_id = ?, status = CASE WHEN kind = 'journal' THEN status ELSE 'linked' END WHERE id = ?",
+              (pid, s["id"]))
     db.log(c, f"Created payment from SQL entry {s['doc_no']}")
     return pid
+
+
+def _as_voucher(c, s, strict=True):
+    """The SQL entry as the payment it records: a voucher as it is; a journal that moves the bank (its pasted lines on the
+    bank account's GL code) as a voucher for what it moves there, in the direction of its sign, not for its total. A
+    journal that moves nothing there is refused (strict), or taken as it is."""
+    if s["kind"] != "journal":
+        return s
+    move = recon.journal_move(c, s["entity_id"], s["dockey"]) if s["dockey"] else None
+    if move is None:
+        if strict:
+            raise sqlimport.SqlImportError(f"{s['doc_no']} has no lines on the bank account, so it moves no money and can't be linked to a "
+                                           "payment. Paste its lines from SQL first (and set the bank account's GL code in Setup).")
+        return s
+    return {**dict(s), "amount": round(abs(move), 2), "direction": "in" if move > 0 else "out"}
 
 
 def _link_entry(c, s, pid):
     if s["kind"] == "invoice":  # a customer invoice stays an invoice; it is the receipt's sales invoice, not a voucher
         c.execute("UPDATE sql_entries SET payment_id = ? WHERE id = ?", (pid, s["id"]))
+        return
+    if s["kind"] == "journal":  # a journal that moves the bank is linked like a voucher, for what it moves there
+        v = _as_voucher(c, s)
+        c.execute("UPDATE sql_entries SET payment_id = ? WHERE id = ?", (pid, s["id"]))
+        _add_sql_ref(c, pid, s["doc_no"], v["amount"], None, s["doc_date"], s["id"])
         return
     c.execute("UPDATE sql_entries SET payment_id = ?, status = 'linked' WHERE id = ?", (pid, s["id"]))
     _add_sql_ref(c, pid, s["doc_no"], s["amount"], s["einvoice"], s["doc_date"] if s["kind"] == "payment" else None, s["id"])
@@ -1702,7 +1894,18 @@ def sql_entry_update(sid):
     c = con()
     s = c.execute("SELECT * FROM sql_entries WHERE id = ?", (sid,)).fetchone() or abort(404)
     matched = 0
+    if s["kind"] == "journal" and (b.get("payment_id") or "create_payment" in b):
+        try:
+            _as_voucher(c, s)
+        except sqlimport.SqlImportError as ex:
+            return err(str(ex))
     if b.get("payment_id"):
+        if s["kind"] == "journal":
+            v = _as_voucher(c, s)
+            pay = c.execute("SELECT direction FROM payments WHERE id = ? AND entity_id = ?", (b["payment_id"], s["entity_id"])).fetchone()
+            if pay and (pay["direction"] or "out") != v["direction"]:
+                return err(f"{s['doc_no']} moves money {'in' if v['direction'] == 'in' else 'out'} on the bank account, "
+                           "so it can't be linked to a payment going the other way.")
         if s["kind"] == "invoice" and not c.execute("SELECT 1 FROM payments WHERE id = ? AND entity_id = ? AND direction = 'in'",
                                                     (b["payment_id"], s["entity_id"])).fetchone():
             return err("A customer invoice can only be linked to money received by the same company.")
@@ -1713,7 +1916,7 @@ def sql_entry_update(sid):
         db.log(c, f"Linked SQL entry {s['doc_no']} to payment: {desc}")
         matched = _match_payments(c, s["entity_id"], {int(b["payment_id"])})
     elif "create_payment" in b:
-        pid = _payment_from_entry(c, s, b["create_payment"].get("category"))
+        pid = _payment_from_entry(c, _as_voucher(c, s), b["create_payment"].get("category"))
         matched = _match_payments(c, s["entity_id"], {pid})
     elif b.get("status") == "ignored":
         c.execute("UPDATE sql_entries SET status = 'ignored' WHERE id = ?", (sid,))
@@ -1730,7 +1933,7 @@ def sql_entry_unlink(sid):
         return err(f"{s['doc_no']} isn't linked to a payment.")
     desc, removed = _unlink_entry(c, s)
     c.commit()
-    return jsonify({"ok": True, "doc_no": s["doc_no"], "payment": desc, "removed": removed})
+    return jsonify({"ok": True, "doc_no": s["doc_no"], "kind": s["kind"], "payment": desc, "removed": removed})
 
 
 @app.post("/api/sql/entries/<int:sid>/unignore")
@@ -1755,8 +1958,12 @@ def _unlink_entry(c, s):
         c.execute("UPDATE sql_entries SET payment_id = NULL WHERE id = ?", (s["id"],))
         db.log(c, f"Unlinked SQL invoice {s['doc_no']} from receipt: {p['description']}")
         return p["description"], False
-    c.execute("UPDATE sql_entries SET payment_id = NULL, status = 'unlinked' WHERE id = ?", (s["id"],))
-    if _made_from(c, p, s):
+    c.execute("UPDATE sql_entries SET payment_id = NULL, status = CASE WHEN kind = 'journal' THEN status ELSE 'unlinked' END WHERE id = ?",
+              (s["id"],))
+    v = _as_voucher(c, s, strict=False)
+    if s["kind"] == "journal":  # its lines may have been pasted again since: the payment keeps the amount it was made with
+        v = {**dict(v), "amount": p["amount"]}
+    if _made_from(c, p, v):
         c.execute("DELETE FROM payments WHERE id = ?", (pid,))
         db.log(c, f"Unlinked SQL entry {s['doc_no']} and removed the payment made from it: {p['description']}")
         return p["description"], True

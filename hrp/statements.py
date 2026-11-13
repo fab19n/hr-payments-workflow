@@ -192,7 +192,7 @@ def take_line_total(con, payment_id):
     from .db import linked_total
     p = con.execute("SELECT * FROM payments WHERE id = ?", (payment_id,)).fetchone()
     total = linked_total(con, p)
-    in_sql = con.execute("SELECT 1 FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') = 'payment'",
+    in_sql = con.execute("SELECT 1 FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')",
                          (payment_id,)).fetchone()
     from_lines = p["amount"] is None or p["amount_is_estimate"] or p["planned_is_estimate"] is not None
     if total and total > 0 and from_lines and not in_sql:
