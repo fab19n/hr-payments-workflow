@@ -168,6 +168,14 @@ const LT = {
   // An amount as it might be typed to find it: 1234.5 and 1,234.50 both match, with or without the sign the table shows (- or the minus sign, +).
   amount(n) { if (n == null || n === "") return ""; const v = Number(n), a = Math.abs(v), p = a.toFixed(2), q = a.toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     return `${p} ${q}` + (v < 0 ? ` -${p} -${q} −${p} −${q}` : v > 0 ? ` +${p} +${q}` : ""); },
+  // An amount typed by a person, as a number, or null when it isn't a well-formed amount: digits with or without
+  // thousands commas (1,234.50), at most 2 decimals, a minus or brackets for a negative. "25abc" or "1.2.3" give null.
+  typedAmount(s) {
+    const m = /^\s*(-|\(\s*)?(\d{1,3}(?:,\d{3})+|\d+)(\.\d{1,2})?(\s*\))?\s*$/.exec(String(s ?? ""));
+    if (!m || (m[1] || "").startsWith("(") !== !!m[4]) return null;
+    const v = Number(m[2].replace(/,/g, "") + (m[3] || ""));
+    return m[1] ? (v === 0 ? 0 : -v) : v;
+  },
   // Bar length in pixels for a value on a scale that ends at max.
   bar(v, max, width) { return max > 0 && v > 0 ? Math.max(1, Math.round(v / max * width * 100) / 100) : 0; },
   // The lines of a budget (one currency) as chart rows: the biggest `top` by budget, the rest added up as 'Other lines'.
@@ -1144,10 +1152,11 @@ function rvGap(line, p) {
   return best.days ? { ...best, kind: p.voucher_dates?.length ? "voucher" : "payment" } : null;
 }
 const rvPay = id => RV().d.payments.find(p => p.id === id);
-// The date difference a row must have ticked before it can be applied: {days, date, kind} or null.
+// The date difference a row must have ticked before it can be applied: {days, date, kind} or null. A linked or
+// explained line needs it only while the server says so (not once it is confirmed: it had its tick then).
 function rvNeedsTick(l) {
   const V = RV();
-  if (l.state !== "open") return l.gap_days ? { days: l.gap_days, date: l.book_date, kind: l.book_date_kind } : null;
+  if (l.state !== "open") return l.needs_date_tick ? { days: l.gap_days, date: l.book_date, kind: l.book_date_kind } : null;
   const ch = V.choice[l.id];
   return ch?.startsWith("p:") ? rvGap(l, rvPay(+ch.slice(2))) : null;
 }
@@ -3860,8 +3869,8 @@ document.addEventListener("submit", async ev => {
   }
   if (ev.target.id === "openingForm") {
     ev.preventDefault();
-    const amount = parseFloat($("#openAmount").value.replace(/,/g, ""));
-    if (!$("#openMonth").value || Number.isNaN(amount)) return toast("Choose the month and type the balance as a number.", true);
+    const amount = LT.typedAmount($("#openAmount").value);
+    if (!$("#openMonth").value || amount === null) return toast("Choose the month and type the balance as a number.", true);
     try {
       await api("/api/recon/book-opening", { json: { entity_id: state.entity, account_id: state.recon.account, month: $("#openMonth").value, amount } });
       toast("Book opening saved."); drawRecon();

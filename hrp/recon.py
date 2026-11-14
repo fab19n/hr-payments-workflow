@@ -479,8 +479,9 @@ def date_gap(con, line, payment_id):
 
 def review(con, ent, st):
     """What the review screen shows for a statement: its figures and month summary, every line (open ones first, with
-    the suggestions for them; matched ones with the payment, its SQL voucher numbers and dates, and the days the bank's
-    date differs from the voucher's or payment's), and the payments a line can be linked to."""
+    the suggestions for them; matched ones with the payment and its id, its SQL voucher numbers and dates, the days the
+    bank's date differs from the voucher's or payment's, and whether the line still needs the date tick: only while it
+    is not confirmed), and the payments a line can be linked to."""
     acct = _acct(con, st["account_id"])
     summary = month_summary(con, ent, acct, st["month"])
     sugg = statements.suggest(con, ent["id"], st["id"])
@@ -490,7 +491,8 @@ def review(con, ent, st):
         row = {"id": l["id"], "line_no": l["line_no"], "txn_date": l["txn_date"], "description": l["description"], "amount": l["amount"],
                "balance": l["balance"], "status": l["status"], "note": l["note"], "confirmed_at": l["confirmed_at"],
                "state": "matched" if pid else "explained" if l["status"] == "no_docs" else "open",
-               "payment": None, "payment_desc": None, "vouchers": [], "suggestions": sugg.get(l["id"], []), "gap_days": 0, "book_date": None, "book_date_kind": None}
+               "payment_id": pid, "payment": None, "payment_desc": None, "vouchers": [], "suggestions": sugg.get(l["id"], []),
+               "gap_days": 0, "book_date": None, "book_date_kind": None, "needs_date_tick": False}
         if pid:
             p = con.execute("SELECT id, description, month, amount, currency, paid_date, direction FROM payments WHERE id = ?", (pid,)).fetchone()
             row["payment"], row["payment_desc"] = dict(p), p["description"]
@@ -498,6 +500,7 @@ def review(con, ent, st):
                 """SELECT doc_no, doc_date, doc_type FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')
                    ORDER BY doc_date""", (pid,))]
             row["gap_days"], row["book_date"], row["book_date_kind"] = date_gap(con, l, pid)
+            row["needs_date_tick"] = bool(row["gap_days"]) and not l["confirmed_at"]  # a confirmed line had its tick then
         rows.append(row)
     pays = [dict(p) for p in con.execute(
         """SELECT p.id, p.month, p.description, p.amount, p.currency, p.direction, p.due_date, p.paid_date,
@@ -627,11 +630,15 @@ def apply_rows(con, ent, st, rows, checked, change):
             plan.append((l, None, l["payment_id"]))
         else:
             raise ReconError(f"Choose what {label} is, or leave it unselected.")
-    # The date tick is checked for every row before anything changes.
+    # The date tick is checked for every row before anything changes; a line already confirmed and left as it is had
+    # its tick when it was confirmed.
     kept = {int(r["line_id"]) for r in rows if r.get("keep_date") is True}
+    # A line already confirmed, left as it is and not ticked is passed over by the date step too: it changes nothing,
+    # not even the payment's paid date (a voucher linked after the line was confirmed doesn't move it without a tick).
+    left = {l["id"] for l, body, pid in plan if body is None and l["confirmed_at"] and l["id"] not in kept}
     for l, body, pid in plan:
         gap, when, kind = date_gap(con, l, pid)
-        if gap and l["id"] not in kept:
+        if gap and l["id"] not in kept and l["id"] not in left:
             what = "voucher" if kind == "voucher" else "payment"
             raise ReconError(f"The bank date of {db.short_day(l['txn_date'])} ({l['amount']:,.2f}) differs by {gap} day{'s' if gap > 1 else ''} from the "
                              f"{what} date, {db.short_day(when)}. Tick \"keep the {what} date\" on that row to apply it.")
@@ -640,6 +647,8 @@ def apply_rows(con, ent, st, rows, checked, change):
         if body:
             change(con, l, body)
             n["created" if "create_payment" in body else "linked" if "payment_id" in body else "explained"] += 1
+        if l["id"] in left:
+            continue
         fresh = con.execute("SELECT * FROM statement_lines WHERE id = ?", (l["id"],)).fetchone()
         gap, when, kind = date_gap(con, fresh, fresh["payment_id"])
         if gap and kind == "voucher":
@@ -692,8 +701,11 @@ def sign_off_before_tracking(con, ent, st, note, checked):
 
 
 def set_book_opening(con, ent, acct, month, amount):
-    """Type the book balance an account starts the month with. Later months carry on from it."""
+    """Type the book balance an account starts the month with. Later months carry on from it. The amount must come as a
+    number (text such as "25" or "25abc" is refused here, whatever the page did with it)."""
     try:
+        if isinstance(amount, bool) or not isinstance(amount, (int, float)):
+            raise TypeError
         amount = _r(amount)
         if not math.isfinite(amount) or abs(amount) > 1e12:
             raise ValueError
