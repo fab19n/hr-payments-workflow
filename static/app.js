@@ -119,7 +119,7 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 
 // month and day are set in start(), once the settings (the rollover day) are loaded.
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
-  nextAll: {}, bankOnly: false, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "", months: false }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
+  nextAll: {}, bankOnly: false, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "", months: false, side: "customers", party: null }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
   setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
@@ -371,7 +371,7 @@ function goTo(g) {
   state.focusBank = g.view === "bank" ? { account: g.account_id || null } : null;
   if (g.view === "books" && g.tab) {  // Next up's statutory rows open the Statutory tab on their month to today
     const B = state.books;
-    if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "" });
+    if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "", party: null });
     B.tab = g.tab;
     if (g.from || g.to) { B.from = g.from || null; B.to = g.to || null; }
   }
@@ -1593,7 +1593,7 @@ const BOOK_NAMES = { bank: "Bank", general: "General", sales: "Sales", purchase:
 async function viewBooks(main) {
   const e = ent(), B = state.books;
   if (!e) { main.innerHTML = `<div class="card"><div class="note">Add a company in Setup first.</div></div>`; return; }
-  if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "" });
+  if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "", party: null });
   main.innerHTML = `${entityPicker()}
     <div class="card" id="booksView"><h1>Books · ${esc(e.code)}</h1>
       <div class="note">${e.uses_sql
@@ -1610,18 +1610,22 @@ async function viewBooks(main) {
         <button type="button" data-bk-tab="ledger" aria-pressed="${B.tab === "ledger"}">General ledger</button>
         <button type="button" data-bk-tab="pl" aria-pressed="${B.tab === "pl"}">Profit and loss</button>
         <button type="button" data-bk-tab="bs" aria-pressed="${B.tab === "bs"}">Balance sheet</button>
+        <button type="button" data-bk-tab="parties" aria-pressed="${B.tab === "parties"}">Customers and suppliers</button>
         <button type="button" data-bk-tab="statutory" aria-pressed="${B.tab === "statutory"}">Statutory</button></div></div>
       <div id="booksBody"><div class="note">Loading…</div></div></div>`;
   const view = $("#booksView");
   view.addEventListener("click", ev => {
     const t = ev.target.closest("button"); if (!t) return;
     const ds = t.dataset;
-    if (ds.bkTab) { B.tab = ds.bkTab; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === B.tab))); return drawBooks(); }
+    if (ds.bkTab) { B.tab = ds.bkTab; B.party = null; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === B.tab))); return drawBooks(); }
     if (ds.bkShow) { B.from = $("#bkFrom").value || null; B.to = $("#bkTo").value || null; return drawBooks(); }
     if (ds.bkYear) { B.from = B.to = null; return drawBooks(); }
     if (ds.bkAcct) { B.tab = "ledger"; B.account = ds.bkAcct; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === "ledger"))); return drawBooks(); }
     if (ds.bkAll) { B.account = null; return drawBooks(); }
     if (ds.bkDoc) return booksDoc(t);
+    if (ds.bkSide) { B.side = ds.bkSide; B.party = null; return drawBooks(); }
+    if (ds.bkParty) { B.party = ds.bkParty; return drawBooks(); }
+    if (ds.bkPartyBack) { B.party = null; return drawBooks(); }
     if (ds.stUse) return statutoryUse(t);
     if (ds.stPay) { const [id, month] = ds.stPay.split(" "); return goTo({ view: "entity", entity_id: state.entity, month, payment_id: +id }); }
     if (ds.stSetup) { state.setup.kind = "statutory_accounts"; return go("setup"); }
@@ -1653,6 +1657,12 @@ async function drawBooks() {
       const d = await api(`/api/statutory?${booksQuery()}`);
       if (!$("#booksBody")) return;
       body.innerHTML = statutoryHtml(d);
+    } else if (B.tab === "parties") {
+      const d = B.party ? await api(`/api/books/party?${booksQuery()}&code=${encodeURIComponent(B.party)}`)
+        : await api(`/api/books/parties?${booksQuery()}&side=${B.side}`);
+      if (!$("#booksBody")) return;
+      B.from = d.from; B.to = d.to;
+      body.innerHTML = B.party ? partyHtml(d) : partiesHtml(d);
     } else if (B.tab === "pl") {
       const d = await api(`/api/books/profit-and-loss?${booksQuery()}&columns=${B.months ? "month" : "total"}`);
       if (!$("#booksBody")) return;
@@ -1801,6 +1811,68 @@ function bsHtml(d) {
     <div class="note">As at the To date above. The profit or loss for the year to date runs from ${esc(fmtDate(d.fy_from))}. Assets are shown as debits above 0, liabilities and equity as credits above 0; a figure in brackets is the other way round.</div>
     ${fsTable(d)}
     ${d.comparative.shown ? "" : d.comparative.why ? `<div class="note">No comparative column: ${esc(d.comparative.why)}</div>` : ""}
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+}
+
+// Customers and suppliers (hrp/receivables.py): who owes what, per debtor or creditor control account, with the ageing
+// at the To date, the totals checked against the control account in the trial balance. Every amount is what is owed (a
+// customer owes the company, the company owes a supplier); a figure in brackets is the other way round. A code opens the
+// customer's or supplier's statement; a doc no. there opens its lines. Read-only.
+const AR_AGE = ["current", "d31_60", "d61_90", "over_90"];
+
+function partiesHtml(d) {
+  const B = state.books, sup = B.side === "suppliers";
+  const who = sup ? "supplier" : "customer";
+  const toggle = `<div class="row spread"><h2>${sup ? "Suppliers" : "Customers"}, ${esc(fmtDate(d.from))} to ${esc(fmtDate(d.to))}</h2>
+    <div class="seg" role="group" aria-label="Customers or suppliers">
+      <button type="button" data-bk-side="customers" aria-pressed="${!sup}">Customers</button>
+      <button type="button" data-bk-side="suppliers" aria-pressed="${sup}">Suppliers</button></div></div>`;
+  if (!d.controls.length) return `${toggle}${fsBanner(null, "Nothing listed", d.text)}
+    <div class="note">No ${who} balance is kept for these dates.${ent()?.uses_sql ? " Fetch SQL's GL Journal of Transaction and trial balance on the SQL import page." : ""}</div>
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+  const bf = d.controls.some(c => c.totals.ageing.brought_forward);
+  const ages = AR_AGE.concat(bf ? ["brought_forward"] : []);
+  const words = Object.fromEntries(d.buckets.map(b => [b.key, b.words]));
+  const head = `<tr><th>Code</th><th>Name</th><th class="num">Opening</th><th class="num">Invoiced</th><th class="num">${sup ? "Paid" : "Received"}</th><th class="num">Other</th><th class="num">Closing</th>${ages.map(k => `<th class="num ar-age">${esc(words[k])}</th>`).join("")}</tr>`;
+  const ageCells = r => r.credit ? `<td colspan="${ages.length}" class="ar-age"><span class="pill grey">In credit</span> <span class="muted">paid in advance or overpaid</span></td>`
+    : r.ageing ? ages.map(k => `<td class="num ar-age">${rmCell(r.ageing[k])}</td>`).join("") : `<td colspan="${ages.length}" class="ar-age muted">—</td>`;
+  const row = r => `<tr><td><button type="button" class="linkish mono" data-bk-party="${esc(r.code)}" title="Open the statement of ${esc(r.code)}">${esc(r.code)}</button></td>
+    <td>${r.own ? `<span class="muted">${esc(r.name_words || "")}</span>` : esc(r.name || "")}${!r.own && r.name_from !== "party" ? ` <span class="pill warn" title="Not in Setup › Customers and suppliers: named ${r.name_from === "chart" ? "from the chart of accounts" : r.name_from === "printed" ? "as SQL printed it" : "by nobody yet"}">Not in Setup</span>` : ""}${r.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}</td>
+    <td class="num">${fsAmt(r.opening_sen)}</td><td class="num">${rmCell(r.invoiced_sen)}</td><td class="num">${r.received_sen ? fsAmt(r.received_sen) : ""}</td><td class="num">${r.other_sen ? fsAmt(r.other_sen) : ""}</td>
+    <td class="num"><b>${fsAmt(r.closing_sen)}</b></td>${ageCells(r)}</tr>`;
+  const ctl = c => `<div class="card-in"><div class="row spread"><h3><button type="button" class="linkish mono" data-bk-acct="${esc(c.code)}" title="Open the ledger of ${esc(c.code)}">${esc(c.code)}</button> ${esc(c.name || "")}</h3>
+      ${c.ties === true ? `<span class="pill ok">Ties to the trial balance</span>` : c.ties === false ? `<span class="pill bad">Doesn't tie</span>` : `<span class="pill grey">Can't be checked</span>`}</div>
+    <div class="tbl-wrap"><table class="fs ar"><thead>${head}</thead><tbody>${c.rows.map(row).join("")}
+      <tr class="fs-sub"><td colspan="2">Total</td><td class="num">${fsAmt(c.totals.opening_sen)}</td><td class="num">${rmPlain(c.totals.invoiced_sen)}</td><td class="num">${fsAmt(c.totals.received_sen)}</td><td class="num">${fsAmt(c.totals.other_sen)}</td><td class="num">${fsAmt(c.totals.closing_sen)}</td>${ages.map(k => `<td class="num ar-age">${rmPlain(c.totals.ageing[k])}</td>`).join("")}</tr>
+      <tr class="fs-line"><td colspan="2">${esc(c.code)} in the trial balance</td><td class="num">${fsAmt(c.tb.opening_sen)}</td><td class="num" colspan="3">${esc(`Moved ${fsAmt(c.tb.moved_sen)}`)}</td><td class="num">${fsAmt(c.tb.closing_sen)}</td><td colspan="${ages.length}" class="ar-age">${c.totals.in_credit_sen ? `<span class="muted">In credit: ${esc(fsAmt(c.totals.in_credit_sen))}</span>` : ""}</td></tr>
+    </tbody></table></div><div class="note">${esc(c.text)}</div></div>`;
+  return `${toggle}${fsBanner(d.ties, d.ties === true ? "Ties to the control accounts" : d.ties === false ? "Doesn't tie to the control accounts" : "Not fully checked", d.text)}
+    <div class="note">Each amount is what is owed: ${sup ? "what the company owes the supplier" : "what the customer owes the company"}; a figure in brackets is the other way round. Invoiced is what the ${sup ? "purchase" : "sales"} book added, ${sup ? "paid" : "received"} what the bank book took off, other everything else (credit notes, journals). The ageing is at ${esc(fmtDate(d.to))}.</div>
+    <div class="note">${esc(d.ageing_note)}</div>
+    ${d.controls.map(ctl).join("")}
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+}
+
+function partyHtml(d) {
+  const sup = d.side === "suppliers";
+  const words = Object.fromEntries(d.buckets.map(b => [b.key, b.words]));
+  const doc = r => r.doc_no == null ? "" : r.origin === "sql" ? `<button type="button" class="linkish mono" data-bk-doc="${esc(r.doc_no)}" title="Show the lines of ${esc(r.doc_no)}">${esc(r.doc_no)}</button>` : `<span class="mono">${esc(r.doc_no)}</span>`;
+  const owed = d.owed_sen == null ? "unknown" : d.credit ? `${rmPlain(Math.abs(d.owed_sen))} in credit (paid in advance or overpaid)` : d.owed_sen === 0 ? "nothing" : rmPlain(d.owed_sen);
+  const ageRow = d.ageing && !d.credit ? Object.keys(d.ageing).filter(k => k !== "brought_forward" || d.ageing[k]).map(k => `<span class="pill grey">${esc(words[k])}: ${esc(rmPlain(d.ageing[k]))}</span>`).join(" ") : "";
+  return `<div class="row spread"><h2><span class="mono">${esc(d.code)}</span> ${esc(d.name || "")}${d.name_from !== "party" && d.code !== d.control ? ` <span class="pill warn">Not in Setup</span>` : ""}</h2>
+      <button class="ghost small" type="button" data-bk-party-back="1">All ${sup ? "suppliers" : "customers"}</button></div>
+    <div class="note">${sup ? "Supplier" : "Customer"} under <button type="button" class="linkish mono" data-bk-acct="${esc(d.control)}" title="Open the ledger of ${esc(d.control)}">${esc(d.control)}</button> ${esc(d.control_name || "")}. ${sup ? "Owed to them" : "Owed by them"} at ${esc(fmtDate(d.to))}: ${esc(owed)}.</div>
+    <div class="tbl-wrap"><table class="books-ledger"><thead><tr><th>Date</th><th>Doc No</th><th>Book</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr></thead><tbody>
+      <tr class="books-open"><td>${esc(shortDate(d.from))}</td><td></td><td></td><td>Opening balance</td><td></td><td></td><td class="num">${drCr(d.opening_sen)}</td></tr>
+      ${d.rows.map(r => `<tr><td>${esc(shortDate(r.date))}</td><td>${doc(r)}</td><td>${esc(BOOK_NAMES[r.book] || r.book || "")}</td><td>${esc(r.description || "")}</td><td class="num">${rmCell(r.dr_sen)}</td><td class="num">${rmCell(r.cr_sen)}</td><td class="num">${drCr(r.balance_sen)}</td></tr>`).join("")}
+      <tr class="books-open"><td>${esc(shortDate(d.to))}</td><td></td><td></td><td>Closing balance</td><td></td><td></td><td class="num">${drCr(d.closing_sen)}</td></tr>
+    </tbody></table></div>
+    <h3>Still open at ${esc(fmtDate(d.to))}</h3>
+    ${ageRow ? `<div class="row">${ageRow}</div>` : ""}
+    ${d.credit ? `<div class="note">In credit, so nothing is aged.</div>` : d.open_items.length ? `<div class="tbl-wrap"><table class="books-ledger"><thead><tr><th>Date</th><th>Doc No</th><th>Description</th><th class="num">Invoice</th><th class="num">Still open</th><th class="num">Days</th><th>Age</th></tr></thead><tbody>
+      ${d.open_items.map(i => `<tr><td>${esc(shortDate(i.date))}</td><td>${doc(i)}</td><td>${esc(i.description || "")}</td><td class="num">${rmPlain(i.amount_sen)}</td><td class="num">${rmPlain(i.open_sen)}</td><td class="num">${i.days == null ? "" : esc(i.days)}</td><td>${esc(i.bucket_words)}</td></tr>`).join("")}
+    </tbody></table></div>` : `<div class="note">Nothing is open.</div>`}
+    <div class="note">${esc(d.ageing_note)}</div>
     ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
 }
 
@@ -3130,7 +3202,7 @@ function setupPaint() {
 }
 
 // Items done by the statements, the reconciliation or the audit pack have no deadline (the server keeps 0 for them).
-const NO_DEADLINE = ["statements", "statements_balanced", "reconciled", "pack"];
+const NO_DEADLINE = ["statements", "statements_balanced", "reconciled", "pack", "books"];
 // The inputs of a drawer's term (what a change sends), by id: not the month, the reason or what is fixed once added.
 const TERM_SKIP = ["cl-from", "cl-reason", "cl-completion", "rm-from", "rm-reason", "rm-short", "rm-key", "rm-kind"];
 function termInputs(pre) {
@@ -3223,8 +3295,9 @@ function openChecklist(id, { force = false, keep = {}, saved = null } = {}) {
   // The month shown: the one typed before it was drawn again, else the earliest not filed; the term in force then.
   const m0 = /^\d{4}-\d{2}$/.test(keep["cl-from"] || "") ? keep["cl-from"] : d.default_from || "";
   const t = (it && termAt(it, m0)) || { title: "", detail: "", due_offset: 0, due_day: "", docs: [], deadline: 0, submit_as: null, rule: null };
-  // Built-in completions have a code of their own: a company has each at most once.
-  const offered = (d.completions || []).filter(c => !c.code || !(d.items || []).some(x => x.code === c.code));
+  // Built-in completions have a code of their own: a company has each at most once. SQL's books only for a company kept in SQL.
+  const offered = (d.completions || []).filter(c => (!c.code || !(d.items || []).some(x => x.code === c.code))
+    && (c.key !== "books" || d.uses_sql !== false));
   const completion = isNew ? offered[0]?.key || "hand" : it.completion, on = isNew || termOn(it, m0);
   const used = +it?.used || 0, code = d.code || ent()?.code || "";
   state.openPayment = null; state.why = null; S.drawer = null; S.remOpen = null; S.chkOpen = { id: isNew ? "new" : it.id, completion, term: isNew ? null : t, on };

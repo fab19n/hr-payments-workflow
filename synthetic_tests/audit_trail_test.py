@@ -76,7 +76,8 @@ for t in after:
     if any(new[:len(prev)] != prev for new, prev in zip(after[t], old)) or after[t][len(old):]:
         added[t] = after[t][len(old):] or "changed"
 check("updating to 17 changes no record (only the update's own activity line is added)",
-      set(added) <= {"activity"} and all("Saved a copy" in r[2] for r in added.get("activity", [])), added)
+      set(added) <= {"activity"} and all("Saved a copy" in r[2] or r[2].endswith("added SQL books agree with SQL Account, from the start")
+                                         for r in added.get("activity", [])), added)  # and update 30's line per company kept in SQL
 check("the update reports a clean trail", trail["entries"] >= 1 and trail["outside"] == 0 and not trail["head"]
       and not trail["triggers_repaired"] and trail["late_sealed"] == 0 and not trail["head_behind"], trail)
 # Every record is in the trail: as it stood when the trail started (baseline), or as added by a later update (update 20

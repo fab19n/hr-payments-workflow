@@ -15,7 +15,7 @@ import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
 from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, finstatements, ledger, masters, nextup, recon, reports,
-               monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements, statutory)
+               monthly, packcheck, partybook, receivables, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements, statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -1960,6 +1960,33 @@ def books_balance_sheet():
     if not _books_year_ok(as_at):
         return err(f"The as-at date is out of range: use a date from {BOOKS_YEARS[0]} to {BOOKS_YEARS[1]}.")
     return jsonify(finstatements.balance_sheet(c, eid, as_at))
+
+
+@app.get("/api/books/parties")
+def books_parties():
+    """Customers and suppliers: who owes what for a period (default: this financial year to date), side=customers or
+    suppliers (both when empty), with the ageing at the To date and the totals checked against the control accounts in
+    the trial balance. Read-only."""
+    c = con()
+    eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    try:
+        d_from, d_to = _books_period(c, eid)
+        return jsonify(receivables.balances(c, eid, d_from, d_to, request.args.get("side")))
+    except ValueError as ex:
+        return err(str(ex))
+
+
+@app.get("/api/books/party")
+def books_party():
+    """One customer's or supplier's statement (code=) for a period: every line with its running balance, and the
+    invoices still open at the To date with their age. Read-only."""
+    c = con()
+    eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    try:
+        d_from, d_to = _books_period(c, eid)
+        return jsonify(receivables.statement(c, eid, (request.args.get("code") or "").strip(), d_from, d_to))
+    except ValueError as ex:
+        return err(str(ex))
 
 
 @app.get("/api/statutory")

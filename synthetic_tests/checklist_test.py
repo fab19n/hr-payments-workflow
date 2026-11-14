@@ -53,7 +53,9 @@ with db.connect() as c:
     check("from update 21 they come from the tables", B.from_tables and c.execute("PRAGMA user_version").fetchone()[0] >= 21)
     ent = c.execute("SELECT * FROM entities WHERE code = 'AISB'").fetchone()
     check("and AISB's checklist reads as the code had it",
-          [{k: t[k] for k in frozen_list[0]} for t in B.checklist(ent, "2026-11")] == frozen_list)
+          [{k: t[k] for k in frozen_list[0]} for t in B.checklist(ent, "2026-11") if t["code"] != "sql-books"] == frozen_list)
+    # update 30 adds the SQL books item (not one of the code's lists) at the end of a checklist of a company kept in SQL
+    check("and update 30 adds the SQL books item at its end", B.checklist(ent, "2026-11")[-1]["code"] == "sql-books")
     check("the guesses, salary words and filing words read as the code had them",
           B.guess == checklistbook.FROZEN.guess and B.hints == checklistbook.FROZEN.hints)
     seeded = c.execute("""SELECT COUNT(*) FROM audit_row WHERE op = 'insert' AND tbl IN ('checklist_items', 'checklist_terms',
@@ -100,7 +102,8 @@ check("/api/meta gives the reminders and the checklist codes",
       [p["key"] for p in meta["people_tasks"]] == ["ecp22", "perkeso", "kwsp", "stamp", "cp22a"] and "kwsp" in meta["checklist_codes"])
 v = j("get", "/api/setup/checklist?entity=1")
 items = {x["code"]: x for x in v["items"]}
-check("the checklist view lists AISB's 15 items, built in and in use", len(items) == 15 and all(x["system"] and x["in_use"] for x in items.values()))
+check("the checklist view lists AISB's 15 items and update 30's SQL books item, built in and in use",
+      len(items) == 16 and "sql-books" in items and all(x["system"] and x["in_use"] for x in items.values()))
 check("and how each is shown done", items["statement"]["completion"] == "statements" and items["kwsp"]["completion"] == "payments"
       and items["kwsp"]["now"]["rule"]["docs"] == ["portal"] and items["kwsp"]["now"]["submit_as"] == "KWSP")
 check("a change may start from the month being worked on", v["default_from"] == M1 and v["first_allowed"] is None)

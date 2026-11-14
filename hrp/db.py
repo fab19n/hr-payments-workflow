@@ -321,6 +321,12 @@ MIGRATIONS = [
     #     SOCSO, EIS, SKBBK, PCB, HRDF) and payable account, the employer's share account and the due day. Made empty:
     #     the owner confirms them. Nothing else in the records changes.
     lambda con: _statutory_accounts(con),
+    # 30. A checklist item shown done by SQL's own reports: SQL books agree with SQL Account (a GL Journal of
+    #     Transaction over the whole month, every document of the month in it and in SQL's listings, each balancing
+    #     and agreeing with its listing, and SQL's trial balance agreeing with the books here), worked out each time,
+    #     never stored as a tick. Each company kept in SQL with a checklist gets it from the earliest month not filed
+    #     (filed months never change), added to the months already set up from then on. Nothing else changes.
+    checklistbook.install_sql_books,
 ]
 
 
@@ -438,6 +444,8 @@ def load_seed(con, seed):
         if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'checklist_items'").fetchone():
             checklistbook.seed_company(con, {"id": eid, "code": e["code"]})  # update 21 ran before any company existed
             checklistbook.seed_filing(con, {r[0] for r in con.execute("SELECT code FROM checklist_items WHERE entity_id = ?", (eid,))})
+            if con.execute("PRAGMA user_version").fetchone()[0] >= 30:  # update 30 ran before any company existed
+                checklistbook.add_sql_books(con, dict(con.execute("SELECT * FROM entities WHERE id = ?", (eid,)).fetchone()))
         acct_ids = {}
         for a in e.get("accounts", []):
             c = con.execute("INSERT INTO accounts (entity_id, label, bank, number, currency) VALUES (?, ?, ?, ?, ?)",
@@ -1182,6 +1190,9 @@ def task_status(con, ent, task, ev=None):
         ok, why = _from_statements(con, ent, month, checklistbook.STATEMENTS_ARG[kind])
     elif kind == "pack":
         ok, why = _from_pack(con, ent, month)
+    elif kind == "books":
+        from . import sqlbooks
+        ok, why = sqlbooks.month_check(con, ent, month)
     else:
         ok, why = None, None
     ev = evidence(con, task=task) if ev is None else ev

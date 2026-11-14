@@ -189,7 +189,7 @@ def checklist_view(con, entity_id):
         if n:
             others.append({"id": o["id"], "code": o["code"], "name": o["name"], "items": n})
     docs = sorted(((k, d) for k, d in R.docs.items() if k not in INTERNAL_DOCS), key=lambda kv: (R.order(kv[0], 999), kv[1]["sort"]))
-    return {"entity_id": entity_id, "code": e["code"], "name": e["name"],
+    return {"entity_id": entity_id, "code": e["code"], "name": e["name"], "uses_sql": bool(e["uses_sql"]),
             "default_from": masters._first_open(con, entity_id), "first_allowed": db.shift_month(last, 1) if last else None,
             "items": items,
             "completions": [{"key": k, "label": label, "code": code} for k, label, code in checklistbook.COMPLETIONS],
@@ -254,8 +254,8 @@ def _term_fields(con, f, completion, keep=None):
          "due_day": _int(f.get("due_day"), "Due day", 1, 31),
          "docs": _docs(con, f.get("docs") or [], tuple(keep.get("docs", ())), "Documents the item asks for"),
          "deadline": 1 if f.get("deadline") in (True, 1, "1") else 0}
-    if completion in checklistbook.STATEMENTS_ARG or completion == "pack":
-        t["deadline"] = 0  # Next up shows these through its own rows (import, reconcile, the audit pack)
+    if completion in checklistbook.STATEMENTS_ARG or completion in ("pack", "books"):
+        t["deadline"] = 0  # Next up shows these through its own rows (import, reconcile, the audit pack) or rule 10
     t["submit_as"] = (_text(f.get("submit_as"), "Submitted as", required=False, limit=SUBMIT_MAX) or None) if t["deadline"] else None
     t["rule"] = _rule(con, f.get("rule"), keep.get("rule")) if completion == "payments" else None
     return t
@@ -429,6 +429,8 @@ def checklist_save(con, b):
             completion = f.get("completion") if isinstance(f, dict) else None
             if completion not in [k for k, _, _ in checklistbook.COMPLETIONS]:
                 raise Refused("Say how the item is shown done.")
+            if completion == "books" and not ent["uses_sql"]:
+                raise Refused(f"{ent['code']}'s books aren't kept in SQL Account, so SQL's books can't show this item done.")
             vals = _term_fields(con, f, completion)
             _same_title(B, ent, [(vals["title"], m, None)], None)
             taken = {code for (e2, code) in B.items if e2 == eid}
