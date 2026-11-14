@@ -440,7 +440,7 @@ def balance_sheet(con, eid, as_at=None):
     when they don't, the check says by how much and why. Returns {as_at, fy_from, columns, blocks, figures, comparative,
     balanced, difference_sen, check, notes}."""
     B = books._Books(con, eid)
-    as_at = _iso(as_at) or date.today().isoformat()
+    as_at = _iso(as_at) or books.default_to(con, eid)
     chart = _chart(con, eid)
     fy_from = B.year_start(as_at)
     cols = [{"key": "now", "label": f"At {_dmy(as_at)}", "as_at": as_at, "role": "total"}]

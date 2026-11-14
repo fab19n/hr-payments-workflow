@@ -596,7 +596,10 @@ check("the ledger route gives the account's lines, and the accounts to search", 
       and any(x["code"] == "300-A0003" and x["control"] == "300-0000" for x in d["choices"]), str(d["accounts"][0].keys()))
 d = j("get", f"/api/books/ledger?entity={EID}")
 today = date.today().isoformat()
-check("with no dates, the current financial year to date", (d["from"], d["to"]) == (f"{today[:4]}-01-01", today), str((d["from"], d["to"])))
+# With no dates the report opens on the as-at day of the latest SQL trial balance kept (stage 1 settle: so the check
+# against SQL can run), from its financial year's start.
+check("with no dates, the financial year to the latest SQL trial balance kept", (d["from"], d["to"]) == ("2026-01-01", "2026-01-31")
+      and d["to"] <= today, str((d["from"], d["to"])))
 check("a date that isn't one is refused in words", "isn't a date" in j("get", f"/api/books/trial-balance?entity={EID}&from=2026-13-01", 400)["error"])
 check("so is a From date after the To date", "after" in j("get", f"/api/books/ledger?entity={EID}&from=2026-02-01&to=2026-01-01", 400)["error"])
 check("the routes write nothing", q("SELECT COUNT(*) AS n FROM audit_row")[0]["n"] == trail_before)

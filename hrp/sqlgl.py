@@ -17,7 +17,7 @@ import hashlib
 import json
 import re
 
-from .sqlreport import PAGE, PERIOD, ReportError, _a_date, _a_number, _norm
+from .sqlreport import PAGE, PERIOD, ReportError, _a_date, _a_number, _norm, refuse_currency
 
 TITLES = {"journal": "GL Journal of Transaction", "gl_ledger": "GL Ledger", "trial_balance": "Trial Balance"}
 BOOKS = ("bank", "general", "sales", "purchase")
@@ -234,6 +234,7 @@ def journal(rows, spans):
     if head_row is None:
         raise ReportError(f"This {title} is laid out in a way this app hasn't seen: no row has the headings Doc Date, A/C Code, Ref 1, Debit and Credit.")
     heads = _jot_heading(rows, spans, head_row)
+    refuse_currency(rows, head_row, title)
     printed = _period(rows, head_row)
 
     sections, docs, where = [], {}, {}   # where: doc key -> the section label it was first read in
@@ -368,6 +369,7 @@ def gl_ledger(rows, spans):
     if head_row is None:
         raise ReportError(f"This {title} is laid out in a way this app hasn't seen: no row has the headings Date, Ref, Debit, Credit and Bal.")
     heads = _ledger_heading(rows, spans, head_row)
+    refuse_currency(rows, head_row, title)
     top = {_norm(x) for r in rows[:head_row] for x in r if isinstance(x, str)}
 
     accounts, acct, last, total, footer, side = [], None, None, None, [], None
@@ -474,6 +476,7 @@ def trial_balance(rows, spans):
     head_row = next((i for i, r in enumerate(rows) if _tb_heading(r)), None)
     if head_row is None:
         raise ReportError(f"This {title} is laid out in a way this app hasn't seen: no row has the headings Opening Balance, Period To Date, Month To Date and Year To Date.")
+    refuse_currency(rows, head_row, title)
     groups = sorted((a, TB_GROUPS[_norm(x)]) for a, _, x in _cells(rows, spans, head_row) if isinstance(x, str) and _norm(x) in TB_GROUPS)
     sub_row = next((i for i in range(head_row + 1, min(len(rows), head_row + 4))
                     if sum(t in ("debit", "credit") for t in _texts(_cells(rows, spans, i))) >= 8), None)

@@ -6,9 +6,12 @@ A month is shown done when all four hold, checked in this order, and the first t
 what to fetch or fix:
   1. the GL Journals of Transaction fetched cover the whole month (one read, or several whose periods run on from each
      other with no day missing);
-  2. no listing entry dated in the month is missing from SQL's journal, and no document of the month in the journal
-     lacks a listing (ledger.orphans, kept to the month);
-  3. every current document dated in the month balances and agrees with its listing (ledger.doc_checks);
+  2. no listing entry dated in the month is missing from SQL's journal (one confirmed as deleted in SQL is left out), and
+     no document of the month in a section of the journal this app reads a listing for (bank, general, sales, purchase)
+     lacks a listing (ledger.orphans, kept to the month). A document in another section (cash sales, credit notes and
+     the like: no listing this app reads) is never asked for one;
+  3. every current document dated in the month balances and agrees with its listing (ledger.doc_checks); one in a
+     section with no listing this app reads only has to balance, and SQL's trial balance (4) checks its accounts;
   4. SQL's trial balance agrees with the books here (books.check_against_sql), taken from the stored trial balance of
      SQL's whose as-at date is the nearest on or after the month's last day (the latest read of that date), from its own
      From date. A trial balance fetched later for a later day never changes the answer for a month that has its own, so
@@ -94,11 +97,13 @@ def month_check(con, ent, month):
     if unlisted:
         n = len(unlisted)
         return False, (f"{n} document{_s(n)} of {label} in SQL's GL Journal of Transaction {'has' if n == 1 else 'have'} no "
-                       f"listing ({_nos(unlisted)}): fetch or paste SQL's listing for {label}.")
+                       f"listing ({_nos(unlisted)}): fetch SQL's listing for {label} on the SQL import page.")
     docs = con.execute("""SELECT doc_no FROM ledger_docs WHERE entity_id = ? AND origin = 'sql' AND state = 'current'
                           AND doc_date >= ? AND doc_date <= ? ORDER BY doc_date, doc_key""", (eid, first, last)).fetchall()
     checks = ledger.doc_checks(con, eid, [d["doc_no"] for d in docs])
-    bad = sorted((c for c in checks.values() if c["state"] == "current" and (not c["balanced"] or c["total_ok"] is not True)),
+    own = {x["id"] for x in o["own_lines"] if first <= x["doc_date"] <= last}  # no listing to agree with: their lines must balance
+    bad = sorted((c for c in checks.values() if c["state"] == "current"
+                  and (not c["balanced"] or (c["total_ok"] is not True and c["doc_id"] not in own))),
                  key=lambda c: c["doc_no"])
     if bad:
         n, c = len(bad), bad[0]
@@ -116,8 +121,11 @@ def month_check(con, ent, month):
                        f"SQL's Trial Balance as at {upto}, or its GL Journal of Transaction up to {at}.")
     res = books.check_against_sql(con, eid, tb["period_from"], tb["period_to"])
     if res["outcome"] == "ok":
+        n = len(own)
+        extra = (f" ({n} document{_s(n)} in sections with no listing this app reads {'was' if n == 1 else 'were'} checked by "
+                 f"{'its' if n == 1 else 'their'} account lines and SQL's trial balance)") if n else ""
         return True, (f"Done: SQL's journal covers {label}, its documents agree with the listings and SQL's trial balance as "
-                      f"at {db.day_label(tb['period_to'])} agrees with the books here")
+                      f"at {db.day_label(tb['period_to'])} agrees with the books here{extra}")
     if res["outcome"] == "warn":
         return False, f"{res['text']} See Accounting › Books › Trial balance, then fetch again what differs."
     return False, res["text"]

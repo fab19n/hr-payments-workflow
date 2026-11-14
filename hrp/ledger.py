@@ -386,10 +386,11 @@ def listing_of(con, eid, keys=None):
     A row listed again unchanged stays with the import that first brought it, so when one row of a voucher on several
     rows is edited in SQL, the latest import holds only the edited row: when it holds fewer rows than an earlier import
     did, partial is True and total is None (can't tell), rather than a total that leaves the unchanged rows out.
-    can_ignore: every row is still unlinked (only those can be ignored)."""
+    can_ignore: every row is still unlinked (only those can be ignored). can_confirm: no row is linked to a payment or
+    ignored already (a voucher, journal or invoice SQL no longer has can then be confirmed as deleted in SQL)."""
     cols = {r[1] for r in con.execute("PRAGMA table_info(sql_entries)")}
     code = "code" if "code" in cols else "NULL AS code"
-    base = f"""SELECT id, import_id, doc_no, doc_date, amount, direction, kind, doc_type, status, {code}
+    base = f"""SELECT id, import_id, doc_no, doc_date, amount, direction, kind, doc_type, status, payment_id, {code}
                FROM sql_entries WHERE entity_id = ? AND TRIM(COALESCE(doc_no, '')) <> ''"""
     if keys is None:
         got = con.execute(base + " ORDER BY import_id, id", (eid,)).fetchall()
@@ -418,6 +419,7 @@ def listing_of(con, eid, keys=None):
                   "dates": sorted({r["doc_date"] for r in mine}), "total": _rm(total), "total_sen": total,
                   "ignored": all(r["status"] == "ignored" for r in mine), "partial": partial,
                   "can_ignore": all(r["status"] == "unlinked" for r in mine),
+                  "can_confirm": all(r["status"] in ("unlinked", "journal", "invoice") and not r["payment_id"] for r in mine),
                   "earlier": [sum(_sen(r["amount"]) for r in e) for e in earlier.values()
                               if len({r["direction"] for r in e}) == 1]}
     return out
@@ -699,17 +701,38 @@ def _journal_books(con, eid):
     return out
 
 
-def orphans(con, eid):
-    """{no_listing: current SQL documents no listing has, not_in_journal: listing entries dated in a Journal of
-    Transaction read, in a book it covered, with no current document (deleted or renumbered in SQL)}. Each entry of
-    not_in_journal has all its row ids, and can_ignore: whether every row is still unlinked (a linked voucher, a journal
-    or an invoice is never ignored from there: it would show as linked and ignored at once)."""
+# The sections of SQL's Journal of Transaction this app has a listing reader for. A document in any other section (cash
+# sales, credit and debit notes, deposits, refunds, contra, purchase returns, cash purchases: book 'other') has no listing
+# that could be fetched, so none is asked for: it is checked by its own lines (they balance) and by SQL's trial balance.
+LISTED_BOOKS = ("bank", "general", "sales", "purchase")
+OWN_LINES_WORDS = "No listing this app reads yet: checked by their account lines and SQL's trial balance"
+
+
+def orphans(con, eid, since=None):
+    """{no_listing: current SQL documents no listing has, in a section with a listing this app reads (bank, general,
+    sales, purchase), own_lines: current SQL documents no listing has in another section (book 'other': none can be
+    fetched, so they are checked by their own lines and SQL's trial balance, not asked for one), not_in_journal: listing
+    entries dated in a Journal of Transaction read, in a book it covered, with no current document (deleted or renumbered
+    in SQL), before_tracking: how many of these are dated before since}. Each entry of not_in_journal has all its row
+    ids, can_ignore: whether every row is still unlinked (a linked voucher, a journal or an invoice is never ignored from
+    there: it would show as linked and ignored at once), can_confirm: whether it can be confirmed as deleted in SQL (no
+    row linked to a payment) and gone: whether a journal read marked its document no longer in SQL. since: the first
+    day tracked (YYYY-MM-DD), or None for all; documents and entries dated before it are only counted."""
     listing = listing_of(con, eid)
     docs = con.execute("""SELECT id, doc_no, doc_key, doc_date, book, version FROM ledger_docs WHERE entity_id = ? AND origin = 'sql'
                           AND state = 'current' ORDER BY doc_date, doc_key""", (eid,)).fetchall()
+    gone = {r["doc_key"] for r in con.execute("""SELECT doc_key FROM ledger_docs WHERE entity_id = ? AND origin = 'sql'
+                                                 AND state = 'gone'""", (eid,))}
     current = {d["doc_key"] for d in docs}
-    no_listing = [{"id": d["id"], "doc_no": d["doc_no"], "doc_date": d["doc_date"], "book": d["book"], "version": d["version"]}
-                  for d in docs if d["doc_key"] not in listing]
+    no_listing, own, early = [], [], 0
+    for d in docs:
+        if d["doc_key"] in listing:
+            continue
+        if since and d["doc_date"] < since:
+            early += 1
+            continue
+        (no_listing if d["book"] in LISTED_BOOKS else own).append(
+            {"id": d["id"], "doc_no": d["doc_no"], "doc_date": d["doc_date"], "book": d["book"], "version": d["version"]})
     reads = _journal_books(con, eid)
     missing = []
     for k, L in sorted(listing.items(), key=lambda kv: (kv[1]["doc_date"], kv[0])):
@@ -717,9 +740,30 @@ def orphans(con, eid):
             continue
         book = _book_of(L["kind"], L["doc_type"])
         if any(f <= L["doc_date"] <= t and book in books for f, t, books in reads):
+            if since and L["doc_date"] < since:
+                early += 1
+                continue
             missing.append({"ids": L["ids"], "doc_no": L["doc_no"], "doc_date": L["doc_date"], "kind": L["kind"],
-                            "doc_type": L["doc_type"], "amount": L["total"], "book": book, "can_ignore": L["can_ignore"]})
-    return {"no_listing": no_listing, "not_in_journal": missing}
+                            "doc_type": L["doc_type"], "amount": L["total"], "book": book, "can_ignore": L["can_ignore"],
+                            "can_confirm": L["can_confirm"], "gone": k in gone})
+    return {"no_listing": no_listing, "own_lines": own, "not_in_journal": missing, "before_tracking": early}
+
+
+def deleted_in_sql(con, eid, ids):
+    """The doc nos. of the listing entries among the sql_entries ids that SQL no longer has: dated in a Journal of
+    Transaction read that covers their book but not in it (its document marked no longer in SQL, or never there), with no
+    row linked to a payment. Only those can be confirmed as deleted in SQL, and only whole: an entry listed on several
+    rows is returned only when every one of its rows is among the ids, so a voucher is never left half ignored."""
+    ids = {int(i) for i in ids}
+    return [x["doc_no"] for x in orphans(con, eid)["not_in_journal"] if x["can_confirm"] and set(x["ids"]) <= ids]
+
+
+def deleted_in_sql_part(con, eid, ids):
+    """The doc nos. of the listing entries that could be confirmed as deleted in SQL but of which only some rows are
+    among the sql_entries ids."""
+    ids = {int(i) for i in ids}
+    return [x["doc_no"] for x in orphans(con, eid)["not_in_journal"]
+            if x["can_confirm"] and ids & set(x["ids"]) and not set(x["ids"]) <= ids]
 
 
 def doc_view(con, eid, doc_no):
@@ -1456,6 +1500,11 @@ def _listing_month(con, acct, dates):
     return (signed[0], True) if signed else (months[0] if months else None, False)
 
 
+def fetch_months(con, eid, gl):
+    """The months whose bank reconciliation keeping these GL reports can change (see _fetch_months)."""
+    return _fetch_months(con, eid, gl)
+
+
 def _fetch_months(con, eid, gl):
     """The months whose bank reconciliation keeping these journals can change: the journals' own dates, and the
     listing dates of every document they hold or may mark no longer in SQL (the current documents dated in a printed
@@ -1496,19 +1545,48 @@ def _stored_ledger(con, eid, as_at):
     return None
 
 
-def apply_fetch(c, ent, imp, gl):
+def listing_months(con, ent, recs):
+    """(months, signed_off) for a listing about to be imported (recs: sqlimport.records): the months whose bank
+    reconciliation its rows can move (their own dates, and the dates of the rows already kept under the same doc nos.,
+    since only the latest import of a doc no. counts), and those of them, signed off, that a row new here falls in (what
+    the preview can say beforehand: a row already imported changes nothing)."""
+    from . import recon
+    eid, months, new = ent["id"], set(), set()
+    nos = {_key(r["doc_no"]) for r in recs if (r.get("doc_no") or "").strip()}
+    for part in _chunks(nos):
+        for x in con.execute(f"""SELECT doc_no, doc_date FROM sql_entries WHERE entity_id = ?
+                                 AND UPPER(TRIM(doc_no)) IN ({','.join('?' * len(part))})""", (eid, *part)):
+            months.add(x["doc_date"][:7])
+    for r in recs:
+        m = str(r["date"])[:7]
+        months.add(m)
+        if r.get("kind") == "invoice" or con.execute(
+                "SELECT 1 FROM sql_entries WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?",
+                (eid, r["doc_no"], r["date"], r["amount"])).fetchone():
+            continue  # an invoice moves no bank balance; a row imported already changes nothing
+        new.add(m)
+        new |= {x["doc_date"][:7] for x in con.execute("SELECT doc_date FROM sql_entries WHERE entity_id = ? AND doc_no = ?",
+                                                        (eid, r["doc_no"]))}
+    acct = recon.cash_book_account(con, eid) if ent["uses_sql"] else None
+    return months, sorted(m for m in new if _signed_off(con, acct, m))
+
+
+def apply_fetch(c, ent, imp, gl, before=None):
     """Keeps SQL's general-ledger reports a fetch read, in the import's transaction (imp: its sql_imports id): each
     file as an 'sqlexport' document (its fingerprint is how the next fetch knows it is done), one batch per file, every
     document of a Journal of Transaction kept by put_document (the oldest file first, so the newest wins) and the ones
     SQL no longer has marked, then the ledger and the trial balance checked against the lines, their results stored.
     The bank reconciliation of signed-off months is worked out before and after: a month that moved is reported (in
     the journals' summary and the activity log), never un-signed. Returns {files: [{name, kind, title, period,
-    batch_id, summary, results, problems}], recon_changed}. Refused for a company whose books aren't kept in SQL."""
+    batch_id, summary, results, problems}], recon_changed}. Refused for a company whose books aren't kept in SQL.
+    before: a snapshot (recon_snapshot) the caller took before it added any listing row of the same fetch, holding the
+    journals' months too (fetch_months), so what the listings move counts as well; else one is taken here."""
     from .docstore import store
     if not ent["uses_sql"]:
         raise LedgerError(NOT_SQL)
     eid = ent["id"]
-    before = recon_snapshot(c, ent, _fetch_months(c, eid, gl))
+    if before is None:
+        before = recon_snapshot(c, ent, _fetch_months(c, eid, gl))
     files, journals, checked = [], [], []
     for g in _ordered(gl):
         rep, kind = g["rep"], g["kind"]

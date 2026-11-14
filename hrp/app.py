@@ -1348,8 +1348,12 @@ def sql_preview():
     try:
         if request.files.get("file"):
             f = request.files["file"]
+            data = f.read()
+            if len(data) > sqlfetch.MAX_BYTES:
+                return err(f"This file is too large to read ({len(data) / 1024 / 1024:.1f} MB; at most "
+                           f"{sqlfetch.MAX_BYTES // (1024 * 1024)} MB). Export a shorter period from SQL Account.")
             token = secrets.token_hex(8)
-            _pending_sql[token] = (int(request.form["entity_id"]), f.filename, f.read())
+            _pending_sql[token] = (int(request.form["entity_id"]), f.filename, data)
             hr, mp = None, None
         elif request.get_json().get("text"):
             # Rows copied straight from an SQL Account listing (Ctrl+A, Ctrl+C) and pasted into the app.
@@ -1427,13 +1431,16 @@ def sql_preview():
         sample = next(r for r in rows_ if sum(1 for x in r if str(x or "").strip()) >= 3)
         headers = [f"Column {i + 1}: {str(v)[:25]}" for i, v in enumerate(sample)]
     cands = sqlimport.candidates(c, eid, sqlimport.months_of(recs), [r["payment_id"] for r in recs if r["payment_id"]])
+    ent_now = entity(c, eid)
+    # The signed-off months of the bank reconciliation a row new here falls in (said beforehand; nothing is un-signed).
+    signed = ledger.listing_months(c, ent_now, recs)[1] if ent_now["uses_sql"] else []
     _preview_made[token] = {r["id"]: (r["payee_id"], r["month"]) for r in c.execute(
         "SELECT id, payee_id, month FROM payments WHERE id > ?", (top,))}
     c.rollback()
     fetched = _pending_fetch.get(token)
     return jsonify({"token": token, "entity_id": eid, "filename": filename, "header_row": header_row, "headers": headers,
                     "mapping": mapping, "fields": sqlimport.ALL_FIELDS, "records": recs, "candidates": cands,
-                    **({"fetch": fetched["review"]} if fetched else {}),
+                    "signed_off": signed, **({"fetch": fetched["review"]} if fetched else {}),
                     **({"ledger": ledger.preview(c, eid, fetched["gl"], [r["doc_no"] for r in recs if r["kind"] == "journal"])}
                        if fetched and fetched["gl"] else {})})
 
@@ -1629,6 +1636,13 @@ def sql_apply():
         did = store(c, entity=e, month=month, folder="_SQL exports", doc_type="sqlexport", filename=filename, data=data)
         imp = c.execute("INSERT INTO sql_imports (entity_id, filename, document_id, imported_at, entries, linked) VALUES (?, ?, ?, ?, 0, 0)",
                         (eid, filename, did, db.now())).lastrowid
+    # The bank reconciliation of signed-off months is worked out before any listing row is added and after the whole
+    # import (listings and SQL's reports), so a month a listing moves is reported as one a journal moves is. Nothing is
+    # ever un-signed: the change is only said, in the result and the activity log.
+    snap = None
+    if e["uses_sql"]:
+        months = ledger.listing_months(c, e, recs)[0] | (ledger.fetch_months(c, eid, gl) if gl else set())
+        snap = ledger.recon_snapshot(c, e, months)
     for m in sqlimport.months_of(recs):
         db.auto_open(c, eid, m)
     made = _preview_made.get(b["token"], {})
@@ -1698,7 +1712,7 @@ def sql_apply():
     kept = None
     if gl:
         try:
-            kept = ledger.apply_fetch(c, e, imp, gl)
+            kept = ledger.apply_fetch(c, e, imp, gl, before=snap)
         except ledger.LedgerError as ex:
             c.rollback()
             return err(str(ex))
@@ -1711,12 +1725,18 @@ def sql_apply():
                   + (f" (read from {len(fetched['sources'])} exported files in {fetched['review']['folder']})" if fetched else ""))
     for f in (kept or {}).get("files", []):
         db.log(c, ledger.log_line(e, f))
+    changed = (kept or {}).get("recon_changed")
+    if changed is None and snap is not None:  # no journal read: the listings alone may have moved a signed-off month
+        changed = ledger.recon_changed(snap, ledger.recon_snapshot(c, e, snap))
+        if changed:
+            db.log(c, f"Imported SQL export '{filename}' for {e['code']}: bank reconciliation changed for signed-off "
+                      + ", ".join(x["month"] for x in changed) + " (still signed off; check again)")
     c.commit()
     _pending_fetch.pop(b["token"], None)
     _pending_sql.pop(b["token"], None)
     _preview_made.pop(b["token"], None)
     return jsonify({"added": added, "linked": linked, "skipped": skipped, "bank_lines_matched": matched,
-                    **({"ledger": kept} if kept else {})})
+                    "recon_changed": changed or [], **({"ledger": kept} if kept else {})})
 
 
 # What an SQL voucher's link replaced on a payment, kept (undo_link) so unlinking it can put exactly that back.
@@ -1826,7 +1846,8 @@ def sql_entries():
     other = _taken_back(c, rows(c.execute(
         """SELECT s.*, t.title AS task_title, t.month AS task_month, p.description AS payment_desc
            FROM sql_entries s LEFT JOIN tasks t ON t.id = s.task_id LEFT JOIN payments p ON p.id = s.payment_id
-           WHERE s.entity_id = ? AND s.kind IN ('journal', 'invoice') ORDER BY s.doc_date DESC LIMIT 200""", (eid,))))
+           WHERE s.entity_id = ? AND s.kind IN ('journal', 'invoice') AND s.status <> 'ignored'
+           ORDER BY s.doc_date DESC LIMIT 200""", (eid,))))
     on_payments = rows(c.execute(
         """SELECT s.*, p.description AS payment_desc, p.month AS payment_month FROM sql_entries s JOIN payments p ON p.id = s.payment_id
            WHERE s.entity_id = ? ORDER BY s.doc_date DESC, s.id DESC LIMIT 300""", (eid,)))
@@ -1853,7 +1874,10 @@ def sql_entries():
     counts = ledger.import_lines(c, me)
     for i in imports:
         i["lines"] = counts.get(i["id"], 0)
-    orphans = ledger.orphans(c, me) if ledger.ready(c) else {"no_listing": [], "not_in_journal": []}
+    # Documents and entries dated before the first month tracked are never asked about: only counted, in one line.
+    since = f"{e['first_month']}-01" if e["first_month"] else None
+    orphans = ledger.orphans(c, me, since) if ledger.ready(c) else {"no_listing": [], "own_lines": [], "not_in_journal": [],
+                                                                    "before_tracking": 0}
     return jsonify({"imports": imports, "unlinked": unlinked, "before_tracking": before, "first_month": e["first_month"],
                     "candidates": cands, "documents": other, "einvoices": einv,
                     "linked": on_payments, "ignored": ignored, "lines": lines,
@@ -1895,7 +1919,7 @@ def _books_period(c, eid):
         if v and not _books_year_ok(v):
             raise ValueError(f"The {k} date is out of range: use a date from {BOOKS_YEARS[0]} to {BOOKS_YEARS[1]}.")
     d_from, d_to = out
-    d_to = d_to or date.today().isoformat()
+    d_to = d_to or books.default_to(c, eid)  # the last day SQL's reports kept reach, never after today
     d_from = d_from or books.year_start(c, eid, d_to)
     if d_from > d_to:
         raise ValueError("The From date is after the To date.")
@@ -1954,7 +1978,7 @@ def books_balance_sheet():
     try:
         if v and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
             raise ValueError
-        as_at = date.fromisoformat(v).isoformat() if v else date.today().isoformat()
+        as_at = date.fromisoformat(v).isoformat() if v else books.default_to(c, eid)
     except ValueError:
         return err("The as-at date isn't a date (use YYYY-MM-DD).")
     if not _books_year_ok(as_at):
@@ -2144,6 +2168,46 @@ def sql_ignore_all():
     return jsonify({"ignored": len(nos)})
 
 
+@app.post("/api/sql/entries/deleted")
+def sql_deleted_in_sql():
+    """Confirms listing entries as deleted in SQL: a voucher, journal or invoice SQL's Journal of Transaction no longer
+    has (marked no longer in SQL by a later read, or missing from a read covering its date and section), linked to no
+    payment. Its rows are kept (the audit trail and the SQL page's Ignored list still show them) but marked ignored, so
+    the checks and the SQL books item leave them out. Un-ignore puts them back as they were (a journal or invoice keeps
+    its own kind). Anything else among the ids is refused, nothing changed."""
+    ids = [int(i) for i in request.get_json().get("ids") or []]
+    c = con()
+    if not ids or not ledger.ready(c):
+        return err("Choose the entries SQL no longer has.")
+    q = ",".join("?" * len(ids))
+    got = c.execute(f"SELECT * FROM sql_entries WHERE id IN ({q})", ids).fetchall()
+    eids = {r["entity_id"] for r in got}
+    if len(got) != len(set(ids)) or len(eids) != 1:
+        return err("Those entries aren't all of one company's SQL listings.")
+    eid = eids.pop()
+    part = ledger.deleted_in_sql_part(c, eid, ids)
+    if part:
+        return err(f"{', '.join(sorted(part))} is listed on several rows: confirm all of its rows as deleted in SQL "
+                   "together (reload the SQL page and use its Deleted in SQL button).")
+    nos = ledger.deleted_in_sql(c, eid, ids)
+    mine = {r["doc_no"] for r in got}
+    if not nos or set(nos) != mine:
+        return err(f"{', '.join(sorted(mine - set(nos)) or sorted(mine))} can't be confirmed as deleted in SQL: only an entry "
+                   "SQL's GL Journal of Transaction no longer has, linked to no payment, can (unlink it first if it is linked).")
+    # A confirmed voucher leaves the bank reconciliation (SQL's cash book no longer has it): a signed-off month it moves
+    # is said, as an import says it. Nothing is un-signed.
+    e = entity(c, eid)
+    snap = ledger.recon_snapshot(c, e, {r["doc_date"][:7] for r in got if r["doc_date"]})
+    c.execute(f"UPDATE sql_entries SET status = 'ignored', deleted_in_sql = ? WHERE id IN ({q})", (db.now(), *ids))
+    db.log(c, f"Confirmed as deleted in SQL (kept, listed under Ignored): {', '.join(sorted(mine))}")
+    changed = ledger.recon_changed(snap, ledger.recon_snapshot(c, e, snap))
+    if changed:
+        db.log(c, f"Confirmed {', '.join(sorted(mine))} as deleted in SQL for {e['code']}: bank reconciliation changed for "
+                  "signed-off " + ", ".join(x["month"] for x in changed) + " (still signed off; check again)")
+    c.commit()
+    return jsonify({"ignored": len(ids), "doc_nos": sorted(mine), "recon_changed": changed})
+
+
 def _rematch(c, entity_id, with_counts=False):
     """Matches every statement of the company again, then marks bank charges and own-account transfers."""
     sts = c.execute("SELECT s.id FROM statements s JOIN accounts a ON a.id = s.account_id WHERE a.entity_id = ?",
@@ -2232,13 +2296,24 @@ def sql_entry_unlink(sid):
 def sql_entry_unignore(sid):
     c = con()
     s = c.execute("SELECT * FROM sql_entries WHERE id = ?", (sid,)).fetchone() or abort(404)
+    changed = []
     if s["status"] == "ignored":
+        # One confirmed as deleted in SQL comes back into the bank reconciliation: a signed-off month it moves is said.
+        gone = "deleted_in_sql" in s.keys() and s["deleted_in_sql"]
+        e = entity(c, s["entity_id"])
+        snap = ledger.recon_snapshot(c, e, {s["doc_date"][:7]}) if gone and e["uses_sql"] and s["doc_date"] else {}
         # Back to what it was: a journal or an invoice keeps its own kind, a voucher still on a payment is linked.
-        c.execute("""UPDATE sql_entries SET status = CASE WHEN kind IN ('journal', 'invoice') THEN kind
-                     WHEN payment_id IS NOT NULL THEN 'linked' ELSE 'unlinked' END WHERE id = ?""", (sid,))
+        c.execute(f"""UPDATE sql_entries SET status = CASE WHEN kind IN ('journal', 'invoice') THEN kind
+                      WHEN payment_id IS NOT NULL THEN 'linked' ELSE 'unlinked' END{', deleted_in_sql = NULL' if gone else ''}
+                      WHERE id = ?""", (sid,))
         db.log(c, f"SQL entry {s['doc_no']} no longer ignored")
+        changed = ledger.recon_changed(snap, ledger.recon_snapshot(c, e, snap)) if snap else []
+        if changed:
+            db.log(c, f"SQL entry {s['doc_no']} of {e['code']} no longer ignored: bank reconciliation changed for signed-off "
+                      + ", ".join(x["month"] for x in changed) + " (still signed off; check again)")
     c.commit()
-    return jsonify({"ok": True, "doc_no": s["doc_no"], "before_tracking": not s["payment_id"] and s["kind"] not in ("invoice", "journal")
+    return jsonify({"ok": True, "doc_no": s["doc_no"], "kind": s["kind"], "recon_changed": changed,
+                    "before_tracking": not s["payment_id"] and s["kind"] not in ("invoice", "journal")
                     and db.entry_before_tracking(entity(c, s["entity_id"]), s["description"], s["doc_date"])})
 
 

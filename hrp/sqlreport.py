@@ -18,7 +18,11 @@ from datetime import date, datetime, time, timedelta
 NS = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}"
 DOC_REL = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
 PKG_REL = "{http://schemas.openxmlformats.org/package/2006/relationships}Relationship"
-MAX_PART = 30 * 1024 * 1024   # a part larger than this, unpacked, is no listing
+# The limits on a workbook from SQL Account, kept in step: a workbook file of at most MAX_BYTES (a listing is a few
+# hundred KB; a year's GL Journal of Transaction a few MB), whose sheet, unpacked, is at most MAX_PART (sheet XML packs
+# about eight to one). An upload is capped higher still (app.py MAX_CONTENT_LENGTH, 40 MB, which a setup file needs).
+MAX_BYTES = 25 * 1024 * 1024
+MAX_PART = 8 * MAX_BYTES      # a part larger than this, unpacked, is no listing
 MAX_ROWS = 200_000
 
 # The listings read, by the title printed on them, and how their documents are typed. The doc no. alone can't say it: a
@@ -233,6 +237,35 @@ def _head_key(x):
     return None
 
 
+# An amount heading that names its currency: Amount (MYR), Debit (SGD), Local Amount... is not one (it starts otherwise).
+CURRENCY = re.compile(r"^(amount|dr|debit|cr|credit|bal|balance)\b[^()]*\(\s*([a-z]{3})\s*\)", re.I)
+# A total's label that names its currency, and nothing else: Total (MYR) :, Grand Total Amount (USD). A customer's or
+# supplier's name or a description that only starts with "Total" (Total Parts (Sdn) Bhd) is not one.
+TOTAL_CURRENCY = re.compile(r"^(grand )?total( amount)? ?\( ?([a-z]{3}) ?\) ?:?$", re.I)
+BASE_CURRENCY = "MYR"
+# The currency codes in use (ISO 4217), so a bracketed company form such as (Sdn), (Pte) or (PLT) is never taken for one.
+ISO_CURRENCIES = set("""AED AFN ALL AMD ANG AOA ARS AUD AWG AZN BAM BBD BDT BGN BHD BIF BMD BND BOB BRL BSD BTN BWP BYN BZD
+CAD CDF CHF CLP CNH CNY COP CRC CUC CUP CVE CZK DJF DKK DOP DZD EGP ERN ETB EUR FJD FKP GBP GEL GHS GIP GMD GNF GTQ GYD HKD
+HNL HTG HUF IDR ILS INR IQD IRR ISK JMD JOD JPY KES KGS KHR KMF KPW KRW KWD KYD KZT LAK LBP LKR LRD LSL LYD MAD MDL MGA MKD
+MMK MNT MOP MRU MUR MVR MWK MXN MYR MZN NAD NGN NIO NOK NPR NZD OMR PAB PEN PGK PHP PKR PLN PYG QAR RON RSD RUB RWF SAR SBD
+SCR SDG SEK SGD SHP SLE SLL SOS SRD SSP STN SVC SYP SZL THB TJS TMT TND TOP TRY TTD TWD TZS UAH UGX USD UYU UZS VED VES VND
+VUV WST XAF XCD XOF XPF YER ZAR ZMW ZWG ZWL""".split())
+
+
+def refuse_currency(rows, head_row, title):
+    """Refuses (ReportError) a report whose amount headings or totals name a currency other than ringgit, rather than
+    read its figures as ringgit. Only the heading row's amount headings and the cells that are a total's label alone
+    (Total (SGD) :) are looked at, never the documents' own text, and only a real currency code counts."""
+    found = []
+    if head_row is not None and head_row < len(rows):
+        found += [m.group(2) for x in rows[head_row] if isinstance(x, str) for m in [CURRENCY.match(_norm(x))] if m]
+    found += [m.group(3) for r in rows for x in r if isinstance(x, str) for m in [TOTAL_CURRENCY.match(_norm(x))] if m]
+    for code in (x.upper() for x in found):
+        if code in ISO_CURRENCIES and code != BASE_CURRENCY:
+            raise ReportError(f"This {title} shows its amounts in {code}, not ringgit ({BASE_CURRENCY}). This "
+                              f"app reads SQL's reports in ringgit only: export it again with the amounts in {BASE_CURRENCY}.")
+
+
 def _heading(rows, spans, start):
     """The heading row after the page line: (row, {field: (first column, last column)})."""
     for i in range(start, min(len(rows), start + 25)):
@@ -297,6 +330,7 @@ def listing(rows, spans):
     head_row, heads = _heading(rows, spans, page_row + 1)
     if head_row is None:
         raise ReportError(f"This {title} is laid out in a way this app hasn't seen: no row has the headings for the date, the doc no. and the amount.")
+    refuse_currency(rows, head_row, title)
     two_sided = "amount" not in heads
     company = next((x.strip() for x in rows[page_row] if isinstance(x, str) and x.strip() and not PAGE.match(x.strip())), "")
     period = next((m for r in top for x in r if isinstance(x, str) for m in [PERIOD.search(x)] if m), None)

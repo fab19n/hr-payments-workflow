@@ -4,7 +4,7 @@ Two kinds of export. A template carries the rules only: payment types, document 
 needs (the sets for every company), a starter checklist with no company (the checklist of a company chosen, else the one
 new companies get), the joiner and leaver reminders, the matching words and the general settings (not the organisation
 name). Everything adds the companies, their bank accounts (with the account numbers: the file is then sensitive), charts
-of accounts, customers and suppliers, each company's checklist and own sets of required documents; and, only when
+of accounts, statutory accounts (Setup's list the statutory payables check reads), customers and suppliers, each company's checklist and own sets of required documents; and, only when
 asked, the recurring payments and salary advances, which are personal data (staff names, amounts, bank details).
 
 The file never holds an id: a company is named by its code, a payment or document type by its key, a GL account by its
@@ -34,6 +34,7 @@ ENTITY_COLS = ("code", "name", "short_name", "uses_sql", "first_month", "fy_star
 ACCOUNT_COLS = ("label", "bank", "number", "currency", "statement_format", "gl_code", "sql_payment_method", "cash_book",
                 "notes", "active", "sort")
 GL_COLS = ("code", "name", "type", "special", "parent_code", "sql_type", "active", "sort", "notes")
+STAT_COLS = ("kind", "label", "payable_code", "employer_code", "due_day", "active", "sort", "notes")  # update 29
 PARTY_COLS = ("kind", "name", "short_name", "sql_code", "tin", "brn", "match_words", "gl_code", "active", "sort", "notes")
 PAYEE_COLS = ("name", "category", "direction", "desc_template", "amount", "amount_varies", "month_offset", "due_day",
               "bank_details", "reference", "match_words", "start_date", "end_date", "active", "sort", "notes")
@@ -51,22 +52,23 @@ JSON_COLS = {"words", "docs", "rule", "match_words"}
 # What each list is called in a preview and in a refusal, in the order an import adds them.
 LISTS = [("settings", "general settings"), ("payment_types", "payment types"), ("doc_types", "document types"),
          ("starter_checklist", "starter checklist items"), ("entities", "companies"), ("accounts", "bank accounts"),
-         ("gl_accounts", "GL accounts"), ("parties", "customers and suppliers"), ("checklist", "checklist items"),
+         ("gl_accounts", "GL accounts"), ("statutory_accounts", "statutory accounts"), ("parties", "customers and suppliers"), ("checklist", "checklist items"),
          ("required_sets", "sets of required documents"), ("reminders", "joiner and leaver reminders"),
          ("guess_words", "payment type guesses"), ("hint_words", "salary words"), ("filing_words", "SQL filing words"),
          ("payees", "recurring payments"), ("advances", "salary advances")]
 ONE = {"general settings": "general setting", "payment types": "payment type", "document types": "document type",
        "starter checklist items": "starter checklist item", "companies": "company", "bank accounts": "bank account",
-       "GL accounts": "GL account", "customers and suppliers": "customer or supplier", "checklist items": "checklist item",
+       "GL accounts": "GL account", "statutory accounts": "statutory account", "customers and suppliers": "customer or supplier", "checklist items": "checklist item",
        "sets of required documents": "set of required documents", "joiner and leaver reminders": "joiner or leaver reminder",
        "payment type guesses": "payment type guess", "salary words": "salary words", "SQL filing words": "SQL filing words",
        "recurring payments": "recurring payment", "salary advances": "salary advance"}
-FULL_ONLY = ("entities", "accounts", "gl_accounts", "parties", "checklist", "payees", "advances")
-HEAD = ("format", "format_version", "records_version", "made", "what", "holds")
+FULL_ONLY = ("entities", "accounts", "gl_accounts", "statutory_accounts", "parties", "checklist", "payees", "advances")
+HEAD = ("format", "format_version", "records_version", "made", "what", "holds", "left_out")
 # Records that are a company's data: an import is refused while any of them holds a row.
 HOLDING = [("entities", "company", "companies"), ("accounts", "bank account", "bank accounts"),
            ("payees", "recurring payment", "recurring payments"), ("advances", "salary advance", "salary advances"),
            ("parties", "customer or supplier", "customers and suppliers"), ("gl_accounts", "GL account", "GL accounts"),
+           ("statutory_accounts", "statutory account", "statutory accounts"),
            ("checklist_items", "checklist item", "checklist items"), ("months", "month set up", "months set up"),
            ("tasks", "checklist item in a month", "checklist items in months"), ("payments", "payment", "payments"),
            ("documents", "document", "documents"), ("statements", "bank statement", "bank statements"),
@@ -118,6 +120,12 @@ def _starter_from(con, entity_id):
             for t in B.checklist(dict(e), db.current_cycle())]
 
 
+def _in_chart(con, entity_id, code):
+    """Whether the company's chart of accounts has the account (as Setup's check finds it)."""
+    return bool(con.execute("SELECT 1 FROM gl_accounts WHERE entity_id = ? AND UPPER(TRIM(code)) = ?",
+                            (entity_id, str(code).strip().upper())).fetchone())
+
+
 def export(con, what, payees=False, entity_id=None):
     """The setup as setup.json holds it: a template (rules only, with a starter checklist taken from entity_id's checklist
     or the one new companies get) or everything (full; payees: with the recurring payments and salary advances)."""
@@ -157,6 +165,20 @@ def export(con, what, payees=False, entity_id=None):
             out["accounts"].append({"ref": acct_ref[r["id"]], "company": codes[r["entity_id"]], **_out(r, ACCOUNT_COLS)})
         out["gl_accounts"] = [{"company": codes[r["entity_id"]], **_out(r, GL_COLS)}
                               for r in con.execute("SELECT * FROM gl_accounts ORDER BY entity_id, code, id")]
+        if _has(con, "statutory_accounts"):  # records from update 29
+            out["statutory_accounts"], left = [], []
+            for r in con.execute("SELECT * FROM statutory_accounts ORDER BY entity_id, sort, id").fetchall():
+                # Setup accepts an account SQL's account lines name although the chart lacks it; a new install has no
+                # account lines, so its import would refuse the row (and undo everything). Such a row stays out, said.
+                missing = [r[k] for k in ("payable_code", "employer_code") if r[k] and not _in_chart(con, r["entity_id"], r[k])]
+                if missing:
+                    left.append(f"Statutory account {r['label'] or r['kind']} of {codes[r['entity_id']]}: its account "
+                                f"{', '.join(missing)} isn't in the company's chart of accounts. Add it to the chart in Setup "
+                                "and export again, or add the statutory account again after importing.")
+                    continue
+                out["statutory_accounts"].append({"company": codes[r["entity_id"]], **_out(r, STAT_COLS)})
+            if left:
+                out["left_out"] = left
         out["parties"] = []
         for r in con.execute("SELECT * FROM parties ORDER BY id").fetchall():
             party_ref[r["id"]] = f"p{len(party_ref) + 1}"
@@ -453,6 +475,21 @@ class _Import:
                     vals.update(entity_id=eid, active=_flag(r, "active", "In use"), sort=_sort(r))
                     _insert(self.con, "gl_accounts", vals)
 
+    def statutory(self):
+        """The accounts the statutory payables check reads, each checked as Setup checks one added (its accounts in the
+        company's chart, which is imported first)."""
+        rows = self.rows("statutory_accounts")
+        if rows and not _has(self.con, "statutory_accounts"):
+            raise Refused("The file's statutory accounts can be imported once the records are updated.", 409)
+        for r in rows:
+            with _At(f"Statutory account {r.get('label')} of {r.get('company')}"):
+                _only(r, ("company",) + STAT_COLS)
+                eid = self.ent(r.get("company"))
+                vals = self.fields("statutory_accounts", r, ("kind", "label", "payable_code", "employer_code", "due_day", "notes"))
+                masters._statutory_check(self.con, eid, vals)
+                vals.update(entity_id=eid, active=_flag(r, "active", "In use"), sort=_sort(r))
+                _insert(self.con, "statutory_accounts", vals)
+
     def customers_and_suppliers(self):
         for r in self.rows("parties"):
             with _At(f"Customer or supplier {r.get('name')}"):
@@ -714,6 +751,7 @@ class _Import:
         self.companies()
         self.bank_accounts()
         self.chart()
+        self.statutory()
         self.customers_and_suppliers()
         self.checklists()
         self.required_sets()
@@ -744,8 +782,9 @@ def load(con, data):
     if data.get("what") not in WHATS:
         raise Refused("This setup file doesn't say whether it is a template or everything.")
     holds, made = data.get("holds"), data.get("made")
-    if holds is not None and (not isinstance(holds, list) or not all(isinstance(h, str) for h in holds)):
-        raise Refused("This setup file can't be read.")
+    for said in (holds, data.get("left_out")):
+        if said is not None and (not isinstance(said, list) or not all(isinstance(h, str) for h in said)):
+            raise Refused("This setup file can't be read.")
     if made is not None and (not isinstance(made, str) or len(made) > 40):
         raise Refused("This setup file can't be read.")
     names = {n for n, _ in LISTS}
@@ -772,5 +811,6 @@ def load(con, data):
     if "starter_checklist" in data:
         notes.append("Companies added later start with the file's starter checklist.")
     notes += [f"The file holds: {h}" for h in data.get("holds") or []]
+    notes += [f"Left out of the file when it was made: {h}" for h in data.get("left_out") or []]
     return {"what": data["what"], "made": data.get("made"), "counts": imp.counts, "rows": n, "notes": notes}
 

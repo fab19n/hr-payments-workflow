@@ -118,7 +118,7 @@ check("a normal listing is not read as journal lines", sqlimport.journal_lines(l
       and sqlimport.journal_lines("not xml at all") is None and sqlimport.journal_lines(b"<DATAPACKET><ROW DOCNO='X'/></DATAPACKET>") is None)
 pre, res = paste(listing)
 check("a listing paste reads as before (4 records, no journal_lines)", "journal_lines" not in pre and len(pre["records"]) == 4
-      and res == {"added": 4, "linked": 0, "skipped": 0, "bank_lines_matched": 0}, (pre.get("records"), res))
+      and res == {"added": 4, "linked": 0, "skipped": 0, "bank_lines_matched": 0, "recon_changed": []}, (pre.get("records"), res))
 mv, code = book()
 check("without lines or a bank code, journals stay out of the books", (mv["in"], mv["out"]) == (12345.0, 2345.0)
       and mv["left_out"]["journals"] == 2 and code is None, (mv, code))
