@@ -407,6 +407,30 @@ check("a salary paid late is withheld in the payroll month its description names
       and x4["2026-09"]["withheld_sen"] == 0 and x4["2026-09"]["status"] == "nothing"
       and [(c["doc_no"], c.get("for_month")) for c in x4["2026-08"]["credits"]] == [("PV-S08", None), ("PV-S08L", "2026-08")],
       (x4["2026-08"], x4["2026-09"]))
+check("a payment putting its employer's share on its own kind's account is not reported", R4["postings"] == [], R4["postings"])
+
+# An EPF payment that puts its employer's share on the EIS employer account, as a real SOCSO payment did.
+j("post", "/api/setup/statutory_accounts", json={"entity_id": EXO, "fields": {"kind": "eis", "label": "EIS", "payable_code": "420-1003",
+                                                                             "employer_code": "900-S002"}})
+con = db.connect()
+con.arm("import", "test: a misposted employer's share")
+jb4 = ledger.new_batch(con, EXO, report="journal", sql_import_id=IMP2, period_from="2026-10-01", period_to="2026-10-31")
+ledger.put_document(con, EXO, jb4, {"doc_no": "PV-X10", "doc_date": "2026-10-12", "book": "bank", "lines": [
+    L("420-1001", dr=1000), L("900-S002", dr=1100), {"code": "310-1000", "dr_sen": 0, "cr_sen": S(2100), "description": "made up"}]})
+ledger.finish_batch(con, jb4)
+con.commit()
+con.disarm()
+con.close()
+with db.connect() as r:
+    R5 = statutory.report(r, EXO, "2026-09", "2026-09", TODAY)
+p5 = R5["postings"]
+check("an employer's share put on another kind's employer account is named, with the account it belongs on",
+      [(p["doc_no"], p["month"], p["amount_sen"], p["code"], p["expected"]) for p in p5] == [("PV-X10", "2026-09", S(1100), "900-S002", ["900-E001"])]
+      and "pays EPF, but puts RM 1,100.00 of employer's share on 900-S002" in p5[0]["text"]
+      and "EPF's employer share account is 900-E001" in p5[0]["text"], p5)
+d5 = j("get", f"/api/statutory?entity={EXO}&from=2026-09&to=2026-09")
+check("the page is given it", [p["doc_no"] for p in d5["postings"]] == ["PV-X10"]
+      and "Employer's share on another account" in (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8"), d5.get("postings"))
 
 # ---------- 8. every account stopped ----------
 

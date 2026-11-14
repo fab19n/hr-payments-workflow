@@ -452,12 +452,54 @@ def report(con, eid, m_from=None, m_to=None, today=None):
     through = max(m_to, latest, _month(today.isoformat()))
     tracker = _tracker(con, eid, sorted({d["doc_no"] for d in docs.values() if d["origin"] == "sql"}))
     accounts = [_one(B, ent, r, docs, all_codes, tracker, m_from, m_to, through, today) for r in rows]
+    postings = misposted(B, rows, docs, m_from, m_to, ent)
     problems = [{"kind": a["kind"], "label": a["label"], "payable_code": a["payable_code"], "month": x["month"], "status": x["status"],
                  "difference_sen": x["difference_sen"], "due": x["due"], "text": x["text"]}
                 for a in accounts for x in a["months"] if x["status"] in PROBLEMS and not x["before_tracking"]]
     empty = all(x["status"] == "nothing" for a in accounts for x in a["months"] if not x["before_tracking"])
     return {**base, "configured": True, "stopped": False, "accounts": accounts, "problems": problems, "empty": empty,
-            "summary": _summary(accounts, problems)}
+            "postings": postings, "summary": _summary(accounts, problems)}
+
+
+def misposted(B, rows, docs, m_from, m_to, ent=None):
+    """The payments to an authority that put an employer's share on another kind's employer account: a SOCSO and SKBBK
+    payment debiting its 672.05 employer's share to the EIS (SIP) employer account, say. The totals stay right, but each
+    expense account is off by the amount, so it is said once per document, in words. A document is one that debits a
+    payable (it pays an authority) and debits the employer account of a kind it pays nothing to. [{doc_no, origin, date,
+    month (the payroll month it pays, the month before its own), amount_sen, code, code_name, kind_label, paid_labels,
+    expected (the employer accounts of the kinds it pays), before_tracking, text}], in date order. Only documents dated
+    from the first day of m_from to the last of the month after m_to (when the payments for m_to are made)."""
+    from .ledger import _key
+    payable = {_key(r["payable_code"]): r for r in rows}
+    employer = {_key(r["employer_code"]): r for r in rows if r["employer_code"]}
+    first, last = _first(m_from), _last(db.shift_month(m_to, 1))
+    label = lambda r: r["label"] or KIND_WORDS[r["kind"]]
+    out = []
+    for d in docs.values():
+        if not first <= d["date"] <= last:
+            continue
+        paid = [payable[c] for c, v in d["nets"].items() if c in payable and v > 0]
+        if not paid:
+            continue
+        kinds = {r["kind"] for r in paid}
+        for code, v in sorted(d["nets"].items()):
+            r = employer.get(code)
+            if not r or v <= 0 or r["kind"] in kinds:
+                continue
+            expected = [(_key(x["employer_code"]), label(x)) for x in paid if x["employer_code"]]
+            missing = [(c, lb) for c, lb in expected if not d["nets"].get(c)]
+            month = db.shift_month(_month(d["date"]), -1)
+            paid_words = " and ".join(dict.fromkeys(label(x) for x in paid))
+            should = (" " + "; ".join(f"{lb}'s employer share account is {c} {B.name(c)[0] or ''}".strip() for c, lb in missing) + "."
+                      if missing else "")
+            out.append({"doc_no": d["doc_no"], "origin": d["origin"], "date": d["date"], "month": month, "amount_sen": v,
+                        "code": code, "code_name": B.name(code)[0], "kind_label": label(r), "paid_labels": paid_words,
+                        "expected": [c for c, _ in missing], "before_tracking": bool(ent and ent["first_month"] and month < ent["first_month"]),
+                        "text": f"{d['doc_no']} ({date.fromisoformat(d['date']):%d %b %Y}) pays {paid_words}, but puts "
+                                f"{_rm(v)} of employer's share on {code} {B.name(code)[0] or ''}, the {label(r)} employer account, though "
+                                f"it pays no {label(r)}.{should} The totals are right; each expense account is off by {_rm(v)}."
+                                .replace("  ", " ")})
+    return sorted(out, key=lambda x: (x["date"], x["doc_no"]))
 
 
 def _summary(accounts, problems):
