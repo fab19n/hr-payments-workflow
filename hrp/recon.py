@@ -84,21 +84,36 @@ def bank_gl_code(con, acct):
     return hit["code"] if hit else None
 
 
-def journal_moves(con, entity_id, dockeys, code):
-    """What the pasted lines of each journal (by SQL's document key) move on the bank account whose GL code is given:
-    {dockey: net amount, money in above 0}. A journal with no lines, no line on that code or a net of nothing isn't in it."""
-    keys = sorted({str(k) for k in dockeys if k not in (None, "")})
-    if not code or not keys or not con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sql_journal_lines'").fetchone():
+def journal_moves(con, entity_id, docs, code):
+    """What each journal moves on the bank account whose GL code is given: {UPPER(doc no.): net amount, money in above
+    0}, for docs = [(doc no., SQL document key or None)]. A journal SQL's GL Journal of Transaction has given (update 26
+    on) is counted from the current version of its account lines there, whatever else was pasted, so one deleted in
+    SQL moves nothing; any other is counted from its lines pasted from SQL's grid, by document key. A journal with no
+    lines, no line on that code or a net of nothing isn't in it."""
+    from . import ledger
+    docs = [(str(n).strip().upper(), None if k in (None, "") else str(k)) for n, k in docs if n not in (None, "")]
+    if not code or not docs:
         return {}
-    got = con.execute(f"""SELECT dockey, ROUND(SUM(dr - cr), 2) AS net FROM sql_journal_lines WHERE entity_id = ? AND UPPER(TRIM(code)) = ?
-                          AND dockey IN ({','.join('?' * len(keys))}) GROUP BY dockey""", (entity_id, code.strip().upper(), *keys)).fetchall()
-    return {r["dockey"]: r["net"] for r in got if abs(r["net"]) >= TOL}
+    out, rest = {}, docs
+    if ledger.ready(con):
+        nets = ledger.bank_nets(con, entity_id, [n for n, _ in docs], code)
+        out = {n: _r(net / 100) for n, net in nets.items()}
+        rest = [(n, k) for n, k in docs if n not in nets]
+    keys = sorted({k for _, k in rest if k})
+    if keys and con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sql_journal_lines'").fetchone():
+        got = {r["dockey"]: r["net"] for r in con.execute(
+            f"""SELECT dockey, ROUND(SUM(dr - cr), 2) AS net FROM sql_journal_lines WHERE entity_id = ? AND UPPER(TRIM(code)) = ?
+                AND dockey IN ({','.join('?' * len(keys))}) GROUP BY dockey""", (entity_id, code.strip().upper(), *keys))}
+        for n, k in rest:
+            if k in got:
+                out[n] = got[k]
+    return {n: v for n, v in out.items() if abs(v) >= TOL}
 
 
-def journal_move(con, entity_id, dockey):
+def journal_move(con, entity_id, doc_no, dockey=None):
     """What one journal moves on the company's cash book account (see journal_moves), or None when it moves nothing there."""
     acct = cash_book_account(con, entity_id)
-    return journal_moves(con, entity_id, [dockey], bank_gl_code(con, acct) if acct else None).get(str(dockey))
+    return journal_moves(con, entity_id, [(doc_no, dockey)], bank_gl_code(con, acct) if acct else None).get(str(doc_no).strip().upper())
 
 
 def movements(con, ent, acct, month):
@@ -108,9 +123,9 @@ def movements(con, ent, acct, month):
     that isn't a bank movement: {journals, invoices (customer refunds too), unknown (cash book entries with no direction)}}.
     SQL: every receipt (OR) and payment (PV) dated in the month, whatever its status here: an ignored correction is in
     SQL's books too. Customer invoices (IV) are left out: they move no bank balance by themselves. So is a journal (JV)
-    whose bank side can't be told: its header carries only one total, so it counts only once its lines have been pasted
-    (sql_journal_lines) and some of them are on the bank account's GL code (bank_gl_code); it then counts as the net of
-    those lines, in or out, like a voucher. A company's other accounts have no SQL listing of their own and
+    whose bank side can't be told: its header carries only one total, so it counts only once its lines are known (read
+    from SQL's GL Journal of Transaction, or pasted from its grid) and some of them are on the bank account's GL code
+    (bank_gl_code); it then counts as the net of those lines, in or out, like a voucher. A company's other accounts have no SQL listing of their own and
     are worked out from payments, as a company that isn't in SQL is: every payment recorded for the account with a paid
     date in the month, plus the account's statement lines dated in the month that need no documents (bank charges and
     own-account transfers, marked by statements.classify or by a person): money the bank moved with nothing to record,
@@ -123,10 +138,13 @@ def movements(con, ent, acct, month):
                                       AND n.doc_no = e.doc_no AND n.import_id > e.import_id)) ORDER BY doc_date, doc_no, id""",
                            (ent["id"], month)).fetchall()
         # A journal counts as the bank movement of its lines, so its sign gives the direction; one that moves nothing there stays out.
-        # (Records not updated yet have no document keys, so no journal can have lines.)
-        keyed = [r for r in rows if r["kind"] == "journal" and "dockey" in r.keys() and r["dockey"]]
-        moves = journal_moves(con, ent["id"], [r["dockey"] for r in keyed], bank_gl_code(con, acct) if keyed else None)
-        counted = {r["id"]: moves[r["dockey"]] for r in keyed if r["dockey"] in moves}
+        # Its lines come from SQL's Journal of Transaction, by doc no., else from its pasted grid, by document key (records
+        # not updated to update 22 have no document keys and no lines of either kind, nor the columns the GL code is found by).
+        keyed = [r for r in rows if r["kind"] == "journal"]
+        has_key = "dockey" in rows[0].keys() if rows else False
+        moves = journal_moves(con, ent["id"], [(r["doc_no"], r["dockey"] if has_key else None) for r in keyed],
+                              bank_gl_code(con, acct) if keyed and has_key else None)
+        counted = {r["id"]: moves[r["doc_no"].strip().upper()] for r in keyed if (r["doc_no"] or "").strip().upper() in moves}
         items = []
         for r in rows:
             if r["id"] in counted:

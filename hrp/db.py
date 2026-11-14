@@ -5,7 +5,7 @@ import re
 import sqlite3
 from datetime import date, datetime, timedelta
 
-from . import appsettings, audit, checklistbook, partybook, rulebook, rules
+from . import appsettings, audit, checklistbook, ledger, partybook, rulebook, rules
 from .config import BACKUP_DIR, DB_PATH, PACKS_DIR, SEED_PATH
 from .sqlimport import MONEY_IN, MONEY_OUT, PURCHASE_DOCS, SALES_DOCS
 
@@ -304,6 +304,10 @@ MIGRATIONS = [
     #     line, by the journal's document key and the import that brought them), so a journal that moves the bank
     #     counts in the bank reconciliation. Empty to begin with. Nothing in the records changes.
     lambda con: _journal_lines_table(con),
+    # 26. The account lines of every SQL document (vouchers, receipts, journals, invoices), read from SQL's GL Journal of
+    #     Transaction, kept as documents with versions and where each came from, and checked against SQL's ledger and
+    #     trial balance. Journal lines pasted until now are copied in. Nothing else in the records changes.
+    ledger.install,
 ]
 
 

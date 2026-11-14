@@ -41,7 +41,7 @@ GENESIS = "0" * 64
 HEAD_FILE = DATA_DIR / "audit-head.json"
 CTX = "(SELECT token FROM audit_context WHERE only = 1)"
 SKIP = ("audit_row", "audit_tx", "audit_context", "audit_sealed")  # the audit store itself
-APPEND_ONLY = ("audit_row", "audit_tx", "activity", "audit_sealed")
+APPEND_ONLY = ("audit_row", "audit_tx", "activity", "audit_sealed", "ledger_lines")
 # Tables whose rows belong to a company through a parent row (the rest have entity_id, or are entities themselves).
 ENTITY_VIA = {
     "advances": "(SELECT entity_id FROM payees WHERE id = {X}.payee_id)",
@@ -277,12 +277,15 @@ def triggers(con):
         out[f"audit_{s}_d"] = (f"CREATE TRIGGER audit_{s}_d AFTER DELETE ON {on} BEGIN "
                                + _row_sql(t, "delete", okey, oent, oobj, "NULL") + " END")
     for t in APPEND_ONLY:
-        what = "The activity log" if t == "activity" else "The audit trail"
-        if t == "audit_sealed" and not _exists(con, t):
+        if not _exists(con, t):  # a table a later update step creates (audit_sealed, ledger_lines) gets its guard then
             continue
+        if t == "ledger_lines":
+            msg = "Account lines can''t be changed: a change in SQL is kept as a new version."
+        else:
+            msg = ("The activity log" if t == "activity" else "The audit trail") + " can''t be changed."
         for op, word in (("u", "UPDATE"), ("d", "DELETE")):
             out[f"audit_guard_{t}_{op}"] = (f"CREATE TRIGGER audit_guard_{t}_{op} BEFORE {word} ON {_q(t)} "
-                                            f"BEGIN SELECT RAISE(ABORT, '{what} can''t be changed.'); END")
+                                            f"BEGIN SELECT RAISE(ABORT, '{msg}'); END")
     return out
 
 
@@ -560,6 +563,9 @@ def startup(con):
         event(con, "audit", "head", problem)
         con._head_noted = True
     repaired = ensure_triggers(con)
+    from . import ledger
+    if ledger.ensure_guard(con):  # outside the trail's own triggers, so put back here (and checked by verify)
+        repaired = repaired + ["ledger_guard_here"]
     if repaired:
         event(con, "audit", "triggers", {"updated": repaired, "why": "missing or changed at start-up"})
     late = 0
@@ -628,6 +634,9 @@ def verify(con, last=None):
     want, have = triggers(con), _have(con)
     if any(have.get(n) != s for n, s in want.items()):
         problems.append("The audit triggers have been changed or removed.")
+    from . import ledger
+    if ledger.guard_missing(con):
+        problems.append("The check that refuses entries made here for a company kept in SQL has been changed or removed.")
     if _exists(con, "audit_sealed"):
         odd = con.execute("""SELECT COUNT(*) FROM (
                                SELECT j.value AS row_id, t.id AS tx_id FROM audit_tx t, json_each(t.null_rows) j WHERE t.null_rows IS NOT NULL
