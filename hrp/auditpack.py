@@ -441,6 +441,13 @@ def _reconciled(r, say, table, heading, cur):
     if r["status"] == "reconciled":
         how = "before tracking began" + (f" ({r['reconciled_note']})" if r["reconciled_note"] else "")             if r["reconciled_how"] == "before tracking" else "after checking every line"
         say(f"Reconciled on {day_label(r['reconciled_at'][:10])}, {how}.")
+        ch = r.get("book_changed")
+        if ch:
+            o, n = ch["old"], ch["new"]
+            say(f"{ch['text']}. Signed off with in {money(o['in'], cur)}, out {money(o['out'], cur)}, closing {money(o['closing'], cur)}; "
+                f"counting SQL's receipts and payments by their lines on the bank account it is now in {money(n['in'], cur)}, "
+                f"out {money(n['out'], cur)}, closing {money(n['closing'], cur)}."
+                + ("" if r.get("can_reconfirm") else " The new book closing doesn't agree with the bank, so the month needs reviewing again."))
     else:
         say(f"Not reconciled yet ({r['status_text'].lower()}). " + ("; ".join(r["why_not"]).capitalize() + "." if r["why_not"] else ""))
     b = r["book"]

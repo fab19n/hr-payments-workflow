@@ -50,7 +50,7 @@ FIELD_LABELS = {
     "direction": "Money in or out", "doc_type": "Document type", "original_name": "File", "removed_at": "Removed",
     "replaced_by": "Replaced by", "status": "Status", "txn_date": "Date", "balance": "Balance", "confirmed_at": "Confirmed",
     "reconciled_at": "Reconciled", "reconciled_how": "Reconciled how", "reconciled_note": "Reconciliation note",
-    "doc_no": "Doc no.", "doc_date": "Doc date", "payee": "Payee", "label": "Label", "number": "Account number",
+    "book_rule_at": "Book figures by bank lines confirmed", "doc_no": "Doc no.", "doc_date": "Doc date", "payee": "Payee", "label": "Label", "number": "Account number",
     "currency": "Currency", "monthly_deduction": "Monthly deduction", "start_month": "From", "end_month": "Until",
     "first_month": "First month tracked", "fy_start": "Financial year starts in","uses_sql": "Kept in SQL Account", "code": "Code", "what": "Line",
     "balance_as_at": "Balance as at", "as_at": "Balance as at", "details": "Details", "month": "Month",

@@ -331,6 +331,11 @@ MIGRATIONS = [
     #     voucher SQL no longer has out of the cash book, while an ignored correction SQL still has keeps counting.
     #     Empty for every entry to begin with. Nothing else in the records changes.
     lambda con: add_column(con, "sql_entries", "deleted_in_sql", "TEXT"),
+    # 32. When a statement's sign-off was given (or confirmed again) with the cash book counted by each SQL document's
+    #     lines on the bank account rather than its listing amount (empty: signed off before that, or not signed off).
+    #     A month signed off before it whose book figures the lines change keeps its sign-off and asks to be confirmed
+    #     again. Empty for every statement to begin with. Nothing else in the records changes.
+    lambda con: add_column(con, "statements", "book_rule_at", "TEXT"),
 ]
 
 
@@ -888,14 +893,23 @@ def sync_payee(con, old, new, today=None, was_plans=None):
 def linked_total(con, pay):
     """What the bank lines linked to a payment add up to, in its currency and counted its way: money going the other
     way (a refund, a transfer the bank returned, a charge on a receipt) is taken off, as SQL refunds are. None when no
-    line is linked, or when a line is in another currency (a USD line on an RM payment) and the two can't be compared."""
+    line is linked, or when a line is in another currency (a USD line on an RM payment) and the two can't be compared.
+    A receipt whose SQL document booked the bank's fee on the bank account itself (recon.bank_parts: bank DR 58,585.50,
+    bank CR 36.25) counts that fee back once the lines linked hold all that reached the bank (one net line, or the
+    amount and the fee line): the customer paid the whole amount, and SQL already shows the charge."""
     lines = con.execute(
         """SELECT l.amount, a.currency FROM statement_lines l JOIN statements s ON s.id = l.statement_id
            JOIN accounts a ON a.id = s.account_id WHERE l.payment_id = ?""", (pay["id"],)).fetchall()
     if not lines or any(l["currency"] != pay["currency"] for l in lines):
         return None
     sign = -1 if pay["direction"] == "out" else 1
-    return round(sum(sign * l["amount"] for l in lines), 2)
+    total = round(sum(sign * l["amount"] for l in lines), 2)
+    if pay["direction"] == "in" and pay["amount"] is not None and pay["amount"] - total > 0.005 and "entity_id" in pay.keys():
+        from . import recon
+        bp = recon.bank_parts(con, pay["entity_id"], [pay["id"]]).get(pay["id"])
+        if bp and abs(total - bp["net"]) <= 0.005:
+            total = round(total - sum(x for x in bp["lines"] if x < 0), 2)
+    return total
 
 
 def _proof(ref, note):
