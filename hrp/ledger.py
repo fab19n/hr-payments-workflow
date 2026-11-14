@@ -540,6 +540,9 @@ def _book_of(kind, doc_type):
 BOOK_WORDS = {"bank": "the Bank Journal", "general": "the General Journal", "sales": "the Sales Journal",
               "purchase": "the Purchase Journal", "other": "another section"}
 KIND_WORDS = {"payment": "a payment or receipt", "journal": "a journal", "invoice": "an invoice"}
+# A bank charge on a payment or receipt is taken as one only while it is under a tenth of the listing's amount: a bank
+# line larger than that is money undone or sent back, and the document is checked on what it moves net.
+CHARGE_SHARE = 10
 
 
 def _total_check(L, lines, banks, ch):
@@ -554,23 +557,51 @@ def _total_check(L, lines, banks, ch):
     if kind == "payment":
         if not banks:
             return None, "bank", "Can't tell whether the lines agree with the listing: set the bank account's GL code in Setup."
-        per = {}
+        way = {"in": "money in", "out": "money out"}.get(L["direction"], "")
+        into = L["direction"] == "in"
+        # per bank code: the net (debit above 0), the lines on the listing's own side, and the lines on the other side
+        per, side, other = {}, {}, {}
+        paired = set()  # the other accounts' lines that a bank charge paid with the money could pair with
         for x in lines:
             if x["account_code"] in banks:
-                per[x["account_code"]] = per.get(x["account_code"], 0) + x["dr_sen"] - x["cr_sen"]
-        net = sum(per.values())
+                code = x["account_code"]
+                per[code] = per.get(code, 0) + x["dr_sen"] - x["cr_sen"]
+                side[code] = side.get(code, 0) + (x["dr_sen"] if into else x["cr_sen"])
+                other[code] = other.get(code, 0) + (x["cr_sen"] if into else x["dr_sen"])
+            else:
+                paired.add(x["cr_sen"] if into else x["dr_sen"])
+        net, gross = sum(per.values()), sum(side.values())
+
+        def small(n):
+            return 0 < n * CHARGE_SHARE < total
+
+        def with_charge(own, back):
+            # The listing's amount is what the document moves in the listing's direction, before a bank charge: a
+            # receipt's charge is a bank line on the other side (bank DR 58,585.50 and CR 36.25 for a listing of
+            # 58,585.50 money in), and a payment's charge paid out with it is on the same side (bank CR 1,005.00 for a
+            # listing of 1,000.00 money out, with 5.00 to bank charges). Only a small charge counts, so lines that
+            # undo the money or send it back the other way still need looking at.
+            if own == total and small(back):
+                return True
+            extra = own - back - total
+            return small(extra) and extra in paired
+        if way and (with_charge(gross, sum(other.values())) or any(with_charge(side[k], other[k]) for k in side)):
+            return True, "bank", None
 
         def fits(n):
-            return abs(n) == total and (L["direction"] not in ("in", "out") or (n > 0 if L["direction"] == "in" else n < 0))
-        # All the bank codes together, or one of them: money moved between two of the company's own bank accounts nets
-        # to nothing over both, but the account the voucher is paid from still moves the listing's amount.
+            return abs(n) == total and (not way or (n > 0 if L["direction"] == "in" else n < 0))
+        # Or what they move net, over all the bank codes together, or on one of them: money moved between two of the
+        # company's own bank accounts nets to nothing over both, but the account the voucher is paid from still moves
+        # the listing's amount.
         if fits(net) or any(fits(n) for n in per.values()):
             return True, "bank", None
-        way = {"in": "money in", "out": "money out"}.get(L["direction"], "")
         moved = f"{'money in' if net > 0 else 'money out'} of {_money(abs(net))}" if net else "nothing"
-        text = (f"The lines on the bank account move {moved}, but the listing has {_money(total)}{' ' + way if way else ''} "
-                f"(checked on the bank account's lines).")
-        return False, "bank", _earlier(text, abs(net), L)
+        if way:
+            text = (f"The lines on the bank account have {'debits' if L['direction'] == 'in' else 'credits'} of {_money(gross)} "
+                    f"and move {moved} net, but the listing has {_money(total)} {way} (checked on the bank account's lines).")
+        else:
+            text = f"The lines on the bank account move {moved}, but the listing has {_money(total)} (checked on the bank account's lines)."
+        return False, "bank", _earlier(text, gross if way and gross in L["earlier"] else abs(net), L)
     if kind == "invoice":
         code = _key(L["code"])
         on = [x for x in lines if code and x["account_code"] == code]
@@ -885,23 +916,48 @@ def _footer_net(ledger_rep):
     return out
 
 
+def _covered(con, eid, f, t):
+    """Whether one span of the company's Journal of Transaction reads covers f to t."""
+    return any(a <= f and t <= b for a, b in _coverage(con, eid))
+
+
+def _label(ch, code, a):
+    return f"{code} {ch.name(code, (a or {}).get('name'))[0] or ''}".strip()
+
+
 def _tb_checks(con, eid, rep, ledger_rep):
+    """SQL's trial balance counts profit and loss from its printed From date, not from the financial year start: an
+    earlier P&L balance is moved into retained earnings on that date, inside Period To Date, with no document. So a P&L
+    account's Year To Date is its lines from the From date to the as-at date, and its Month To Date its lines of the
+    month, unless the From date falls inside the month after its 1st (then the month holds that move too). Retained
+    earnings' Period To Date holds the move, so it is never compared; what was moved is noted. A trial balance with no
+    From date is read as before: the P&L figures themselves (or the financial year setting) tell a closing month."""
     res = []
-    as_at = _period(rep.get("period"))[1]
+    tb_from, as_at = _period(rep.get("period"))
     if not as_at:
         return [_result("tb_mtd", None, "skipped", None, None, "The trial balance prints no as-at date, so it can't be checked.")]
+    if tb_from and tb_from > as_at:
+        tb_from = None
     accts = {_key(a["code"]): a for a in rep.get("accounts") or []}
     ch = _Chart(con, eid)
     start = as_at[:8] + "01"
+    fy = fy_start_of(con, eid)
+    day = lambda d: f"{date.fromisoformat(d):%d/%m/%Y}"  # noqa: E731
 
     # 1. Month To Date against the lines dated from the 1st of the month to the as-at date.
     rule = "tb_mtd"
-    if not any(a <= start and as_at <= b for a, b in _coverage(con, eid)):
+    if not _covered(con, eid, start, as_at):
         res.append(_result(rule, None, "skipped", None, None, f"No GL Journal of Transaction read covers {_dates(start, as_at)}, "
                                                               "so Month To Date can't be compared with the lines."))
     else:
         mine, rolled, left = _roll(_lines_in(con, eid, [(start, as_at)]), set(accts), ch)
-        later_month = _pl_comparable(accts, mine, ch)
+        if tb_from:
+            # Only a From date inside the month, after its 1st, puts SQL's move of earlier profit and loss in Month To Date.
+            later_month = not (start < tb_from <= as_at)
+        else:
+            # No From date printed: with the financial year start set (Setup › Companies), only its first month holds
+            # SQL's year-end closing in Month To Date; without it, the P&L figures themselves are read for a sign of it.
+            later_month = int(as_at[5:7]) != fy if fy else _pl_comparable(accts, mine, ch)
         agree, held = 0, []
         for code in sorted(set(accts) | set(mine)):
             T = tuple((accts.get(code) or {}).get("mtd") or (0, 0))
@@ -913,24 +969,59 @@ def _tb_checks(con, eid, rep, ledger_rep):
             if same:
                 agree += 1
                 continue
-            label = f"{code} {ch.name(code, (accts.get(code) or {}).get('name'))[0] or ''}".strip()
             res.append(_result(rule, code, "warn", _net(T), M[0] - M[1],
-                               f"{label}: the trial balance's Month To Date nets {_money(_net(T))}, the lines dated "
+                               f"{_label(ch, code, accts.get(code))}: the trial balance's Month To Date nets {_money(_net(T))}, the lines dated "
                                f"{_dates(start, as_at)} {_money(M[0] - M[1])}" + (" (sub-ledger roll-up)." if code in rolled else ".")))
         for code, (dr, cr) in sorted(left.items()):
             res.append(_result(rule, code, "warn", 0, dr - cr, f"{code}: the lines dated {_dates(start, as_at)} net {_money(dr - cr)}, "
                                                                "but the trial balance has no such account."))
         if held:
-            res.append(_result(rule, None, "skipped", None, None,
-                               f"{len(held)} profit and loss, retained earnings or unclassified account{'s' if len(held) != 1 else ''} "
-                               "not compared: the month may hold SQL's year-end closing."))
+            n = f"{len(held)} profit and loss, retained earnings or unclassified account{'s' if len(held) != 1 else ''} not compared: "
+            res.append(_result(rule, None, "skipped", None, None, n + (
+                f"the trial balance starts on {day(tb_from)}, inside the month, so SQL's Month To Date holds its move of "
+                "earlier profit and loss into retained earnings." if tb_from else "the month may hold SQL's year-end closing.")))
         res.append(_result(rule, None, "ok", None, None, f"{agree} account{'s agree' if agree != 1 else ' agrees'} with the lines for the month."))
 
-    # 2. Balance-sheet Year To Date against the ledger's running balance; 3. what the year-end closing moved.
+    # 2. Profit and loss Year To Date against the lines dated from the trial balance's From date to the as-at date.
+    if tb_from:
+        rule = "tb_ytd"
+        pl = sorted(code for code in accts if ch.kind(code) in ("pl", None))
+        if not pl:
+            res.append(_result(rule, None, "skipped", None, None, "The trial balance has no profit and loss account that the chart "
+                                                                  "of accounts names, so Year To Date isn't compared. Set the account types in Setup."))
+        elif not _covered(con, eid, tb_from, as_at):
+            res.append(_result(rule, None, "skipped", None, None, f"No GL Journal of Transaction read covers {_dates(tb_from, as_at)}, "
+                                                                  "the trial balance's dates, so profit and loss Year To Date can't be "
+                                                                  "compared with the lines. Fetch the journal from the trial balance's From date."))
+        else:
+            mine, rolled, _ = _roll(_lines_in(con, eid, [(tb_from, as_at)]), set(accts), ch)
+            agree = 0
+            for code in pl:
+                ytd, m = _net(accts[code].get("ytd")), _net(mine.get(code))
+                if ytd == m:
+                    agree += 1
+                    continue
+                hint = "" if ch.kind(code) else (" It isn't typed in the chart of accounts: if it is a balance-sheet account, "
+                                                 "set its type in Setup.")
+                res.append(_result(rule, code, "warn", ytd, m,
+                                   f"{_label(ch, code, accts[code])}: the trial balance's Year To Date nets {_money(ytd)}, the lines "
+                                   f"dated {_dates(tb_from, as_at)} {_money(m)}" + (" (sub-ledger roll-up)." if code in rolled else ".") + hint))
+            res.append(_result(rule, None, "ok", None, None, f"{agree} profit and loss account{'s agree' if agree != 1 else ' agrees'} "
+                                                             f"with the lines dated {_dates(tb_from, as_at)}."))
+        # 3. What SQL moved into retained earnings on the From date: the P&L accounts' opening balances (debit above 0:
+        # a loss). Not on the 1st of the financial year (January when not set), where that is last year's result.
+        moved = sum(_net(a.get("open")) for code, a in accts.items() if ch.kind(code) == "pl")
+        if moved and tb_from[5:] != f"{fy or 1:02d}-01":
+            what = f"a profit of {_money(-moved)}" if moved < 0 else f"a loss of {_money(moved)}"
+            res.append(_result("tb_pl_moved", None, "info", None, moved,
+                               f"SQL's trial balance counts profit and loss from its From date ({day(tb_from)}), so it moved "
+                               f"{what} from earlier into retained earnings. No document carries that move."))
+
+    # 4. Balance-sheet Year To Date against the ledger's running balance; with no From date, what the year-end closing moved.
     rule = "tb_balance"
     lf, lt = _period((ledger_rep or {}).get("period"))
     if not ledger_rep or not lf or not lt or not (lf <= as_at <= lt):
-        res.append(_result(rule, None, "skipped", None, None, f"No SQL ledger read covers {date.fromisoformat(as_at):%d/%m/%Y}, "
+        res.append(_result(rule, None, "skipped", None, None, f"No SQL ledger read covers {day(as_at)}, "
                                                               "so the balances can't be compared."))
         return res
     led = {_key(a["code"]): a for a in ledger_rep.get("accounts") or []}
@@ -960,27 +1051,27 @@ def _tb_checks(con, eid, rep, ledger_rep):
         if bal == ytd:
             agree += 1
             continue
-        label = f"{code} {ch.name(code, a.get('name'))[0] or ''}".strip()
         warned += 1
-        res.append(_result(rule, code, "warn", ytd, bal, f"{label}: the trial balance's Year To Date nets {_money(ytd)}, SQL's ledger "
-                                                         f"balance at {date.fromisoformat(as_at):%d/%m/%Y} is {_money(bal)}."))
+        res.append(_result(rule, code, "warn", ytd, bal, f"{_label(ch, code, a)}: the trial balance's Year To Date nets {_money(ytd)}, "
+                                                         f"SQL's ledger balance at {day(as_at)} is {_money(bal)}."))
     for code in unsure:
-        label = f"{code} {ch.name(code, accts[code].get('name'))[0] or ''}".strip()
         res.append(_result(rule, code, "skipped", None, None,
-                           f"{label}: not compared, as SQL's ledger prints no lines for this debtor or creditor control account, "
-                           f"only its movements for {_dates(lf, lt)} as a whole, and the trial balance is dated "
-                           f"{date.fromisoformat(as_at):%d/%m/%Y}."))
+                           f"{_label(ch, code, accts[code])}: not compared, as SQL's ledger prints no lines for this debtor or creditor "
+                           f"control account, only its movements for {_dates(lf, lt)} as a whole, and the trial balance is dated "
+                           f"{day(as_at)}."))
     if not agree and not warned and not unsure:
         res.append(_result(rule, None, "skipped", None, None, "No balance-sheet account could be compared: set the account types "
                                                               "in the chart of accounts in Setup."))
     else:
         res.append(_result(rule, None, "ok", None, None, f"{agree} balance-sheet account{'s agree' if agree != 1 else ' agrees'} with SQL's ledger."))
-    if compared_pl and closed:
+    if not tb_from and compared_pl and closed:
         # closed is the profit and loss accounts' balances that SQL zeroed at the year start (debit above 0): a credit
         # net is a profit carried into retained earnings, a debit net a loss.
         what = f"a profit of {_money(-closed)}" if closed < 0 else f"a loss of {_money(closed)}"
         res.append(_result("tb_year_close", None, "info", None, closed,
-                           f"At the start of the financial year SQL moved {what} from the profit and loss accounts into retained "
+                           f"At the start of the financial year"
+                           + (f" (1 {MONTH_NAMES[fy - 1]})" if fy else "")
+                           + f" SQL moved {what} from the profit and loss accounts into retained "
                            "earnings. No document carries that move, so profit and loss Period To Date is not compared."))
     return res
 
@@ -996,6 +1087,22 @@ def report_checks(con, eid, batch, rep, kind, ledger_rep=None):
     if kind == "trial_balance":
         return _tb_checks(con, eid, rep, ledger_rep)
     return []
+
+
+# ---------- the company's financial year ----------
+
+MONTH_NAMES = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+               "November", "December")
+
+
+def fy_start_of(con, eid):
+    """The company's "Financial year starts in" setting (Setup › Companies), entered by the owner to match SQL
+    Account's company setting: a month 1-12, or None when it isn't set (or the records are below update 27). It can't
+    be told from SQL's trial balance, which counts profit and loss from its own From date."""
+    r = con.execute("SELECT * FROM entities WHERE id = ?", (eid,)).fetchone()
+    v = r["fy_start"] if r is not None and "fy_start" in r.keys() else None
+    return v if isinstance(v, int) and 1 <= v <= 12 else None
+
 
 
 # ---------- the bank reconciliation of signed-off months ----------

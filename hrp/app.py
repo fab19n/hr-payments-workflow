@@ -415,6 +415,13 @@ def overview():
             # On the month's own statements, as Before you print counts them.
             "unmatched_lines": sum(a["to_explain"] for a in db.month_statements(c, e, month)),
         }
+        if db.before_tracking(e, month):
+            # Bank reconciliation still covers a month before the first month tracked, until its statement is
+            # explained or signed off as Reconciled before tracking (which leaves its lines as they are).
+            todo["unmatched_lines"] = c.execute(
+                """SELECT COUNT(*) FROM statement_lines l JOIN statements s ON s.id = l.statement_id JOIN accounts a ON a.id = s.account_id
+                   WHERE a.entity_id = ? AND s.month = ? AND l.status = 'unmatched' AND s.reconciled_at IS NULL""",
+                (e["id"], month)).fetchone()[0]
         filed = db.closed_at(c, e["id"], month)
         if filed:
             todo = {k: [] if isinstance(v, list) else 0 for k, v in todo.items()}
@@ -667,7 +674,12 @@ def delete_payment(pid):
     if c.execute("SELECT 1 FROM documents WHERE payment_id = ? AND replaced_by IS NULL AND removed_at IS NULL", (pid,)).fetchone():
         return err("This payment has documents attached, so it can't be removed. If it was added by mistake, remove its "
                    "documents first; the files are kept on this PC.")
-    vouchers = [r["doc_no"] for r in c.execute("SELECT doc_no FROM sql_entries WHERE payment_id = ? ORDER BY doc_no", (pid,))]
+    on_it = c.execute("SELECT doc_no, description, doc_date, kind FROM sql_entries WHERE payment_id = ? ORDER BY doc_no", (pid,)).fetchall()
+    vouchers = [r["doc_no"] for r in on_it]
+    # The vouchers that go back under Before tracking on the SQL page, not under SQL entries not linked (the toast says so).
+    ent = entity(c, p["entity_id"])
+    before = [r["doc_no"] for r in on_it if r["kind"] not in ("invoice", "journal")
+              and db.entry_before_tracking(ent, r["description"], r["doc_date"])]
     try:
         # Its bank lines go back to the lines waiting to be explained, marked so matching again doesn't give them to
         # another payment, and its SQL vouchers back under 'not linked'. Documents taken off it or replaced stay on
@@ -690,7 +702,7 @@ def delete_payment(pid):
     except sqlite3.Error:
         c.rollback()
         return err("This payment couldn't be removed, so nothing was changed. Try again, or set its amount to 0 and add a note.")
-    return jsonify({"ok": True, "unlinked": vouchers, "lines": lines})
+    return jsonify({"ok": True, "unlinked": vouchers, "before_tracking": before, "lines": lines})
 
 
 @app.post("/api/upload")
@@ -1801,7 +1813,12 @@ def sql_entries():
     c = con()
     eid = request.args["entity"]
     imports = rows(c.execute("SELECT * FROM sql_imports WHERE entity_id = ? ORDER BY id DESC LIMIT 20", (eid,)))
-    unlinked = rows(c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' ORDER BY doc_date", (eid,)))
+    e = entity(c, eid)
+    # Entries of months before the first month tracked are kept in the books mirror but not asked about: they are
+    # listed apart (before_tracking), read-only, and nothing offers to link them or counts them as to do.
+    unlinked, before = [], []
+    for u in rows(c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' ORDER BY doc_date", (eid,))):
+        (before if db.entry_before_tracking(e, u["description"], u["doc_date"]) else unlinked).append(u)
     linked, corrections = sqlimport.linked_vouchers(c, eid), sqlimport.corrections(c, eid)
     for u in unlinked:
         _note_linked(u, linked)
@@ -1814,13 +1831,16 @@ def sql_entries():
         """SELECT s.*, p.description AS payment_desc, p.month AS payment_month FROM sql_entries s JOIN payments p ON p.id = s.payment_id
            WHERE s.entity_id = ? ORDER BY s.doc_date DESC, s.id DESC LIMIT 300""", (eid,)))
     for x in other:  # a journal pasted again after a change in SQL is a new row: say when its number is already linked
+        x["before_tracking"] = db.entry_before_tracking(e, x["description"], x["doc_date"])
         if x["kind"] == "journal" and not x["payment_id"]:
             _note_linked(x, linked)
     _journal_moves(c, eid, other)
     _journal_moves(c, eid, on_payments, as_amount=True)
-    # A journal that moves the bank is linked like a voucher, so the months of its payments are offered as well.
+    # A journal that moves the bank is linked like a voucher, so the months of its payments are offered as well (not
+    # for one before the first month tracked, which is offered nothing).
     months = sorted({u["doc_date"][:7] for u in unlinked} | {x["doc_date"][:7] for x in other
-                                                            if x["kind"] == "journal" and x["bank_move"] and not x["payment_id"]})
+                                                            if x["kind"] == "journal" and x["bank_move"] and not x["payment_id"]
+                                                            and not x["before_tracking"]})
     cands = sqlimport.candidates(c, eid, sqlimport.months_of([{"date": m + "-01"} for m in months])) if months else []
     einv = _taken_back(c, rows(c.execute(
         """SELECT id, entity_id, doc_no, doc_date, description, payee, amount, einvoice, einvoice_status, einvoice_link, kind,
@@ -1829,12 +1849,13 @@ def sql_entries():
     ignored = rows(c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'ignored' ORDER BY doc_date DESC", (eid,)))
     # The account lines SQL's journals gave for each entry, checked now against the chart and the listing.
     me = int(eid)
-    lines = ledger.entry_lines(c, me, list({x["id"]: x for x in unlinked + other + on_payments + ignored}.values()))
+    lines = ledger.entry_lines(c, me, list({x["id"]: x for x in unlinked + before + other + on_payments + ignored}.values()))
     counts = ledger.import_lines(c, me)
     for i in imports:
         i["lines"] = counts.get(i["id"], 0)
     orphans = ledger.orphans(c, me) if ledger.ready(c) else {"no_listing": [], "not_in_journal": []}
-    return jsonify({"imports": imports, "unlinked": unlinked, "candidates": cands, "documents": other, "einvoices": einv,
+    return jsonify({"imports": imports, "unlinked": unlinked, "before_tracking": before, "first_month": e["first_month"],
+                    "candidates": cands, "documents": other, "einvoices": einv,
                     "linked": on_payments, "ignored": ignored, "lines": lines,
                     "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans}})
 
@@ -1874,10 +1895,14 @@ def _payment_from_entry(c, s, category=None):
     acct = masters.first_active_account(c, s["entity_id"])  # the cash book account, as SQL's cash book listing is for it
     direction = s["direction"] or "out"
     category = "receipt" if direction == "in" else valid_cat(c, category or _guess_category(s["description"], c), "out")
+    # Its month as the SQL page and Next up count it (db.entry_month): one dated 30 September for October's rent goes
+    # in October, never in a month before the first month tracked.
+    ent = c.execute("SELECT * FROM entities WHERE id = ?", (s["entity_id"],)).fetchone()
+    month = db.entry_month(ent, s["description"], s["doc_date"]) if ent else s["doc_date"][:7]
     pid = c.execute(
         """INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date,
            paid_source, sql_ref, einvoice_ref, direction, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'sql', ?, ?, ?, ?)""",
-        (s["entity_id"], s["doc_date"][:7], acct["id"] if acct else None, category,
+        (s["entity_id"], month, acct["id"] if acct else None, category,
          s["description"] or s["payee"] or s["doc_no"], s["amount"], acct["currency"] if acct else "MYR",
          s["doc_date"], s["doc_date"], s["doc_no"], s["einvoice"], direction, db.now())).lastrowid
     # (a journal keeps its status, as an invoice does: it is still a journal, only linked)
@@ -1921,8 +1946,11 @@ def sql_create_all():
     c = con()
     eid = request.get_json()["entity_id"]
     # Only real bank vouchers (PV, OR...); anything of unknown type stays for a person to decide.
-    unlinked = c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' AND COALESCE(kind, 'payment') = 'payment'"
-                         " AND direction IS NOT NULL", (eid,)).fetchall()
+    # Not those of months before the first month tracked: they are kept in the books mirror only.
+    e = entity(c, eid)
+    unlinked = [s for s in c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' AND COALESCE(kind, 'payment') = 'payment'"
+                                     " AND direction IS NOT NULL", (eid,)).fetchall()
+                if not db.entry_before_tracking(e, s["description"], s["doc_date"])]
     by_ref, done = sqlimport.payments_by_ref(c, eid), set(sqlimport.linked_vouchers(c, eid))
     corrections = sqlimport.corrections(c, eid)
     created = linked = left = 0
@@ -2040,7 +2068,10 @@ def sql_entry_unlink(sid):
         return err(f"{s['doc_no']} isn't linked to a payment.")
     desc, removed = _unlink_entry(c, s)
     c.commit()
-    return jsonify({"ok": True, "doc_no": s["doc_no"], "kind": s["kind"], "payment": desc, "removed": removed})
+    # Whether it goes back under Before tracking on the SQL page rather than SQL entries not linked (the toast says so).
+    before = s["kind"] not in ("invoice", "journal") and db.entry_before_tracking(entity(c, s["entity_id"]), s["description"], s["doc_date"])
+    return jsonify({"ok": True, "doc_no": s["doc_no"], "kind": s["kind"], "payment": desc, "removed": removed,
+                    "before_tracking": before})
 
 
 @app.post("/api/sql/entries/<int:sid>/unignore")
@@ -2053,7 +2084,8 @@ def sql_entry_unignore(sid):
                      WHEN payment_id IS NOT NULL THEN 'linked' ELSE 'unlinked' END WHERE id = ?""", (sid,))
         db.log(c, f"SQL entry {s['doc_no']} no longer ignored")
     c.commit()
-    return jsonify({"ok": True, "doc_no": s["doc_no"]})
+    return jsonify({"ok": True, "doc_no": s["doc_no"], "before_tracking": not s["payment_id"] and s["kind"] not in ("invoice", "journal")
+                    and db.entry_before_tracking(entity(c, s["entity_id"]), s["description"], s["doc_date"])})
 
 
 def _unlink_entry(c, s):

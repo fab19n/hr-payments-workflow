@@ -27,6 +27,8 @@ PERSONAL = ("salary", "director")  # paid to a person: staff are never customers
 BASE = "MYR"  # the books' currency (SQL Account's cash book listing is in it)
 MONTH = re.compile(r"\d{4}-(0[1-9]|1[0-2])")
 DAY = re.compile(r"[2-9]\d{3}-\d{2}-\d{2}")
+MONTH_NAMES = ("January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+               "November", "December")
 
 
 def is_day(v):
@@ -64,6 +66,8 @@ KINDS = {
             _f("uses_sql", "Kept in SQL Account", "bool", default=1, hint="Payments then need their PV, JV or OR from SQL."),
             _f("first_month", "First month tracked", "month",
                hint="Months before it are never set up on their own and nothing in them counts as overdue. Empty: no limit."),
+            _f("fy_start", "Financial year starts in", "select", options=[[n, name] for n, name in enumerate(MONTH_NAMES, 1)],
+               hint="Keep it the same as the company's setting in SQL Account: SQL's reports can't tell it. The trial balance check uses it, and later reports will too. Empty: January."),
             _f("reg_no", "Registration no.", "text"),
             _f("tin", "Tax ID (TIN)", "text"),
             _f("sst_no", "SST no.", "text"),

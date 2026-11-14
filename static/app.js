@@ -332,7 +332,11 @@ function partyOptions(e, dir, sel, linked) {
 }
 // A month is set up (its checklist and recurring payments added) when you ask, or for the current cycle on loading.
 // One not set up can still hold payments (from an SQL voucher or a bank line), which are shown below this card.
-const notSetUp = (e, month, held) => `<div class="card noprint"><h2>${esc(monthName(month))} isn't set up yet</h2>
+// A month before the company's first month tracked (none when it has no first month): its pill is grey, never red,
+// overdue or green, as nothing in it is tracked here.
+const beforeTracking = (e, month) => !!(e?.first_month && month < e.first_month);
+const BEFORE_PILL = `<span class="pill grey">Before tracking</span>`;
+const notSetUp = (e, month, held) => `<div class="card noprint"><h2>${esc(monthName(month))} isn't set up yet${beforeTracking(e, month) ? ` ${BEFORE_PILL}` : ""}</h2>
   <div class="note">${held ? `It already holds ${held} payment${held > 1 ? "s" : ""}, shown below. ` : ""}Setting it up adds ${esc(e.code)}'s checklist and recurring payments for the month.${e.first_month && month < e.first_month
     ? ` It is before the first month tracked in this app (${esc(monthName(e.first_month))}).` : ""}</div>
   <div class="row"><button class="btn" data-open-month="${e.id}">Set up this month</button></div></div>`;
@@ -442,20 +446,26 @@ async function viewOverview(main) {
     const outAll = x.payments - x.receipts.payments, outDone = x.complete - x.receipts.complete;
     const pct = outAll ? Math.round(outDone / outAll * 100) : 0;
     // Each count is a button to what it counts (pillGo).
-    const flags = [], count = (kind, tone, text) => flags.push(`<button class="pillbtn" data-pill="${kind}" data-entity="${x.entity.id}" title="Show these"><span class="pill ${tone}">${text}</span></button>`);
+    const flags = [], kept = [], count = (kind, tone, text, stays) => {
+      const pill = `<button class="pillbtn" data-pill="${kind}" data-entity="${x.entity.id}" title="Show these"><span class="pill ${tone}">${text}</span></button>`;
+      flags.push(pill);
+      if (stays) kept.push(pill);  // still shown in a month before the first month tracked (below)
+    };
     if (x.overdue_tasks) count("overdue_tasks", "bad", `${x.overdue_tasks} checklist overdue`);
     if (x.due_today_tasks) count("due_today_tasks", "warn", `${x.due_today_tasks} checklist due today`);
-    for (const f of x.payment_flags) count(f.way === "in" ? `in-${f.code}` : f.code, f.tone, `${f.n} ${f.way === "in" ? "receipt" : "payment"}${f.n > 1 ? "s" : ""} ${esc(lowerFirst(f.text))}`);
+    for (const f of x.payment_flags) count(f.way === "in" ? `in-${f.code}` : f.code, f.tone, `${f.n} ${f.way === "in" ? "receipt" : "payment"}${f.n > 1 ? "s" : ""} ${esc(lowerFirst(f.text))}`, true);
     if (x.part_paid) count("part_paid", "warn", `${x.part_paid} part paid`);
     if (x.receipts.part_paid) count("in-part_paid", "warn", `${x.receipts.part_paid} part received`);
     if (x.paid_missing) count("paid_missing", "warn", `${x.paid_missing} paid, documents missing`);
     if (x.receipts.paid_missing) count("paid_missing", "warn", `${x.receipts.paid_missing} received, documents missing`);
-    if (x.unmatched_lines) count("unmatched_lines", "warn", `${x.unmatched_lines} bank lines not explained`);
+    if (x.unmatched_lines) count("unmatched_lines", "warn", `${x.unmatched_lines} bank lines not explained`, true);
     if (x.not_in_sql) count("not_in_sql", "warn", `${x.not_in_sql} paid, not recorded in SQL`);
-    // A month filed is done with: the server counts nothing in it as to do.
+    // A month filed is done with: the server counts nothing in it as to do. A month before the first month tracked
+    // isn't tracked here (no checklist or SQL counts, green is for what is done), so it shows its grey pill with only
+    // what still needs doing there: the bank lines to explain and the payments recorded in it.
+    if (x.before_first) flags.splice(0, flags.length, BEFORE_PILL, ...kept);
     if (!flags.length) flags.push(x.closed_at ? `<span class="pill ok">Filed ${shortDate(x.closed_at)}</span>` : `<span class="pill ok">Nothing overdue</span>`);
-    if (x.before_first) flags.push(`<span class="pill grey">Before the first month tracked</span>`);
-    if (!x.set_up) flags.push(`<span class="pill grey">Month not set up</span>`);
+    if (!x.set_up && !x.before_first) flags.push(`<span class="pill grey">Month not set up</span>`);
     return `<div class="card">
       <div class="row spread"><div><div class="eyebrow">${esc(x.entity.code)}</div><h2>${esc(x.entity.name)}</h2></div>
       <button class="btn small" data-view="entity" data-entity="${x.entity.id}">Open ${esc(x.entity.code)}</button></div>
@@ -543,7 +553,7 @@ async function viewEntity(main) {
   }).join("");
 
   main.innerHTML = `${setUp}
-    <div class="row spread"><div><div class="eyebrow">${esc(d.entity.code)}</div><h1>${esc(d.entity.name)} · ${esc(d.label)}</h1></div>
+    <div class="row spread"><div><div class="eyebrow">${esc(d.entity.code)}</div><h1>${esc(d.entity.name)} · ${esc(d.label)}${d.before_first ? ` ${BEFORE_PILL}` : ""}</h1></div>
       <div class="row noprint">${d.set_up && !d.closed_at ? `<button class="ghost" data-close-month="1">Mark month as filed</button>` : ""}
       <button class="btn" id="addPayment">Add a payment</button></div></div>
     ${d.closed_at ? `<div class="banner ok"><b>Filed ${shortDate(d.closed_at)}</b><span>This month is marked as filed, so nothing in it counts as to do on the Overview.</span>
@@ -741,7 +751,7 @@ async function viewBudget(main) {
   const inRange = v => isDay(v) && v >= first && v <= last;
   main.innerHTML = `${entityPicker()}${setUp}
     <div class="card">
-      <div class="row spread"><div><div class="eyebrow">${esc(d.entity.name)}</div><h1>Budget for ${esc(d.label)}</h1></div>
+      <div class="row spread"><div><div class="eyebrow">${esc(d.entity.name)}</div><h1>Budget for ${esc(d.label)}${beforeTracking(d.entity, d.month) ? ` ${BEFORE_PILL}` : ""}</h1></div>
       <button class="ghost noprint" id="printPage">Print budget</button></div>
       ${cycleNote(d)}
       <div class="note noprint">Not set up yet: this list is worked out from the month's payments and can't be edited. ${d.previous ? `Setting it up copies ${esc(monthName(shiftMonth(d.month, -1)))}'s budget with its amounts.` : "Setting it up makes a line for each payment out, which you can then change, add to and delete."} <button class="btn small" id="bud-setup">Set up budget</button></div>
@@ -825,7 +835,7 @@ async function viewStoredBudget(main, d, here) {
   const currencies = [...new Set(["MYR", ...ent().accounts.map(a => a.currency)])];
   main.innerHTML = `${entityPicker()}${d.set_up ? "" : notSetUp(d.entity, month, d.lines.length)}
     <div class="card">
-      <div class="row spread"><div><div class="eyebrow">${esc(d.entity.name)}</div><h1>Budget for ${esc(d.label)}</h1></div>
+      <div class="row spread"><div><div class="eyebrow">${esc(d.entity.name)}</div><h1>Budget for ${esc(d.label)}${beforeTracking(d.entity, month) ? ` ${BEFORE_PILL}` : ""}</h1></div>
       <span class="row noprint"><a class="ghost" href="/api/export/budget.xlsx?entity_id=${eid}&month=${month}&as_at=${esc(d.as_at)}">Excel</a>
       <button class="ghost" id="printPage">Print budget</button></span></div>
       ${cycleNote(d)}
@@ -1424,7 +1434,7 @@ function sqlChecksCard(d) {
       ${rs.filter(r => r.outcome === "info").map(r => `<div class="note">${esc(r.text)}</div>`).join("")}`;
   };
   return `<div class="card"><h2>Checks against SQL's reports</h2>
-    <div class="note">The latest of SQL's GL Journal of Transaction, GL Ledger and Trial Balance fetched, checked against the account lines kept. Not checked: profit and loss and retained earnings Period To Date or opening balances against the lines, and anything after the dates the journals read cover.</div>
+    <div class="note">The latest of SQL's GL Journal of Transaction, GL Ledger and Trial Balance fetched, checked against the account lines kept. Not checked: Period To Date and opening balances against the lines (SQL's trial balance moves earlier profit and loss into retained earnings on its From date), and anything after the dates the journals read cover.</div>
     ${reads.journal ? journal(reads.journal) : ""}
     ${["gl_ledger", "trial_balance"].filter(k => reads[k]).map(k => report(k, reads[k])).join("")}
     ${orph.no_listing.length ? `<h3>In SQL's journal but no listing fetched · ${orph.no_listing.length}</h3>
@@ -1470,14 +1480,17 @@ async function viewSql(main) {
         <td><div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${u.id}" style="max-width:240px">${candOpts(u)}</select><button class="ghost small" data-sql-link-go="${u.id}">Link</button></div></td>
         <td><div class="row"><button class="ghost small" data-sql-create="${u.id}">Create payment</button><button class="ghost small" data-sql-ignore="${u.id}">Ignore</button></div></td></tr>`;
   const waiting = d.unlinked.filter(u => !u.correction), corrections = d.unlinked.filter(u => u.correction);
+  // Entries of months before the first month tracked: kept in the books mirror, listed read-only, never asked about.
+  const before = d.before_tracking || [];
   state.sqlCorrections = corrections.map(u => u.id);
   const sqlText = x => [x.doc_no, fmtDate(x.doc_date), x.doc_date, x.description, x.payee, x.code, x.cheque_no, x.payment_method, LT.amount(x.amount), x.direction === "in" ? "money in" : "", x.payment_desc,
     x.payment_month ? monthName(x.payment_month) : "", x.einvoice ? "e-invoice" : ""].join(" ");
   const th = (cols, last) => `<thead><tr>${sortTh("sql", "doc", "Doc No")}${sortTh("sql", "date", "Date")}${sortTh("sql", "desc", "Description")}${sortTh("sql", "amount", "Amount", "num")}${cols}${last}</tr></thead>`;
   const none = (list, text) => `<tr><td colspan="6" class="empty">${list.length ? "No entry matches." : text}</td></tr>`;
   const entries = () => {
-    const w = listRows("sql", waiting, sqlText), c = listRows("sql", corrections, sqlText), lk = listRows("sql", d.linked, sqlText), ig = listRows("sql", d.ignored, sqlText);
-    setCount("sql", w.length + c.length + lk.length + ig.length, waiting.length + corrections.length + d.linked.length + d.ignored.length);
+    const w = listRows("sql", waiting, sqlText), c = listRows("sql", corrections, sqlText), lk = listRows("sql", d.linked, sqlText), ig = listRows("sql", d.ignored, sqlText),
+      bf = listRows("sql", before, sqlText);
+    setCount("sql", w.length + c.length + lk.length + ig.length + bf.length, waiting.length + corrections.length + d.linked.length + d.ignored.length + before.length);
     return `<div class="card"><h2>SQL entries not linked to a payment</h2>
       <div class="row spread"><div class="note">These are in SQL but not in this tracker. Link each one to a payment, create a payment for it, or ignore it (e.g. a reversal).</div>
       ${waiting.length > 1 ? `<button class="ghost small" id="sqlCreateAll">Create payments for all ${waiting.length}</button>` : ""}</div>
@@ -1500,6 +1513,12 @@ async function viewSql(main) {
       <div class="tbl-wrap"><table>${th("", `<th></th>`).replace("<th></th></tr>", "<th></th></tr>")}<tbody>
       ${ig.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}${linesPill(d.lines, x)}</td>
         <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td><td><button class="ghost small" data-sql-unignore="${x.id}">Un-ignore</button></td></tr>`).join("") || none(d.ignored, "")}
+      </tbody></table></div></details></div>` : ""}
+    ${before.length ? `<div class="card"><details data-sql-open="before" ${state.sqlOpen.before ? "open" : ""}><summary><h2 style="display:inline">Before tracking (${before.length})</h2></summary>
+      <div class="note">These SQL entries are from months before ${d.first_month ? esc(monthName(d.first_month)) : "the first month tracked"}, the first month tracked here. They are kept with SQL's books (their account lines and the checks against SQL's reports) but are not tracked as payments, so nothing asks you to link them.</div>
+      <div class="tbl-wrap"><table>${th("", "")}<tbody>
+      ${bf.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}${linesPill(d.lines, x)}</td>
+        <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td></tr>`).join("") || `<tr><td colspan="4" class="empty">No entry matches.</td></tr>`}
       </tbody></table></div></details></div>` : ""}`;
   };
   main.innerHTML = `${entityPicker()}
@@ -1527,10 +1546,10 @@ async function viewSql(main) {
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>e-Invoice</th><th>Checklist item</th></tr></thead><tbody>
       ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}${linesPill(d.lines, x)}</td>
         <td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
-        <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : `<span class="muted">—</span>`}
+        <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : x.before_tracking ? `<span class="pill grey">Before tracking</span>` : `<span class="muted">—</span>`}
           ${x.kind === "journal" && x.bank_move != null ? `<div class="note">Moves ${money(Math.abs(x.bank_move))} ${x.bank_move > 0 ? "into" : "out of"} the bank, so it counts in the bank reconciliation.</div>` : ""}
           ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">${x.kind === "journal" ? "Payment" : "Receipt"}: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>`
-            : x.kind === "journal" && x.bank_move != null ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
+            : x.kind === "journal" && x.bank_move != null && !x.before_tracking ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
       </tbody></table></div></div>
     ${sqlChecksCard(d)}
     <div class="card"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it.</div>
@@ -1606,7 +1625,9 @@ function renderSqlPreview(p) {
   }
   const colOpts = sel => `<option value="">(none)</option>` + p.headers.map((h, i) => `<option value="${i}" ${i === sel ? "selected" : ""}>${esc(h || "Column " + (i + 1))}</option>`).join("");
   const kinds = { journal: "Journal", invoice: "Customer invoice" };
-  const target = r => r.exists ? `<span class="pill grey">Already imported</span>${receiptPick(p, r)}`
+  // A document of a month before the first month tracked is kept with SQL's books only: nothing to link it to.
+  const target = r => r.exists ? `<span class="pill grey">Already imported</span>${r.before_tracking ? "" : receiptPick(p, r)}`
+    : r.before_tracking ? `<span class="pill grey">Before tracking, kept with SQL's books</span>`
     : r.kind !== "payment" ? (r.task_id ? `<span class="pill ok">Checklist: ${esc(r.task_title)}</span>` : `<span class="pill grey">${kinds[r.kind]}, kept on file</span>`) + receiptPick(p, r)
     : `<select data-sql-row="${r.row}"><option value="">Not linked</option>${paymentOptions(p.candidates, r, r.payment_id)}</select>${r.task_id ? `<div class="note">Also: ${esc(r.task_title)}</div>` : ""}${changedInSql(r)}`;
   const blocked = p.ledger?.refused && !p.records.filter(r => !r.exists).length;
@@ -3596,7 +3617,9 @@ document.addEventListener("click", async ev => {
       let r;
       try { r = await api(`/api/payments/${state.openPayment}`, { method: "DELETE", json: {} }); }
       catch (e) { t.dataset.confirm = ""; t.textContent = "Remove this payment"; throw e; }
-      closeDrawer(true); toast(`Payment removed${r.unlinked.length ? `; ${r.unlinked.join(", ")} back under SQL entries not linked` : ""}${r.lines
+      // A voucher of a month before the first month tracked goes back under Before tracking, not under SQL entries not linked.
+      const bt = r.before_tracking || [], back = r.unlinked.filter(n => !bt.includes(n));
+      closeDrawer(true); toast(`Payment removed${back.length ? `; ${back.join(", ")} back under SQL entries not linked` : ""}${bt.length ? `; ${bt.join(", ")} back under Before tracking on the SQL page` : ""}${r.lines
         ? `; ${r.lines} bank line${r.lines > 1 ? "s" : ""} back under lines to explain` : ""}`); return render();
     }
     if (t.id === "addPayment") return addPaymentDrawer();
@@ -3686,11 +3709,12 @@ document.addEventListener("click", async ev => {
     }
     if (ds.sqlUnlink) {
       const r = await api(`/api/sql/entries/${ds.sqlUnlink}/unlink`, { json: {} });
+      const list = r.before_tracking ? "Before tracking" : "SQL entries not linked";  // where the SQL page now lists it
       toast(r.kind === "journal" ? `${r.doc_no} unlinked${r.removed ? `, and the payment made from it was removed` : ` from ${r.payment}`}`
-        : r.removed ? `${r.doc_no} is back under SQL entries not linked, and the payment made from it was removed`
-        : `${r.doc_no} unlinked from ${r.payment}; it's back under SQL entries not linked`); return render();
+        : r.removed ? `${r.doc_no} is back under ${list}, and the payment made from it was removed`
+        : `${r.doc_no} unlinked from ${r.payment}; it's back under ${list}`); return render();
     }
-    if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under SQL entries not linked`); return render(); }
+    if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.before_tracking ? "Before tracking" : "SQL entries not linked"}`); return render(); }
     if (ds.editPayee) { if (!mayLeave()) return; return await editPayee(ds.editPayee); }
     if (ds.addMonth) {
       const r = await api(`/api/payees/${ds.addMonth}/add-to-month`, { json: { month: state.month } });

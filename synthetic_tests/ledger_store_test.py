@@ -94,7 +94,7 @@ def jot_batch(con, eid, period=None, source=None, books=("general",)):
 
 # ---------- 1. a records.db at update 25 with pasted journal lines, then update 26 ----------
 full = db.MIGRATIONS[:]
-check("update 26 is the ledger's install", len(full) == 26 and full[25] is ledger.install)
+check("update 26 is the ledger's install", len(full) >= 26 and full[25] is ledger.install)
 db.MIGRATIONS[:] = full[:25]
 db.init()
 EID, EXB, EXN, EXT, EXR = (q("SELECT id FROM entities WHERE code = ?", (x,))[0]["id"] for x in ("EXH", "EXB", "EXN", "EXT", "EXR"))
@@ -122,7 +122,7 @@ check("before the update, a re-entered journal's old pasted lines don't count", 
 
 db.MIGRATIONS[:] = full
 trail = db.init()
-check("every update has run", q("PRAGMA user_version")[0]["user_version"] == 26)
+check("every update has run", q("PRAGMA user_version")[0]["user_version"] == len(full))
 docs = q("SELECT * FROM ledger_docs")
 check("the pasted journal with a header is copied as version 1",
       len(docs) == 1 and docs[0]["doc_no"] == "JV2610-001" and docs[0]["doc_key"] == "JV2610-001" and docs[0]["version"] == 1
@@ -404,15 +404,18 @@ check("a ledger that agrees with the lines gives no warning (PROFIT/(LOSS) and B
 led["accounts"][0]["rows"][0]["dr_sen"] += 100
 res = ledger.report_checks(c, EID, None, led, "gl_ledger")
 check("one that doesn't names the account", [x["subject"] for x in res if x["outcome"] == "warn"] == [led["accounts"][0]["code"]], res)
-# The year's first month: Month To Date of a profit and loss account also holds SQL's closing of last year's 1,000.00,
-# while Year To Date started again and equals the lines.
+# A trial balance from 1 October: SQL moves the earlier 1,000.00 of a profit and loss account into retained earnings on
+# that date, inside Period To Date only; Month To Date and Year To Date are October's lines.
 closing = {"520-1000": 100000}
 tb = {"period": ["2026-10-01", "2026-10-31"], "accounts": [
     {"code": x["code"], "name": "", "open": (closing.get(x["code"], 0), 0), "ptd": (x["dr"], x["cr"] + closing.get(x["code"], 0)),
-     "mtd": (x["dr"], x["cr"] + closing.get(x["code"], 0)), "ytd": (x["dr"], x["cr"])} for x in oct_lines]}
+     "mtd": (x["dr"], x["cr"]), "ytd": (x["dr"], x["cr"])} for x in oct_lines]}
 res = ledger.report_checks(c, EID, None, tb, "trial_balance", ledger_rep=None)
-check("a trial balance in what may be the year's first month skips P&L, and the balance check says why",
-      not [x for x in res if x["outcome"] == "warn"] and any(x["outcome"] == "skipped" and "year-end closing" in x["text"] for x in res)
+check("a trial balance from the 1st of the month compares P&L Month To Date and Year To Date, notes SQL's move, and the "
+      "balance check says why it can't run",
+      not [x for x in res if x["outcome"] == "warn"] and not any(x["outcome"] == "skipped" and x["rule"] in ("tb_mtd", "tb_ytd") for x in res)
+      and any(x["rule"] == "tb_ytd" and x["outcome"] == "ok" for x in res)
+      and [x["actual_sen"] for x in res if x["rule"] == "tb_pl_moved"] == [100000]
       and any(x["rule"] == "tb_balance" and x["outcome"] == "skipped" for x in res), res)
 c.disarm()
 c.close()
@@ -422,19 +425,30 @@ c = conn("test: another company's chart and lines")
 c.execute("UPDATE accounts SET gl_code = ? WHERE entity_id = ?", (BANK, EXR))
 for code, name, typ, special in (("300-0000", "TRADE DEBTORS", "asset", "debtor_control"), (BANK, "BANK-EXAMPLE", "asset", "bank"),
                                  ("310-2000", "BANK-EXAMPLE TWO", "asset", "bank"), ("500-2000", "EXAMPLE SALES", "income", None),
-                                 ("9S0-T002", "SALARY - EXAMPLE", "expense", None)):
+                                 ("9S0-T002", "SALARY - EXAMPLE", "expense", None), ("900-B001", "BANK CHARGES - EXAMPLE", "expense", None)):
     c.execute("INSERT INTO gl_accounts (entity_id, code, name, type, special) VALUES (?, ?, ?, ?, ?)", (EXR, code, name, typ, special))
 br = jot_batch(c, EXR, ("2026-10-01", "2026-11-30"), "printed", books=("bank", "general", "sales"))
 for doc in ({"doc_no": "IV2610-001", "doc_date": "2026-10-08", "book": "sales", "lines": [line("300-A0003", dr=3000), line("500-2000", cr=3000)]},
             {"doc_no": "PV2610-005", "doc_date": "2026-10-05", "book": "bank", "lines": [line("9S0-T002", dr=500), line(BANK, cr=500)]},
             {"doc_no": "PV2611-005", "doc_date": "2026-11-03", "book": "bank", "lines": [line("9S0-T002", dr=600), line(BANK, cr=600)]},
             {"doc_no": "PV2610-050", "doc_date": "2026-10-12", "book": "bank", "lines": [line("310-2000", dr=1000), line(BANK, cr=1000)]},
-            {"doc_no": "PV2610-060", "doc_date": "2026-10-15", "book": "bank", "lines": [line("9S0-T002", dr=350), line(BANK, cr=350)]}):
+            {"doc_no": "PV2610-060", "doc_date": "2026-10-15", "book": "bank", "lines": [line("9S0-T002", dr=350), line(BANK, cr=350)]},
+            # A receipt with a bank charge, as SQL writes one: the charge is a bank line on the other side.
+            {"doc_no": "OR2610-080", "doc_date": "2026-10-20", "book": "bank",
+             "lines": [line(BANK, dr=58585.50), line("900-B001", dr=36.25), line("300-A0002", cr=58585.50), line(BANK, cr=36.25)]},
+            # A payment with a bank line on the other side (a charge given back), listed at the amount paid out.
+            {"doc_no": "PV2610-081", "doc_date": "2026-10-21", "book": "bank",
+             "lines": [line("9S0-T002", dr=1000), line(BANK, cr=1000), line(BANK, dr=12), line("900-B001", cr=12)]},
+            {"doc_no": "OR2610-082", "doc_date": "2026-10-22", "book": "bank",
+             "lines": [line(BANK, dr=700), line("900-B001", dr=5), line("300-A0002", cr=700), line(BANK, cr=5)]}):
     ledger.put_document(c, EXR, br, doc)
 ia = an_import(c, EXR, "pv-a.xlsx")
 entry(c, ia, EXR, "PV2610-050", "2026-10-12", 1000, "payment", "PV", direction="out")
 entry(c, ia, EXR, "PV2610-060", "2026-10-15", 100, "payment", "PV", direction="out")
 entry(c, ia, EXR, "PV2610-060", "2026-10-15", 200, "payment", "PV", direction="out", desc="EXAMPLE SECOND ROW")
+entry(c, ia, EXR, "OR2610-080", "2026-10-20", 58585.50, "payment", "OR", direction="in")
+entry(c, ia, EXR, "PV2610-081", "2026-10-21", 1000, "payment", "PV", direction="out")
+entry(c, ia, EXR, "OR2610-082", "2026-10-22", 750, "payment", "OR", direction="in")  # listed at more than SQL's lines move
 entry(c, ia, EXR, "PV2610-070", "2026-10-16", 360, "payment", "PV", direction="out")  # listed on two rows, not in the journal
 entry(c, ia, EXR, "PV2610-070", "2026-10-16", 40, "payment", "PV", direction="out", desc="EXAMPLE SECOND ROW")
 jv71 = entry(c, ia, EXR, "JV2610-071", "2026-10-17", 75, "journal", "JV")  # a journal SQL's journal lacks
@@ -446,6 +460,45 @@ c.commit()
 ck = ledger.doc_checks(c, EXR, ["PV2610-050", "PV2610-060"])
 check("a voucher moving money between two of the company's own bank accounts agrees with its listing",
       ck["PV2610-050"]["total_ok"] is True and ck["PV2610-050"]["warnings"] == [], ck["PV2610-050"])
+chg = ledger.doc_checks(c, EXR, ["OR2610-080", "PV2610-081", "OR2610-082"])
+check("a receipt with a bank charge agrees with its listing: the bank's debits are the amount received",
+      chg["OR2610-080"]["total_ok"] is True and chg["OR2610-080"]["rule"] == "bank" and chg["OR2610-080"]["warnings"] == [], chg["OR2610-080"])
+check("so does a payment with a bank line on the other side: the bank's credits are the amount paid",
+      chg["PV2610-081"]["total_ok"] is True and chg["PV2610-081"]["warnings"] == [], chg["PV2610-081"])
+check("one whose bank lines don't come to the listing's amount either way names both figures",
+      chg["OR2610-082"]["total_ok"] is False and chg["OR2610-082"]["warnings"] == [
+          "The lines on the bank account have debits of 700.00 and move money in of 695.00 net, but the listing has 750.00 money in "
+          "(checked on the bank account's lines)."], chg["OR2610-082"])
+
+
+def total_check(direction, total, lines):
+    """The check on made-up bank lines against a listing of `total` money in or out, called directly."""
+    L = {"total_sen": int(round(total * 100)), "kind": "payment", "direction": direction, "earlier": set(), "partial": False}
+    got = [{"account_code": x["code"], "dr_sen": x["dr_sen"], "cr_sen": x["cr_sen"]} for x in lines]
+    return ledger._total_check(L, got, {BANK, "310-2000"}, None)
+
+
+ok, _, said = total_check("in", 1000, [line(BANK, dr=1000), line(BANK, cr=1000), line("300-A0002", cr=0)])
+check("a receipt whose bank lines move nothing net doesn't agree with its listing",
+      ok is False and said == "The lines on the bank account have debits of 1,000.00 and move nothing net, but the listing has "
+      "1,000.00 money in (checked on the bank account's lines).", said)
+ok, _, said = total_check("in", 1000, [line(BANK, dr=1000), line(BANK, cr=400), line("300-A0002", cr=600)])
+check("nor one whose bank line on the other side is too large to be a bank charge",
+      ok is False and "debits of 1,000.00 and move money in of 600.00 net" in said, said)
+ok, _, said = total_check("in", 1000, [line(BANK, dr=1000), line(BANK, cr=3000), line("300-A0002", dr=2000)])
+check("nor one whose bank lines move money the wrong way",
+      ok is False and "debits of 1,000.00 and move money out of 2,000.00 net" in said, said)
+ok, _, said = total_check("out", 1000, [line(BANK, cr=1005), line("900-B001", dr=5), line("9S0-T002", dr=1000)])
+check("a payment with its bank charge paid out of the bank with it agrees with a listing of the amount paid",
+      ok is True and said is None, said)
+ok, _, said = total_check("out", 1000, [line(BANK, cr=1000), line(BANK, cr=5), line("900-B001", dr=5), line("9S0-T002", dr=1000)])
+check("so does one with the charge on a bank line of its own", ok is True and said is None, said)
+ok, _, said = total_check("out", 1000, [line(BANK, cr=1005), line("9S0-T002", dr=1005)])
+check("but a payment of more than its listing, with no line for the charge, still names both figures",
+      ok is False and "credits of 1,005.00 and move money out of 1,005.00 net, but the listing has 1,000.00 money out" in said, said)
+ok, _, said = total_check("out", 1000, [line(BANK, cr=1400), line("900-B001", dr=400), line("9S0-T002", dr=1000)])
+check("and so does one whose 'charge' is too large to be a bank charge", ok is False, said)
+
 L60 = ledger.listing_of(c, EXR, ["PV2610-060"])["PV2610-060"]
 check("a voucher with one of its rows edited in SQL can't be told, rather than totalled from the edited row alone",
       L60["total"] is None and L60["partial"] is True and ck["PV2610-060"]["total_ok"] is None
@@ -488,20 +541,30 @@ for as_at in ("2026-10-31", "2026-10-14"):
         check("and is skipped, saying why, on a day inside the ledger's period", not [x for x in res if x["outcome"] == "warn"]
               and any(x["outcome"] == "skipped" and x["subject"] == "300-0000" and "control account" in x["text"] for x in res), res)
 
-# A financial year starting in October, the trial balance printed over two months: October's Month To Date holds the
-# year-end closing of last year's 49,500.00 salary, its Year To Date only October's 500.00.
-tb_oct = {"period": ["2026-09-01", "2026-10-14"], "accounts": [
-    {"code": "9S0-T002", "name": "SALARY - EXAMPLE", "open": (4950000, 0), "ptd": (50000, 4950000), "mtd": (50000, 4950000), "ytd": (50000, 0)}]}
-res = [x for x in ledger.report_checks(c, EXR, None, tb_oct, "trial_balance") if x["rule"] == "tb_mtd"]
-check("a closing month printed over two months skips profit and loss Month To Date instead of warning",
-      not any(x["subject"] == "9S0-T002" for x in res) and any(x["outcome"] == "skipped" and "year-end closing" in x["text"] for x in res), res)
-# November printed for the month alone: Month To Date equals Period To Date, Year To Date holds October too.
+# A trial balance from 10 October: SQL moves the earlier 49,500.00 of salary into retained earnings on that date, so
+# October's Month To Date holds the move as well as the month's lines; Year To Date is only the lines from 10 October.
+tb_oct = {"period": ["2026-10-10", "2026-10-14"], "accounts": [
+    {"code": "9S0-T002", "name": "SALARY - EXAMPLE", "open": (4950000, 0), "ptd": (0, 4950000), "mtd": (50000, 4950000), "ytd": (0, 0)}]}
+res = [x for x in ledger.report_checks(c, EXR, None, tb_oct, "trial_balance") if x["rule"] in ("tb_mtd", "tb_ytd")]
+check("a trial balance from inside the month skips profit and loss Month To Date instead of warning, and compares Year To Date",
+      not any(x["subject"] == "9S0-T002" for x in res)
+      and any(x["outcome"] == "skipped" and "inside the month" in x["text"] for x in res)
+      and any(x["rule"] == "tb_ytd" and x["outcome"] == "ok" and x["text"].startswith("1 profit and loss account agrees") for x in res), res)
+# November from its 1st: Month To Date and Year To Date are November's lines; October's 850.00 moved on 1 November.
 tb_nov = {"period": ["2026-11-01", "2026-11-14"], "accounts": [
-    {"code": "9S0-T002", "name": "SALARY - EXAMPLE", "open": (50000, 0), "ptd": (60000, 0), "mtd": (60000, 0), "ytd": (110000, 0)}]}
-res = [x for x in ledger.report_checks(c, EXR, None, tb_nov, "trial_balance") if x["rule"] == "tb_mtd"]
-check("a later month printed for one month compares profit and loss Month To Date",
+    {"code": "9S0-T002", "name": "SALARY - EXAMPLE", "open": (85000, 0), "ptd": (60000, 85000), "mtd": (60000, 0), "ytd": (60000, 0)}]}
+res = [x for x in ledger.report_checks(c, EXR, None, tb_nov, "trial_balance") if x["rule"] in ("tb_mtd", "tb_ytd", "tb_pl_moved")]
+check("a trial balance from the month's 1st compares profit and loss Month To Date and Year To Date, and notes the move",
       not any(x["outcome"] == "skipped" for x in res) and not any(x["subject"] == "9S0-T002" for x in res)
-      and any(x["outcome"] == "ok" for x in res), res)
+      and any(x["rule"] == "tb_mtd" and x["outcome"] == "ok" for x in res) and any(x["rule"] == "tb_ytd" and x["outcome"] == "ok" for x in res)
+      and [x["text"] for x in res if x["rule"] == "tb_pl_moved"] == [
+          "SQL's trial balance counts profit and loss from its From date (01/11/2026), so it moved a loss of 850.00 from earlier "
+          "into retained earnings. No document carries that move."], res)
+res = [x for x in ledger.report_checks(c, EXR, None, {"period": tb_nov["period"], "accounts": [
+    {**tb_nov["accounts"][0], "mtd": (60000, 0), "ytd": (110000, 0)}]}, "trial_balance") if x["outcome"] == "warn"]
+check("one whose salary Year To Date also holds October's lines warns",
+      [(x["rule"], x["subject"], x["expected_sen"], x["actual_sen"]) for x in res if x["subject"] == "9S0-T002"]
+      == [("tb_ytd", "9S0-T002", 110000, 60000)], res)
 
 # A ledger from September, with the journals read covering October on: its footer's Add Code holds September too.
 led_wide = {"period": ["2026-09-01", "2026-10-31"], "footer": [{"op": "add", "code": "300-0000", "dr_sen": 350000, "cr_sen": 0}],

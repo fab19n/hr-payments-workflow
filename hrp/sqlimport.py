@@ -503,12 +503,15 @@ def corrections(con, entity_id):
     """Ids of the vouchers not linked yet that look like corrections made only in the books, where no money moved: a
     reversal or contra by its description, or one of a receipt and a payment for the same amount on the same day
     (an OR refunding a duplicated self-billed e-Invoice, a second PV replacing the first). An entry with no direction
-    (neither a receipt nor a payment) is never one of a pair."""
+    (neither a receipt nor a payment) is never one of a pair. One of a month before the first month tracked
+    (db.entry_before_tracking) isn't asked about, so it is never one either."""
+    from .db import entry_before_tracking
+    ent = con.execute("SELECT * FROM entities WHERE id = ?", (entity_id,)).fetchone()
     entries = con.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'",
                           (entity_id,)).fetchall()
     sides = {(s["doc_date"], s["amount"], s["direction"]) for s in entries}
     other = {"in": "out", "out": "in"}
-    return {s["id"] for s in entries if s["status"] == "unlinked" and (
+    return {s["id"] for s in entries if s["status"] == "unlinked" and not entry_before_tracking(ent, s["description"], s["doc_date"]) and (
         CORRECTION_WORDS.search(s["description"] or "")
         or (s["direction"] in other and (s["doc_date"], s["amount"], other[s["direction"]]) in sides))}
 
@@ -530,12 +533,13 @@ def receipt_invoice(r):
     return r["kind"] == "invoice" and r["doc_type"] == "IV"
 
 
-def _propose_receipts(con, entity_id, recs):
+def _propose_receipts(con, entity_id, recs, ok=lambda r, p: True):
     """Suggest the money-in payment each customer invoice (IV) is for: a payment made from a Money in payee, with the same
     payee words (the payee's match words and name against the invoice's description and name; the payment's own description
     isn't used, as words like Rent would fit any customer) and exactly the amount, in the
     month the invoice belongs to (db.filing_month), else the nearest due date within 45 days. Each payment takes one
-    invoice. An invoice already linked to a payment (as imported before) is left alone."""
+    invoice. An invoice already linked to a payment (as imported before) is left alone. ok(invoice, payment) says whether
+    that pair may be suggested at all (propose: never a payment of a month before the first month tracked)."""
     from . import partybook
     from .db import filing_month
     invoices = sorted((r for r in recs if receipt_invoice(r)), key=lambda r: (r["date"], r["row"]))
@@ -552,7 +556,7 @@ def _propose_receipts(con, entity_id, recs):
                        "AND payment_id IS NOT NULL", (entity_id, r["doc_no"], r["date"], r["amount"])).fetchone():
             continue
         text, month, day = _words(r["description"] + " " + r["payee"]), filing_month(r["description"], r["date"]), date.fromisoformat(r["date"])
-        fits = [p for p in pays if p["id"] not in taken and abs(p["amount"] - r["amount"]) < 0.005
+        fits = [p for p in pays if p["id"] not in taken and abs(p["amount"] - r["amount"]) < 0.005 and ok(r, p)
                 and (_words(" ".join(filter(None, [p["match_words"], p["payee_name"]]))) & text or partybook.coded(codes, p, r))]
         best = min(fits, key=lambda p: (p["month"] != month, abs((date.fromisoformat(p["due_date"]) - day).days)), default=None)
         if best and (best["month"] == month or abs((date.fromisoformat(best["due_date"]) - day).days) <= 45):
@@ -570,13 +574,60 @@ def propose(con, entity_id, recs):
     2. several named vouchers adding up exactly (SOCSO and SKBBK paid separately for one payment);
     3. for an estimate, the named voucher(s) closest to it within ±50% (electricity, PCB, KWSP vary every month).
     A voucher must share a real name word with the payment; months and accounting terms don't count.
+
+    Whether a suggestion is kept is decided by what it suggests, not by the document alone: a payment or checklist item
+    of a month before the first month tracked is never suggested. A document of a month before the first month tracked
+    (db.entry_before_tracking) keeps only a suggestion of a tracked payment or item due within SUGGEST_ACROSS_DAYS of its
+    date (an invoice of 25 September for October's rent, a voucher of 30 September paying an October item); otherwise it
+    gets none and before_tracking is set on it: it is kept in the books mirror only, as those months were never tracked.
     """
+    from .db import entry_before_tracking
+    ent = con.execute("SELECT * FROM entities WHERE id = ?", (entity_id,)).fetchone()
     for r in recs:
         task = task_for(con, entity_id, r)
         r["task_id"], r["task_title"] = (task["id"], task["title"]) if task else (None, None)
+        r["_task"] = task
         r["payment_id"] = r["payment_desc"] = None
-    _propose_receipts(con, entity_id, recs)
+    # Only pairs whose suggestion would be kept (_suggest_ok) are tried, so a voucher of September never takes an
+    # October payment that a later voucher should have.
+    ok = (lambda r, p: _suggest_ok(ent, r, p["month"], p["paid_date"] or p["due_date"])) if ent else (lambda r, p: True)
+    _propose_receipts(con, entity_id, recs, ok)
     open_recs = [r for r in recs if r["kind"] == "payment"]  # journals and invoices record no bank payment
+    _match_vouchers(con, entity_id, open_recs, ok)
+    pays = {p["id"]: p for p in con.execute("SELECT id, month, due_date, paid_date FROM payments WHERE entity_id = ?", (entity_id,))}
+    for r in recs:
+        task, r["before_tracking"] = r.pop("_task"), bool(ent) and entry_before_tracking(ent, r["description"], r["date"])
+        if not ent:
+            continue
+        p = pays.get(r["payment_id"])
+        if p and not _suggest_ok(ent, r, p["month"], p["paid_date"] or p["due_date"]):
+            r["payment_id"] = r["payment_desc"] = None
+        if task and not _suggest_ok(ent, r, task["month"], task["due_date"]):
+            r["task_id"] = r["task_title"] = None
+        if r["payment_id"] or r["task_id"]:
+            r["before_tracking"] = False  # it is suggested for a tracked month, so it is offered as any other row
+    return recs
+
+
+# How far from its date a document of a month before the first month tracked may be suggested for a tracked payment or
+# checklist item: the end of September for what October pays, never the September vouchers of September's own work.
+SUGGEST_ACROSS_DAYS = 15
+
+
+def _suggest_ok(ent, r, month, due):
+    """True when a suggestion of a payment or checklist item of this month (due on this date) is kept for the document:
+    never one of a month before the first month tracked, and for a document of such a month only one due close by."""
+    from .db import before_tracking, entry_before_tracking
+    if before_tracking(ent, month):
+        return False
+    if not entry_before_tracking(ent, r["description"], r["date"]):
+        return True
+    return bool(due) and abs((date.fromisoformat(due) - date.fromisoformat(r["date"])).days) <= SUGGEST_ACROSS_DAYS
+
+
+def _match_vouchers(con, entity_id, open_recs, ok):
+    """The payment matching of propose (its steps 1-3), on the vouchers given; ok(voucher, payment) says whether that
+    pair may be suggested at all."""
     from . import checklistbook, partybook
     book = checklistbook.get(con)
     codes = partybook.payee_codes(con, entity_id)  # a supplier's or customer's SQL code names its recurring payments' payments
@@ -599,7 +650,7 @@ def propose(con, entity_id, recs):
     by_ref = payments_by_ref(con, entity_id)
     for r in open_recs:
         p = by_ref.get(r["doc_no"].upper())
-        if p:
+        if p and ok(r, p):
             assign(p, [r])
             typed.setdefault(p["id"], []).append(r)
     # Pass 1: single vouchers with the exact amount, closest date first across all payments, so September's
@@ -608,7 +659,7 @@ def propose(con, entity_id, recs):
     for p in pays:
         pd, pwords = pinfo(p)
         for r in open_recs:
-            if (r.get("direction") and p["direction"] != r["direction"]) or abs(r["amount"] - p["amount"]) >= 0.005:
+            if (r.get("direction") and p["direction"] != r["direction"]) or abs(r["amount"] - p["amount"]) >= 0.005 or not ok(r, p):
                 continue
             gap = abs((date.fromisoformat(r["date"]) - pd).days)
             named = bool(pwords & _words(r["description"] + " " + r["payee"])) or partybook.coded(codes, p, r)
@@ -628,7 +679,7 @@ def propose(con, entity_id, recs):
             continue
         pd, pwords = pinfo(p)
         hints = book.hints.get(p["category"])
-        near = [r for r in open_recs if r["row"] not in taken
+        near = [r for r in open_recs if r["row"] not in taken and ok(r, p)
                 and not (r.get("direction") and p["direction"] != r["direction"])
                 and abs((date.fromisoformat(r["date"]) - pd).days) <= 15
                 and (pwords & _words(r["description"] + " " + r["payee"]) or partybook.coded(codes, p, r))]
@@ -638,7 +689,6 @@ def propose(con, entity_id, recs):
             chosen = _sum_to(text_ok, p["amount"], exact=False, base=base)
         if chosen:
             assign(p, chosen)
-    return recs
 
 
 def _signed(r, p):
