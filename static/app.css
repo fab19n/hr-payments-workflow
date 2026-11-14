@@ -334,6 +334,23 @@ fieldset.chk-rule legend { padding: 0 4px; font-size: .85rem; font-weight: 600; 
 .adv-row .adv-note { grid-column: 1 / 3; }
 .adv-row .adv-act { align-self: end; flex-wrap: nowrap; gap: 6px; }
 @media (max-width: 520px) { .adv-row { grid-template-columns: minmax(0, 1fr); } .adv-row .adv-note { grid-column: auto; } }
+/* SQL import: what a fetch of the exported listings found, and the folder it reads */
+.sql-fetch { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+.sql-fetch .sql-unused { display: grid; gap: 2px; }
+.sql-folder { margin-top: 6px; }
+.sql-folder summary { cursor: pointer; color: var(--muted); font-size: .88rem; }
+.sql-folder .row { margin-top: 6px; }
+/* SQL import: the account lines of a document (SQL's GL Journal of Transaction), opened from its pill */
+button.pill.pill-btn { border: 0; font: inherit; font-size: .76rem; font-weight: 600; cursor: pointer; }
+button.pill.pill-btn:hover { filter: brightness(.95); text-decoration: underline; }
+.sql-lines-row > td { background: var(--bg); padding: 10px 12px; }
+.sql-doc { display: grid; gap: 6px; }
+.sql-doc details summary { cursor: pointer; }
+table.sql-lines tr.sql-bank-line td { background: var(--accent-soft); }
+table.sql-lines tr.sql-lines-total td { font-weight: 600; border-top: 1px solid var(--line-strong); }
+.sql-warn { display: grid; gap: 2px; padding: 8px 10px; border-radius: 6px; background: var(--warn-soft); }
+.warn-text { color: var(--warn); }
+
 /* Paste a list: a wider drawer for the preview's table, and the pasted text kept small */
 .drawer:has(#pasteForm) { width: min(860px, 100vw); }
 #ps-text { font-size: .8rem; resize: vertical; }

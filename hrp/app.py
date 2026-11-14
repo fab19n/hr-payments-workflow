@@ -14,8 +14,8 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, checklistbook, config, budget as stored, db, masters, nextup, recon, reports,
-               monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlimport, statements)
+from . import (appsettings, audit, auditpack, auditread, checklistbook, config, budget as stored, db, ledger, masters, nextup, recon, reports,
+               monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -186,6 +186,7 @@ def meta():
         "doc_info": {k: {"active": d["active"], "from_sql": d["from_sql"], "system": d["system"]} for k, d in R.docs.items()},
         "required": {k: (R.set_for(k) or R.set_for("other") or {"docs": []})["docs"] for k in R.types}, "sql_only": sorted(R.sql_only),
         "data_dir": str(DATA_DIR), "backup_dir": SETTINGS.get("backup_dir") or "", "settings": appsettings.values(),
+        "sql_exports_dir": sqlfetch.folder_of(SETTINGS), "sql_exports_default": not (SETTINGS.get("sql_exports_dir") or "").strip(),
         **_meta_monthly(c),
         "parties": rows(c.execute("""SELECT id, entity_id, kind, name, short_name, sql_code, active FROM parties
                                      ORDER BY name COLLATE NOCASE, id""")) if partybook.ready(c) else [],
@@ -1312,6 +1313,9 @@ def open_payments():
 _pending_sql = {}  # token -> (entity_id, filename, data); one person uses this app, so memory is enough
 PASTED = "SQL listing pasted"  # how a pasted listing's file is named
 _preview_made = {}  # token -> {payment id: (payee id, month)} for payments the preview set up only for its suggestions
+FETCHED = "SQL exports fetched"  # how the table put together from a folder of exported listings is named
+REPORTS_FETCHED = "SQL reports fetched"  # how a fetch that read only SQL's general-ledger reports is named
+_pending_fetch = {}  # token -> {review: what the fetch found, sources: [(name, data, month)] the listings it read, gl: its GL reports}
 
 
 def _parse_sql(token, header_row=None, mapping=None):
@@ -1328,7 +1332,7 @@ def _parse_sql(token, header_row=None, mapping=None):
 @app.post("/api/sql/preview")
 def sql_preview():
     c = con()
-    pasted = False
+    pasted = fetching = False
     try:
         if request.files.get("file"):
             f = request.files["file"]
@@ -1345,6 +1349,24 @@ def sql_preview():
             ext = "xml" if "<DATAPACKET" in b["text"][:500] else "txt"
             name = f"{PASTED} {datetime.now():%Y%m%d-%H%M}.{ext}"
             _pending_sql[token] = (int(b["entity_id"]), name, b["text"].encode("utf-8"))
+            hr, mp = None, None
+        elif request.get_json().get("fetch"):
+            # One click: every SQL listing and general-ledger report exported to the folder, whatever the files are
+            # called, put together. Listings with nothing new in them are only kept (with the reports), not read again.
+            b = request.get_json()
+            fetching = True
+            eid = int(b["entity_id"])
+            got = sqlfetch.gather(c, eid, sqlfetch.folder_of(SETTINGS))
+            review = {k: got[k] for k in ("folder", "files", "other", "entries", "new", "already")}
+            if not got["new"] and not got["gl"]:  # nothing to import: the review alone says why
+                return jsonify({"entity_id": eid, "records": [], "nothing_new": True, "fetch": review})
+            token = secrets.token_hex(8)
+            _pending_sql[token] = (eid, f"{FETCHED} {datetime.now():%Y%m%d-%H%M}.csv", got["csv"] if got["new"] else b"")
+            _pending_fetch[token] = {"review": review, "sources": got["sources"], "gl": got["gl"]}
+            if not got["new"]:  # SQL's reports only: no entries to match, only account lines to keep
+                return jsonify({"token": token, "entity_id": eid, "filename": _pending_sql[token][1], "records": [], "header_row": -1,
+                                "headers": [], "mapping": {}, "fields": sqlimport.ALL_FIELDS, "candidates": [], "fetch": review,
+                                "ledger": ledger.preview(c, eid, got["gl"])})
             hr, mp = None, None
         else:
             b = request.get_json()
@@ -1367,6 +1389,8 @@ def sql_preview():
     except sqlimport.SqlImportError as ex:
         return err(str(ex))
     except Exception:
+        if fetching:
+            return err("The exported files couldn't be read. Copy and paste the listings instead, and report this.")
         if pasted:
             return err("The pasted rows couldn't be read. Clear the box, copy the listing in SQL again and paste it.")
         return err("This file couldn't be read. Export the SQL report as Excel (.xlsx) and try again.")
@@ -1394,14 +1418,17 @@ def sql_preview():
     _preview_made[token] = {r["id"]: (r["payee_id"], r["month"]) for r in c.execute(
         "SELECT id, payee_id, month FROM payments WHERE id > ?", (top,))}
     c.rollback()
+    fetched = _pending_fetch.get(token)
     return jsonify({"token": token, "entity_id": eid, "filename": filename, "header_row": header_row, "headers": headers,
-                    "mapping": mapping, "fields": sqlimport.ALL_FIELDS, "records": recs, "candidates": cands})
+                    "mapping": mapping, "fields": sqlimport.ALL_FIELDS, "records": recs, "candidates": cands,
+                    **({"fetch": fetched["review"]} if fetched else {}),
+                    **({"ledger": ledger.preview(c, eid, fetched["gl"], [r["doc_no"] for r in recs if r["kind"] == "journal"])}
+                       if fetched and fetched["gl"] else {})})
 
 
 def _journal_header(c, eid, dockey):
     """The journal (its latest pasted row) that has this SQL document key, or None while its header isn't imported."""
-    return c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND kind = 'journal' AND dockey = ? ORDER BY import_id DESC, id DESC LIMIT 1",
-                     (eid, dockey)).fetchone()
+    return ledger.journal_header(c, eid, dockey)
 
 
 def _journal_text(c, mine, name, head, acct):
@@ -1484,7 +1511,10 @@ def _text_lines_preview(c, eid, lines, chosen):
 
 def _apply_journal_lines(c, eid, filename, data, lines):
     """Keeps the pasted journal lines: the file as a document, as a listing is, and the lines by the journal's document
-    key. Lines pasted again for a journal replace its earlier ones. The import's entries are the lines kept."""
+    key. Lines pasted again for a journal replace its earlier ones. The import's entries are the lines kept. From update
+    26 each journal whose header is imported is also kept in the ledger (a 'grid' read of this import): a journal the
+    ledger already has with the same lines is only noted as seen, one with other lines becomes its next version. Lines
+    whose journal isn't imported yet stay in sql_journal_lines only, and are copied once it is (ledger.copy_pasted)."""
     e = entity(c, eid)
     head = next(filter(None, (_journal_header(c, eid, l["dockey"]) for l in lines)), None)
     did = store(c, entity=e, month=head["doc_date"][:7] if head else f"{datetime.now():%Y-%m}", folder="_SQL exports",
@@ -1498,6 +1528,19 @@ def _apply_journal_lines(c, eid, filename, data, lines):
         c.execute("""INSERT INTO sql_journal_lines (entity_id, dockey, import_id, dtlkey, seq, code, description, project, dr, cr)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                   (eid, l["dockey"], imp, l["dtlkey"], l["seq"], l["code"], l["description"], l["project"], l["dr"], l["cr"]))
+    if ledger.ready(c):
+        batch = None
+        for key in keys:
+            jh = ledger.current_header(c, eid, key)  # not under a key the latest listing of its number no longer has
+            if not jh:
+                continue
+            if batch is None:
+                batch = ledger.new_batch(c, eid, origin="sql", report="grid", sql_import_id=imp, document_id=did, file_name=filename)
+            mine = sorted((l for l in lines if l["dockey"] == key), key=lambda l: (l["seq"] is None, l["seq"] or 0))
+            ledger.put_document(c, eid, batch, {
+                "doc_no": jh["doc_no"], "doc_date": jh["doc_date"], "book": "general", "book_label": None,
+                "lines": [{"code": l["code"], "description": l["description"], "project": l["project"],
+                           "dr_sen": ledger.sen(l["dr"]), "cr_sen": ledger.sen(l["cr"])} for l in mine]})
     names = ", ".join((_journal_header(c, eid, k) or {"doc_no": f"key {k}"})["doc_no"] for k in keys)
     db.log(c, f"Imported SQL journal lines '{filename}' for {e['code']}: {len(lines)} lines kept for {names}")
     c.commit()
@@ -1551,16 +1594,29 @@ def sql_apply():
         kept = _apply_journal_lines(c, pending[0], pending[1], pending[2], lines)
         _pending_sql.pop(b["token"], None)
         return jsonify({"added": kept, "linked": 0, "skipped": 0, "bank_lines_matched": 0, "journal_lines": kept})
-    try:
-        eid, filename, data, rows_, header_row, mapping = _parse_sql(b["token"], b["header_row"], b["mapping"])
-        recs = sqlimport.records(rows_, header_row, mapping)
-    except sqlimport.SqlImportError as ex:
-        return err(str(ex))
-    e = entity(c, eid)
-    month = max(r["date"] for r in recs)[:7]
-    did = store(c, entity=e, month=month, folder="_SQL exports", doc_type="sqlexport", filename=filename, data=data)
-    imp = c.execute("INSERT INTO sql_imports (entity_id, filename, document_id, imported_at, entries, linked) VALUES (?, ?, ?, ?, 0, 0)",
-                    (eid, filename, did, db.now())).lastrowid
+    fetched = _pending_fetch.get(b["token"])
+    gl = (fetched or {}).get("gl") or []
+    if gl and pending and not entity(c, pending[0])["uses_sql"]:
+        return err(ledger.NOT_SQL)
+    if gl and pending and pending[2] == b"":
+        # SQL's reports only: there is no listing to read, so the import holds no entries, only the reports' account lines.
+        # It is named after the reports read (each kept as a file of its own), not after a table of entries never made.
+        eid = pending[0]
+        filename = f"{REPORTS_FETCHED} {datetime.now():%Y%m%d-%H%M}: " + ", ".join(g["name"] for g in gl)
+        e, recs = entity(c, eid), []
+        imp = c.execute("INSERT INTO sql_imports (entity_id, filename, document_id, imported_at, entries, linked) VALUES (?, ?, NULL, ?, 0, 0)",
+                        (eid, filename, db.now())).lastrowid
+    else:
+        try:
+            eid, filename, data, rows_, header_row, mapping = _parse_sql(b["token"], b["header_row"], b["mapping"])
+            recs = sqlimport.records(rows_, header_row, mapping)
+        except sqlimport.SqlImportError as ex:
+            return err(str(ex))
+        e = entity(c, eid)
+        month = max(r["date"] for r in recs)[:7]
+        did = store(c, entity=e, month=month, folder="_SQL exports", doc_type="sqlexport", filename=filename, data=data)
+        imp = c.execute("INSERT INTO sql_imports (entity_id, filename, document_id, imported_at, entries, linked) VALUES (?, ?, ?, ?, 0, 0)",
+                        (eid, filename, did, db.now())).lastrowid
     for m in sqlimport.months_of(recs):
         db.auto_open(c, eid, m)
     made = _preview_made.get(b["token"], {})
@@ -1621,13 +1677,34 @@ def sql_apply():
             linked += 1
             touched.add(int(pid))
     c.execute("UPDATE sql_imports SET entries = ?, linked = ? WHERE id = ?", (added, linked, imp))
+    # A fetch keeps the listings it read as well as the table made from them: they are the evidence, and their
+    # fingerprints are how the next fetch knows these files are done.
+    for name, source, source_month in (fetched or {}).get("sources", []):
+        store(c, entity=e, month=source_month, folder="_SQL exports", doc_type="sqlexport", filename=name, data=source)
+    # SQL's general-ledger reports: their account lines kept and their checks stored, in the same transaction. Journal
+    # lines pasted before their journal's header was imported are copied in, now that it may be.
+    kept = None
+    if gl:
+        try:
+            kept = ledger.apply_fetch(c, e, imp, gl)
+        except ledger.LedgerError as ex:
+            c.rollback()
+            return err(str(ex))
+    elif ledger.ready(c):
+        ledger.copy_pasted(c, eid)
     matched = _match_payments(c, eid, touched)
-    db.log(c, f"Imported SQL export '{filename}' for {e['code']}: {added} entries, {linked} linked, {skipped} already imported, "
-              f"{matched} bank lines matched")
+    if recs or not gl:
+        db.log(c, f"Imported SQL export '{filename}' for {e['code']}: {added} entries, {linked} linked, {skipped} already imported, "
+                  f"{matched} bank lines matched"
+                  + (f" (read from {len(fetched['sources'])} exported files in {fetched['review']['folder']})" if fetched else ""))
+    for f in (kept or {}).get("files", []):
+        db.log(c, ledger.log_line(e, f))
     c.commit()
+    _pending_fetch.pop(b["token"], None)
     _pending_sql.pop(b["token"], None)
     _preview_made.pop(b["token"], None)
-    return jsonify({"added": added, "linked": linked, "skipped": skipped, "bank_lines_matched": matched})
+    return jsonify({"added": added, "linked": linked, "skipped": skipped, "bank_lines_matched": matched,
+                    **({"ledger": kept} if kept else {})})
 
 
 # What an SQL voucher's link replaced on a payment, kept (undo_link) so unlinking it can put exactly that back.
@@ -1750,21 +1827,44 @@ def sql_entries():
            payment_id FROM sql_entries WHERE entity_id = ? AND (einvoice IS NOT NULL OR einvoice_status IS NOT NULL)
            ORDER BY doc_date DESC LIMIT 200""", (eid,))))
     ignored = rows(c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'ignored' ORDER BY doc_date DESC", (eid,)))
+    # The account lines SQL's journals gave for each entry, checked now against the chart and the listing.
+    me = int(eid)
+    lines = ledger.entry_lines(c, me, list({x["id"]: x for x in unlinked + other + on_payments + ignored}.values()))
+    counts = ledger.import_lines(c, me)
+    for i in imports:
+        i["lines"] = counts.get(i["id"], 0)
+    orphans = ledger.orphans(c, me) if ledger.ready(c) else {"no_listing": [], "not_in_journal": []}
     return jsonify({"imports": imports, "unlinked": unlinked, "candidates": cands, "documents": other, "einvoices": einv,
-                    "linked": on_payments, "ignored": ignored})
+                    "linked": on_payments, "ignored": ignored, "lines": lines,
+                    "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans}})
+
+
+@app.get("/api/ledger/doc")
+def ledger_doc():
+    """One SQL document's account lines, every version kept, with the checks on the current one. Read-only."""
+    c = con()
+    if not ledger.ready(c):
+        return err("The records need update 26 to show account lines. Restart the app.")
+    eid = int(request.args["entity"])
+    view = ledger.doc_view(c, eid, request.args.get("doc_no") or "")
+    if not view["versions"]:
+        return err("SQL's Journal of Transaction hasn't given the lines of this document yet.", 404)
+    return jsonify({**view, "bank_codes": sorted(ledger.bank_codes(c, eid))})  # so the page can mark the bank's lines
 
 
 def _journal_moves(c, eid, entries, as_amount=False):
-    """Gives each journal in the rows bank_move: what its pasted lines move on the bank account (money in above 0), or None
-    when it moves nothing there. With as_amount (the rows are linked ones), a journal shows that as its amount and direction, as a voucher does."""
+    """Gives each journal in the rows bank_move: what its lines (from SQL's Journal of Transaction, else pasted) move on the
+    bank account (money in above 0), or None when it moves nothing there. With as_amount (the rows are linked ones), a
+    journal shows that as its amount and direction, as a voucher does. Rows are matched by doc no.; the document key, when
+    a row has one, finds its pasted lines."""
     if not any(x["kind"] == "journal" for x in entries):
         return
     acct = recon.cash_book_account(c, eid)
-    moves = recon.journal_moves(c, eid, [x.get("dockey") for x in entries if x["kind"] == "journal"],
+    moves = recon.journal_moves(c, eid, [(x["doc_no"], x.get("dockey")) for x in entries if x["kind"] == "journal"],
                                 recon.bank_gl_code(c, acct) if acct else None)
     for x in entries:
         if x["kind"] == "journal":
-            x["bank_move"] = moves.get(x.get("dockey"))
+            x["bank_move"] = moves.get((x["doc_no"] or "").strip().upper())
             if as_amount and x["bank_move"] is not None:
                 x["amount"], x["direction"] = abs(x["bank_move"]), "in" if x["bank_move"] > 0 else "out"
 
@@ -1788,16 +1888,17 @@ def _payment_from_entry(c, s, category=None):
 
 
 def _as_voucher(c, s, strict=True):
-    """The SQL entry as the payment it records: a voucher as it is; a journal that moves the bank (its pasted lines on the
-    bank account's GL code) as a voucher for what it moves there, in the direction of its sign, not for its total. A
-    journal that moves nothing there is refused (strict), or taken as it is."""
+    """The SQL entry as the payment it records: a voucher as it is; a journal that moves the bank (its lines on the bank
+    account's GL code, from SQL's Journal of Transaction or pasted) as a voucher for what it moves there, in the direction
+    of its sign, not for its total. A journal that moves nothing there is refused (strict), or taken as it is."""
     if s["kind"] != "journal":
         return s
-    move = recon.journal_move(c, s["entity_id"], s["dockey"]) if s["dockey"] else None
+    move = recon.journal_move(c, s["entity_id"], s["doc_no"], s["dockey"] if "dockey" in s.keys() else None)
     if move is None:
         if strict:
             raise sqlimport.SqlImportError(f"{s['doc_no']} has no lines on the bank account, so it moves no money and can't be linked to a "
-                                           "payment. Paste its lines from SQL first (and set the bank account's GL code in Setup).")
+                                           "payment. Fetch SQL's GL Journal of Transaction (or paste its lines), and set the bank "
+                                           "account's GL code in Setup.")
         return s
     return {**dict(s), "amount": round(abs(move), 2), "direction": "in" if move > 0 else "out"}
 
@@ -1919,6 +2020,12 @@ def sql_entry_update(sid):
         pid = _payment_from_entry(c, _as_voucher(c, s), b["create_payment"].get("category"))
         matched = _match_payments(c, s["entity_id"], {pid})
     elif b.get("status") == "ignored":
+        if s["status"] != "unlinked":
+            # A linked voucher would show as linked and ignored at once, and a journal or invoice would come back as
+            # an unlinked voucher: only an entry not linked to anything can be ignored.
+            what = {"linked": "it is linked to a payment: unlink it first", "journal": "it is a journal",
+                    "invoice": "it is an invoice", "ignored": "it is ignored already"}.get(s["status"], "it isn't an unlinked voucher")
+            return err(f"{s['doc_no']} can't be ignored: {what}.")
         c.execute("UPDATE sql_entries SET status = 'ignored' WHERE id = ?", (sid,))
         db.log(c, f"Ignored SQL entry {s['doc_no']}")
     c.commit()
@@ -1941,7 +2048,9 @@ def sql_entry_unignore(sid):
     c = con()
     s = c.execute("SELECT * FROM sql_entries WHERE id = ?", (sid,)).fetchone() or abort(404)
     if s["status"] == "ignored":
-        c.execute("UPDATE sql_entries SET status = 'unlinked' WHERE id = ?", (sid,))
+        # Back to what it was: a journal or an invoice keeps its own kind, a voucher still on a payment is linked.
+        c.execute("""UPDATE sql_entries SET status = CASE WHEN kind IN ('journal', 'invoice') THEN kind
+                     WHEN payment_id IS NOT NULL THEN 'linked' ELSE 'unlinked' END WHERE id = ?""", (sid,))
         db.log(c, f"SQL entry {s['doc_no']} no longer ignored")
     c.commit()
     return jsonify({"ok": True, "doc_no": s["doc_no"]})
@@ -2273,6 +2382,33 @@ def set_backup_dir():
     audit.event(c, "settings", "backup_dir", {"before": before, "after": path})
     c.commit()
     return jsonify({"backup_dir": path})
+
+
+@app.post("/api/settings/sql-exports-dir")
+def set_sql_exports_dir():
+    """The folder Fetch from SQL exports reads (empty: the Downloads folder of whoever runs the app). It must exist;
+    nothing in it is ever changed. Saved in settings.json with the other keys kept."""
+    b = request.get_json(silent=True)
+    path = b.get("sql_exports_dir") if isinstance(b, dict) else None
+    path = path.strip().strip('"') if isinstance(path, str) else None
+    if path is None:
+        return err("Give the folder as text.")
+    if path:
+        w = PureWindowsPath(path)
+        if not (w.drive and w.root):
+            return err("Give the full path of the folder, starting with the drive letter, for example C: and then the folders.")
+        if not Path(path).is_dir():
+            return err("That folder can't be found. Check the path, or leave it empty to use your Downloads folder.")
+    saved = json.loads(config.SETTINGS_FILE.read_text(encoding="utf-8")) if config.SETTINGS_FILE.exists() else {}
+    before = SETTINGS.get("sql_exports_dir") or ""
+    saved["sql_exports_dir"] = path
+    config.save_settings(saved)
+    SETTINGS["sql_exports_dir"] = path
+    c = con()
+    db.log(c, f"SQL exports folder set to {path}" if path else "SQL exports folder set back to the Downloads folder")
+    audit.event(c, "settings", "sql_exports_dir", {"before": before, "after": path})
+    c.commit()
+    return jsonify({"sql_exports_dir": sqlfetch.folder_of(SETTINGS), "default": not path})
 
 
 def _setup_call(fn, preview=None):

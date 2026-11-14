@@ -90,8 +90,24 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
 5. **SQL import** (AISB) – sign in to SQL Account yourself, export the PV / JV / Cash Book listing to Excel, and import it here.
    Each entry's doc no. is saved on the payment it records; estimated bills take SQL's actual amount. Entries in SQL but not
    in the tracker are listed so nothing is missed. Re-importing the same export is safe.
-   A journal that moves the bank counts in the reconciliation once its lines (SQL's journal detail grid) are pasted on the SQL page
-   and the bank account's GL code is set in Setup.
+   **Fetch from SQL exports** reads every listing exported from SQL Account in one click: in SQL, the arrow beside the print
+   button › Export to Microsoft Excel Workbook, saved in `SQL Drive on SQL Connect › Download` (the browser then downloads
+   it). The files are read by what they hold, not by their names, from your Downloads folder or the folder saved on the SQL
+   page (`sql_exports_dir` in `settings.json`), and each document is shown once as new or already imported. A listing that
+   doesn't add up to its own grand total, or belongs to another company, is left out with the reason; nothing in the folder is
+   changed. It reads the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice and
+   Customer Payment listings, not their GST layouts (`hrp/sqlreport.py`, `hrp/sqlfetch.py`). A document in two listings is
+   kept once, with what each says (the cash book's description and cheque no., the customer payment listing's name and
+   code). The same click reads SQL's general-ledger reports exported for the same dates: the **GL Journal of
+   Transaction** (the account lines of every voucher, receipt, journal and invoice), the **GL Ledger** (Local - Ledger -
+   Detail, Level 1 or V2) and the **Trial Balance** (This Month vs This Year with Opening) (`hrp/sqlgl.py`). A report that
+   doesn't add up to its own totals is left out whole, with the reason. The lines are kept per document with versions
+   (`hrp/ledger.py`): a document exported again with other lines becomes its next version, one SQL no longer prints in the
+   journal's period is marked so, and nothing is ever edited or deleted. Each entry on the SQL page shows its lines and
+   whether they balance and agree with the listing, and **Checks against SQL's reports** lists where the ledger or trial
+   balance differ from the lines. A journal that moves the bank counts in the reconciliation from its lines once the bank
+   account's GL code is set in Setup (pasting its detail grid still works); a signed-off month this changes is named in the
+   preview and the activity log, and stays signed off. e-Invoice details still come from copy and paste.
 6. **Audit pack** – **Before you print** lists what the month still needs: bank statements not imported, lines to
    explain, payments not complete and what each lacks, checklist documents missing, checklist items not done, payments
    paid but not in SQL (AISB), and files that won't print (emails, Excel, password PDFs, missing files). Click a line to

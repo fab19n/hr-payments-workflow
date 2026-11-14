@@ -498,6 +498,8 @@ USES = {  # (one, many, how to count)
                                              AND c.entity_id = g.entity_id AND c.parent_code = g.code"""),
         ("SQL entry", "SQL entries", """SELECT COUNT(*) FROM sql_entries s, gl_accounts g WHERE g.id = ? AND s.entity_id = g.entity_id
                                         AND s.code = g.code"""),
+        ("SQL account line", "SQL account lines", """SELECT COUNT(*) FROM ledger_lines l, gl_accounts g WHERE g.id = ?
+                                                     AND l.entity_id = g.entity_id AND l.account_code = UPPER(TRIM(g.code))"""),
     ],
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),

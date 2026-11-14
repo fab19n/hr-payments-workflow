@@ -9,6 +9,7 @@ SETTINGS_FILE = PROGRAM_DIR / "settings.json"
 DEFAULTS = {
     "data_dir": r"C:\HR-Records",
     "backup_dir": "",  # e.g. an external drive like E:\HR-Backup
+    "sql_exports_dir": "",  # where SQL Account exports are saved; empty: the Downloads folder
     "port": 8626,
 }
 

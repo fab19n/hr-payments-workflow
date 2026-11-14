@@ -9,6 +9,8 @@ import zipfile
 import xml.etree.ElementTree as ET
 from datetime import date, datetime
 
+from . import sqlreport
+
 FIELDS = {
     "doc_no": ("doc no", "docno", "document no", "doc. no", "pv no", "voucher no", "ref", "reference", "no."),
     "date": ("doc date", "docdate", "date", "posting date", "trans date"),
@@ -52,9 +54,20 @@ def read_rows(filename, data):
     if data.lstrip()[:200].lstrip(b"\xef\xbb\xbf").startswith((b"<?xml", b"<DATAPACKET")) and b"<DATAPACKET" in data[:500]:
         return _read_datapacket(data)
     if name.endswith(".xlsx") or name.endswith(".xlsm"):
+        printed = report_rows(data)  # a listing exported with SQL Account's print button: a printed page, not a table
+        if printed:
+            return printed
         from openpyxl import load_workbook
-        wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
-        return [list(r) for r in wb.worksheets[0].iter_rows(values_only=True)]
+        try:
+            wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+            return [list(r) for r in wb.worksheets[0].iter_rows(values_only=True)]
+        except Exception:
+            # SQL Account writes workbooks openpyxl refuses (a WindowWidth attribute): read the sheet's own XML
+            try:
+                return sqlreport.read_xlsx(data)[0]
+            except Exception:
+                pass
+            raise
     if name.endswith(".xls"):
         import xlrd
         book = xlrd.open_workbook(file_contents=data)
@@ -83,6 +96,31 @@ def read_rows(filename, data):
 DATAPACKET_COLUMNS = ["Doc No", "Doc Type", "Doc Date", "Description", "Company Name", "DR", "CR", "Amount",
                       "Cheque No", "e-Invoice UUID", "e-Invoice status", "e-Invoice link",
                       "SQL code", "Payment method", "Doc key", "Currency"]
+
+
+def listing_rows(entries):
+    """Documents read from exported listings ({doc_no, doc_type, date, description, amount, cheque_no, payee, code}), as
+    rows under the headings a pasted listing gets, so both are matched the same way."""
+    blank = [""] * len(DATAPACKET_COLUMNS)
+    at = {name: i for i, name in enumerate(DATAPACKET_COLUMNS)}
+    rows = [list(DATAPACKET_COLUMNS)]
+    for e in entries:
+        row = list(blank)
+        row[at["Doc No"]], row[at["Doc Type"]], row[at["Doc Date"]] = e["doc_no"], e["doc_type"], e["date"]
+        row[at["Description"]], row[at["Amount"]], row[at["Cheque No"]] = e["description"], f"{e['amount']:.2f}", e["cheque_no"]
+        row[at["Company Name"]], row[at["SQL code"]] = e.get("payee", ""), e.get("code", "")
+        rows.append(row)
+    return rows
+
+
+def report_rows(data):
+    """The rows of a listing exported from SQL Account's print button, or None when the file is any other workbook.
+    Every entry carries the document type its listing gives it (a payment voucher may be numbered CLAIMS_NOV26)."""
+    try:
+        rep = sqlreport.parse(data)
+    except sqlreport.ReportError as ex:
+        raise SqlImportError(str(ex))
+    return listing_rows(rep["entries"]) if rep else None
 
 
 def _first(a, *keys):
