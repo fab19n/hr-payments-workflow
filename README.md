@@ -107,7 +107,14 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    whether they balance and agree with the listing, and **Checks against SQL's reports** lists where the ledger or trial
    balance differ from the lines. A journal that moves the bank counts in the reconciliation from its lines once the bank
    account's GL code is set in Setup (pasting its detail grid still works); a signed-off month this changes is named in the
-   preview and the activity log, and stays signed off. e-Invoice details still come from copy and paste.
+   preview and the activity log, and stays signed off. Fetch also reads a copy of SQL's **MyInvois Transaction** screen
+   (click its grid, Ctrl+A, Ctrl+C, paste it into a new Excel workbook with its headings and save it in the exports folder
+   under any name; an older copy without headings is read too). It is the company's whose TIN (Setup › Companies) it
+   holds (`hrp/myinvois.py`): each e-Invoice is kept by its UUID, a later copy updates its status (an e-Invoice
+   cancelled) and one it leaves out is kept. The company's own e-Invoices and self-billed PVs fill in the e-Invoice of the
+   SQL document with the same number, so the checklist sees them validated (or cancelled); those received are matched to
+   supplier invoices and payment vouchers, and the valid ones not found in SQL's books are listed on the SQL page.
+   e-Invoice details can still come from copy and paste of SQL's invoice grid.
 6. **Audit pack** – **Before you print** lists what the month still needs: bank statements not imported, lines to
    explain, payments not complete and what each lacks, checklist documents missing, checklist items not done, payments
    paid but not in SQL (AISB), and files that won't print (emails, Excel, password PDFs, missing files). Click a line to

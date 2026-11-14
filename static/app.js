@@ -1412,8 +1412,9 @@ function paymentOptions(cands, x, sel) {
     ? `<optgroup label="${x.direction === "in" ? "Payments out (if this refunds one)" : "Money in (if this pays one back)"}">${opts(other)}</optgroup>` : "");
 }
 // The Import button's text: the entries not imported yet, and how many of them are linked.
-const applyLabel = p => !p.records.filter(r => !r.exists).length && p.ledger ? "Keep account lines"
-  : `Import ${p.records.filter(r => !r.exists).length} entries (${p.records.filter(r => (r.payment_id || r.task_id) && !r.exists || r.exists && r.kind === "invoice" && r.payment_id).length} linked)${p.ledger ? " and keep account lines" : ""}`;
+const applyLabel = p => !p.records.filter(r => !r.exists).length && (p.ledger || p.myinvois)
+  ? [p.ledger ? "Keep account lines" : "", p.myinvois ? "Keep MyInvois e-Invoices" : ""].filter(Boolean).join(" and ").replace(" and Keep", " and keep")
+  : `Import ${p.records.filter(r => !r.exists).length} entries (${p.records.filter(r => (r.payment_id || r.task_id) && !r.exists || r.exists && r.kind === "invoice" && r.payment_id).length} linked)${p.ledger ? " and keep account lines" : ""}${p.myinvois ? " and keep MyInvois e-Invoices" : ""}`;
 const GL_KIND = { journal: "GL Journal of Transaction", gl_ledger: "GL Ledger", trial_balance: "Trial Balance" };
 const sen = n => n == null ? null : n / 100;
 
@@ -1525,6 +1526,7 @@ async function viewSql(main) {
     return;
   }
   const d = await api(`/api/sql/entries?entity=${state.entity}`);
+  state.miData = d.myinvois;
   const candOpts = u => `<option value="">Choose a payment…</option>${paymentOptions(d.candidates, u)}`;
   const unlinkBtn = x => `<button class="ghost small" data-sql-unlink="${x.id}">Unlink</button>`;
   const unRow = u => `<tr><td class="mono">${esc(u.doc_no)}</td><td>${shortDate(u.doc_date)}</td><td>${esc(u.description)}${u.payee ? `<div class="note">${esc(u.payee)}</div>` : ""}${sqlCodes(u)}${linesPill(d.lines, u)}
@@ -1578,7 +1580,7 @@ async function viewSql(main) {
     <div class="card"><h1>SQL import · ${esc(e.code)}</h1>
       <div class="note">Fetch (or paste) each SQL listing for the month: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to this tracker; customer invoices are filed against their checklist item of their own month (the e-Invoices for the fund received and the office rental) and linked to the money in they are for (the tenant's rent), and a payroll journal, if there is one, against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine.</div>
       <div class="row spread" style="align-items:flex-start;gap:16px"><div><h3>Fetch exported listings (one click)</h3>
-          <div class="note">Reads every SQL listing saved in <b>${esc(state.meta.sql_exports_dir)}</b>, whatever the files are called, and shows what is new and what is already imported. In SQL: open the listing, then the arrow beside the print button, <b>Export to Microsoft Excel Workbook</b>, and save it in <b>SQL Drive on SQL Connect › Download</b>. It reads the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice and Customer Payment listings (not their GST layouts). It also reads SQL's <b>GL Journal of Transaction</b> (the account lines of every document), <b>GL Ledger</b> (Local - Ledger - Detail, Level 1) and <b>Trial Balance</b> (This Month vs This Year with Opening): export them for the same dates as the listings, and the lines are kept and checked against SQL's own figures. e-Invoice details still come from copy and paste below.</div>
+          <div class="note">Reads every SQL listing saved in <b>${esc(state.meta.sql_exports_dir)}</b>, whatever the files are called, and shows what is new and what is already imported. In SQL: open the listing, then the arrow beside the print button, <b>Export to Microsoft Excel Workbook</b>, and save it in <b>SQL Drive on SQL Connect › Download</b>. It reads the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice and Customer Payment listings (not their GST layouts). It also reads SQL's <b>GL Journal of Transaction</b> (the account lines of every document), <b>GL Ledger</b> (Local - Ledger - Detail, Level 1) and <b>Trial Balance</b> (This Month vs This Year with Opening): export them for the same dates as the listings, and the lines are kept and checked against SQL's own figures. It also reads a copy of SQL's <b>MyInvois Transaction</b> screen: click its grid, press <b>Ctrl+A</b> then <b>Ctrl+C</b>, paste it into a new Excel workbook with its headings and save it in the same folder under any name.</div>
           <details class="sql-folder"><summary>Use another folder</summary>
             <div class="row" style="align-items:flex-end"><label class="field" style="flex:1"><span>Folder the exports are saved in (leave empty for your Downloads folder)</span><input id="sqlDir" value="${state.meta.sql_exports_default ? "" : esc(state.meta.sql_exports_dir)}" placeholder="${esc(state.meta.sql_exports_dir)}" autocomplete="off"></label>
             <button class="ghost" id="sqlDirSave" type="button">Save folder</button></div></details></div>
@@ -1605,11 +1607,13 @@ async function viewSql(main) {
             : x.kind === "journal" && x.bank_move != null && !x.before_tracking ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Fetch SQL's Journal Voucher and Customer Invoice listings on this page to see them here.</td></tr>`}
       </tbody></table></div></div>
     ${sqlChecksCard(d)}
-    <div class="card"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it.</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Status</th><th></th></tr></thead><tbody>
+    <div class="card"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it. Where a copy of SQL's MyInvois Transaction screen was read, what MyInvois says is shown beside it.</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Status</th><th>MyInvois</th><th></th></tr></thead><tbody>
       ${d.einvoices.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.payee || x.description)}</td><td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
-        <td>${x.payment_id ? unlinkBtn(x) : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">None imported yet.</td></tr>`}
-      </tbody></table></div></div>
+        <td>${x.myinvois ? `<span class="mono">${esc(x.myinvois.uuid)}</span><div class="note">${esc(x.myinvois.type || "")} · ${esc(x.myinvois.status)}${x.myinvois.validated_at ? ` · validated ${esc(x.myinvois.validated_at)}` : ""}</div>` : `<span class="muted">—</span>`}</td>
+        <td>${x.payment_id ? unlinkBtn(x) : ""}</td></tr>`).join("") || `<tr><td colspan="7" class="empty">None imported yet.</td></tr>`}
+      </tbody></table></div>
+      <div id="miBox">${myinvoisBox(d.myinvois)}</div></div>
     <div class="card"><h2>Imported files</h2>${d.imports.map(i => `<div class="row spread"><span>${esc(i.filename)} <span class="muted">· ${i.entries} entries, ${i.linked} linked${i.lines ? ` · ${plural(i.lines, "line")}` : ""}</span></span><span class="muted">${esc(i.imported_at.replace("T", " "))}</span></div>`).join("") || `<div class="note">None yet.</div>`}</div>`;
   // A listing read but not imported yet stays, with links picked by hand, while you tidy the entries below.
   $("#sqlPaste").value = state.sqlPaste[state.entity] || "";
@@ -1987,6 +1991,35 @@ async function booksDoc(t) {
   } catch (e) { toast(e.message, true); }
 }
 
+// What the copies of SQL's MyInvois Transaction screen say (d.myinvois from /api/sql/entries): every e-Invoice read,
+// filtered to issued, self-billed or received, the valid ones received that none of SQL's documents has, and the copy
+// read last. Nothing here can be changed: a newer copy saved in the exports folder and fetched updates it.
+const MI_WAYS = [["all", "All"], ["issued", "Issued"], ["self_billed", "Self-billed"], ["received", "Received"]];
+// A received e-Invoice matched by its amount alone (hrp/myinvois._by_amount) is a likely match, shown as such.
+const MI_HOW = { amount: "By amount", line: "By a line's amount", sum: "Paid together" };
+
+function myinvoisBox(m) {
+  if (!m) return "";
+  if (!m.rows.length) return `<h3>From MyInvois</h3><div class="note">No copy of MyInvois read yet. In SQL, open the MyInvois Transaction screen, click the grid, press <b>Ctrl+A</b> then <b>Ctrl+C</b>, paste it into a new Excel workbook with its headings and save it in the exports folder under any name, then use Fetch from SQL exports. The company's TIN must be in Setup › Companies.</div>`;
+  const f = state.miFilter || "all", shown = m.rows.filter(r => f === "all" || r.direction === f);
+  const party = r => r.direction === "issued" ? r.buyer_name : r.supplier_name;  // the other side: who it was issued to, or by
+  const src = m.sources[0];
+  return `<h3>From MyInvois</h3>
+    ${src ? `<div class="note">Read from <b>${esc(src.name)}</b> (saved ${esc(String(src.saved).replace("T", " "))}), on ${esc(String(src.read_at).replace("T", " "))}.</div>` : ""}
+    <div class="seg" role="group" aria-label="Which e-Invoices">${MI_WAYS.map(([v, l]) => `<button type="button" data-mi-filter="${v}" aria-pressed="${f === v}">${l}${v === "all" ? "" : ` (${m.counts[v] || 0})`}</button>`).join("")}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>UUID</th><th>Type</th><th>Status</th><th>Validated</th><th>Supplier or buyer</th><th class="num">Total</th><th>In SQL</th></tr></thead><tbody>
+    ${shown.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td class="mono">${esc(r.uuid)}</td><td>${esc(r.type || "")}</td>
+      <td><span class="pill ${r.status === "Valid" ? "ok" : "warn"}">${esc(r.status)}</span></td><td>${esc(r.validated_at || "")}</td>
+      <td>${esc(party(r) || "")}</td><td class="num">${r.currency && r.currency !== "MYR" ? esc(r.currency) + " " : ""}${rmPlain(r.total_sen)}</td>
+      <td>${r.entry_doc_no ? `<span class="mono">${esc(r.entry_doc_no)}</span>${MI_HOW[r.matched_by] ? ` <span class="pill grey" title="A likely match, by amount only: check it">${MI_HOW[r.matched_by]}</span>` : ""}` : `<span class="muted">${r.direction === "other" ? "—" : "Not found"}</span>`}</td></tr>`).join("") || `<tr><td colspan="8" class="empty">None.</td></tr>`}
+    </tbody></table></div>
+    <h3>e-Invoices received but not found in SQL's books${m.unmatched.length ? ` (${m.unmatched.length})` : ""}</h3>
+    <div class="note">Valid e-Invoices issued to the company${m.since ? ` from ${esc(monthName(m.since))}` : ""} that no supplier invoice or payment voucher in SQL has, by the supplier's document number, its TIN and amount, or its amount alone (a whole voucher, or one line of a claim, dated near it). Check each one: it may still have to be entered in SQL.</div>
+    ${m.unmatched.length ? `<div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Supplier</th><th>Supplier TIN</th><th>Issued</th><th class="num">Total</th></tr></thead><tbody>
+      ${m.unmatched.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td>${esc(r.supplier_name || "")}</td><td class="mono">${esc(r.supplier_tin || "")}</td><td>${esc((r.issued_at || r.received_at || "").slice(0, 10))}</td>
+        <td class="num">${r.currency && r.currency !== "MYR" ? esc(r.currency) + " " : ""}${rmPlain(r.total_sen)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="note">None: every valid e-Invoice received is in SQL's books.</div>`}`;
+}
+
 function einvPill(x) {
   if (!x.einvoice && !x.einvoice_status) return `<span class="muted">—</span>`;
   const ok = (x.einvoice_status || "").startsWith("Validated") && !x.taken_back_by;
@@ -2010,16 +2043,19 @@ function sqlFetchReview(f) {
   const read = f.files.filter(x => x.status === "read"), before = f.files.filter(x => x.status === "imported_before"),
     copies = f.files.filter(x => x.status === "copy"), unused = f.files.filter(x => !["read", "imported_before", "copy"].includes(x.status));
   const span = x => x.period?.[0] ? `, ${shortDate(x.period[0])} to ${shortDate(x.period[1])}` : x.period?.[1] ? `, as at ${shortDate(x.period[1])}` : "";
-  const listings = read.filter(x => !x.report), reports = read.filter(x => x.report);
+  const listings = read.filter(x => !x.report), reports = read.filter(x => x.report && x.report !== "myinvois"),
+    copies_mi = read.filter(x => x.report === "myinvois");
   const left = [before.length ? `${n(before.length, "file")} imported before` : "", copies.length ? `${n(copies.length, "copy")}`.replace("copys", "copies") + " of a file read" : "",
     f.other ? (f.other === 1 ? "1 other workbook that isn't an SQL listing or report" : `${f.other} other workbooks that aren't SQL listings or reports`) : ""].filter(Boolean);
   return `<div class="sql-fetch">
     <div>${listings.length ? `<b>${n(listings.length, "listing")} read</b> from ${esc(f.folder)}: ${n(f.entries, "document")}, <b>${f.new} new</b>, ${f.already} already imported.`
-      : `No new SQL listing was found in ${esc(f.folder)}.`}${reports.length ? ` <b>${n(reports.length, "report")} of SQL's general ledger read.</b>` : ""}</div>
+      : `No new SQL listing was found in ${esc(f.folder)}.`}${reports.length ? ` <b>${n(reports.length, "report")} of SQL's general ledger read.</b>` : ""}${copies_mi.length ? ` <b>MyInvois e-Invoices: ${copies_mi.reduce((a, x) => a + x.rows, 0)}</b>.` : ""}</div>
     ${listings.map(x => `<div class="row spread"><span>${esc(x.name)} <span class="muted">· ${esc(x.title)}${span(x)}</span></span>
       <span class="muted">${x.new} new, ${x.already} already imported${x.repeated ? `, ${x.repeated} also in another file` : ""}</span></div>`).join("")}
     ${reports.map(x => `<div class="row spread"><span>${esc(x.name)} <span class="muted">· ${esc(GL_KIND[x.report] || x.title)}${span(x)}</span></span>
       <span class="muted">${x.report === "journal" ? `${n(x.docs, "document")}, ${n(x.lines, "line")}` : n(x.accounts, "account")}</span></div>`).join("")}
+    ${copies_mi.map(x => `<div class="row spread"><span>${esc(x.name)} <span class="muted">· MyInvois e-Invoices${span(x)}</span></span>
+      <span class="muted">${n(x.rows, "e-Invoice")}: ${x.new} new, ${x.changed} status or details changed, ${x.unchanged} unchanged${x.older ? `, ${x.older} left as a later copy says` : ""} (${x.issued} issued, ${x.self_billed} self-billed, ${x.received} received)</span></div>`).join("")}
     ${unused.length ? `<div class="sql-unused"><b>${n(unused.length, "file")} not used</b>${unused.map(x => `<div class="note">${esc(x.name)}: ${esc(x.reason)}</div>`).join("")}</div>` : ""}
     ${left.length ? `<div class="note">Left alone: ${left.join("; ")}.</div>` : ""}</div>`;
 }
@@ -2054,9 +2090,9 @@ function renderSqlPreview(p) {
     : r.kind !== "payment" ? (r.task_id ? `<span class="pill ok">Checklist: ${esc(r.task_title)}</span>` : `<span class="pill grey">${kinds[r.kind]}, kept on file</span>`) + receiptPick(p, r)
     : `<select data-sql-row="${r.row}"><option value="">Not linked</option>${paymentOptions(p.candidates, r, r.payment_id)}</select>${r.task_id ? `<div class="note">Also: ${esc(r.task_title)}</div>` : ""}${changedInSql(r)}`;
   const blocked = p.ledger?.refused && !p.records.filter(r => !r.exists).length;
-  if (p.ledger && !p.records.length) {  // SQL's reports only: account lines to keep, no entries to match
+  if ((p.ledger || p.myinvois) && !p.records.length) {  // SQL's reports or MyInvois copies only: no entries to match
     $("#sqlPreview").innerHTML = `<div class="card">
-      <div class="row spread"><h2>SQL's general-ledger reports</h2><span class="muted">No new listing entries</span></div>
+      <div class="row spread"><h2>${p.ledger ? "SQL's general-ledger reports" : "MyInvois e-Invoices"}</h2><span class="muted">No new listing entries</span></div>
       ${sqlFetchReview(p.fetch)}${sqlLedgerBox(p.ledger)}
       <div class="row"><button class="btn" id="sqlApply" ${blocked ? "disabled" : ""}>${applyLabel(p)}</button><button class="ghost" id="sqlCancel">Cancel</button></div></div>`;
     return;
@@ -4085,10 +4121,13 @@ document.addEventListener("click", async ev => {
         diffs = kept.reduce((a, f) => a + (f.problems || 0), 0);
       const lines = kept.length ? `Kept the account lines of ${plural(docs, "document")} from ${plural(kept.length, "report")} of SQL's${diffs ? `; ${plural(diffs, "difference")} from SQL's reports, listed under Checks against SQL's reports` : ""}` : "";
       const moved = res.recon_changed?.length ? `. The bank reconciliation of signed-off ${res.recon_changed.map(m => monthName(m.month)).join(", ")} changed: it stays signed off; check it again` : "";
-      if (!p.records.length && kept.length) { toast(lines + moved + "."); return render(); }
-      toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${moved}.`);
+      const mi = res.myinvois, miFilled = mi ? mi.notes.filter(x => x.includes("filled in from MyInvois")).length : 0;
+      const einv = mi ? `Kept ${plural(mi.files.reduce((a, f) => a + f.rows, 0), "MyInvois e-Invoice")} (${mi.files.reduce((a, f) => a + f.new, 0)} new, ${mi.files.reduce((a, f) => a + f.changed, 0)} changed); ${plural(miFilled, "SQL document")} filled in` : "";
+      if (!p.records.length && (kept.length || mi)) { toast([lines, einv].filter(Boolean).join(". ") + moved + "."); return render(); }
+      toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${einv ? `. ${einv}` : ""}${moved}.`);
       return render();
     }
+    if (ds.miFilter) { state.miFilter = ds.miFilter; const box = $("#miBox"); if (box) box.innerHTML = myinvoisBox(state.miData); return; }
     if (ds.sqlLines) {
       const row = t.closest("tr"), next = row?.nextElementSibling;
       if (next?.classList.contains("sql-lines-row") && next.dataset.doc === ds.sqlLines) { next.remove(); return; }

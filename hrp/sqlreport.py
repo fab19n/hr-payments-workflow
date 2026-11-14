@@ -413,7 +413,8 @@ def _sheet(data):
 
 def read(data):
     """What a file exported from SQL Account holds: ("listing", listing) for a listing, (kind, report) for a
-    general-ledger report ('journal', 'gl_ledger' or 'trial_balance', read by hrp/sqlgl.py), or None when the file is
+    general-ledger report ('journal', 'gl_ledger' or 'trial_balance', read by hrp/sqlgl.py), ("myinvois", copy) for a
+    copy of SQL's MyInvois Transaction grid saved from Excel (read by hrp/myinvois.py), or None when the file is
     anything else. The general-ledger reports are told apart first: they print a page number but no listing title, so
     listing() would take them for a report it doesn't read. Raises ReportError for an SQL report that can't be read."""
     from . import sqlgl  # sqlgl reads the sheet with this module's helpers
@@ -424,13 +425,17 @@ def read(data):
     if kind:
         return kind, sqlgl.READERS[kind](*sheet)
     rep = listing(*sheet)
-    return ("listing", rep) if rep is not None else None
+    if rep is not None:
+        return "listing", rep
+    from . import myinvois  # a copy of SQL's MyInvois Transaction grid, saved from Excel: no page number, no title
+    rep = myinvois.parse(sheet[0])
+    return ("myinvois", rep) if rep is not None else None
 
 
 def parse(data):
     """The listing in a file exported from SQL Account, or None when the file is anything else (another spreadsheet, or
     not a workbook at all). Raises ReportError for an SQL report that can't be read, and for SQL's general-ledger
-    reports, which are read only by Fetch from SQL exports."""
+    reports and a MyInvois copy, which are read only by Fetch from SQL exports."""
     from . import sqlgl
     sheet = _sheet(data)
     if sheet is None:
@@ -438,4 +443,9 @@ def parse(data):
     kind = sqlgl.detect(*sheet)
     if kind:
         raise ReportError(f"This is SQL's {sqlgl.TITLES[kind]}: save it in the exports folder and use Fetch from SQL exports.")
-    return listing(*sheet)
+    rep = listing(*sheet)
+    if rep is None:
+        from . import myinvois
+        if myinvois.detect(sheet[0]):
+            raise ReportError("This is a copy of SQL's MyInvois Transaction screen: save it in the exports folder and use Fetch from SQL exports.")
+    return rep
