@@ -1054,7 +1054,7 @@ function monthPanel(s) {
       <div class="row">${st.document_id ? `<a class="ghost small" href="/api/documents/${st.document_id}/file" target="_blank">Statement PDF</a>` : ""}
       <button class="btn small" data-rc-review="${st.id}">Review lines</button></div></div>
     <h3>Reconciliation statement</h3>
-    ${s.book.state !== "ok" ? `<div class="note">${esc(s.book.note)}${s.book.note === "Needs book opening" ? ": type this account's book balance under Book opening below." : ": paste the cash book listing for that month on the SQL import page."}</div>` : ""}
+    ${s.book.state !== "ok" ? `<div class="note">${esc(s.book.note)}${s.book.note === "Needs book opening" ? ": type this account's book balance under Book opening below." : " on the SQL import page."}</div>` : ""}
     ${diff != null && Math.abs(diff) >= 0.005 ? `<div class="note">The books are ${money(Math.abs(diff), cur)} ${diff > 0 ? "below" : "above"} the bank.${parts.length ? " That is: " + esc(parts.join("; ")) + "." : ""}</div>` : ""}
     ${rcTable("In the books, not on this statement", s.books_only, cur)}${rcTable("On the statement, not in the books", s.bank_only, cur)}
     ${s.differ.length ? `<div class="tbl-wrap"><h3>Matched, but the amounts differ · ${s.differ.length}</h3><table><thead><tr><th>Payment</th><th class="num">Books</th><th class="num">Statement</th><th class="num">Difference</th></tr></thead><tbody>
@@ -1062,7 +1062,7 @@ function monthPanel(s) {
     ${!s.books_only.length && !s.bank_only.length && !s.differ.length && s.book.state === "ok" ? `<div class="note">Everything on the statement is in the books, and the other way round.</div>` : ""}
     ${gone ? `<div class="note">Not counted as bank movements: ${s.left_out.journals} journal${s.left_out.journals === 1 ? "" : "s"} and ${s.left_out.invoices} customer invoice${s.left_out.invoices === 1 ? "" : "s"} (customer refunds included) in the SQL listing. Fetch SQL's GL Journal of Transaction to count a journal that moves the bank.</div>` : ""}
     ${unk ? `<div class="note">Not counted: ${unk} cash book entr${unk === 1 ? "y" : "ies"} with no money in or out shown, so the books may differ by that amount.</div>` : ""}
-    ${s.uses_sql ? `<div class="note">Paste only the bank's cash book listing for reconciliation: a voucher paid from petty cash or a card would count as a bank movement.</div>` : ""}
+    ${s.uses_sql ? `<div class="note">For the reconciliation, fetch only the bank's cash book listing: a voucher paid from petty cash or a card would count as a bank movement.</div>` : ""}
     ${signBlock(s)}
     <div class="note">Marking a month reconciled is a record kept in this app. Nothing is posted to SQL Account.</div></div>`;
 }
@@ -1430,8 +1430,8 @@ function ledgerDocView(v) {
 // The card of what SQL's own reports said when they were last read: the journal's counts, and the ledger's and trial
 // balance's differences from the account lines, with the checks that couldn't run and why.
 function sqlChecksCard(d) {
-  const reads = d.ledger?.reads || {}, orph = d.ledger?.orphans || { no_listing: [], not_in_journal: [] };
-  if (!Object.keys(reads).length && !orph.no_listing.length && !orph.not_in_journal.length) return "";
+  const reads = d.ledger?.reads || {}, orph = d.ledger?.orphans || { no_listing: [], own_lines: [], not_in_journal: [], before_tracking: 0 };
+  if (!Object.keys(reads).length && !orph.no_listing.length && !(orph.own_lines || []).length && !orph.not_in_journal.length) return "";
   const head = (kind, b) => `<div class="row spread"><h3>${GL_KIND[kind]}</h3><span class="muted">${esc(b.file_name || "")}${b.period_from ? ` · ${shortDate(b.period_from)} to ${shortDate(b.period_to)}` : b.period_to ? ` · as at ${shortDate(b.period_to)}` : ""} · read ${esc((b.read_at || "").replace("T", " "))}</span></div>`;
   const journal = b => {
     const s = b.summary || {};
@@ -1456,13 +1456,18 @@ function sqlChecksCard(d) {
     ${reads.journal ? journal(reads.journal) : ""}
     ${["gl_ledger", "trial_balance"].filter(k => reads[k]).map(k => report(k, reads[k])).join("")}
     ${orph.no_listing.length ? `<h3>In SQL's journal but no listing fetched · ${orph.no_listing.length}</h3>
-      <div class="note">Fetch or paste the listing these are in, so each can be matched to a payment.</div>
+      <div class="note">Fetch SQL's listing these are in on the SQL import page, so each can be matched to a payment.</div>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Section</th><th></th></tr></thead><tbody>
       ${orph.no_listing.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.book)}</td><td><button type="button" class="ghost small" data-sql-lines="${esc(x.doc_no)}">Lines</button></td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${(orph.own_lines || []).length ? `<details><summary><h3 style="display:inline">No listing this app reads yet · ${orph.own_lines.length}</h3></summary>
+      <div class="note">No listing this app reads yet: checked by their account lines and SQL's trial balance. These are in other sections of SQL's journal (cash sales, credit or debit notes, deposits, refunds, contra and the like), so nothing asks for their listing.</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th></th></tr></thead><tbody>
+      ${orph.own_lines.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td><button type="button" class="ghost small" data-sql-lines="${esc(x.doc_no)}">Lines</button></td></tr>`).join("")}</tbody></table></div></details>` : ""}
     ${orph.not_in_journal.length ? `<h3>Listing entries missing from SQL's Journal of Transaction · ${orph.not_in_journal.length}</h3>
-      <div class="note">Dated inside a journal read, but not in it: deleted or renumbered in SQL. Ignore one that SQL no longer has.</div>
+      <div class="note">Dated inside a journal read, but not in it: deleted or renumbered in SQL. If SQL no longer has one, click Deleted in SQL: it is kept here, listed under Ignored, and left out of the checks (Un-ignore puts it back).</div>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th class="num">Amount</th><th></th></tr></thead><tbody>
-      ${orph.not_in_journal.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td class="num">${money(x.amount)}</td><td>${x.can_ignore ? `<button class="ghost small" data-sql-ignore-ids="${x.ids.join(",")}">Ignore</button>` : `<span class="muted">${x.kind === "payment" ? "Unlink it first to ignore it" : ""}</span>`}</td></tr>`).join("")}</tbody></table></div>` : ""}
+      ${orph.not_in_journal.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}${x.gone ? ` <span class="pill bad">No longer in SQL</span>` : ""}</td><td class="num">${money(x.amount)}</td><td>${x.can_confirm ? `<button class="ghost small" data-sql-deleted-ids="${esc(x.ids.join(","))}">Deleted in SQL</button>` : `<span class="muted">Linked to a payment: unlink it first</span>`}</td></tr>`).join("")}</tbody></table></div>` : ""}
+    ${orph.before_tracking ? `<div class="note muted">${plural(orph.before_tracking, "document")} before the first month tracked ${orph.before_tracking === 1 ? "has" : "have"} no listing or ${orph.before_tracking === 1 ? "is" : "are"} missing from the journal; months before tracking aren't checked.</div>` : ""}
   </div>`;
 }
 
@@ -1541,7 +1546,7 @@ async function viewSql(main) {
   };
   main.innerHTML = `${entityPicker()}
     <div class="card"><h1>SQL import · ${esc(e.code)}</h1>
-      <div class="note">Paste each SQL listing for the month in turn: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to this tracker; customer invoices are filed against their checklist item of their own month (the e-Invoices for the fund received and the office rental) and linked to the money in they are for (the tenant's rent), and a payroll journal, if there is one, against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine.</div>
+      <div class="note">Fetch (or paste) each SQL listing for the month: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to this tracker; customer invoices are filed against their checklist item of their own month (the e-Invoices for the fund received and the office rental) and linked to the money in they are for (the tenant's rent), and a payroll journal, if there is one, against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine.</div>
       <div class="row spread" style="align-items:flex-start;gap:16px"><div><h3>Fetch exported listings (one click)</h3>
           <div class="note">Reads every SQL listing saved in <b>${esc(state.meta.sql_exports_dir)}</b>, whatever the files are called, and shows what is new and what is already imported. In SQL: open the listing, then the arrow beside the print button, <b>Export to Microsoft Excel Workbook</b>, and save it in <b>SQL Drive on SQL Connect › Download</b>. It reads the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice and Customer Payment listings (not their GST layouts). It also reads SQL's <b>GL Journal of Transaction</b> (the account lines of every document), <b>GL Ledger</b> (Local - Ledger - Detail, Level 1) and <b>Trial Balance</b> (This Month vs This Year with Opening): export them for the same dates as the listings, and the lines are kept and checked against SQL's own figures. e-Invoice details still come from copy and paste below.</div>
           <details class="sql-folder"><summary>Use another folder</summary>
@@ -1567,7 +1572,7 @@ async function viewSql(main) {
         <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : x.before_tracking ? `<span class="pill grey">Before tracking</span>` : `<span class="muted">—</span>`}
           ${x.kind === "journal" && x.bank_move != null ? `<div class="note">Moves ${money(Math.abs(x.bank_move))} ${x.bank_move > 0 ? "into" : "out of"} the bank, so it counts in the bank reconciliation.</div>` : ""}
           ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">${x.kind === "journal" ? "Payment" : "Receipt"}: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>`
-            : x.kind === "journal" && x.bank_move != null && !x.before_tracking ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Fetch or paste the Journal and invoice listings to see them here.</td></tr>`}
+            : x.kind === "journal" && x.bank_move != null && !x.before_tracking ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Fetch SQL's Journal Voucher and Customer Invoice listings on this page to see them here.</td></tr>`}
       </tbody></table></div></div>
     ${sqlChecksCard(d)}
     <div class="card"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it.</div>
@@ -2028,6 +2033,7 @@ function renderSqlPreview(p) {
   }
   $("#sqlPreview").innerHTML = `<div class="card">
     <div class="row spread"><h2>${esc(p.filename)}</h2><span class="muted">${p.records.length} entries found</span></div>
+    ${(p.signed_off || []).length ? `<div class="note warn-text">New entries fall in ${p.signed_off.map(m => esc(monthName(m))).join(", ")}, whose bank reconciliation is signed off: its book figures may change. Nothing is un-signed: check ${p.signed_off.length === 1 ? "that month" : "those months"} again after importing.</div>` : ""}
     ${p.fetch ? `${sqlFetchReview(p.fetch)}${sqlLedgerBox(p.ledger)}<div class="note">Check each suggested payment, then import. The new documents are listed first.</div>`
       : `<div class="note">Check the columns were read correctly, then check each suggested payment.</div>
     <div class="form">${p.fields.map(f => `<label class="field"><span>${esc(SQL_FIELD_LABELS[f] ?? f)}</span><select data-sql-map="${f}">${colOpts(p.mapping[f])}</select></label>`).join("")}</div>`}
@@ -2948,6 +2954,8 @@ async function settingsSave() {
    imported into records that hold no company yet (hrp/setupfile.py). The template holds the rules only; everything adds
    the companies and what belongs to them, and the recurring payments only when ticked. Saving one is an ordinary
    download (the server notes it in the audit trail); an import is previewed first and asks why. */
+// A signed-off bank reconciliation month an action moved, said after its toast (it stays signed off).
+const reconMoved = r => r.recon_changed?.length ? `. The bank reconciliation of signed-off ${r.recon_changed.map(m => monthName(m.month)).join(", ")} changed: it stays signed off; check it again` : "";
 const moveHref = (what, extra) => `/api/setup/export?what=${what}${extra}`;
 async function setupMove(box) {
   const st = await api("/api/setup/import"), M = state.setup.move ||= { payees: false, from: "", preview: null };
@@ -4044,9 +4052,10 @@ document.addEventListener("click", async ev => {
       if (res.journal_lines) { toast(`Kept ${res.journal_lines} journal lines.`); return render(); }
       const kept = res.ledger?.files || [], docs = kept.filter(f => f.kind === "journal").reduce((a, f) => a + (f.summary?.docs || 0), 0),
         diffs = kept.reduce((a, f) => a + (f.problems || 0), 0);
-      const lines = kept.length ? `Kept the account lines of ${plural(docs, "document")} from ${plural(kept.length, "report")} of SQL's${diffs ? `; ${plural(diffs, "difference")} from SQL's reports, listed under Checks against SQL's reports` : ""}${res.ledger.recon_changed?.length ? `; the bank reconciliation of a signed-off month changed` : ""}` : "";
-      if (!p.records.length && kept.length) { toast(lines + "."); return render(); }
-      toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}.`);
+      const lines = kept.length ? `Kept the account lines of ${plural(docs, "document")} from ${plural(kept.length, "report")} of SQL's${diffs ? `; ${plural(diffs, "difference")} from SQL's reports, listed under Checks against SQL's reports` : ""}` : "";
+      const moved = res.recon_changed?.length ? `. The bank reconciliation of signed-off ${res.recon_changed.map(m => monthName(m.month)).join(", ")} changed: it stays signed off; check it again` : "";
+      if (!p.records.length && kept.length) { toast(lines + moved + "."); return render(); }
+      toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${moved}.`);
       return render();
     }
     if (ds.sqlLines) {
@@ -4091,6 +4100,10 @@ document.addEventListener("click", async ev => {
       const r = await api("/api/sql/entries/ignore", { json: { ids: ds.sqlIgnoreIds.split(",").map(Number) } });
       toast(r.ignored === 1 ? "1 entry ignored; it is listed under Ignored" : `${r.ignored} entries ignored; they are listed under Ignored`); return render();
     }
+    if (ds.sqlDeletedIds) {  // every row of the listing entry; kept, marked ignored, Un-ignore puts it back
+      const r = await api("/api/sql/entries/deleted", { json: { ids: ds.sqlDeletedIds.split(",").map(Number) } });
+      toast(`${r.doc_nos.join(", ")} marked as deleted in SQL; listed under Ignored${reconMoved(r)}`); return render();
+    }
     if (ds.sqlLinkGo) {
       const v = $(`select[data-sql-link="${ds.sqlLinkGo}"]`).value;
       if (!v) return toast("Choose a payment first.", true);
@@ -4103,7 +4116,7 @@ document.addEventListener("click", async ev => {
         : r.removed ? `${r.doc_no} is back under ${list}, and the payment made from it was removed`
         : `${r.doc_no} unlinked from ${r.payment}; it's back under ${list}`); return render();
     }
-    if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.before_tracking ? "Before tracking" : "SQL entries not linked"}`); return render(); }
+    if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.kind === "journal" || r.kind === "invoice" ? "Journals and invoices" : r.before_tracking ? "Before tracking" : "SQL entries not linked"}${reconMoved(r)}`); return render(); }
     if (ds.editPayee) { if (!mayLeave()) return; return await editPayee(ds.editPayee); }
     if (ds.addMonth) {
       const r = await api(`/api/payees/${ds.addMonth}/add-to-month`, { json: { month: state.month } });

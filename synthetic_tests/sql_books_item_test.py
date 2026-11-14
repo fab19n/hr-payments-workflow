@@ -424,7 +424,7 @@ check("a listing entry of the month not in the journal is named",
 write("the entry ignored", ("UPDATE sql_entries SET status = 'ignored' WHERE doc_no = 'PV2610-003'", ()))
 check("documents of the month in the journal with no listing are named, not September's",
       status()["why"] == "2 documents of October 2026 in SQL's GL Journal of Transaction have no listing (PV2610-001, PV2610-002): "
-                         "fetch or paste SQL's listing for October 2026.", status())
+                         "fetch SQL's listing for October 2026 on the SQL import page.", status())
 listing(("PV2609-001", "2026-09-10", 100.0, "unlinked"), ("PV2610-001", "2026-10-15", 200.0, "unlinked"),
         ("PV2610-002", "2026-10-20", 350.0, "unlinked"))
 why = status()["why"]

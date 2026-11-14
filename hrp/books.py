@@ -313,6 +313,21 @@ def year_start(con, eid, day):
     return date(d.year if d.month >= fy else d.year - 1, fy, 1).isoformat()
 
 
+def default_to(con, eid, today=None):
+    """The To date a report opens on when none is given: the last day SQL's reports kept reach (the latest trial
+    balance's as-at day, or the end of a later GL Journal of Transaction or GL Ledger fetched), so the report opens with
+    the newest documents kept; never after today. When a journal reaches past the latest trial balance, the check
+    against SQL says it needs SQL's trial balance as at that day. Today when nothing is kept, and for a company whose
+    books are kept here."""
+    today = (today or date.today()).isoformat()
+    ent = con.execute("SELECT uses_sql FROM entities WHERE id = ?", (eid,)).fetchone()
+    if not ent or not ent["uses_sql"] or not _exists(con, "ledger_batches"):
+        return today
+    r = con.execute("""SELECT MAX(period_to) FROM ledger_batches WHERE entity_id = ? AND period_to IS NOT NULL
+                       AND report IN ('trial_balance', 'journal', 'gl_ledger')""", (eid,)).fetchone()[0]
+    return min(r, today) if r else today
+
+
 # ---------- opening_at ----------
 
 def opening_at(con, eid, code, day):
@@ -330,7 +345,7 @@ def opening_at(con, eid, code, day):
 # ---------- the general ledger ----------
 
 def _period_of(B, d_from, d_to):
-    d_to = _iso(d_to) or date.today().isoformat()
+    d_to = _iso(d_to) or default_to(B.con, B.eid)
     d_from = _iso(d_from) or B.year_start(d_to)
     if d_from > d_to:
         d_from, d_to = d_to, d_from

@@ -14,13 +14,14 @@ import csv
 import hashlib
 import io
 import re
+import zipfile
 from datetime import datetime
 from pathlib import Path
 
 from . import sqlimport, sqlreport
 
 EXTENSIONS = (".xlsx", ".xlsm")
-MAX_BYTES = 10 * 1024 * 1024   # a listing is a few hundred KB; a larger workbook is something else
+MAX_BYTES = sqlreport.MAX_BYTES  # a larger workbook is not read (one from SQL is named as too large)
 MAX_FILES = 500                # the newest ones, so a crowded Downloads folder stays quick
 
 
@@ -67,13 +68,37 @@ def _files(folder):
     return found[:MAX_FILES]
 
 
+# The titles SQL Account prints on the listings and general-ledger reports this app reads.
+SQL_TITLES = tuple(sqlreport.LISTINGS) + ("gl journal of transaction", "gl ledger", "trial balance")
+PEEK = 256 * 1024  # how much of a large workbook's text is looked at to tell whether SQL Account wrote it
+
+
+def _from_sql(path):
+    """Whether a workbook looks like one SQL Account exported, read cheaply without unpacking it whole: its workbook part
+    has the attribute SQL Account writes (WindowWidth, which Excel spells windowWidth), or the start of its text names a
+    report title this app reads."""
+    try:
+        with zipfile.ZipFile(path) as z:
+            names = set(z.namelist())
+            if "xl/workbook.xml" in names and z.getinfo("xl/workbook.xml").file_size <= PEEK:
+                if b"WindowWidth=" in z.read("xl/workbook.xml"):
+                    return True
+            if "xl/sharedStrings.xml" in names:
+                with z.open("xl/sharedStrings.xml") as f:
+                    text = f.read(PEEK).decode("utf-8", "ignore").lower()
+                return any(t in text for t in SQL_TITLES)
+    except (OSError, zipfile.BadZipFile, KeyError, ValueError):
+        return False
+    return False
+
+
 def gather(con, entity_id, folder):
     """Every SQL listing and general-ledger report in the folder for this company, put together.
 
     Returns {folder, files, other, entries, new, already, csv, sources, gl}:
       files    what was found, newest first: {name, saved, status, reason, title, period, entries, new, already, repeated};
                a general-ledger report has report (its kind) and docs and lines (a journal) or accounts instead of entries
-               status: read | imported_before | copy | other_company | unknown_company | unreadable
+               status: read | imported_before | copy | other_company | unknown_company | unreadable | too_large
       other    how many workbooks are not SQL listings or reports (left alone)
       entries, new, already   the documents in the listings read, each counted once
       csv      those documents as one table (sqlimport reads it like a pasted listing), new ones first; None when there are none
@@ -90,7 +115,13 @@ def gather(con, entity_id, folder):
     for path, st in _files(folder):
         info = {"name": path.name, "saved": datetime.fromtimestamp(st.st_mtime).isoformat(timespec="seconds"), "status": "read", "reason": ""}
         if st.st_size > MAX_BYTES:
-            other += 1
+            # An SQL report too large to read is named, so it isn't missed without a word; any other large workbook (a
+            # budget saved in Downloads) is left alone, as one that is no listing.
+            if _from_sql(path):
+                files.append({**info, "status": "too_large", "reason": f"too large to read ({st.st_size / 1024 / 1024:.1f} MB; "
+                                                                         f"at most {MAX_BYTES // (1024 * 1024)} MB). Export a shorter period."})
+            else:
+                other += 1
             continue
         try:
             data = path.read_bytes()

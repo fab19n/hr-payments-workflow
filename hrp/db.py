@@ -327,6 +327,10 @@ MIGRATIONS = [
     #     never stored as a tick. Each company kept in SQL with a checklist gets it from the earliest month not filed
     #     (filed months never change), added to the months already set up from then on. Nothing else changes.
     checklistbook.install_sql_books,
+    # 31. When an SQL listing entry was confirmed as deleted in SQL (empty: never), so the bank reconciliation leaves a
+    #     voucher SQL no longer has out of the cash book, while an ignored correction SQL still has keeps counting.
+    #     Empty for every entry to begin with. Nothing else in the records changes.
+    lambda con: add_column(con, "sql_entries", "deleted_in_sql", "TEXT"),
 ]
 
 
@@ -1152,7 +1156,7 @@ def payment_flag(con, ent, pay, today):
         if not latest or due_on > latest:
             upto = f"the SQL entries imported go up to {short_day(latest)}" if latest else "no SQL listing is imported yet"
             return _flag("waiting_sql", "Waiting for SQL record", "warn",
-                         f"{probably}: {upto}. Paste the latest SQL listing to record it." + deadline)
+                         f"{probably}: {upto}. Fetch SQL's latest listings on the SQL import page to record it." + deadline)
     return _flag("waiting_statement", f"Waiting for {mon} statement", "warn",
                  f"{probably}: the {mon} bank statement isn't imported yet. Import it on the Bank statements page to "
                  "confirm this payment." + deadline)

@@ -348,7 +348,8 @@ def _in_sql(con, e, worked, pays, cur):
         mons = list(dict.fromkeys(_mon(d) for d in sorted(p["paid_date"] or p["due_date"] for p in unrecorded)))
         kinds = list(dict.fromkeys("Official Receipt" if p["direction"] == "in" else "Payment Voucher" for p in unrecorded))
         what = db._names(unrecorded, unrecorded) if n == 1 else f"{n} {_kinds(unrecorded, rulebook.get(con))}"
-        text = (f"Paste the {db._listed(mons)} {db._listed(kinds)} listing{_s(len(mons) * len(kinds))}: {what} not recorded"
+        text = (f"Fetch SQL's {db._listed(mons)} {db._listed(kinds)} listing{_s(len(mons) * len(kinds))} on the SQL import page: "
+                f"{what} not recorded"
                 + (f"; {unlinked}" if k else ""))
     else:
         text = f"Link or ignore {unlinked}"

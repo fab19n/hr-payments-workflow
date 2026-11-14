@@ -122,7 +122,8 @@ def movements(con, ent, acct, month):
     amount (money in above 0, out below), payment_id, status, doc_type}], in, out, left_out (what an SQL listing holds
     that isn't a bank movement: {journals, invoices (customer refunds too), unknown (cash book entries with no direction)}}.
     SQL: every receipt (OR) and payment (PV) dated in the month, whatever its status here: an ignored correction is in
-    SQL's books too. Customer invoices (IV) are left out: they move no bank balance by themselves. So is a journal (JV)
+    SQL's books too; only one confirmed as deleted in SQL is left out (SQL's cash book no longer has it). Customer
+    invoices (IV) are left out: they move no bank balance by themselves. So is a journal (JV)
     whose bank side can't be told: its header carries only one total, so it counts only once its lines are known (read
     from SQL's GL Journal of Transaction, or pasted from its grid) and some of them are on the bank account's GL code
     (bank_gl_code); it then counts as the net of those lines, in or out, like a voucher. A company's other accounts have no SQL listing of their own and
@@ -137,6 +138,9 @@ def movements(con, ent, acct, month):
                              AND NOT (COALESCE(doc_no, '') <> '' AND EXISTS (SELECT 1 FROM sql_entries n WHERE n.entity_id = e.entity_id
                                       AND n.doc_no = e.doc_no AND n.import_id > e.import_id)) ORDER BY doc_date, doc_no, id""",
                            (ent["id"], month)).fetchall()
+        # An entry confirmed as deleted in SQL (update 31) is no longer in SQL's cash book, so it isn't counted here either.
+        listed = rows
+        rows = [r for r in rows if not ("deleted_in_sql" in r.keys() and r["deleted_in_sql"] and r["status"] == "ignored")]
         # A journal counts as the bank movement of its lines, so its sign gives the direction; one that moves nothing there stays out.
         # Its lines come from SQL's Journal of Transaction, by doc no., else from its pasted grid, by document key (records
         # not updated to update 22 have no document keys and no lines of either kind, nor the columns the GL code is found by).
@@ -158,7 +162,7 @@ def movements(con, ent, acct, month):
         left = {"journals": sum(r["kind"] == "journal" and r["id"] not in counted for r in rows),
                 "invoices": sum(r["kind"] == "invoice" for r in rows),
                 "unknown": sum((r["kind"] or "payment") == "payment" and r["direction"] not in ("in", "out") for r in rows)}
-        listing = any((r["kind"] or "payment") == "payment" for r in rows)
+        listing = any((r["kind"] or "payment") == "payment" for r in listed)
         source = "sql"
     else:
         # every account in the currency, stopped ones too: stopping an account must not move past payments between books
@@ -213,7 +217,7 @@ def book_of(con, ent, acct, month, table=None):
     if b["state"] == "needs_opening":
         b["note"] = "Needs book opening"
     elif b["state"] == "needs_listing":
-        b["note"] = "Paste SQL listing" + ("" if b["month"] == month else f" for {db.month_label(b['month'])}")
+        b["note"] = "Fetch SQL's cash book listing" + ("" if b["month"] == month else f" for {db.month_label(b['month'])}")
     else:
         b["note"] = None
     return b
