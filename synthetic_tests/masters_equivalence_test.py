@@ -762,6 +762,12 @@ if OPTS.write_golden:
     Path(OPTS.write_golden).write_text(json.dumps(S0, sort_keys=True, indent=1, ensure_ascii=False), encoding="utf-8")
     print(f"golden written: {OPTS.write_golden}")
 
+# Update 30 adds a new checklist item, SQL books agree with SQL Account, to each company kept in SQL, by design (it is
+# proved in sql_books_item_test). The proof runs its table change only (the items table may then hold the new kind),
+# so the item doesn't show here as a difference. On code without update 30 nothing is replaced.
+_books = next((i for i, s in enumerate(full) if getattr(s, "__name__", "") == "install_sql_books"), None)
+if _books is not None:
+    full = full[:_books] + [sys.modules[full[_books].__module__]._widen_completions] + full[_books + 1:]
 db.MIGRATIONS[:] = full
 db.init()
 patch_clock()

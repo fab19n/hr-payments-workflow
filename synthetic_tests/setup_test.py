@@ -74,8 +74,10 @@ trail = db.init()
 raw = sqlite3.connect(config.DB_PATH)
 raw.row_factory = sqlite3.Row
 check("update 19 reaches the last update", raw.execute("PRAGMA user_version").fetchone()[0] == len(db.MIGRATIONS))
-check("payments, checklist items, recurring payments and months are unchanged by it",
-      all(rows_of(raw, t) == before[t] for t in before))
+# Update 30 adds the SQL books item to the months set up, not filed, of each company kept in SQL: those rows are new.
+books_rows = [r for r in rows_of(raw, "tasks") if isinstance(r, tuple) and "sql-books" in r]
+check("payments, checklist items, recurring payments and months are unchanged by it (update 30's SQL books items aside)",
+      all([r for r in rows_of(raw, t) if r not in books_rows] == before[t] for t in before) and len(books_rows) == 1, books_rows)
 check("each company's first account becomes its cash book", [tuple(r) for r in raw.execute(
     "SELECT entity_id, label FROM accounts WHERE cash_book = 1 ORDER BY entity_id")] == [(1, "Main"), (2, "Current")])
 check("the organisation name starts empty (the program holds none; it is typed in Setup)", appsettings.get("organisation_name") == "")

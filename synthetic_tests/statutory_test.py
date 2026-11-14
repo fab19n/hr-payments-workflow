@@ -69,7 +69,7 @@ def S(rm):
 # ---------- 1. update 29 on records at update 28 ----------
 
 full = db.MIGRATIONS[:]
-check("update 29 is the last one, the statutory accounts", len(full) == 29)
+check("update 29 is the statutory accounts (later updates may follow)", len(full) >= 29)
 db.MIGRATIONS[:] = full[:28]
 db.init()
 check("the records are at update 28 while they are built", q("PRAGMA user_version")[0]["user_version"] == 28)
@@ -87,7 +87,7 @@ write("the chart of accounts and the first month tracked",
       ("UPDATE entities SET first_month = '2026-02', fy_start = 1 WHERE id = ?", (EID,)))
 db.MIGRATIONS[:] = full
 trail = db.init()
-check("update 29 runs", q("PRAGMA user_version")[0]["user_version"] == 29)
+check("update 29 runs, with the updates after it", q("PRAGMA user_version")[0]["user_version"] == len(full))
 check("the statutory accounts table is made empty", q("SELECT COUNT(*) AS n FROM statutory_accounts")[0]["n"] == 0)
 check("it has its audit triggers", q("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'audit_statutory_accounts%'")[0]["n"] >= 3)
 with db.connect() as r:

@@ -541,7 +541,7 @@ ents = {e["code"]: e["id"] for e in j("get", "/api/meta")["entities"]}
 src_added, src_seeded = (j("get", f"/api/setup/checklist?entity={ents[x]}") for x in (frozen_code, seeded_code))
 check("a company added with a code that has a list in the code has its own starter checklist; one from seed.json the list, built in",
       all(not i["system"] and i["can_delete"] for i in src_added["items"]) and src_added["replaceable"] is True
-      and [i["code"] for i in src_seeded["items"]] == [x[0] for x in rules.CHECKLIST[seeded_code]]
+      and [i["code"] for i in src_seeded["items"]] == [x[0] for x in rules.CHECKLIST[seeded_code]] + ["sql-books"]  # update 30's, kept in SQL
       and all(i["system"] for i in src_seeded["items"]), (src_added["items"][:2], src_seeded["items"][:2]))
 
 ef = j("post", "/api/setup/entities", json={"fields": {"code": "EXF", "name": "Example Filing Sdn Bhd"}, "reason": "test"})["id"]
@@ -610,8 +610,8 @@ check("the company added in Setup keeps its own checklist: nothing built in, eac
       and all(x[1] == 0 and x[2] for x in mine["items"]) and mine["replaceable"] is True, mine)
 seeded = held["companies"][seeded_code]
 check("the company from seed.json keeps its list built in",
-      [x[0] for x in seeded["items"]] == [x[0] for x in rules.CHECKLIST[seeded_code]]
-      and all(x[1] == 1 and not x[2] for x in seeded["items"]), seeded)
+      [x[0] for x in seeded["items"]] == [x[0] for x in rules.CHECKLIST[seeded_code]] + ["sql-books"]  # update 30's, kept in SQL
+      and all(x[1] == 1 and not x[2] for x in seeded["items"] if x[0] != "sql-books"), seeded)  # not on the code's list: its own
 d = copy.deepcopy(data)
 for x in d["checklist"]:
     x.pop("system")
@@ -628,7 +628,7 @@ check("a file can make built in only the items of a company's list in the code",
       held["import"] == [200, None] and all(x[1] == 0 for x in held["companies"][frozen_code]["items"]
                                             if x[0] not in {y[0] for y in rules.CHECKLIST[frozen_code]})
       and all(x[1] == 0 for x in held["companies"]["EXT"]["items"])
-      and all(x[1] == 1 for x in held["companies"][seeded_code]["items"]), held["import"])
+      and all(x[1] == 1 for x in held["companies"][seeded_code]["items"] if x[0] != "sql-books"), held["import"])  # update 30's
 
 # ---------- 10. a copy replaces only an untouched starter checklist; titles are checked over the months each is in use ----------
 # A copy replaces a checklist only while it is the starter list as given and no month is set up (section 4). A

@@ -80,6 +80,10 @@ def required_docs(category, uses_sql):
 # What the Bank reconciliation item says it is: done once every account's statement for the month is signed off.
 RECON_DETAIL = ("Every statement line confirmed and the books agreeing with the bank. Done when the month is marked "
                 "reconciled on the Bank statements page.")
+# What the SQL books item says it is: shown done from SQL's own reports (TASK_BOOKS), never by a document.
+BOOKS_DETAIL = ("Fetch SQL's GL Journal of Transaction and Trial Balance up to at least the month's last day. Done when "
+                "every document of the month is in the journal and in SQL's listings, each one balances and agrees with "
+                "its listing, and SQL's trial balance agrees with the books here.")
 
 # Monthly checklist per entity code. Each task can also ask for documents (attached to the task itself). From update 21
 # on the checklist lives in the records (Setup); these lists only fill it for a records.db updated from before then,
@@ -167,9 +171,10 @@ STARTER = [
     ("statement", (1, 5), "Download bank statements and import them here", "", []),
     ("recon", (1, 10), "Bank reconciliation", RECON_DETAIL, []),
     ("file", (1, 10), "Print and file the audit pack", "Generate the pack from the Audit pack screen.", []),
+    ("sql-books", (1, 15), "SQL books agree with SQL Account", BOOKS_DETAIL, []),
 ]
-# Starter items left out for a company not kept in SQL Account: they ask for SQL vouchers.
-STARTER_SQL_ONLY = {"payroll-jv"}
+# Starter items left out for a company not kept in SQL Account: they ask for SQL vouchers, or check SQL's books.
+STARTER_SQL_ONLY = {"payroll-jv", "sql-books"}
 
 # Checklist items the month's payments show done (db.task_status), once each payment they cover has the documents
 # named (uploaded, or shown by SQL or the bank). Which payments: types, money in or out, and words (whole words) in the
@@ -199,6 +204,10 @@ TASK_PAYMENTS = {
 TASK_STATEMENTS = {"statement": False, "recon": "reconciled", "records": True}
 # The checklist item an audit pack built since the month's documents last changed shows done.
 TASK_PACK = "file"
+# The checklist item SQL's own reports show done, for a company kept in SQL Account (sqlbooks.month_check): a GL Journal
+# of Transaction fetched over the whole month, every listing entry of the month in it and every document of the month in
+# a listing, each document balancing and agreeing with its listing, and SQL's trial balance agreeing with the books here.
+TASK_BOOKS = "sql-books"
 
 # One-off reminders from a salary's start date (joiner) or last day (leaver), for a company that runs Malaysian
 # payroll: (joiner or leaver, key, days from that date, monthly salary it must be over or None, title, detail,

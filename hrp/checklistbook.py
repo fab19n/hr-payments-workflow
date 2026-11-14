@@ -7,7 +7,7 @@ and reminder names, and the words SQL imports are guessed and filed by. From upd
 answer is cached on the connection, keyed on the records.db's update number; Setup's writes call forget(con).
 
 The checklist is kept per company as items (a code that never changes, and how the item is shown done: by hand, by the
-month's payments, by the bank statements, by the audit pack) and their terms: what the item is from a payroll month on
+month's payments, by the bank statements, by the audit pack, by SQL's books) and their terms: what the item is from a payroll month on
 (and, when it ends, to a month, not included): its due date, title, detail, documents, whether Next up shows it as a
 deadline, and, for one shown done by payments, which payments and documents. A month set up gets the items whose term
 in force for that month is in use; an item is judged by the term in force for the month of the checklist item in
@@ -27,7 +27,8 @@ COMPLETIONS = [("hand", "Ticked by hand", None), ("payments", "Payments with the
                ("statements", "Bank statements imported", "statement"),
                ("statements_balanced", "Statements balanced, every line explained", "records"),
                ("reconciled", "Statements reconciled", "recon"),
-               ("pack", "Audit pack built (ticked when the month is filed)", "file")]
+               ("pack", "Audit pack built (ticked when the month is filed)", "file"),
+               ("books", "SQL books agree with SQL Account (from SQL's journal and trial balance)", "sql-books")]
 BUILT_IN = {code: key for key, _, code in COMPLETIONS if code}  # code -> completion
 STATEMENTS_ARG = {"statements": False, "statements_balanced": True, "reconciled": "reconciled"}  # db._from_statements
 REMINDER_PREFIXES = ("joiner-", "leaver-")
@@ -54,6 +55,8 @@ def _frozen_completion(code):
         return {False: "statements", True: "statements_balanced", "reconciled": "reconciled"}[rules.TASK_STATEMENTS[code]], None
     if code == rules.TASK_PACK:
         return "pack", None
+    if code == rules.TASK_BOOKS:
+        return "books", None
     return "hand", None
 
 
@@ -247,7 +250,7 @@ TABLES = """
 CREATE TABLE IF NOT EXISTS checklist_items (
   id INTEGER PRIMARY KEY, entity_id INTEGER NOT NULL REFERENCES entities(id), code TEXT NOT NULL,
   completion TEXT NOT NULL DEFAULT 'hand'
-    CHECK (completion IN ('hand', 'payments', 'statements', 'statements_balanced', 'reconciled', 'pack')),
+    CHECK (completion IN ('hand', 'payments', 'statements', 'statements_balanced', 'reconciled', 'pack', 'books')),
   system INTEGER NOT NULL DEFAULT 0, name TEXT, notes TEXT,
   UNIQUE (entity_id, code)
 );
@@ -498,6 +501,91 @@ def install(con):
     forget(con)
 
 
+# ---------- update 30 ----------
+
+def books_term(sort):
+    """The SQL books item's first term: due the 15th of the next month, as the statutory items are, asking for no
+    document (SQL's reports show it done), not one of Next up's deadlines outside the office."""
+    return {"due_offset": 1, "due_day": 15, "title": "SQL books agree with SQL Account", "detail": rules.BOOKS_DETAIL,
+            "docs": [], "deadline": 0, "submit_as": None, "rule": None, "sort": sort}
+
+
+def _widen_completions(con):
+    """The checklist's items may be shown done by SQL's books ('books'). SQLite can't change a CHECK in place, so the
+    items table is made again and every row copied as it was, with the same id (the trail's rows still name them), as
+    partybook.widen_specials does. The terms name the items, so they are held aside while the items table is made
+    again and put back as they were. Only these two tables' capture triggers are dropped (dropping every trigger would
+    leave the trail looking stopped); the refresh below puts them back. Records whose items table already allows it (a
+    new install, made at update 21 from this version): nothing is done."""
+    from . import audit
+    have = con.execute("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'checklist_items'").fetchone()
+    if not have or "'books'" in have[0]:
+        return
+    make = next(s for s in TABLES.split(";") if "TABLE IF NOT EXISTS checklist_items" in s)
+    for (name,) in con.execute("""SELECT name FROM sqlite_master WHERE type = 'trigger'
+                                  AND tbl_name IN ('checklist_items', 'checklist_terms') AND name LIKE 'audit%'""").fetchall():
+        con.execute(f'DROP TRIGGER "{name}"')
+    con.execute("CREATE TEMP TABLE checklist_terms_held AS SELECT * FROM checklist_terms")
+    con.execute("DELETE FROM checklist_terms")
+    con.execute(make.replace("CREATE TABLE IF NOT EXISTS checklist_items", "CREATE TABLE checklist_items_new"))
+    cols = ", ".join(r[1] for r in con.execute("PRAGMA table_info(checklist_items)"))
+    con.execute(f"INSERT INTO checklist_items_new ({cols}) SELECT {cols} FROM checklist_items")
+    con.execute("DROP TABLE checklist_items")
+    con.execute("ALTER TABLE checklist_items_new RENAME TO checklist_items")
+    tcols = ", ".join(r[1] for r in con.execute("PRAGMA table_info(checklist_terms)"))
+    con.execute(f"INSERT INTO checklist_terms ({tcols}) SELECT {tcols} FROM checklist_terms_held")
+    con.execute("DROP TABLE checklist_terms_held")
+    audit.refresh(con)  # the items added below go into the audit trail as added
+
+
+def first_unfiled(con, ent):
+    """The earliest month a new item may start from for a company: the month after the latest month filed (filed
+    months never change), else from the start; never before the first month tracked."""
+    from . import db
+    last = con.execute("SELECT MAX(month) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", (ent["id"],)).fetchone()[0]
+    m = db.shift_month(last, 1) if last else "0000-00"
+    return max(m, ent["first_month"]) if ent["first_month"] else m
+
+
+def add_sql_books(con, ent, system=1):
+    """Gives a company kept in SQL Account that has a checklist, and no SQL books item yet, the item, from the earliest
+    month not filed (first_unfiled), at the end of its checklist, and brings the months already set up from then on,
+    not filed, into line (monthly._bring_into_line: the item is added to each). Returns the lines saying what was done,
+    [] when nothing was. Refuses (raises) if a filed month would change, which can't happen as the item starts after
+    the latest one."""
+    from . import db, monthly
+    if not ent["uses_sql"] or con.execute("SELECT 1 FROM checklist_items WHERE entity_id = ? AND code = ?",
+                                          (ent["id"], rules.TASK_BOOKS)).fetchone():
+        return []
+    sorts = [r[0] for r in con.execute("""SELECT t.sort FROM checklist_terms t JOIN checklist_items i ON i.id = t.item_id
+                                          WHERE i.entity_id = ?""", (ent["id"],))]
+    if not sorts:
+        return []  # a company left without a checklist keeps none
+    m = first_unfiled(con, ent)
+    before = monthly._filed_tasks(con, ent["id"])
+    add_item(con, ent["id"], rules.TASK_BOOKS, "books", system, books_term(1 + max(sorts)), m)
+    forget(con)
+    lines, _ = monthly._bring_into_line(con, ent, rules.TASK_BOOKS, m)
+    monthly._keep_filed(con, before, ent["id"])
+    forget(con)
+    when = "from the start" if m == "0000-00" else f"from {db.month_label(m)}"
+    out = [f"Checklist {ent['code']}: added SQL books agree with SQL Account, {when}"] + [f"Checklist {ent['code']} in {x}" for x in lines]
+    for x in out:
+        db.log(con, x)
+    return out
+
+
+def install_sql_books(con):
+    """Update 30: the checklist's items may be shown done by SQL's books, and each company kept in SQL Account that has a
+    checklist gets the item SQL books agree with SQL Account, from the earliest month not filed (never in a filed month,
+    never before the first month tracked), added to the months already set up from then on. A company not kept in SQL,
+    or without a checklist, gets nothing. Nothing else in the records changes."""
+    _widen_completions(con)
+    for e in [dict(r) for r in con.execute("SELECT * FROM entities ORDER BY id")]:
+        add_sql_books(con, e)
+    forget(con)
+
+
 def check(con, b, ents):
     """Raises unless the book b answers as the code did (update 21 stops then, so nothing is judged by other rules). The
     code's lists are read with the names seed.json gave this install in place of the placeholders (named), as
@@ -510,8 +598,10 @@ def check(con, b, ents):
     norm = lambda x: json.loads(json.dumps(x))
     for e in ents:
         for month in ("2026-01", "2027-06"):
-            if [{k: t[k] for k in ("code", "due_offset", "due_day", "title", "detail", "docs", "sort")} for t in b.checklist(e, month)] \
-                    != nm(f.checklist(e, month)):
+            # the SQL books item is update 30's, not one of the code's lists: on records updated past it (update 21 run
+            # again) it is left out here
+            if [{k: t[k] for k in ("code", "due_offset", "due_day", "title", "detail", "docs", "sort")} for t in b.checklist(e, month)
+                    if t["code"] != rules.TASK_BOOKS] != nm(f.checklist(e, month)):
                 stop(f"checklist items of {e['code']}")
     pairs = {(r[0], r[1]) for r in con.execute("SELECT entity_id, code FROM tasks")}
     pairs |= {(e["id"], code) for e in ents for code, *_ in rules.CHECKLIST.get(e["code"], [])}
