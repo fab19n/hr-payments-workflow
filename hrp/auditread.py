@@ -25,6 +25,7 @@ TABLE_LABELS = {
     "guess_words": ("Payment type guess", "payment type guesses"), "hint_words": ("Salary words", "salary words"),
     "filing_words": ("SQL filing words", "SQL filing words"),
     "parties": ("Customer or supplier", "customers and suppliers"), "gl_accounts": ("GL account", "chart of accounts"),
+    "statutory_accounts": ("Statutory account", "statutory accounts"),
     "ledger_batches": ("Ledger read", "ledger reads"), "ledger_docs": ("Ledger document", "ledger documents"),
     "ledger_lines": ("Account line", "account lines"), "ledger_openings": ("Opening balance", "opening balances"),
     # events
@@ -54,7 +55,8 @@ FIELD_LABELS = {
     "first_month": "First month tracked", "fy_start": "Financial year starts in","uses_sql": "Kept in SQL Account", "code": "Code", "what": "Line",
     "balance_as_at": "Balance as at", "as_at": "Balance as at", "details": "Details", "month": "Month",
     "short_name": "Short name", "reg_no": "Registration no.", "tin": "Tax ID (TIN)", "sst_no": "SST no.",
-    "employer_kwsp": "KWSP employer no.", "employer_perkeso": "PERKESO employer no.", "employer_lhdn": "LHDN employer no.",
+    "employer_kwsp": "KWSP employer no.", "employer_perkeso": "PERKESO employer no.", "employer_lhdn": "LHDN employer no.", "payable_code": "Payable account",
+    "employer_code": "Employer's share account", "kind": "Kind",
     "sql_database": "SQL Account database", "bank": "Bank", "statement_format": "Statement format", "gl_code": "GL account code",
     "sql_payment_method": "SQL payment method", "cash_book": "Cash book account", "key": "Key", "value": "Value",
     "plural": "Several are called", "singular": "One is called", "pack_order": "Place in the audit pack",

@@ -29,9 +29,10 @@ APP_SOURCES = ("user", "auto", "import")  # entries the app sealed for a request
 # The tables whose deleted records can be put back, and the Setup section each is listed in.
 KINDS = {"entities": "entities", "accounts": "accounts", "payment_types": "payment_types", "doc_types": "doc_types",
          "guess_words": "guess_words", "hint_words": "hint_words", "filing_words": "filing_words", "parties": "parties",
-         "gl_accounts": "gl_accounts", "checklist_items": "checklist", "people_tasks": "reminders", "payees": "payees"}
+         "gl_accounts": "gl_accounts", "checklist_items": "checklist", "people_tasks": "reminders", "payees": "payees",
+         "statutory_accounts": "statutory_accounts"}
 TABLE_OF = {kind: tbl for tbl, kind in KINDS.items()}
-PER_ENTITY = ("accounts", "parties", "gl_accounts", "checklist_items", "payees")
+PER_ENTITY = ("accounts", "parties", "gl_accounts", "checklist_items", "payees", "statutory_accounts")
 LISTED = 200  # deleted records listed at most per section (the newest)
 
 
@@ -331,6 +332,9 @@ def _plan(con, row_id):
     elif tbl == "gl_accounts":
         _company(con, img["entity_id"], "GL account", r["id"])
         masters._gl_check(con, img["entity_id"], {k: img[k] for k in ("code", "parent_code", "sql_type", "type") if img.get(k) is not None})
+    elif tbl == "statutory_accounts":
+        _company(con, img["entity_id"], "statutory account", r["id"])
+        masters._statutory_check(con, img["entity_id"], {k: img[k] for k in ("kind", "payable_code") if img.get(k) is not None})
     elif tbl == "checklist_items":
         ent = _company(con, img["entity_id"], "checklist item", r["id"])
         if _one(con, "SELECT 1 FROM checklist_items WHERE entity_id = ? AND code = ?", (img["entity_id"], img["code"])):
