@@ -363,6 +363,12 @@ button.linkish:hover { color: var(--ink); }
 table.books-tb tfoot td, table.books-ledger tr.sql-lines-total td { font-weight: 600; border-top: 1px solid var(--line-strong); }
 table.books-ledger tr.books-open td { font-weight: 600; color: var(--muted); }
 table.books-ledger tr.books-reset td { background: var(--accent-soft); }
+table.fs tr.fs-head th { text-align: left; padding-top: 14px; color: var(--accent); border-bottom: 1px solid var(--line); }
+table.fs tr.fs-sub td, table.fs tr.fs-group td { font-weight: 600; border-top: 1px solid var(--line); }
+table.fs tr.fs-total td { font-weight: 700; border-top: 1px solid var(--line-strong); border-bottom: 3px double var(--line-strong); background: var(--accent-soft); }
+table.fs tr.fs-line td { font-weight: 600; }
+table.fs td.fs-comp, table.fs th.fs-comp { color: var(--muted); }
+table.fs td.fs-sum { font-weight: 600; }
 #bkSearch { border: 1px solid var(--line-strong); background: var(--bg); border-radius: 6px; padding: 4px 8px; min-width: 0; }
 
 /* Paste a list: a wider drawer for the preview's table, and the pasted text kept small */

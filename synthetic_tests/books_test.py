@@ -793,5 +793,10 @@ try:
           and "305-W0001" in ch["differences"][0]["text"], str(ch["differences"]))
 finally:
     books._stored_tb = real_stored_tb
+with db.connect() as con:
+    T = books.trial_balance(con, EG, "2026-01-01", "2026-02-28", rollup=True)
+rows = {x["code"]: x for x in T["accounts"]}
+check("a customer's code with no record rolls into its family's control account in every report, not only the SQL check",
+      "305-W0001" not in rows and rows["305-0000"]["closing_sen"] == 0 and T["balanced"], {k: v["closing_sen"] for k, v in rows.items()})
 
 print("All books checks passed.")

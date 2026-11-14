@@ -119,7 +119,7 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 
 // month and day are set in start(), once the settings (the rollover day) are loaded.
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
-  nextAll: {}, bankOnly: false, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "" }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
+  nextAll: {}, bankOnly: false, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "", months: false }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
   setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
@@ -1608,6 +1608,8 @@ async function viewBooks(main) {
       <div class="row"><div class="seg" role="group" aria-label="Report">
         <button type="button" data-bk-tab="tb" aria-pressed="${B.tab === "tb"}">Trial balance</button>
         <button type="button" data-bk-tab="ledger" aria-pressed="${B.tab === "ledger"}">General ledger</button>
+        <button type="button" data-bk-tab="pl" aria-pressed="${B.tab === "pl"}">Profit and loss</button>
+        <button type="button" data-bk-tab="bs" aria-pressed="${B.tab === "bs"}">Balance sheet</button>
         <button type="button" data-bk-tab="statutory" aria-pressed="${B.tab === "statutory"}">Statutory</button></div></div>
       <div id="booksBody"><div class="note">Loading…</div></div></div>`;
   const view = $("#booksView");
@@ -1630,6 +1632,7 @@ async function viewBooks(main) {
   view.addEventListener("change", ev => {
     const t = ev.target;
     if (t.id === "bkRollup") { B.rollup = t.checked; return drawBooks(); }
+    if (t.id === "bkMonths") { B.months = t.checked; return drawBooks(); }
     if (t.id === "bkAcct") {
       const v = t.value.trim().toUpperCase(), code = v.split(/\s+/)[0];
       if (!v) { B.account = null; return drawBooks(); }
@@ -1650,6 +1653,16 @@ async function drawBooks() {
       const d = await api(`/api/statutory?${booksQuery()}`);
       if (!$("#booksBody")) return;
       body.innerHTML = statutoryHtml(d);
+    } else if (B.tab === "pl") {
+      const d = await api(`/api/books/profit-and-loss?${booksQuery()}&columns=${B.months ? "month" : "total"}`);
+      if (!$("#booksBody")) return;
+      B.from = d.from; B.to = d.to;
+      body.innerHTML = plHtml(d);
+    } else if (B.tab === "bs") {
+      const d = await api(`/api/books/balance-sheet?entity=${state.entity}${B.to ? `&as_at=${B.to}` : ""}`);
+      if (!$("#booksBody")) return;
+      B.to = d.as_at;
+      body.innerHTML = bsHtml(d);
     } else if (B.tab === "tb") {
       const d = await api(`/api/books/trial-balance?${booksQuery()}&rollup=${B.rollup ? 1 : 0}`);
       if (!$("#booksBody")) return;
@@ -1727,6 +1740,67 @@ function ledgerHtml(d) {
     </tbody></table></div>${a.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}</div>`;
   return `${pick}<h2>General ledger, ${esc(fmtDate(d.from))} to ${esc(fmtDate(d.to))}</h2>
     ${d.accounts.map(acct).join("") || `<div class="note">No line or opening balance is kept for ${B.account ? esc(B.account) : "any account"} in these dates.</div>`}
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+}
+
+// The financial statements (hrp/finstatements.py): the profit and loss account and the balance sheet, laid out as SQL
+// prints them, from the trial balance with customers and suppliers added into their control accounts. Each section's
+// amounts are shown its usual way round (income, liabilities and equity as credits); negatives are in brackets. An
+// account's code opens its ledger, as on the trial balance. Read-only.
+const fsAmt = n => n == null ? "—" : n < 0 ? `(${rmPlain(-n)})` : rmPlain(n);
+const fsCells = (amounts, cols) => amounts.map((n, i) => `<td class="num${cols[i].role === "comparative" ? " fs-comp" : cols[i].role === "total" && cols.length > 1 && cols.some(c => c.role === "month") ? " fs-sum" : ""}">${fsAmt(n)}</td>`).join("");
+
+function fsTable(d) {
+  const cols = d.columns, n = cols.length;
+  const head = `<tr><th>Account</th>${cols.map(c => `<th class="num${c.role === "comparative" ? " fs-comp" : ""}">${esc(c.label)}${c.role === "comparative" ? `<div class="note">Comparative</div>` : ""}</th>`).join("")}</tr>`;
+  const row = r => r.kind === "group_total"
+    ? `<tr class="fs-group"><td style="padding-left:${12 + r.depth * 18}px">${esc(r.name)}</td>${fsCells(r.amounts, cols)}</tr>`
+    : `<tr><td style="padding-left:${12 + r.depth * 18}px">${r.code == null ? esc(r.name || "") : `<button type="button" class="linkish mono" data-bk-acct="${esc(r.code)}" title="Open the ledger of ${esc(r.code)}">${esc(r.code)}</button> ${esc(r.name || "")}`}${r.in_chart === false ? ` <span class="pill warn">Not in chart</span>` : ""}${r.rolled?.length ? `<div class="note">With ${esc(r.rolled.join(", "))}</div>` : ""}</td>${fsCells(r.amounts, cols)}</tr>`;
+  const block = b => b.kind === "section"
+    ? `<tr class="fs-head"><th colspan="${n + 1}">${esc(b.title)}${b.key === "not_classified" ? ` <span class="pill warn">Set their types in Setup</span>` : ""}</th></tr>
+       ${b.rows.map(row).join("")}
+       <tr class="fs-sub"><td>${esc(b.total_label)}</td>${fsCells(b.total, cols)}</tr>`
+    : `<tr class="${b.kind === "total" ? "fs-total" : "fs-line"}"><td>${esc(b.label)}</td>${fsCells(b.amounts, cols)}</tr>`;
+  return `<div class="tbl-wrap"><table class="fs"><thead>${head}</thead><tbody>${d.blocks.map(block).join("")}</tbody></table></div>`;
+}
+
+function fsBanner(good, title, text) {
+  return `<div class="banner ${good === true ? "ok" : good === false ? "warn" : "grey"}"><b>${esc(title)}</b><span>${esc(text)}</span></div>`;
+}
+
+// A statement is empty when no account is listed in it (the totals between the sections are always there, all 0).
+function fsEmpty(d) {
+  return !d.blocks.some(b => b.kind === "section" || (b.kind === "line" && b.amounts.some(a => a !== 0)));
+}
+
+function plHtml(d) {
+  const ch = d.check;
+  if (fsEmpty(d)) return `${fsBanner(null, "Nothing to check", "No income or expense account moved in these dates.")}
+    <h2>Profit and loss, ${esc(fmtDate(d.from))} to ${esc(fmtDate(d.to))}</h2>
+    <div class="note">No income or expense account moved in these dates.</div>
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+  return `${fsBanner(ch.reconciles, ch.reconciles === true ? "Reconciles to the trial balance" : ch.reconciles === false ? "Doesn't reconcile to the trial balance" : "Not checked against the trial balance", ch.text)}
+    <div class="row spread"><h2>Profit and loss, ${esc(fmtDate(d.from))} to ${esc(fmtDate(d.to))}</h2>
+      <label class="row tight"><input type="checkbox" id="bkMonths" ${d.columns_mode === "month" ? "checked" : ""}> Months</label></div>
+    <div class="note">Income is shown as a credit above 0 and costs as a debit above 0; a figure in brackets is the other way round.</div>
+    ${fsTable(d)}
+    ${d.comparative.shown ? "" : d.comparative.why ? `<div class="note">No comparative column: ${esc(d.comparative.why)}</div>` : ""}
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+}
+
+function bsHtml(d) {
+  const ch = d.check;
+  if (fsEmpty(d)) return `${fsBanner(null, "Nothing to check", "No balance is kept at this day.")}
+    <h2>Balance sheet at ${esc(fmtDate(d.as_at))}</h2>
+    <div class="note">No balance is kept at this day.</div>
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+  const good = ch.balances === true && ch.reconciles === true ? true : ch.balances === false || ch.reconciles === false ? false : null;
+  return `${fsBanner(good, good === true ? "Balances and reconciles to the trial balance" : ch.balances === false ? "Doesn't balance" : good === false ? "Doesn't reconcile" : "Can't be totalled", ch.text)}
+    <div class="row spread"><h2>Balance sheet at ${esc(fmtDate(d.as_at))}</h2>
+      ${d.balanced === true ? `<span class="pill ok">Balances</span>` : d.balanced === false ? `<span class="pill bad">Doesn't balance</span>` : ""}</div>
+    <div class="note">As at the To date above. The profit or loss for the year to date runs from ${esc(fmtDate(d.fy_from))}. Assets are shown as debits above 0, liabilities and equity as credits above 0; a figure in brackets is the other way round.</div>
+    ${fsTable(d)}
+    ${d.comparative.shown ? "" : d.comparative.why ? `<div class="note">No comparative column: ${esc(d.comparative.why)}</div>` : ""}
     ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
 }
 

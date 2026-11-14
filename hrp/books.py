@@ -101,7 +101,15 @@ class _Books:
     def control(self, code):
         """The control account a customer's or supplier's code rolls up into, or None for an account of its own."""
         ctl = self.ch.control(code)
-        return ctl if ctl and ctl != _key(code) else None
+        if ctl and ctl != _key(code):
+            return ctl
+        # A customer's or supplier's code that isn't an account of the chart, with no record saying its control (SQL's
+        # 305-W0001 under 305-0000 OTHER DEBTORS): the '-0000' account of its family, when the chart has one.
+        code = _key(code)
+        family = f"{code.split('-')[0]}-0000"
+        if "-" in code and family != code and code not in self.ch.accounts and family in self.ch.accounts:
+            return family
+        return None
 
     def kind(self, code):
         """'pl', 're', 'bs', or None when the chart doesn't say. A customer's or supplier's code is its control's kind."""

@@ -14,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, ledger, masters, nextup, recon, reports,
+from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, finstatements, ledger, masters, nextup, recon, reports,
                monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements, statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
@@ -1873,6 +1873,13 @@ def ledger_doc():
     return jsonify({**view, "bank_codes": sorted(ledger.bank_codes(c, eid))})  # so the page can mark the bank's lines
 
 
+BOOKS_YEARS = (1900, 2999)  # the years a Books date may be in; far earlier or later dates can't be worked with
+
+
+def _books_year_ok(d):
+    return BOOKS_YEARS[0] <= int(d[:4]) <= BOOKS_YEARS[1]
+
+
 def _books_period(c, eid):
     """(from, to) of a Books request: the dates given, else the current financial year to date. Raises ValueError with a
     sentence when a date given can't be read."""
@@ -1885,6 +1892,8 @@ def _books_period(c, eid):
             out.append(date.fromisoformat(v).isoformat() if v else None)
         except ValueError:
             raise ValueError(f"The {k} date isn't a date (use YYYY-MM-DD).") from None
+        if v and not _books_year_ok(v):
+            raise ValueError(f"The {k} date is out of range: use a date from {BOOKS_YEARS[0]} to {BOOKS_YEARS[1]}.")
     d_from, d_to = out
     d_to = d_to or date.today().isoformat()
     d_from = d_from or books.year_start(c, eid, d_to)
@@ -1920,6 +1929,37 @@ def books_trial_balance():
     rollup = (request.args.get("rollup") or "") in ("1", "true", "yes")
     return jsonify({**books.trial_balance(c, eid, d_from, d_to, rollup=rollup),
                     "check": books.check_against_sql(c, eid, d_from, d_to)})
+
+
+@app.get("/api/books/profit-and-loss")
+def books_profit_and_loss():
+    """The profit and loss account for a period (default: this financial year to date), one column or one per month
+    (columns=month), with the same period a year before when the books cover it. Read-only."""
+    c = con()
+    eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    try:
+        d_from, d_to = _books_period(c, eid)
+        return jsonify(finstatements.profit_and_loss(c, eid, d_from, d_to, (request.args.get("columns") or "total").strip()))
+    except ValueError as ex:
+        return err(str(ex))
+
+
+@app.get("/api/books/balance-sheet")
+def books_balance_sheet():
+    """The balance sheet as at a day (as_at=, default today), with the end of the previous financial year when the books
+    cover it. Read-only."""
+    c = con()
+    eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    v = (request.args.get("as_at") or "").strip()
+    try:
+        if v and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
+            raise ValueError
+        as_at = date.fromisoformat(v).isoformat() if v else date.today().isoformat()
+    except ValueError:
+        return err("The as-at date isn't a date (use YYYY-MM-DD).")
+    if not _books_year_ok(as_at):
+        return err(f"The as-at date is out of range: use a date from {BOOKS_YEARS[0]} to {BOOKS_YEARS[1]}.")
+    return jsonify(finstatements.balance_sheet(c, eid, as_at))
 
 
 @app.get("/api/statutory")
