@@ -170,23 +170,32 @@ def _guard_text(sql):
     return " ".join(str(sql or "").replace("IF NOT EXISTS ", "").split()).lower()
 
 
+def _guards_due(con):
+    """The guards (name, statement) the records should have: those of the updates that have run, on tables that exist."""
+    version = con.execute("PRAGMA user_version").fetchone()[0]
+    return [(name, sql) for name, (since, table, sql) in GUARDS.items() if version >= since and _exists(con, table)]
+
+
+def _guards_off(con):
+    have = {r[0]: r[1] for r in con.execute("SELECT name, sql FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'ledger\\_%' ESCAPE '\\'")}
+    return [(name, sql) for name, sql in _guards_due(con) if name not in have or _guard_text(have[name]) != _guard_text(sql)]
+
+
 def guard_missing(con):
-    """True when update 26 has run but ledger_guard_here is missing or isn't the one update 26 made (another program
-    dropped or rewrote it). Its name is outside the audit trail's triggers, so the trail's own checks don't cover it."""
-    if not ready(con) or not _exists(con, "ledger_docs"):
-        return False
-    r = con.execute("SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'ledger_guard_here'").fetchone()
-    return r is None or _guard_text(r[0]) != _guard_text(GUARD)
+    """True when a guard that refuses entries made here for a company kept in SQL (ledger_guard_here from update 26,
+    the opening balances' guards from update 28) is missing or isn't the one its update made (another program dropped
+    or rewrote it). Their names are outside the audit trail's triggers, so the trail's own checks don't cover them."""
+    return bool(_guards_off(con))
 
 
 def ensure_guard(con):
-    """Puts ledger_guard_here back when it is missing or changed (audit.startup runs it at every start). Returns True
-    when it did."""
-    if not guard_missing(con):
-        return False
-    con.execute("DROP TRIGGER IF EXISTS ledger_guard_here")
-    con.execute(GUARD)
-    return True
+    """Puts the guards back when one is missing or changed (audit.startup runs it at every start). Returns the names of
+    the guards it put back (an empty list when none was off), so the audit trail names the guard that was touched."""
+    off = _guards_off(con)
+    for name, sql in off:
+        con.execute(f"DROP TRIGGER IF EXISTS {name}")
+        con.execute(sql)
+    return [name for name, _ in off]
 
 
 def journal_header(con, eid, dockey):
@@ -1104,6 +1113,173 @@ def fy_start_of(con, eid):
     return v if isinstance(v, int) and 1 <= v <= 12 else None
 
 
+# ---------- opening balances (update 28) ----------
+# What an account's balance was before a day, as SQL printed it: a trial balance's Opening Balance column at its From
+# date, or a GL ledger's Balance B/F at its From date. They are figures SQL printed, not documents: no account line
+# carries them, and the books (hrp/books.py) start each account from the latest one and add the lines after it.
+# A later read of the same report kind for the same day replaces the figures kept (the row is updated in place, so the
+# audit trail keeps what it said before, and which read it came from); nothing else ever changes them.
+
+OPENINGS_SINCE = 28
+OPENING_SOURCES = ("sql_tb", "sql_ledger", "here")
+REFUSED_OPENING = "This company's books are kept in SQL Account: its opening balances come only from SQL's reports."
+
+OPENINGS = """
+CREATE TABLE IF NOT EXISTS ledger_openings (
+  id INTEGER PRIMARY KEY,
+  entity_id INTEGER NOT NULL REFERENCES entities(id),
+  account_code TEXT NOT NULL,
+  account_name TEXT,
+  as_of TEXT NOT NULL,
+  dr_sen INTEGER NOT NULL DEFAULT 0, cr_sen INTEGER NOT NULL DEFAULT 0,
+  source TEXT NOT NULL CHECK (source IN ('sql_tb', 'sql_ledger', 'here')),
+  batch_id INTEGER REFERENCES ledger_batches(id),
+  set_at TEXT NOT NULL,
+  CHECK (source = 'here' OR batch_id IS NOT NULL),
+  UNIQUE (entity_id, account_code, as_of, source)
+);
+CREATE INDEX IF NOT EXISTS ledger_openings_acct ON ledger_openings (entity_id, account_code, as_of)
+"""
+
+# As ledger_guard_here: an opening entered here is refused for a company kept in SQL, on insert and on a change that
+# would make one. Outside the audit trail's 'audit_%' triggers, so the trail never drops or rewrites them.
+_HERE_SQL = "COALESCE((SELECT uses_sql FROM entities WHERE id = NEW.entity_id), 1) = 1"
+GUARD_OPENINGS = f"""CREATE TRIGGER IF NOT EXISTS ledger_openings_guard_here BEFORE INSERT ON ledger_openings
+  WHEN NEW.source = 'here' AND {_HERE_SQL}
+  BEGIN SELECT RAISE(ABORT, '{REFUSED_OPENING.replace("'", "''")}'); END"""
+GUARD_OPENINGS_U = f"""CREATE TRIGGER IF NOT EXISTS ledger_openings_guard_here_u BEFORE UPDATE ON ledger_openings
+  WHEN NEW.source = 'here' AND {_HERE_SQL}
+  BEGIN SELECT RAISE(ABORT, '{REFUSED_OPENING.replace("'", "''")}'); END"""
+
+# Every guard of this module: name -> (the update that makes it, its table, its statement).
+GUARDS = {"ledger_guard_here": (SINCE, "ledger_docs", GUARD),
+          "ledger_openings_guard_here": (OPENINGS_SINCE, "ledger_openings", GUARD_OPENINGS),
+          "ledger_openings_guard_here_u": (OPENINGS_SINCE, "ledger_openings", GUARD_OPENINGS_U)}
+
+
+def openings_ready(con):
+    return con.execute("PRAGMA user_version").fetchone()[0] >= OPENINGS_SINCE and _exists(con, "ledger_openings")
+
+
+def openings_from(kind, rep):
+    """(as_of, figures, reason) of a GL ledger's or trial balance's opening balances: as_of is the report's From date
+    (the balances are before that day), figures [{code, name, dr_sen, cr_sen}]. A report with no From date gives
+    (None, [], a sentence saying why nothing is kept)."""
+    p_from, _ = _period(rep.get("period"))
+    what = "trial balance" if kind == "trial_balance" else "GL ledger"
+    if not p_from:
+        return None, [], f"SQL's {what} prints no From date, so its opening balances aren't kept."
+    figures = []
+    for a in rep.get("accounts") or []:
+        if kind == "trial_balance":
+            dr, cr = (a.get("open") or (0, 0))[:2]
+        else:
+            bf = a.get("bf_sen") or 0
+            dr, cr = max(bf, 0), max(-bf, 0)
+        figures.append({"code": _key(a.get("code")), "name": a.get("name"), "dr_sen": int(dr or 0), "cr_sen": int(cr or 0)})
+    return p_from, figures, None
+
+
+def put_openings(c, eid, batch_id, as_of, source, figures, complete):
+    """Keeps opening balances as printed before as_of, for one source. The only writer of ledger_openings. A figure
+    kept before for the same account, day and source is replaced in place (the audit trail keeps the old one). With
+    complete (a trial balance, which lists every account with a balance), an account kept before for that day and
+    source that the new report no longer lists is removed: it had nothing. A ledger may be printed for some accounts
+    only, so the accounts it doesn't list are left as they were. An opening entered here (source 'here') is refused for
+    a company kept in SQL, here and by ledger_openings_guard_here. Returns {as_of, accounts, added, changed, same,
+    removed}."""
+    if source not in OPENING_SOURCES:
+        raise LedgerError("An opening balance comes from SQL's trial balance or ledger, or is entered here.")
+    if source == "here" and _uses_sql(c, eid):
+        raise LedgerError(REFUSED_OPENING)
+    day = _iso(as_of)
+    if not day:
+        raise LedgerError("An opening balance needs the day it is before.")
+    merged = {}
+    for f in figures:
+        code = _key(f.get("code"))
+        if not code:
+            continue
+        got = merged.setdefault(code, {"name": f.get("name"), "dr": 0, "cr": 0})
+        got["dr"] += int(f.get("dr_sen") or 0)
+        got["cr"] += int(f.get("cr_sen") or 0)
+    had = {r["account_code"]: r for r in c.execute("SELECT * FROM ledger_openings WHERE entity_id = ? AND as_of = ? AND source = ?",
+                                                   (eid, day, source))}
+    n = dict.fromkeys(("added", "changed", "same", "removed"), 0)
+    at = _now()
+    for code, f in sorted(merged.items()):
+        old = had.get(code)
+        if old is None:
+            c.execute("""INSERT INTO ledger_openings (entity_id, account_code, account_name, as_of, dr_sen, cr_sen, source, batch_id, set_at)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""", (eid, code, f["name"], day, f["dr"], f["cr"], source, batch_id, at))
+            n["added"] += 1
+        elif (old["dr_sen"], old["cr_sen"]) != (f["dr"], f["cr"]):
+            c.execute("UPDATE ledger_openings SET account_name = ?, dr_sen = ?, cr_sen = ?, batch_id = ?, set_at = ? WHERE id = ?",
+                      (f["name"], f["dr"], f["cr"], batch_id, at, old["id"]))
+            n["changed"] += 1
+        else:
+            c.execute("UPDATE ledger_openings SET account_name = ?, batch_id = ? WHERE id = ?", (f["name"], batch_id, old["id"]))
+            n["same"] += 1
+    if complete:
+        for code, old in sorted(had.items()):
+            if code not in merged:
+                c.execute("DELETE FROM ledger_openings WHERE id = ?", (old["id"],))
+                n["removed"] += 1
+    return {"as_of": day, "accounts": len(merged), **n}
+
+
+def keep_openings(c, eid, batch_id, kind, rep):
+    """The opening balances of one GL ledger or trial balance read (batch_id), kept by put_openings: a trial balance's
+    as source 'sql_tb' (complete), a ledger's as 'sql_ledger'. Returns put_openings' counts, or {skipped: why}."""
+    as_of, figures, why = openings_from(kind, rep)
+    if why:
+        return {"skipped": why}
+    return put_openings(c, eid, batch_id, as_of, "sql_tb" if kind == "trial_balance" else "sql_ledger", figures,
+                        complete=kind == "trial_balance")
+
+
+def install_openings(con):
+    """Update 28: the opening balances table and its guards, then the openings of every GL ledger and trial balance
+    read so far, taken again from their stored files (oldest read first, so a later read of the same day wins). The
+    audit triggers are made before anything is filled (audit.py), so the rows are recorded as added by this update. A
+    stored file that is missing, or no longer matches the fingerprint taken when it was kept, is skipped and named in
+    the activity log. Nothing else in the records changes."""
+    from . import audit
+    from .db import log
+    from .docstore import path_of, verify
+    from .sqlreport import ReportError, read
+    for stmt in OPENINGS.split(";"):
+        if stmt.strip():
+            con.execute(stmt)
+    con.execute(GUARD_OPENINGS)
+    con.execute(GUARD_OPENINGS_U)
+    audit.refresh(con)
+    kept = accounts = 0
+    for b in con.execute("""SELECT b.id, b.entity_id, b.report, b.file_name, b.read_at, b.document_id FROM ledger_batches b
+                            WHERE b.report IN ('gl_ledger', 'trial_balance') AND b.document_id IS NOT NULL ORDER BY b.id""").fetchall():
+        what = f"SQL's {'trial balance' if b['report'] == 'trial_balance' else 'GL ledger'} '{b['file_name'] or ''}' read {b['read_at'][:16].replace('T', ' ')}"
+        d = con.execute("SELECT * FROM documents WHERE id = ?", (b["document_id"],)).fetchone()
+        if not d or not verify(d):
+            log(con, f"Update 28: the stored file of {what} is missing or has changed since it was kept, "
+                     "so no opening balances were taken from it.")
+            continue
+        try:
+            got = read(path_of(d).read_bytes())
+        except (OSError, ReportError):
+            got = None
+        if not got or got[0] != b["report"]:
+            log(con, f"Update 28: the stored file of {what} can't be read again as that report, so no opening balances were taken from it.")
+            continue
+        res = keep_openings(con, b["entity_id"], b["id"], b["report"], got[1])
+        if res.get("skipped"):
+            continue
+        kept += 1
+        accounts += res["accounts"]
+    if kept:
+        log(con, f"Update 28: opening balances taken from {kept} stored SQL report{'s' if kept != 1 else ''} "
+                 f"({accounts} account figure{'s' if accounts != 1 else ''}).")
+
+
 
 # ---------- the bank reconciliation of signed-off months ----------
 
@@ -1369,6 +1545,8 @@ def apply_fetch(c, ent, imp, gl):
             led = _stored_ledger(c, eid, as_at) if as_at else None
         f["results"] = report_checks(c, eid, None, rep, f["kind"], led)
         f["problems"] = sum(1 for r in f["results"] if r["outcome"] == "warn")
+        if openings_ready(c):  # the figures SQL printed at the From date, after the checks (which never read them)
+            f["summary"]["openings"] = keep_openings(c, eid, f["batch_id"], f["kind"], rep)
         finish_batch(c, f["batch_id"], f["summary"], f["results"])
     changed = recon_changed(before, recon_snapshot(c, ent, before))
     for f in journals:
@@ -1389,7 +1567,12 @@ def log_line(ent, f):
         return text
     what = "ledger check" if f["kind"] == "gl_ledger" else "trial balance check"
     n = f.get("problems") or 0
-    return f"{head}: {s.get('accounts', 0)} accounts; {what}: {n} difference{'s' if n != 1 else ''}"
+    o = s.get("openings") or {}
+    kept = ""
+    if o.get("as_of"):
+        kept = (f"; opening balances at {date.fromisoformat(o['as_of']):%d/%m/%Y} kept for {o['accounts']} accounts"
+                + (f" ({o['changed']} changed, {o['removed']} removed from an earlier read)" if o.get("changed") or o.get("removed") else ""))
+    return f"{head}: {s.get('accounts', 0)} accounts; {what}: {n} difference{'s' if n != 1 else ''}{kept}"
 
 
 # ---------- what the SQL page shows ----------

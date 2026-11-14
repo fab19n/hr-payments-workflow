@@ -26,7 +26,7 @@ TABLE_LABELS = {
     "filing_words": ("SQL filing words", "SQL filing words"),
     "parties": ("Customer or supplier", "customers and suppliers"), "gl_accounts": ("GL account", "chart of accounts"),
     "ledger_batches": ("Ledger read", "ledger reads"), "ledger_docs": ("Ledger document", "ledger documents"),
-    "ledger_lines": ("Account line", "account lines"),
+    "ledger_lines": ("Account line", "account lines"), "ledger_openings": ("Opening balance", "opening balances"),
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),

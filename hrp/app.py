@@ -14,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, checklistbook, config, budget as stored, db, ledger, masters, nextup, recon, reports,
+from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, ledger, masters, nextup, recon, reports,
                monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
@@ -1871,6 +1871,55 @@ def ledger_doc():
     if not view["versions"]:
         return err("SQL's Journal of Transaction hasn't given the lines of this document yet.", 404)
     return jsonify({**view, "bank_codes": sorted(ledger.bank_codes(c, eid))})  # so the page can mark the bank's lines
+
+
+def _books_period(c, eid):
+    """(from, to) of a Books request: the dates given, else the current financial year to date. Raises ValueError with a
+    sentence when a date given can't be read."""
+    out = []
+    for k in ("from", "to"):
+        v = (request.args.get(k) or "").strip()
+        if v and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
+            raise ValueError(f"The {k} date isn't a date (use YYYY-MM-DD).")
+        try:
+            out.append(date.fromisoformat(v).isoformat() if v else None)
+        except ValueError:
+            raise ValueError(f"The {k} date isn't a date (use YYYY-MM-DD).") from None
+    d_from, d_to = out
+    d_to = d_to or date.today().isoformat()
+    d_from = d_from or books.year_start(c, eid, d_to)
+    if d_from > d_to:
+        raise ValueError("The From date is after the To date.")
+    return d_from, d_to
+
+
+@app.get("/api/books/ledger")
+def books_ledger():
+    """The general ledger of one account (account=) or every account, for a period, from the openings SQL printed and
+    the account lines kept. Read-only."""
+    c = con()
+    eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    try:
+        d_from, d_to = _books_period(c, eid)
+    except ValueError as ex:
+        return err(str(ex))
+    account = (request.args.get("account") or "").strip().upper() or None
+    return jsonify({**books.ledger_report(c, eid, account, d_from, d_to), "account": account,
+                    "choices": books.account_choices(c, eid)})
+
+
+@app.get("/api/books/trial-balance")
+def books_trial_balance():
+    """The trial balance for a period, with its check against SQL's own trial balance as at the same day. Read-only."""
+    c = con()
+    eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    try:
+        d_from, d_to = _books_period(c, eid)
+    except ValueError as ex:
+        return err(str(ex))
+    rollup = (request.args.get("rollup") or "") in ("1", "true", "yes")
+    return jsonify({**books.trial_balance(c, eid, d_from, d_to, rollup=rollup),
+                    "check": books.check_against_sql(c, eid, d_from, d_to)})
 
 
 def _journal_moves(c, eid, entries, as_amount=False):

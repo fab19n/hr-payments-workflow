@@ -564,8 +564,9 @@ def startup(con):
         con._head_noted = True
     repaired = ensure_triggers(con)
     from . import ledger
-    if ledger.ensure_guard(con):  # outside the trail's own triggers, so put back here (and checked by verify)
-        repaired = repaired + ["ledger_guard_here"]
+    fixed = ledger.ensure_guard(con)  # outside the trail's own triggers, so put back here (and checked by verify)
+    if fixed:
+        repaired = repaired + fixed
     if repaired:
         event(con, "audit", "triggers", {"updated": repaired, "why": "missing or changed at start-up"})
     late = 0
