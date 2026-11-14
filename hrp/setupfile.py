@@ -29,7 +29,7 @@ FORMAT, VERSION = "hrp-setup", 1
 WHATS = ("template", "full")
 MAX_ROWS = 20000  # per list; the request itself is capped at 40 MB (app.py)
 
-ENTITY_COLS = ("code", "name", "short_name", "uses_sql", "first_month", "reg_no", "tin", "sst_no", "employer_kwsp",
+ENTITY_COLS = ("code", "name", "short_name", "uses_sql", "first_month", "fy_start", "reg_no", "tin", "sst_no", "employer_kwsp",
                "employer_perkeso", "employer_lhdn", "sql_database", "notes", "active", "sort")
 ACCOUNT_COLS = ("label", "bank", "number", "currency", "statement_format", "gl_code", "sql_payment_method", "cash_book",
                 "notes", "active", "sort")

@@ -418,14 +418,16 @@ check("a document SQL's journal never gave is refused plainly", "hasn't given th
 # ---------- a second fetch: SQL's reports only, one document changed and one deleted in SQL ----------
 
 save("6.xlsx", jot([("Bank Journal", [OR1]), ("General Journal Journal", [JV1, JV2B]), ("Sales Journal", [IV1])]), 20)
-# The first month of a financial year: Month To Date holds SQL's closing of last year's profit and loss (1,000.00 of
-# rental income, 1,000.00 of electricity), while Year To Date started again and equals the lines.
+# From 1 November: SQL moves the earlier profit and loss (1,500.00 of rental income, 1,000.00 of electricity) into
+# retained earnings on that date, inside Period To Date (the trial balance must balance, so retained earnings opened
+# with a debit of 500.00); Month To Date and Year To Date are the lines from 1 November.
 TB_B = [("100-0000", "SHARE CAPITAL", (0, 9000.0), (0, 0), (0, 0), (0, 9000.0)),
+        ("150-0000", "RETAINED EARNING", (500.0, 0), (0, 500.0), (0, 0), (0, 0)),
         ("300-0000", "TRADE DEBTORS", (0, 0), (440.0, 500.0), (440.0, 500.0), (0, 60.0)),
         ("310-1000", "BANK-EXAMPLE 0001", (10000.0, 0), (500.0, 0), (500.0, 0), (10500.0, 0)),
         ("400-0000", "TRADE CREDITORS", (0, 1000.0), (0, 0), (0, 0), (0, 1000.0)),
-        ("530-1000", "OTHER INCOME - RENTAL", (0, 1000.0), (1000.0, 440.0), (1000.0, 440.0), (0, 440.0)),
-        ("900-E002", "ELECTRICITY", (1000.0, 0), (0, 1000.0), (0, 1000.0), (0, 0))]
+        ("530-1000", "OTHER INCOME - RENTAL", (0, 1500.0), (1500.0, 440.0), (0, 440.0), (0, 440.0)),
+        ("900-E002", "ELECTRICITY", (1000.0, 0), (0, 1000.0), (0, 0), (0, 0))]
 save("7.xlsx", trial_balance(TB_B, "01/11/2026"), 15)
 before = counts()
 p2 = j("post", "/api/sql/preview", json={"entity_id": EID, "fetch": True})
@@ -451,9 +453,12 @@ gone = j("get", f"/api/ledger/doc?entity={EID}&doc_no=PV2611-001")
 check("the deleted document is kept, marked no longer in SQL", gone["versions"][0]["state"] == "gone"
       and any("no longer in SQL" in x for x in gone["checks"]), str(gone["checks"]))
 tb2 = next(x for x in res2["ledger"]["files"] if x["kind"] == "trial_balance")["results"]
-check("a first-month trial balance leaves profit and loss out of Month To Date",
-      any(r["rule"] == "tb_mtd" and r["outcome"] == "skipped" and "year-end closing" in r["text"] for r in tb2)
-      and not any(r["rule"] == "tb_mtd" and r["subject"] == "530-1000" for r in tb2), str(tb2))
+check("a trial balance from 1 November compares profit and loss Month To Date and Year To Date with the lines",
+      not any(r["rule"] in ("tb_mtd", "tb_ytd") and r["outcome"] in ("warn", "skipped") for r in tb2)
+      and any(r["rule"] == "tb_ytd" and r["outcome"] == "ok" and r["text"].startswith("2 profit and loss accounts agree") for r in tb2), str(tb2))
+check("and notes the profit SQL moved into retained earnings on 1 November", [r["text"] for r in tb2 if r["rule"] == "tb_pl_moved"] == [
+    "SQL's trial balance counts profit and loss from its From date (01/11/2026), so it moved a profit of 500.00 from earlier "
+    "into retained earnings. No document carries that move."], str(tb2))
 check("its balances are checked against the ledger read again from its stored file",
       [r["subject"] for r in tb2 if r["rule"] == "tb_balance" and r["outcome"] == "warn"] == ["310-1000"], str(tb2))
 d2 = j("get", f"/api/sql/entries?entity={EID}")

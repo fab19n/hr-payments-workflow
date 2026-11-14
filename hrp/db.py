@@ -308,6 +308,10 @@ MIGRATIONS = [
     #     Transaction, kept as documents with versions and where each came from, and checked against SQL's ledger and
     #     trial balance. Journal lines pasted until now are copied in. Nothing else in the records changes.
     ledger.install,
+    # 27. The month each company's financial year starts in (1-12, Setup › Companies; empty: not set), entered by the
+    #     owner to match SQL Account's company setting, for the reports that need the year's first month. Empty for
+    #     every company to begin with. Nothing else in the records changes.
+    lambda con: add_column(con, "entities", "fy_start", "INTEGER"),
 ]
 
 
@@ -493,6 +497,28 @@ def current_cycle(today=None):
 def before_tracking(ent, month):
     """True for a month before the first month the company is tracked in this app."""
     return bool(ent["first_month"]) and month < ent["first_month"]
+
+
+def entry_before_tracking(ent, description, doc_date):
+    """True for an SQL document of a month before the first month tracked: both the month it is dated in and the month
+    it belongs to as the app files SQL documents (filing_month: the month its description names, else the month it is
+    dated in) are before it. One dated 30 September for October's rent (RENTAL OCT 26) is tracked; one dated in a
+    tracked month always is, whatever its description names, as a day number or a range read as a month (PAYMENT INV
+    DATED OCT 15, SERVICE MAY 2026 - NOV 2026) must never hide a voucher that still needs linking. Such a document is
+    kept in the books mirror (its row, its account lines, the checks against SQL's reports) but nothing asks for it to
+    be linked to a payment: those months were never tracked as payments here."""
+    return before_tracking(ent, doc_date[:7]) and before_tracking(ent, filing_month(description, doc_date))
+
+
+def entry_month(ent, description, doc_date):
+    """The payroll month a tracked SQL entry is counted in and its payment created in: the month it is dated in, or,
+    for one dated before the first month tracked that belongs to a tracked month (30 September, RENTAL OCT 26), the
+    month it belongs to, never earlier than the first month tracked. So Create payment, Create payments for all and
+    Next up all put it in the same month the SQL page lists it under."""
+    month = doc_date[:7]
+    if not before_tracking(ent, month):
+        return month
+    return max(filing_month(description, doc_date), ent["first_month"])
 
 
 def ensure_month(con, entity_id, month):

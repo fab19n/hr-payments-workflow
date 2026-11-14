@@ -315,17 +315,27 @@ def _explain(con, e, m, accts):
     return [_row(9, e, m, text, db.due(m, *_closing(checklistbook.get(con), e, m)), P2, {"view": "bank", "account_id": lines[0]["id"], "filter": "to_explain"}, "explain")]
 
 
+def _entry_cycle(e, s):
+    """The payroll month a tracked SQL entry not linked yet is asked about in: its payroll cycle, as for a payment made
+    early the month after, unless that is before the first month tracked (one dated 30 September for October's rent),
+    when it is the month its payment would be created in (db.entry_month), so the SQL page's list and this count agree."""
+    m = db.current_cycle(date.fromisoformat(s["doc_date"]))
+    return db.entry_month(e, s["description"], s["doc_date"]) if db.before_tracking(e, m) else m
+
+
 def _in_sql(con, e, worked, pays, cur):
     """Rule 7, for a company kept in SQL: the payments of these months not recorded there yet, paid (as the Overview
     counts them, db.not_in_sql) or past due and waiting for their SQL voucher (Waiting for SQL record), and the SQL
     entries of these months not linked to a payment yet (the month of an entry is its payroll cycle, as for a payment
-    made early the month after)."""
+    made early the month after). An entry of a month before the first month tracked (db.entry_before_tracking) is only
+    kept in the books mirror, so it is never asked for."""
     if not e["uses_sql"]:
         return []
     unrecorded = [x["p"] for x in pays if x["p"]["month"] in worked
                   and (db.not_in_sql(e, x["p"]) or x["flag"] and x["flag"]["code"] == "waiting_sql")]
-    loose = [m for m in (db.current_cycle(date.fromisoformat(s["doc_date"])) for s in con.execute(
-        "SELECT doc_date FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' ORDER BY doc_date", (e["id"],)))
+    loose = [m for m in (_entry_cycle(e, s) for s in con.execute(
+        "SELECT doc_date, description FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' ORDER BY doc_date", (e["id"],))
+        if not db.entry_before_tracking(e, s["description"], s["doc_date"]))
         if m in worked or m > cur and not db.before_tracking(e, m)]
     if not unrecorded and not loose:
         return []
