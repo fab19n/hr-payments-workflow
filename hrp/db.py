@@ -317,7 +317,16 @@ MIGRATIONS = [
     #     stored files of the ledgers and trial balances read so far; a file missing or changed since it was kept is
     #     skipped and named in the activity log. Nothing else in the records changes.
     ledger.install_openings,
+    # 29. The accounts the statutory payables check reads (Setup › Statutory accounts): for each company, kind (EPF,
+    #     SOCSO, EIS, SKBBK, PCB, HRDF) and payable account, the employer's share account and the due day. Made empty:
+    #     the owner confirms them. Nothing else in the records changes.
+    lambda con: _statutory_accounts(con),
 ]
+
+
+def _statutory_accounts(con):
+    from . import statutory
+    statutory.install(con)
 
 
 JOURNAL_LINES = """

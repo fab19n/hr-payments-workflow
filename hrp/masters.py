@@ -215,7 +215,30 @@ KINDS["gl_accounts"] = {
         _f("notes", "Notes", "textarea", wide=True),
     ],
 }
-GROUPS = [["Companies and banks", ["entities", "accounts", "gl_accounts"]], ["People and payments", ["payees", "parties"]],
+KINDS["statutory_accounts"] = {
+    "label": "Statutory account", "plural": "statutory accounts", "table": "statutory_accounts", "per_entity": True,
+    "order": "sort, id", "name_field": "label",
+    "help": "The payable accounts the salary vouchers credit with what is taken off the salaries (EPF, SOCSO, EIS, SKBBK, PCB), "
+            "and the expense account each authority's voucher debits with the employer's share. Accounting › Books › Statutory "
+            "checks that each month is paid in full by its due day. Nothing is checked until an account is added here; that "
+            "page suggests them from the chart of accounts by their names.",
+    "columns": [{"key": "label", "label": "Name"}, {"key": "kind", "label": "Kind"}, {"key": "payable_code", "label": "Payable account"},
+                {"key": "employer_code", "label": "Employer's share account"}, {"key": "due_day", "label": "Due day"}],
+    "fields": [
+        _f("kind", "Kind", "select", required=True, options=[["epf", "EPF (KWSP)"], ["socso", "SOCSO (PERKESO)"], ["eis", "EIS (SIP)"],
+                                                              ["skbbk", "SKBBK (Lindung 24 Jam)"], ["pcb", "PCB (LHDN)"],
+                                                              ["hrdf", "HRDF"], ["other", "Other statutory"]]),
+        _f("label", "Name", "text", required=True, wide=True, hint="As the check names it, e.g. EPF (KWSP)."),
+        _f("payable_code", "Payable account", "sqlcode", required=True,
+           hint="The liability the salary vouchers credit, e.g. 420-1001 EPF PAYABLE."),
+        _f("employer_code", "Employer's share account", "sqlcode",
+           hint="The expense the authority's voucher debits with the employer's share, e.g. 900-E001. Empty: none (PCB)."),
+        _f("due_day", "Due day of the next month", "day", hint="Contributions for a month are due by this day of the next month. Empty: the 15th."),
+        _f("sort", "Order", "number", hint="Lower comes first. Empty: after the others."),
+        _f("notes", "Notes", "textarea", wide=True),
+    ],
+}
+GROUPS = [["Companies and banks", ["entities", "accounts", "gl_accounts", "statutory_accounts"]],["People and payments", ["payees", "parties"]],
           ["Payments and documents", ["payment_types", "doc_types", "required"]],
           ["Monthly work", ["checklist", "reminders"]],
           ["Matching words", ["guess_words", "hint_words", "filing_words"]], ["General", ["settings", "move"]]]
@@ -227,7 +250,8 @@ STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and i
                 "hint_words": "Stopped: not used when matching estimated payments with SQL vouchers.",
                 "filing_words": "Stopped: SQL documents aren't filed on the checklist by these words.",
                 "parties": "Stopped: not offered for recurring payments. Links and SQL entries already matched keep it.",
-                "gl_accounts": "Stopped: kept for reference; records that name it keep it."}
+                "gl_accounts": "Stopped: kept for reference; records that name it keep it.",
+                "statutory_accounts": "Stopped: the statutory payables check leaves this account out."}
 
 
 def types():
@@ -418,6 +442,38 @@ def _gl_check(con, entity_id, vals, rec=None):
                 break
 
 
+def _statutory_check(con, entity_id, vals, rec=None):
+    """A statutory account: accounts the company's books know (its chart, or a code SQL's account lines or opening
+    balances name), a payable that isn't its own employer's share account, and a kind and payable not added already.
+    An emptied due day is the 15th."""
+    rec = rec or {}
+    if "due_day" in vals and vals["due_day"] is None:
+        vals["due_day"] = 15
+    for key, label in (("payable_code", "Payable account"), ("employer_code", "Employer's share account")):
+        code = vals.get(key)
+        if code and code != rec.get(key) and not _known_code(con, entity_id, code):
+            raise Refused(f"{label}: the company's chart of accounts has no account {code}, and no account line or opening "
+                          "balance names it.")
+    pay, emp = vals.get("payable_code", rec.get("payable_code")), vals.get("employer_code", rec.get("employer_code"))
+    if pay and emp and pay == emp:
+        raise Refused("The payable account and the employer's share account are two different accounts.")
+    kind = vals.get("kind", rec.get("kind"))
+    if ("kind" in vals or "payable_code" in vals) and con.execute(
+            "SELECT 1 FROM statutory_accounts WHERE entity_id = ? AND kind = ? AND payable_code = ? AND id IS NOT ?",
+            (entity_id, kind, pay, rec.get("id"))).fetchone():
+        raise Refused(f"The account {pay} is already a statutory account of this kind for the company.")
+
+
+def _known_code(con, entity_id, code):
+    if con.execute("SELECT 1 FROM gl_accounts WHERE entity_id = ? AND UPPER(TRIM(code)) = ?", (entity_id, code)).fetchone():
+        return True
+    for table in ("ledger_lines", "ledger_openings"):
+        if _has_table(con, table) and con.execute(f"SELECT 1 FROM {table} WHERE entity_id = ? AND UPPER(TRIM(account_code)) = ?",
+                                                  (entity_id, code)).fetchone():
+            return True
+    return False
+
+
 def _decoded(kind, r):
     for f in KINDS.get(kind, {}).get("fields", []):
         if f["type"] == "words" and isinstance(r.get(f["key"]), str):
@@ -462,6 +518,7 @@ USES = {  # (one, many, how to count)
         ("budget line", "budget lines", "SELECT COUNT(*) FROM budget_lines WHERE entity_id = ?"),
         ("customer or supplier", "customers and suppliers", "SELECT COUNT(*) FROM parties WHERE entity_id = ?"),
         ("GL account", "GL accounts", "SELECT COUNT(*) FROM gl_accounts WHERE entity_id = ?"),
+        ("statutory account", "statutory accounts", "SELECT COUNT(*) FROM statutory_accounts WHERE entity_id = ?"),
     ],
     "payment_types": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
@@ -511,6 +568,7 @@ USES = {  # (one, many, how to count)
         ("bank statement", "bank statements", "SELECT COUNT(*) FROM statements WHERE account_id = ?"),
         ("book opening", "book openings", "SELECT COUNT(*) FROM book_openings WHERE account_id = ?"),
     ],
+    "statutory_accounts": [],  # the check only reads it, so it can always be deleted
 }
 
 
@@ -677,6 +735,14 @@ def create(con, kind, fields, entity_id=None, quiet=False):
             raise Refused("Choose the company whose chart of accounts it is in.")
         vals["entity_id"] = entity_id
         _gl_check(con, entity_id, vals)
+    elif kind == "statutory_accounts":
+        if entity_id is None or not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
+            raise Refused("Choose the company whose books it is in.")
+        vals["entity_id"] = entity_id
+        _statutory_check(con, entity_id, vals)
+        if vals.get("sort") is None:
+            vals["sort"] = con.execute("SELECT COALESCE(MAX(sort), 0) + 1 FROM statutory_accounts WHERE entity_id = ?",
+                                       (entity_id,)).fetchone()[0]
     else:
         if entity_id is None or not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
             raise Refused("Choose the company the account belongs to.")
@@ -752,6 +818,11 @@ def update(con, kind, rid, fields, quiet=False):
         _party_check(con, vals, rec)
     if kind == "gl_accounts":
         _gl_check(con, rec["entity_id"], vals, rec)
+    if kind == "statutory_accounts":
+        _statutory_check(con, rec["entity_id"], vals, rec)
+        if "sort" in vals and vals["sort"] is None:
+            vals["sort"] = con.execute("SELECT COALESCE(MAX(sort), 0) + 1 FROM statutory_accounts WHERE entity_id = ?",
+                                       (rec["entity_id"],)).fetchone()[0]
     if kind in WORD_KINDS:
         _word_check(con, kind, vals, rec)
         if "sort" in vals and vals["sort"] is None:  # Order emptied: after the others

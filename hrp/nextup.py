@@ -4,7 +4,7 @@ import calendar
 from collections import Counter
 from datetime import date, timedelta
 
-from . import appsettings, auditpack, budget, checklistbook, db, rulebook, rules
+from . import appsettings, auditpack, budget, checklistbook, db, rulebook, rules, statutory
 
 # Days (General settings): a row due within SOON is 'soon'; payments and checklist items show from AHEAD days before;
 # a backup is asked for after BACKUP days without one.
@@ -51,7 +51,7 @@ def older_open(con, today, entity_id=None):
 
 
 def items(con, today, entity_id=None):
-    """The list for the day given (a date), for one company with entity_id: one row per thing to do, {key, rule (1-13),
+    """The list for the day given (a date), for one company with entity_id: one row per thing to do, {key, rule (1-14),
     entity_id, entity, month, text (one sentence), due (a date, or None), state (overdue, today, soon: within SOON
     days, or later), priority (1-3), amount, currency, go: where it is done {view, entity_id, month, and payment_id
     (payment_ids for a row of several), task_id (task_ids for a row of several), account_id or filter, as_at for the
@@ -64,6 +64,8 @@ def items(con, today, entity_id=None):
         months, past = ([m for x, m in found if x["id"] == e["id"]] for found in (shown, older))
         if entity_id in (None, e["id"]) and (months or past):
             out += _company(con, e, months, past, today)
+        if entity_id in (None, e["id"]):
+            out += _statutory(con, e, today)
     if entity_id is None:
         out += _backup(con, today)
     iso, soon = today.isoformat(), (today + timedelta(days=_soon())).isoformat()
@@ -432,6 +434,22 @@ def _checklist(e, m, tasks, B=checklistbook.FROZEN):
         listed = db._listed(names) if plain else f"{names[0]} and {len(ts) - 1} more"
         text = f"Finish {len(ts)} {_mon(m)} {e['code']} checklist items: {listed}"
     return [_row(10, e, m, text, ts[0]["due_date"], P3, _task_go(ts), "checklist")]
+
+
+def _statutory(con, e, today):
+    """Rule 14: a statutory payable not paid by its due day, or paid short, in a month tracked (Accounting › Books ›
+    Statutory, statutory.next_up): one row per account and month. Nothing until the company's statutory accounts are
+    confirmed in Setup. Each row opens the tab on its own month to today's, so the month it names is listed there
+    whatever period the tab showed last (its default, this financial year, may start after it)."""
+    if not statutory.ready(con):
+        return []
+    rows = []
+    for p in statutory.next_up(con, e["id"], today):
+        rows.append(_row(14, e, p["month"], f"{e['code']}: {p['text']} Check it on the Statutory tab.", p["due"], P1,
+                         {"view": "books", "tab": "statutory", "from": f"{p['month']}-01", "to": today.isoformat()},
+                         f"{p['kind']}:{p['payable_code']}",
+                         amount=-p["difference_sen"] / 100, currency="MYR"))
+    return rows
 
 
 def _backup(con, today):

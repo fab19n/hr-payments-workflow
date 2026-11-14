@@ -15,7 +15,7 @@ import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
 from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, ledger, masters, nextup, recon, reports,
-               monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements)
+               monthly, packcheck, partybook, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements, statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -1920,6 +1920,44 @@ def books_trial_balance():
     rollup = (request.args.get("rollup") or "") in ("1", "true", "yes")
     return jsonify({**books.trial_balance(c, eid, d_from, d_to, rollup=rollup),
                     "check": books.check_against_sql(c, eid, d_from, d_to)})
+
+
+@app.get("/api/statutory")
+def statutory_check():
+    """The statutory payables check for a range of payroll months (from= and to=, written 2026-10, or a day in the
+    month; default this financial year to date), with the accounts the chart suggests. Read-only."""
+    c = con()
+    eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    months = []
+    for k in ("from", "to"):
+        v = (request.args.get(k) or "").strip()[:7]
+        if v and not MONTH.fullmatch(v):
+            return err(f"The {k} month isn't a month. Months are written like 2026-10.")
+        months.append(v or None)
+    if not statutory.ready(c):
+        return err("The records need update 29 for the statutory check. Restart the app.")
+    return jsonify(statutory.report(c, eid, *months))
+
+
+@app.post("/api/statutory/use-suggested")
+def statutory_use_suggested():
+    """Use these accounts: the accounts the chart suggests become the company's statutory accounts, as if each were
+    added in Setup (so each has its history)."""
+    b = _body()
+    eid = b.get("entity_id")
+    if not isinstance(eid, int) or isinstance(eid, bool):
+        return err("Choose a company.")
+
+    def run(c):
+        if not c.execute("SELECT 1 FROM entities WHERE id = ?", (eid,)).fetchone():
+            raise masters.Refused("There is no such company.", 404)
+        found = statutory.suggest(c, eid)
+        if not found:
+            raise masters.Refused("The chart of accounts suggests no statutory account that isn't added already.")
+        ids = [masters.create(c, "statutory_accounts", {k: x[k] for k in ("kind", "label", "payable_code", "employer_code", "due_day")
+                                                        if x[k] is not None}, entity_id=eid) for x in found]
+        return {"added": len(ids), "ids": ids}
+    return _setup_call(run)
 
 
 def _journal_moves(c, eid, entries, as_amount=False):

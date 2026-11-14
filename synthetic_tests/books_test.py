@@ -293,7 +293,7 @@ TB1 = [("100-0000", "SHARE CAPITAL", (0, 9000.0), (0, 0), (0, 0), (0, 9000.0)),
 
 # ---------- 1. records at update 27 with SQL's reports read, then update 28 ----------
 full = db.MIGRATIONS[:]
-check("update 28 is the last one, the opening balances", len(full) == 28 and full[27] is ledger.install_openings)
+check("update 28 is the opening balances", len(full) >= 28 and full[27] is ledger.install_openings)
 db.MIGRATIONS[:] = full[:27]
 db.init()
 c = app.test_client()
@@ -342,7 +342,7 @@ p4.unlink()
 
 db.MIGRATIONS[:] = full
 trail = db.init()
-check("update 28 runs", q("PRAGMA user_version")[0]["user_version"] == 28)
+check("update 28 runs, and every update after it", q("PRAGMA user_version")[0]["user_version"] == len(full))
 op = q("SELECT * FROM ledger_openings WHERE entity_id = ? ORDER BY source, account_code", (EID,))
 tb_rows = {r["account_code"]: (r["dr_sen"], r["cr_sen"]) for r in op if r["source"] == "sql_tb"}
 led_rows = {r["account_code"]: (r["dr_sen"], r["cr_sen"]) for r in op if r["source"] == "sql_ledger"}

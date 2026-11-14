@@ -362,13 +362,19 @@ function goTo(g) {
   if (!closeDrawer()) return;
   const tasks = g.task_ids || (g.task_id ? [g.task_id] : null);
   if (g.entity_id) state.entity = g.entity_id;
-  if (g.month) state.month = g.month;
+  if (g.month && g.view !== "books") state.month = g.month;  // the Books page has no payroll month; other pages keep theirs
   state.view = g.view;
   state.openPayment = g.payment_id || null;
   state.asAt = g.view === "budget" ? g.as_at || null : null;
   state.mark = g.view !== "entity" ? null : g.payment_ids ? { pay: p => g.payment_ids.includes(p.id) }
     : tasks ? { task: t => tasks.includes(t.id) } : g.filter ? markFor(g.filter) : null;
   state.focusBank = g.view === "bank" ? { account: g.account_id || null } : null;
+  if (g.view === "books" && g.tab) {  // Next up's statutory rows open the Statutory tab on their month to today
+    const B = state.books;
+    if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "" });
+    B.tab = g.tab;
+    if (g.from || g.to) { B.from = g.from || null; B.to = g.to || null; }
+  }
   if (g.view === "bank") state.bankOnly = g.filter === "to_explain";
   window.scrollTo?.(0, 0);
   renderNav(); return render();
@@ -1601,7 +1607,8 @@ async function viewBooks(main) {
       </div>
       <div class="row"><div class="seg" role="group" aria-label="Report">
         <button type="button" data-bk-tab="tb" aria-pressed="${B.tab === "tb"}">Trial balance</button>
-        <button type="button" data-bk-tab="ledger" aria-pressed="${B.tab === "ledger"}">General ledger</button></div></div>
+        <button type="button" data-bk-tab="ledger" aria-pressed="${B.tab === "ledger"}">General ledger</button>
+        <button type="button" data-bk-tab="statutory" aria-pressed="${B.tab === "statutory"}">Statutory</button></div></div>
       <div id="booksBody"><div class="note">Loading…</div></div></div>`;
   const view = $("#booksView");
   view.addEventListener("click", ev => {
@@ -1613,6 +1620,9 @@ async function viewBooks(main) {
     if (ds.bkAcct) { B.tab = "ledger"; B.account = ds.bkAcct; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === "ledger"))); return drawBooks(); }
     if (ds.bkAll) { B.account = null; return drawBooks(); }
     if (ds.bkDoc) return booksDoc(t);
+    if (ds.stUse) return statutoryUse(t);
+    if (ds.stPay) { const [id, month] = ds.stPay.split(" "); return goTo({ view: "entity", entity_id: state.entity, month, payment_id: +id }); }
+    if (ds.stSetup) { state.setup.kind = "statutory_accounts"; return go("setup"); }
   });
   view.addEventListener("input", ev => {
     if (ev.target.id === "bkSearch") { B.q = ev.target.value; paintTbRows(); }
@@ -1636,7 +1646,11 @@ async function drawBooks() {
   if (!body) return;
   body.innerHTML = `<div class="note">Loading…</div>`;
   try {
-    if (B.tab === "tb") {
+    if (B.tab === "statutory") {
+      const d = await api(`/api/statutory?${booksQuery()}`);
+      if (!$("#booksBody")) return;
+      body.innerHTML = statutoryHtml(d);
+    } else if (B.tab === "tb") {
       const d = await api(`/api/books/trial-balance?${booksQuery()}&rollup=${B.rollup ? 1 : 0}`);
       if (!$("#booksBody")) return;
       B.from = d.from; B.to = d.to; B.tb = d;
@@ -1714,6 +1728,68 @@ function ledgerHtml(d) {
   return `${pick}<h2>General ledger, ${esc(fmtDate(d.from))} to ${esc(fmtDate(d.to))}</h2>
     ${d.accounts.map(acct).join("") || `<div class="note">No line or opening balance is kept for ${B.account ? esc(B.account) : "any account"} in these dates.</div>`}
     ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+}
+
+// The statutory payables check (hrp/statutory.py): for each statutory account confirmed in Setup, the payroll months of
+// the period (the months of From and To; this financial year to date when they are empty) with what was taken off the
+// salaries, the employer's share and what was paid for it, and whether it was paid in full by the due day. Months
+// before the company's first month tracked are grey: shown, never asked for. Read-only, except Use these accounts, which
+// adds the accounts the chart suggests as Setup would.
+const ST_PILL = { cleared: "ok", due: "warn", late: "bad", short: "bad", over: "bad", nothing: "grey" };
+const ST_WORDS = { cleared: "Cleared", due: "Due", late: "Late", short: "Short", over: "Over", nothing: "Nothing" };
+const owedRm = n => n == null ? "—" : n === 0 ? "nil" : n < 0 ? `${rmPlain(-n)} owed` : `${rmPlain(n)} paid ahead`;
+
+function statutoryHtml(d) {
+  const sug = d.suggestion || [];
+  const sugTable = sug.length ? `<div class="tbl-wrap"><table><thead><tr><th>Kind</th><th>Payable account</th><th>Employer's share account</th><th class="num">Due day</th></tr></thead><tbody>
+    ${sug.map(x => `<tr><td>${esc(x.label)}</td><td><span class="mono">${esc(x.payable_code)}</span> ${esc(x.payable_name || "")}</td>
+      <td>${x.employer_code ? `<span class="mono">${esc(x.employer_code)}</span> ${esc(x.employer_name || "")}` : "—"}</td><td class="num">${esc(x.due_day)}</td></tr>`).join("")}</tbody></table></div>` : "";
+  if (!d.configured) {
+    return `<h2>Statutory payables</h2><div class="banner grey"><b>Nothing is checked yet</b><span>${esc(d.summary)}${d.stopped ? "" : " Confirm which accounts the salary vouchers credit with what is taken off the salaries, and which take the employer's share."}</span></div>
+      ${d.stopped ? `<div class="note">The statutory accounts confirmed for this company are all stopped in Setup. Start one again there to have it checked.</div><div class="row"><button class="ghost small" type="button" data-st-setup="1">Open Setup › Statutory accounts</button></div>`
+        : sug.length ? `<div class="note">Suggested from the chart of accounts by their names:</div>${sugTable}
+        <div class="row"><button class="btn" type="button" data-st-use="1">Use these accounts</button><button class="ghost small" type="button" data-st-setup="1">Set them up in Setup instead</button></div>`
+        : `<div class="note">The chart of accounts has no account whose name looks like an EPF, SOCSO, EIS, SKBBK or PCB payable. Add them in Setup.</div><div class="row"><button class="ghost small" type="button" data-st-setup="1">Open Setup › Statutory accounts</button></div>`}`;
+  }
+  const bad = d.problems.length > 0;
+  const doc = x => x.origin === "sql" ? `<button type="button" class="linkish mono" data-bk-doc="${esc(x.doc_no)}" title="Show the lines of ${esc(x.doc_no)}">${esc(x.doc_no)}</button>` : `<span class="mono">${esc(x.doc_no)}</span>`;
+  const tracker = x => !x.tracker ? (x.origin === "sql" ? `<span class="muted">Not linked</span>` : "")
+    : `<button type="button" class="linkish" data-st-pay="${esc(x.tracker.id)} ${esc(x.tracker.month)}" title="${esc(x.tracker.description || "")}">${esc(money(x.tracker.amount_sen == null ? null : x.tracker.amount_sen / 100))}</button>${x.tracker.paid_date ? ` <span class="muted">paid ${esc(fmtDate(x.tracker.paid_date))}</span>` : ""}
+      ${x.tracker.matches ? `<span class="pill ok">Agrees</span>` : `<span class="pill warn" title="The voucher pays ${esc(rmPlain(x.tracker.expected_sen))} to the statutory accounts">Voucher pays ${esc(rmPlain(x.tracker.expected_sen))}</span>`}`;
+  const pill = m => m.before_tracking ? `<span class="pill grey" title="Before the first month tracked: shown, never asked for">Before tracking · ${esc(ST_WORDS[m.status] || m.status)}</span>`
+    : `<span class="pill ${ST_PILL[m.status] || "grey"}">${esc(ST_WORDS[m.status] || m.status)}</span>${m.paid_late ? ` <span class="pill warn">Paid late</span>` : ""}`;
+  const row = m => {
+    const pays = m.payments.length ? m.payments.map(x => `<div>${doc(x)} <span class="muted">${esc(shortDate(x.date))}</span></div>`).join("") : "—";
+    const trk = m.payments.map(tracker).filter(Boolean).map(h => `<div>${h}</div>`).join("") || "—";
+    return `<tr class="${m.before_tracking || m.status === "nothing" ? "muted" : ""}"><td>${esc(m.label)}<div class="note">Due ${esc(fmtDate(m.due))}</div></td>
+      <td class="num">${rmPlain(m.withheld_sen)}${m.credits.length ? `<div class="note">${m.credits.map(x => doc(x) + (x.correction ? ` <span class="muted">(correction)</span>` : "")).join(", ")}</div>` : ""}</td>
+      <td class="num">${rmCell(m.employer_sen)}</td><td class="num">${rmPlain(m.paid_sen)}</td>
+      <td class="num">${m.difference_sen ? (m.difference_sen > 0 ? "+" : "−") + rmPlain(Math.abs(m.difference_sen)) : ""}</td>
+      <td class="num">${owedRm(m.balance_due_sen)}</td>
+      <td>${pill(m)}<div class="note">${esc(m.text)}</div></td><td>${pays}</td><td>${trk}</td></tr>`;
+  };
+  const acct = a => `<div class="card-in"><div class="row spread"><h3>${esc(a.label)} <span class="muted">· <span class="mono">${esc(a.payable_code)}</span> ${esc(a.payable_name || "")}</span></h3>
+      <span class="note">${a.employer_code ? `Employer's share: <span class="mono">${esc(a.employer_code)}</span> ${esc(a.employer_name || "")}` : "No employer's share account"} · due by the ${esc(ordinal(a.due_day))} of the next month</span></div>
+    <div class="note">Owed at ${esc(fmtDate(a.opening_day))}: ${a.opening_sen == null ? "unknown" : esc(owedRm(a.opening_sen))}${a.brought_forward.paid_sen ? `; ${esc(rmPlain(a.brought_forward.paid_sen))} of it paid since` : ""}${a.brought_forward.still_owed_sen ? `, ${esc(rmPlain(a.brought_forward.still_owed_sen))} still owed` : ""}.</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Month</th><th class="num">Withheld</th><th class="num">Employer share</th><th class="num">Paid</th><th class="num">Difference</th><th class="num">Balance at due date</th><th>Status</th><th>Payment voucher</th><th>Tracker payment</th></tr></thead>
+    <tbody>${a.months.map(row).join("") || `<tr><td colspan="9" class="empty">No months in this period.</td></tr>`}</tbody></table></div>
+    ${a.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}</div>`;
+  return `<div class="row spread"><h2>Statutory payables, ${esc(monthName(d.from))} to ${esc(monthName(d.to))}</h2><button class="ghost small" type="button" data-st-setup="1">Statutory accounts in Setup</button></div>
+    <div class="banner ${bad ? "warn" : d.empty ? "grey" : "ok"}"><b>${bad ? "Statutory payables to look at" : "Statutory payables"}</b><span>${esc(d.summary)}</span></div>
+    ${(d.postings || []).length ? `<div class="banner warn"><b>Employer's share on another account</b>${d.postings.map(p => `<span>${doc(p)} ${esc(p.text.slice(p.doc_no.length))}${p.before_tracking ? ` <span class="pill grey">Before tracking</span>` : ""}</span>`).join("")}<span>Correct it in SQL Account with a journal moving the amount to the right account, then fetch again.</span></div>` : ""}
+    <div class="note">Withheld is what the month's documents credit to the payable, with the corrections to it (a journal against the salary, shown as a correction, belongs to the month whose withholding it corrects). Paid is what the payments to the authority debit to it for that month (the month before their own first, else up to their own month), less any refund, with the employer's share they debit to its own account. The balance is the payable's, from the books, at the end of the due day.</div>
+    ${d.accounts.map(acct).join("")}
+    ${sug.length ? `<div class="note">The chart also has ${esc(sug.map(x => x.payable_code).join(", "))}, which look like statutory payables not checked. Add them in Setup if they are.</div>` : ""}`;
+}
+
+// Use these accounts: the accounts suggested from the chart are added as Setup would add them, then the check is drawn.
+async function statutoryUse(t) {
+  t.disabled = true;
+  try {
+    const r = await api("/api/statutory/use-suggested", { json: { entity_id: state.entity } });
+    toast(`${plural(r.added, "statutory account")} added.`);
+    await drawBooks();
+  } catch (e) { toast(e.message, true); t.disabled = false; }
 }
 
 // A doc no. in the ledger opens that document's lines below its row, as on the SQL page; clicking it again closes them.
@@ -3603,7 +3679,7 @@ async function drawDeleted(kind) {
   const box = $("#setupDeleted");
   if (!box) return;
   if (!state.setup.deleted) { box.innerHTML = ""; return; }
-  const per = ["accounts", "parties", "gl_accounts", "checklist", "payees"].includes(kind);
+  const per = ["accounts", "parties", "gl_accounts", "statutory_accounts", "checklist", "payees"].includes(kind);
   if (per && !state.entity) { box.innerHTML = ""; return; }
   box.innerHTML = `<div class="note">Loading…</div>`;
   try {
