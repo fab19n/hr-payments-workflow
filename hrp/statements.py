@@ -132,12 +132,21 @@ def auto_match(con, statement_id, only=None):
     the exact amount, or several adding up to it (Maybank splits large DuitNow transfers: 25,000 = 5,000 + 10,000
     + 10,000). The same person can appear on several lines (claim, salary), so only the right combination is taken.
     An estimated bill (electricity, PCB) matches a single named line within ±50% and takes the bank's figure (take_line_total).
+    A payment whose SQL receipt or payment posted to the bank in several lines (recon.bank_parts: a receipt of 58,585.50
+    the bank took 36.25 from) is matched either way the statement shows it: one named line (or a split transfer) equal
+    to its net movement on the bank (58,549.25), or its lines one for one (the named line of 58,585.50 and a line of
+    36.25 out, dated within FEE_DAYS of it, worded as the bank's charge or marked so by classify, and not confirmed: see
+    _by_bank_lines); never both, and never a fee line on its own. When neither is there it is matched by its amount, as before.
     The bank's date replaces a paid date that came from an SQL voucher, but never one typed in. A line undone by hand,
     or freed by removing its payment, is left for a person to explain.
     """
+    from . import recon
     st = con.execute("SELECT * FROM statements WHERE id = ?", (statement_id,)).fetchone()
     lines = con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND payment_id IS NULL AND status = 'unmatched'
                            AND undone_payment_id IS NULL""", (statement_id,)).fetchall()
+    # Lines classify marked as the bank's own charges, not confirmed yet: one may be the fee of a document's other line.
+    fees = con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND payment_id IS NULL AND status = 'no_docs'
+                          AND note = 'Bank charge' AND confirmed_at IS NULL AND undone_payment_id IS NULL""", (statement_id,)).fetchall()
     pays = con.execute(
         """SELECT p.*, py.match_words, py.name AS payee_name FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
            WHERE p.account_id = ? AND p.month BETWEEN ? AND ? AND p.amount IS NOT NULL
@@ -146,6 +155,8 @@ def auto_match(con, statement_id, only=None):
         (st["account_id"], shift(st["month"], -1), st["month"])).fetchall()
     if only is not None:
         pays = [p for p in pays if p["id"] in only]
+    acct = con.execute("SELECT entity_id FROM accounts WHERE id = ?", (st["account_id"],)).fetchone()
+    parts = recon.bank_parts(con, acct["entity_id"], [p["id"] for p in pays]) if acct and pays else {}
     from datetime import date as _d
 
     def gap(p, chosen):
@@ -161,9 +172,11 @@ def auto_match(con, statement_id, only=None):
             key = words(p["match_words"] or p["payee_name"] or p["description"])
             if not key:
                 continue
+            others = [words(o["match_words"] or o["payee_name"] or o["description"]) for o in remaining if o is not p]
+            chosen = _by_bank_lines(parts.get(p["id"]), key, lines, fees, taken, others)
             cands = [l for l in lines if l["id"] not in taken and overlaps(key, words(l["description"]))
                      and (l["amount"] < 0) == (p["direction"] == "out")]
-            chosen = _combination(cands, p["amount"])
+            chosen = chosen or _combination(cands, p["amount"])
             if not chosen and p["amount_is_estimate"] and len(cands) == 1 and p["amount"] \
                     and 0.5 <= abs(cands[0]["amount"]) / p["amount"] <= 1.5:
                 chosen = cands
@@ -175,10 +188,13 @@ def auto_match(con, statement_id, only=None):
         remaining.remove(p)
         for l in chosen:
             taken.add(l["id"])
-            con.execute("UPDATE statement_lines SET payment_id = ?, status = 'matched' WHERE id = ?", (p["id"], l["id"]))
+            # A fee line classify had marked as a bank charge is the document's own line now: its note goes.
+            con.execute("""UPDATE statement_lines SET payment_id = ?, status = 'matched',
+                           note = CASE WHEN status = 'no_docs' THEN NULL ELSE note END WHERE id = ?""", (p["id"], l["id"]))
         if not p["paid_date"] or p["paid_source"] == "sql":
+            paying = [l for l in chosen if (l["amount"] < 0) == (p["direction"] == "out")] or chosen  # not a fee the other way
             con.execute("UPDATE payments SET paid_date = ?, paid_source = 'bank' WHERE id = ?",
-                        (max(l["txn_date"] for l in chosen), p["id"]))
+                        (max(l["txn_date"] for l in paying), p["id"]))
         take_line_total(con, p["id"])
         matched += len(chosen)
     return matched
@@ -244,6 +260,68 @@ def classify(con, statement_id):
     return marked
 
 
+FEE_DAYS = 3  # a fee line is dated within this many days of the line it was taken from
+CHARGE_SHARE = 10  # a fee is under a tenth of the line it was taken from (ledger.CHARGE_SHARE, SQL's own check)
+
+
+def _cents(n):
+    return int(round(float(n) * 100))
+
+
+def _by_bank_lines(bp, key, lines, fees, taken, others=()):
+    """The statement lines of a document SQL posted to the bank in several lines (bp, from recon.bank_parts), or None:
+    (a) lines named like the payee, going its way, adding up to its net movement on the bank (one net line, or a split
+    transfer); else (b) its bank lines one for one, for a payment settled by one document only: the largest on a line
+    named like the payee, each other one (the fee) on a line of the same amount and sign that looks like the bank's charge
+    (BANK_CHARGE, or marked as a bank charge by classify: fees), within FEE_DAYS of it. A fee is a small line (under a
+    CHARGE_SHARE-th of the largest, as SQL's own check has it): a line as large as that is money of its own, not a charge.
+    When SQL posted the amount and the charge as one bank line (a payment of 3,000 and its charge of 5 as 3,005 out),
+    (c) a line named like the payee and one bank charge line (BANK_CHARGE, or marked so) within FEE_DAYS that add up to
+    it. Only one of these is ever taken, a fee line never on its own, and never a line named like another payment still
+    to match (others: their match words), which is that payment's own line."""
+    if not bp:
+        return None
+    from datetime import date as _d
+    named = [l for l in lines if l["id"] not in taken and overlaps(key, words(l["description"]))]
+    chosen = _combination([l for l in named if (l["amount"] > 0) == (bp["net"] > 0)], abs(bp["net"]))
+    if chosen:
+        return chosen
+    fee_ids = {l["id"] for l in fees}
+    # A fee is the bank's own charge line: marked so, or worded so, and not named like another payment still to match.
+    pool = [l for l in list(lines) + list(fees) if l["id"] not in taken
+            and (l["id"] in fee_ids or BANK_CHARGE.search(l["description"].upper()))
+            and not any(overlaps(o, words(l["description"])) for o in others if o)]
+
+    def days(a, b):
+        return abs((_d.fromisoformat(a["txn_date"]) - _d.fromisoformat(b["txn_date"])).days)
+    if len(bp["lines"]) > 1:
+        if len(bp.get("docs") or []) != 1:
+            return None  # lines merged from several documents are not an amount and its fee
+        rest = sorted(bp["lines"], key=lambda x: -abs(x))
+        main, rest = rest[0], rest[1:]
+        if any(abs(_cents(f)) * CHARGE_SHARE >= abs(_cents(main)) for f in rest):
+            return None  # a line that large isn't a charge
+        for m in sorted((l for l in named if _cents(l["amount"]) == _cents(main)), key=lambda l: l["txn_date"]):
+            pick = [m]
+            for f in rest:
+                used = {x["id"] for x in pick}
+                near = [l for l in pool if l["id"] not in used and _cents(l["amount"]) == _cents(f) and days(l, m) <= FEE_DAYS]
+                if not near:
+                    break
+                pick.append(min(near, key=lambda l: (days(l, m), l["line_no"])))
+            else:
+                return pick
+        return None
+    for m in sorted(named, key=lambda l: l["txn_date"]):
+        rest = _cents(bp["net"]) - _cents(m["amount"])
+        if not rest or abs(rest) >= abs(_cents(m["amount"])) or (m["amount"] > 0) != (bp["net"] > 0):
+            continue
+        near = [l for l in pool if l["id"] != m["id"] and _cents(l["amount"]) == rest and days(l, m) <= FEE_DAYS]
+        if near:
+            return [m, min(near, key=lambda l: (days(l, m), l["line_no"]))]
+    return None
+
+
 def _combination(cands, amount):
     """The smallest set of candidate lines adding up exactly to the amount, or None."""
     from itertools import combinations
@@ -299,8 +377,13 @@ def suggest(con, entity_id, statement_id=None):
     still open), a payroll month within the statement's month or the month before (as auto_match). Score out of 100:
     amount up to 40 (exact; an estimate within 50% scores less the further off; a line smaller than a firm amount,
     which may be one of several, 10), name up to 40, date up to 20 (3 days or less from the paid or due date, down to
-    0 at 45 days). Reads only. With statement_id, only for the lines of that statement."""
+    0 at 45 days). Reads only. With statement_id, only for the lines of that statement.
+    A payment whose SQL receipt or payment posted to the bank in several lines (recon.bank_parts) is offered by those
+    lines instead: while none is linked, for a line going its way equal to its net movement or to its largest line; once
+    some are, only for a line equal to one still open (recon.open_lines: the fee left after the amount was linked),
+    whatever its name. A fee line is never offered while the document's other line isn't linked."""
     from datetime import date as _d
+    from . import recon
     out = {}
     for st in con.execute("""SELECT s.* FROM statements s JOIN accounts a ON a.id = s.account_id
                              WHERE a.entity_id = ? AND (? IS NULL OR s.id = ?) ORDER BY s.month DESC, s.id""",
@@ -317,17 +400,42 @@ def suggest(con, entity_id, statement_id=None):
                FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
                WHERE p.account_id = ? AND p.month BETWEEN ? AND ?""",
             (st["account_id"], shift(st["month"], -1), st["month"])).fetchall()
-        pays = [p for p in pays if not p["linked"] or (p["amount"] and p["linked"] < p["amount"] - 0.005)]
+        bank = recon.bank_parts(con, entity_id, [p["id"] for p in pays])
+        on_stmt = recon._linked_amounts(con, bank)
+        opens = {pid: recon.open_lines(bp, on_stmt.get(pid, [])) for pid, bp in bank.items()}
+        pays = [p for p in pays if (opens[p["id"]] if p["id"] in bank
+                                    else not p["linked"] or (p["amount"] and p["linked"] < p["amount"] - 0.005))]
         for l in lines:
             amt, found = abs(l["amount"]), []
             for p in pays:
-                if (l["amount"] < 0) != (p["direction"] == "out") or p["id"] == l["undone_payment_id"]:
+                bp = bank.get(p["id"])
+                if p["id"] == l["undone_payment_id"] or (not bp and (l["amount"] < 0) != (p["direction"] == "out")):
                     continue  # the payment a person just unlinked from this line is not offered back
                 parts, notes = 0.0, []
-                name = _name_score(p, l["description"])
-                if p["linked"] and name < 0.9:
-                    continue  # the rest of a split payment is a round figure (10,000) too common to go on without the name
-                target = p["amount"] - (p["linked"] or 0) if p["amount"] else None  # what is still open
+                if bp:
+                    cl = _cents(l["amount"])
+                    if on_stmt.get(p["id"]):  # some of its lines are linked: only one still open, the fee among them
+                        if not any(_cents(x) == cl for x in opens[p["id"]]):
+                            continue
+                        name = 0.0
+                        parts += 40
+                        notes.append(f"Same as the bank line still open on {', '.join(bp['docs'])}")
+                    else:
+                        if (l["amount"] > 0) != (bp["net"] > 0):
+                            continue  # a fee line on its own is never offered
+                        name = _name_score(p, l["description"])
+                        if cl == _cents(bp["net"]):
+                            parts += 40
+                            notes.append("Same as what reached the bank (after the bank's charge)" if len(bp["lines"]) > 1 else "Same amount")
+                        elif cl == _cents(max(bp["lines"], key=abs)):
+                            parts += 40
+                            notes.append("Same amount")
+                    target = None
+                else:
+                    name = _name_score(p, l["description"])
+                    if p["linked"] and name < 0.9:
+                        continue  # the rest of a split payment is a round figure (10,000) too common to go on without the name
+                    target = p["amount"] - (p["linked"] or 0) if p["amount"] else None  # what is still open
                 if target:
                     off = abs(amt - target) / target
                     if off < 0.00005 or abs(amt - target) < 0.005:

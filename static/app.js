@@ -1010,7 +1010,7 @@ function signBlock(s) {
   if (s.reconciled_at) {
     return `<div class="rc-sign"><span class="pill ok">Reconciled ${fmtDate(s.reconciled_at)}${s.reconciled_how === "before tracking" ? " · before tracking" : ""}</span>
       ${s.reconciled_note ? `<span class="note">${esc(s.reconciled_note)}</span>` : ""}
-      <button class="ghost small" data-rc-undo="${id}">Undo sign-off</button></div>`;
+      <button class="ghost small" data-rc-undo="${id}">Undo sign-off</button></div>${rcChanged(s)}`;
   }
   const why = s.why_not.length ? `<div class="note">Not ready: ${esc(s.why_not.join("; "))}.</div>` : "";
   const before = s.before_tracking ? `<div class="rc-before"><div class="note">This month is before tracking began here. If it was reconciled outside this app, say so.</div>
@@ -1019,6 +1019,27 @@ function signBlock(s) {
       <button class="ghost" data-rc-before="${id}" ${s.can_sign_before_tracking ? "" : "disabled"}>Reconciled before tracking</button>
       ${s.can_sign_before_tracking ? "" : `<div class="note">The statement has to add up first.</div>`}</div>` : "";
   return `<div class="rc-sign"><button class="btn" data-rc-sign="${id}" ${s.can_sign ? "" : "disabled"}>Mark reconciled</button>${why}</div>${before}`;
+}
+
+// A month signed off before SQL's receipts and payments counted by their lines on the bank, whose book figures that
+// changed: the figures then and now, and the owner's confirmation asked for (the sign-off stays until then).
+function rcChanged(s) {
+  const ch = s.book_changed;
+  if (!ch || !s.statement) return "";
+  const cur = s.account.currency, row = (k, w) => `<tr><td>${w}</td><td class="num">${money(ch.old[k], cur)}</td><td class="num">${money(ch.new[k], cur)}</td></tr>`;
+  return `<div class="banner warn rc-changed"><b>${esc(ch.text)}</b>
+    <span>SQL's receipts and payments now count by what each one posted to the bank account, not by its listing amount.</span>
+    <div class="tbl-wrap"><table><thead><tr><th></th><th class="num">At sign-off</th><th class="num">Now</th></tr></thead><tbody>
+      ${row("in", "Money in")}${row("out", "Money out")}${row("closing", "Book closing")}</tbody></table></div>
+    <div class="row"><button class="btn small" data-rc-reconfirm="${s.statement.id}" ${s.can_reconfirm ? "" : "disabled"}>Confirm again</button>
+      ${s.reconfirm_why ? `<span class="note">${esc(s.reconfirm_why)}</span>` : ""}</div></div>`;
+}
+
+// The month-end check of the cash book against SQL's own bank account (s.sql_check), in words.
+function rcSqlCheck(s) {
+  const k = s.sql_check;
+  if (!k) return "";
+  return `<div class="note rc-sqlcheck">${k.state === "agrees" ? `<span class="pill ok">${esc(k.text)}</span>` : k.state === "differs" ? `<span class="pill bad">Check against SQL</span> ${esc(k.text)}` : esc(k.text)}</div>`;
 }
 
 function rcTable(title, rows, cur) {
@@ -1040,8 +1061,9 @@ function monthPanel(s) {
     rc.bank_net ? `${money(rc.bank_net, cur)} net on the statement, not in the books` : "",
     rc.differ ? `${money(rc.differ, cur)} from matched amounts that differ` : "",
     rc.other ? `${money(rc.other, cur)} not explained by any of these` : ""].filter(Boolean);
-  const gone = s.left_out.journals || s.left_out.invoices, unk = s.left_out.unknown;
+  const gone = s.left_out.journals || s.left_out.invoices, unk = s.left_out.unknown, other = s.left_out.other_bank || 0;
   return `<div class="rc-panel">
+    ${rcSqlCheck(s)}
     <div class="stats">
       <div class="stat"><b>${money(st.money_in, cur)}</b><span>Money in</span></div>
       <div class="stat"><b>${money(st.money_out, cur)}</b><span>Money out</span></div>
@@ -1062,6 +1084,8 @@ function monthPanel(s) {
     ${!s.books_only.length && !s.bank_only.length && !s.differ.length && s.book.state === "ok" ? `<div class="note">Everything on the statement is in the books, and the other way round.</div>` : ""}
     ${gone ? `<div class="note">Not counted as bank movements: ${s.left_out.journals} journal${s.left_out.journals === 1 ? "" : "s"} and ${s.left_out.invoices} customer invoice${s.left_out.invoices === 1 ? "" : "s"} (customer refunds included) in the SQL listing. Fetch SQL's GL Journal of Transaction to count a journal that moves the bank.</div>` : ""}
     ${unk ? `<div class="note">Not counted: ${unk} cash book entr${unk === 1 ? "y" : "ies"} with no money in or out shown, so the books may differ by that amount.</div>` : ""}
+    ${other ? `<div class="note">Not counted: ${plural(other, "receipt or payment", "receipts or payments")} whose lines in SQL don't touch this bank account (paid from another account).</div>` : ""}
+    ${s.listing_note ? `<div class="note">${esc(s.listing_note)}</div>` : ""}
     ${s.uses_sql ? `<div class="note">For the reconciliation, fetch only the bank's cash book listing: a voucher paid from petty cash or a card would count as a bank movement.</div>` : ""}
     ${signBlock(s)}
     <div class="note">Marking a month reconciled is a record kept in this app. Nothing is posted to SQL Account.</div></div>`;
@@ -1102,7 +1126,7 @@ async function drawRecon(focus) {
   R.panel = R.open && y.rows.some(r => r.month === R.open) ? await api(rcUrl("month", `&account_id=${R.account}&month=${R.open}`)) : null;
   const cur = y.account.currency;
   const rowHtml = r => `<tr class="${R.open === r.month ? "focus" : ""}"><td><button class="link" data-rc-open="${r.month}" aria-expanded="${R.open === r.month}">${esc(r.label)}</button></td>
-      <td>${rcPill(r.status, r.status_text)}</td>
+      <td>${rcPill(r.status, r.status_text)}${r.book_changed ? `<div class="note bad-text">${esc(r.book_changed.text)}: book closing ${money(r.book_changed.old.closing, cur)} at sign-off, ${money(r.book_changed.new.closing, cur)} now (in ${money(r.book_changed.old.in, cur)} → ${money(r.book_changed.new.in, cur)}, out ${money(r.book_changed.old.out, cur)} → ${money(r.book_changed.new.out, cur)})</div>` : ""}</td>
       <td class="num">${r.bank_closing != null ? money(r.bank_closing, cur) : "—"}</td><td class="num">${bookCell({ closing: r.book_closing, note: r.book_note }, cur)}</td>
       <td>${r.reconciled_at ? fmtDate(r.reconciled_at) + (r.reconciled_how === "before tracking" ? ` <span class="muted">· before tracking</span>` : "") : "—"}</td>
       <td class="noprint">${r.document_id ? `<a href="/api/documents/${r.document_id}/file" target="_blank">PDF</a>` : "—"}</td></tr>
@@ -1114,6 +1138,7 @@ async function drawRecon(focus) {
       <div class="row noprint">${pickAccounts(e, R.account).length > 1 ? pickAccounts(e, R.account).map(a => `<button class="${a.id === R.account ? "btn" : "ghost"} small" data-rc-acct="${a.id}">${esc(a.label)}</button>`).join("") : ""}
       ${y.years.length > 1 ? y.years.map(yr => `<button class="${yr === y.year ? "btn" : "ghost"} small" data-rc-year="${yr}">${esc(yr)}</button>`).join("") : ""}</div></div>
       <div class="note">Click a month for its summary. Book closing comes from ${esc(y.source)}.</div>
+      ${y.listing_note ? `<div class="note">${esc(y.listing_note)}</div>` : ""}
       <div class="tbl-wrap"><table><thead><tr><th>Month</th><th>Status</th><th class="num">Bank closing</th><th class="num">Book closing</th><th>Reconciled on</th><th class="noprint">Statement</th></tr></thead><tbody>
       ${y.rows.map(rowHtml).join("") || `<tr><td colspan="6" class="empty">No months to show for ${esc(y.year)}.</td></tr>`}</tbody></table></div></div>
     <div class="card noprint"><h2>Book opening</h2>
@@ -1186,7 +1211,11 @@ function rvMine(l) {
   const ch = V.choice[l.id] || "";
   const sugg = l.suggestions.map(x => ({ p: rvPay(x.payment_id), why: x.reason })).filter(x => x.p);
   const used = new Set(sugg.map(x => x.p.id));
-  const others = V.d.payments.filter(p => !used.has(p.id) && (p.direction === "in") === (l.amount > 0) && !(p.linked && p.amount && p.linked >= p.amount - 0.005));
+  // A receipt or payment SQL posted to the bank in several lines is open while one of its lines isn't linked (a fee
+  // line, money the other way, goes to the same document); any other goes the line's way and isn't covered yet.
+  const others = V.d.payments.filter(p => !used.has(p.id) && (p.open_lines
+    ? p.open_lines.some(x => Math.abs(x - l.amount) < 0.005) || (!p.linked && (p.bank_net > 0) === (l.amount > 0))
+    : (p.direction === "in") === (l.amount > 0) && !(p.linked && p.amount && p.linked >= p.amount - 0.005)));
   const opts = `<option value="">Choose what this is…</option>
     ${sugg.length ? `<optgroup label="Suggested">${sugg.map(x => rvPayOption(x.p, ch, x.why)).join("")}</optgroup>` : ""}
     ${others.length ? `<optgroup label="Open payments">${others.map(p => rvPayOption(p, ch)).join("")}</optgroup>` : ""}
@@ -1270,6 +1299,7 @@ function drawReview() {
         <div class="stat"><b>${money(st.closing, cur)}</b><span>Bank closing${diff == null ? "" : " · difference " + money(diff, cur)}</span></div>
         <div class="stat" id="rvSelected"></div></div>
       <div class="row spread"><div>${rcPill(s.status, s.status_text)}</div></div>
+      ${rcSqlCheck(s)}${s.listing_note ? `<div class="note">${esc(s.listing_note)}</div>` : ""}
       ${listBar("bank", "statement lines")}
       <div class="row rv-sortbar noprint"><span class="muted small">Sort by</span><table class="rv-sort"><thead><tr>${sortTh("bank", "date", "Date")}${sortTh("bank", "desc", "Description")}${sortTh("bank", "amount", "Amount", "num")}${sortTh("bank", "by", "Explained by")}</tr></thead></table></div>
       <div class="rv-wrap"><div id="rvList" class="rv-list">${rvLists()}</div>
@@ -4035,6 +4065,7 @@ document.addEventListener("click", async ev => {
     if (t.id === "rvApply") { t.disabled = true; try { return await rvApply(); } finally { t.disabled = false; } }
     if (ds.rcSign) return rcAct("sign-off", { statement_id: +ds.rcSign }, "Marked as reconciled.");
     if (ds.rcUndo) return rcAct("undo-sign-off", { statement_id: +ds.rcUndo }, "Sign-off undone.");
+    if (ds.rcReconfirm) return rcAct("confirm-book", { statement_id: +ds.rcReconfirm }, "Sign-off confirmed again with the new book figures.");
     if (ds.rcBefore) {
       const id = ds.rcBefore, tick = document.querySelector(`[data-rc-before-tick="${id}"]`)?.checked === true;
       return rcAct("before-tracking", { statement_id: +id, checked: tick, note: document.querySelector(`[data-rc-note="${id}"]`)?.value || "" }, "Marked as reconciled before tracking.");

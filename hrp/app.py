@@ -1302,6 +1302,13 @@ def recon_undo_sign_off():
     return _recon_do(lambda c: recon.undo_sign_off(c, st))
 
 
+@app.post("/api/recon/confirm-book")
+def recon_confirm_book():
+    """Confirm again a month signed off before receipts and payments counted by their bank lines (recon.confirm_book_change)."""
+    e, st = _recon_statement()
+    return _recon_do(lambda c: recon.confirm_book_change(c, e, st))
+
+
 @app.post("/api/recon/before-tracking")
 def recon_before_tracking():
     e, st = _recon_statement()

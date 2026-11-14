@@ -537,6 +537,43 @@ def bank_nets(con, eid, keys, code):
     return out
 
 
+def bank_lines(con, eid, keys, code):
+    """Each line the current version of a document holds on one GL code, in its order: {doc_key: [sen, debit (money
+    into the bank) above 0]}. A current document with no line on the code gives []; a key with no current SQL document
+    (none kept, or no longer in SQL) isn't in it."""
+    code = _key(code)
+    out = {}
+    if not code or not ready(con):
+        return out
+    for part in _chunks({_key(k) for k in keys if k}):
+        for r in con.execute(f"""SELECT d.doc_key, l.account_code, l.dr_sen, l.cr_sen FROM ledger_docs d
+                                 LEFT JOIN ledger_lines l ON l.doc_id = d.id
+                                 WHERE d.entity_id = ? AND d.origin = 'sql' AND d.state = 'current'
+                                 AND d.doc_key IN ({','.join('?' * len(part))}) ORDER BY d.doc_key, l.seq""", (eid, *part)):
+            got = out.setdefault(r["doc_key"], [])
+            if r["account_code"] is not None and _key(r["account_code"]) == code and (r["dr_sen"] or r["cr_sen"]):
+                got.append((r["dr_sen"] or 0) - (r["cr_sen"] or 0))
+    return out
+
+
+def doc_reads(con, eid, keys):
+    """For each SQL document kept: {doc_key: {state ('current' or 'gone'), import_id (the SQL import of the latest read
+    that gave or saw that version, or None)}}. A key with no SQL document kept, or only replaced versions, isn't in it.
+    The bank reconciliation uses it to tell a document SQL no longer has from one with no lines kept, and a listing pasted
+    after the journal read from one the read already holds."""
+    out = {}
+    if not ready(con):
+        return out
+    for part in _chunks({_key(k) for k in keys if k}):
+        for r in con.execute(f"""SELECT d.doc_key, d.state, MAX(COALESCE(b.sql_import_id, 0), COALESCE(s.sql_import_id, 0)) AS imp
+                                 FROM ledger_docs d JOIN ledger_batches b ON b.id = d.batch_id
+                                 LEFT JOIN ledger_batches s ON s.id = d.seen_batch_id
+                                 WHERE d.entity_id = ? AND d.origin = 'sql' AND d.state IN ('current', 'gone')
+                                 AND d.doc_key IN ({','.join('?' * len(part))})""", (eid, *part)):
+            out[r["doc_key"]] = {"state": r["state"], "import_id": r["imp"] or None}
+    return out
+
+
 # ---------- per document checks (live) ----------
 
 def _book_of(kind, doc_type):
