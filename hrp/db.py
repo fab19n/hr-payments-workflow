@@ -312,6 +312,11 @@ MIGRATIONS = [
     #     owner to match SQL Account's company setting, for the reports that need the year's first month. Empty for
     #     every company to begin with. Nothing else in the records changes.
     lambda con: add_column(con, "entities", "fy_start", "INTEGER"),
+    # 28. Opening balances as SQL printed them (a trial balance's Opening Balance and a GL ledger's Balance B/F, each at
+    #     its From date), kept with the read they came from, so the books can start each account there. Filled from the
+    #     stored files of the ledgers and trial balances read so far; a file missing or changed since it was kept is
+    #     skipped and named in the activity log. Nothing else in the records changes.
+    ledger.install_openings,
 ]
 
 

@@ -119,11 +119,12 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 
 // month and day are set in start(), once the settings (the rollover day) are loaded.
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
-  nextAll: {}, bankOnly: false, lists: {}, counts: {}, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
+  nextAll: {}, bankOnly: false, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "" }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
   setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
 const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
+  ["Accounting", [["books", "Books"]]],
   ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
   ["Setup", [["setup", "Setup"]]]];
 const ICON = {
@@ -132,6 +133,7 @@ const ICON = {
   budget: '<path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12M16 14h.01"/>',
   bank: '<path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M2 21h20M12 3l9 5H3z"/>',
   sql: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
+  books: '<path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6zM7 8h2M15 8h2M7 12h2M15 12h2"/>',
   payees: '<path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',
   audit: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M9 15l2 2 4-4"/>',
   settings: '<path d="M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
@@ -304,6 +306,7 @@ async function render() {
     else if (state.view === "budget") await viewBudget(main);
     else if (state.view === "bank") await viewBank(main);
     else if (state.view === "sql") await viewSql(main);
+    else if (state.view === "books") await viewBooks(main);
     else if (state.view === "payees") await viewPayees(main);
     else if (state.view === "audit") await viewAudit(main);
     else if (state.view === "settings") await viewSettings(main);
@@ -1551,14 +1554,14 @@ async function viewSql(main) {
     <div id="sqlPreview"></div>
     <div class="card"><h2>Find an SQL entry</h2>${listBar("sql", "SQL entries")}</div>
     <div id="sqlEntries">${entries()}</div>
-    <div class="card"><h2>Journals and customer invoices</h2>
+    <div class="card"><h2>Journals and invoices</h2>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>e-Invoice</th><th>Checklist item</th></tr></thead><tbody>
       ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}${linesPill(d.lines, x)}</td>
         <td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
         <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : x.before_tracking ? `<span class="pill grey">Before tracking</span>` : `<span class="muted">—</span>`}
           ${x.kind === "journal" && x.bank_move != null ? `<div class="note">Moves ${money(Math.abs(x.bank_move))} ${x.bank_move > 0 ? "into" : "out of"} the bank, so it counts in the bank reconciliation.</div>` : ""}
           ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">${x.kind === "journal" ? "Payment" : "Receipt"}: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>`
-            : x.kind === "journal" && x.bank_move != null && !x.before_tracking ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Paste the Journal and Customer Invoice listings to see them here.</td></tr>`}
+            : x.kind === "journal" && x.bank_move != null && !x.before_tracking ? `<div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${x.id}" style="max-width:240px">${candOpts({ doc_no: x.doc_no, direction: x.bank_move > 0 ? "in" : "out" })}</select><button class="ghost small" data-sql-link-go="${x.id}">Link</button><button class="ghost small" data-sql-create="${x.id}">Create payment</button></div>` : ""}</td></tr>`).join("") || `<tr><td colspan="6" class="empty">Fetch or paste the Journal and invoice listings to see them here.</td></tr>`}
       </tbody></table></div></div>
     ${sqlChecksCard(d)}
     <div class="card"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it.</div>
@@ -1571,6 +1574,160 @@ async function viewSql(main) {
   $("#sqlPaste").value = state.sqlPaste[state.entity] || "";
   paintCount("sql"); LIST_REDRAW.sql = () => { $("#sqlEntries").innerHTML = entries(); paintCount("sql"); };
   if (state.sqlPreview?.entity_id === state.entity) renderSqlPreview(state.sqlPreview);
+}
+
+/* ---------------- Accounting › Books ---------------- */
+// The books worked out here from the openings SQL printed and the account lines kept: the trial balance (checked against
+// SQL's own) and the general ledger. Read-only: nothing on this page changes the records.
+const rmPlain = n => n == null ? "—" : (n / 100).toLocaleString("en-MY", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const rmCell = n => n ? rmPlain(n) : "";
+const drCr = n => n == null ? "—" : n === 0 ? "0.00" : `${rmPlain(Math.abs(n))} ${n > 0 ? "Dr" : "Cr"}`;
+const BOOK_NAMES = { bank: "Bank", general: "General", sales: "Sales", purchase: "Purchase", other: "Other" };
+
+async function viewBooks(main) {
+  const e = ent(), B = state.books;
+  if (!e) { main.innerHTML = `<div class="card"><div class="note">Add a company in Setup first.</div></div>`; return; }
+  if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "" });
+  main.innerHTML = `${entityPicker()}
+    <div class="card" id="booksView"><h1>Books · ${esc(e.code)}</h1>
+      <div class="note">${e.uses_sql
+        ? "The books worked out here: each account starts from the opening balance SQL printed (its trial balance or ledger, kept when they were fetched) and adds the account lines of SQL's GL Journal of Transaction."
+        : "The books kept here for this company: each account starts from its opening balance entered here (or from nothing) and adds the account lines entered here."} Profit and loss start again at the financial year start${e.fy_start ? ` (1 ${esc(monthName("2000-" + String(e.fy_start).padStart(2, "0")).split(" ")[0])})` : " (January, as it isn't set in Setup › Companies)"}. Nothing on this page can be changed${e.uses_sql ? "; it follows what is fetched from SQL" : ""}.</div>
+      <div class="row" style="align-items:flex-end">
+        <label class="field"><span>From</span><input type="date" id="bkFrom" value="${esc(B.from || "")}"></label>
+        <label class="field"><span>To</span><input type="date" id="bkTo" value="${esc(B.to || "")}"></label>
+        <button class="btn" type="button" data-bk-show="1">Show</button>
+        <button class="ghost small" type="button" data-bk-year="1">This financial year to date</button>
+      </div>
+      <div class="row"><div class="seg" role="group" aria-label="Report">
+        <button type="button" data-bk-tab="tb" aria-pressed="${B.tab === "tb"}">Trial balance</button>
+        <button type="button" data-bk-tab="ledger" aria-pressed="${B.tab === "ledger"}">General ledger</button></div></div>
+      <div id="booksBody"><div class="note">Loading…</div></div></div>`;
+  const view = $("#booksView");
+  view.addEventListener("click", ev => {
+    const t = ev.target.closest("button"); if (!t) return;
+    const ds = t.dataset;
+    if (ds.bkTab) { B.tab = ds.bkTab; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === B.tab))); return drawBooks(); }
+    if (ds.bkShow) { B.from = $("#bkFrom").value || null; B.to = $("#bkTo").value || null; return drawBooks(); }
+    if (ds.bkYear) { B.from = B.to = null; return drawBooks(); }
+    if (ds.bkAcct) { B.tab = "ledger"; B.account = ds.bkAcct; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === "ledger"))); return drawBooks(); }
+    if (ds.bkAll) { B.account = null; return drawBooks(); }
+    if (ds.bkDoc) return booksDoc(t);
+  });
+  view.addEventListener("input", ev => {
+    if (ev.target.id === "bkSearch") { B.q = ev.target.value; paintTbRows(); }
+  });
+  view.addEventListener("change", ev => {
+    const t = ev.target;
+    if (t.id === "bkRollup") { B.rollup = t.checked; return drawBooks(); }
+    if (t.id === "bkAcct") {
+      const v = t.value.trim().toUpperCase(), code = v.split(/\s+/)[0];
+      if (!v) { B.account = null; return drawBooks(); }
+      if ((B.choices || []).some(c => c.code === code)) { B.account = code; return drawBooks(); }
+    }
+  });
+  await drawBooks();
+}
+
+const booksQuery = () => { const B = state.books; return `entity=${state.entity}${B.from ? `&from=${B.from}` : ""}${B.to ? `&to=${B.to}` : ""}`; };
+
+async function drawBooks() {
+  const B = state.books, body = $("#booksBody");
+  if (!body) return;
+  body.innerHTML = `<div class="note">Loading…</div>`;
+  try {
+    if (B.tab === "tb") {
+      const d = await api(`/api/books/trial-balance?${booksQuery()}&rollup=${B.rollup ? 1 : 0}`);
+      if (!$("#booksBody")) return;
+      B.from = d.from; B.to = d.to; B.tb = d;
+      body.innerHTML = tbHtml(d); paintTbRows();
+    } else {
+      const d = await api(`/api/books/ledger?${booksQuery()}${B.account ? `&account=${encodeURIComponent(B.account)}` : ""}`);
+      if (!$("#booksBody")) return;
+      B.from = d.from; B.to = d.to; B.choices = d.choices;
+      body.innerHTML = ledgerHtml(d);
+    }
+    $("#bkFrom").value = B.from || ""; $("#bkTo").value = B.to || "";
+  } catch (e) { body.innerHTML = `<div class="note warn-text">${esc(e.message)}</div>`; }
+}
+
+// The banner of the check against SQL's own trial balance: green when it agrees, the differences when not, grey when
+// it couldn't run (and why).
+function sqlCheckBanner(ch) {
+  if (!ch) return "";
+  if (ch.outcome === "ok") return `<div class="banner ok"><b>Checked against SQL's trial balance: agrees</b><span>${esc(ch.text)}</span></div>`;
+  if (ch.outcome === "skipped") return `<div class="banner grey"><b>Not checked against SQL's trial balance</b><span>${esc(ch.text)}</span></div>`;
+  return `<div class="banner warn"><b>Checked against SQL's trial balance: differences</b><span>${esc(ch.text)}</span>
+    <div class="tbl-wrap"><table><thead><tr><th>Account</th><th>What differs</th><th class="num">SQL</th><th class="num">Here</th><th class="num">Difference</th></tr></thead><tbody>
+    ${ch.differences.map(x => `<tr><td class="mono">${esc(x.code)}</td><td>${esc(x.text)}</td><td class="num">${drCr(x.sql_sen)}</td><td class="num">${drCr(x.here_sen)}</td><td class="num">${drCr(x.diff_sen)}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
+}
+
+const acctName = r => r.code == null ? esc(r.name) : `${esc(r.name || "")}${r.name_from === "printed" ? ` <span class="pill warn">Not in chart</span>` : !r.name ? ` <span class="pill warn">Not in chart</span>` : ""}${r.rolled?.length ? `<div class="note">With ${esc(r.rolled.join(", "))}</div>` : ""}${r.control ? `<div class="note">Sub-ledger of ${esc(r.control)}</div>` : ""}`;
+
+function tbHtml(d) {
+  const resets = d.accounts.some(r => r.reset_sen);
+  const starts = d.openings.map(o => o.as_of ? `${esc(o.words)} at ${esc(fmtDate(o.as_of))} (${plural(o.accounts, "account")})` : `${esc(o.words)} (${plural(o.accounts, "account")})`).join("; ");
+  return `${sqlCheckBanner(ent()?.uses_sql ? d.check : null)}
+    <div class="row spread"><h2>Trial balance, ${esc(fmtDate(d.from))} to ${esc(fmtDate(d.to))}</h2>
+      ${d.balanced ? `<span class="pill ok">Balances</span>` : `<span class="pill bad">Doesn't balance</span>`}</div>
+    ${starts ? `<div class="note">Openings from ${starts}.</div>` : ""}
+    <div class="row"><label class="row tight"><input type="checkbox" id="bkRollup" ${d.rollup ? "checked" : ""}> Customers and suppliers added into their control accounts, as SQL prints them</label>
+      ${listBarBooks()}</div>
+    <div class="tbl-wrap"><table class="books-tb"><thead><tr><th>Code</th><th>Name</th><th class="num">Opening debit</th><th class="num">Opening credit</th><th class="num">Debit</th><th class="num">Credit</th>${resets ? `<th class="num">Year start</th>` : ""}<th class="num">Closing debit</th><th class="num">Closing credit</th></tr></thead>
+    <tbody id="bkRows"></tbody>
+    <tfoot><tr class="sql-lines-total"><td colspan="2">Total</td><td class="num">${rmPlain(d.totals.opening_dr_sen)}</td><td class="num">${rmPlain(d.totals.opening_cr_sen)}</td><td class="num">${rmPlain(d.totals.dr_sen)}</td><td class="num">${rmPlain(d.totals.cr_sen)}</td>${resets ? `<td class="num">${drCr(d.totals.reset_sen)}</td>` : ""}<td class="num">${rmPlain(d.totals.closing_dr_sen)}</td><td class="num">${rmPlain(d.totals.closing_cr_sen)}</td></tr></tfoot></table></div>
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+}
+
+const listBarBooks = () => `<input type="search" id="bkSearch" value="${esc(state.books.q)}" placeholder="Search accounts" aria-label="Search accounts"><span class="muted" id="bkCount" aria-live="polite"></span>`;
+
+function paintTbRows() {
+  const d = state.books.tb, tb = $("#bkRows");
+  if (!d || !tb) return;
+  const resets = d.accounts.some(r => r.reset_sen);
+  const rows = d.accounts.filter(r => LT.match(`${r.code || ""} ${r.name || ""} ${(r.rolled || []).join(" ")}`, state.books.q));
+  tb.innerHTML = rows.map(r => `<tr><td class="mono">${r.code == null ? "—" : `<button type="button" class="linkish mono" data-bk-acct="${esc(r.code)}" title="Open the ledger of ${esc(r.code)}">${esc(r.code)}</button>`}</td>
+    <td>${acctName(r)}</td><td class="num">${r.opening_sen == null ? "—" : rmCell(r.opening_dr_sen)}</td><td class="num">${r.opening_sen == null ? "—" : rmCell(r.opening_cr_sen)}</td>
+    <td class="num">${rmCell(r.dr_sen)}</td><td class="num">${rmCell(r.cr_sen)}</td>${resets ? `<td class="num">${r.reset_sen ? drCr(r.reset_sen) : ""}</td>` : ""}
+    <td class="num">${r.closing_sen == null ? "—" : rmCell(r.closing_dr_sen)}</td><td class="num">${r.closing_sen == null ? "—" : rmCell(r.closing_cr_sen)}</td></tr>`).join("")
+    || `<tr><td colspan="${resets ? 9 : 8}" class="empty">${d.accounts.length ? "No account matches." : `No opening balance or account line is kept for these dates yet.${ent()?.uses_sql ? " Fetch SQL's reports on the SQL import page." : ""}`}</td></tr>`;
+  const c = $("#bkCount"); if (c) c.textContent = `${rows.length} of ${d.accounts.length} shown`;
+}
+
+function ledgerHtml(d) {
+  const B = state.books;
+  const pick = `<div class="row" style="align-items:flex-end"><label class="field" style="min-width:280px"><span>Account (type to search)</span>
+      <input id="bkAcct" list="bkChoices" value="${esc(B.account || "")}" placeholder="All accounts" autocomplete="off"></label>
+      <datalist id="bkChoices">${(d.choices || []).map(c => `<option value="${esc(c.code)}">${esc(c.code)} ${esc(c.name || "")}</option>`).join("")}</datalist>
+      ${B.account ? `<button class="ghost small" type="button" data-bk-all="1">All accounts</button>` : ""}</div>`;
+  const acct = a => `<div class="card-in"><div class="row spread"><h3><span class="mono">${esc(a.code)}</span> ${esc(a.name || "")}${a.name_from === "printed" || !a.name ? ` <span class="pill warn">Not in chart</span>` : ""}</h3>
+      ${a.control ? `<span class="note">Sub-ledger of <button type="button" class="linkish mono" data-bk-acct="${esc(a.control)}">${esc(a.control)}</button></span>` : ""}</div>
+    <div class="tbl-wrap"><table class="books-ledger"><thead><tr><th>Date</th><th>Doc No</th><th>Book</th><th>Description</th><th class="num">Debit</th><th class="num">Credit</th><th class="num">Balance</th></tr></thead><tbody>
+      <tr class="books-open"><td>${esc(shortDate(d.from))}</td><td></td><td></td><td>Opening balance${a.opening_words ? ` <span class="muted">· ${esc(a.opening_words)}${a.opening_as_of ? ` at ${esc(fmtDate(a.opening_as_of))}` : ""}</span>` : ""}</td><td></td><td></td><td class="num">${drCr(a.opening_sen)}</td></tr>
+      ${a.rows.map(r => r.kind === "year_start" ? `<tr class="books-reset"><td>${esc(shortDate(r.date))}</td><td></td><td></td><td>${esc(r.description)}</td><td class="num">${rmCell(r.dr_sen)}</td><td class="num">${rmCell(r.cr_sen)}</td><td class="num">${drCr(r.balance_sen)}</td></tr>`
+        : `<tr><td>${esc(shortDate(r.date))}</td><td>${r.origin === "sql" ? `<button type="button" class="linkish mono" data-bk-doc="${esc(r.doc_no)}" title="Show the lines of ${esc(r.doc_no)}">${esc(r.doc_no)}</button>` : `<span class="mono">${esc(r.doc_no)}</span>`}</td><td>${esc(BOOK_NAMES[r.book] || r.book || "")}</td>
+          <td>${esc(r.description || "")}</td><td class="num">${rmCell(r.dr_sen)}</td><td class="num">${rmCell(r.cr_sen)}</td><td class="num">${drCr(r.balance_sen)}</td></tr>`).join("")}
+      <tr class="sql-lines-total"><td colspan="4">Total for the period</td><td class="num">${rmPlain(a.dr_sen)}</td><td class="num">${rmPlain(a.cr_sen)}</td><td></td></tr>
+      <tr class="books-open"><td>${esc(shortDate(d.to))}</td><td></td><td></td><td>Closing balance</td><td></td><td></td><td class="num">${drCr(a.closing_sen)}</td></tr>
+    </tbody></table></div>${a.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}</div>`;
+  return `${pick}<h2>General ledger, ${esc(fmtDate(d.from))} to ${esc(fmtDate(d.to))}</h2>
+    ${d.accounts.map(acct).join("") || `<div class="note">No line or opening balance is kept for ${B.account ? esc(B.account) : "any account"} in these dates.</div>`}
+    ${d.notes.map(n => `<div class="note">${esc(n)}</div>`).join("")}`;
+}
+
+// A doc no. in the ledger opens that document's lines below its row, as on the SQL page; clicking it again closes them.
+async function booksDoc(t) {
+  const row = t.closest("tr"), next = row?.nextElementSibling, no = t.dataset.bkDoc;
+  if (next?.classList.contains("sql-lines-row") && next.dataset.doc === no) { next.remove(); return; }
+  if (next?.classList.contains("sql-lines-row")) next.remove();
+  try {
+    const v = await api(`/api/ledger/doc?entity=${state.entity}&doc_no=${encodeURIComponent(no)}`);
+    const tr = document.createElement("tr");
+    tr.className = "sql-lines-row"; tr.dataset.doc = no;
+    tr.innerHTML = `<td colspan="${row.children.length}">${ledgerDocView(v)}</td>`;
+    row.after(tr);
+  } catch (e) { toast(e.message, true); }
 }
 
 function einvPill(x) {

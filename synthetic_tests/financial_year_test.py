@@ -90,7 +90,7 @@ CHART = ((SAL, "SALARY - EXAMPLE", "expense"), (SALES, "SALES - EXAMPLE", "incom
 
 # ---------- 1. a records.db at update 26, then update 27 ----------
 full = db.MIGRATIONS[:]
-check("update 27 is the last one", len(full) == 27)
+check("update 27 is the financial year setting", len(full) >= 27)
 db.MIGRATIONS[:] = full[:26]
 db.init()
 EXO, EXJ, EXA = (q("SELECT id FROM entities WHERE code = ?", (x,))[0]["id"] for x in ("EXO", "EXJ", "EXA"))
@@ -125,10 +125,12 @@ before = business_rows()
 db.MIGRATIONS[:] = full
 trail = db.init()
 after = business_rows()
-check("update 27 runs", q("PRAGMA user_version")[0]["user_version"] == 27)
+check("update 27 runs, and every update after it", q("PRAGMA user_version")[0]["user_version"] == len(full))
 check("every company gets an empty financial year start", [r["fy_start"] for r in q("SELECT fy_start FROM entities ORDER BY id")] == [None] * 3)
+# Tables a later update adds (the opening balances of update 28) start empty here: no ledger or trial balance was read.
 check("every other row is kept as it was",
-      {t: r for t, r in after.items() if t not in ("entities", "activity")} == {t: r for t, r in before.items() if t not in ("entities", "activity")}
+      all(not after[t] for t in set(after) - set(before))
+      and {t: r for t, r in after.items() if t in before and t not in ("entities", "activity")} == {t: r for t, r in before.items() if t not in ("entities", "activity")}
       and [x[:-1] for x in after["entities"]] == before["entities"] and after["activity"][:len(before["activity"])] == before["activity"])
 r = db.connect()
 v = audit.verify(r)
