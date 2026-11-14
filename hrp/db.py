@@ -336,7 +336,16 @@ MIGRATIONS = [
     #     A month signed off before it whose book figures the lines change keeps its sign-off and asks to be confirmed
     #     again. Empty for every statement to begin with. Nothing else in the records changes.
     lambda con: add_column(con, "statements", "book_rule_at", "TEXT"),
+    # 33. e-Invoices read from copies of SQL's MyInvois Transaction screen (each company's, by UUID, with what LHDN
+    #     says of it and the SQL document it links to), and on each SQL document when its e-Invoice was last known and
+    #     whether MyInvois filled it. Made empty. Nothing else in the records changes.
+    lambda con: _myinvois_table(con),
 ]
+
+
+def _myinvois_table(con):
+    from . import myinvois
+    myinvois.install(con)
 
 
 def _statutory_accounts(con):

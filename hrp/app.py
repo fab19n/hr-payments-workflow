@@ -15,7 +15,8 @@ import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
 from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, finstatements, ledger, masters, nextup, recon, reports,
-               monthly, packcheck, partybook, receivables, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements, statutory)
+               monthly, myinvois, packcheck, partybook, receivables, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements,
+               statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -1331,10 +1332,13 @@ def open_payments():
 
 _pending_sql = {}  # token -> (entity_id, filename, data); one person uses this app, so memory is enough
 PASTED = "SQL listing pasted"  # how a pasted listing's file is named
+MYINVOIS_PASTED = ("This is a copy of SQL's MyInvois Transaction screen: paste it into Excel, save it in the exports folder "
+                   "and use Fetch from SQL exports.")
 _preview_made = {}  # token -> {payment id: (payee id, month)} for payments the preview set up only for its suggestions
 FETCHED = "SQL exports fetched"  # how the table put together from a folder of exported listings is named
-REPORTS_FETCHED = "SQL reports fetched"  # how a fetch that read only SQL's general-ledger reports is named
-_pending_fetch = {}  # token -> {review: what the fetch found, sources: [(name, data, month)] the listings it read, gl: its GL reports}
+REPORTS_FETCHED = "SQL reports fetched"  # how a fetch that read only SQL's general-ledger reports or MyInvois copies is named
+_pending_fetch = {}  # token -> {review: what the fetch found, sources: [(name, data, month)] the listings it read, gl: its GL
+#                        reports, myinvois: its MyInvois copies}
 
 
 def _parse_sql(token, header_row=None, mapping=None):
@@ -1368,6 +1372,8 @@ def sql_preview():
             pasted = True
             if b["text"].count("<DATAPACKET") > 1:
                 return err("The box holds more than one SQL listing. Clear it, then paste one listing at a time.")
+            if "<DATAPACKET" not in b["text"][:500] and myinvois.detect([ln.split("\t") for ln in b["text"].splitlines()]):
+                return err(MYINVOIS_PASTED)
             token = secrets.token_hex(8)
             ext = "xml" if "<DATAPACKET" in b["text"][:500] else "txt"
             name = f"{PASTED} {datetime.now():%Y%m%d-%H%M}.{ext}"
@@ -1381,15 +1387,16 @@ def sql_preview():
             eid = int(b["entity_id"])
             got = sqlfetch.gather(c, eid, sqlfetch.folder_of(SETTINGS))
             review = {k: got[k] for k in ("folder", "files", "other", "entries", "new", "already")}
-            if not got["new"] and not got["gl"]:  # nothing to import: the review alone says why
+            if not got["new"] and not got["gl"] and not got["myinvois"]:  # nothing to import: the review alone says why
                 return jsonify({"entity_id": eid, "records": [], "nothing_new": True, "fetch": review})
             token = secrets.token_hex(8)
             _pending_sql[token] = (eid, f"{FETCHED} {datetime.now():%Y%m%d-%H%M}.csv", got["csv"] if got["new"] else b"")
-            _pending_fetch[token] = {"review": review, "sources": got["sources"], "gl": got["gl"]}
-            if not got["new"]:  # SQL's reports only: no entries to match, only account lines to keep
+            _pending_fetch[token] = {"review": review, "sources": got["sources"], "gl": got["gl"], "myinvois": got["myinvois"]}
+            if not got["new"]:  # SQL's reports or MyInvois copies only: no entries to match, only lines and e-Invoices to keep
                 return jsonify({"token": token, "entity_id": eid, "filename": _pending_sql[token][1], "records": [], "header_row": -1,
                                 "headers": [], "mapping": {}, "fields": sqlimport.ALL_FIELDS, "candidates": [], "fetch": review,
-                                "ledger": ledger.preview(c, eid, got["gl"])})
+                                **({"ledger": ledger.preview(c, eid, got["gl"])} if got["gl"] else {}),
+                                **({"myinvois": _myinvois_preview(got["myinvois"])} if got["myinvois"] else {})})
             hr, mp = None, None
         else:
             b = request.get_json()
@@ -1448,8 +1455,30 @@ def sql_preview():
     return jsonify({"token": token, "entity_id": eid, "filename": filename, "header_row": header_row, "headers": headers,
                     "mapping": mapping, "fields": sqlimport.ALL_FIELDS, "records": recs, "candidates": cands,
                     "signed_off": signed, **({"fetch": fetched["review"]} if fetched else {}),
+                    **({"myinvois": _myinvois_preview(fetched["myinvois"])} if fetched and fetched.get("myinvois") else {}),
                     **({"ledger": ledger.preview(c, eid, fetched["gl"], [r["doc_no"] for r in recs if r["kind"] == "journal"])}
                        if fetched and fetched["gl"] else {})})
+
+
+def _myinvois_preview(copies):
+    """What the fetch preview says of the MyInvois copies it read, beside the review's counts for each file."""
+    return {"files": [{"name": m["name"], "rows": len(m["rep"]["rows"])} for m in copies]}
+
+
+def _keep_myinvois(c, e, imp, copies):
+    """Keeps the MyInvois copies a fetch read, oldest saved first so the newest has the last word: each file as an SQL
+    export of the company, its e-Invoices by UUID, then the links to SQL's documents. Returns {files: [{name, rows, new,
+    changed, unchanged, older}], notes: [one sentence per SQL document filled in or left as it was]}."""
+    files = []
+    for m in sorted(copies, key=lambda m: (m["saved"], m["name"])):
+        did = store(c, entity=e, month=m["month"], folder="_SQL exports", doc_type="sqlexport", filename=m["name"], data=m["data"])
+        kept = myinvois.keep(c, e, imp, did, m["rep"], m["saved"])
+        files.append({"name": m["name"], **kept})
+        db.log(c, myinvois.log_line(e, m["name"], kept))
+    notes = myinvois.link(c, e["id"])
+    for n in notes:
+        db.log(c, f"MyInvois for {e['code']}: {n}")
+    return {"files": files, "notes": notes}
 
 
 def _journal_header(c, eid, dockey):
@@ -1622,13 +1651,15 @@ def sql_apply():
         return jsonify({"added": kept, "linked": 0, "skipped": 0, "bank_lines_matched": 0, "journal_lines": kept})
     fetched = _pending_fetch.get(b["token"])
     gl = (fetched or {}).get("gl") or []
+    mi = (fetched or {}).get("myinvois") or []
     if gl and pending and not entity(c, pending[0])["uses_sql"]:
         return err(ledger.NOT_SQL)
-    if gl and pending and pending[2] == b"":
-        # SQL's reports only: there is no listing to read, so the import holds no entries, only the reports' account lines.
-        # It is named after the reports read (each kept as a file of its own), not after a table of entries never made.
+    if (gl or mi) and pending and pending[2] == b"":
+        # SQL's reports or MyInvois copies only: there is no listing to read, so the import holds no entries, only the
+        # reports' account lines and the e-Invoices. It is named after the files read (each kept as a file of its own),
+        # not after a table of entries never made.
         eid = pending[0]
-        filename = f"{REPORTS_FETCHED} {datetime.now():%Y%m%d-%H%M}: " + ", ".join(g["name"] for g in gl)
+        filename = f"{REPORTS_FETCHED} {datetime.now():%Y%m%d-%H%M}: " + ", ".join(g["name"] for g in gl + mi)
         e, recs = entity(c, eid), []
         imp = c.execute("INSERT INTO sql_imports (entity_id, filename, document_id, imported_at, entries, linked) VALUES (?, ?, NULL, ?, 0, 0)",
                         (eid, filename, db.now())).lastrowid
@@ -1659,6 +1690,7 @@ def sql_apply():
     sqlimport.propose(c, eid, recs)  # for the checklist task of journals and invoices
     added = linked = skipped = 0
     touched = set()
+    einv_ready = myinvois.ready(c)
     for r in recs:
         pid = links.get(r["row"]) if r["kind"] == "payment" else None
         if sqlimport.receipt_invoice(r) and links.get(r["row"]) in money_in:
@@ -1671,11 +1703,21 @@ def sql_apply():
             (imp, eid, r["doc_no"], r["date"], r["description"], r["payee"], r["amount"], r.get("direction"),
              r.get("einvoice") or None, r["doc_type"], r["kind"], r.get("einvoice_status") or None,
              r.get("einvoice_link") or None, r.get("task_id"), pid, status))
+        einv_was = None if cur.rowcount or not einv_ready else c.execute(
+            "SELECT einvoice, einvoice_status FROM sql_entries WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?",
+            (eid, r["doc_no"], r["date"], r["amount"])).fetchone()
         if not cur.rowcount:
             # Already imported from another listing (e.g. the cash book and the PV listing both hold PV2601-001):
             # fill in anything the earlier listing lacked, and an e-Invoice validated since.
             # A document first read without its type (e.g. a customer invoice) is reclassified while still unlinked.
             st = r.get("einvoice_status") or None
+            if einv_ready and r.get("einvoice"):
+                # A UUID MyInvois filled in that SQL's grid now gives differently: SQL's UUID is taken with its own status,
+                # so a status is never put on a UUID it wasn't given for.
+                c.execute("""UPDATE sql_entries SET einvoice = ?, einvoice_status = ?
+                             WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?
+                               AND einvoice_from = 'myinvois' AND einvoice IS NOT NULL AND einvoice <> ?""",
+                          (r["einvoice"], st, eid, r["doc_no"], r["date"], r["amount"], r["einvoice"]))
             c.execute(
                 """UPDATE sql_entries SET einvoice = COALESCE(einvoice, ?),
                    einvoice_status = CASE WHEN ? LIKE 'Validated%' THEN ? ELSE COALESCE(einvoice_status, ?) END,
@@ -1686,6 +1728,17 @@ def sql_apply():
                    WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?""",
                 (r.get("einvoice") or None, st, st, st, r.get("einvoice_link") or None,
                  r.get("task_id"), r["doc_type"], r["kind"], r["kind"], r["kind"], eid, r["doc_no"], r["date"], r["amount"]))
+        if einv_ready and (r.get("einvoice") or r.get("einvoice_status")):
+            # From update 33: when SQL said what this e-Invoice is, so an older MyInvois copy doesn't overwrite it.
+            if cur.rowcount:
+                c.execute("UPDATE sql_entries SET einvoice_as_at = ? WHERE id = ?", (db.now(), cur.lastrowid))
+            elif einv_was is not None:
+                now_ = c.execute("SELECT einvoice, einvoice_status FROM sql_entries WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?",
+                                 (eid, r["doc_no"], r["date"], r["amount"])).fetchone()
+                if tuple(now_) != tuple(einv_was):
+                    c.execute("""UPDATE sql_entries SET einvoice_as_at = ?, einvoice_from = NULL
+                                 WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?""",
+                              (db.now(), eid, r["doc_no"], r["date"], r["amount"]))
         extra = {f: r.get(f) or None for f in partybook.SQL_EXTRA}
         if any(extra.values()) and partybook.ready(c):  # kept from update 22; a later listing fills what an earlier lacked
             c.execute(f"""UPDATE sql_entries SET {', '.join(f'{f} = COALESCE({f}, ?)' for f in extra)}
@@ -1725,8 +1778,15 @@ def sql_apply():
             return err(str(ex))
     elif ledger.ready(c):
         ledger.copy_pasted(c, eid)
+    # MyInvois copies: their e-Invoices kept and linked. Any other import links again, so a document imported after the
+    # copy was read takes its e-Invoice now.
+    einv = _keep_myinvois(c, e, imp, mi) if mi else None
+    if not mi and myinvois.ready(c):
+        for n in myinvois.link(c, eid):
+            if "filled in from MyInvois" in n:
+                db.log(c, f"MyInvois for {e['code']}: {n}")
     matched = _match_payments(c, eid, touched)
-    if recs or not gl:
+    if recs or not (gl or mi):
         db.log(c, f"Imported SQL export '{filename}' for {e['code']}: {added} entries, {linked} linked, {skipped} already imported, "
                   f"{matched} bank lines matched"
                   + (f" (read from {len(fetched['sources'])} exported files in {fetched['review']['folder']})" if fetched else ""))
@@ -1743,7 +1803,7 @@ def sql_apply():
     _pending_sql.pop(b["token"], None)
     _preview_made.pop(b["token"], None)
     return jsonify({"added": added, "linked": linked, "skipped": skipped, "bank_lines_matched": matched,
-                    "recon_changed": changed or [], **({"ledger": kept} if kept else {})})
+                    "recon_changed": changed or [], **({"ledger": kept} if kept else {}), **({"myinvois": einv} if einv else {})})
 
 
 # What an SQL voucher's link replaced on a payment, kept (undo_link) so unlinking it can put exactly that back.
@@ -1874,6 +1934,9 @@ def sql_entries():
         """SELECT id, entity_id, doc_no, doc_date, description, payee, amount, einvoice, einvoice_status, einvoice_link, kind,
            payment_id FROM sql_entries WHERE entity_id = ? AND (einvoice IS NOT NULL OR einvoice_status IS NOT NULL)
            ORDER BY doc_date DESC LIMIT 200""", (eid,))))
+    mi = myinvois.view(c, e)  # what LHDN says of each e-Invoice, from the MyInvois copies read (None below update 33)
+    for x in einv:
+        x["myinvois"] = (mi or {}).get("by_entry", {}).get(x["id"])
     ignored = rows(c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'ignored' ORDER BY doc_date DESC", (eid,)))
     # The account lines SQL's journals gave for each entry, checked now against the chart and the listing.
     me = int(eid)
@@ -1887,6 +1950,7 @@ def sql_entries():
                                                                     "before_tracking": 0}
     return jsonify({"imports": imports, "unlinked": unlinked, "before_tracking": before, "first_month": e["first_month"],
                     "candidates": cands, "documents": other, "einvoices": einv,
+                    "myinvois": {k: v for k, v in mi.items() if k != "by_entry"} if mi else None,
                     "linked": on_payments, "ignored": ignored, "lines": lines,
                     "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans}})
 

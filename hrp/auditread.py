@@ -28,6 +28,7 @@ TABLE_LABELS = {
     "statutory_accounts": ("Statutory account", "statutory accounts"),
     "ledger_batches": ("Ledger read", "ledger reads"), "ledger_docs": ("Ledger document", "ledger documents"),
     "ledger_lines": ("Account line", "account lines"), "ledger_openings": ("Opening balance", "opening balances"),
+    "myinvois_docs": ("MyInvois e-Invoice", "MyInvois e-Invoices"),
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),

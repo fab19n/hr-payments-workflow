@@ -7,7 +7,8 @@ and their documents are put together, each one once, marked new or already impor
 GL Journal of Transaction, the GL Ledger and the Trial Balance, read by hrp/sqlgl.py) are taken in the same way and
 handed back whole, for their account lines and their checks (hrp/ledger.py).
 
-Nothing in the folder is moved, renamed or deleted. A file is left out the next time once it has been imported (its
+A copy of SQL's MyInvois Transaction grid, saved from Excel, is read too (hrp/myinvois.py): it is the company's whose
+TIN it holds. Nothing in the folder is moved, renamed or deleted. A file is left out the next time once it has been imported (its
 fingerprint is among the company's stored SQL exports); a listing of another company is never taken.
 """
 import csv
@@ -18,7 +19,7 @@ import zipfile
 from datetime import datetime
 from pathlib import Path
 
-from . import sqlimport, sqlreport
+from . import myinvois, sqlimport, sqlreport
 
 EXTENSIONS = (".xlsx", ".xlsm")
 MAX_BYTES = sqlreport.MAX_BYTES  # a larger workbook is not read (one from SQL is named as too large)
@@ -105,13 +106,16 @@ def gather(con, entity_id, folder):
       sources  [(name, data, month)] of the listings read, to keep with the import
       gl       [{name, sha, data, saved, kind, rep, month}] of the general-ledger reports read ('journal', 'gl_ledger' or
                'trial_balance', rep as hrp/sqlgl.py reads it), month the file's latest date as YYYY-MM
+      myinvois [{name, sha, data, saved, rep, month}] of the copies of SQL's MyInvois Transaction grid read (rep as
+               hrp/myinvois.py reads it); in files each has report 'myinvois' and what keeping it would do (new,
+               changed, unchanged, older, and how many were issued, self-billed and received)
     """
     ents = con.execute("SELECT * FROM entities").fetchall()
     me = next(e for e in ents if e["id"] == int(entity_id))
     sql_users = [e for e in ents if e["uses_sql"] and ("active" not in e.keys() or e["active"])]
     imported = {r[0] for r in con.execute("SELECT sha256 FROM documents WHERE entity_id = ? AND doc_type = 'sqlexport'", (me["id"],))}
 
-    files, sources, entries, seen, by_sha, other, gl = [], [], [], {}, {}, 0, []
+    files, sources, entries, seen, by_sha, other, gl, mi = [], [], [], {}, {}, 0, [], []
     for path, st in _files(folder):
         info = {"name": path.name, "saved": datetime.fromtimestamp(st.st_mtime).isoformat(timespec="seconds"), "status": "read", "reason": ""}
         if st.st_size > MAX_BYTES:
@@ -146,6 +150,25 @@ def gather(con, entity_id, folder):
         kind, rep = got
         by_sha[sha] = path.name
         info.update(title=rep["title"], period=rep["period"], company=rep["company"])
+        if kind == "myinvois":
+            # A copy of the MyInvois grid names no company: it is the one whose TIN is the supplier's or buyer's in it.
+            # A company without its TIN in Setup can't be told, so the copy is never taken on a guess.
+            own = myinvois.owner(ents, rep)
+            if own is not None and own["id"] != me["id"]:
+                files.append({**info, "status": "other_company", "reason": f"This MyInvois copy is for {own['code']} ({own['name']}), not {me['code']}."})
+            elif own is None:
+                files.append({**info, "status": "unknown_company",
+                              "reason": f"This MyInvois copy has no e-Invoice whose supplier or buyer TIN is {me['code']}'s"
+                                        + ("" if (me["tin"] if "tin" in me.keys() else None) else " (its TIN isn't in Setup yet)")
+                                        + ", so it was left out. Enter the company's TIN in Setup › Companies, then fetch again."})
+            elif not myinvois.ready(con):
+                files.append({**info, "status": "unreadable", "reason": "The records need update 33 to keep MyInvois copies. Restart the app, then fetch again."})
+            else:
+                info.update(report="myinvois", **myinvois.compare(con, me["id"], rep, info["saved"]))
+                files.append(info)
+                mi.append({"name": path.name, "sha": sha, "data": data, "saved": info["saved"], "rep": rep,
+                           "month": (rep["period"] or [None, info["saved"][:10]])[1][:7]})
+            continue
         own = owner(ents, rep["company"])
         if own is not None and own["id"] != me["id"]:
             files.append({**info, "status": "other_company", "reason": f"This {rep['title']} is for {own['code']} ({own['name']}), not {me['code']}."})
@@ -194,7 +217,7 @@ def gather(con, entity_id, folder):
         table = out.getvalue().encode("utf-8")
     return {"folder": str(Path(folder)), "files": files, "other": other, "entries": len(entries),
             "new": sum(1 for e in entries if not e["exists"]), "already": sum(1 for e in entries if e["exists"]),
-            "csv": table, "sources": sources, "gl": gl}
+            "csv": table, "sources": sources, "gl": gl, "myinvois": mi}
 
 
 def _latest(kind, rep):
