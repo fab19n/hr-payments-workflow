@@ -2035,8 +2035,13 @@ function invoicePrintBar(p) {
     ? `<a class="ghost small" href="/api/invoices/month.zip?entity=${state.entity}&entity_id=${state.entity}&month=${esc(sel)}&kind=${kind}">${label} ${esc(monthName(sel))} (zip)</a>` : "";
   return `<div class="row"><label class="row tight"><span class="muted">Print</span><select data-inv-month="1">${months.map(m => `<option value="${esc(m)}" ${m === sel ? "selected" : ""}>${esc(monthName(m))}</option>`).join("")}</select></label>
       ${zip("customer", "All invoices of")}${zip("self_billed", "All self-billed invoices of")}</div>
-    ${p.missing.length ? `<div class="note"><b>Print settings:</b> invoices print without what is missing.<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul><button class="ghost small" type="button" data-inv-setup="1">Open Setup › Companies</button></div>` : ""}`;
+    ${p.missing.length ? `<div class="note"><b>Print settings:</b> invoices print without what is missing.<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul><button class="ghost small" type="button" data-inv-setup="1">Open Setup › Companies</button></div>` : ""}
+    ${fontNote(p.fonts)}${tooLongNote(p.too_long)}`;
 }
+// Which of the print settings are too long to print in full (their end is cut off), with where to shorten them.
+const tooLongNote = rows => rows && rows.length ? `<div class="note"><b>Too long to print in full:</b><ul>${rows.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : "";
+// Which of SQL's fonts this computer lacks and what invoices print instead (nothing when all are found).
+const fontNote = fonts => fonts && fonts.length ? `<div class="note"><b>Fonts:</b><ul>${fonts.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : "";
 
 function einvPill(x) {
   if (!x.einvoice && !x.einvoice_status) return `<span class="muted">—</span>`;
@@ -2829,7 +2834,8 @@ async function drawPrintSettings(id, got) {
   box.innerHTML = `<h3>Printed invoices</h3>
     <div class="note">Customer invoices and self-billed e-Invoices are printed from SQL's documents with this header and footer: the name, registration no., TIN, address, phone, email and website above, the bank account on invoices, and the logo and signature here (PNG or JPEG, at most 2 MB).</div>
     <div class="grid2">${img("logo", "Logo")}${img("signature", "Signature")}</div>
-    ${p.missing.length ? `<div class="note"><b>Print settings still missing</b> (invoices print without them):<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : `<div class="note">Every print setting is filled in.</div>`}`;
+    ${p.missing.length ? `<div class="note"><b>Print settings still missing</b> (invoices print without them):<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : `<div class="note">Every print setting is filled in.</div>`}
+    ${fontNote(p.fonts)}${tooLongNote(p.too_long)}`;
 }
 // Uploads (or removes) the logo or signature of the company open in the drawer.
 async function printImage(which, remove) {

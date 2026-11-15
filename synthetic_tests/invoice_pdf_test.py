@@ -19,6 +19,16 @@
 9. Review fixes: a supplier's long address block moves the table down rather than printing over it; account lines
    under a number SQL used again on another date are refused; a description longer than a page is split across pages;
    the QR code keeps its blank margin; a backup holds the logo and signature.
+10. SQL's own layout: US Letter; SQL's fonts (Times New Roman, Tahoma, Trebuchet MS, Segoe UI) for their parts when
+   Windows has them; every piece of text within 0.3 mm of where SQL's PDF puts it, read back with pypdf; the rules,
+   the QR code and the lines under it; nothing overlaps or runs off the page; text outside Latin-1 prints. With the
+   fonts missing (an empty font folder), the look-alikes are used, never larger than SQL's sizes, at the same places,
+   and the invoice check and print settings say which fonts were not found; with only Segoe UI missing, only the
+   bank block falls back.
+11. Review fixes: fonts are never looked for in (and the note never points to) the records folder; a damaged copy of a
+   font (empty, junk, or cut short) is passed over for a good one later in the search, or named as missing; a font
+   that fails only when the PDF is made doesn't stop the invoice; a line more than twice too long for its place is
+   cut at half SQL's size and named in the print settings, the invoice check and the month's zip.
 
 Companies, customers, banks, TINs, UUIDs, documents and amounts are made up.
 
@@ -28,6 +38,7 @@ import io
 import json
 import math
 import os
+import re
 import sqlite3
 import stat
 import sys
@@ -104,7 +115,7 @@ def links_of(data):
     return out
 
 
-PAGE_H_PT = 841.89  # A4 in points
+PAGE_H_PT = 792  # US Letter in points
 
 
 def baselines(data, page=None):
@@ -386,7 +397,7 @@ check("the customer's name, address, attention and terms come from Setup",
 check("the header comes from the company's settings",
       a["company"]["reg_line"] == "(202001000001 (1000001-A))  (TIN No: C00000000010)"
       and a["company"]["address"] == "1-1, Jalan Contoh 1/2, Taman Contoh, Jalan Sampel, 50000 Kuala Lumpur,"
-      and a["company"]["contact"] == "Phone: +603-0000 0000  |  email: info@example.com  |  www.example.com"
+      and a["company"]["contact"] == "Phone: +603-0000 0000   |   email: info@example.com   |   www.example.com"
       and a["company"]["sign_label"] == "For EXAMPLE HOLDINGS SDN BHD" and a["company"]["logo"] and a["company"]["signature"], a["company"])
 check("the payment block is the bank account chosen",
       a["pay_to"] == {"name": "EXAMPLE HOLDINGS SDN BHD", "bank": "Example Bank Berhad", "bank_address": "Jalan Contoh, Kuala Lumpur",
@@ -455,8 +466,8 @@ for words in ("EXAMPLE HOLDINGS SDN BHD", "(202001000001 (1000001-A))", "(TIN No
               "Attn : MR. EXAMPLE PERSON", "For EXAMPLE HOLDINGS SDN BHD", f"e-Invoice UUID: {U('A')}", "Validated on 29/07/2026 14:19:44"):
     check(f"the e-Invoice PDF shows {words}", words in ta, ta)
 check("its QR code links to the e-Invoice's MyInvois page", links_of(pdf_a) == [link_a], links_of(pdf_a))
-check("it is one A4 portrait page", [(round(float(p.mediabox.width)), round(float(p.mediabox.height)))
-                                     for p in PdfReader(io.BytesIO(pdf_a)).pages] == [(595, 842)])
+check("it is one US Letter portrait page, as SQL prints", [(round(float(p.mediabox.width)), round(float(p.mediabox.height)))
+                                                          for p in PdfReader(io.BytesIO(pdf_a)).pages] == [(612, 792)])
 pdf_c = invoicepdf.render(cdoc)
 check("a plain invoice prints no QR code and no e-Invoice line", links_of(pdf_c) == [] and "e-Invoice" not in text_of(pdf_c))
 pdf_e = invoicepdf.render(e)
@@ -477,13 +488,13 @@ ti = text_of(pdf_i)
 check("the self-billed PDF: its title, supplier and buyer, and no payment block",
       "Self-billed Invoice" in ti and "Supplier" in ti and "TIN : EI00000000020" in ti and "Buyer : EXAMPLE HOLDINGS SDN BHD (TIN No: C00000000010)" in ti
       and "All payments" not in ti and links_of(pdf_i) == [f"https://myinvois.hasil.gov.my/{U('I')}/share/{LONG('I')}"], ti)
-many = dict(a, lines=[{"code": f"500-{n:04d}", "description": f"LINE {n} OF A LONG INVOICE", "sen": 100} for n in range(1, 61)], total_sen=6000,
-            words="Malaysian Ringgit : " + W(6000))
+many = dict(a, lines=[{"code": f"500-{n:04d}", "description": f"LINE {n} OF A LONG INVOICE", "sen": 100} for n in range(1, 51)], total_sen=5000,
+            words="Malaysian Ringgit : " + W(5000))
 pdf_many = invoicepdf.render(many)
 pages = PdfReader(io.BytesIO(pdf_many)).pages
 check("lines that don't fit go on to another page, the total and QR code on the last",
       len(pages) == 2 and "Continued on page 2 of 2" in pages[0].extract_text() and "Total :" not in pages[0].extract_text()
-      and "LINE 60 OF A LONG INVOICE" in pages[1].extract_text() and "Total :" in pages[1].extract_text() and links_of(pdf_many) == [link_a])
+      and "LINE 50 OF A LONG INVOICE" in pages[1].extract_text() and "Total :" in pages[1].extract_text() and links_of(pdf_many) == [link_a])
 
 # A supplier with four address lines, its TIN, Attn and the Buyer: the table moves down so nothing prints over its headings
 i4 = dict(i, party=dict(i["party"], address=["UNIT 9-9, EXAMPLE TOWER,", "1 EXAMPLE AVENUE,", "EXAMPLE DISTRICT,", "EXAMPLE CITY 00000."],
@@ -520,10 +531,10 @@ check("its code and amount are printed once, on its first part", text_of(pdf_hug
 rows = [("500-1", ["x"] * 3, "1.00"), ("500-2", ["y"] * 80, "2.00"), ("500-3", ["z"] * 2, "3.00")]
 pg = invoicepdf._pages(rows)
 check("a long row after others fills the rest of the page first, and a short row after it follows on",
-      [sum(len(r[1]) for r in p) for p in pg] == [32, 32, 21] and pg[0][1][0] == "500-2" and pg[1][0][0] == "" and pg[1][0][2] == ""
+      [sum(len(r[1]) for r in p) for p in pg] == [29, 29, 27] and pg[0][1][0] == "500-2" and pg[1][0][0] == "" and pg[1][0][2] == ""
       and pg[2][-1] == ("500-3", ["z"] * 2, "3.00"), [[(r[0], len(r[1])) for r in p] for p in pg])
 check("a short row that doesn't fit under others still moves whole to the next page",
-      [[(r[0], len(r[1])) for r in p] for p in invoicepdf._pages([("A", ["a"] * 30, ""), ("B", ["b"] * 5, "")])] == [[("A", 30)], [("B", 5)]])
+      [[(r[0], len(r[1])) for r in p] for p in invoicepdf._pages([("A", ["a"] * 26, ""), ("B", ["b"] * 5, "")])] == [[("A", 26)], [("B", 5)]])
 
 # The QR code keeps its margin of blank paper (four of its squares) above the e-Invoice UUID lines
 import segno  # noqa: E402
@@ -534,10 +545,359 @@ uuid_top = [mm - cap for _, t, mm in baselines(pdf_a) if t.startswith("e-Invoice
 check("the e-Invoice UUID line starts at least four QR squares below the QR code",
       uuid_top and uuid_top[0] >= qr_box[3] + 4 * square and uuid_top[0] < 285, (qr_box, square, uuid_top))
 
+# ---------- 10. SQL's own fonts, sizes and places (measured from the PDF SQL Account exports) ----------
+MM = 25.4 / 72
+WIN_FONTS = Path(os.environ.get("WINDIR") or r"C:\Windows") / "Fonts"
+HAVE_SQL_FONTS = all((WIN_FONTS / f[0]).is_file() for f in invoicepdf.FONTS.values())
+
+
+def pieces(data):
+    """Each piece of text the PDF prints, as pypdf reads it: [(page, text, start mm from the left, baseline mm from the
+    top, BaseFont, size in pt)]."""
+    out = []
+    for n, p in enumerate(PdfReader(io.BytesIO(data)).pages, 1):
+        def seen(text, cm, tm, font, size, n=n):
+            if text.strip():
+                out.append((n, text.strip(), (tm[4] * cm[0] + cm[4]) * MM, (PAGE_H_PT - (tm[5] * cm[3] + cm[5])) * MM,
+                            str((font or {}).get("/BaseFont", "")), size))
+        p.extract_text(visitor_text=seen)
+    return out
+
+
+def base_fonts(data):
+    out = set()
+    for p in PdfReader(io.BytesIO(data)).pages:
+        for f in p["/Resources"].get("/Font", {}).values():
+            out.add(str(f.get_object()["/BaseFont"]).split("+")[-1].lstrip("/"))
+    return out
+
+
+def rules(data, page=0):
+    """The straight rules drawn, as (x1, y1, x2, y2) in mm from the top-left, and the line widths set (pt)."""
+    text = PdfReader(io.BytesIO(data)).pages[page].get_contents().get_data().decode("latin-1")
+    lines = [tuple(float(v) * MM if i % 2 == 0 else (PAGE_H_PT - float(v)) * MM for i, v in enumerate(m.groups()))
+             for m in re.finditer(r"([\d.]+) ([\d.]+) m ([\d.]+) ([\d.]+) l S", text)]
+    return lines, {float(w) for w in re.findall(r"([\d.]+) w\b", text)}
+
+
+def overlaps(trace):
+    """Pairs of printed pieces whose boxes (from just above the capitals to below the descenders) cross on a page."""
+    box = lambda t: (t["x"], t["base"] - 0.75 * t["size"] * MM, t["x"] + t["w"], t["base"] + 0.21 * t["size"] * MM)
+    out = []
+    for n, a in enumerate(trace):
+        for b in trace[n + 1:]:
+            if a["page"] != b["page"]:
+                continue
+            (ax1, ay1, ax2, ay2), (bx1, by1, bx2, by2) = box(a), box(b)
+            if ax1 < bx2 - 0.05 and bx1 < ax2 - 0.05 and ay1 < by2 - 0.05 and by1 < ay2 - 0.05:
+                out.append((a["text"], b["text"]))
+    return out
+
+
+def inside(trace):
+    """Every piece within the page and its margins of 3 mm."""
+    return all(3 <= t["x"] and t["x"] + t["w"] <= invoicepdf.PAGE_W - 3 and t["base"] <= invoicepdf.PAGE_H - 1.5 for t in trace)
+
+
+# Where SQL's PDF puts each piece of the customer invoice: (text it starts with, font, size, start or right edge, baseline)
+# A start is the spec's measured start; "R" pieces are right-aligned and checked by their right edge, "C" by the centre.
+SPEC_A = [("EXAMPLE HOLDINGS SDN BHD", "TimesNewRomanBold", 15.86, ("C", 121.4), 12.84),
+          ("(202001000001", "TimesNewRoman", 7.99, ("C", 121.4), 16.62),
+          ("1-1, Jalan Contoh", "TimesNewRoman", 7.99, ("C", 121.4), 19.80),
+          ("Phone:", "TimesNewRoman", 7.99, ("C", 121.4), 22.99),
+          ("Invoice", "TahomaBold", 12, ("L", 99.8), 37.04),
+          ("To  :", "Tahoma", 10, ("L", 11.19), 41.48),
+          ("EXAMPLE TENANT TRADING", "Tahoma", 10, ("L", 21.23), 41.48),
+          ("12-3, JALAN SAMPEL", "Tahoma", 10, ("L", 21.23), 45.52),
+          ("TAMAN CONTOH,", "Tahoma", 10, ("L", 21.23), 49.56),
+          ("50000 KUALA LUMPUR.", "Tahoma", 10, ("L", 21.23), 53.60),
+          ("Attn :", "Tahoma", 10, ("L", 21.23), 61.69),
+          ("Doc No.  :", "TahomaBold", 10, ("L", 150.43), 41.48),
+          ("EXH/2026/07/001", "TahomaBold", 9, ("L", 170.62), 41.16),
+          ("Date   :", "Tahoma", 10, ("L", 154.43), 46.58),
+          ("29/07/2026", "Tahoma", 10, ("L", 170.62), 46.58),
+          ("Account  :", "Tahoma", 10, ("L", 150.41), 51.58),
+          ("300-E0001", "Tahoma", 10, ("L", 170.62), 51.58),
+          ("Terms  :", "Tahoma", 10, ("L", 153.09), 56.57),
+          ("30 Days", "Tahoma", 10, ("L", 170.62), 56.57),
+          ("G/L CODE", "Tahoma", 9, ("L", 11.19), 71.69),
+          ("DESCRIPTION", "Tahoma", 9, ("L", 93.2), 71.69),
+          ("Amount(MYR)", "Tahoma", 9, ("L", 185.47), 71.69),
+          ("500-1000", "Tahoma", 9, ("L", 11.19), 77.14),
+          ("RENTAL CHARGE FOR JULY 26", "Tahoma", 9, ("L", 36.74), 77.14),
+          ("Malaysian Ringgit :", "Tahoma", 10, ("L", 11.56), 216.20),
+          ("Total :", "TahomaBold", 10, ("L", 158.29), 216.20),
+          ("All payments to be made to :", "Tahoma", 10, ("L", 11.56), 223.20),
+          ("Bank :", "SegoeUI", 6.91, ("L", 11.45), 230.40),
+          ("Example Bank Berhad", "SegoeUIBold", 6.91, None, 230.40),
+          ("Bank Address :", "SegoeUI", 6.91, ("L", 11.45), 233.62),
+          ("Account No :", "SegoeUI", 6.91, ("L", 11.45), 236.84),
+          ("Bank Transfer Code :", "SegoeUI", 6.91, ("L", 11.45), 240.07),
+          ("EXMBMYKL", "SegoeUIBold", 6.91, None, 240.07),
+          ("For EXAMPLE HOLDINGS SDN BHD", "Tahoma", 10, ("L", 12.56), 275.45),
+          ("e-Invoice UUID:", "Tahoma", 5.5, ("R", 201.91), None)]
+
+
+def placed(data, trace, spec, check_fonts):
+    """Each spec piece compared with where the PDF (read back with pypdf) prints it: [(text, what is wrong)]."""
+    got, wrong = pieces(data), []
+    for text, font, size, at, base in spec:
+        hit = [g for g in got if g[1].startswith(text) and g[0] == 1]
+        tr = [t for t in trace if t["text"].startswith(text) and t["page"] == 1]
+        if not hit or not tr:
+            wrong.append((text, "not printed"))
+            continue
+        _, _, x, b, bf, sz = hit[0]
+        if base is not None and abs(b - base) > 0.3:
+            wrong.append((text, f"baseline {b:.2f}, not {base}"))
+        if at:
+            kind, want = at
+            have = x if kind == "L" else x + tr[0]["w"] if kind == "R" else x + tr[0]["w"] / 2
+            if abs(have - want) > 0.3:
+                wrong.append((text, f"{kind} at {have:.2f}, not {want}"))
+        if check_fonts and (bf.split("+")[-1] != font or abs(sz - size) > 0.01):
+            wrong.append((text, f"{bf} {sz}, not {font} {size}"))
+    return wrong
+
+
+ta_trace = []
+pdf_a = invoicepdf.render(a, trace=ta_trace)
+if HAVE_SQL_FONTS:
+    check("the fonts are SQL's own when Windows has them", invoicepdf.font_notes() == []
+          and all(invoicepdf.font_choice(k)["kind"] == "sql" for k in invoicepdf.FONTS), invoicepdf.font_notes())
+    check("the PDF names SQL's fonts: Times New Roman, Tahoma, Trebuchet MS and Segoe UI (regular and bold)",
+          base_fonts(pdf_a) == {"TimesNewRoman", "TimesNewRomanBold", "Tahoma", "TahomaBold", "TrebuchetMS", "SegoeUI", "SegoeUIBold"},
+          base_fonts(pdf_a))
+    # The measured widths and ratios kept in the code are the Windows fonts' own
+    from fpdf import FPDF  # noqa: E402
+    m = FPDF(unit="mm")
+    m.add_page()
+    for key, (file, *_rest, built_in) in invoicepdf.FONTS.items():
+        m.add_font(f"t-{key}", "", str(WIN_FONTS / file))
+        m.set_font(f"t-{key}", "", 10)
+        w = m.get_string_width(invoicepdf.REFERENCE)
+        m.set_font(*built_in, 10)
+        check(f"{file}: its reference width and ratio to the built-in look-alike are as measured",
+              abs(w - invoicepdf.SQL_WIDTHS[key]) < 0.01 and abs(w / m.get_string_width(invoicepdf.REFERENCE) - invoicepdf.BUILT_IN_RATIOS[key]) < 0.0005,
+              (w, invoicepdf.SQL_WIDTHS[key]))
+else:
+    print(f"NOTE: {WIN_FONTS} lacks some of SQL's fonts, so the checks that the PDF uses them are skipped.")
+wrong = placed(pdf_a, ta_trace, SPEC_A, HAVE_SQL_FONTS)
+check("every piece of the customer invoice is within 0.3 mm of where SQL prints it, in its font and size", not wrong, wrong)
+amounts = [t for t in ta_trace if t["text"] == "440.00"]
+check("the row's amount (Trebuchet MS 9) and the total (Trebuchet MS 10) end where SQL's do (about 205.3 mm)",
+      len(amounts) == 2 and all(abs(t["x"] + t["w"] - 205.3) <= 0.3 for t in amounts)
+      and [(t["font"], t["sql_size"], round(t["base"], 2)) for t in amounts] == [("trebuchet", 9, 77.14), ("trebuchet", 10, 216.2)], amounts)
+bank_name = [t for t in ta_trace if t["text"] == "EXAMPLE HOLDINGS SDN BHD" and t["font"] == "segoe-bold"]
+check("the bank block starts with the company's name in Segoe UI Bold 6.91 at 227.17",
+      bank_name and abs(bank_name[0]["x"] - 11.45) < 0.01 and abs(bank_name[0]["base"] - 227.17) < 0.01, bank_name)
+lines_a, widths_a = rules(pdf_a)
+want_rules = [(10.66, 68.06, 205.57, 68.06), (10.66, 73.14, 205.57, 73.14), (36.98, 68.06, 36.98, 73.14), (170.10, 68.06, 170.10, 73.14),
+              (11.03, 212.69, 205.57, 212.69), (12.03, 271.93, 75.36, 271.93)]
+check("the rules are SQL's: the heading band with its two inner rules only, the rule above the total and the signature's, 0.75 pt",
+      len(lines_a) == len(want_rules) and all(any(all(abs(p - q) <= 0.3 for p, q in zip(w, g)) for g in lines_a) for w in want_rules)
+      and 0.75 in widths_a, lines_a)
+qr = link_rects(pdf_a)[0]
+check("the QR code is 20 x 20 mm at 181.91, 243.69", all(abs(p - q) <= 0.3 for p, q in zip(qr, (181.91, 243.69, 201.91, 263.69))), qr)
+uuid = [t for t in ta_trace if t["text"].startswith(("e-Invoice UUID", "Validated on"))]
+check("the UUID and Validated on lines are small, right-aligned under the QR code, at least 2 mm below it and on the page",
+      len(uuid) == 2 and all(5 <= t["size"] <= 6 and abs(t["x"] + t["w"] - 201.91) < 0.05 for t in uuid)
+      and uuid[0]["base"] - 0.75 * 5.5 * MM >= 263.69 + 2 and uuid[-1]["base"] < invoicepdf.PAGE_H - 3, uuid)
+check("the customer invoice's text doesn't overlap and stays on the page", not overlaps(ta_trace) and inside(ta_trace), overlaps(ta_trace))
+for name, dd in (("six lines with cents", b), ("not an e-Invoice", cdoc), ("long description", d), ("cancelled", e), ("no Long ID", f),
+                ("self-billed", i), ("self-billed, 4 address lines", i4), ("two pages", many),
+                 ("amount in words on three lines", dict(a, total_sen=99999999999999, words="Malaysian Ringgit : " + W(99999999999999)))):
+    tr = []
+    invoicepdf.render(dd, trace=tr)
+    check(f"{name}: nothing overlaps, nothing runs off the page", not overlaps(tr) and inside(tr), overlaps(tr))
+tb_trace = []
+invoicepdf.render(b, trace=tb_trace)
+rows_b = sorted(t["base"] for t in tb_trace if t["font"] == "trebuchet" and t["sql_size"] == 9)
+check("rows are 4.5 mm apart from 77.14", [round(x, 2) for x in rows_b] == [round(77.14 + n * 4.5, 2) for n in range(6)], rows_b)
+ti_trace = []
+invoicepdf.render(i, trace=ti_trace)
+sup = [t for t in ti_trace if t["text"] in ("Supplier  :", "EXAMPLE OVERSEAS SERVICES INC", "TIN : EI00000000020")]
+check("the self-billed invoice's Supplier block is where SQL's To block is, its lines a line apart",
+      [round(t["base"], 2) for t in sup] == [41.48, 41.48, 45.52] and sup[0]["x"] == 11.19 and sup[1]["x"] > sup[0]["x"] + sup[0]["w"], sup)
+long_name = dict(a, party=dict(a["party"], name="EXAMPLE " + "VERY LONG " * 20 + "TRADING"),
+                 company=dict(a["company"], name="EXAMPLE " + "EXTREMELY LONG " * 10 + "HOLDINGS SDN BHD"))
+tl = []
+invoicepdf.render(long_name, trace=tl)
+check("a name too long for its line is made smaller to fit (never larger), not run over the right block or off the page",
+      all(t["size"] < t["sql_size"] for t in tl if "VERY LONG" in t["text"] or "EXTREMELY" in t["text"])
+      and all(t["size"] <= t["sql_size"] + 1e-9 for t in tl) and not overlaps(tl) and inside(tl), [(t["text"][:20], t["size"]) for t in tl][:6])
+
+# Characters outside Latin-1 (here "ā" and "€") print with SQL's (TrueType) fonts
+uni = dict(a, party=dict(a["party"], name="EXAMPLE ĀLAM TRADING"),
+           lines=[{"code": "500-1000", "description": "SERVICE FEE € 10 FOR ā ROOM", "sen": 44000}])
+pdf_uni = invoicepdf.render(uni)
+if HAVE_SQL_FONTS:
+    check("non-Latin-1 text (a with a macron, the euro sign) prints with SQL's fonts", "EXAMPLE ĀLAM TRADING" in text_of(pdf_uni) and "SERVICE FEE € 10 FOR ā ROOM" in text_of(pdf_uni),
+          text_of(pdf_uni))
+
+# The fallback: no SQL font found (an empty font folder), so the built-in look-alikes, never larger than SQL's sizes
+empty_fonts = tmp / "no-fonts"
+empty_fonts.mkdir()
+invoicepdf.FONT_DIRS = [empty_fonts]
+try:
+    notes = invoicepdf.font_notes()
+    check("with no font found, each of SQL's fonts is named with what prints instead",
+          all(any(f"SQL's font {name} " in n for n in notes) for _f, name, *_r in invoicepdf.FONTS.values())
+          and any("Helvetica" in n for n in notes) and any("HRP_FONT_DIR" in n and "outside the records folder" in n for n in notes), notes)
+    check("and the note never tells the owner to put font files in the records folder",
+          not any(str(tmp) in n for n in notes), notes)
+    r = j("get", f"/api/invoices/{ROWS['EXH/2026/07/001']}/check")
+    check("the invoice check says which fonts were not found and what is used instead", r["fonts"] == notes and any("Segoe UI" in n for n in r["fonts"]), r)
+    r = j("get", f"/api/setup/entities/{EXH}/print")
+    check("and so do the print settings", r["fonts"] == notes, r)
+    fa_trace, fi_trace = [], []
+    fb_a = invoicepdf.render(a, trace=fa_trace)
+    fb_i = invoicepdf.render(i, trace=fi_trace)
+    fb_uni = invoicepdf.render(uni)
+finally:
+    invoicepdf.FONT_DIRS = None
+check("the fallback PDF uses the look-alikes: Times for Times New Roman, Helvetica for Tahoma, Trebuchet MS and Segoe UI",
+      base_fonts(fb_a) == {"Times-Roman", "Times-Bold", "Helvetica", "Helvetica-Bold"}, base_fonts(fb_a))
+check("no fallback text is larger than SQL's size", all(t["size"] <= t["sql_size"] + 1e-9 for t in fa_trace + fi_trace),
+      [t for t in fa_trace if t["size"] > t["sql_size"]][:3])
+check("each look-alike is drawn at SQL's size times min(1, r), as measured",
+      all(abs(t["size"] - t["sql_size"] * min(1, invoicepdf.BUILT_IN_RATIOS[t["font"]])) < 1e-6 for t in fa_trace), fa_trace[:2])
+check("Tahoma's look-alike is drawn smaller (Helvetica is wider), Tahoma Bold's at SQL's size (Helvetica Bold is narrower)",
+      any(t["font"] == "tahoma" and t["size"] < t["sql_size"] for t in fa_trace)
+      and all(t["size"] == t["sql_size"] for t in fa_trace if t["font"] == "tahoma-bold"))
+# Pieces SQL right-aligns or centres keep their right edge or centre (where they end in Tahoma); the rest their start
+ANCHORS = {"Invoice": ("C", 107.72), "Doc No.  :": ("R", 167.52), "Date   :": ("R", 166.27), "Account  :": ("R", 166.27),
+           "Terms  :": ("R", 166.27), "DESCRIPTION": ("C", 103.16), "Amount(MYR)": ("R", 205.05), "Total :": ("R", 169.59)}
+wrong = placed(fb_a, fa_trace, [(t, f, s, ANCHORS.get(t, at), bl) for t, f, s, at, bl in SPEC_A], False)
+check("the fallback keeps SQL's places (baselines, starts, centres and right edges)", not wrong, wrong)
+check("in the fallback, nothing overlaps and nothing runs off the page", not overlaps(fa_trace) and inside(fa_trace)
+      and not overlaps(fi_trace) and inside(fi_trace), overlaps(fa_trace) + overlaps(fi_trace))
+check("a character a built-in font can't print is replaced, not a failure", "EXAMPLE ?LAM TRADING" in text_of(fb_uni), text_of(fb_uni))
+
+# Only Segoe UI missing: only the bank block falls back
+real_find = invoicepdf._find
+invoicepdf._find = lambda name, system=False: None if name.lower().startswith("segoeui") else real_find(name, system)
+try:
+    notes = invoicepdf.font_notes()
+    sg_trace = []
+    pdf_sg = invoicepdf.render(a, trace=sg_trace)
+finally:
+    invoicepdf._find = real_find
+if HAVE_SQL_FONTS:
+    check("with only Segoe UI missing, only the bank block falls back and only Segoe UI is named",
+          len(notes) == 3 and all("Segoe UI" in n for n in notes[:2]) and "segoeui.ttf, segoeuib.ttf" in notes[2]
+          and base_fonts(pdf_sg) == {"TimesNewRoman", "TimesNewRomanBold", "Tahoma", "TahomaBold", "TrebuchetMS", "Helvetica", "Helvetica-Bold"}
+          and {t["font"] for t in sg_trace if t["font_name"].startswith("Helvetica")} == {"segoe", "segoe-bold"}, (notes, base_fonts(pdf_sg)))
+
+# Review fixes: fonts are never looked for in the records folder
+check("no folder searched for fonts is in the records folder",
+      not any(Path(d).resolve().is_relative_to(tmp.resolve()) for d in invoicepdf.font_dirs()), invoicepdf.font_dirs())
+inside_fonts = tmp / "fonts"
+inside_fonts.mkdir()
+os.environ["HRP_FONT_DIR"] = str(inside_fonts)
+try:
+    dirs_inside, notes_inside = invoicepdf.font_dirs(), invoicepdf.font_notes()
+finally:
+    del os.environ["HRP_FONT_DIR"]
+check("a fonts folder named inside the records folder isn't searched, and the print settings say so",
+      inside_fonts not in dirs_inside and any("inside the records folder" in n for n in notes_inside), (dirs_inside, notes_inside))
+outside_fonts = Path(tempfile.mkdtemp(prefix="hrp-invoice-pdf-fonts-"))
+os.environ["HRP_FONT_DIR"] = str(outside_fonts)
+try:
+    dirs_outside = invoicepdf.font_dirs()
+finally:
+    del os.environ["HRP_FONT_DIR"]
+check("a fonts folder named outside the records folder is searched first", dirs_outside[0] == outside_fonts, dirs_outside)
+
+# Review fixes: a damaged copy of a font ahead of a good one is passed over, and the good one is used
+if HAVE_SQL_FONTS:
+    good = (WIN_FONTS / "tahoma.ttf").read_bytes()
+    for label, damaged in (("empty", b""), ("junk", b"not a font" * 100), ("half a file", good[:len(good) // 2]),
+                           ("cut 200 bytes short", good[:-200]), ("cut 5000 bytes short", good[:-5000]),
+                           ("cut 40000 bytes short", good[:-40000])):
+        bad_dir = Path(tempfile.mkdtemp(prefix="hrp-invoice-pdf-badfont-"))
+        (bad_dir / "tahoma.ttf").write_bytes(damaged)
+        invoicepdf.FONT_DIRS = [bad_dir, WIN_FONTS]
+        try:
+            choice, notes_bad = invoicepdf.font_choice("tahoma"), invoicepdf.font_notes()
+            pdf_bad = invoicepdf.render(a)
+        finally:
+            invoicepdf.FONT_DIRS = None
+        check(f"a damaged Tahoma ({label}) ahead of the good one is passed over: the invoice prints in Windows' Tahoma",
+              choice["kind"] == "sql" and choice["path"].parent == WIN_FONTS and notes_bad == []
+              and "Tahoma" in base_fonts(pdf_bad) and "Helvetica" not in base_fonts(pdf_bad), (choice, notes_bad, base_fonts(pdf_bad)))
+    # Only a damaged copy: it is named as not found, and the invoice prints in the look-alike
+    bad_dir = Path(tempfile.mkdtemp(prefix="hrp-invoice-pdf-badfont-"))
+    (bad_dir / "tahoma.ttf").write_bytes(good[:-200])
+    invoicepdf.FONT_DIRS = [bad_dir]
+    try:
+        choice, notes_bad = invoicepdf.font_choice("tahoma"), invoicepdf.font_notes()
+        pdf_bad = invoicepdf.render(a)
+    finally:
+        invoicepdf.FONT_DIRS = None
+    check("with only a damaged Tahoma, the print settings say it isn't there (or is damaged) and the look-alike prints",
+          choice["kind"] == "built-in" and any("SQL's font Tahoma " in n and "damaged" in n for n in notes_bad)
+          and "Helvetica" in base_fonts(pdf_bad), (choice, notes_bad))
+    # A file that passes the check but fails when the PDF is made: the invoice still prints, the file is named, and
+    # it is passed over from then on
+    bad_dir = Path(tempfile.mkdtemp(prefix="hrp-invoice-pdf-badfont-"))
+    bad_file = bad_dir / "tahoma.ttf"
+    bad_file.write_bytes(good[:-5000])
+    real_ok = invoicepdf._font_ok
+    invoicepdf._font_ok = lambda p: True if Path(p) == bad_file else real_ok(p)
+    invoicepdf.FONT_DIRS = [bad_dir, WIN_FONTS]
+    try:
+        tr_bad = []
+        pdf_late = invoicepdf.render(a, trace=tr_bad)
+        invoicepdf._font_ok = real_ok
+        notes_late, choice_late = invoicepdf.font_notes(), invoicepdf.font_choice("tahoma")
+    finally:
+        invoicepdf._font_ok = real_ok
+        invoicepdf.FONT_DIRS = None
+    check("a font file that fails only when the PDF is made doesn't stop the invoice: it prints in the next Tahoma found",
+          pdf_late.startswith(b"%PDF") and "Tahoma" in base_fonts(pdf_late) and text_of(pdf_late).count("EXAMPLE TENANT TRADING") >= 1
+          and len([t for t in tr_bad if t["text"] == "Invoice"]) == 1, base_fonts(pdf_late))
+    check("and the damaged file is named in the print settings and passed over from then on",
+          any(str(bad_file) in n and "failed while an invoice was being printed" in n for n in notes_late)
+          and choice_late["path"].parent == WIN_FONTS, (notes_late, choice_late))
+    invoicepdf._print_trouble.clear()
+
+# Review fixes: a line more than twice too long for its place is cut, and the cut is named, never silent
+too_long = dict(a, company=dict(a["company"], name="EXAMPLE " * 20 + "END", address="LOT " * 81),
+                party=dict(a["party"], name="EXAMPLE " + "LONG " * 12 + "TRADING"))
+cuts, tl2 = [], []
+pdf_cut = invoicepdf.render(too_long, trace=tl2, cut=cuts)
+cut_fields = {w for w, _full, _shown in cuts}
+check("text more than twice its room shrinks only to half SQL's size, and what is cut is noted",
+      {"company_name", "address"} <= cut_fields and "party" not in cut_fields
+      and all(t["size"] >= t["sql_size"] * invoicepdf.MIN_SHRINK * min(1, invoicepdf.BUILT_IN_RATIOS[t["font"]]) - 1e-9 for t in tl2)
+      and not overlaps(tl2) and inside(tl2), (cut_fields, [(t["text"][:15], t["size"]) for t in tl2][:4]))
+cut_words = invoicepdf.cut_notes(cuts, "EXH")
+check("the cut lines are named in words, with where to shorten them",
+      any(n.startswith("The company's name in the header is too long") and "Setup › Companies › EXH" in n for n in cut_words)
+      and any(n.startswith("The company's address in the header") for n in cut_words) and len(cut_words) == 2, cut_words)
+check("text that fits at more than half its size is only made smaller, not cut",
+      [t for t in tl2 if "LONG" in t["text"]][0]["text"] == too_long["party"]["name"])
+j("patch", f"/api/setup/entities/{EXH}", json={"fields": {"address": "LOT " * 81}})
+r = j("get", f"/api/setup/entities/{EXH}/print")
+check("the print settings say which of the company's settings is too long to print in full",
+      len(r["too_long"]) == 1 and r["too_long"][0].startswith("The company's address in the header is too long"), r["too_long"])
+r = j("get", f"/api/invoices/{ROWS['EXH/2026/07/001']}/check")
+check("and so does the invoice check", any(n.startswith("The company's address in the header is too long") for n in r["notes"]), r["notes"])
+resp = c.get(BASE + f"/api/invoices/month.zip?entity={EXH}&month=2026-07&kind=customer")
+zc = zipfile.ZipFile(io.BytesIO(resp.data))
+check("and the month's zip lists the invoices printed with a line cut short",
+      "Text cut short.txt" in zc.namelist() and "EXH/2026/07/001: The company's address in the header" in zc.read("Text cut short.txt").decode(),
+      zc.namelist())
+j("patch", f"/api/setup/entities/{EXH}", json={"fields": {"address": "1-1, Jalan Contoh 1/2,\nTaman Contoh, Jalan Sampel,\n50000 Kuala Lumpur,"}})
+check("with the address shortened again, nothing is too long", j("get", f"/api/setup/entities/{EXH}/print")["too_long"] == [])
+
 for name, data in (("1 customer e-Invoice, 1 line.pdf", pdf_a), ("2 customer e-Invoice, 6 lines with cents.pdf", pdf_b),
                    ("3 customer invoice, not an e-Invoice.pdf", pdf_c), ("4 self-billed e-Invoice.pdf", pdf_i),
                    ("5 long description wrapping.pdf", pdf_d), ("6 e-Invoice cancelled.pdf", pdf_e), ("7 two pages.pdf", pdf_many),
-                   ("8 self-billed, supplier with 4 address lines.pdf", pdf_i4), ("9 one line longer than a page.pdf", pdf_huge)):
+                   ("8 self-billed, supplier with 4 address lines.pdf", pdf_i4), ("9 one line longer than a page.pdf", pdf_huge),
+                   ("10 fallback fonts, customer e-Invoice.pdf", fb_a), ("11 fallback fonts, self-billed.pdf", fb_i),
+                   ("12 non-Latin-1 text.pdf", pdf_uni), ("13 text more than twice too long, cut and noted.pdf", pdf_cut)):
     (SAMPLES / name).write_bytes(data)
 
 # A logo changed on disk since it was uploaded is not printed, and the settings say so
@@ -585,7 +945,7 @@ check("the SQL page offers Invoice PDF on customer invoices only", kinds.get("EX
 einv_kinds = {x["doc_no"]: x["print_kind"] for x in page["einvoices"]}
 check("and on the vouchers with a self-billed e-Invoice", einv_kinds.get("PV2607-009") == "self_billed", einv_kinds)
 check("and in the MyInvois list", any(r["print_entry"] == ROWS["PV2607-009"] for r in page["myinvois"]["rows"]), page["myinvois"]["rows"][:2])
-check("with the months to print and no settings missing", page["invoice_print"] == {"missing": [], "months": {"customer": ["2026-07"],
+check("with the months to print and no settings missing", page["invoice_print"] == {"missing": [], "fonts": invoicepdf.font_notes(), "too_long": [], "months": {"customer": ["2026-07"],
                                                                                                               "self_billed": ["2026-07"]}},
       page["invoice_print"])
 resp = c.delete(BASE + f"/api/setup/entities/{EXH}/image/signature", headers=H, json={})

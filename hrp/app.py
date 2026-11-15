@@ -1960,7 +1960,8 @@ def sql_entries():
                     "myinvois": {k: v for k, v in mi.items() if k != "by_entry"} if mi else None,
                     "linked": on_payments, "ignored": ignored, "lines": lines,
                     "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans},
-                    "invoice_print": {"missing": invoicepdf.missing_settings(c, e), "months": invoicepdf.print_months(c, me)}
+                    "invoice_print": {"missing": invoicepdf.missing_settings(c, e), "months": invoicepdf.print_months(c, me),
+                                      "fonts": invoicepdf.font_notes(), "too_long": invoicepdf.setup_cuts(c, e)}
                     if printing else None})
 
 
@@ -2976,13 +2977,18 @@ def _refused_page(message, status):
 
 @app.get("/api/invoices/<int:sid>/check")
 def invoice_check(sid):
-    """Whether an SQL document's invoice can be printed: its file name, what it notes and the settings missing."""
+    """Whether an SQL document's invoice can be printed: its file name, what it notes (with any line too long to print
+    in full) and the settings missing."""
     c = con()
     try:
         doc = invoicepdf.document(c, sid)
+        cuts = []
+        invoicepdf.render(doc, cut=cuts)
     except invoicepdf.InvoiceError as x:
         return err(str(x), x.status)
-    return jsonify({"ok": True, "kind": doc["kind"], "file": invoicepdf.file_name(doc), "notes": doc["notes"], "missing": doc["missing"]})
+    notes = doc["notes"] + invoicepdf.cut_notes(cuts, doc["entity_code"])
+    return jsonify({"ok": True, "kind": doc["kind"], "file": invoicepdf.file_name(doc), "notes": notes, "missing": doc["missing"],
+                    "fonts": invoicepdf.font_notes()})
 
 
 @app.get("/api/invoices/<int:sid>.pdf")
@@ -3019,7 +3025,8 @@ def invoices_zip():
 
 def _print_settings(c, e):
     e = dict(e)
-    return {"logo": e.get("logo_sha256"), "signature": e.get("signature_sha256"), "missing": invoicepdf.missing_settings(c, e)}
+    return {"logo": e.get("logo_sha256"), "signature": e.get("signature_sha256"), "missing": invoicepdf.missing_settings(c, e),
+            "fonts": invoicepdf.font_notes(), "too_long": invoicepdf.setup_cuts(c, e)}
 
 
 @app.get("/api/setup/entities/<int:rid>/print")
