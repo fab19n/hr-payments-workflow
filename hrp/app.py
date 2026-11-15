@@ -14,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, finstatements, ledger, masters, nextup, recon, reports,
+from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, recon, reports,
                monthly, myinvois, packcheck, partybook, receivables, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements,
                statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
@@ -1932,11 +1932,18 @@ def sql_entries():
     cands = sqlimport.candidates(c, eid, sqlimport.months_of([{"date": m + "-01"} for m in months])) if months else []
     einv = _taken_back(c, rows(c.execute(
         """SELECT id, entity_id, doc_no, doc_date, description, payee, amount, einvoice, einvoice_status, einvoice_link, kind,
-           payment_id FROM sql_entries WHERE entity_id = ? AND (einvoice IS NOT NULL OR einvoice_status IS NOT NULL)
+           payment_id, doc_type, direction FROM sql_entries WHERE entity_id = ? AND (einvoice IS NOT NULL OR einvoice_status IS NOT NULL)
            ORDER BY doc_date DESC LIMIT 200""", (eid,))))
     mi = myinvois.view(c, e)  # what LHDN says of each e-Invoice, from the MyInvois copies read (None below update 33)
     for x in einv:
         x["myinvois"] = (mi or {}).get("by_entry", {}).get(x["id"])
+    # Which documents have an invoice to print (a customer invoice, or a voucher with a self-billed e-Invoice)
+    printing = invoicepdf.ready(c)
+    for x in other + einv:
+        x["print_kind"] = invoicepdf.kind_of(c, x) if printing and x.get("kind") in ("invoice", "payment", None) else None
+    if mi and printing:
+        for r in mi["rows"]:
+            r["print_entry"] = r["entry_id"] if r["direction"] == "self_billed" and r["entry_id"] else None
     ignored = rows(c.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND status = 'ignored' ORDER BY doc_date DESC", (eid,)))
     # The account lines SQL's journals gave for each entry, checked now against the chart and the listing.
     me = int(eid)
@@ -1952,7 +1959,9 @@ def sql_entries():
                     "candidates": cands, "documents": other, "einvoices": einv,
                     "myinvois": {k: v for k, v in mi.items() if k != "by_entry"} if mi else None,
                     "linked": on_payments, "ignored": ignored, "lines": lines,
-                    "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans}})
+                    "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans},
+                    "invoice_print": {"missing": invoicepdf.missing_settings(c, e), "months": invoicepdf.print_months(c, me)}
+                    if printing else None})
 
 
 @app.get("/api/ledger/doc")
@@ -2601,9 +2610,11 @@ def _write_backup(zf, snap):
         s.close()
     zf.writestr("manifest.json", json.dumps({"made": datetime.now().isoformat(timespec="seconds"), "records_sha256": audit.file_sha256(snap),
                                              "audit_trail": {"last_entry": last[0], "hash": last[1], "at": last[2]} if last else None}, indent=2))
-    for p in (DATA_DIR / "documents").rglob("*"):
-        if p.is_file():
-            zf.write(p, str(p.relative_to(DATA_DIR)))
+    # the documents, and the logos and signatures printed on invoices (company-assets), at their places in the records folder
+    for folder in ("documents", "company-assets"):
+        for p in (DATA_DIR / folder).rglob("*"):
+            if p.is_file():
+                zf.write(p, str(p.relative_to(DATA_DIR)))
 
 
 def _encrypted_zip(target, snap, password):
@@ -2951,6 +2962,112 @@ def setup_active(kind, rid, act):
 def setup_delete(kind, rid):
     _reason()
     return _setup_call(lambda c: (masters.delete(c, kind, rid), {"ok": True})[1])
+
+
+# ---------- printed invoices (invoicepdf) ----------
+
+def _refused_page(message, status):
+    """A refusal shown in the tab the PDF or zip was opened in: the sentence, as a small page."""
+    from html import escape
+    body = (f"<!doctype html><meta charset='utf-8'><title>Not printed</title><body style='font-family:sans-serif;margin:2em'>"
+            f"<p>{escape(message)}</p></body>")
+    return make_response(body, status, {"Content-Type": "text/html; charset=utf-8"})
+
+
+@app.get("/api/invoices/<int:sid>/check")
+def invoice_check(sid):
+    """Whether an SQL document's invoice can be printed: its file name, what it notes and the settings missing."""
+    c = con()
+    try:
+        doc = invoicepdf.document(c, sid)
+    except invoicepdf.InvoiceError as x:
+        return err(str(x), x.status)
+    return jsonify({"ok": True, "kind": doc["kind"], "file": invoicepdf.file_name(doc), "notes": doc["notes"], "missing": doc["missing"]})
+
+
+@app.get("/api/invoices/<int:sid>.pdf")
+@audited_read("invoice")
+def invoice_pdf(sid):
+    """One customer invoice or self-billed e-Invoice as PDF, shown in the browser (?download=1 saves it)."""
+    c = con()
+    try:
+        doc = invoicepdf.document(c, sid)
+        data = invoicepdf.render(doc)
+    except invoicepdf.InvoiceError as x:
+        return _refused_page(str(x), x.status)
+    return send_file(io.BytesIO(data), mimetype="application/pdf", download_name=invoicepdf.file_name(doc),
+                     as_attachment=request.args.get("download") == "1")
+
+
+@app.get("/api/invoices/month.zip")
+@audited_read("invoices")
+def invoices_zip():
+    """Every customer invoice (kind=customer) or self-billed e-Invoice (kind=self_billed) of a company's month, zipped,
+    with a list of those that couldn't be printed and why."""
+    c = con()
+    e = entity(c, id_from(request.args.get("entity") or request.args.get("entity_id") or ""))
+    month = month_from(request.args.get("month"))
+    kind = request.args.get("kind", "customer")
+    try:
+        data, _printed, _skipped = invoicepdf.month_zip(c, e, month, kind)
+    except invoicepdf.InvoiceError as x:
+        return _refused_page(str(x), x.status)
+    what = "Invoices" if kind == "customer" else "Self-billed invoices"
+    return send_file(io.BytesIO(data), mimetype="application/zip", as_attachment=True,
+                     download_name=f"{e['code']} {what} {month}.zip")
+
+
+def _print_settings(c, e):
+    e = dict(e)
+    return {"logo": e.get("logo_sha256"), "signature": e.get("signature_sha256"), "missing": invoicepdf.missing_settings(c, e)}
+
+
+@app.get("/api/setup/entities/<int:rid>/print")
+def setup_print(rid):
+    """What a company's printed invoices have and lack: its logo and signature (their fingerprints) and the settings
+    missing, in words."""
+    c = con()
+    return jsonify(_print_settings(c, entity(c, rid)))
+
+
+@app.get("/api/setup/entities/<int:rid>/image/<which>")
+def setup_image_file(rid, which):
+    c = con()
+    p = invoicepdf.image_path(entity(c, rid), which) if which in invoicepdf.IMAGES else None
+    if not p:
+        abort(404)
+    return send_file(p)
+
+
+@app.post("/api/setup/entities/<int:rid>/image/<which>")
+def setup_image(rid, which):
+    """Uploads the company's logo or signature for its invoices (PNG or JPEG, at most 2 MB)."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return err("Choose an image to upload.")
+    c = con()
+    e = entity(c, rid)
+    try:
+        invoicepdf.store_image(c, e, which, f.filename, f.read())
+    except invoicepdf.InvoiceError as x:
+        c.rollback()
+        return err(str(x), x.status)
+    c.commit()
+    return jsonify(_print_settings(c, entity(c, rid)))
+
+
+@app.delete("/api/setup/entities/<int:rid>/image/<which>")
+def setup_image_remove(rid, which):
+    """Takes the logo or signature off the company's invoices; the file stays in the records folder."""
+    c = con()
+    e = entity(c, rid)
+    try:
+        invoicepdf.clear_image(c, e, which)
+    except invoicepdf.InvoiceError as x:
+        c.rollback()
+        return err(str(x), x.status)
+    c.commit()
+    return jsonify(_print_settings(c, entity(c, rid)))
 
 
 @app.get("/api/audit/status")

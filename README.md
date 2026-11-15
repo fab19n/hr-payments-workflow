@@ -33,16 +33,18 @@ inside your OneDrive folder, for example `C:\Users\<you>\OneDrive\HR-Backup`, an
 backups are copied there; a plain backup stays on this PC. After you mark a month as filed, the app offers to make an
 encrypted backup.
 
-Only the contents of an encrypted backup are protected. The names of the files inside (the documents folder) can be seen
-without the password, so avoid putting a person's name in a document's file name if the backup goes to OneDrive.
+Only the contents of an encrypted backup are protected. The names of the files inside (the documents and
+company-assets folders) can be seen without the password, so avoid putting a person's name in a document's file name if
+the backup goes to OneDrive.
 
 ### Restore from an encrypted backup
 
 1. Close HR Payments.
 2. Open the zip with 7-Zip (Windows Explorer cannot open AES zips) and type the password. Without the password the backup
    cannot be opened.
-3. Copy `records.db` and the `documents` folder from the zip into the records folder (`C:\HR-Records`), replacing what is
-   there (keep a copy of the old folder first).
+3. Copy `records.db`, the `documents` folder and the `company-assets` folder (the logos and signatures printed on
+   invoices) from the zip into the records folder (`C:\HR-Records`), replacing what is there (keep a copy of the old
+   folder first).
 4. Start HR Payments again.
 
 ## What to do next

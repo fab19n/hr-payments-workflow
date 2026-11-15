@@ -68,13 +68,22 @@ KINDS = {
                hint="Months before it are never set up on their own and nothing in them counts as overdue. Empty: no limit."),
             _f("fy_start", "Financial year starts in", "select", options=[[n, name] for n, name in enumerate(MONTH_NAMES, 1)],
                hint="Keep it the same as the company's setting in SQL Account: SQL's reports can't tell it. The trial balance check uses it, and later reports will too. Empty: January."),
-            _f("reg_no", "Registration no.", "text"),
+            _f("reg_no", "Registration no.", "text", hint="As printed on invoices, e.g. 202401012345."),
+            _f("old_reg_no", "Old registration no.", "text", hint="Printed in brackets after the registration no., e.g. 1234567-X. Empty: none."),
             _f("tin", "Tax ID (TIN)", "text"),
             _f("sst_no", "SST no.", "text"),
             _f("employer_kwsp", "KWSP employer no.", "text"),
             _f("employer_perkeso", "PERKESO employer no.", "text"),
             _f("employer_lhdn", "LHDN employer no. (E)", "text"),
             _f("sql_database", "SQL Account database", "text", hint="Which SQL Account company database holds its books."),
+            _f("address", "Address", "textarea", wide=True,
+               hint="Printed in the invoice header, as one line. Several lines are joined with commas."),
+            _f("phone", "Phone", "text", hint="Printed in the invoice header."),
+            _f("email", "Email", "text", hint="Printed in the invoice header."),
+            _f("website", "Website", "text", hint="Printed in the invoice header, e.g. www.example.com."),
+            _f("invoice_account_id", "Bank account on invoices", "select", options_from="entity_accounts",
+               hint="Printed under All payments to be made to. Its bank, account number, bank address and transfer code come from Setup › Bank accounts."),
+            _f("sign_label", "Under the signature", "text", hint="Empty: For and the company's name, as SQL Account prints it."),
             _f("notes", "Notes", "textarea", wide=True),
         ],
     },
@@ -91,6 +100,8 @@ KINDS = {
                hint="The account SQL Account's cash book listing is for. Each company has one, in MYR."),
             _f("gl_code", "GL account code", "text", hint="The bank account's code in SQL Account's chart of accounts."),
             _f("sql_payment_method", "SQL payment method", "text", hint="As SQL Account names it on vouchers."),
+            _f("bank_address", "Bank address", "text", wide=True, hint="Printed on invoices when this account is the one to pay into."),
+            _f("swift_code", "Bank transfer (SWIFT) code", "text", max=11, hint="Printed on invoices, e.g. EXMBMYKL."),
             _f("notes", "Notes", "textarea", wide=True),
         ],
     },
@@ -186,6 +197,13 @@ KINDS["parties"] = {
         _f("tin", "Tax ID (TIN)", "text", max=20),
         _f("brn", "Business registration no. (BRN)", "text", max=30),
         _f("gl_code", "Control account (GL code)", "sqlcode", hint="Its debtor or creditor control account."),
+        _f("address_1", "Address line 1", "text", wide=True, hint="Printed on its invoices. Filled from SQL's list when pasted with Address1 to Address4."),
+        _f("address_2", "Address line 2", "text", wide=True),
+        _f("address_3", "Address line 3", "text", wide=True),
+        _f("address_4", "Address line 4", "text", wide=True),
+        _f("attention", "Attention", "text", hint="Printed as Attn on its invoices."),
+        _f("phone", "Phone", "text"),
+        _f("credit_term", "Terms", "text", max=40, hint="Its credit term as SQL prints it, e.g. 30 Days."),
         _f("match_words", "Words in SQL descriptions", "words", wide=True, hint="Kept for reference; matching uses the code."),
         _f("notes", "Notes", "textarea", wide=True),
     ],
@@ -341,12 +359,12 @@ def check_value(f, v):
         if isinstance(v, bool) or not isinstance(v, int):
             raise Refused(f"{label}: choose a company, or every company.")
         return v
-    if kind == "select" and f.get("options_from") == "parties":
+    if kind == "select" and f.get("options_from") in ("parties", "entity_accounts"):
         if isinstance(v, str) and v.isdigit():
             v = int(v)
         if isinstance(v, bool) or not isinstance(v, int):
             raise Refused(f"{label}: choose one of the options.")
-        return v  # checked against the records by _word_check
+        return v  # checked against the records by _word_check (an account: by _invoice_account)
     if kind == "select" and f.get("options_from"):
         if not isinstance(v, str):
             raise Refused(f"{label}: choose one of the options.")
@@ -406,6 +424,15 @@ def _shared_codes(con, entity_id, database):
     if len(dbs) > 1:
         raise Refused(f"{', '.join(coded[:3])}{' and more' if len(coded) > 3 else ''} are customers or suppliers for every company "
                       "with an SQL code. Give their codes to a customer or supplier of each company first.")
+
+
+def _invoice_account(con, entity_id, account_id):
+    """The bank account printed on a company's invoices: one of its own accounts, in use."""
+    a = con.execute("SELECT * FROM accounts WHERE id = ?", (account_id,)).fetchone()
+    if not a or a["entity_id"] != entity_id:
+        raise Refused("Bank account on invoices: choose one of this company's bank accounts.")
+    if not a["active"]:
+        raise Refused("Bank account on invoices: that account is stopped. Choose one in use, or use it again first.")
 
 
 def _gl_check(con, entity_id, vals, rec=None):
@@ -567,6 +594,7 @@ USES = {  # (one, many, how to count)
         ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE account_id = ?"),
         ("bank statement", "bank statements", "SELECT COUNT(*) FROM statements WHERE account_id = ?"),
         ("book opening", "book openings", "SELECT COUNT(*) FROM book_openings WHERE account_id = ?"),
+        ("company's invoices", "companies' invoices", "SELECT COUNT(*) FROM entities WHERE invoice_account_id = ?"),
     ],
     "statutory_accounts": [],  # the check only reads it, so it can always be deleted
 }
@@ -578,8 +606,8 @@ def usage(con, kind, rid):
     for one, many, sql in USES[kind]:
         try:
             n = con.execute(sql, (rid,)).fetchone()[0]
-        except sqlite3.OperationalError as x:  # a table a later update adds (a records.db still below it)
-            if "no such table" not in str(x):
+        except sqlite3.OperationalError as x:  # a table or column a later update adds (a records.db still below it)
+            if "no such table" not in str(x) and "no such column" not in str(x):
                 raise
             n = 0
         if n:
@@ -715,6 +743,8 @@ def create(con, kind, fields, entity_id=None, quiet=False):
         if f.get("required") and vals.get(f["key"]) in (None, ""):
             raise Refused(f"{f['label']}: this can't be empty.")
     if kind == "entities":
+        if vals.get("invoice_account_id") is not None:
+            raise Refused("Bank account on invoices: add the company first, then its bank accounts, then choose one.")
         _unique_code(con, vals["code"])
         vals.setdefault("uses_sql", 1)
         _shared_codes(con, None, vals.get("sql_database"))
@@ -813,6 +843,8 @@ def update(con, kind, rid, fields, quiet=False):
         _unique_code(con, vals["code"], rid)
     if kind == "entities" and "sql_database" in vals:
         _shared_codes(con, rid, vals["sql_database"])
+    if kind == "entities" and vals.get("invoice_account_id") is not None:
+        _invoice_account(con, rid, vals["invoice_account_id"])
     _legal_pair(kind, vals, rec)
     if kind == "parties":
         _party_check(con, vals, rec)

@@ -1527,6 +1527,7 @@ async function viewSql(main) {
   }
   const d = await api(`/api/sql/entries?entity=${state.entity}`);
   state.miData = d.myinvois;
+  state.invPrint = d.invoice_print;
   const candOpts = u => `<option value="">Choose a payment…</option>${paymentOptions(d.candidates, u)}`;
   const unlinkBtn = x => `<button class="ghost small" data-sql-unlink="${x.id}">Unlink</button>`;
   const unRow = u => `<tr><td class="mono">${esc(u.doc_no)}</td><td>${shortDate(u.doc_date)}</td><td>${esc(u.description)}${u.payee ? `<div class="note">${esc(u.payee)}</div>` : ""}${sqlCodes(u)}${linesPill(d.lines, u)}
@@ -1598,9 +1599,10 @@ async function viewSql(main) {
     <div class="card"><h2>Find an SQL entry</h2>${listBar("sql", "SQL entries")}</div>
     <div id="sqlEntries">${entries()}</div>
     <div class="card"><h2>Journals and invoices</h2>
+      <div id="invPrint">${invoicePrintBar(d.invoice_print)}</div>
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>e-Invoice</th><th>Checklist item</th></tr></thead><tbody>
       ${d.documents.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}${linesPill(d.lines, x)}</td>
-        <td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
+        <td class="num">${money(x.amount)}</td><td>${einvPill(x)}${invoiceBtn(x)}</td>
         <td>${x.task_title ? `<span class="pill ok">${esc(x.task_title.split(":")[0])} (${esc(x.task_month)})</span>` : x.before_tracking ? `<span class="pill grey">Before tracking</span>` : `<span class="muted">—</span>`}
           ${x.kind === "journal" && x.bank_move != null ? `<div class="note">Moves ${money(Math.abs(x.bank_move))} ${x.bank_move > 0 ? "into" : "out of"} the bank, so it counts in the bank reconciliation.</div>` : ""}
           ${x.payment_id ? `<div class="row" style="gap:6px"><span class="note">${x.kind === "journal" ? "Payment" : "Receipt"}: ${esc(x.payment_desc)}</span>${unlinkBtn(x)}</div>`
@@ -1611,7 +1613,7 @@ async function viewSql(main) {
       <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Status</th><th>MyInvois</th><th></th></tr></thead><tbody>
       ${d.einvoices.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.payee || x.description)}</td><td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
         <td>${x.myinvois ? `<span class="mono">${esc(x.myinvois.uuid)}</span><div class="note">${esc(x.myinvois.type || "")} · ${esc(x.myinvois.status)}${x.myinvois.validated_at ? ` · validated ${esc(x.myinvois.validated_at)}` : ""}</div>` : `<span class="muted">—</span>`}</td>
-        <td>${x.payment_id ? unlinkBtn(x) : ""}</td></tr>`).join("") || `<tr><td colspan="7" class="empty">None imported yet.</td></tr>`}
+        <td><div class="row" style="gap:6px">${x.payment_id ? unlinkBtn(x) : ""}${invoiceBtn(x)}</div></td></tr>`).join("") || `<tr><td colspan="7" class="empty">None imported yet.</td></tr>`}
       </tbody></table></div>
       <div id="miBox">${myinvoisBox(d.myinvois)}</div></div>
     <div class="card"><h2>Imported files</h2>${d.imports.map(i => `<div class="row spread"><span>${esc(i.filename)} <span class="muted">· ${i.entries} entries, ${i.linked} linked${i.lines ? ` · ${plural(i.lines, "line")}` : ""}</span></span><span class="muted">${esc(i.imported_at.replace("T", " "))}</span></div>`).join("") || `<div class="note">None yet.</div>`}</div>`;
@@ -2011,13 +2013,29 @@ function myinvoisBox(m) {
     ${shown.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td class="mono">${r.long_id ? `<a href="${esc(`https://myinvois.hasil.gov.my/${r.uuid}/share/${r.long_id}`)}" target="_blank" rel="noopener noreferrer" title="Open it on MyInvois">${esc(r.uuid)} ↗</a>` : esc(r.uuid)}</td><td>${esc(r.type || "")}</td>
       <td><span class="pill ${r.status === "Valid" ? "ok" : "warn"}">${esc(r.status)}</span></td><td>${esc(r.validated_at || "")}</td>
       <td>${esc(party(r) || "")}</td><td class="num">${r.currency && r.currency !== "MYR" ? esc(r.currency) + " " : ""}${rmPlain(r.total_sen)}</td>
-      <td>${r.entry_doc_no ? `<span class="mono">${esc(r.entry_doc_no)}</span>${MI_HOW[r.matched_by] ? ` <span class="pill grey" title="A likely match, by amount only: check it">${MI_HOW[r.matched_by]}</span>` : ""}` : `<span class="muted">${r.direction === "other" ? "—" : "Not found"}</span>`}</td></tr>`).join("") || `<tr><td colspan="8" class="empty">None.</td></tr>`}
+      <td>${r.entry_doc_no ? `<span class="mono">${esc(r.entry_doc_no)}</span>${MI_HOW[r.matched_by] ? ` <span class="pill grey" title="A likely match, by amount only: check it">${MI_HOW[r.matched_by]}</span>` : ""}` : `<span class="muted">${r.direction === "other" ? "—" : "Not found"}</span>`}${r.print_entry ? invoiceBtn({ id: r.print_entry, print_kind: "self_billed" }) : ""}</td></tr>`).join("") || `<tr><td colspan="8" class="empty">None.</td></tr>`}
     </tbody></table></div>
     <h3>e-Invoices received but not found in SQL's books${m.unmatched.length ? ` (${m.unmatched.length})` : ""}</h3>
     <div class="note">Valid e-Invoices issued to the company${m.since ? ` from ${esc(monthName(m.since))}` : ""} that no supplier invoice or payment voucher in SQL has, by the supplier's document number, its TIN and amount, or its amount alone (a whole voucher, or one line of a claim, dated near it). Check each one: it may still have to be entered in SQL.</div>
     ${m.unmatched.length ? `<div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Supplier</th><th>Supplier TIN</th><th>Issued</th><th class="num">Total</th></tr></thead><tbody>
       ${m.unmatched.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td>${esc(r.supplier_name || "")}</td><td class="mono">${esc(r.supplier_tin || "")}</td><td>${esc((r.issued_at || r.received_at || "").slice(0, 10))}</td>
         <td class="num">${r.currency && r.currency !== "MYR" ? esc(r.currency) + " " : ""}${rmPlain(r.total_sen)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="note">None: every valid e-Invoice received is in SQL's books.</div>`}`;
+}
+
+// Printed invoices (hrp/invoicepdf): a customer invoice, or a payment voucher with a self-billed e-Invoice, opens as PDF
+// in a new tab; one that can't be printed yet says why there.
+const invoiceBtn = x => x.print_kind ? `<div><a class="ghost small" href="/api/invoices/${+x.id}.pdf?entity_id=${state.entity}" target="_blank" rel="noopener" title="${x.print_kind === "self_billed" ? "The self-billed invoice, laid out as SQL Account prints it" : "The invoice, laid out as SQL Account prints it"}">Invoice PDF</a></div>` : "";
+// All of a month's invoices as one zip, and the print settings the company still lacks (with the way to Setup).
+function invoicePrintBar(p) {
+  if (!p) return "";
+  const months = [...new Set([...(p.months.customer || []), ...(p.months.self_billed || [])])].sort().reverse();
+  if (!months.length) return "";
+  const sel = state.invMonth && months.includes(state.invMonth) ? state.invMonth : months[0];
+  const zip = (kind, label) => (p.months[kind] || []).includes(sel)
+    ? `<a class="ghost small" href="/api/invoices/month.zip?entity=${state.entity}&entity_id=${state.entity}&month=${esc(sel)}&kind=${kind}">${label} ${esc(monthName(sel))} (zip)</a>` : "";
+  return `<div class="row"><label class="row tight"><span class="muted">Print</span><select data-inv-month="1">${months.map(m => `<option value="${esc(m)}" ${m === sel ? "selected" : ""}>${esc(monthName(m))}</option>`).join("")}</select></label>
+      ${zip("customer", "All invoices of")}${zip("self_billed", "All self-billed invoices of")}</div>
+    ${p.missing.length ? `<div class="note"><b>Print settings:</b> invoices print without what is missing.<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul><button class="ghost small" type="button" data-inv-setup="1">Open Setup › Companies</button></div>` : ""}`;
 }
 
 function einvPill(x) {
@@ -2484,6 +2502,11 @@ function fieldOptions(f, all) {
     return Object.entries(state.meta.categories).filter(([k]) => all || catActive(k) && (!dir || catDir(k) === dir));
   }
   if (f.options_from === "checklist_codes") return Object.entries(state.meta.checklist_codes || {});
+  // The company's own bank accounts (the company open in the drawer), by id: in use only, unless all.
+  if (f.options_from === "entity_accounts") {
+    const co = state.meta.entities.find(x => x.id === +state.setup.id);
+    return (co?.accounts || []).filter(a => all || isActive(a)).map(a => [a.id, `${a.label}${a.bank ? ` · ${a.bank}` : ""}${a.number ? ` · ${a.number}` : ""}`]);
+  }
   // Customers and suppliers, by id: in use only, unless all. In a per-company list, that company's and every company's.
   if (f.options_from === "parties") {
     const perEntity = !!state.setup.types?.kinds?.[state.setup.kind]?.per_entity;
@@ -2784,11 +2807,45 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
       ${tidy ? `<button class="ghost" type="button" data-setup-act="tidy">Tidy up months before this</button>` : ""}</div>
     ${+rec.system ? `<div class="note">The app's own rules rely on this ${esc(lowerFirst(spec.label))}, so it can't be deleted.</div>` : ""}
     ${tidy ? `<div class="note">Tidy up removes, from the months before the first month tracked, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.</div>` : ""}
+    ${kind === "entities" ? `<div id="suPrint"></div>` : ""}
     ${whyForm()}
     ${histSection(spec.table, id)}`}`;
   $("#drawer").hidden = false;
   state.setup.drawer = { kind, id, locked, loaded: formValues(fields, "su-") };
   watchDrawer(keep);
+  if (kind === "entities" && !isNew) drawPrintSettings(id);
+}
+
+// A company's printed invoices: its logo and signature (uploaded here, PNG or JPEG) and the settings they still lack.
+async function drawPrintSettings(id, got) {
+  if (!$("#suPrint")) return;
+  const p = got || await api(`/api/setup/entities/${id}/print`);
+  const box = $("#suPrint");
+  if (!box || String(state.setup.id) !== String(id)) return;
+  const img = (which, label) => `<div class="field"><span>${label}</span>
+    ${p[which] ? `<img src="/api/setup/entities/${+id}/image/${which}?v=${esc(p[which].slice(0, 12))}" alt="${label}" style="max-height:70px;max-width:220px;object-fit:contain;border:1px solid var(--line);border-radius:4px;background:#fff;padding:4px">` : `<span class="muted">None uploaded</span>`}
+    <div class="row"><input type="file" id="suImg-${which}" accept=".png,.jpg,.jpeg,image/png,image/jpeg"><button class="ghost small" type="button" data-inv-img-up="${which}">Upload</button>
+      ${p[which] ? `<button class="ghost small" type="button" data-inv-img-remove="${which}">Remove</button>` : ""}</div></div>`;
+  box.innerHTML = `<h3>Printed invoices</h3>
+    <div class="note">Customer invoices and self-billed e-Invoices are printed from SQL's documents with this header and footer: the name, registration no., TIN, address, phone, email and website above, the bank account on invoices, and the logo and signature here (PNG or JPEG, at most 2 MB).</div>
+    <div class="grid2">${img("logo", "Logo")}${img("signature", "Signature")}</div>
+    ${p.missing.length ? `<div class="note"><b>Print settings still missing</b> (invoices print without them):<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : `<div class="note">Every print setting is filled in.</div>`}`;
+}
+// Uploads (or removes) the logo or signature of the company open in the drawer.
+async function printImage(which, remove) {
+  const id = state.setup.drawer?.id;
+  if (!id || id === "new") return;
+  const name = which === "logo" ? "Logo" : "Signature";
+  let r;
+  if (remove) r = await api(`/api/setup/entities/${+id}/image/${which}`, { method: "DELETE", json: {} });
+  else {
+    const f = $(`#suImg-${which}`)?.files?.[0];
+    if (!f) return toast("Choose an image first.", true);
+    const form = new FormData(); form.append("file", f); form.append("entity_id", id);
+    r = await api(`/api/setup/entities/${+id}/image/${which}`, { form });
+  }
+  toast(remove ? `${name} taken off the invoices` : `${name} uploaded`);
+  return drawPrintSettings(id, r);
 }
 
 // Save: a new record is added; one already there sends only the fields changed.
@@ -4179,6 +4236,9 @@ document.addEventListener("click", async ev => {
       if (!v) return toast("Choose a payment first.", true);
       const r = await api(`/api/sql/entries/${ds.sqlLinkGo}`, { json: { payment_id: +v } }); toast(`Linked${matchedNote(r)}`); return render();
     }
+    if (ds.invSetup) { state.setup.kind = "entities"; return go("setup"); }
+    if (ds.invImgUp) return printImage(ds.invImgUp, false);
+    if (ds.invImgRemove) return printImage(ds.invImgRemove, true);
     if (ds.sqlUnlink) {
       const r = await api(`/api/sql/entries/${ds.sqlUnlink}/unlink`, { json: {} });
       const list = r.before_tracking ? "Before tracking" : "SQL entries not linked";  // where the SQL page now lists it
@@ -4249,6 +4309,7 @@ document.addEventListener("change", async ev => {
   try {
     // Only the statements are drawn again, so the account and file chosen for an import stay.
     if (t.dataset.rvSel) { RV().sel[t.dataset.rvSel] = t.checked; return paintBar(); }
+    if (t.dataset.invMonth) { state.invMonth = t.value; const box = $("#invPrint"); if (box) box.innerHTML = invoicePrintBar(state.invPrint); return; }
     if (t.dataset.rvKeep) { RV().keep[t.dataset.rvKeep] = t.checked; return; }
     // Move setup: the links save what is chosen.
     if (t.id === "mv-from") { state.setup.move.from = t.value; $("#mvTemplate").href = moveHref("template", t.value ? `&entity=${t.value}` : ""); return; }

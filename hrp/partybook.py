@@ -378,6 +378,14 @@ HEADINGS = {
                 "brn": ("brn", "new brn", "registration no", "registration no.", "reg no", "reg. no.", "business registration no",
                         "roc", "company reg no"),
                 "gl_code": ("control account", "controlaccount", "control a/c", "gl code", "control ac"),
+                # The address, attention, phone and credit term SQL's Maintain Customer and Supplier grids show (update 35)
+                "address_1": ("address1", "address 1", "address line 1", "address", "addr1"),
+                "address_2": ("address2", "address 2", "address line 2", "addr2"),
+                "address_3": ("address3", "address 3", "address line 3", "addr3"),
+                "address_4": ("address4", "address 4", "address line 4", "addr4"),
+                "attention": ("attention", "attn", "contact person"),
+                "phone": ("phone", "phone1", "phone 1", "phone no", "tel", "tel1", "telephone"),
+                "credit_term": ("credit term", "credit terms", "creditterm", "terms", "term"),
                 "notes": ("remark", "remarks", "note", "notes")},
     "gl_accounts": {"code": ("code", "account code", "acc code", "acc. code", "gl code", "account no", "account no."),
                     "name": ("description", "name", "account name", "account", "description 1"),
@@ -510,6 +518,8 @@ def paste(con, kind, b):
         header_row, mapping = guess_columns(kind, rows)
     width = max(len(r) for r in rows)
     mapping = {f: c for f, c in mapping.items() if f in HEADINGS[kind] and isinstance(c, int) and not isinstance(c, bool) and 0 <= c < width}
+    have = {r[1] for r in con.execute(f"PRAGMA table_info({kind})")}
+    mapping = {f: c for f, c in mapping.items() if f in have}  # a field a later update adds is left out below it
     spec = masters.spec(kind)
     fields = {f["key"]: f for f in spec["fields"]}
     out = {"how": how, "read_note": read_note, "headers": headings(rows, header_row), "header_row": header_row, "mapping": mapping,
