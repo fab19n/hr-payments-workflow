@@ -5,3 +5,4 @@ fpdf2==2.9.0
 openpyxl==3.1.5
 xlrd==2.0.2
 pyzipper==0.4.0
+segno==1.6.1

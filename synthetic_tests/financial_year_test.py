@@ -50,13 +50,29 @@ def conn(action="test"):
     return con
 
 
-def business_rows():
-    """Every row of every table except the audit store, as text, to compare the records before and after an update."""
+def business_rows(cols=None):
+    """Every row of every table except the audit store, as text, to compare the records before and after an update.
+    cols: {table: columns} to read only those (the columns a table had before), else every column."""
     with sqlite3.connect(config.DB_PATH) as r:
         out = {}
         for (t,) in r.execute("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'audit_%'"):
-            out[t] = [tuple(x) for x in r.execute(f'SELECT * FROM "{t}" ORDER BY rowid')]
+            pick = ", ".join(f'"{c}"' for c in cols[t]) if cols and t in cols else "*"
+            out[t] = [tuple(x) for x in r.execute(f'SELECT {pick} FROM "{t}" ORDER BY rowid')]
         return out
+
+
+def columns():
+    with sqlite3.connect(config.DB_PATH) as r:
+        return {t: [x[1] for x in r.execute(f'PRAGMA table_info("{t}")')] for (t,) in r.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'audit_%'")}
+
+
+def added_values():
+    """The values in the columns the updates added to the tables that were there before them (all must be empty)."""
+    now = columns()
+    with sqlite3.connect(config.DB_PATH) as r:
+        return {f"{t}.{c}": v for t, cs in before_cols.items() for c in now[t] if c not in cs
+                for (v,) in r.execute(f'SELECT "{c}" FROM "{t}"') if v is not None}
 
 
 def an_import(con, eid, name="test.xlsx"):
@@ -121,17 +137,19 @@ c.commit()
 c.disarm()
 c.close()
 check("below update 27 there is no financial year setting", "fy_start" not in {r["name"] for r in q("PRAGMA table_info(entities)")})
+before_cols = columns()
 before = business_rows()
 db.MIGRATIONS[:] = full
 trail = db.init()
-after = business_rows()
+after = business_rows(before_cols)
 check("update 27 runs, and every update after it", q("PRAGMA user_version")[0]["user_version"] == len(full))
 check("every company gets an empty financial year start", [r["fy_start"] for r in q("SELECT fy_start FROM entities ORDER BY id")] == [None] * 3)
 # Tables a later update adds (the opening balances of update 28) start empty here: no ledger or trial balance was read.
 check("every other row is kept as it was",
       all(not after[t] for t in set(after) - set(before))
       and {t: r for t, r in after.items() if t in before and t not in ("entities", "activity")} == {t: r for t, r in before.items() if t not in ("entities", "activity")}
-      and [x[:-1] for x in after["entities"]] == before["entities"] and after["activity"][:len(before["activity"])] == before["activity"])
+      and after["entities"] == before["entities"] and after["activity"][:len(before["activity"])] == before["activity"]
+      and added_values() == {})
 r = db.connect()
 v = audit.verify(r)
 r.close()

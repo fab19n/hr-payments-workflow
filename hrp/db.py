@@ -343,7 +343,18 @@ MIGRATIONS = [
     # 34. The Long ID MyInvois gives each e-Invoice, read from copies of the MyInvois Transaction screen that show it, so
     #     an e-Invoice's page on MyInvois can be opened from its SQL document. Empty to begin with. Nothing else changes.
     lambda con: add_column(con, "myinvois_docs", "long_id", "TEXT"),
+    # 35. What the printed invoices need (Setup): each company's old registration no., address, phone, email, website, the
+    #     bank account printed under All payments to be made to, the words under the signature, and its logo and
+    #     signature images (the file and its fingerprint); each bank account's bank address and transfer (SWIFT) code;
+    #     each customer's and supplier's address lines, attention, phone and credit term. Empty to begin with. Nothing
+    #     else in the records changes.
+    lambda con: _print_settings(con),
 ]
+
+
+def _print_settings(con):
+    from . import invoicepdf
+    invoicepdf.install(con)
 
 
 def _myinvois_table(con):
