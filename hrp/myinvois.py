@@ -26,8 +26,11 @@ HEADINGS = {
     "buyer tin": "buyer_tin", "receiver tin": "receiver_tin", "submission id": "submission_id",
     "submission channel": "channel", "validated date": "validated_at", "received date": "received_at",
     "issued date": "issued_at", "reject date": "rejected_at", "rejected date": "rejected_at", "status": "status",
-    "total amount": "total", "total excluding tax": "excl_tax", "total net amount": "net",
+    "total amount": "total", "total excluding tax": "excl_tax", "total net amount": "net", "long id": "long_id",
 }
+# MyInvois's public page of an e-Invoice (the one its QR code opens), made from its UUID and Long ID.
+LINK = "https://myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+LONG_ID = re.compile(r"^[A-Za-z0-9]{20,}$")
 SIGNS = ("uuid", "status", "supplier_tin", "buyer_tin")  # the headings that make a sheet a MyInvois copy
 NEEDED = ("doc_no", "uuid", "type", "status", "total")   # without these a copy can't be read
 # A copy made without headings: its columns by position. The newer grid has 20 columns, the older one 15 (no Receiver
@@ -39,7 +42,7 @@ OLD_LAYOUT = ["doc_no", "uuid", "type", "version", "currency", "supplier_name", 
               "channel", "received_at", "issued_at", "rejected_at", "status", "total"]
 FIELDS = ("doc_no", "uuid", "type", "version", "currency", "supplier_name", "supplier_tin", "buyer_name", "buyer_tin",
           "receiver_tin", "submission_id", "channel", "validated_at", "received_at", "issued_at", "rejected_at", "status",
-          "total_sen", "excl_tax_sen", "net_sen")
+          "total_sen", "excl_tax_sen", "net_sen", "long_id")
 WHEN = ("validated_at", "received_at", "issued_at", "rejected_at")
 MONEY = {"total": "total_sen", "excl_tax": "excl_tax_sen", "net": "net_sen"}
 UUID = re.compile(r"^[A-Z0-9]{26}$")
@@ -160,6 +163,29 @@ def _when(v):
     raise ValueError
 
 
+def _read_month_first(rows, cols):
+    """Whether Excel read this copy's dates month first: its date columns hold both real dates and day-first text
+    whose day can't be a month (13/11/2026 2:19:44 PM)."""
+    text = real = False
+    for r in rows:
+        for c in cols:
+            v = r[c] if c < len(r) else None
+            if isinstance(v, (datetime, date)):
+                real = True
+            elif isinstance(v, str):
+                m = re.match(r"^\s*(\d{1,2})/(\d{1,2})/\d{4}", v)
+                if m and int(m.group(1)) > 12:
+                    text = True
+    return text and real
+
+
+def link_of(row):
+    """The e-Invoice's page on MyInvois, when its copy gave the Long ID; else None."""
+    keys = row.keys() if hasattr(row, "keys") else row
+    long_id = row["long_id"] if "long_id" in keys else None
+    return LINK.format(uuid=row["uuid"], long_id=long_id) if long_id else None
+
+
 def _sen(v):
     """Ringgit (or the e-Invoice's own currency) in sen, or None when blank. Raises ValueError for anything else."""
     if v is None or (isinstance(v, str) and not v.strip()):
@@ -195,6 +221,10 @@ def parse(rows):
     start = next(i for i, r in enumerate(rows) if _cells(r)) + (1 if how == "headings" else 0)
     again = "Copy the whole MyInvois Transaction grid again" + (", with its headings." if how == "headings" else ".")
     out, seen = [], {}
+    # Excel can read the grid's day-first dates month-first as it pastes them: 12/11/2026 becomes 11 December, while
+    # 13/11/2026 (no 13th month) stays text. A copy whose date columns hold such day-first text beside real dates was
+    # read that way, so its real dates have their day and month swapped back.
+    month_first = _read_month_first(rows[start:], [cols[f] for f in WHEN if f in cols])
     for i in range(start, len(rows)):
         r = rows[i]
         if not _cells(r):
@@ -215,10 +245,16 @@ def parse(rows):
             problem = "no Status"
         elif how == "shape" and rec["status"] not in STATUS_WORDS:
             problem = f"a status this app doesn't know ({rec['status']})"
+        rec["long_id"] = _text(get("long_id")) if "long_id" in cols else ""
+        if problem is None and rec["long_id"] and not LONG_ID.match(rec["long_id"]):
+            problem = f"a Long ID that isn't one LHDN gives ({rec['long_id']})"
         if problem is None:
             for f in WHEN:
                 try:
-                    rec[f] = _when(get(f))
+                    v = get(f)
+                    if month_first and isinstance(v, datetime) and v.day <= 12:
+                        v = v.replace(month=v.day, day=v.month)
+                    rec[f] = _when(v)
                 except ValueError:
                     problem = f"a date it can't read under {f.replace('_at', '').replace('_', ' ').title()} Date ({_text(get(f))})"
                     break
@@ -319,7 +355,9 @@ def _as_at(saved):
 
 
 def _differs(old, new):
-    return [f for f in FIELDS if f != "uuid" and (old[f] if old[f] != "" else None) != (new[f] if new[f] != "" else None)]
+    """The fields a copy changes. A copy without the Long ID column (an older layout) never clears a Long ID kept."""
+    return [f for f in FIELDS if f != "uuid" and not (f == "long_id" and not new[f])
+            and (old[f] if old[f] != "" else None) != (new[f] if new[f] != "" else None)]
 
 
 def compare(con, entity_id, rep, saved):
@@ -511,15 +549,19 @@ def link(con, entity_id):
                                  f"MyInvois holds only {_short(best['uuid'])} ({best['status']}) for this number.")
                     continue
             word = STATUS_WORDS.get(pick["status"], pick["status"])
+            url = link_of(pick)
             if s["einvoice"] == pick["uuid"] and s["einvoice_status"] == word:
+                if url and not s["einvoice_link"]:  # a copy with the Long ID gives the page an earlier one lacked
+                    con.execute("UPDATE sql_entries SET einvoice_link = ? WHERE id = ?", (url, s["id"]))
                 continue
             known = _known_at(con, s)
             if s["einvoice_from"] != "myinvois" and (s["einvoice"] or s["einvoice_status"]) and known and known > pick["as_at"]:
                 notes.append(f"{s['doc_no']}: kept its e-Invoice status from SQL ({s['einvoice_status'] or 'UUID recorded'}), "
                              f"pasted after this MyInvois copy was saved.")
                 continue
-            con.execute("""UPDATE sql_entries SET einvoice = ?, einvoice_status = ?, einvoice_as_at = ?, einvoice_from = 'myinvois'
-                           WHERE id = ?""", (pick["uuid"], word, pick["as_at"], s["id"]))
+            con.execute("""UPDATE sql_entries SET einvoice = ?, einvoice_status = ?, einvoice_as_at = ?, einvoice_from = 'myinvois',
+                           einvoice_link = CASE WHEN ? IS NOT NULL THEN ? WHEN einvoice = ? THEN einvoice_link END WHERE id = ?""",
+                        (pick["uuid"], word, pick["as_at"], url, url, pick["uuid"], s["id"]))
             was = s["einvoice_status"]
             notes.append(f"{s['doc_no']}: {kind} e-Invoice {_short(pick['uuid'])} filled in from MyInvois, {word}"
                          + (f" (was {was})" if was and was != word else "") + ".")

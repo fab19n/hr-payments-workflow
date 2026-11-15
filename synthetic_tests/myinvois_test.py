@@ -200,7 +200,8 @@ def save(name, table_or_bytes, when):
 
 # ---------- 1. update 33 on records at update 32 ----------
 full = db.MIGRATIONS[:]
-check("update 33 is the MyInvois e-Invoices", len(full) == 33, len(full))
+check("update 33 is the MyInvois e-Invoices (later updates may follow)", len(full) >= 33
+      and "_myinvois_table" in getattr(full[32], "__code__", None).co_names, len(full))
 db.MIGRATIONS[:] = full[:32]
 db.init()
 check("the records start at update 32", q("PRAGMA user_version")[0]["user_version"] == 32)
@@ -212,7 +213,7 @@ write("an SQL document pasted at update 32",
        (EID, uid("K"))))
 db.MIGRATIONS[:] = full
 trail = db.init()
-check("update 33 runs", q("PRAGMA user_version")[0]["user_version"] == 33)
+check("update 33 runs, with the updates after it", q("PRAGMA user_version")[0]["user_version"] == len(full))
 check("its table is made empty", q("SELECT COUNT(*) AS n FROM myinvois_docs")[0]["n"] == 0)
 check("the SQL documents get when their e-Invoice was last known, empty to begin with",
       [(r["einvoice_as_at"], r["einvoice_from"]) for r in q("SELECT * FROM sql_entries")] == [(None, None)])
@@ -253,7 +254,7 @@ check("each e-Invoice's fields are read, amounts in sen and dates as date and ti
              "supplier_name": SUP, "supplier_tin": "C00000000020", "buyer_name": US, "buyer_tin": OUR_TIN, "receiver_tin": OUR_TIN,
              "submission_id": "GF0B95E1M751P33J29RZR97M10", "channel": "IntermediaryERP", "validated_at": "2026-11-13 14:19:44",
              "received_at": "2026-11-13 10:19:44", "issued_at": "2026-11-13 10:19:44", "rejected_at": None, "status": "Valid",
-             "total_sen": 8844, "excl_tax_sen": 8844, "net_sen": 8844}, r0)
+             "total_sen": 8844, "excl_tax_sen": 8844, "net_sen": 8844, "long_id": ""}, r0)  # no Long ID column in this copy
 check("its period is the issued days", got[1]["period"] == ["2026-08-15", "2026-11-13"], got[1]["period"])
 got_new = sqlreport.read(workbook(COPY1[1:]))
 check("a copy without headings, in the 20-column layout, is told by its shape",
@@ -561,6 +562,48 @@ for label, text in (("with its headings", tsv), ("without headings", tsv.split("
     r = j("post", "/api/sql/preview", 400, json={"entity_id": EID, "text": text})
     check(f"pasting the MyInvois grid {label} into the SQL box says to save it from Excel and use Fetch",
           "MyInvois Transaction screen" in r["error"] and "Excel" in r["error"] and "Fetch from SQL exports" in r["error"], r)
+# ---------- 9. the Long ID and the page on MyInvois; dates Excel read month first ----------
+LONG = "NA6YQZYN7N9DJ7BP29RZR97M10Dm"
+head_long = HEAD[:2] + ["Long ID"] + HEAD[2:]
+with_long = lambda r, lid: r[:2] + [lid] + r[2:]
+rep = myinvois.parse([head_long, with_long(SELF, LONG)])
+check("a copy with the Long ID column reads it", rep["rows"][0]["long_id"] == LONG, rep["rows"][0])
+check("and the e-Invoice's page on MyInvois is made from its UUID and Long ID",
+      myinvois.link_of(rep["rows"][0]) == f"https://myinvois.hasil.gov.my/{uid('A')}/share/{LONG}")
+try:
+    myinvois.parse([head_long, with_long(SELF, "not one!")])
+    refused = ""
+except myinvois.MyInvoisError as ex:
+    refused = str(ex)
+check("a Long ID that isn't one is refused, with the row named", "Long ID" in refused and "Row 2" in refused, refused)
+
+# Excel read 12/11/2026 as 11 December and left 13/11/2026 as text: the real dates are swapped back.
+mixed = [head_long,
+         with_long(einv("PV-M1", uid("K"), "Self-billed Invoice", SUP, "C00000000020", US, OUR_TIN, "Valid", 10.0,
+                        datetime(2026, 12, 11, 22, 44, 52), datetime(2026, 12, 11, 22, 44, 52)), LONG),
+         with_long(einv("PV-M2", uid("L"), "Self-billed Invoice", SUP, "C00000000020", US, OUR_TIN, "Valid", 11.0,
+                        "13/11/2026 2:19:44 PM", "13/11/2026 2:19:44 PM"), LONG)]
+got = {r["doc_no"]: r for r in myinvois.parse(mixed)["rows"]}
+check("dates Excel read month first are swapped back when the copy shows it (day-first text beside real dates)",
+      got["PV-M1"]["issued_at"] == "2026-11-12 22:44:52" and got["PV-M1"]["validated_at"] == "2026-11-12 22:44:52"
+      and got["PV-M2"]["issued_at"] == "2026-11-13 14:19:44", {k: v["issued_at"] for k, v in got.items()})
+plain = myinvois.parse([head_long, with_long(einv("PV-M3", uid("M"), "Self-billed Invoice", SUP, "C00000000020", US, OUR_TIN,
+                                                  "Valid", 12.0, datetime(2026, 12, 11, 9), datetime(2026, 12, 11, 9)), LONG)])
+check("a copy with no day-first text keeps its dates as they are", plain["rows"][0]["issued_at"] == "2026-12-11 09:00:00", plain["rows"][0])
+
+# A later copy with the Long ID fills in the page on the SQL document; an older layout without it never clears it.
+save("my-invoice-trans (long).xlsx", [head_long, with_long(SELF, LONG)], datetime(2026, 11, 15, 13, 0))
+fetch()
+pv = q("SELECT einvoice, einvoice_link FROM sql_entries WHERE doc_no = 'PV2611-009'")[0]
+kept = q("SELECT long_id FROM myinvois_docs WHERE uuid = ?", (uid("A"),))[0]
+check("a copy with the Long ID gives the SQL document its MyInvois page", kept["long_id"] == LONG
+      and pv["einvoice_link"] == f"https://myinvois.hasil.gov.my/{uid('A')}/share/{LONG}", (kept, pv))
+save("my-invoice-trans (no long).xlsx", [HEAD, SELF], datetime(2026, 11, 15, 14, 0))
+fetch()
+check("a later copy without the Long ID column keeps the Long ID and the page",
+      q("SELECT long_id FROM myinvois_docs WHERE uuid = ?", (uid("A"),))[0]["long_id"] == LONG
+      and q("SELECT einvoice_link FROM sql_entries WHERE doc_no = 'PV2611-009'")[0]["einvoice_link"] is not None)
+
 with db.connect() as r:
     v = audit.verify(r)
 check("the audit trail checks out at the end", v["ok"], v)

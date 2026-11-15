@@ -340,6 +340,9 @@ MIGRATIONS = [
     #     says of it and the SQL document it links to), and on each SQL document when its e-Invoice was last known and
     #     whether MyInvois filled it. Made empty. Nothing else in the records changes.
     lambda con: _myinvois_table(con),
+    # 34. The Long ID MyInvois gives each e-Invoice, read from copies of the MyInvois Transaction screen that show it, so
+    #     an e-Invoice's page on MyInvois can be opened from its SQL document. Empty to begin with. Nothing else changes.
+    lambda con: add_column(con, "myinvois_docs", "long_id", "TEXT"),
 ]
 
 
