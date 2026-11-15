@@ -1535,7 +1535,22 @@ async function viewSql(main) {
         <td class="num">${money(u.amount)}</td>
         <td><div class="row" style="flex-wrap:nowrap;gap:6px"><select data-sql-link="${u.id}" style="max-width:240px">${candOpts(u)}</select><button class="ghost small" data-sql-link-go="${u.id}">Link</button></div></td>
         <td><div class="row"><button class="ghost small" data-sql-create="${u.id}">Create payment</button><button class="ghost small" data-sql-ignore="${u.id}">Ignore</button></div></td></tr>`;
-  const waiting = d.unlinked.filter(u => !u.correction), corrections = d.unlinked.filter(u => u.correction);
+  // A voucher changed in SQL whose earlier entry is linked: shown once, under Changed in SQL, until the owner moves the link.
+  const changedIds = new Set((d.changed || []).map(x => x.new.id));
+  const waiting = d.unlinked.filter(u => !u.correction && !changedIds.has(u.id)), corrections = d.unlinked.filter(u => u.correction && !changedIds.has(u.id));
+  const changedCard = (d.changed || []).length ? `<div class="card"><h2>Changed in SQL</h2>
+      <div class="note">These vouchers were edited in SQL after they were linked to a payment: the latest fetch gives another amount or date. The link stays on the earlier entry until you move it. Moving it keeps the earlier entry, marked as replaced.</div>
+      ${d.changed.map(x => `<div class="sql-changed" data-sql-changed="${x.old.id}" style="padding:8px 0;border-top:1px solid var(--line)">
+        <div><b class="mono">${esc(x.doc_no)}</b> changed in SQL ${esc(x.words)}.</div>
+        <div class="note">Linked to ${esc(x.payment.description)}${x.payment.month_label ? ` (${esc(x.payment.month_label)})` : ""}, whose amount is ${money(x.payment.amount)}.${x.ledger ? (x.ledger.agrees ? ` SQL's GL Journal of Transaction (version ${x.ledger.version}) already has ${money(x.ledger.total)}.` : ` SQL's GL Journal of Transaction kept here still has ${money(x.ledger.total)}: fetch it again for the same dates so the account lines follow.`) : ""}</div>
+        ${x.amount_follows ? `<label class="row" style="gap:6px"><input type="checkbox" data-sql-follow="1"> Also change the payment's amount from ${money(x.old.amount)} to ${money(x.new.amount)}</label>` : ""}
+        <div class="row"><button class="ghost small" type="button" data-sql-move="${x.old.id}" data-sql-move-to="${x.new.id}">Move the link to the new amount</button></div></div>`).join("")}</div>` : "";
+  const replaced = d.superseded || [];
+  const replacedCard = replaced.length ? `<div class="card"><details data-sql-open="replaced" ${state.sqlOpen.replaced ? "open" : ""}><summary><h2 style="display:inline">Replaced by a later version from SQL</h2> <span class="muted">· ${replaced.length}</span></summary>
+      <div class="note">Earlier entries of vouchers edited in SQL. They are kept as they were read; the later entry is the one that counts.</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount then</th><th class="num">Amount now</th></tr></thead><tbody>
+      ${replaced.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}${x.new_date !== x.doc_date ? `<div class="note">now ${shortDate(x.new_date)}</div>` : ""}</td><td>${esc(x.description)}</td><td class="num">${money(x.amount)}</td><td class="num">${money(x.new_amount)}</td></tr>`).join("")}
+      </tbody></table></div></details></div>` : "";
   // Entries of months before the first month tracked: kept in the books mirror, listed read-only, never asked about.
   const before = d.before_tracking || [];
   state.sqlCorrections = corrections.map(u => u.id);
@@ -1547,7 +1562,7 @@ async function viewSql(main) {
     const w = listRows("sql", waiting, sqlText), c = listRows("sql", corrections, sqlText), lk = listRows("sql", d.linked, sqlText), ig = listRows("sql", d.ignored, sqlText),
       bf = listRows("sql", before, sqlText);
     setCount("sql", w.length + c.length + lk.length + ig.length + bf.length, waiting.length + corrections.length + d.linked.length + d.ignored.length + before.length);
-    return `<div class="card"><h2>SQL entries not linked to a payment</h2>
+    return `${changedCard}<div class="card"><h2>SQL entries not linked to a payment</h2>
       <div class="row spread"><div class="note">These are in SQL but not in this tracker. Link each one to a payment, create a payment for it, or ignore it (e.g. a reversal).</div>
       ${waiting.length > 1 ? `<button class="ghost small" id="sqlCreateAll">Create payments for all ${waiting.length}</button>` : ""}</div>
       <div class="tbl-wrap"><table>${th(`<th>Link to</th>`, `<th></th>`)}<tbody>
@@ -1575,7 +1590,7 @@ async function viewSql(main) {
       <div class="tbl-wrap"><table>${th("", "")}<tbody>
       ${bf.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.description)}${x.payee ? `<div class="note">${esc(x.payee)}</div>` : ""}${sqlCodes(x)}${linesPill(d.lines, x)}</td>
         <td class="num">${x.direction === "in" ? "+" : ""}${money(x.amount)}</td></tr>`).join("") || `<tr><td colspan="4" class="empty">No entry matches.</td></tr>`}
-      </tbody></table></div></details></div>` : ""}`;
+      </tbody></table></div></details></div>` : ""}${replacedCard}`;
   };
   main.innerHTML = `${entityPicker()}
     <div class="card"><h1>SQL import · ${esc(e.code)}</h1>
@@ -1645,6 +1660,7 @@ async function viewBooks(main) {
         <label class="field"><span>To</span><input type="date" id="bkTo" value="${esc(B.to || "")}"></label>
         <button class="btn" type="button" data-bk-show="1">Show</button>
         <button class="ghost small" type="button" data-bk-year="1">This financial year to date</button>
+        <a class="ghost small" id="bkExcel" hidden title="This report as an Excel file, for the dates and options shown">Excel</a>
       </div>
       <div class="row"><div class="seg" role="group" aria-label="Report">
         <button type="button" data-bk-tab="tb" aria-pressed="${B.tab === "tb"}">Trial balance</button>
@@ -1693,6 +1709,7 @@ async function drawBooks() {
   const B = state.books, body = $("#booksBody");
   if (!body) return;
   body.innerHTML = `<div class="note">Loading…</div>`;
+  booksExcelLink(true);
   try {
     if (B.tab === "statutory") {
       const d = await api(`/api/statutory?${booksQuery()}`);
@@ -1726,7 +1743,25 @@ async function drawBooks() {
       body.innerHTML = ledgerHtml(d);
     }
     $("#bkFrom").value = B.from || ""; $("#bkTo").value = B.to || "";
-  } catch (e) { body.innerHTML = `<div class="note warn-text">${esc(e.message)}</div>`; }
+    booksExcelLink();
+  } catch (e) { body.innerHTML = `<div class="note warn-text">${esc(e.message)}</div>`; booksExcelLink(true); }
+}
+
+// The Excel button: the report shown, for the dates and options on the screen (none for the statutory check or one
+// customer's or supplier's statement).
+function booksExcelLink(off) {
+  const a = $("#bkExcel"), B = state.books;
+  if (!a) return;
+  const q = `entity_id=${state.entity}${B.from ? `&from=${B.from}` : ""}${B.to ? `&to=${B.to}` : ""}`;
+  const href = off || B.party ? null : {
+    tb: `trial-balance.xlsx?${q}&rollup=${B.rollup ? 1 : 0}`,
+    ledger: `ledger.xlsx?${q}${B.account ? `&account=${encodeURIComponent(B.account)}` : ""}`,
+    pl: `profit-and-loss.xlsx?${q}&columns=${B.months ? "month" : "total"}`,
+    bs: `balance-sheet.xlsx?entity_id=${state.entity}${B.to ? `&as_at=${B.to}` : ""}`,
+    parties: `customers-and-suppliers.xlsx?${q}&side=${B.side}`,
+  }[B.tab];
+  a.hidden = !href;
+  if (href) a.href = `/api/export/books/${href}`; else a.removeAttribute("href");
 }
 
 // The banner of the check against SQL's own trial balance: green when it agrees, the differences when not, grey when
@@ -1735,6 +1770,11 @@ function sqlCheckBanner(ch) {
   if (!ch) return "";
   if (ch.outcome === "ok") return `<div class="banner ok"><b>Checked against SQL's trial balance: agrees</b><span>${esc(ch.text)}</span></div>`;
   if (ch.outcome === "skipped") return `<div class="banner grey"><b>Not checked against SQL's trial balance</b><span>${esc(ch.text)}</span></div>`;
+  // A trial balance read before a later journal: its differences may be out of date, so they aren't shown as errors.
+  if (ch.stale) return `<div class="banner grey"><b>Checked against SQL's trial balance: possibly out of date</b><span>${esc(ch.text)}</span>
+    <div class="tbl-wrap"><table><thead><tr><th>Account</th><th>May differ (re-export SQL's trial balance to check)</th><th class="num">SQL then</th><th class="num">Here</th><th class="num">Difference</th></tr></thead><tbody>
+    ${ch.differences.map(x => `<tr><td class="mono">${esc(x.code)}</td><td>${esc(x.text)}</td><td class="num">${drCr(x.sql_sen)}</td><td class="num">${drCr(x.here_sen)}</td><td class="num">${drCr(x.diff_sen)}</td></tr>`).join("")}
+    </tbody></table></div></div>`;
   return `<div class="banner warn"><b>Checked against SQL's trial balance: differences</b><span>${esc(ch.text)}</span>
     <div class="tbl-wrap"><table><thead><tr><th>Account</th><th>What differs</th><th class="num">SQL</th><th class="num">Here</th><th class="num">Difference</th></tr></thead><tbody>
     ${ch.differences.map(x => `<tr><td class="mono">${esc(x.code)}</td><td>${esc(x.text)}</td><td class="num">${drCr(x.sql_sen)}</td><td class="num">${drCr(x.here_sen)}</td><td class="num">${drCr(x.diff_sen)}</td></tr>`).join("")}
@@ -2024,7 +2064,13 @@ function myinvoisBox(m) {
 
 // Printed invoices (hrp/invoicepdf): a customer invoice, or a payment voucher with a self-billed e-Invoice, opens as PDF
 // in a new tab; one that can't be printed yet says why there.
-const invoiceBtn = x => x.print_kind ? `<div><a class="ghost small" href="/api/invoices/${+x.id}.pdf?entity_id=${state.entity}" target="_blank" rel="noopener" title="${x.print_kind === "self_billed" ? "The self-billed invoice, laid out as SQL Account prints it" : "The invoice, laid out as SQL Account prints it"}">Invoice PDF</a></div>` : "";
+// The printed document's name by SQL's document type: a customer's debit or credit note prints as one, else an invoice.
+const PRINT_NAMES = { DN: "debit note", CN: "credit note" };
+const invoiceBtn = x => {
+  if (!x.print_kind) return "";
+  const what = x.print_kind === "self_billed" ? "self-billed invoice" : PRINT_NAMES[String(x.doc_type || "").toUpperCase()] || "invoice";
+  return `<div><a class="ghost small" href="/api/invoices/${+x.id}.pdf?entity_id=${state.entity}" target="_blank" rel="noopener" title="${esc(`The ${what}, laid out as SQL Account prints it`)}">${esc(what === "self-billed invoice" ? "Invoice" : what[0].toUpperCase() + what.slice(1))} PDF</a></div>`;
+};
 // All of a month's invoices as one zip, and the print settings the company still lacks (with the way to Setup).
 function invoicePrintBar(p) {
   if (!p) return "";
@@ -2034,7 +2080,7 @@ function invoicePrintBar(p) {
   const zip = (kind, label) => (p.months[kind] || []).includes(sel)
     ? `<a class="ghost small" href="/api/invoices/month.zip?entity=${state.entity}&entity_id=${state.entity}&month=${esc(sel)}&kind=${kind}">${label} ${esc(monthName(sel))} (zip)</a>` : "";
   return `<div class="row"><label class="row tight"><span class="muted">Print</span><select data-inv-month="1">${months.map(m => `<option value="${esc(m)}" ${m === sel ? "selected" : ""}>${esc(monthName(m))}</option>`).join("")}</select></label>
-      ${zip("customer", "All invoices of")}${zip("self_billed", "All self-billed invoices of")}</div>
+      ${zip("customer", "All invoices, debit and credit notes of")}${zip("self_billed", "All self-billed invoices of")}</div>
     ${p.missing.length ? `<div class="note"><b>Print settings:</b> invoices print without what is missing.<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul><button class="ghost small" type="button" data-inv-setup="1">Open Setup › Companies</button></div>` : ""}
     ${fontNote(p.fonts)}${tooLongNote(p.too_long)}`;
 }
@@ -2079,7 +2125,7 @@ function sqlFetchReview(f) {
       <span class="muted">${x.report === "journal" ? `${n(x.docs, "document")}, ${n(x.lines, "line")}` : n(x.accounts, "account")}</span></div>`).join("")}
     ${copies_mi.map(x => `<div class="row spread"><span>${esc(x.name)} <span class="muted">· MyInvois e-Invoices${span(x)}</span></span>
       <span class="muted">${n(x.rows, "e-Invoice")}: ${x.new} new, ${x.changed} status or details changed, ${x.unchanged} unchanged${x.older ? `, ${x.older} left as a later copy says` : ""} (${x.issued} issued, ${x.self_billed} self-billed, ${x.received} received)</span></div>`).join("")}
-    ${unused.length ? `<div class="sql-unused"><b>${n(unused.length, "file")} not used</b>${unused.map(x => `<div class="note">${esc(x.name)}: ${esc(x.reason)}</div>`).join("")}</div>` : ""}
+    ${unused.length ? `<div class="sql-unused"><b>${n(unused.length, "file")} not used</b>${unused.map(x => `<div class="note">${esc(x.name)}: ${esc(x.reason)}${x.take_for ? ` <button class="ghost small" type="button" data-sql-take="${esc(x.company)}">Take it for ${esc(x.take_for)}</button>` : ""}</div>`).join("")}</div>` : ""}
     ${left.length ? `<div class="note">Left alone: ${left.join("; ")}.</div>` : ""}</div>`;
 }
 
@@ -4187,7 +4233,9 @@ document.addEventListener("click", async ev => {
       const mi = res.myinvois, miFilled = mi ? mi.notes.filter(x => x.includes("filled in from MyInvois")).length : 0;
       const einv = mi ? `Kept ${plural(mi.files.reduce((a, f) => a + f.rows, 0), "MyInvois e-Invoice")} (${mi.files.reduce((a, f) => a + f.new, 0)} new, ${mi.files.reduce((a, f) => a + f.changed, 0)} changed); ${plural(miFilled, "SQL document")} filled in` : "";
       if (!p.records.length && (kept.length || mi)) { toast([lines, einv].filter(Boolean).join(". ") + moved + "."); return render(); }
-      toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${einv ? `. ${einv}` : ""}${moved}.`);
+      // Vouchers edited in SQL: one linked to nothing replaced its earlier entry; one linked waits under Changed in SQL.
+      const edits = `${res.replaced?.length ? `. Changed in SQL, listed once at the new figure: ${res.replaced.join(", ")}` : ""}${res.changed_linked ? `. ${res.changed_linked} linked ${res.changed_linked === 1 ? "voucher was" : "vouchers were"} changed in SQL: see Changed in SQL` : ""}`;
+      toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${einv ? `. ${einv}` : ""}${edits}${moved}.`);
       return render();
     }
     if (ds.miFilter) { state.miFilter = ds.miFilter; const box = $("#miBox"); if (box) box.innerHTML = myinvoisBox(state.miData); return; }
@@ -4206,6 +4254,19 @@ document.addEventListener("click", async ev => {
       try { renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, fetch: true } })); }
       finally { t.disabled = false; t.textContent = "Fetch from SQL exports"; }
       return $("#sqlPreview").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    if (ds.sqlTake != null) {  // an export from a company not in Setup: taken only when the owner says whose it is
+      if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = `Click again: "${ds.sqlTake}" is ${ent().code}`; return; }
+      await api("/api/sql/take-company", { json: { entity_id: state.entity, company: ds.sqlTake } });
+      toast(`Exports printed for "${ds.sqlTake}" are taken for ${ent().code} from now on. Fetching again…`);
+      renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, fetch: true } }));
+      return;
+    }
+    if (ds.sqlMove) {  // a voucher changed in SQL: its payment's link moves to the new entry only on this click
+      const box = t.closest("[data-sql-changed]"), follow = box?.querySelector("[data-sql-follow]")?.checked || false;
+      const r = await api(`/api/sql/entries/${ds.sqlMove}/move-link`, { json: { to: +ds.sqlMoveTo, update_amount: follow } });
+      toast(`${r.doc_no}: the link of ${r.payment} moved to the amount SQL gives now${r.amount_changed ? ", and the payment's amount changed with it" : "; the payment's amount is as it was"}${matchedNote(r)}`);
+      return render();
     }
     if (t.id === "sqlDirSave") {
       const r = await api("/api/settings/sql-exports-dir", { json: { sql_exports_dir: $("#sqlDir").value } });

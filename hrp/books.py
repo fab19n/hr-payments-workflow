@@ -696,11 +696,59 @@ def check_against_sql(con, eid, d_from=None, d_to=None):
                      "period's movements aren't compared, only the balances.")
     if skipped:
         extra.append(f"Not compared, as no opening balance is kept for them: {', '.join(skipped)}.")
+    stale = False
     if diffs:
         n = len({d["code"] for d in diffs})
         text = f"{n} account{'s differ' if n != 1 else ' differs'} from SQL's trial balance as at {_dmy(d_to)}; {agree} agree."
         outcome = "warn"
+        # When the trial balance was read, and the latest GL Journal of Transaction covering its dates: a journal read
+        # after it that added, changed or found deleted a document dated in the trial balance's dates may hold changes
+        # made in SQL since, so the differences may only be the trial balance being old. A journal read again with
+        # nothing changed leaves them as they are.
+        last = _latest_journal_read(con, eid, tb_from, d_to)
+        jr = last["read_at"] if last else None
+        src["journal_read_at"] = jr
+        stale = bool(last) and _changed_after(con, eid, batch, tb_from, d_to)
+        extra.append(f"SQL's trial balance was read {_when(batch['read_at'])}"
+                     + (f"; the latest GL Journal of Transaction for these dates {_when(jr)}." if jr else "."))
+        if stale:
+            extra.append(f"The journal was read after the trial balance, so these differences may be out of date rather "
+                         f"than errors: export SQL's Trial Balance again for the same dates "
+                         f"({_dmy(tb_from) + ' to ' if tb_from else 'as at '}{_dmy(d_to)}) and Fetch it.")
+            for d in diffs:
+                d["possibly_stale"] = True
     else:
         text = f"Agrees with SQL's trial balance as at {_dmy(d_to)}: all {agree} account{'s' if agree != 1 else ''} compared."
         outcome = "ok"
-    return {"outcome": outcome, "text": " ".join([text] + extra), "differences": diffs, "agree": agree, "compared": compared, "sql": src}
+    return {"outcome": outcome, "text": " ".join([text] + extra), "differences": diffs, "agree": agree, "compared": compared,
+            "sql": src, "stale": stale}
+
+
+def _latest_journal_read(con, eid, d_from, d_to):
+    """The latest read of SQL's GL Journal of Transaction for a period overlapping from d_from to d_to (ISO): {read_at,
+    sql_import_id}, or None."""
+    if not _exists(con, "ledger_batches"):
+        return None
+    return con.execute("""SELECT read_at, sql_import_id FROM ledger_batches WHERE entity_id = ? AND origin = 'sql' AND report = 'journal'
+                          AND (period_from IS NULL OR period_from <= ?) AND (period_to IS NULL OR ? IS NULL OR period_to >= ?)
+                          ORDER BY read_at DESC, id DESC LIMIT 1""", (eid, d_to, d_from, d_from)).fetchone()
+
+
+def _changed_after(con, eid, tb, d_from, d_to):
+    """Whether a GL Journal of Transaction read after the trial balance tb (a ledger_batches row) added a document dated
+    from d_from (or any day, None) to d_to, or replaced one or found one deleted in SQL. Later means a later fetch
+    (imports are numbered in turn; one fetch that reads both, a moment apart, isn't later), or, without the trial
+    balance's import, read after it."""
+    tb_import = tb["sql_import_id"] if "sql_import_id" in tb.keys() else None
+    later = ("(b.sql_import_id > ?)" if tb_import is not None else "(b.read_at > ?)")
+    arg = tb_import if tb_import is not None else tb["read_at"]
+    return con.execute(f"""SELECT 1 FROM ledger_docs d JOIN ledger_batches b ON b.id IN (d.batch_id, d.ended_batch_id)
+                           WHERE d.entity_id = ? AND d.origin = 'sql' AND b.entity_id = d.entity_id AND b.origin = 'sql'
+                           AND b.report = 'journal' AND {later} AND d.doc_date <= ? AND (? IS NULL OR d.doc_date >= ?)
+                           LIMIT 1""", (eid, arg, d_to, d_from, d_from)).fetchone() is not None
+
+
+def _when(at):
+    """A stored time (2026-11-14T09:30:00) in words: on 14/11/2026 at 09:30."""
+    at = str(at or "")
+    return f"on {_dmy(at[:10])}" + (f" at {at[11:16]}" if len(at) >= 16 else "")

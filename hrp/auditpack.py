@@ -236,6 +236,12 @@ def build(con, entity, month, built=None):
     for pg in PdfReader(io.BytesIO(_reconciliation(con, entity, month))).pages:
         out.add_page(pg)
     out.add_outline_item("Bank reconciliation", first)
+    first = len(out.pages)
+    checks = {**books_checks(con, entity, month), "head": f"{entity['name']} - {month_label(month)}"}
+    for pg in PdfReader(io.BytesIO(_books_pages(checks))).pages:
+        out.add_page(pg)
+    for i, title in enumerate(BOOKS_PAGES):
+        out.add_outline_item(title, first + i)
     for label, d, pages in parts:
         first = len(out.pages)
         try:
@@ -555,6 +561,88 @@ def _reconciliation(con, entity, month):
                     _no_line_note(p, month)) for p in a["no_line"]])
         else:
             say("Every payment paid in the month on this account has a bank line.")
+    return bytes(pdf.output())
+
+
+BOOKS_PAGES = ("SQL books check", "Statutory payables check", "Trial balance against SQL")
+
+
+def books_checks(con, entity, month):
+    """What the pack's three books pages say for a month, worked out as the app shows them: the SQL books checklist
+    item (sqlbooks.month_check), the statutory payables check for the payroll month (statutory.report), and whether
+    the trial balance here agrees with SQL's own, taken as the SQL books item takes it (the stored trial balance of
+    SQL's nearest on or after the month's last day). Reads only. Records from before the books or the statutory check
+    were added say the same as records with nothing fetched. Returns {sql_books: {state ('done', 'not_done',
+    'not_checked'), text}, statutory: {summary, lines}, trial_balance: {outcome, text, source, differences}}."""
+    from . import books, ledger, sqlbooks, statutory
+    first, last = sqlbooks._span(month)
+    ok, why = sqlbooks.month_check(con, entity, month)
+    if ok:
+        why = why[6:] if why.startswith("Done: ") else why
+        sb = {"state": "done", "text": why[0].upper() + why[1:] + "."}
+    elif ok is False:
+        sb = {"state": "not_done", "text": why}
+    else:
+        sb = {"state": "not_checked", "text": why or (f"{month_label(month)} is before the first month tracked in this app, "
+                                                       "so SQL's books are not checked for it.")}
+
+    none = "No statutory accounts are confirmed for this company yet, so nothing is checked."
+    st = {"summary": none, "lines": []}
+    if statutory.ready(con):
+        rep = statutory.report(con, entity["id"], month, month)
+        st["summary"] = rep["summary"]
+        for a in rep["accounts"]:
+            for x in a["months"]:
+                if x["month"] == month:
+                    st["lines"].append(f"{a['label']} ({a['payable_code']}): {x['text']}")
+            st["lines"] += a["notes"]
+        st["lines"] += [x["text"] for x in rep.get("postings") or [] if x["month"] == month]
+
+    if not entity["uses_sql"]:
+        tb = {"outcome": "skipped", "source": None, "differences": [],
+              "text": "This company's books are kept here, not in SQL, so there is no SQL trial balance to check against."}
+    else:
+        near = sqlbooks.nearest_tb(con, entity["id"], last) if ledger.ready(con) else None
+        if near is None:
+            tb = {"outcome": "skipped", "source": None, "differences": [],
+                  "text": f"No trial balance of SQL's as at {day_label(last)} or later is kept, so the books here can't be "
+                          f"checked against SQL's. Fetch SQL's Trial Balance as at {day_label(last)}."}
+        else:
+            res = books.check_against_sql(con, entity["id"], near["period_from"], near["period_to"])
+            tb = {"outcome": res["outcome"], "text": res["text"], "differences": [d["text"] for d in res["differences"]],
+                  "source": f"SQL's trial balance {near['file_name'] or ''}".rstrip() + (
+                      f", {day_label(near['period_from'])} to {day_label(near['period_to'])}" if near["period_from"]
+                      else f", as at {day_label(near['period_to'])}")}
+    return {"sql_books": sb, "statutory": st, "trial_balance": tb}
+
+
+def _books_pages(chk):
+    """The three books pages (books_checks), one short page each."""
+    pdf = FPDF(unit="mm", format="A4")
+    pdf.set_auto_page_break(True, 15)
+
+    def page(title, lines):
+        pdf.add_page()
+        pdf.set_font("Helvetica", "B", 15)
+        pdf.multi_cell(0, 8, _latin(title), new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(2)
+        pdf.set_font("Helvetica", "", 9)
+        for text in lines:
+            if text:
+                pdf.multi_cell(0, LINE, _latin(text), new_x="LMARGIN", new_y="NEXT")
+                pdf.ln(1.5)
+
+    head = chk["head"]
+    sb, st, tb = chk["sql_books"], chk["statutory"], chk["trial_balance"]
+    words = {"done": "Done", "not_done": "Not done", "not_checked": "Not checked here"}
+    page(f"{head} - {BOOKS_PAGES[0]}", [f"{words[sb['state']]}.", sb["text"],
+                                         "Whether SQL Account's books for the month agree with the mirror kept here: SQL's journal "
+                                         "covers the month, its documents agree with the listings, and SQL's trial balance agrees "
+                                         "with the books here. SQL Account stays the books; nothing here changes them."])
+    page(f"{head} - {BOOKS_PAGES[1]}", [st["summary"], *(f"- {x}" for x in st["lines"])])
+    agree = {"ok": "Agrees with SQL's trial balance.", "warn": "Differs from SQL's trial balance.", "skipped": "Not checked."}
+    page(f"{head} - {BOOKS_PAGES[2]}", [agree[tb["outcome"]], tb["source"] and f"Compared with {tb['source']}.", tb["text"],
+                                         *(f"- {x}" for x in tb["differences"])])
     return bytes(pdf.output())
 
 

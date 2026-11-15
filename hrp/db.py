@@ -349,7 +349,31 @@ MIGRATIONS = [
     #     each customer's and supplier's address lines, attention, phone and credit term. Empty to begin with. Nothing
     #     else in the records changes.
     lambda con: _print_settings(con),
+    # 36. Two checks on what is fetched from SQL. The company names SQL prints on its exports that the owner confirmed
+    #     as one of the companies (Take it for ...), for an export whose printed company matches no company in Setup:
+    #     made empty, so such a file is taken only once the owner says whose it is. And on each SQL listing entry, the
+    #     later entry that replaced it (a voucher edited in SQL and fetched again with another amount or date) and when:
+    #     an old entry linked to nothing is marked replaced by its newer one now, so it isn't listed twice (kept, not
+    #     deleted, and named in the activity log); one linked to a payment stays as it is until the owner moves the link.
+    lambda con: _fetch_checks(con),
 ]
+
+
+def _fetch_checks(con):
+    from . import sqlimport
+    con.execute(SQL_COMPANY_NAMES)
+    audit.refresh(con)  # the new table is captured from here on
+    add_column(con, "sql_entries", "superseded_by", "INTEGER")
+    add_column(con, "sql_entries", "superseded_at", "TEXT")
+    for (eid,) in con.execute("SELECT id FROM entities ORDER BY id").fetchall():
+        sqlimport.supersede_unlinked(con, eid)
+
+
+SQL_COMPANY_NAMES = """
+CREATE TABLE IF NOT EXISTS sql_company_names (
+  id INTEGER PRIMARY KEY, entity_id INTEGER NOT NULL REFERENCES entities(id), name_key TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL, confirmed_at TEXT NOT NULL
+)"""
 
 
 def _print_settings(con):

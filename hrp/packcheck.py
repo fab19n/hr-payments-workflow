@@ -25,6 +25,7 @@ GROUPS = (("payments", "Payments", "to payments"), ("documents", "Documents", "t
           ("tasks", "Checklist items", "to checklist items"),
           ("statements", "Bank statements and their lines", "to bank statements and their lines"),
           ("sql", "SQL vouchers linked to its payments or checklist items", "to SQL vouchers linked to them"),
+          ("books", "SQL's books and the statutory accounts (its books pages)", "to SQL's books or the statutory accounts"),
           ("month", "The month (set up, filed)", "to the month itself"),
           ("rules", "Rules that reach the month", "to the rules for the month"),
           ("types", "Payment types, document types and general settings", "to payment types, document types or general settings"),
@@ -33,6 +34,10 @@ GROUPS = (("payments", "Payments", "to payments"), ("documents", "Documents", "t
 RULE_TABLES = ("required_sets", "checklist_terms", "checklist_items")
 TYPE_TABLES = ("payment_types", "doc_types", "app_settings")
 OWN_TABLES = ("payments", "tasks", "months", "statements", "statement_lines", "documents", "sql_entries", "accounts")
+# What the pack's books pages read (auditpack.books_checks): SQL's reports kept, their documents and openings, the chart
+# of accounts and the statutory accounts. The account lines are left out: a document changed in SQL comes in as a new
+# version of its ledger_docs row, which is counted.
+BOOK_TABLES = ("ledger_batches", "ledger_docs", "ledger_openings", "gl_accounts", "statutory_accounts")
 
 
 def _fetch(con, sql, args=()):
@@ -114,8 +119,9 @@ def _changes(con, ent, month, after_id, token):
           (tbl IN ({', '.join('?' * len(OWN_TABLES))}) AND op != 'event' AND (entity_id = ? OR (entity_id IS NULL AND token IS NULL)))
           OR (tbl = 'entities' AND row_key = ? AND op != 'event')
           OR (tbl IN ({', '.join('?' * len(RULE_TABLES + TYPE_TABLES))}) AND op != 'event')
+          OR (tbl IN ({', '.join('?' * len(BOOK_TABLES))}) AND op != 'event' AND entity_id = ?)
           OR (tbl = 'pack' AND op = 'event' AND entity_id = ? AND json_extract(after, '$.month') = ?))
-        ORDER BY id""", (after_id, token, *OWN_TABLES, e, ek, *RULE_TABLES, *TYPE_TABLES, e, month))
+        ORDER BY id""", (after_id, token, *OWN_TABLES, e, ek, *RULE_TABLES, *TYPE_TABLES, *BOOK_TABLES, e, e, month))
     by = {}
     for r in rows:
         by.setdefault(r["tbl"], []).append(r)
@@ -161,10 +167,18 @@ def _changes(con, ent, month, after_id, token):
     rule_rows += [r for r in by.get("checklist_terms", []) if _any(r, lambda i: item_of.get(i.get("item_id"), e) in (None, e) and _reaches(i, month))]
     rule_rows += [r for r in by.get("checklist_items", []) if _any(r, lambda i: i.get("entity_id") in (None, e))]
     company = by.get("entities", []) + [r for r in by.get("accounts", []) if _any(r, mine)]
+    # The books pages read SQL's books up to the trial balance nearest after the month and the statutory payments made
+    # in the month after it, so what is dated after the month after the month never reaches them.
+    y, m = map(int, month.split("-"))
+    upto = f"{y + m // 12:04d}-{m % 12 + 1:02d}-31"
+    dated = {"ledger_docs": "doc_date", "ledger_openings": "as_of", "ledger_batches": "period_from"}
+    book_rows = [r for t in BOOK_TABLES for r in by.get(t, [])
+                 if t not in dated or _any(r, lambda i, f=dated[t]: (i.get(f) or "") <= upto)]
     return {"payments": pay, "documents": docs, "tasks": tasks, "statements": sorted(stmts + lines, key=lambda r: r["id"]),
             "sql": sql, "month": month_rows, "rules": sorted(rule_rows, key=lambda r: r["id"]),
             "types": sorted(sum((by.get(t, []) for t in TYPE_TABLES), []), key=lambda r: r["id"]),
-            "company": sorted(company, key=lambda r: r["id"]), "packs": by.get("pack", [])}
+            "company": sorted(company, key=lambda r: r["id"]), "books": sorted(book_rows, key=lambda r: r["id"]),
+            "packs": by.get("pack", [])}
 
 
 def _entries(con, rows):
@@ -322,6 +336,8 @@ def check(con, event=None, ent=None, month=None, name=None):
         cannot.append(f"Statuses such as Past legal deadline were worked out on {day_label(today)}; built today, some could read differently.")
     cannot.append("Changes that reach the pack only indirectly are not listed, such as a recurring payment, SQL entries not "
                   "linked to its payments or checklist items, or book openings.")
+    cannot.append("For its books pages, SQL's documents, openings and reports dated after the month that follows it are not "
+                  "listed: they reach those pages only when no trial balance of SQL's as at the month's end was kept.")
     if outside:
         cannot.append(f"{outside} of the changes {'was' if outside == 1 else 'were'} made outside this app. One found by the "
                       "trail check is dated when it was found, which may be after it was made.")
