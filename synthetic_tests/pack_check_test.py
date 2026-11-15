@@ -294,6 +294,32 @@ oct_ = pack_check(event=evs["2026-10"])
 check("and so is its SQL voucher number, which the pack's note on a payment paid with no bank line prints",
       group(oct_, "payments") and oct_["changes"]["total"] == 2, oct_["changes"])
 
+# ---------- the books pages: what they print, and changes to what they read ----------
+r = call("post", "/api/audit-pack", json={"entity_id": 1, "month": "2026-10"})
+bname = r.get_json()["name"]
+reader = PdfReader(tmp / "audit-packs" / "EXH" / bname)
+titles = [o.title for o in reader.outline if not isinstance(o, list)]
+text = "\n".join(pg.extract_text() for pg in reader.pages)
+check("the pack holds the SQL books check, the statutory payables check and the trial balance against SQL, after the bank "
+      "reconciliation", titles[:5] == ["Index", "Bank reconciliation", *auditpack.BOOKS_PAGES]
+      and "SQL books check" in text and "No statutory accounts are confirmed for this company yet" in text
+      and "No trial balance of SQL's as at 31 Oct 2026 or later is kept" in text.replace("\n", " "), (titles, text[-1500:]))
+bev = q("SELECT * FROM audit_row WHERE tbl = 'pack' AND op = 'event' ORDER BY id DESC LIMIT 1")[0]["id"]
+check("right after, nothing it reads has changed", pack_check(event=bev)["changes"]["total"] == 0)
+con = db.connect()
+con.arm("user", "test: the chart of accounts")
+con.execute("INSERT INTO gl_accounts (entity_id, code, name, type) VALUES (1, '310-1000', 'BANK-EXAMPLE 0001', 'asset')")
+con.execute("INSERT INTO gl_accounts (entity_id, code, name, type) VALUES (2, '310-1000', 'BANK-EXAMPLE 0002', 'asset')")
+con.commit()
+con.disarm()
+con.close()
+rb = pack_check(event=bev)
+check("an account added to the company's chart is a change to its books pages; one of another company's isn't",
+      group(rb, "books") and group(rb, "books")["count"] == 1 and rb["changes"]["total"] == 1
+      and "SQL's books or the statutory accounts" in rb["changes"]["summary"], rb["changes"])
+check("and what the books pages can't tell is said", any("books pages" in x for x in rb["cannot_tell"]), rb["cannot_tell"])
+check("the pack file itself is still the one built", rb["file"]["state"] == "unchanged")
+
 # ---------- what built a pack never stops the app starting ----------
 fake = Path(tempfile.mkdtemp(prefix="hrp-pack-check-git-"))
 (fake / ".git").write_bytes(b"gitdir: wt\0\0\0\0")  # zero-filled after a crash

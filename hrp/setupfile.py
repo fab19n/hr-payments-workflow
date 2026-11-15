@@ -17,28 +17,51 @@ preview makes it and undoes it to show what it would add. The generic rules merg
 gave the new install (the app's own flags, such as which types it relies on, stay the code's); the matching words and
 the sets of required documents in the file replace the ones it was given. A template's starter checklist is given to
 each company imported without a checklist of its own and kept (checklistbook.STARTER_KEY) for companies added later.
-Whether a record is in use is set last, once every reference to it has been checked."""
+Whether a record is in use is set last, once every reference to it has been checked.
+
+From update 35 a full export also carries what printed invoices need: each company's address, phone, email, website,
+old registration no. and the words under its signature, the bank account on its invoices (named by the account's name
+and number, as the file names no id), each bank account's bank address and transfer (SWIFT) code, each customer's and
+supplier's address lines, attention, phone and terms, and the company's logo and signature images (the image itself,
+in base64, with its fingerprint). An imported image must match its fingerprint and pass Setup's own checks (PNG or
+JPEG, at most 2 MB); a file made before update 35, without any of these, imports as before.
+
+A full export also carries the company names SQL prints on its exports that the owner confirmed as one of the companies
+(Take it for on the SQL page, update 36), with when and (from update 37) by whom, so the new install's Fetch takes those
+files too. Each is checked as Take it for checks it (a company kept in SQL, a name that matches no company and no other
+name in the file); a file made before them, without any, imports as before."""
+import base64
+import binascii
+import hashlib
 import json
+import os
 import re
 import sqlite3
 
-from . import appsettings, checklistbook, db, masters, monthly, partybook, rulebook, rules
+from . import appsettings, checklistbook, db, invoicepdf, masters, monthly, partybook, rulebook, rules, sqlfetch
 from .masters import MONTH, Refused
 
 FORMAT, VERSION = "hrp-setup", 1
 WHATS = ("template", "full")
 MAX_ROWS = 20000  # per list; the request itself is capped at 40 MB (app.py)
 
+# The print settings of update 35 (invoicepdf): left out of an export from records below it, and optional in a file.
+PRINT_ENTITY_COLS = ("old_reg_no", "address", "phone", "email", "website", "sign_label")
+PRINT_ACCOUNT_COLS = ("bank_address", "swift_code")
+PRINT_PARTY_COLS = ("address_1", "address_2", "address_3", "address_4", "attention", "phone", "credit_term")
 ENTITY_COLS = ("code", "name", "short_name", "uses_sql", "first_month", "fy_start", "reg_no", "tin", "sst_no", "employer_kwsp",
-               "employer_perkeso", "employer_lhdn", "sql_database", "notes", "active", "sort")
+               "employer_perkeso", "employer_lhdn", "sql_database", "notes", "active", "sort") + PRINT_ENTITY_COLS
+ENTITY_EXTRAS = ("invoice_account", "logo", "signature")  # the bank account on invoices, by name and number; the images
 ACCOUNT_COLS = ("label", "bank", "number", "currency", "statement_format", "gl_code", "sql_payment_method", "cash_book",
-                "notes", "active", "sort")
+                "notes", "active", "sort") + PRINT_ACCOUNT_COLS
 GL_COLS = ("code", "name", "type", "special", "parent_code", "sql_type", "active", "sort", "notes")
 STAT_COLS = ("kind", "label", "payable_code", "employer_code", "due_day", "active", "sort", "notes")  # update 29
-PARTY_COLS = ("kind", "name", "short_name", "sql_code", "tin", "brn", "match_words", "gl_code", "active", "sort", "notes")
+PARTY_COLS = ("kind", "name", "short_name", "sql_code", "tin", "brn", "match_words", "gl_code", "active", "sort",
+              "notes") + PRINT_PARTY_COLS
 PAYEE_COLS = ("name", "category", "direction", "desc_template", "amount", "amount_varies", "month_offset", "due_day",
               "bank_details", "reference", "match_words", "start_date", "end_date", "active", "sort", "notes")
 ADVANCE_COLS = ("monthly_deduction", "start_month", "end_month", "note")
+NAME_COLS = ("company", "name", "confirmed_at", "confirmed_by")  # printed company names (updates 36 and 37)
 TYPE_COLS = {"payment_types": ("key", "label", "plural", "direction", "legal_due_offset", "legal_due_day", "active", "sort", "notes"),
              "doc_types": ("key", "label", "singular", "plural", "pack_order", "from_sql", "active", "sort", "notes")}
 WORD_COLS = {"guess_words": ("label", "words", "payment_type", "active", "sort", "notes"),
@@ -51,18 +74,20 @@ PEOPLE_TERM_COLS = DATED + ("days", "salary_over", "title", "detail", "docs")
 JSON_COLS = {"words", "docs", "rule", "match_words"}
 # What each list is called in a preview and in a refusal, in the order an import adds them.
 LISTS = [("settings", "general settings"), ("payment_types", "payment types"), ("doc_types", "document types"),
-         ("starter_checklist", "starter checklist items"), ("entities", "companies"), ("accounts", "bank accounts"),
+         ("starter_checklist", "starter checklist items"), ("entities", "companies"), ("company_names", "printed company names"),
+         ("accounts", "bank accounts"),
          ("gl_accounts", "GL accounts"), ("statutory_accounts", "statutory accounts"), ("parties", "customers and suppliers"), ("checklist", "checklist items"),
          ("required_sets", "sets of required documents"), ("reminders", "joiner and leaver reminders"),
          ("guess_words", "payment type guesses"), ("hint_words", "salary words"), ("filing_words", "SQL filing words"),
          ("payees", "recurring payments"), ("advances", "salary advances")]
 ONE = {"general settings": "general setting", "payment types": "payment type", "document types": "document type",
-       "starter checklist items": "starter checklist item", "companies": "company", "bank accounts": "bank account",
+       "starter checklist items": "starter checklist item", "companies": "company", "printed company names": "printed company name",
+       "bank accounts": "bank account",
        "GL accounts": "GL account", "statutory accounts": "statutory account", "customers and suppliers": "customer or supplier", "checklist items": "checklist item",
        "sets of required documents": "set of required documents", "joiner and leaver reminders": "joiner or leaver reminder",
        "payment type guesses": "payment type guess", "salary words": "salary words", "SQL filing words": "SQL filing words",
        "recurring payments": "recurring payment", "salary advances": "salary advance"}
-FULL_ONLY = ("entities", "accounts", "gl_accounts", "statutory_accounts", "parties", "checklist", "payees", "advances")
+FULL_ONLY = ("entities", "company_names", "accounts", "gl_accounts", "statutory_accounts", "parties", "checklist", "payees", "advances")
 HEAD = ("format", "format_version", "records_version", "made", "what", "holds", "left_out")
 # Records that are a company's data: an import is refused while any of them holds a row.
 HOLDING = [("entities", "company", "companies"), ("accounts", "bank account", "bank accounts"),
@@ -126,6 +151,29 @@ def _in_chart(con, entity_id, code):
                             (entity_id, str(code).strip().upper())).fetchone())
 
 
+def _print_extras(con, ent, row, left):
+    """A company's row with the bank account on its invoices (by the account's name and number) and its logo and
+    signature images (base64, with their fingerprints). An image whose file changed or is gone since it was uploaded
+    stays out of the file, said in left."""
+    keys = ent.keys()
+    if "invoice_account_id" in keys and ent["invoice_account_id"]:
+        a = con.execute("SELECT label, number FROM accounts WHERE id = ?", (ent["invoice_account_id"],)).fetchone()
+        if a:
+            row["invoice_account"] = {"label": a["label"], "number": a["number"]}
+    for which, label in invoicepdf.IMAGES.items():
+        if f"{which}_file" not in keys or not ent[f"{which}_file"]:
+            continue
+        path = invoicepdf.image_path(ent, which)
+        if path is None:
+            left.append(f"The {which} of {ent['code']}: its file changed or is gone since it was uploaded, so it isn't in "
+                        "the file. Upload it again in Setup › Companies after importing.")
+            continue
+        data = path.read_bytes()
+        row[which] = {"name": f"{which}{path.suffix.lower()}", "sha256": hashlib.sha256(data).hexdigest(),
+                      "data": base64.b64encode(data).decode("ascii")}
+    return row
+
+
 def export(con, what, payees=False, entity_id=None):
     """The setup as setup.json holds it: a template (rules only, with a starter checklist taken from entity_id's checklist
     or the one new companies get) or everything (full; payees: with the recurring payments and salary advances)."""
@@ -157,7 +205,29 @@ def export(con, what, payees=False, entity_id=None):
                         for p in con.execute("SELECT * FROM people_tasks ORDER BY sort, id").fetchall()]
     party_ref = {}
     if full:
-        out["entities"] = [_out(r, ENTITY_COLS) for r in con.execute("SELECT * FROM entities ORDER BY sort, id")]
+        left = []
+        out["entities"] = [_print_extras(con, r, _out(r, ENTITY_COLS), left)
+                           for r in con.execute("SELECT * FROM entities ORDER BY sort, id").fetchall()]
+        if any(e.get("signature") for e in out["entities"]):
+            out["holds"].append("The companies' signature images, as printed on their invoices.")
+        if sqlfetch.names_ready(con):  # records from update 36
+            # A name stays out, said, when the import would refuse it (and so the whole file): its company is no longer
+            # kept in SQL Account, or the name now matches a company in Setup (a name or registration number edited).
+            ents = con.execute("SELECT * FROM entities").fetchall()
+            uses_sql = {e["id"]: bool(e["uses_sql"]) for e in ents}
+            out["company_names"] = []
+            for n_ in con.execute("SELECT * FROM sql_company_names ORDER BY entity_id, confirmed_at, id").fetchall():
+                code, own = codes[n_["entity_id"]], sqlfetch.owner(ents, n_["name"])
+                if not uses_sql.get(n_["entity_id"]):
+                    left.append(f"Printed company name {n_['name']} of {code}: {code} is no longer kept in SQL Account, so "
+                                "it can't take SQL's exports. Remove the name in Setup › Companies, or keep the company in "
+                                "SQL Account again and export again.")
+                    continue
+                if own is not None:
+                    left.append(f"Printed company name {n_['name']} of {code}: it now matches company {own['code']} in "
+                                "Setup, so there is nothing to confirm. Remove it in Setup › Companies.")
+                    continue
+                out["company_names"].append({"company": code, **{k: n_[k] for k in NAME_COLS[1:] if k in n_.keys()}})
         acct_ref = {}
         out["accounts"] = []
         for r in con.execute("SELECT * FROM accounts ORDER BY entity_id, sort, id").fetchall():
@@ -166,7 +236,7 @@ def export(con, what, payees=False, entity_id=None):
         out["gl_accounts"] = [{"company": codes[r["entity_id"]], **_out(r, GL_COLS)}
                               for r in con.execute("SELECT * FROM gl_accounts ORDER BY entity_id, code, id")]
         if _has(con, "statutory_accounts"):  # records from update 29
-            out["statutory_accounts"], left = [], []
+            out["statutory_accounts"] = []
             for r in con.execute("SELECT * FROM statutory_accounts ORDER BY entity_id, sort, id").fetchall():
                 # Setup accepts an account SQL's account lines name although the chart lacks it; a new install has no
                 # account lines, so its import would refuse the row (and undo everything). Such a row stays out, said.
@@ -177,8 +247,8 @@ def export(con, what, payees=False, entity_id=None):
                                 "and export again, or add the statutory account again after importing.")
                     continue
                 out["statutory_accounts"].append({"company": codes[r["entity_id"]], **_out(r, STAT_COLS)})
-            if left:
-                out["left_out"] = left
+        if left:
+            out["left_out"] = left
         out["parties"] = []
         for r in con.execute("SELECT * FROM parties ORDER BY id").fetchall():
             party_ref[r["id"]] = f"p{len(party_ref) + 1}"
@@ -309,15 +379,38 @@ def _same_title(title, f, to, others):
             raise Refused(f"Another item in use is called {title}. Give this one another title.")
 
 
+def _image_of(r, which):
+    """A company's logo or signature as the file holds it: (file name, the image's bytes), or None when there is none.
+    Refused unless the image is the one exported (its fingerprint); Setup's own checks (PNG or JPEG, at most 2 MB, an
+    image that reads) are made when it is stored."""
+    v = r.get(which)
+    if v is None:
+        return None
+    label = invoicepdf.IMAGES[which]
+    if not isinstance(v, dict) or set(v) != {"name", "sha256", "data"} or not all(isinstance(v[k], str) for k in v):
+        raise Refused(f"{label}: this can't be read. The file may have been changed by hand.")
+    if len(v["data"]) > (invoicepdf.MAX_IMAGE + 2) * 4 // 3 + 4:
+        raise Refused(f"{label}: the image is larger than 2 MB. Save it smaller and upload it again after importing.")
+    try:
+        data = base64.b64decode(v["data"], validate=True)
+    except (binascii.Error, ValueError):
+        raise Refused(f"{label}: this can't be read. The file may have been changed by hand.")
+    if hashlib.sha256(data).hexdigest() != v["sha256"].strip().lower():
+        raise Refused(f"{label}: the image isn't the one exported (its fingerprint doesn't match). Export the setup again.")
+    return os.path.basename(v["name"]), data
+
+
 def _insert(con, table, vals):
     vals = masters._stored(vals)
     return con.execute(f"INSERT INTO {table} ({', '.join(vals)}) VALUES ({', '.join('?' * len(vals))})", tuple(vals.values())).lastrowid
 
 
 class _Import:
-    def __init__(self, con, data):
+    def __init__(self, con, data, preview=False):
         self.con, self.data, self.full = con, data, data["what"] == "full"
+        self.preview = preview  # a preview checks the images but writes no file (its records are undone after)
         self.ents, self.accounts, self.parties, self.payees = {}, {}, {}, {}
+        self.invoice_on = {}  # company id: the bank account on its invoices, as the file names it
         self.later = []  # (table, id, active, what): whether in use, set once every reference has been checked
         self.counts = []
 
@@ -413,16 +506,65 @@ class _Import:
     def companies(self):
         for r in self.rows("entities"):
             with _At(f"Company {r.get('code')}"):
-                _only(r, ENTITY_COLS)
+                _only(r, ENTITY_COLS + ENTITY_EXTRAS)
+                if not invoicepdf.ready(self.con) and any(r.get(k) not in (None, "") for k in PRINT_ENTITY_COLS + ENTITY_EXTRAS):
+                    raise Refused("its print settings can be imported once the records are updated.", 409)
                 vals = self.fields("entities", r, [c for c in ENTITY_COLS if c not in ("active", "sort")])
                 if vals["code"] in self.ents:
                     raise Refused("this company is in the file twice.")
                 masters._unique_code(self.con, vals["code"])
                 vals.setdefault("uses_sql", 1)
                 vals.update(active=_flag(r, "active", "In use"), sort=_sort(r))
-                self.ents[vals["code"]] = _insert(self.con, "entities", vals)
+                eid = self.ents[vals["code"]] = _insert(self.con, "entities", vals)
+                for which in invoicepdf.IMAGES:
+                    got = _image_of(r, which)
+                    if got:
+                        try:
+                            invoicepdf.store_image(self.con, {"id": eid, "code": vals["code"]}, which, *got, write=not self.preview)
+                        except invoicepdf.InvoiceError as x:
+                            raise Refused(str(x))
+                if r.get("invoice_account") is not None:
+                    self.invoice_on[eid] = r["invoice_account"]
         if self.ents and not self.con.execute("SELECT 1 FROM entities WHERE active = 1").fetchone():
             raise Refused("At least one company must be in use.")
+
+    def company_names(self):
+        """The printed company names confirmed for a company, each checked as Take it for checks it (sqlfetch.take_for):
+        a company kept in SQL, a name that matches no company (all of the file's are in by now) and no other name."""
+        rows = self.rows("company_names")
+        if rows and not sqlfetch.names_ready(self.con):
+            raise Refused("The file's printed company names can be imported once the records are updated.", 409)
+        ents = self.con.execute("SELECT * FROM entities").fetchall()
+        taken = set(sqlfetch.confirmed_names(self.con))
+        by = sqlfetch._has_by(self.con) if rows else False
+        for r in rows:
+            with _At(f"Printed company name {r.get('name')} of {r.get('company')}"):
+                _only(r, NAME_COLS)
+                eid = self.ent(r.get("company"))
+                if not next(e for e in ents if e["id"] == eid)["uses_sql"]:
+                    raise Refused("only a company kept in SQL Account can take SQL's exports.")
+                name = r.get("name")
+                if not isinstance(name, str) or len(name) > 500:
+                    raise Refused("Name: this can't be read.")
+                name = re.sub(r"\s+", " ", name).strip()
+                key = sqlfetch._key(name)
+                if not key:
+                    raise Refused("Name: this can't be empty.")
+                own = sqlfetch.owner(ents, name)
+                if own is not None:
+                    raise Refused(f"it already matches company {own['code']}, so there is nothing to confirm.")
+                if key in taken:
+                    raise Refused("this name is in the file twice.")
+                taken.add(key)
+                at, who = r.get("confirmed_at"), r.get("confirmed_by")
+                if at is not None and (not isinstance(at, str) or len(at) > 40):
+                    raise Refused("Confirmed: give a date and time.")
+                if who is not None and (not isinstance(who, str) or len(who) > 200):
+                    raise Refused("Confirmed by: this can't be read.")
+                vals = {"entity_id": eid, "name_key": key, "name": name, "confirmed_at": at or db.now()}
+                if by:
+                    vals["confirmed_by"] = who
+                _insert(self.con, "sql_company_names", vals)
 
     def bank_accounts(self):
         cash = {}
@@ -431,7 +573,8 @@ class _Import:
                 _only(r, ("ref", "company") + ACCOUNT_COLS)
                 ref = self.ref(r, self.accounts)
                 eid = self.ent(r.get("company"))
-                vals = self.fields("accounts", r, ("label", "bank", "number", "currency", "gl_code", "sql_payment_method", "notes"))
+                vals = self.fields("accounts", r, ("label", "bank", "number", "currency", "gl_code", "sql_payment_method", "notes")
+                                   + PRINT_ACCOUNT_COLS)
                 book = _flag(r, "cash_book", "Cash book account", 0)
                 if book and vals["currency"] != masters.BASE:
                     raise Refused(f"The cash book account is in {masters.BASE}, as SQL Account's cash book listing is.")
@@ -455,6 +598,25 @@ class _Import:
             first = cash.get(("first", eid))
             if first and not self.con.execute("SELECT 1 FROM accounts WHERE entity_id = ? AND cash_book = 1", (eid,)).fetchone():
                 self.con.execute("UPDATE accounts SET cash_book = 1 WHERE id = ?", (first,))
+
+    def invoice_accounts(self):
+        """The bank account each company prints on its invoices: the one of the company's accounts in the file with
+        that name (and number), checked as Setup checks the choice."""
+        for eid, said in self.invoice_on.items():
+            code = next(c for c, i in self.ents.items() if i == eid)
+            with _At(f"Company {code}"):
+                if not isinstance(said, dict) or set(said) - {"label", "number"} or not isinstance(said.get("label"), str) \
+                        or not isinstance(said.get("number"), (str, type(None))):
+                    raise Refused("Bank account on invoices: this can't be read. The file may have been changed by hand.")
+                found = [a["id"] for a in self.con.execute("SELECT id, number FROM accounts WHERE entity_id = ? AND label = ? ORDER BY id",
+                                                           (eid, said["label"]))
+                         if said.get("number") is None or (a["number"] or "") == said["number"]]
+                if len(found) != 1:
+                    named = said["label"] + (f" ({said['number']})" if said.get("number") else "")
+                    raise Refused(f"Bank account on invoices: the file has {'no' if not found else 'more than one'} bank account "
+                                  f"{named} for this company.")
+                masters._invoice_account(self.con, eid, found[0])
+                self.con.execute("UPDATE entities SET invoice_account_id = ? WHERE id = ?", (found[0], eid))
 
     def chart(self):
         rows = self.rows("gl_accounts")
@@ -495,7 +657,8 @@ class _Import:
             with _At(f"Customer or supplier {r.get('name')}"):
                 _only(r, ("ref", "company") + PARTY_COLS)
                 ref = self.ref(r, self.parties)
-                vals = self.fields("parties", r, ("name", "kind", "sql_code", "short_name", "tin", "brn", "gl_code", "match_words", "notes"))
+                vals = self.fields("parties", r, ("name", "kind", "sql_code", "short_name", "tin", "brn", "gl_code", "match_words", "notes")
+                                   + PRINT_PARTY_COLS)
                 vals["entity_id"] = self.ent(r.get("company"), every=True)
                 masters._party_check(self.con, vals)
                 active = _flag(r, "active", "In use")
@@ -749,7 +912,9 @@ class _Import:
         self.types()
         self.starter()
         self.companies()
+        self.company_names()
         self.bank_accounts()
+        self.invoice_accounts()
         self.chart()
         self.statutory()
         self.customers_and_suppliers()
@@ -763,9 +928,10 @@ class _Import:
         checklistbook.forget(self.con)
 
 
-def load(con, data):
+def load(con, data, preview=False):
     """Adds a setup file's rows to records that hold no company data (see the module's notes). The caller rolls back on
-    a refusal (and after a preview) and commits otherwise. Returns {what, counts: [[what, how many]], notes}."""
+    a refusal (and after a preview) and commits otherwise. A preview (preview=True) checks the logo and signature as an
+    import does but saves no image file, since nothing it makes is kept. Returns {what, counts: [[what, how many]], notes}."""
     if not isinstance(data, dict) or data.get("format") != FORMAT:
         raise Refused("This isn't a setup file from this app.")
     fv, rv = data.get("format_version"), data.get("records_version")
@@ -799,7 +965,7 @@ def load(con, data):
     if _version(con) < partybook.SINCE:
         raise Refused("A setup file can be imported once the records are updated.", 409)
     try:
-        imp = _Import(con, data)
+        imp = _Import(con, data, preview)
         imp.run()
     except sqlite3.IntegrityError as x:
         raise Refused(f"The records can't hold this file ({x}).")

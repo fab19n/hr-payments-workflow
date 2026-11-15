@@ -1,7 +1,8 @@
-"""Prints SQL Account's customer invoices and self-billed e-Invoices as PDF files, laid out as SQL Account prints its
-invoice: the company's header (logo, name, registration and tax numbers, address, phone, email and website), the title,
-who it is to with the document number, date, account and terms, the account lines, the total in words, where to pay,
-the signature, and for an e-Invoice validated by LHDN its QR code at the bottom right.
+"""Prints SQL Account's customer invoices, debit notes and credit notes, and self-billed e-Invoices, as PDF files,
+laid out as SQL Account prints its invoice: the company's header (logo, name, registration and tax numbers, address,
+phone, email and website), the title, who it is to with the document number, date, account and terms, the account
+lines, the total in words, where to pay, the signature, and for an e-Invoice validated by LHDN its QR code at the
+bottom right. A credit note's lines and total print as positive figures, as SQL prints them.
 The page, fonts, sizes and places are those of the PDF SQL Account exports for its invoice (US Letter; Times New Roman,
 Tahoma, Trebuchet MS and Segoe UI, read from where Windows keeps them, never from the records folder); a computer
 without one of those fonts (or with a damaged copy) prints that part in a look-alike, never larger, and the print
@@ -42,6 +43,13 @@ IMAGE_TYPES = {".png": (b"\x89PNG\r\n\x1a\n",), ".jpg": (b"\xff\xd8\xff",), ".jp
 MAX_IMAGE = 2 * 1024 * 1024  # bytes
 MAX_SIDE = 6000  # pixels
 KINDS = ("customer", "self_billed")
+# The customer documents printed, by SQL's document type, with their title. A credit note's lines are the other way
+# round: the customer's account is credited, and its lines (the income it takes back) are debits. SQL prints them as
+# positive figures, and so does this.
+CUSTOMER_DOCS = {"IV": "Invoice", "DN": "Debit Note", "CN": "Credit Note"}
+# Where a credit note's listing row keeps the invoice it is set against (SQL's knock-off or Ref), when a listing gave it:
+# none of SQL's listings read today carries it, so a credit note prints no Ref until one does.
+REF_COLS = ("knockoff_doc", "ref_doc")
 CURRENCY_NAMES = {"MYR": "Malaysian Ringgit", "USD": "US Dollar", "SGD": "Singapore Dollar", "EUR": "Euro",
                   "GBP": "Pound Sterling", "AUD": "Australian Dollar", "CNY": "Chinese Yuan", "JPY": "Japanese Yen"}
 
@@ -80,10 +88,12 @@ def ready(con):
 
 # ---------- the logo and signature (Setup › Companies) ----------
 
-def store_image(con, ent, which, filename, data):
+def store_image(con, ent, which, filename, data, write=True):
     """Keeps a company's logo or signature: a PNG or JPEG image of at most 2 MB, saved read-only under the records
     folder (company-assets/<code>/) by its fingerprint, so an image once printed is never overwritten. The company
-    then names the file and its fingerprint. Returns the stored path, relative to the records folder."""
+    then names the file and its fingerprint. Returns the stored path, relative to the records folder. With
+    write=False (a setup file's preview, whose records are undone) the image is checked the same way but no file is
+    saved."""
     if which not in IMAGES:
         raise InvoiceError("There is no such image.", 404)
     ext = os.path.splitext(filename or "")[1].lower()
@@ -106,9 +116,10 @@ def store_image(con, ent, which, filename, data):
         raise InvoiceError(f"{IMAGES[which]}: the image is too large ({w} x {h} pixels). Save it smaller.", 400)
     digest = hashlib.sha256(data).hexdigest()
     folder = ASSETS_DIR / safe(ent["code"])
-    folder.mkdir(parents=True, exist_ok=True)
     target = folder / f"{which}-{digest[:16]}{ext}"
-    if not (target.exists() and hashlib.sha256(target.read_bytes()).hexdigest() == digest):
+    if write:
+        folder.mkdir(parents=True, exist_ok=True)
+    if write and not (target.exists() and hashlib.sha256(target.read_bytes()).hexdigest() == digest):
         if target.exists():
             os.chmod(target, stat.S_IWRITE | stat.S_IREAD)
         target.write_bytes(data)
@@ -236,11 +247,11 @@ def _einvoice_rows(con, s, direction):
 
 
 def kind_of(con, s):
-    """'customer' for a customer invoice (an IV), 'self_billed' for a payment voucher with a self-billed e-Invoice in
-    the MyInvois copies read, else None (nothing to print)."""
+    """'customer' for a customer invoice, debit note or credit note (an IV, DN or CN), 'self_billed' for a payment
+    voucher with a self-billed e-Invoice in the MyInvois copies read, else None (nothing to print)."""
     s = dict(s)
     doc_type, kind = (s.get("doc_type") or "").upper(), s.get("kind") or "payment"
-    if kind == "invoice" and (doc_type == "IV" or (not doc_type and s.get("direction") == "in")):
+    if kind == "invoice" and (doc_type in CUSTOMER_DOCS or (not doc_type and s.get("direction") == "in")):
         return "customer"
     if kind == "payment" and doc_type not in ("OR", "RV", "CS") and s.get("direction") != "in" and _einvoice_rows(con, s, "self_billed"):
         return "self_billed"
@@ -263,10 +274,11 @@ def _party(con, eid, code=None, tin=None):
     return None
 
 
-def _lines(con, eid, doc_no, doc_date=None):
+def _lines(con, eid, doc_no, doc_date=None, what="invoice"):
     """The current version of the document's account lines from SQL's GL Journal of Transaction, or None. With the
     listing's date, lines kept under the same number but another date (SQL reuses numbers, for example a later year's
-    document numbered as an earlier one) are refused with a sentence, so an invoice never prints another document's lines."""
+    document numbered as an earlier one) are refused with a sentence, so an invoice never prints another document's lines.
+    what is the document's printed name in the sentence (_printed_name: invoice, debit note, credit note)."""
     if not ledger.ready(con):
         return None
     d = con.execute("""SELECT * FROM ledger_docs WHERE entity_id = ? AND origin = 'sql' AND doc_key = ? AND state = 'current'""",
@@ -274,14 +286,51 @@ def _lines(con, eid, doc_no, doc_date=None):
     if not d:
         return None
     if doc_date and str(d["doc_date"] or "")[:10] != str(doc_date)[:10]:
-        raise InvoiceError(f"{doc_no}: SQL's account lines under this number are dated {_dmy(d['doc_date'])}, not this invoice's date "
+        raise InvoiceError(f"{doc_no}: SQL's account lines under this number are dated {_dmy(d['doc_date'])}, not this {what}'s date "
                            f"({_dmy(doc_date)}), so it isn't printed with another document's lines. If its date was changed in SQL, "
                            "fetch the invoice listing again; if the number was used again, check it in SQL.")
     return [dict(x) for x in con.execute("SELECT * FROM ledger_lines WHERE doc_id = ? ORDER BY seq", (d["id"],))]
 
 
-def _fetch_first(s):
-    return f"Fetch SQL's GL Journal of Transaction covering {_dmy(s['doc_date'])} to print this invoice."
+def _printed_name(s, kind):
+    """What the document is called in a sentence, as its button says: invoice, debit note, credit note or self-billed
+    invoice."""
+    if kind == "self_billed":
+        return "self-billed invoice"
+    return CUSTOMER_DOCS.get((s.get("doc_type") or "IV").upper(), "Invoice").lower()
+
+
+def _fetch_first(s, kind="customer"):
+    return f"Fetch SQL's GL Journal of Transaction covering {_dmy(s['doc_date'])} to print this {_printed_name(s, kind)}."
+
+
+def _credit_ref(con, s):
+    """The invoice a credit note is set against, when its listing row says so (REF_COLS) and that invoice is in the
+    SQL documents fetched for the company; else None (nothing printed)."""
+    for col in REF_COLS:
+        no = str(s.get(col) or "").strip()
+        if no:
+            r = con.execute("""SELECT doc_no FROM sql_entries WHERE entity_id = ? AND UPPER(TRIM(doc_no)) = ?
+                               AND UPPER(COALESCE(doc_type, '')) IN ('IV', 'DN') ORDER BY id DESC LIMIT 1""",
+                            (s["entity_id"], _key(no))).fetchone()
+            if r:
+                return r["doc_no"]
+    return None
+
+
+def _at_rate(items, total):
+    """The lines' amounts (sen) in the e-Invoice's currency: each ringgit line at the voucher's one rate (the e-Invoice's
+    total over the lines' total), a credit line (such as withholding tax) as a negative line at the same rate, the sen
+    left over by rounding given to the lines that lost most, so they add up to the total exactly. When the lines come
+    to nothing or less in ringgit, or the total is negative, there is no rate: the lines are given back unchanged."""
+    myr = sum(x["sen"] for x in items)
+    if myr <= 0 or total < 0:
+        return items
+    nums = [x["sen"] * total for x in items]
+    out = [n // myr for n in nums]  # rounded down, negative lines too
+    for i in sorted(range(len(items)), key=lambda i: -(nums[i] % myr))[:total - sum(out)]:
+        out[i] += 1
+    return [dict(x, sen=v) for x, v in zip(items, out)]
 
 
 def _company(con, ent):
@@ -388,25 +437,29 @@ def document(con, sid):
     ent = con.execute("SELECT * FROM entities WHERE id = ?", (s["entity_id"],)).fetchone()
     kind = kind_of(con, s)
     if kind is None:
-        raise InvoiceError(f"{s['doc_no']} isn't a customer invoice or a payment voucher with a self-billed e-Invoice, so it has "
-                           "no invoice to print.")
+        raise InvoiceError(f"{s['doc_no']} isn't a customer invoice, debit note or credit note, or a payment voucher with a "
+                           "self-billed e-Invoice, so it has no invoice to print.")
     if s.get("deleted_in_sql"):
         raise InvoiceError(f"{s['doc_no']} was confirmed as deleted in SQL, so it isn't printed.")
-    lines = _lines(con, s["entity_id"], s["doc_no"], s["doc_date"])
+    lines = _lines(con, s["entity_id"], s["doc_no"], s["doc_date"], _printed_name(s, kind))
     if not lines:
-        raise InvoiceError(f"SQL's account lines of {s['doc_no']} haven't been fetched. {_fetch_first(s)}")
+        raise InvoiceError(f"SQL's account lines of {s['doc_no']} haven't been fetched. {_fetch_first(s, kind)}")
     notes = []
     code = (s.get("code") or "").strip().upper()
+    paid_as, ref = None, None
     if kind == "customer":
+        doc_type = (s.get("doc_type") or "IV").upper()
+        credit = doc_type == "CN"  # the customer's account credited, the lines debited
+        sign = -1 if credit else 1
         if not code:
-            debits = {x["account_code"] for x in lines if x["dr_sen"] > x["cr_sen"]}
-            code = next(iter(debits)) if len(debits) == 1 else ""
+            on_customer = {x["account_code"] for x in lines if sign * (x["dr_sen"] - x["cr_sen"]) > 0}
+            code = next(iter(on_customer)) if len(on_customer) == 1 else ""
         if not code or not any(x["account_code"] == code for x in lines):
             raise InvoiceError(f"{s['doc_no']}: SQL's account lines don't show which line is the customer's (its listing has no "
-                               "customer code). Fetch the invoice listing again, then print it.")
-        total = sum(x["dr_sen"] - x["cr_sen"] for x in lines if x["account_code"] == code)
+                               "customer code). Fetch the listing again, then print it.")
+        total = sum(sign * (x["dr_sen"] - x["cr_sen"]) for x in lines if x["account_code"] == code)
         items = [{"code": x["account_code"], "description": x["description"] or x["account_name"] or s["description"] or "",
-                  "sen": x["cr_sen"] - x["dr_sen"]} for x in lines if x["account_code"] != code and x["cr_sen"] != x["dr_sen"]]
+                  "sen": sign * (x["cr_sen"] - x["dr_sen"])} for x in lines if x["account_code"] != code and x["cr_sen"] != x["dr_sen"]]
         listed = _sen(s["amount"])
         if total != listed:
             raise InvoiceError(f"{s['doc_no']}: SQL's account lines put {money(total)} on the customer's account {code}, but SQL's "
@@ -414,14 +467,15 @@ def document(con, sid):
                                f"{_dmy(s['doc_date'])} again so they agree, then print it.")
         if sum(x["sen"] for x in items) != total:
             raise InvoiceError(f"{s['doc_no']}: SQL's account lines don't balance (the lines come to {money(sum(x['sen'] for x in items))}, "
-                               f"the customer's account to {money(total)}). {_fetch_first(s)}")
+                               f"the customer's account to {money(total)}). {_fetch_first(s, kind)}")
         party = _party(con, s["entity_id"], code) or {}
         rows = _einvoice_rows(con, s, "issued")
         einv = _einvoice(rows, s, notes)
         name = party.get("name") or s.get("payee") or (einv or {}).get("row", {}).get("buyer_name") or code
-        title, label, currency = "Invoice", "To", "MYR"
+        title, label, currency = CUSTOMER_DOCS.get(doc_type, "Invoice"), "To", "MYR"
         buyer = None
         tin = None
+        ref = _credit_ref(con, s) if credit else None
     else:
         rows = _einvoice_rows(con, s, "self_billed")
         einv = _einvoice(rows, s, notes)
@@ -435,7 +489,21 @@ def document(con, sid):
                   "sen": x["dr_sen"] - x["cr_sen"]} for x in picked]
         total = r["total_sen"]
         currency = (r["currency"] or "MYR").upper()
-        if sum(x["sen"] for x in items) != total:
+        if currency != "MYR":
+            # The voucher's lines are SQL's ringgit; the e-Invoice is in its own currency. The lines print at the
+            # voucher's rate, so they add up to MyInvois's total, and a line under the total says what was paid.
+            myr = sum(x["sen"] for x in items)
+            if myr <= 0 or total < 0:
+                # No rate to convert at: ringgit lines under the e-Invoice's currency would be wrong figures.
+                raise InvoiceError(f"{s['doc_no']}: the e-Invoice is in {currency} ({currency} {money(total)}), but the voucher's "
+                                   f"lines other than the bank come to MYR {money(myr)}, so they can't be printed at the voucher's "
+                                   "rate. Check the voucher in SQL, fetch its GL Journal of Transaction again, then print it.")
+            paid_as = f"Paid as MYR {money(myr)} by {s['doc_no']}"
+            items = _at_rate(items, total)
+            if len(items) > 1:
+                notes.append(f"The e-Invoice is in {currency}: its lines print SQL's ringgit lines at the voucher's rate "
+                             f"({currency} {money(total)} for MYR {money(myr)}).")
+        elif sum(x["sen"] for x in items) != total:
             notes.append(f"The e-Invoice's total on MyInvois ({currency} {money(total)}) isn't what the voucher's lines come to "
                          f"(MYR {money(sum(x['sen'] for x in items))}): it prints MyInvois's total. Check the voucher in SQL.")
         party = _party(con, s["entity_id"], code, r["supplier_tin"]) or {}
@@ -450,8 +518,9 @@ def document(con, sid):
             "party_label": label,
             "party": {"name": name, "address": [party[k] for k in ("address_1", "address_2", "address_3", "address_4") if party.get(k)],
                       "attn": party.get("attention") or "", "tin": tin},
-            "buyer": buyer, "company": company, "pay_to": _pay_to(con, ent) if kind == "customer" else None,
-            "lines": items, "total_sen": total, "currency": currency,
+            "buyer": buyer, "company": company,
+            "pay_to": _pay_to(con, ent) if kind == "customer" and title != "Credit Note" else None,
+            "lines": items, "total_sen": total, "currency": currency, "ref": ref, "paid_as": paid_as,
             "words": f"{CURRENCY_NAMES.get(currency, currency)} : {amount_words(total)}" if total >= 0 else "",
             "einvoice": {k: v for k, v in einv.items() if k != "row"} if einv else None,
             "notes": notes, "missing": missing_settings(con, ent)}
@@ -708,6 +777,7 @@ RIGHT_BLOCK = (("Doc No.  :", "tahoma-bold", 167.52, 41.48, "tahoma-bold", 9, 41
                ("Date   :", "tahoma", 166.27, 46.58, "tahoma", 10, 46.58, "date"),
                ("Account  :", "tahoma", 166.27, 51.58, "tahoma", 10, 51.58, "account"),
                ("Terms  :", "tahoma", 166.27, 56.57, "tahoma", 10, 56.57, "terms"))
+REF_Y = 56.57 + 5.0     # a credit note's Ref, a line under Terms
 L, R = 10.66, 205.57    # the table's rules run between these
 TOP_RULE, HEAD_RULE = 68.06, 73.14
 DIV1, DIV2 = 36.98, 170.10  # the rules between the headings (in the heading band only)
@@ -719,6 +789,7 @@ FOOT_RULE = 212.69
 LINES_END = FOOT_RULE - ROW  # rows stop here, leaving room above the rule for "Continued on page ..."
 WORDS_X, WORDS_Y, WORDS_W, WORDS_STEP = 11.56, 216.20, 132.0, 4.04
 TOTAL_R = 169.59             # "Total :" starts at 158.29
+PAID_SIZE = 7                # the "Paid as MYR ..." line under a foreign-currency e-Invoice's total
 PAY_Y, BANK_X, BANK_NAME_Y = 223.20, 11.45, 227.17
 BANK_YS = (230.40, 233.62, 236.84, 240.07)
 BANK_SIZE = 6.91
@@ -744,6 +815,8 @@ CUT_FIELDS = {
     "date": ("The date", "", False),
     "account": ("The account code", "in SQL", False),
     "terms": ("The terms", "in the customer's record in Setup", False),
+    "ref": ("The invoice a credit note refers to", "in SQL", False),
+    "paid_as": ("The line saying what was paid in ringgit", "", False),
     "code": ("An account code in the lines", "in SQL", False),
     "description": ("A line's description", "in SQL", False),
     "amount": ("An amount", "", False),
@@ -831,7 +904,8 @@ def _party_block(doc):
         y += STEP
     if doc.get("buyer"):
         out.append((y, f"Buyer : {doc['buyer']}"))
-    return [(b, t, BLOCK_RIGHT if b < 59 else R) for b, t in out], max(b for b, _ in out) + DESCENT
+    below = REF_Y + 2 if doc.get("ref") else 59  # the lines beside the right block stop where it does
+    return [(b, t, BLOCK_RIGHT if b < below else R) for b, t in out], max(b for b, _ in out) + DESCENT
 
 
 def _table_top(doc):
@@ -858,6 +932,9 @@ def _header(pg, doc):
     for label, key, end, base, vkey, vsize, vbase, field in RIGHT_BLOCK:
         pg.put(key, 10, end, base, label, "R")
         pg.put(vkey, vsize, RIGHT_VALUE_X, vbase, doc[field], "L", R - RIGHT_VALUE_X, field)
+    if doc.get("ref"):  # the invoice a credit note refers to, a line under Terms
+        pg.put("tahoma", 10, 166.27, REF_Y, "Ref  :", "R")
+        pg.put("tahoma", 10, RIGHT_VALUE_X, REF_Y, doc["ref"], "L", R - RIGHT_VALUE_X, "ref")
     # The table's headings, lower down when the block at the left needs the room
     top = _table_top(doc)
     head = top + HEAD_RULE - TOP_RULE
@@ -946,6 +1023,9 @@ def _footer(pg, doc):
     extra = (min(len(parts), 3) - 1) * WORDS_STEP
     pg.put("tahoma-bold", 10, TOTAL_R, WORDS_Y, "Total :", "R")
     pg.put("trebuchet", 10, AMOUNT_R, WORDS_Y, money(doc["total_sen"]), "R", AMOUNT_R - RIGHT_VALUE_X, "amount")
+    if doc.get("paid_as"):  # an e-Invoice in another currency: what the voucher paid, in ringgit, under the total
+        pg.put("tahoma", PAID_SIZE, AMOUNT_R, WORDS_Y + WORDS_STEP, doc["paid_as"], "R", AMOUNT_R - (WORDS_X + WORDS_W) - 2,
+               "paid_as")
     c, pay = doc["company"], doc["pay_to"]
     if pay:
         pg.put("tahoma", 10, WORDS_X, PAY_Y + extra, "All payments to be made to :")
@@ -1078,7 +1158,8 @@ def setup_cuts(con, ent):
     company = dict(_company(con, ent), logo=None, signature=None)
     doc = {"kind": "customer", "title": "Invoice", "doc_no": "", "date": "", "account": "", "terms": "", "party_label": "To",
            "party": {"name": "", "address": [], "attn": "", "tin": None}, "buyer": None, "company": company,
-           "pay_to": _pay_to(con, ent), "lines": [], "total_sen": 0, "currency": "MYR", "words": "", "einvoice": None}
+           "pay_to": _pay_to(con, ent), "lines": [], "total_sen": 0, "currency": "MYR", "words": "", "einvoice": None,
+           "ref": None, "paid_as": None}
     _pdf, pg = _draw(doc)
     return cut_notes([x for x in pg.cut if CUT_FIELDS.get(x[0], ("", "", False))[2]], e.get("code") or "")
 
@@ -1086,10 +1167,11 @@ def setup_cuts(con, ent):
 # ---------- a month's invoices ----------
 
 def month_documents(con, eid, month, kind):
-    """The SQL documents of a month that have an invoice of this kind to print: [(sql_entries id, doc_no)], one per
-    document number (the latest import's row), in date and number order."""
+    """The SQL documents of a month that have an invoice of this kind to print (customer: the invoices, debit notes and
+    credit notes): [(sql_entries id, doc_no)], one per document number (the latest import's row), in date and number
+    order."""
     if kind not in KINDS:
-        raise InvoiceError("Choose customer invoices or self-billed e-Invoices.", 400)
+        raise InvoiceError("Choose customer invoices (with debit and credit notes) or self-billed e-Invoices.", 400)
     gone = "AND deleted_in_sql IS NULL" if "deleted_in_sql" in _cols(con, "sql_entries") else ""
     want = "kind = 'invoice'" if kind == "customer" else "COALESCE(kind, 'payment') = 'payment'"
     rows = con.execute(f"""SELECT * FROM sql_entries WHERE id IN (SELECT MAX(id) FROM sql_entries WHERE entity_id = ? AND {want}
@@ -1099,11 +1181,13 @@ def month_documents(con, eid, month, kind):
 
 
 def print_months(con, eid):
-    """{customer: [months with customer invoices], self_billed: [months with self-billed e-Invoices]}, newest first,
+    """{customer: [months with customer invoices, debit or credit notes], self_billed: [months with self-billed
+    e-Invoices]}, newest first,
     for the SQL page's All invoices of a month."""
     out = {"customer": [r[0] for r in con.execute(
         """SELECT DISTINCT substr(doc_date, 1, 7) FROM sql_entries WHERE entity_id = ? AND kind = 'invoice' AND status <> 'ignored'
-           AND (UPPER(COALESCE(doc_type, '')) = 'IV' OR (doc_type IS NULL AND direction = 'in')) ORDER BY 1 DESC""", (eid,))],
+           AND (UPPER(COALESCE(doc_type, '')) IN ('IV', 'DN', 'CN') OR (doc_type IS NULL AND direction = 'in'))
+           ORDER BY 1 DESC""", (eid,))],
         "self_billed": []}
     if myinvois.ready(con):
         out["self_billed"] = [r[0] for r in con.execute(
@@ -1118,7 +1202,8 @@ def month_zip(con, ent, month, kind):
     those printed with a line too long for its place (its end cut off). Returns (bytes, printed, [(doc no, reason)])."""
     docs = month_documents(con, ent["id"], month, kind)
     if not docs:
-        what = "customer invoices" if kind == "customer" else "payment vouchers with a self-billed e-Invoice"
+        what = ("customer invoices, debit notes or credit notes" if kind == "customer"
+                else "payment vouchers with a self-billed e-Invoice")
         raise InvoiceError(f"{ent['code']} has no {what} in {db.month_label(month)} in the SQL documents fetched.", 404)
     buf, printed, skipped, names, short = io.BytesIO(), 0, [], set(), []
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:

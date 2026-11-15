@@ -330,19 +330,29 @@ def _in_sql(con, e, worked, pays, cur):
     counts them, db.not_in_sql) or past due and waiting for their SQL voucher (Waiting for SQL record), and the SQL
     entries of these months not linked to a payment yet (the month of an entry is its payroll cycle, as for a payment
     made early the month after). An entry of a month before the first month tracked (db.entry_before_tracking) is only
-    kept in the books mirror, so it is never asked for."""
+    kept in the books mirror, so it is never asked for. A voucher changed in SQL whose earlier entry is linked to a
+    payment (sqlimport.changed_linked) isn't counted as not linked: its new entry waits on the SQL page's Changed in
+    SQL card, and is named here as changed in SQL, as the SQL page lists it."""
+    from . import sqlimport
     if not e["uses_sql"]:
         return []
     unrecorded = [x["p"] for x in pays if x["p"]["month"] in worked
                   and (db.not_in_sql(e, x["p"]) or x["flag"] and x["flag"]["code"] == "waiting_sql")]
-    loose = [m for m in (_entry_cycle(e, s) for s in con.execute(
-        "SELECT doc_date, description FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' ORDER BY doc_date", (e["id"],))
-        if not db.entry_before_tracking(e, s["description"], s["doc_date"]))
-        if m in worked or m > cur and not db.before_tracking(e, m)]
-    if not unrecorded and not loose:
+    changed_ids = {x["new"]["id"] for x in sqlimport.changed_linked(con, e["id"])}
+    asked = lambda m: m in worked or m > cur and not db.before_tracking(e, m)  # noqa: E731
+    loose, changed = [], []
+    for s in con.execute("SELECT id, doc_date, description FROM sql_entries WHERE entity_id = ? AND status = 'unlinked' "
+                         "ORDER BY doc_date", (e["id"],)):
+        if db.entry_before_tracking(e, s["description"], s["doc_date"]):
+            continue
+        m = _entry_cycle(e, s)
+        if asked(m):
+            (changed if s["id"] in changed_ids else loose).append(m)
+    if not unrecorded and not loose and not changed:
         return []
-    k = len(loose)
+    k, ch = len(loose), len(changed)
     unlinked = f"{k} SQL entr{_s(k, 'ies', 'y')} not linked yet"
+    moved = f"{ch} voucher{_s(ch)} changed in SQL (move the link on the SQL page)"
     if unrecorded:
         n = len(unrecorded)
         mons = list(dict.fromkeys(_mon(d) for d in sorted(p["paid_date"] or p["due_date"] for p in unrecorded)))
@@ -350,10 +360,12 @@ def _in_sql(con, e, worked, pays, cur):
         what = db._names(unrecorded, unrecorded) if n == 1 else f"{n} {_kinds(unrecorded, rulebook.get(con))}"
         text = (f"Fetch SQL's {db._listed(mons)} {db._listed(kinds)} listing{_s(len(mons) * len(kinds))} on the SQL import page: "
                 f"{what} not recorded"
-                + (f"; {unlinked}" if k else ""))
+                + (f"; {unlinked}" if k else "") + (f"; {moved}" if ch else ""))
+    elif k:
+        text = f"Link or ignore {unlinked}" + (f"; check {moved}" if ch else "")
     else:
-        text = f"Link or ignore {unlinked}"
-    m = min([p["month"] for p in unrecorded] + loose)
+        text = f"Check {moved}"
+    m = min([p["month"] for p in unrecorded] + loose + changed)
     return [_row(7, e, m, text, db.due(m, *_closing(checklistbook.get(con), e, m)), P2, {"view": "sql"}, "sql")]
 
 

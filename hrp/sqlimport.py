@@ -507,8 +507,8 @@ def corrections(con, entity_id):
     (db.entry_before_tracking) isn't asked about, so it is never one either."""
     from .db import entry_before_tracking
     ent = con.execute("SELECT * FROM entities WHERE id = ?", (entity_id,)).fetchone()
-    entries = con.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'",
-                          (entity_id,)).fetchall()
+    entries = con.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'"
+                          " AND status <> 'superseded'", (entity_id,)).fetchall()  # an entry replaced by a later one pairs with nothing
     sides = {(s["doc_date"], s["amount"], s["direction"]) for s in entries}
     other = {"in": "out", "out": "in"}
     return {s["id"] for s in entries if s["status"] == "unlinked" and not entry_before_tracking(ent, s["description"], s["doc_date"]) and (
@@ -773,3 +773,142 @@ def months_of(recs):
         prev = f"{y - (mo == 1):04d}-{12 if mo == 1 else mo - 1:02d}"
         out |= {m, prev}
     return sorted(out)
+
+
+# ---------- a voucher edited in SQL and fetched again ----------
+
+def supersede_ready(con):
+    """Whether the records have update 36: an SQL entry can be marked replaced by a later one."""
+    return "superseded_by" in {r[1] for r in con.execute("PRAGMA table_info(sql_entries)")}
+
+
+def edited(con, entity_id):
+    """The vouchers edited in SQL and fetched again: [(older entry, newer entry)]. SQL keeps one voucher under one doc
+    no.; an edit that changes its amount or date comes back as a new entry (an entry is known by its doc no., date and
+    amount), in a later import than the one it replaces. A pair is the company's one current entry of a doc no. and
+    doc type in an earlier import and its one entry in the latest import, with another amount or date, the newer not
+    linked to anything yet. A voucher edited again before the owner moved its link has more than one earlier entry:
+    the one linked to a payment and, after it, the entries linked to nothing that came in between (one per import).
+    Each is then paired with the latest entry, so the linked one goes straight to SQL's latest figure and the ones in
+    between are replaced by it. A voucher listed on several rows is left as it is (which row replaced which can't be
+    told), and so is one ignored, a journal and an invoice. Nothing is changed here."""
+    if not supersede_ready(con):
+        return []
+    groups = {}
+    for r in con.execute("""SELECT * FROM sql_entries WHERE entity_id = ? AND COALESCE(kind, 'payment') = 'payment'
+                            AND status IN ('linked', 'unlinked') AND superseded_by IS NULL AND TRIM(COALESCE(doc_no, '')) <> ''
+                            ORDER BY import_id, id""", (entity_id,)):
+        groups.setdefault((r["doc_no"].strip().upper(), r["doc_type"] or ""), []).append(r)
+    out = []
+    for g in groups.values():
+        last = g[-1]["import_id"]
+        new, old = [r for r in g if r["import_id"] == last], [r for r in g if r["import_id"] < last]
+        if len(new) != 1 or not old or len({r["import_id"] for r in old}) != len(old):
+            continue
+        n = new[0]
+        if n["payment_id"] or n["status"] != "unlinked":
+            continue
+        if len(old) > 1:
+            # Edited again in SQL: the earliest may be linked, every later one must be linked to nothing.
+            if any(r["payment_id"] or r["status"] != "unlinked" for r in old[1:]):
+                continue
+        for o in old:
+            if (o["doc_date"], round(o["amount"], 2)) != (n["doc_date"], round(n["amount"], 2)):
+                out.append((o, n))
+    return out
+
+
+def changed_words(o, n):
+    """What changed between two entries of one voucher, in words: 'from 1,000.00 to 1,200.00', with the dates when
+    they differ."""
+    words = []
+    if round(o["amount"], 2) != round(n["amount"], 2):
+        words.append(f"from {o['amount']:,.2f} to {n['amount']:,.2f}")
+    if o["doc_date"] != n["doc_date"]:
+        words.append(f"dated {_dmy(o['doc_date'])} before, {_dmy(n['doc_date'])} now")
+    return ", ".join(words)
+
+
+def _dmy(iso):
+    try:
+        return date.fromisoformat(iso).strftime("%d/%m/%Y")
+    except (TypeError, ValueError):
+        return str(iso or "")
+
+
+def supersede_unlinked(con, entity_id):
+    """Marks each edited voucher's older entry replaced by its newer one when the older is linked to nothing, so the
+    SQL page lists the voucher once, at SQL's latest figure. The older entry is kept (marked superseded, with the entry
+    that replaced it and when) and the change is named in the activity log. An older entry linked to a payment is left
+    for the owner (Move the link to the new amount on the SQL page). Returns the doc nos. marked."""
+    from .db import log, now
+    done = []
+    code = (con.execute("SELECT code FROM entities WHERE id = ?", (entity_id,)).fetchone() or [""])[0]
+    for o, n in edited(con, entity_id):
+        if o["payment_id"] or o["status"] != "unlinked":
+            continue
+        con.execute("UPDATE sql_entries SET status = 'superseded', superseded_by = ?, superseded_at = ? WHERE id = ?",
+                    (n["id"], now(), o["id"]))
+        log(con, f"SQL entry {o['doc_no']} of {code} changed in SQL {changed_words(o, n)}: the earlier entry, linked to "
+                 "nothing, is kept and marked replaced by the later one")
+        done.append(o["doc_no"])
+    return done
+
+
+def revive(con, entity_id, import_id, rec, recs):
+    """A voucher edited in SQL back to a figure it had before: its entry at that figure is already kept, replaced by a
+    later one, so the fetch adds nothing. That earlier entry is made current again, as the latest import's entry (it is
+    what SQL gives now), so the next step pairs it with the entry it replaced: one linked to nothing is replaced in
+    turn, one linked to a payment is shown as changed in SQL for the owner. Only for a payment voucher's entry linked
+    to nothing, while another entry of its doc no. is current and this fetch doesn't list that one too. Returns
+    whether it was made current."""
+    from .db import log
+    s = con.execute("SELECT * FROM sql_entries WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?",
+                    (entity_id, rec["doc_no"], rec["date"], rec["amount"])).fetchone()
+    if not s or s["status"] != "superseded" or s["payment_id"] or (s["kind"] or "payment") != "payment":
+        return False
+    key = str(s["doc_no"] or "").strip().upper()
+    cur = con.execute("""SELECT * FROM sql_entries WHERE entity_id = ? AND UPPER(TRIM(doc_no)) = ? AND COALESCE(doc_type, '') = ?
+                         AND COALESCE(kind, 'payment') = 'payment' AND status IN ('linked', 'unlinked') AND superseded_by IS NULL""",
+                      (entity_id, key, s["doc_type"] or "")).fetchall()
+    if not cur:
+        return False
+    listed = {(str(x["doc_no"] or "").strip().upper(), x["date"], round(x["amount"] or 0, 2)) for x in recs}
+    if any((key, x["doc_date"], round(x["amount"], 2)) in listed for x in cur):
+        return False  # this fetch lists the current figure as well: which one SQL holds now can't be told
+    con.execute("UPDATE sql_entries SET status = 'unlinked', superseded_by = NULL, superseded_at = NULL, import_id = ? WHERE id = ?",
+                (import_id, s["id"]))
+    code = (con.execute("SELECT code FROM entities WHERE id = ?", (entity_id,)).fetchone() or [""])[0]
+    log(con, f"SQL entry {s['doc_no']} of {code} is back at {s['amount']:,.2f}, dated {_dmy(s['doc_date'])}, in SQL: its "
+             "earlier entry at that figure, kept as replaced, is SQL's entry again")
+    return True
+
+
+def changed_linked(con, entity_id):
+    """The edited vouchers whose older entry is linked to a payment, for the owner to decide on: [{doc_no, doc_type,
+    old: {id, amount, doc_date}, new: {id, amount, doc_date, description}, words, payment: {id, description, month,
+    amount}, amount_follows (the payment's amount is the old voucher's, so it can be changed to the new one too),
+    ledger (what SQL's Journal of Transaction kept for the voucher: {version, total, agrees} or None)}]."""
+    from .db import same_amount
+    from . import ledger
+    out = []
+    for o, n in edited(con, entity_id):
+        if not o["payment_id"]:
+            continue
+        p = con.execute("SELECT id, description, month, amount FROM payments WHERE id = ?", (o["payment_id"],)).fetchone()
+        if not p:
+            continue
+        lg = None
+        if ledger.ready(con):
+            d = con.execute("""SELECT version, dr_sen FROM ledger_docs WHERE entity_id = ? AND origin = 'sql' AND doc_key = ?
+                               AND state = 'current'""", (entity_id, o["doc_no"].strip().upper())).fetchone()
+            if d:
+                lg = {"version": d["version"], "total": d["dr_sen"] / 100, "agrees": d["dr_sen"] == round(n["amount"] * 100)}
+        out.append({"doc_no": n["doc_no"], "doc_type": n["doc_type"],
+                    "old": {"id": o["id"], "amount": o["amount"], "doc_date": o["doc_date"]},
+                    "new": {"id": n["id"], "amount": n["amount"], "doc_date": n["doc_date"], "description": n["description"]},
+                    "words": changed_words(o, n),
+                    "payment": {"id": p["id"], "description": p["description"], "month": p["month"], "amount": p["amount"]},
+                    "amount_follows": same_amount(p["amount"], o["amount"]) and round(o["amount"], 2) != round(n["amount"], 2),
+                    "ledger": lg})
+    return out

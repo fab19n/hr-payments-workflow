@@ -5,7 +5,7 @@ import io
 import os
 import re
 import zipfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
@@ -333,9 +333,33 @@ def _folders(con, entity, month):
     return out
 
 
+def books_workbooks(con, entity, month):
+    """The month's books as Excel files for the auditor package, made as the Books page's Excel buttons make them: the
+    trial balance for the month (customers and suppliers added into their control accounts, as SQL prints it), the
+    general ledger of every account for the month, the profit and loss account for the financial year to the month's
+    end, the balance sheet at the month's end, the customers' and suppliers' balances for the month with their ageing
+    at its end, and the statutory payables check for the payroll month (records from update 29). [(file name,
+    bytes)]; none for records from before the books were kept (update 26)."""
+    from . import booksexcel, ledger, statutory
+    if not ledger.ready(con):
+        return []
+    y, m = map(int, month.split("-"))
+    first = f"{month}-01"
+    last = (date(y + m // 12, m % 12 + 1, 1) - timedelta(days=1)).isoformat()
+    made = [booksexcel.trial_balance(con, entity, first, last, rollup=True),
+            booksexcel.ledger(con, entity, None, first, last),
+            booksexcel.profit_and_loss(con, entity, None, last),
+            booksexcel.balance_sheet(con, entity, last),
+            booksexcel.parties(con, entity, first, last)]
+    if statutory.ready(con):
+        made.append(booksexcel.statutory_payables(con, entity, month, month))
+    return [(name, workbook_bytes(wb)) for wb, name in made]
+
+
 def auditor_package(con, entity, month, built=None):
-    """Builds a fresh audit pack and the zip for the auditor: the pack, the month report with a Files sheet, and the
-    original files. A file whose fingerprint no longer matches is left out and listed. Returns (zip path, files in it,
+    """Builds a fresh audit pack and the zip for the auditor: the pack, the month report with a Files sheet, the month's
+    books as Excel files in Books/ (books_workbooks: trial balance, general ledger, profit and loss, balance sheet,
+    customers and suppliers, statutory payables), and the original files. A file whose fingerprint no longer matches is left out and listed. Returns (zip path, files in it,
     files left out). built: filled with what built the pack, as auditpack.build does, and with pack_path, the pack
     file just built (for its trail event; take it out before the event is written)."""
     pack = auditpack.build(con, entity, month, built)
@@ -348,6 +372,11 @@ def auditor_package(con, entity, month, built=None):
               "sha256": hashlib.sha256(pack_bytes).hexdigest(), "note": ""},
              {"name": report_name, "folder": "", "belongs": "Month report", "type": "Excel report", "sha256": "", "note": "This file"}]
     blobs, left_out = [], 0
+    for name, data in books_workbooks(con, entity, month):
+        name = _unique(taken, "Books/", name)
+        blobs.append((name, data))
+        files.append({"name": name, "folder": "Books/", "belongs": "Books", "type": "Excel report",
+                      "sha256": hashlib.sha256(data).hexdigest(), "note": ""})
     for folder, belongs, d in _folders(con, entity, month):
         label = rulebook.get(con).doc_label(d["doc_type"])
         src = path_of(d)
@@ -372,7 +401,10 @@ def auditor_package(con, entity, month, built=None):
             z.writestr(pack.name, pack_bytes)
             z.writestr(report_name, report)
             for name, src in blobs:
-                z.write(src, name)
+                if isinstance(src, bytes):
+                    z.writestr(name, src)
+                else:
+                    z.write(src, name)
         os.replace(tmp, out)
     finally:
         tmp.unlink(missing_ok=True)

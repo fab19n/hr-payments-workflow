@@ -9,7 +9,8 @@ handed back whole, for their account lines and their checks (hrp/ledger.py).
 
 A copy of SQL's MyInvois Transaction grid, saved from Excel, is read too (hrp/myinvois.py): it is the company's whose
 TIN it holds. Nothing in the folder is moved, renamed or deleted. A file is left out the next time once it has been imported (its
-fingerprint is among the company's stored SQL exports); a listing of another company is never taken.
+fingerprint is among the company's stored SQL exports); a listing of another company is never taken, and one whose
+printed company matches no company in Setup only once the owner has said whose it is (Take it for, take_for).
 """
 import csv
 import hashlib
@@ -57,6 +58,108 @@ def owner(entities, company):
     return best
 
 
+def names_ready(con):
+    """Whether the records have update 36 (the company names the owner confirmed)."""
+    return bool(con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'sql_company_names'").fetchone())
+
+
+def confirmed_names(con):
+    """{printed company name, as a key: company id} for the names the owner said are one of the companies."""
+    if not names_ready(con):
+        return {}
+    return {r["name_key"]: r["entity_id"] for r in con.execute("SELECT name_key, entity_id FROM sql_company_names")}
+
+
+def take_for(con, entity_id, company):
+    """Keeps a company name SQL printed on an export, that matches no company in Setup, as this company's, because the
+    owner clicked Take it for on the fetch's list: the next fetch takes exports printed with it for this company (and
+    for no other). Refused, with a sentence, for an empty name, a name that already matches a company, or one already
+    taken for another company. Logged in the activity log; the audit trail keeps the row."""
+    from .db import log, now
+    if not names_ready(con):
+        raise FetchError("The records need update 36 to take an export for a company. Restart the app.")
+    ents = con.execute("SELECT * FROM entities").fetchall()
+    me = next((e for e in ents if e["id"] == int(entity_id)), None)
+    name = re.sub(r"\s+", " ", str(company or "")).strip()
+    key = _key(name)
+    if me is None or not me["uses_sql"]:
+        raise FetchError("Only a company kept in SQL Account can take SQL's exports.")
+    if not key:
+        raise FetchError("This export prints no company name, so it can't be taken for a company.")
+    own = owner(ents, name)
+    if own is not None:
+        raise FetchError(f"\"{name}\" already matches {own['code']} in Setup, so there is nothing to confirm.")
+    had = confirmed_names(con).get(key)
+    if had is not None:
+        if had == me["id"]:
+            return False
+        other = next((e for e in ents if e["id"] == had), None)
+        raise FetchError(f"\"{name}\" was taken for {other['code'] if other else 'another company'} before. "
+                         "Check which company the export is from in SQL Account.")
+    if _has_by(con):
+        con.execute("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at, confirmed_by) VALUES (?, ?, ?, ?, ?)",
+                    (me["id"], key, name, now(), _who()))
+    else:
+        con.execute("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at) VALUES (?, ?, ?, ?)",
+                    (me["id"], key, name, now()))
+    log(con, f"Took SQL's exports printed for \"{name}\" as {me['code']}'s ({me['name']}): the company name matches none "
+             "in Setup, and the owner confirmed it")
+    return True
+
+
+def _has_by(con):
+    """Whether the records have update 37 (who confirmed each name is kept with it)."""
+    return "confirmed_by" in {r[1] for r in con.execute("PRAGMA table_info(sql_company_names)")}
+
+
+def _who():
+    from .audit import who
+    return who()[0]
+
+
+def names_of(con, entity_id):
+    """The printed company names confirmed as this company's (Setup › Companies): [{id, name, confirmed_at,
+    confirmed_by}], oldest first. confirmed_by is None for a name kept before update 37 that the audit trail doesn't
+    name a person for."""
+    if not names_ready(con):
+        return []
+    by = "confirmed_by" if _has_by(con) else "NULL AS confirmed_by"
+    return [dict(r) for r in con.execute(f"""SELECT id, name, confirmed_at, {by} FROM sql_company_names
+                                             WHERE entity_id = ? ORDER BY confirmed_at, id""", (int(entity_id),))]
+
+
+def forget(con, entity_id, name_id):
+    """Removes a printed company name the owner confirmed for this company (Setup › Companies, Remove). Nothing that was
+    imported from such files changes; the next Fetch holds files printing this name again, as from a company not in
+    Setup, until the owner clicks Take it for again. Logged in the activity log; the audit trail keeps the row removed.
+    Returns the name removed."""
+    from .db import log
+    if not names_ready(con):
+        raise FetchError("The records need update 36 to keep printed company names. Restart the app.")
+    r = con.execute("SELECT * FROM sql_company_names WHERE id = ? AND entity_id = ?", (int(name_id), int(entity_id))).fetchone()
+    if r is None:
+        raise FetchError("This printed company name isn't kept for this company any more. Reload the page.")
+    e = con.execute("SELECT code, name FROM entities WHERE id = ?", (r["entity_id"],)).fetchone()
+    con.execute("DELETE FROM sql_company_names WHERE id = ?", (r["id"],))
+    log(con, f"Removed the printed company name \"{r['name']}\" from {e['code']} ({e['name']}): the next Fetch holds SQL's "
+             "exports printed with it again, until the owner takes them for a company again")
+    return r["name"]
+
+
+def fill_confirmed_by(con):
+    """Update 37: who confirmed each name kept before it, as the audit trail recorded the click (the person the entry
+    that added the row names). A name the trail has no such entry for stays without one."""
+    if not names_ready(con) or not con.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'audit_tx'").fetchone():
+        return
+    for r in con.execute("SELECT id FROM sql_company_names WHERE confirmed_by IS NULL").fetchall():
+        t = con.execute("""SELECT t.actor FROM audit_row a JOIN audit_tx t ON t.token = a.token
+                           WHERE a.tbl = 'sql_company_names' AND a.row_key = ? AND a.op = 'insert'
+                           ORDER BY a.id DESC LIMIT 1""", (str(r["id"]),)).fetchone()
+        if t and t["actor"]:
+            con.execute("UPDATE sql_company_names SET confirmed_by = ? WHERE id = ?", (t["actor"], r["id"]))
+
+
 def _files(folder):
     p = Path(folder)
     if not p.is_dir():
@@ -100,6 +203,7 @@ def gather(con, entity_id, folder):
       files    what was found, newest first: {name, saved, status, reason, title, period, entries, new, already, repeated};
                a general-ledger report has report (its kind) and docs and lines (a journal) or accounts instead of entries
                status: read | imported_before | copy | other_company | unknown_company | unreadable | too_large
+               an unknown_company file whose printed company can be confirmed has take_for (this company's code)
       other    how many workbooks are not SQL listings or reports (left alone)
       entries, new, already   the documents in the listings read, each counted once
       csv      those documents as one table (sqlimport reads it like a pasted listing), new ones first; None when there are none
@@ -112,7 +216,8 @@ def gather(con, entity_id, folder):
     """
     ents = con.execute("SELECT * FROM entities").fetchall()
     me = next(e for e in ents if e["id"] == int(entity_id))
-    sql_users = [e for e in ents if e["uses_sql"] and ("active" not in e.keys() or e["active"])]
+    confirmed = confirmed_names(con)
+    can_confirm = names_ready(con) and bool(me["uses_sql"])
     imported = {r[0] for r in con.execute("SELECT sha256 FROM documents WHERE entity_id = ? AND doc_type = 'sqlexport'", (me["id"],))}
 
     files, sources, entries, seen, by_sha, other, gl, mi = [], [], [], {}, {}, 0, [], []
@@ -170,13 +275,26 @@ def gather(con, entity_id, folder):
                            "month": (rep["period"] or [None, info["saved"][:10]])[1][:7]})
             continue
         own = owner(ents, rep["company"])
+        if own is None and _key(rep["company"]) in confirmed:  # a printed name the owner said is this company's (Take it for)
+            own = next((e for e in ents if e["id"] == confirmed[_key(rep["company"])]), None)
         if own is not None and own["id"] != me["id"]:
             files.append({**info, "status": "other_company", "reason": f"This {rep['title']} is for {own['code']} ({own['name']}), not {me['code']}."})
             continue
-        if own is None and not (len(sql_users) == 1 and sql_users[0]["id"] == me["id"]):
-            files.append({**info, "status": "unknown_company",
-                          "reason": f"This {rep['title']} is for \"{rep['company']}\", which matches no company's name or registration number in Setup, "
-                                    "so it was left out. Correct the company's name or registration number in Setup › Companies, then fetch again."})
+        if own is None:
+            # Never taken on a guess, even when only one company is kept in SQL: nothing from it is read until the owner
+            # says whose it is (Take it for ..., which keeps the printed name with that company for later fetches).
+            if not _key(rep["company"]):
+                files.append({**info, "status": "unknown_company",
+                              "reason": f"This {rep['title']} prints no company name, so whose it is can't be told and nothing "
+                                        "was taken from it. Export it again from SQL Account with the company name on it."})
+            else:
+                files.append({**info, "status": "unknown_company", "take_for": me["code"] if can_confirm else None,
+                              "reason": f"This {rep['title']} is from a company not in Setup: \"{rep['company']}\" matches no "
+                                        "company's name or registration number in Setup, so nothing was taken from it. "
+                                        + (f"If it is {me['code']}'s, click Take it for {me['code']}; otherwise correct the "
+                                           "company's name or registration number in Setup › Companies, then fetch again."
+                                           if can_confirm else "Correct the company's name or registration number in Setup › "
+                                                               "Companies, then fetch again.")})
             continue
         if kind != "listing":
             month = _latest(kind, rep)

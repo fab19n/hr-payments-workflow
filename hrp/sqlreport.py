@@ -35,7 +35,8 @@ LISTINGS = {
     "customer invoice listing": "code", "invoice listing": "code", "supplier invoice listing": "PI",
     "customer payment listing": "OR", "supplier payment listing": "SP",
 }
-READS = "the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice and Customer Payment listings"
+READS = ("the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice, Customer Payment, "
+         "Supplier Invoice and Supplier Payment listings")
 ENDS = ("transaction summary", "account summary", "item code summary")  # the blocks printed after a listing's documents
 
 PAGE = re.compile(r"^Page \d+ of \d+$", re.I)

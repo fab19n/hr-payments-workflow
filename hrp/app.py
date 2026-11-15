@@ -14,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, books, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, recon, reports,
+from . import (appsettings, audit, auditpack, auditread, books, booksexcel, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, recon, reports,
                monthly, myinvois, packcheck, partybook, receivables, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements,
                statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
@@ -728,12 +728,20 @@ def upload():
     else:
         return err("Upload has no payment or task.")
     e = entity(c, owner["entity_id"])
+    # A replacement may only retire a document still on this same payment or checklist item: never another payment's,
+    # another company's, or one already replaced or taken off. Checked before anything is stored.
+    replaces = request.form.get("replaces")
+    if replaces:
+        old = c.execute("SELECT * FROM documents WHERE id = ?", (replaces,)).fetchone()
+        same = old is not None and (str(old["payment_id"]) == str(pid) if pid else str(old["task_id"]) == str(tid))
+        if not same or old["replaced_by"] is not None or old["removed_at"] is not None:
+            return err("The document to replace isn't a current document of this payment or checklist item, so nothing "
+                       "was uploaded. Close this and try again from the document's own row.")
     try:
         did = store(c, entity=e, month=owner["month"], folder=folder, doc_type=doc_type, filename=f.filename, data=f.read(),
                     payment_id=pid, task_id=tid, note=request.form.get("note"))
     except ValueError as ex:
         return err(str(ex))
-    replaces = request.form.get("replaces")
     if replaces:
         c.execute("UPDATE documents SET replaced_by = ? WHERE id = ?", (did, replaces))
     db.log(c, f"Uploaded {R.doc_label(doc_type)} '{f.filename}' to {folder}")
@@ -1460,6 +1468,21 @@ def sql_preview():
                        if fetched and fetched["gl"] else {})})
 
 
+@app.post("/api/sql/take-company")
+def sql_take_company():
+    """The owner's Take it for click on Fetch's list: an export whose printed company matches no company in Setup is
+    this company's. The printed name is kept with the company (sqlfetch.take_for), so Fetch takes such exports from
+    now on; nothing is imported until the owner fetches and imports again."""
+    b = request.get_json() or {}
+    c = con()
+    try:
+        added = sqlfetch.take_for(c, b.get("entity_id"), b.get("company"))
+    except sqlfetch.FetchError as ex:
+        return err(str(ex))
+    c.commit()
+    return jsonify({"ok": True, "added": added})
+
+
 def _myinvois_preview(copies):
     """What the fetch preview says of the MyInvois copies it read, beside the review's counts for each file."""
     return {"files": [{"name": m["name"], "rows": len(m["rep"]["rows"])} for m in copies]}
@@ -1688,9 +1711,10 @@ def sql_apply():
     # A customer invoice links only to money in: the receipt it is for. Its checklist item (task_id) is kept as well.
     money_in = {x[0] for x in c.execute("SELECT id FROM payments WHERE entity_id = ? AND direction = 'in'", (eid,))}
     sqlimport.propose(c, eid, recs)  # for the checklist task of journals and invoices
-    added = linked = skipped = 0
+    added = linked = skipped = revived = 0
     touched = set()
     einv_ready = myinvois.ready(c)
+    can_supersede = sqlimport.supersede_ready(c)
     for r in recs:
         pid = links.get(r["row"]) if r["kind"] == "payment" else None
         if sqlimport.receipt_invoice(r) and links.get(r["row"]) in money_in:
@@ -1752,6 +1776,8 @@ def sql_apply():
             if hit.rowcount:
                 db.log(c, f"Linked SQL invoice {r['doc_no']} to receipt: "
                           f"{c.execute('SELECT description FROM payments WHERE id = ?', (pid,)).fetchone()[0]}")
+        if not cur.rowcount and r["kind"] == "payment" and can_supersede and sqlimport.revive(c, eid, imp, r, recs):
+            revived += 1  # edited back in SQL to a figure it had before: that entry is SQL's again
         if not cur.rowcount:
             skipped += 1
             continue
@@ -1763,6 +1789,9 @@ def sql_apply():
             linked += 1
             touched.add(int(pid))
     c.execute("UPDATE sql_imports SET entries = ?, linked = ? WHERE id = ?", (added, linked, imp))
+    # A voucher edited in SQL comes back as a new entry: one whose earlier entry is linked to nothing replaces it (kept,
+    # marked superseded); one whose earlier entry is linked waits on the SQL page for the owner to move the link.
+    replaced = sqlimport.supersede_unlinked(c, eid) if (added or revived) and can_supersede else []
     # A fetch keeps the listings it read as well as the table made from them: they are the evidence, and their
     # fingerprints are how the next fetch knows these files are done.
     for name, source, source_month in (fetched or {}).get("sources", []):
@@ -1798,12 +1827,14 @@ def sql_apply():
         if changed:
             db.log(c, f"Imported SQL export '{filename}' for {e['code']}: bank reconciliation changed for signed-off "
                       + ", ".join(x["month"] for x in changed) + " (still signed off; check again)")
+    waiting = len(sqlimport.changed_linked(c, eid)) if (added or revived) and can_supersede else 0
     c.commit()
     _pending_fetch.pop(b["token"], None)
     _pending_sql.pop(b["token"], None)
     _preview_made.pop(b["token"], None)
     return jsonify({"added": added, "linked": linked, "skipped": skipped, "bank_lines_matched": matched,
-                    "recon_changed": changed or [], **({"ledger": kept} if kept else {}), **({"myinvois": einv} if einv else {})})
+                    "recon_changed": changed or [], **({"replaced": replaced} if replaced else {}),
+                    **({"changed_linked": waiting} if waiting else {}), **({"ledger": kept} if kept else {}), **({"myinvois": einv} if einv else {})})
 
 
 # What an SQL voucher's link replaced on a payment, kept (undo_link) so unlinking it can put exactly that back.
@@ -1955,11 +1986,26 @@ def sql_entries():
     since = f"{e['first_month']}-01" if e["first_month"] else None
     orphans = ledger.orphans(c, me, since) if ledger.ready(c) else {"no_listing": [], "own_lines": [], "not_in_journal": [],
                                                                     "before_tracking": 0}
+    # Vouchers edited in SQL whose earlier entry is linked: for the owner to move the link (never done on its own). The
+    # entries a later one replaced are listed apart, read-only.
+    changed = sqlimport.changed_linked(c, me)
+    for x in changed:
+        x["payment"]["month_label"] = db.month_label(x["payment"]["month"]) if x["payment"]["month"] else ""
+    replaced = rows(c.execute(
+        """SELECT o.*, n.amount AS new_amount, n.doc_date AS new_date FROM sql_entries o JOIN sql_entries n ON n.id = o.superseded_by
+           WHERE o.entity_id = ? AND o.status = 'superseded' ORDER BY o.superseded_at DESC, o.id DESC LIMIT 200""", (me,))) \
+        if sqlimport.supersede_ready(c) else []
+    # The trial balance's stored differences say "possibly out of date" when a journal read after it changed documents in
+    # its dates, as the Books page does (books.read_stale).
+    reads = ledger.latest_reads(c, me)
+    if reads.get("trial_balance"):
+        reads["trial_balance"]["stale"] = books.read_stale(c, me, reads["trial_balance"]["id"])
     return jsonify({"imports": imports, "unlinked": unlinked, "before_tracking": before, "first_month": e["first_month"],
+                    "changed": changed, "superseded": replaced,
                     "candidates": cands, "documents": other, "einvoices": einv,
                     "myinvois": {k: v for k, v in mi.items() if k != "by_entry"} if mi else None,
                     "linked": on_payments, "ignored": ignored, "lines": lines,
-                    "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans},
+                    "ledger": {"reads": reads, "orphans": orphans},
                     "invoice_print": {"missing": invoicepdf.missing_settings(c, e), "months": invoicepdf.print_months(c, me),
                                       "fonts": invoicepdf.font_notes(), "too_long": invoicepdf.setup_cuts(c, e)}
                     if printing else None})
@@ -2055,16 +2101,26 @@ def books_balance_sheet():
     cover it. Read-only."""
     c = con()
     eid = entity(c, id_from(request.args.get("entity") or ""))["id"]
+    try:
+        as_at = _books_as_at(c, eid)
+    except ValueError as ex:
+        return err(str(ex))
+    return jsonify(finstatements.balance_sheet(c, eid, as_at))
+
+
+def _books_as_at(c, eid):
+    """The balance sheet's as-at day from the request (as_at=), default the last day SQL's reports kept reach; a
+    ValueError in a sentence when it can't be read or is out of range."""
     v = (request.args.get("as_at") or "").strip()
     try:
         if v and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", v):
             raise ValueError
         as_at = date.fromisoformat(v).isoformat() if v else books.default_to(c, eid)
     except ValueError:
-        return err("The as-at date isn't a date (use YYYY-MM-DD).")
+        raise ValueError("The as-at date isn't a date (use YYYY-MM-DD).") from None
     if not _books_year_ok(as_at):
-        return err(f"The as-at date is out of range: use a date from {BOOKS_YEARS[0]} to {BOOKS_YEARS[1]}.")
-    return jsonify(finstatements.balance_sheet(c, eid, as_at))
+        raise ValueError(f"The as-at date is out of range: use a date from {BOOKS_YEARS[0]} to {BOOKS_YEARS[1]}.")
+    return as_at
 
 
 @app.get("/api/books/parties")
@@ -2359,6 +2415,53 @@ def sql_entry_update(sid):
     return jsonify({"ok": True, "bank_lines_matched": matched})
 
 
+@app.post("/api/sql/entries/<int:sid>/move-link")
+def sql_entry_move_link(sid):
+    """Moves a payment's link from a voucher's earlier entry to the entry SQL gives for it now, after the voucher was
+    edited in SQL (another amount or date). Only when the owner clicks it on the SQL page, and only for the pair the
+    SQL page shows (to: the newer entry's id). The earlier entry is kept, marked superseded by the newer one. The
+    payment's amount changes to the new voucher's only when asked (update_amount), and only while it is still the old
+    voucher's amount; a paid date taken from the old voucher follows the new one. SQL's books are not touched: the
+    voucher's account lines are SQL's, fetched from its Journal of Transaction."""
+    b = request.get_json() or {}
+    c = con()
+    if not sqlimport.supersede_ready(c):
+        return err("The records need update 36 to move a link to a voucher changed in SQL. Restart the app.")
+    s = c.execute("SELECT * FROM sql_entries WHERE id = ?", (sid,)).fetchone() or abort(404)
+    pair = next(((o, n) for o, n in sqlimport.edited(c, s["entity_id"]) if o["id"] == sid and o["payment_id"]), None)
+    if not pair or str(pair[1]["id"]) != str(b.get("to")):
+        return err(f"{s['doc_no']} has no later entry from SQL to move its link to, or it changed since. Reload the SQL page.")
+    o, n = pair
+    pid = o["payment_id"]
+    p = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone()
+    follow = bool(b.get("update_amount"))
+    if follow and not db.same_amount(p["amount"], o["amount"]):
+        return err(f"The payment's amount ({(p['amount'] or 0):,.2f}) isn't {o['doc_no']}'s old amount ({o['amount']:,.2f}), "
+                   "so it can't be changed with the link. Move the link alone, then change the payment's amount yourself if needed.")
+    c.execute("UPDATE sql_entries SET payment_id = ?, status = 'linked' WHERE id = ?", (pid, n["id"]))
+    c.execute("UPDATE sql_entries SET payment_id = NULL, status = 'superseded', superseded_by = ?, superseded_at = ? WHERE id = ?",
+              (n["id"], db.now(), o["id"]))
+    undo = json.loads(p["undo_link"] or "{}")
+    if undo.get("entry") == o["id"]:  # unlinking the new entry later puts back what the old one replaced
+        c.execute("UPDATE payments SET undo_link = ? WHERE id = ?", (json.dumps({**undo, "entry": n["id"]}), pid))
+    if p["paid_source"] == "sql" and p["paid_date"] == o["doc_date"] and n["doc_date"] != o["doc_date"]:
+        c.execute("UPDATE payments SET paid_date = ? WHERE id = ?", (n["doc_date"], pid))
+    if o["einvoice"] and n["einvoice"] and p["einvoice_ref"] == o["einvoice"] and n["einvoice"] != o["einvoice"]:
+        c.execute("UPDATE payments SET einvoice_ref = ? WHERE id = ?", (n["einvoice"], pid))
+    words = sqlimport.changed_words(o, n)
+    db.log(c, f"Moved the link of payment '{p['description']}' from {o['doc_no']}'s earlier entry to the one SQL gives now "
+              f"(changed in SQL {words}); the earlier entry is kept, marked replaced")
+    amount_changed = follow and not db.same_amount(o["amount"], n["amount"])
+    if amount_changed:
+        c.execute("UPDATE payments SET amount = ?, amount_is_estimate = 0 WHERE id = ?", (n["amount"], pid))
+        db.log(c, f"Changed the amount of payment '{p['description']}' from {o['amount']:,.2f} to {n['amount']:,.2f}, "
+                  f"as {o['doc_no']} was changed in SQL")
+    matched = _match_payments(c, s["entity_id"], {pid})
+    c.commit()
+    return jsonify({"ok": True, "doc_no": n["doc_no"], "payment": p["description"], "amount_changed": amount_changed,
+                    "bank_lines_matched": matched})
+
+
 @app.post("/api/sql/entries/<int:sid>/unlink")
 def sql_entry_unlink(sid):
     c = con()
@@ -2547,6 +2650,46 @@ def export_budget():
         return err(str(ex), 404)
     return send_file(io.BytesIO(reports.workbook_bytes(wb)), mimetype=XLSX, as_attachment=True,
                      download_name=reports.budget_report_name(e, month))
+
+
+@app.get("/api/export/books/<report>.xlsx")
+@audited_read("books export")
+def export_books(report):
+    """A report of the Books page as an Excel file (booksexcel), for the same period and options as on the screen:
+    trial-balance (rollup=), ledger (account=), profit-and-loss (columns=), balance-sheet (as_at=),
+    customers-and-suppliers (side=) or statutory-payables (from= and to= payroll months, or days in them, as
+    /api/statutory takes them). Read-only."""
+    if report not in booksexcel.REPORTS:
+        return err("There is no such report.", 404)
+    c = con()
+    e = _entity_arg(c)
+    a = request.args
+    try:
+        if report == "statutory-payables":
+            months = []
+            for k in ("from", "to"):
+                v = (a.get(k) or "").strip()[:7]
+                if v and not MONTH.fullmatch(v):
+                    return err(f"The {k} month isn't a month. Months are written like 2026-10.")
+                months.append(v or None)
+            if not statutory.ready(c):
+                return err("The records need update 29 for the statutory check. Restart the app.")
+            wb, name = booksexcel.statutory_payables(c, e, *months)
+        elif report == "balance-sheet":
+            wb, name = booksexcel.balance_sheet(c, e, _books_as_at(c, e["id"]))
+        else:
+            d_from, d_to = _books_period(c, e["id"])
+            if report == "trial-balance":
+                wb, name = booksexcel.trial_balance(c, e, d_from, d_to, rollup=(a.get("rollup") or "") in ("1", "true", "yes"))
+            elif report == "ledger":
+                wb, name = booksexcel.ledger(c, e, (a.get("account") or "").strip().upper() or None, d_from, d_to)
+            elif report == "profit-and-loss":
+                wb, name = booksexcel.profit_and_loss(c, e, d_from, d_to, (a.get("columns") or "total").strip())
+            else:
+                wb, name = booksexcel.parties(c, e, d_from, d_to, a.get("side"))
+    except ValueError as ex:
+        return err(str(ex))
+    return send_file(io.BytesIO(reports.workbook_bytes(wb)), mimetype=XLSX, as_attachment=True, download_name=name)
 
 
 @app.post("/api/auditor-export")
@@ -2858,6 +3001,13 @@ def setup_settings_save():
         except ValueError as x:
             raise masters.Refused(str(x))
         v = {k: x for k, x in v.items() if x != appsettings.get(k)}
+        if "cycle_rollover_day" in v:  # filed months never change: a new day that would move what is in one is refused
+            moves = db.cycle_day_moves_filed(c, v["cycle_rollover_day"])
+            if moves:
+                raise masters.Refused(
+                    "Payroll month runs until: months already filed would change, so nothing was saved. With the new day "
+                    + "; ".join(moves[:3]) + (f"; and {len(moves) - 3} more" if len(moves) > 3 else "")
+                    + ". Reopen those months first if it really must change.", 409)
         if v:
             appsettings.save(c, v)
             db.log(c, "Changed general settings: " + ", ".join(appsettings.SPEC[k][1].lower() for k in v))
@@ -2897,7 +3047,7 @@ def setup_import():
     if not preview:
         _reason()
     try:
-        return _setup_call(lambda c: setupfile.load(c, b.get("setup")), preview=preview)
+        return _setup_call(lambda c: setupfile.load(c, b.get("setup"), preview=preview), preview=preview)
     finally:
         appsettings.load(con())  # the settings the import saved went into the cache: it follows what was kept
 
@@ -2994,7 +3144,7 @@ def invoice_check(sid):
 @app.get("/api/invoices/<int:sid>.pdf")
 @audited_read("invoice")
 def invoice_pdf(sid):
-    """One customer invoice or self-billed e-Invoice as PDF, shown in the browser (?download=1 saves it)."""
+    """One customer invoice, debit note or credit note, or self-billed e-Invoice, as PDF, shown in the browser (?download=1 saves it)."""
     c = con()
     try:
         doc = invoicepdf.document(c, sid)
@@ -3008,7 +3158,8 @@ def invoice_pdf(sid):
 @app.get("/api/invoices/month.zip")
 @audited_read("invoices")
 def invoices_zip():
-    """Every customer invoice (kind=customer) or self-billed e-Invoice (kind=self_billed) of a company's month, zipped,
+    """Every customer invoice, debit note and credit note (kind=customer) or self-billed e-Invoice (kind=self_billed) of a
+    company's month, zipped (each file named by its doc no., so they sort by it),
     with a list of those that couldn't be printed and why."""
     c = con()
     e = entity(c, id_from(request.args.get("entity") or request.args.get("entity_id") or ""))
@@ -3075,6 +3226,30 @@ def setup_image_remove(rid, which):
         return err(str(x), x.status)
     c.commit()
     return jsonify(_print_settings(c, entity(c, rid)))
+
+
+@app.get("/api/setup/entities/<int:rid>/sql-names")
+def setup_sql_names(rid):
+    """The company names SQL prints on its exports that the owner confirmed as this company's (Take it for on the SQL
+    page), each with when and by whom (sqlfetch.names_of)."""
+    c = con()
+    entity(c, rid)
+    return jsonify({"ready": sqlfetch.names_ready(c), "names": sqlfetch.names_of(c, rid)})
+
+
+@app.delete("/api/setup/entities/<int:rid>/sql-names/<int:nid>")
+def setup_sql_name_remove(rid, nid):
+    """Removes one of them (sqlfetch.forget): the next Fetch holds files printing that name again, until the owner
+    takes them for a company again. Nothing already imported changes."""
+    c = con()
+    entity(c, rid)
+    try:
+        name = sqlfetch.forget(c, rid, nid)
+    except sqlfetch.FetchError as ex:
+        c.rollback()
+        return err(str(ex))
+    c.commit()
+    return jsonify({"removed": name, "ready": sqlfetch.names_ready(c), "names": sqlfetch.names_of(c, rid)})
 
 
 @app.get("/api/audit/status")
