@@ -573,7 +573,9 @@ def books_checks(con, entity, month):
     the trial balance here agrees with SQL's own, taken as the SQL books item takes it (the stored trial balance of
     SQL's nearest on or after the month's last day). Reads only. Records from before the books or the statutory check
     were added say the same as records with nothing fetched. Returns {sql_books: {state ('done', 'not_done',
-    'not_checked'), text}, statutory: {summary, lines}, trial_balance: {outcome, text, source, differences}}."""
+    'not_checked'), text}, statutory: {summary, lines}, trial_balance: {outcome, text, source, differences, stale}}, stale
+    being True when a GL Journal of Transaction read after SQL's trial balance changed documents in its dates, as the
+    Books page shows it ("possibly out of date")."""
     from . import books, ledger, sqlbooks, statutory
     first, last = sqlbooks._span(month)
     ok, why = sqlbooks.month_check(con, entity, month)
@@ -610,6 +612,7 @@ def books_checks(con, entity, month):
         else:
             res = books.check_against_sql(con, entity["id"], near["period_from"], near["period_to"])
             tb = {"outcome": res["outcome"], "text": res["text"], "differences": [d["text"] for d in res["differences"]],
+                  "stale": bool(res.get("stale")),
                   "source": f"SQL's trial balance {near['file_name'] or ''}".rstrip() + (
                       f", {day_label(near['period_from'])} to {day_label(near['period_to'])}" if near["period_from"]
                       else f", as at {day_label(near['period_to'])}")}
@@ -641,7 +644,9 @@ def _books_pages(chk):
                                          "with the books here. SQL Account stays the books; nothing here changes them."])
     page(f"{head} - {BOOKS_PAGES[1]}", [st["summary"], *(f"- {x}" for x in st["lines"])])
     agree = {"ok": "Agrees with SQL's trial balance.", "warn": "Differs from SQL's trial balance.", "skipped": "Not checked."}
-    page(f"{head} - {BOOKS_PAGES[2]}", [agree[tb["outcome"]], tb["source"] and f"Compared with {tb['source']}.", tb["text"],
+    first = ("Possibly out of date: SQL's trial balance was read before a later GL Journal of Transaction."
+             if tb.get("stale") else agree[tb["outcome"]])
+    page(f"{head} - {BOOKS_PAGES[2]}", [first, tb["source"] and f"Compared with {tb['source']}.", tb["text"],
                                          *(f"- {x}" for x in tb["differences"])])
     return bytes(pdf.output())
 

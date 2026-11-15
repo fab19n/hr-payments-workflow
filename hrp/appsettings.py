@@ -13,7 +13,8 @@ SPEC = {
     "cycle_rollover_day": (10, "Payroll month runs until", "day",
                            "Until this day of a month you are still closing the month before (the 10th: October's payroll "
                            "is worked on until 10 November). Change it rarely: joiner and leaver reminders and SQL documents "
-                           "dated near the change are placed by the new day, also in months already filed."),
+                           "dated near the day are placed by it. A change that would move one in or out of a month "
+                           "already filed is refused, so filed months never change."),
     "payee_default_category": ("utility", "New recurring payment: type", "select", None),
     "payee_default_month_offset": (1, "New recurring payment: paid in", "select", None),
     "payee_default_due_day": (6, "New recurring payment: day of month", "day", None),

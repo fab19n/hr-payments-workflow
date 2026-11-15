@@ -356,6 +356,12 @@ MIGRATIONS = [
     #     an old entry linked to nothing is marked replaced by its newer one now, so it isn't listed twice (kept, not
     #     deleted, and named in the activity log); one linked to a payment stays as it is until the owner moves the link.
     lambda con: _fetch_checks(con),
+    # 37. Who confirmed each printed company name kept by update 36 (shown, with when, in Setup › Companies, where a
+    #     name can be removed), filled from the audit trail for the names kept before it. And on each SQL document's
+    #     account lines, the GL Journal of Transaction that last found it again after it was marked no longer in SQL,
+    #     so the check against SQL's trial balance counts that as a change after the trial balance; filled from the
+    #     audit trail where it holds that change. Nothing else in the records changes.
+    lambda con: _names_and_back(con),
 ]
 
 
@@ -367,6 +373,14 @@ def _fetch_checks(con):
     add_column(con, "sql_entries", "superseded_at", "TEXT")
     for (eid,) in con.execute("SELECT id FROM entities ORDER BY id").fetchall():
         sqlimport.supersede_unlinked(con, eid)
+
+
+def _names_and_back(con):
+    from . import ledger, sqlfetch
+    add_column(con, "sql_company_names", "confirmed_by", "TEXT")
+    add_column(con, "ledger_docs", "back_batch_id", "INTEGER REFERENCES ledger_batches(id)")
+    sqlfetch.fill_confirmed_by(con)
+    ledger.fill_back_batches(con)
 
 
 SQL_COMPANY_NAMES = """
@@ -570,6 +584,50 @@ def current_cycle(today=None):
     still closing last month's cycle."""
     t = today or date.today()
     return shift_month(f"{t.year:04d}-{t.month:02d}", -1 if t.day <= appsettings.get("cycle_rollover_day") else 0)
+
+
+def _cycle_by(t, day):
+    """current_cycle with another rollover day."""
+    return shift_month(f"{t.year:04d}-{t.month:02d}", -1 if t.day <= day else 0)
+
+
+def cycle_day_moves_filed(con, new_day):
+    """What a new rollover day would move in or out of a month marked as filed, as plain sentences (at most a few; empty
+    when nothing): an SQL document placed by its date (no month named in its description, not an invoice or journal)
+    or a joiner or leaver reminder whose payroll month differs under the new day, the old or the new month being a filed
+    month of its company. Filed months never change, so Setup refuses such a change (app.py, General settings)."""
+    old = appsettings.get("cycle_rollover_day")
+    if new_day == old:
+        return []
+    lo, hi = min(old, new_day), max(old, new_day)
+    filed = {(r[0], r[1]) for r in con.execute("SELECT entity_id, month FROM months WHERE closed_at IS NOT NULL")}
+    if not filed:
+        return []
+    codes = {r[0]: r[1] for r in con.execute("SELECT id, code FROM entities")}
+    out = []
+
+    def moved(eid, on):
+        a, b = _cycle_by(on, old), _cycle_by(on, new_day)
+        return a != b and ((eid, a) in filed or (eid, b) in filed), a, b
+
+    for s in con.execute(f"""SELECT entity_id, doc_no, doc_date, description, kind FROM sql_entries
+                             WHERE status <> 'superseded' AND CAST(substr(doc_date, 9, 2) AS INTEGER) BETWEEN ? AND ?
+                             ORDER BY doc_date, id""", (lo + 1, hi)):
+        if s["kind"] in FILED_BY_MONTH or named_month(s["description"]):
+            continue
+        hit, a, b = moved(s["entity_id"], date.fromisoformat(s["doc_date"][:10]))
+        if hit:
+            out.append(f"SQL document {s['doc_no']} of {codes.get(s['entity_id'], '?')}, dated {day_label(s['doc_date'][:10])}, "
+                       f"would move from {month_label(a)} to {month_label(b)}")
+    for t in con.execute("""SELECT entity_id, code, title, due_date FROM tasks
+                            WHERE CAST(substr(due_date, 9, 2) AS INTEGER) BETWEEN ? AND ? ORDER BY due_date, id""", (lo + 1, hi)):
+        if not checklistbook.is_reminder(t["code"]):
+            continue
+        hit, a, b = moved(t["entity_id"], date.fromisoformat(t["due_date"][:10]))
+        if hit:
+            out.append(f"the reminder {t['title']} of {codes.get(t['entity_id'], '?')}, due {day_label(t['due_date'][:10])}, "
+                       f"would move from {month_label(a)} to {month_label(b)}")
+    return out
 
 
 def before_tracking(ent, month):

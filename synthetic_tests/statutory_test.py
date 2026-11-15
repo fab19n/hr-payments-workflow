@@ -432,6 +432,30 @@ d5 = j("get", f"/api/statutory?entity={EXO}&from=2026-09&to=2026-09")
 check("the page is given it", [p["doc_no"] for p in d5["postings"]] == ["PV-X10"]
       and "Employer's share on another account" in (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8"), d5.get("postings"))
 
+# ---------- 7b. the check as an Excel file ----------
+
+import io  # noqa: E402
+from openpyxl import load_workbook  # noqa: E402
+r = c.get(BASE + f"/api/export/books/statutory-payables.xlsx?entity_id={EXO}&from=2026-09&to=2026-09", headers=H)
+check("the statutory check downloads as an Excel file, named for the company and the month",
+      r.status_code == 200 and "Statutory payables check to 30-09-2026.xlsx" in r.headers.get("Content-Disposition", ""),
+      (r.status_code, r.headers.get("Content-Disposition"), r.data[:300]))
+ws = load_workbook(io.BytesIO(r.data)).active
+cells = [[v for v in row] for row in ws.iter_rows(values_only=True)]
+flat = [str(v) for row in cells for v in row if v is not None]
+sept = [x for a in d5["accounts"] for x in a["months"] if x["month"] == "2026-09"]
+rows9 = [row for row in cells if row and row[0] == "September 2026"]
+check("it holds each account's September row with the figures and words the page shows",
+      len(rows9) == len(sept) == len(d5["accounts"]) and all(
+          [None if v is None else int(round(v * 100)) for v in row[2:5]] == [x["withheld_sen"], x["paid_sen"], x["employer_sen"]]
+          and row[9] == x["text"] for row, x in zip(rows9, sept)), (rows9, sept))
+check("and the summary and the payment posted to another kind's account",
+      d5["summary"] in flat and d5["postings"][0]["text"] in flat, flat[-6:])
+r = c.get(BASE + f"/api/export/books/statutory-payables.xlsx?entity_id={EXO}&from=2026-13", headers=H)
+check("a month that isn't one is refused", r.status_code == 400 and "isn't a month" in r.get_json()["error"])
+check("the Books page's Excel button offers it on the statutory tab",
+      "statutory: `statutory-payables.xlsx?" in (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8"))
+
 # ---------- 8. every account stopped ----------
 
 write("stop every statutory account", ("UPDATE statutory_accounts SET active = 0 WHERE entity_id = ?", (EID,)))

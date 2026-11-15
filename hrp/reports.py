@@ -336,25 +336,30 @@ def _folders(con, entity, month):
 def books_workbooks(con, entity, month):
     """The month's books as Excel files for the auditor package, made as the Books page's Excel buttons make them: the
     trial balance for the month (customers and suppliers added into their control accounts, as SQL prints it), the
-    profit and loss account for the financial year to the month's end and the balance sheet at the month's end.
-    [(file name, bytes)]; none for records from before the books were kept (update 26)."""
-    from . import booksexcel, ledger
+    general ledger of every account for the month, the profit and loss account for the financial year to the month's
+    end, the balance sheet at the month's end, the customers' and suppliers' balances for the month with their ageing
+    at its end, and the statutory payables check for the payroll month (records from update 29). [(file name,
+    bytes)]; none for records from before the books were kept (update 26)."""
+    from . import booksexcel, ledger, statutory
     if not ledger.ready(con):
         return []
     y, m = map(int, month.split("-"))
     first = f"{month}-01"
     last = (date(y + m // 12, m % 12 + 1, 1) - timedelta(days=1)).isoformat()
-    out = []
-    for wb, name in (booksexcel.trial_balance(con, entity, first, last, rollup=True),
-                     booksexcel.profit_and_loss(con, entity, None, last),
-                     booksexcel.balance_sheet(con, entity, last)):
-        out.append((name, workbook_bytes(wb)))
-    return out
+    made = [booksexcel.trial_balance(con, entity, first, last, rollup=True),
+            booksexcel.ledger(con, entity, None, first, last),
+            booksexcel.profit_and_loss(con, entity, None, last),
+            booksexcel.balance_sheet(con, entity, last),
+            booksexcel.parties(con, entity, first, last)]
+    if statutory.ready(con):
+        made.append(booksexcel.statutory_payables(con, entity, month, month))
+    return [(name, workbook_bytes(wb)) for wb, name in made]
 
 
 def auditor_package(con, entity, month, built=None):
     """Builds a fresh audit pack and the zip for the auditor: the pack, the month report with a Files sheet, the month's
-    trial balance, profit and loss and balance sheet as Excel files in Books/ (books_workbooks), and the original files. A file whose fingerprint no longer matches is left out and listed. Returns (zip path, files in it,
+    books as Excel files in Books/ (books_workbooks: trial balance, general ledger, profit and loss, balance sheet,
+    customers and suppliers, statutory payables), and the original files. A file whose fingerprint no longer matches is left out and listed. Returns (zip path, files in it,
     files left out). built: filled with what built the pack, as auditpack.build does, and with pack_path, the pack
     file just built (for its trail event; take it out before the event is written)."""
     pack = auditpack.build(con, entity, month, built)

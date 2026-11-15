@@ -96,11 +96,68 @@ def take_for(con, entity_id, company):
         other = next((e for e in ents if e["id"] == had), None)
         raise FetchError(f"\"{name}\" was taken for {other['code'] if other else 'another company'} before. "
                          "Check which company the export is from in SQL Account.")
-    con.execute("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at) VALUES (?, ?, ?, ?)",
-                (me["id"], key, name, now()))
+    if _has_by(con):
+        con.execute("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at, confirmed_by) VALUES (?, ?, ?, ?, ?)",
+                    (me["id"], key, name, now(), _who()))
+    else:
+        con.execute("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at) VALUES (?, ?, ?, ?)",
+                    (me["id"], key, name, now()))
     log(con, f"Took SQL's exports printed for \"{name}\" as {me['code']}'s ({me['name']}): the company name matches none "
              "in Setup, and the owner confirmed it")
     return True
+
+
+def _has_by(con):
+    """Whether the records have update 37 (who confirmed each name is kept with it)."""
+    return "confirmed_by" in {r[1] for r in con.execute("PRAGMA table_info(sql_company_names)")}
+
+
+def _who():
+    from .audit import who
+    return who()[0]
+
+
+def names_of(con, entity_id):
+    """The printed company names confirmed as this company's (Setup › Companies): [{id, name, confirmed_at,
+    confirmed_by}], oldest first. confirmed_by is None for a name kept before update 37 that the audit trail doesn't
+    name a person for."""
+    if not names_ready(con):
+        return []
+    by = "confirmed_by" if _has_by(con) else "NULL AS confirmed_by"
+    return [dict(r) for r in con.execute(f"""SELECT id, name, confirmed_at, {by} FROM sql_company_names
+                                             WHERE entity_id = ? ORDER BY confirmed_at, id""", (int(entity_id),))]
+
+
+def forget(con, entity_id, name_id):
+    """Removes a printed company name the owner confirmed for this company (Setup › Companies, Remove). Nothing that was
+    imported from such files changes; the next Fetch holds files printing this name again, as from a company not in
+    Setup, until the owner clicks Take it for again. Logged in the activity log; the audit trail keeps the row removed.
+    Returns the name removed."""
+    from .db import log
+    if not names_ready(con):
+        raise FetchError("The records need update 36 to keep printed company names. Restart the app.")
+    r = con.execute("SELECT * FROM sql_company_names WHERE id = ? AND entity_id = ?", (int(name_id), int(entity_id))).fetchone()
+    if r is None:
+        raise FetchError("This printed company name isn't kept for this company any more. Reload the page.")
+    e = con.execute("SELECT code, name FROM entities WHERE id = ?", (r["entity_id"],)).fetchone()
+    con.execute("DELETE FROM sql_company_names WHERE id = ?", (r["id"],))
+    log(con, f"Removed the printed company name \"{r['name']}\" from {e['code']} ({e['name']}): the next Fetch holds SQL's "
+             "exports printed with it again, until the owner takes them for a company again")
+    return r["name"]
+
+
+def fill_confirmed_by(con):
+    """Update 37: who confirmed each name kept before it, as the audit trail recorded the click (the person the entry
+    that added the row names). A name the trail has no such entry for stays without one."""
+    if not names_ready(con) or not con.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'audit_tx'").fetchone():
+        return
+    for r in con.execute("SELECT id FROM sql_company_names WHERE confirmed_by IS NULL").fetchall():
+        t = con.execute("""SELECT t.actor FROM audit_row a JOIN audit_tx t ON t.token = a.token
+                           WHERE a.tbl = 'sql_company_names' AND a.row_key = ? AND a.op = 'insert'
+                           ORDER BY a.id DESC LIMIT 1""", (str(r["id"]),)).fetchone()
+        if t and t["actor"]:
+            con.execute("UPDATE sql_company_names SET confirmed_by = ? WHERE id = ?", (t["actor"], r["id"]))
 
 
 def _files(folder):

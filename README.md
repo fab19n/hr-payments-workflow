@@ -16,10 +16,14 @@ Everything is stored in `C:\HR-Records`, not in this program folder:
 | `records.db` | Payments, checklist, bank statement lines, activity log |
 | `documents\<AISB or AI>\<YYYY-MM>\` | Uploaded documents, one folder per payment. Files are made read-only and fingerprinted at upload. |
 | `audit-packs\` | Generated audit pack PDFs |
+| `exports\<company>\` | Auditor packages (zips) built on the Audit pack page |
+| `company-assets\` | Each company's logo and signature, uploaded in Setup › Companies and printed on its invoices |
 | `backups\` | Zip backups made from the Backup & log page |
 | `seed.json` | Starting payees and accounts, read once on first start. An optional `"names"` gives the real names for the made-up related company and tenant in the built-in checklists (`rules.PLACEHOLDERS`), so they never sit in the program |
 
-The app only listens on this PC (127.0.0.1) and makes no internet connections. Don't put `C:\HR-Records` inside OneDrive or
+The app only listens on this PC (127.0.0.1) and contacts nothing on the internet itself. The MyInvois links on the SQL
+page, and the QR codes on printed invoices, point to the tax authority's MyInvois site (myinvois.hasil.gov.my): your
+browser opens it only when you click a link or someone scans a code. Don't put `C:\HR-Records` inside OneDrive or
 Google Drive.
 
 ## Backups
@@ -97,8 +101,12 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    it). The files are read by what they hold, not by their names, from your Downloads folder or the folder saved on the SQL
    page (`sql_exports_dir` in `settings.json`), and each document is shown once as new or already imported. A listing that
    doesn't add up to its own grand total, or belongs to another company, is left out with the reason; nothing in the folder is
-   changed. It reads the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice and
-   Customer Payment listings, not their GST layouts (`hrp/sqlreport.py`, `hrp/sqlfetch.py`). A document in two listings is
+   changed. It reads the Cash Book, Payment Voucher, Official Receipt, Journal Voucher, Customer Invoice, Sales Invoice,
+   Customer Payment, Supplier Invoice and Supplier Payment listings, not their GST layouts (`hrp/sqlreport.py`,
+   `hrp/sqlfetch.py`). A file whose company line names no company in Setup is held, with **Take it for** on the SQL page:
+   clicking it confirms that printed company name as one of your companies, and Fetch then reads such files for it. The
+   names confirmed are listed in **Setup › Companies**, each with when and by whom, and **Remove** (two clicks) holds
+   such files again from the next Fetch. A company's files are never read for another company. A document in two listings is
    kept once, with what each says (the cash book's description and cheque no., the customer payment listing's name and
    code). The same click reads SQL's general-ledger reports exported for the same dates: the **GL Journal of
    Transaction** (the account lines of every voucher, receipt, journal and invoice), the **GL Ledger** (Local - Ledger -
@@ -107,7 +115,11 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    (`hrp/ledger.py`): a document exported again with other lines becomes its next version, one SQL no longer prints in the
    journal's period is marked so, and nothing is ever edited or deleted. Each entry on the SQL page shows its lines and
    whether they balance and agree with the listing, and **Checks against SQL's reports** lists where the ledger or trial
-   balance differ from the lines. A journal that moves the bank counts in the reconciliation from its lines once the bank
+   balance differ from the lines (said to be possibly out of date when a journal fetched after the trial balance changed
+   documents in its dates: export the Trial Balance again for the same dates and Fetch it). Documents in SQL's journal
+   with no listing this app reads (credit and debit notes, contra entries, cash sales and the like) are listed apart and
+   checked by their account lines and the trial balance; those whose listing exists but wasn't fetched are listed so you
+   can fetch it. A journal that moves the bank counts in the reconciliation from its lines once the bank
    account's GL code is set in Setup (pasting its detail grid still works); a signed-off month this changes is named in the
    preview and the activity log, and stays signed off. Fetch also reads a copy of SQL's **MyInvois Transaction** screen
    (click its grid, Ctrl+A, Ctrl+C, paste it into a new Excel workbook with its headings and save it in the exports folder
@@ -117,7 +129,28 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    SQL document with the same number, so the checklist sees them validated (or cancelled); those received are matched to
    supplier invoices and payment vouchers, and the valid ones not found in SQL's books are listed on the SQL page.
    e-Invoice details can still come from copy and paste of SQL's invoice grid.
-6. **Audit pack** – **Before you print** lists what the month still needs: bank statements not imported, lines to
+
+   **Printed invoices** (`hrp/invoicepdf.py`): each customer invoice, debit note and credit note, and each payment voucher
+   with a self-billed e-Invoice, has a button on the SQL page that opens it as a PDF laid out as SQL Account prints it,
+   from SQL's account lines (fetch the GL Journal of Transaction covering its date first), with the company's header,
+   footer, bank details, logo and signature from **Setup › Companies** and, once MyInvois validated it, the QR code with
+   its UUID and the time it was validated. **All invoices, debit and credit notes of** a month, and **All self-billed
+   invoices of** a month, download as one zip, with a note of any that couldn't be printed and why. A document that
+   can't be printed says why instead (no account lines yet, lines that disagree with the listing, a date that differs).
+6. **Books and checks** – SQL Account stays the books: nothing here creates or changes an accounting entry for a company
+   kept in SQL. The **Books** page shows the books mirrored from SQL's reports (`hrp/books.py`, `hrp/finstatements.py`,
+   `hrp/receivables.py`): the **trial balance** (with opening balances, checked against SQL's own trial balance), the
+   **general ledger** of one account or all, the **profit and loss** account and the **balance sheet** (with the
+   previous financial year's end beside it), **customers and suppliers** (who owes what, with its ageing) and the
+   **statutory payables** check (`hrp/statutory.py`: what each payroll month withheld for KWSP, PERKESO, EIS, PCB and
+   the like against what was paid by the due date, from the statutory accounts confirmed in Setup). **Excel** downloads the
+   report on screen for the same dates (`hrp/booksexcel.py`). The financial year starts in the month set for the
+   company in **Setup › Companies** (keep it the same as in SQL Account). A statutory payable not paid by its due day, or
+   paid short, is a row in **Next up**. Each month's checklist has **SQL books agree with SQL Account**, which ticks itself
+   when every document of the month is in SQL's journal and its listings, each balances and agrees with its listing,
+   and SQL's trial balance agrees with the books here. The bank reconciliation counts each payment from its bank
+   lines and, at the month's end, checks its book closing against SQL's balance on the bank account's GL code.
+7. **Audit pack** – **Before you print** lists what the month still needs: bank statements not imported, lines to
    explain, payments not complete and what each lacks, checklist documents missing, checklist items not done, payments
    paid but not in SQL (AISB), and files that won't print (emails, Excel, password PDFs, missing files). Click a line to
    go where it is fixed; it shows **Ready to print** once clear. Build one PDF per entity and month and print it; a
@@ -127,6 +160,16 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    missing and similar counts no longer show on the Overview. A joiner or leaver reminder that falls in a filed month
    goes into the next month still open instead (or, when there is none, once the next month is set up); one already in
    a filed month stays there, unless the start date or last day is changed: then it moves on in the same way.
+   The pack has three books pages after the bank reconciliation: the SQL books check, the statutory payables check and
+   the trial balance against SQL (possibly out of date when a later journal was fetched, as on the Books page).
+   **Auditor package** builds a zip in the `exports` folder with a fresh pack, the month report, the original files and
+   a `Books` folder of Excel files: the month's trial balance, general ledger, profit and loss, balance sheet,
+   customers and suppliers, and statutory payables check.
+
+**Months before tracking.** Each company has a **First month tracked** in Setup › Companies. Months before it are never
+set up on their own and nothing in them counts as overdue; SQL documents from them are kept in the books but listed
+apart as **Before tracking**, and their bank reconciliation can be marked **Reconciled before tracking**. **Tidy up
+months before this** removes what was set up there with nothing in it.
 
 A payment is **Complete** only when it is paid and every required document is uploaded, or already shown by what is
 imported here: a linked SQL PV, OR or JV (print it from SQL), an e-Invoice SQL shows as validated and no refund or
@@ -153,7 +196,9 @@ after it a note.
   built it (program version, the day, and the trail entry and check code on its cover).
 - Setup (`hrp/masters.py`, `hrp/appsettings.py`): companies, bank accounts (one MYR cash book each), recurring payments
   with salary advances, and general settings, each added, changed, stopped or (only while unused) deleted, with a reason
-  for stop, use again and delete. Filed months never change.
+  for stop, use again and delete. Filed months never change: a change of **Payroll month runs until** (the cutoff day)
+  that would move an SQL document or a joiner or leaver reminder in or out of a filed month is refused, naming what
+  would move (reopen the month first if it really must change).
   A company added in Setup starts with a starter monthly checklist (`rules.STARTER`), its own to change, or replaced
   by a copy of another company's until a month is set up.
   **Setup › Move setup** (`hrp/setupfile.py`) saves the setup as one file: a template (the rules and a starter
@@ -174,8 +219,13 @@ after it a note.
   groups, each group and parent account opening and closing; a recurring payment can be linked to a supplier or customer, and SQL
   entries keep their code, payment method, cheque number, document key and currency, so a supplier's code matches its
   vouchers first.
-- Tests on made-up data only, safe to keep in git: `.venv\Scripts\python -m synthetic_tests.audit_trail_test`,
-  `.venv\Scripts\python -m synthetic_tests.trail_view_test`, `.venv\Scripts\python -m synthetic_tests.setup_test` and
-  `.venv\Scripts\python -m synthetic_tests.types_test`, `synthetic_tests.checklist_test`, `synthetic_tests.parties_test`, `synthetic_tests.extras_test`, `synthetic_tests.restore_test`, `synthetic_tests.pack_check_test` and `synthetic_tests.seed_names_test`. `synthetic_tests.masters_equivalence_test --golden <file>`
-  compares this code's results with a snapshot taken on older code (`--write-golden <file>` on that code makes one).
-  `synthetic_tests.checklist_equivalence_test --golden <file>` does the same for update 21.
+- Tests on made-up data only, safe to keep in git, each run as `.venv\Scripts\python -m synthetic_tests.<name>`:
+  audit_trail_test, before_tracking_test, books_excel_test, books_test, checklist_equivalence_test, checklist_test,
+  extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
+  journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, myinvois_amount_test,
+  myinvois_test, pack_check_test, parties_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
+  recon_review_fixes_test, restore_test, seed_names_test, setup_test, sql_books_item_test, sql_exports_test,
+  stage1_leftovers_test, stage1_settle_test, statements_test, statutory_test, trail_view_test and types_test.
+  `synthetic_tests.masters_equivalence_test --golden <file>` also compares this code's results with a snapshot taken on
+  older code (`--write-golden <file>` on that code makes one); `synthetic_tests.checklist_equivalence_test --golden
+  <file>` does the same for update 21.

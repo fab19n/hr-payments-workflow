@@ -24,7 +24,7 @@ All amounts are whole sen (debit above 0), so every comparison is exact.
 """
 from datetime import date, timedelta
 
-from .ledger import _Chart, _coverage, _dates, _exists, _iso, _key, _money, _period, fy_start_of
+from .ledger import _Chart, _coverage, _dates, _exists, _iso, _key, _money, _period, fy_start_of, has_back
 
 SOURCE_RANK = {"sql_tb": 0, "sql_ledger": 1, "here": 2}
 SOURCE_WORDS = {"sql_tb": "SQL's trial balance", "sql_ledger": "SQL's GL ledger", "here": "entered here",
@@ -734,15 +734,29 @@ def _latest_journal_read(con, eid, d_from, d_to):
                           ORDER BY read_at DESC, id DESC LIMIT 1""", (eid, d_to, d_from, d_from)).fetchone()
 
 
+def read_stale(con, eid, batch_id):
+    """Whether the stored checks of one of SQL's trial balance reads (a ledger_batches id) may be out of date: a GL
+    Journal of Transaction read after it added, changed or found deleted a document dated in its dates (_changed_after),
+    as the Books page says "possibly out of date". False when the read isn't found."""
+    if not _exists(con, "ledger_batches"):
+        return False
+    b = con.execute("SELECT * FROM ledger_batches WHERE id = ? AND entity_id = ?", (batch_id, eid)).fetchone()
+    if b is None:
+        return False
+    return _changed_after(con, eid, b, b["period_from"], b["period_to"])
+
+
 def _changed_after(con, eid, tb, d_from, d_to):
     """Whether a GL Journal of Transaction read after the trial balance tb (a ledger_batches row) added a document dated
-    from d_from (or any day, None) to d_to, or replaced one or found one deleted in SQL. Later means a later fetch
+    from d_from (or any day, None) to d_to, or replaced one, found one deleted in SQL, or found again one marked deleted
+    before (ledger.put_document's 'back', kept from update 37). Later means a later fetch
     (imports are numbered in turn; one fetch that reads both, a moment apart, isn't later), or, without the trial
     balance's import, read after it."""
     tb_import = tb["sql_import_id"] if "sql_import_id" in tb.keys() else None
     later = ("(b.sql_import_id > ?)" if tb_import is not None else "(b.read_at > ?)")
     arg = tb_import if tb_import is not None else tb["read_at"]
-    return con.execute(f"""SELECT 1 FROM ledger_docs d JOIN ledger_batches b ON b.id IN (d.batch_id, d.ended_batch_id)
+    back = ", d.back_batch_id" if has_back(con) else ""
+    return con.execute(f"""SELECT 1 FROM ledger_docs d JOIN ledger_batches b ON b.id IN (d.batch_id, d.ended_batch_id{back})
                            WHERE d.entity_id = ? AND d.origin = 'sql' AND b.entity_id = d.entity_id AND b.origin = 'sql'
                            AND b.report = 'journal' AND {later} AND d.doc_date <= ? AND (? IS NULL OR d.doc_date >= ?)
                            LIMIT 1""", (eid, arg, d_to, d_from, d_from)).fetchone() is not None

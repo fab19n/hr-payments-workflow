@@ -728,12 +728,20 @@ def upload():
     else:
         return err("Upload has no payment or task.")
     e = entity(c, owner["entity_id"])
+    # A replacement may only retire a document still on this same payment or checklist item: never another payment's,
+    # another company's, or one already replaced or taken off. Checked before anything is stored.
+    replaces = request.form.get("replaces")
+    if replaces:
+        old = c.execute("SELECT * FROM documents WHERE id = ?", (replaces,)).fetchone()
+        same = old is not None and (str(old["payment_id"]) == str(pid) if pid else str(old["task_id"]) == str(tid))
+        if not same or old["replaced_by"] is not None or old["removed_at"] is not None:
+            return err("The document to replace isn't a current document of this payment or checklist item, so nothing "
+                       "was uploaded. Close this and try again from the document's own row.")
     try:
         did = store(c, entity=e, month=owner["month"], folder=folder, doc_type=doc_type, filename=f.filename, data=f.read(),
                     payment_id=pid, task_id=tid, note=request.form.get("note"))
     except ValueError as ex:
         return err(str(ex))
-    replaces = request.form.get("replaces")
     if replaces:
         c.execute("UPDATE documents SET replaced_by = ? WHERE id = ?", (did, replaces))
     db.log(c, f"Uploaded {R.doc_label(doc_type)} '{f.filename}' to {folder}")
@@ -1987,12 +1995,17 @@ def sql_entries():
         """SELECT o.*, n.amount AS new_amount, n.doc_date AS new_date FROM sql_entries o JOIN sql_entries n ON n.id = o.superseded_by
            WHERE o.entity_id = ? AND o.status = 'superseded' ORDER BY o.superseded_at DESC, o.id DESC LIMIT 200""", (me,))) \
         if sqlimport.supersede_ready(c) else []
+    # The trial balance's stored differences say "possibly out of date" when a journal read after it changed documents in
+    # its dates, as the Books page does (books.read_stale).
+    reads = ledger.latest_reads(c, me)
+    if reads.get("trial_balance"):
+        reads["trial_balance"]["stale"] = books.read_stale(c, me, reads["trial_balance"]["id"])
     return jsonify({"imports": imports, "unlinked": unlinked, "before_tracking": before, "first_month": e["first_month"],
                     "changed": changed, "superseded": replaced,
                     "candidates": cands, "documents": other, "einvoices": einv,
                     "myinvois": {k: v for k, v in mi.items() if k != "by_entry"} if mi else None,
                     "linked": on_payments, "ignored": ignored, "lines": lines,
-                    "ledger": {"reads": ledger.latest_reads(c, me), "orphans": orphans},
+                    "ledger": {"reads": reads, "orphans": orphans},
                     "invoice_print": {"missing": invoicepdf.missing_settings(c, e), "months": invoicepdf.print_months(c, me),
                                       "fonts": invoicepdf.font_notes(), "too_long": invoicepdf.setup_cuts(c, e)}
                     if printing else None})
@@ -2643,15 +2656,26 @@ def export_budget():
 @audited_read("books export")
 def export_books(report):
     """A report of the Books page as an Excel file (booksexcel), for the same period and options as on the screen:
-    trial-balance (rollup=), ledger (account=), profit-and-loss (columns=), balance-sheet (as_at=) or
-    customers-and-suppliers (side=). Read-only."""
+    trial-balance (rollup=), ledger (account=), profit-and-loss (columns=), balance-sheet (as_at=),
+    customers-and-suppliers (side=) or statutory-payables (from= and to= payroll months, or days in them, as
+    /api/statutory takes them). Read-only."""
     if report not in booksexcel.REPORTS:
         return err("There is no such report.", 404)
     c = con()
     e = _entity_arg(c)
     a = request.args
     try:
-        if report == "balance-sheet":
+        if report == "statutory-payables":
+            months = []
+            for k in ("from", "to"):
+                v = (a.get(k) or "").strip()[:7]
+                if v and not MONTH.fullmatch(v):
+                    return err(f"The {k} month isn't a month. Months are written like 2026-10.")
+                months.append(v or None)
+            if not statutory.ready(c):
+                return err("The records need update 29 for the statutory check. Restart the app.")
+            wb, name = booksexcel.statutory_payables(c, e, *months)
+        elif report == "balance-sheet":
             wb, name = booksexcel.balance_sheet(c, e, _books_as_at(c, e["id"]))
         else:
             d_from, d_to = _books_period(c, e["id"])
@@ -2977,6 +3001,13 @@ def setup_settings_save():
         except ValueError as x:
             raise masters.Refused(str(x))
         v = {k: x for k, x in v.items() if x != appsettings.get(k)}
+        if "cycle_rollover_day" in v:  # filed months never change: a new day that would move what is in one is refused
+            moves = db.cycle_day_moves_filed(c, v["cycle_rollover_day"])
+            if moves:
+                raise masters.Refused(
+                    "Payroll month runs until: months already filed would change, so nothing was saved. With the new day "
+                    + "; ".join(moves[:3]) + (f"; and {len(moves) - 3} more" if len(moves) > 3 else "")
+                    + ". Reopen those months first if it really must change.", 409)
         if v:
             appsettings.save(c, v)
             db.log(c, "Changed general settings: " + ", ".join(appsettings.SPEC[k][1].lower() for k in v))
@@ -3195,6 +3226,30 @@ def setup_image_remove(rid, which):
         return err(str(x), x.status)
     c.commit()
     return jsonify(_print_settings(c, entity(c, rid)))
+
+
+@app.get("/api/setup/entities/<int:rid>/sql-names")
+def setup_sql_names(rid):
+    """The company names SQL prints on its exports that the owner confirmed as this company's (Take it for on the SQL
+    page), each with when and by whom (sqlfetch.names_of)."""
+    c = con()
+    entity(c, rid)
+    return jsonify({"ready": sqlfetch.names_ready(c), "names": sqlfetch.names_of(c, rid)})
+
+
+@app.delete("/api/setup/entities/<int:rid>/sql-names/<int:nid>")
+def setup_sql_name_remove(rid, nid):
+    """Removes one of them (sqlfetch.forget): the next Fetch holds files printing that name again, until the owner
+    takes them for a company again. Nothing already imported changes."""
+    c = con()
+    entity(c, rid)
+    try:
+        name = sqlfetch.forget(c, rid, nid)
+    except sqlfetch.FetchError as ex:
+        c.rollback()
+        return err(str(ex))
+    c.commit()
+    return jsonify({"removed": name, "ready": sqlfetch.names_ready(c), "names": sqlfetch.names_of(c, rid)})
 
 
 @app.get("/api/audit/status")

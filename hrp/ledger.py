@@ -293,8 +293,10 @@ def put_document(c, eid, batch_id, doc):
         if live["state"] == "current":
             c.execute("UPDATE ledger_docs SET seen_batch_id = ? WHERE id = ?", (batch_id, live["id"]))
             return {"result": "same", "id": live["id"], "version": live["version"], "note": None}
-        c.execute("UPDATE ledger_docs SET state = 'current', ended_batch_id = NULL, ended_at = NULL, seen_batch_id = ? WHERE id = ?",
-                  (batch_id, live["id"]))
+        # The batch that found it again is kept (update 37), so the trial balance check sees a change after it.
+        back = ", back_batch_id = ?" if has_back(c) else ""
+        c.execute(f"UPDATE ledger_docs SET state = 'current', ended_batch_id = NULL, ended_at = NULL, seen_batch_id = ?{back} WHERE id = ?",
+                  (batch_id, *((batch_id,) if back else ()), live["id"]))
         return {"result": "back", "id": live["id"], "version": live["version"], "note": None}
     if live:
         c.execute("UPDATE ledger_docs SET state = 'superseded', ended_batch_id = ?, ended_at = ? WHERE id = ?",
@@ -308,6 +310,26 @@ def put_document(c, eid, batch_id, doc):
         moved = abs((date.fromisoformat(doc_date) - date.fromisoformat(live["doc_date"])).days)
         note = "number reused?" if moved > 180 else None
     return {"result": "changed" if live else "new", "id": did, "version": version, "note": note}
+
+
+def has_back(c):
+    """Whether the records have update 37: each document keeps the batch that last found it again in SQL after it was
+    marked no longer there (back_batch_id)."""
+    return "back_batch_id" in {r[1] for r in c.execute("PRAGMA table_info(ledger_docs)")}
+
+
+def fill_back_batches(con):
+    """Update 37: for each document found again in SQL before it, the batch that last did so, as the audit trail recorded
+    the change (marked no longer in SQL before, current after, with the batch that saw it). A document the trail holds
+    no such change for keeps none. Nothing else changes."""
+    if not _exists(con, "ledger_docs") or not _exists(con, "audit_row"):
+        return
+    for r in con.execute("""SELECT a.row_key, json_extract(a.after, '$.seen_batch_id') AS batch FROM audit_row a
+                            WHERE a.tbl = 'ledger_docs' AND a.op = 'update' AND json_extract(a.before, '$.state') = 'gone'
+                            AND json_extract(a.after, '$.state') = 'current' ORDER BY a.id""").fetchall():
+        if r["batch"] is not None:
+            con.execute("""UPDATE ledger_docs SET back_batch_id = ? WHERE id = ? AND origin = 'sql'
+                           AND EXISTS (SELECT 1 FROM ledger_batches WHERE id = ?)""", (r["batch"], int(r["row_key"]), r["batch"]))
 
 
 def mark_gone(c, eid, batch_id, period_from, period_to, books, seen_keys):

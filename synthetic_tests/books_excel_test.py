@@ -601,5 +601,16 @@ check("the profit and loss in it is the financial year to January's end", sheet_
 bsj = j("get", f"/api/books/balance-sheet?entity={EID}&as_at=2026-01-31")
 ws = load_workbook(io.BytesIO(blobs[want[2]])).active
 check("the balance sheet in it is at January's end", sheet_rows(ws, len(bsj["columns"])) == statement_rows(bsj))
+more = ["Books/EXH General ledger to 31-01-2026.xlsx", "Books/EXH Customers and suppliers to 31-01-2026.xlsx",
+        "Books/EXH Statutory payables check to 31-01-2026.xlsx"]
+check("it also holds the month's general ledger, customers and suppliers and statutory payables check, as on the Books page",
+      all(n in names for n in more), names)
+with zipfile.ZipFile(config.EXPORTS_DIR / "EXH" / r.get_json()["name"]) as z:
+    led = load_workbook(io.BytesIO(z.read(more[0]))).active
+    stat_ws = load_workbook(io.BytesIO(z.read(more[2]))).active
+check("the general ledger in it is January's, every account", "General ledger, all accounts, 01/01/2026 to 31/01/2026" in led["A2"].value,
+      led["A2"].value)
+check("the statutory check in it is January's payroll month",
+      "Statutory payables check, January 2026 (payroll months)" in stat_ws["A2"].value, stat_ws["A2"].value)
 
 print(f"\nAll {len(passed)} checks passed. Records folder used: {tmp}")

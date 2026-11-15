@@ -274,10 +274,11 @@ def _party(con, eid, code=None, tin=None):
     return None
 
 
-def _lines(con, eid, doc_no, doc_date=None):
+def _lines(con, eid, doc_no, doc_date=None, what="invoice"):
     """The current version of the document's account lines from SQL's GL Journal of Transaction, or None. With the
     listing's date, lines kept under the same number but another date (SQL reuses numbers, for example a later year's
-    document numbered as an earlier one) are refused with a sentence, so an invoice never prints another document's lines."""
+    document numbered as an earlier one) are refused with a sentence, so an invoice never prints another document's lines.
+    what is the document's printed name in the sentence (_printed_name: invoice, debit note, credit note)."""
     if not ledger.ready(con):
         return None
     d = con.execute("""SELECT * FROM ledger_docs WHERE entity_id = ? AND origin = 'sql' AND doc_key = ? AND state = 'current'""",
@@ -285,14 +286,22 @@ def _lines(con, eid, doc_no, doc_date=None):
     if not d:
         return None
     if doc_date and str(d["doc_date"] or "")[:10] != str(doc_date)[:10]:
-        raise InvoiceError(f"{doc_no}: SQL's account lines under this number are dated {_dmy(d['doc_date'])}, not this invoice's date "
+        raise InvoiceError(f"{doc_no}: SQL's account lines under this number are dated {_dmy(d['doc_date'])}, not this {what}'s date "
                            f"({_dmy(doc_date)}), so it isn't printed with another document's lines. If its date was changed in SQL, "
                            "fetch the invoice listing again; if the number was used again, check it in SQL.")
     return [dict(x) for x in con.execute("SELECT * FROM ledger_lines WHERE doc_id = ? ORDER BY seq", (d["id"],))]
 
 
-def _fetch_first(s):
-    return f"Fetch SQL's GL Journal of Transaction covering {_dmy(s['doc_date'])} to print this invoice."
+def _printed_name(s, kind):
+    """What the document is called in a sentence, as its button says: invoice, debit note, credit note or self-billed
+    invoice."""
+    if kind == "self_billed":
+        return "self-billed invoice"
+    return CUSTOMER_DOCS.get((s.get("doc_type") or "IV").upper(), "Invoice").lower()
+
+
+def _fetch_first(s, kind="customer"):
+    return f"Fetch SQL's GL Journal of Transaction covering {_dmy(s['doc_date'])} to print this {_printed_name(s, kind)}."
 
 
 def _credit_ref(con, s):
@@ -432,9 +441,9 @@ def document(con, sid):
                            "self-billed e-Invoice, so it has no invoice to print.")
     if s.get("deleted_in_sql"):
         raise InvoiceError(f"{s['doc_no']} was confirmed as deleted in SQL, so it isn't printed.")
-    lines = _lines(con, s["entity_id"], s["doc_no"], s["doc_date"])
+    lines = _lines(con, s["entity_id"], s["doc_no"], s["doc_date"], _printed_name(s, kind))
     if not lines:
-        raise InvoiceError(f"SQL's account lines of {s['doc_no']} haven't been fetched. {_fetch_first(s)}")
+        raise InvoiceError(f"SQL's account lines of {s['doc_no']} haven't been fetched. {_fetch_first(s, kind)}")
     notes = []
     code = (s.get("code") or "").strip().upper()
     paid_as, ref = None, None
@@ -458,7 +467,7 @@ def document(con, sid):
                                f"{_dmy(s['doc_date'])} again so they agree, then print it.")
         if sum(x["sen"] for x in items) != total:
             raise InvoiceError(f"{s['doc_no']}: SQL's account lines don't balance (the lines come to {money(sum(x['sen'] for x in items))}, "
-                               f"the customer's account to {money(total)}). {_fetch_first(s)}")
+                               f"the customer's account to {money(total)}). {_fetch_first(s, kind)}")
         party = _party(con, s["entity_id"], code) or {}
         rows = _einvoice_rows(con, s, "issued")
         einv = _einvoice(rows, s, notes)

@@ -1,5 +1,5 @@
 """The Books page's reports as Excel files: the trial balance, the general ledger, the profit and loss account, the
-balance sheet, and the customers' and suppliers' balances with their ageing. Each is built from the same function as
+balance sheet, the customers' and suppliers' balances with their ageing, and the statutory payables check. Each is built from the same function as
 the screen (books, finstatements, receivables), for the same period and options, so a figure in the file is the figure
 on the page. Built in memory, as the budget export is (reports.budget_workbook). Pure reads: nothing here writes.
 
@@ -14,7 +14,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
-from . import books, finstatements, receivables
+from . import books, db, finstatements, receivables, statutory as stat
 from .docstore import safe
 from .ledger import _exists, _money
 from .reports import BOLD, _print_setup, _put
@@ -23,7 +23,7 @@ MONEY = "#,##0.00"
 SIGNED = "#,##0.00;(#,##0.00)"  # a figure the other way round in brackets, as the statements show it
 DAY = "dd/mm/yyyy"
 BOOK_NAMES = {"bank": "Bank", "general": "General", "sales": "Sales", "purchase": "Purchase", "other": "Other"}
-REPORTS = ("trial-balance", "ledger", "profit-and-loss", "balance-sheet", "customers-and-suppliers")
+REPORTS = ("trial-balance", "ledger", "profit-and-loss", "balance-sheet", "customers-and-suppliers", "statutory-payables")
 
 
 def _rm(sen):
@@ -277,3 +277,41 @@ def parties(con, ent, d_from=None, d_to=None, side=None):
         r += 1
     _notes(ws, r, ["Each amount is what is owed; a figure in brackets is the other way round.", d["ageing_note"], *d["notes"]])
     return wb, _file(ent, who, d["to"])
+
+
+# ---------- the statutory payables check ----------
+
+def statutory_payables(con, ent, m_from=None, m_to=None):
+    """The statutory payables check as on the Books page (statutory.report), for a range of payroll months (written
+    2026-10; default this financial year to date): per payable account, each month's amount withheld, paid, the
+    employer's share paid with it, the difference, the balance at the month's end and at its due date, and what it
+    says, then the account's notes, the payments posted to another kind's account and the summary. Returns (workbook,
+    file name)."""
+    d = stat.report(con, ent["id"], m_from, m_to)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Statutory payables"
+    span = db.month_label(d["from"]) + ("" if d["from"] == d["to"] else f" to {db.month_label(d['to'])}")
+    top = _title(ws, con, ent, f"Statutory payables check, {span} (payroll months)")
+    _head(ws, top, ["Month", "Due", "Withheld", "Paid", "Employer's share paid", "Difference", "Balance at month end",
+                    "Balance at the due date", "Status", "What it says"], [16, 12, 15, 15, 17, 15, 17, 17, 12, 70], range(3, 9))
+    fmts = {2: DAY, **{i: MONEY for i in range(3, 6)}, **{i: SIGNED for i in range(6, 9)}}
+    r = top + 1
+    for a in d["accounts"]:
+        r = _row(ws, r, [f"{a['label']} ({a['payable_code']}{', employer ' + a['employer_code'] if a['employer_code'] else ''})"],
+                 fmts, bold=True)
+        for x in a["months"]:
+            status = stat.STATUS_WORDS.get(x["status"], x["status"]) + (", paid late" if x["paid_late"] else "")
+            if x["before_tracking"]:
+                status += " (before the first month tracked)"
+            r = _row(ws, r, [x["label"], _d(x["due"]), _rm(x["withheld_sen"]), _rm(x["paid_sen"]), _rm(x["employer_sen"]),
+                             _rm(x["difference_sen"]), _rm(x["balance_end_sen"]), _rm(x["balance_due_sen"]), status, x["text"]], fmts)
+        r = _notes(ws, r, a["notes"]) + 1
+    if not d["accounts"]:
+        r += 1
+    _put(ws, r, 1, d["summary"], bold=True)
+    r += 1
+    _notes(ws, r, [x["text"] for x in d.get("postings") or []]
+           + ["Balances are signed: a payable still owed shows in brackets. Amounts are in ringgit."])
+    y, m = map(int, d["to"].split("-"))
+    return wb, _file(ent, "Statutory payables check", date.fromordinal(date(y + m // 12, m % 12 + 1, 1).toordinal() - 1).isoformat())

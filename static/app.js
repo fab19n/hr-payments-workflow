@@ -1478,6 +1478,7 @@ function sqlChecksCard(d) {
         ${warns.map(r => `<tr><td class="mono">${esc(r.subject || "")}</td><td>${esc(r.text)}</td><td class="num">${money(sen(r.expected_sen))}</td><td class="num">${money(sen(r.actual_sen))}</td>
           <td class="num">${r.expected_sen != null && r.actual_sen != null ? money(sen(r.actual_sen - r.expected_sen)) : "—"}</td></tr>`).join("")}</tbody></table></div>`
         : `<div class="note"><span class="pill ok">No differences</span></div>`}
+      ${kind === "trial_balance" && b.stale && warns.length ? `<div class="banner grey"><b>Possibly out of date</b><span>A GL Journal of Transaction read after this trial balance changed documents in its dates, so these differences may only be the trial balance being old. Export SQL's Trial Balance again for the same dates (${b.period_from ? `${shortDate(b.period_from)} to ` : "as at "}${shortDate(b.period_to)}) and Fetch it.</span></div>` : ""}
       ${rs.filter(r => r.outcome === "ok").map(r => `<div class="note">${esc(r.text)}</div>`).join("")}
       ${rs.filter(r => r.outcome === "skipped").map(r => `<div class="note">Not checked: ${esc(r.text)}</div>`).join("")}
       ${rs.filter(r => r.outcome === "info").map(r => `<div class="note">${esc(r.text)}</div>`).join("")}`;
@@ -1747,8 +1748,8 @@ async function drawBooks() {
   } catch (e) { body.innerHTML = `<div class="note warn-text">${esc(e.message)}</div>`; booksExcelLink(true); }
 }
 
-// The Excel button: the report shown, for the dates and options on the screen (none for the statutory check or one
-// customer's or supplier's statement).
+// The Excel button: the report shown, for the dates and options on the screen (none for one customer's or supplier's
+// statement).
 function booksExcelLink(off) {
   const a = $("#bkExcel"), B = state.books;
   if (!a) return;
@@ -1759,6 +1760,7 @@ function booksExcelLink(off) {
     pl: `profit-and-loss.xlsx?${q}&columns=${B.months ? "month" : "total"}`,
     bs: `balance-sheet.xlsx?entity_id=${state.entity}${B.to ? `&as_at=${B.to}` : ""}`,
     parties: `customers-and-suppliers.xlsx?${q}&side=${B.side}`,
+    statutory: `statutory-payables.xlsx?${q}`,
   }[B.tab];
   a.hidden = !href;
   if (href) a.href = `/api/export/books/${href}`; else a.removeAttribute("href");
@@ -2858,13 +2860,49 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
       ${tidy ? `<button class="ghost" type="button" data-setup-act="tidy">Tidy up months before this</button>` : ""}</div>
     ${+rec.system ? `<div class="note">The app's own rules rely on this ${esc(lowerFirst(spec.label))}, so it can't be deleted.</div>` : ""}
     ${tidy ? `<div class="note">Tidy up removes, from the months before the first month tracked, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.</div>` : ""}
-    ${kind === "entities" ? `<div id="suPrint"></div>` : ""}
+    ${kind === "entities" ? `<div id="suPrint"></div><div id="suNames"></div>` : ""}
     ${whyForm()}
     ${histSection(spec.table, id)}`}`;
   $("#drawer").hidden = false;
   state.setup.drawer = { kind, id, locked, loaded: formValues(fields, "su-") };
   watchDrawer(keep);
-  if (kind === "entities" && !isNew) drawPrintSettings(id);
+  if (kind === "entities" && !isNew) { drawPrintSettings(id); drawSqlNames(id); }
+}
+
+// The company names SQL prints on its exports that the owner took for this company on the SQL page (Take it for), each
+// with when and by whom, and a Remove that asks for a second click first.
+async function drawSqlNames(id, got) {
+  if (!$("#suNames")) return;
+  const d = got || await api(`/api/setup/entities/${+id}/sql-names`);
+  const box = $("#suNames");
+  if (!box || String(state.setup.id) !== String(id)) return;
+  const co = state.meta.entities.find(x => x.id === +id);
+  const when = at => at ? `${at.slice(0, 10).split("-").reverse().join("/")}${at.length >= 16 ? ` at ${at.slice(11, 16)}` : ""}` : "—";
+  box.innerHTML = `<h3>Printed company names</h3>
+    <div class="note">Names SQL Account prints on its exports that match no company in Setup, confirmed as ${esc(co?.code || "this company")}'s with <b>Take it for ${esc(co?.code || "")}</b> on the SQL page. Fetch takes files printing them for this company.</div>
+    ${!d.ready ? `<div class="note">The records need an update for this. Restart the app.</div>`
+      : !d.names.length ? `<div class="muted">None confirmed.</div>`
+      : `<div class="tbl-wrap"><table><thead><tr><th>Name as printed</th><th>Confirmed</th><th>By</th><th></th></tr></thead><tbody>${d.names.map(n => `<tr>
+        <td>${esc(n.name)}</td><td>${esc(when(n.confirmed_at))}</td><td>${n.confirmed_by ? esc(n.confirmed_by) : `<span class="muted">Not recorded</span>`}</td>
+        <td style="white-space:nowrap"><button class="ghost small" type="button" data-sql-name-remove="${+n.id}" data-sql-name="${esc(n.name)}">Remove</button></td></tr>`).join("")}</tbody></table></div>
+        <div class="note" id="suNamesConfirm" hidden></div>`}`;
+}
+async function removeSqlName(btn) {
+  const id = state.setup.drawer?.id;
+  if (!id || id === "new") return;
+  const note = $("#suNamesConfirm");
+  if (btn.dataset.confirm !== "1") {
+    document.querySelectorAll("[data-sql-name-remove]").forEach(b => { b.dataset.confirm = ""; b.textContent = "Remove"; });
+    btn.dataset.confirm = "1";
+    btn.textContent = "Click again to remove";
+    if (note) { note.textContent = `Removing "${btn.dataset.sqlName}": files printing it are held again on the next Fetch, until Take it for is clicked again.`; note.hidden = false; }
+    return;
+  }
+  let r;
+  try { r = await api(`/api/setup/entities/${+id}/sql-names/${+btn.dataset.sqlNameRemove}`, { method: "DELETE", json: {} }); }
+  catch (e) { btn.dataset.confirm = ""; btn.textContent = "Remove"; if (note) note.hidden = true; throw e; }
+  toast(`"${r.removed}" removed. Files printing it are held again on the next Fetch, until Take it for is clicked again.`);
+  return drawSqlNames(id, { ready: true, ...r });
 }
 
 // A company's printed invoices: its logo and signature (uploaded here, PNG or JPEG) and the settings they still lack.
@@ -4306,6 +4344,7 @@ document.addEventListener("click", async ev => {
     if (ds.invSetup) { state.setup.kind = "entities"; return go("setup"); }
     if (ds.invImgUp) return printImage(ds.invImgUp, false);
     if (ds.invImgRemove) return printImage(ds.invImgRemove, true);
+    if (ds.sqlNameRemove) return await removeSqlName(t);
     if (ds.sqlUnlink) {
       const r = await api(`/api/sql/entries/${ds.sqlUnlink}/unlink`, { json: {} });
       const list = r.before_tracking ? "Before tracking" : "SQL entries not linked";  // where the SQL page now lists it

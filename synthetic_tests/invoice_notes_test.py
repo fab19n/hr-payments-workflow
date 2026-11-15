@@ -296,6 +296,19 @@ check("a credit note: titled Credit Note, its debits as positive lines, the cust
 check("a credit note prints no bank details and, with no Ref in its listing, no Ref", cn["pay_to"] is None and cn["ref"] is None, cn)
 why = refused("CN-00002")
 check("a credit note with no account lines is refused as an invoice is", why and "haven't been fetched" in why, why)
+check("and the refusal calls it a credit note, not an invoice",
+      why.endswith("Fetch SQL's GL Journal of Transaction covering 21/07/2026 to print this credit note."), why)
+try:
+    invoicepdf._lines(con, EXH, "CN-00001", "2026-07-25", invoicepdf._printed_name(dict(row("CN-00001")), "customer"))
+    why = None
+except invoicepdf.InvoiceError as x:
+    why = str(x)
+check("a credit note whose lines are dated another day says it isn't this credit note's date",
+      why and "not this credit note's date (25/07/2026)" in why and "invoice's date" not in why, why)
+check("a debit note's and a self-billed voucher's sentences name them so",
+      invoicepdf._fetch_first({"doc_type": "DN", "doc_date": "2026-07-10"}).endswith("to print this debit note.")
+      and invoicepdf._fetch_first({"doc_type": "PV", "doc_date": "2026-07-10"}, "self_billed").endswith("to print this self-billed invoice.")
+      and invoicepdf._fetch_first({"doc_type": "IV", "doc_date": "2026-07-10"}).endswith("to print this invoice."))
 why = refused("CN-00003")
 check("a credit note whose lines disagree with the listing is refused", why and "SQL's listing says 12.00" in why, why)
 why = refused("SC-00001")
