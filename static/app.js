@@ -2008,7 +2008,7 @@ function myinvoisBox(m) {
     ${src ? `<div class="note">Read from <b>${esc(src.name)}</b> (saved ${esc(String(src.saved).replace("T", " "))}), on ${esc(String(src.read_at).replace("T", " "))}.</div>` : ""}
     <div class="seg" role="group" aria-label="Which e-Invoices">${MI_WAYS.map(([v, l]) => `<button type="button" data-mi-filter="${v}" aria-pressed="${f === v}">${l}${v === "all" ? "" : ` (${m.counts[v] || 0})`}</button>`).join("")}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>UUID</th><th>Type</th><th>Status</th><th>Validated</th><th>Supplier or buyer</th><th class="num">Total</th><th>In SQL</th></tr></thead><tbody>
-    ${shown.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td class="mono">${esc(r.uuid)}</td><td>${esc(r.type || "")}</td>
+    ${shown.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td class="mono">${r.long_id ? `<a href="${esc(`https://myinvois.hasil.gov.my/${r.uuid}/share/${r.long_id}`)}" target="_blank" rel="noopener noreferrer" title="Open it on MyInvois">${esc(r.uuid)} ↗</a>` : esc(r.uuid)}</td><td>${esc(r.type || "")}</td>
       <td><span class="pill ${r.status === "Valid" ? "ok" : "warn"}">${esc(r.status)}</span></td><td>${esc(r.validated_at || "")}</td>
       <td>${esc(party(r) || "")}</td><td class="num">${r.currency && r.currency !== "MYR" ? esc(r.currency) + " " : ""}${rmPlain(r.total_sen)}</td>
       <td>${r.entry_doc_no ? `<span class="mono">${esc(r.entry_doc_no)}</span>${MI_HOW[r.matched_by] ? ` <span class="pill grey" title="A likely match, by amount only: check it">${MI_HOW[r.matched_by]}</span>` : ""}` : `<span class="muted">${r.direction === "other" ? "—" : "Not found"}</span>`}</td></tr>`).join("") || `<tr><td colspan="8" class="empty">None.</td></tr>`}
