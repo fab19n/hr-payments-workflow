@@ -495,7 +495,7 @@ with db.connect() as con:
     check("and the trial balance before the bring-back sees it as a change after it",
           books._changed_after(con, EID, tb_batch, "2026-10-01", "2026-10-31") is True)
     v = con.execute("PRAGMA user_version").fetchone()[0]
-check("the records are at the latest update, 37", v == len(db.MIGRATIONS) == 37, v)
+check("the records are at the latest update, 38", v == len(db.MIGRATIONS) == 38, v)
 
 
 # ---------- 3. Replace on upload retires only a document of the same payment ----------

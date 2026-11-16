@@ -123,7 +123,8 @@ const state = { meta: null, view: "overview", entity: null, month: null, day: nu
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
   setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
 // Sidebar sections; companies are listed between Dashboard and Monthly work.
-const VIEWS = [["Monthly work", [["budget", "Budget"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
+// The Payroll check sits under Monthly work until the redesign moves it to HR.
+const VIEWS = [["Monthly work", [["budget", "Budget"], ["payroll", "Payroll check"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
   ["Accounting", [["books", "Books"]]],
   ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
   ["Setup", [["setup", "Setup"]]]];
@@ -135,6 +136,7 @@ const ICON = {
   sql: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
   books: '<path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6zM7 8h2M15 8h2M7 12h2M15 12h2"/>',
   payees: '<path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',
+  payroll: '<path d="M4 3h16v18H4zM4 9h16M4 15h16M10 3v18M14 12l1.5 1.5L18 11"/>',
   audit: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M9 15l2 2 4-4"/>',
   settings: '<path d="M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
   trail: '<path d="M12 3l8 3v6c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V6zM9 12l2 2 4-4"/>',
@@ -304,6 +306,7 @@ async function render() {
     if (state.view === "overview") await viewOverview(main);
     else if (state.view === "entity") await viewEntity(main);
     else if (state.view === "budget") await viewBudget(main);
+    else if (state.view === "payroll") await viewPayroll(main);
     else if (state.view === "bank") await viewBank(main);
     else if (state.view === "sql") await viewSql(main);
     else if (state.view === "books") await viewBooks(main);
@@ -2439,6 +2442,52 @@ async function viewAudit(main) {
 const packRow = p => `<div class="row spread"><span>${p.url ? `<a href="${esc(p.url)}" target="_blank">${esc(p.name)}</a>` : esc(p.name)}${p.missing ? ` <span class="pill bad">File missing</span>` : ""}${p.via ? ` <span class="muted">· for the ${esc(p.via)}</span>` : ""}</span>
   <span class="row tight"><span class="muted">${esc(p.at.replace("T", " "))}</span><button class="ghost small" type="button" data-pack-check="${esc(p.event ?? "")}" data-pack-file="${esc(p.name)}">Check this pack</button></span></div>`;
 
+/* ---------------- Payroll check (hrp/payrollcheck.py) ---------------- */
+// The month's payroll workbook, checked before paying: upload it, read the headline, then what to fix per person and
+// for the Summary with the cells, and the month's amounts to pay. A corrected file is checked again from the same box;
+// the earlier checks stay listed. IC numbers come from the server masked (all but the last 4).
+const PC_TONE = { fix: "bad", check: "warn", note: "grey" };
+const sen2rm = n => money(n == null ? null : n / 100);
+const pcTone = c => c.fix || c.to_fix ? "bad" : c.check || c.to_check ? "warn" : "ok";
+async function viewPayroll(main, checkId) {
+  const r = await api(`/api/payroll-check?entity_id=${state.entity}&month=${state.month}${checkId ? `&check=${checkId}` : ""}`);
+  const ch = r.chosen, rep = ch?.report;
+  const where = r.task ? `It is filed as the month's payroll summary on the checklist item ${esc(r.task.title)}.`
+    : `${esc(r.label)} isn't set up for ${esc(r.entity.code)}, so the workbook is kept but not filed on a checklist item.`;
+  const upload = `<form class="row" id="pcForm"><label class="field"><span>${ch ? "Corrected workbook (.xlsx)" : "Payroll workbook (.xlsx)"}</span>
+      <input id="pcFile" type="file" accept=".xlsx"></label><button class="btn" type="submit">${ch ? "Check again" : "Check the workbook"}</button></form>
+    <div class="note">Upload ${esc(r.label)}'s workbook before paying. ${where} Statutory rates as at ${esc(r.rates_as_at)}; PCB amounts themselves are not checked.</div>`;
+  const finding = f => `<div class="pc-f"><div class="row tight"><span class="pill ${PC_TONE[f.severity]}">${esc(f.severity_label)}</span>
+      ${f.cells.length ? `<span class="mono">${esc(f.sheet ? f.sheet + " " : "")}${esc(f.cells.join(", "))}</span>` : f.sheet ? `<span class="mono">${esc(f.sheet)}</span>` : ""}</div>
+    <div>${esc(f.what)}</div><div class="note">Should be: ${esc(f.should)}</div></div>`;
+  const group = g => !g.findings.length && !g.lines.length ? "" : `<div class="pc-g"><h3>${esc(g.title)}${g.nric ? ` <span class="muted mono">${esc(g.nric)}</span>` : ""}${g.findings.length ? "" : ` <span class="pill ok">Nothing found</span>`}</h3>
+    ${g.findings.map(finding).join("")}${g.lines.length ? `<div class="note">${g.lines.map(esc).join("<br>")}</div>` : ""}</div>`;
+  const pay = rep ? `<div class="card"><h2>Amounts to pay · as the Summary has them</h2><div class="tbl-wrap"><table><thead><tr><th>Name</th><th>NRIC</th><th class="num">To pay</th>
+      ${rep.pay.authorities.map(a => `<th class="num">${esc(a)}</th>`).join("")}</tr></thead><tbody>
+      ${rep.pay.people.map(p => `<tr><td>${esc(p.name)}</td><td class="mono">${esc(p.nric)}</td><td class="num">${sen2rm(p.to_pay)}</td>${rep.pay.authorities.map(a => `<td class="num">${sen2rm(p[a])}</td>`).join("")}</tr>`).join("")}
+      <tr><td><b>Total</b></td><td></td><td class="num"><b>${sen2rm(rep.pay.totals.to_pay)}</b></td>${rep.pay.authorities.map(a => `<td class="num"><b>${sen2rm(rep.pay.totals[a])}</b></td>`).join("")}</tr>
+      </tbody></table></div><div class="note">KWSP, SOCSO and EIS are the employee's and employer's shares together, rounded to the sen. Fix what the check found before paying from this.</div></div>` : "";
+  const earlier = r.checks.length > 1 || (ch && !ch.latest) ? `<div class="card"><h2>Checks of ${esc(r.label)}</h2>${r.checks.map((x, i) => `<div class="row spread"><span>${i ? "Earlier version" : "Latest"} · ${esc(x.filename)} · <span class="muted">${esc(x.checked_at.replace("T", " "))}</span></span>
+      <span class="row tight"><span class="pill ${pcTone(x)}">${esc(x.headline)}</span>${ch && x.id === ch.id ? `<span class="muted">Shown</span>` : `<button class="ghost small" type="button" data-pc-show="${x.id}">Show</button>`}</span></div>`).join("")}</div>` : "";
+  main.innerHTML = `${entityPicker()}
+    <div class="card"><div class="row spread"><h1>Payroll check · ${esc(r.entity.code)} · ${esc(r.label)}</h1>
+      ${ch ? `<a class="ghost" href="/api/payroll-check/export.xlsx?entity_id=${state.entity}&month=${state.month}&check=${ch.id}">Excel report</a>` : ""}</div>
+      ${upload}
+      ${rep ? `<div class="row"><span class="pill ${pcTone(rep.counts)}">${esc(rep.headline)}</span>
+        <span class="note">${ch.latest ? "Latest check" : "An earlier version"}: ${esc(ch.filename)}, ${esc(ch.checked_at.replace("T", " "))}</span></div>` : `<div class="note">No workbook checked for ${esc(r.label)} yet.</div>`}</div>
+    ${rep ? `<div class="card">${rep.groups.map(group).join("")}</div>` : ""}
+    ${pay}${earlier}`;
+  $("#pcForm").onsubmit = async ev => {
+    ev.preventDefault();
+    const f = $("#pcFile").files[0];
+    if (!f) return toast("Choose the payroll workbook first.", true);
+    const fd = new FormData(); fd.append("file", f); fd.append("entity_id", state.entity); fd.append("month", state.month);
+    try { const out = await api("/api/payroll-check", { form: fd }); toast(out.chosen?.report?.headline || "Checked"); await viewPayroll(main); }
+    catch (e) { toast(e.message, true); }
+  };
+  main.querySelectorAll("[data-pc-show]").forEach(b => b.onclick = () => viewPayroll(main, +b.dataset.pcShow).catch(e => toast(e.message, true)));
+}
+
 /* ---- Check this pack (hrp/packcheck.py) ---- */
 const PACK_FILE = { unchanged: ["ok", "File unchanged"], changed: ["bad", "File changed"], missing: ["bad", "File missing"],
   not_recorded: ["warn", "Not recorded in the trail"] };
@@ -4560,6 +4609,7 @@ function dropHint() {
   if (state.openPayment && !$("#drawer").hidden) return "Drop the file onto one of the document boxes.";
   if (state.view === "bank") return "Drop the statement PDF on the Choose file button under Statement PDF.";
   if (state.view === "sql") return "Drop the SQL export on the Choose file button under SQL export.";
+  if (state.view === "payroll") return "Drop the payroll workbook on the Choose file button above Check the workbook.";
   if (state.view === "entity") return "Open the payment and drop the file on a document box, or use the + buttons on the checklist.";
   return "Open a payment on the company's page and drop the file on a document box.";
 }

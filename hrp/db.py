@@ -362,7 +362,16 @@ MIGRATIONS = [
     #     so the check against SQL's trial balance counts that as a change after the trial balance; filled from the
     #     audit trail where it holds that change. Nothing else in the records changes.
     lambda con: _names_and_back(con),
+    # 38. The payroll workbook checks (Payroll check page): each check of a month's payroll workbook, with the workbook
+    #     filed as the month's payroll document and the report it gave (IC numbers masked). Made empty. Nothing else in
+    #     the records changes.
+    lambda con: _payroll_checks(con),
 ]
+
+
+def _payroll_checks(con):
+    from . import payrollcheck
+    payrollcheck.install(con)
 
 
 def _fetch_checks(con):

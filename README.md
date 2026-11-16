@@ -92,6 +92,16 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    last day adds reminders to the checklist of the month each falls due in, or until that month is set up the latest
    one set up, where it shows without counting in that month or its audit pack (e-CP22, PERKESO and KWSP registration,
    stamping over RM 3,000; CP22A): reminders to check, not legal advice.
+   **Payroll check** (Monthly work, before paying salaries) – upload the month's payroll workbook (.xlsx). It is read by
+   its headings and checked: each Summary row against its person's payslip (and that every link points at that
+   person's own pay row, not another person's sheet, a month of the table or another workbook), the Summary's sums and
+   totals, each payslip's year-to-date box against its monthly table (and YTD formulas that will go wrong next month),
+   the sheet's own check cells, money with more than 2 decimals, and EPF, SOCSO, EIS and SKBBK against the rates as at
+   Nov 2026 (in `hrp/payrollcheck.py`, to check each year). PCB amounts themselves are not checked. The report starts
+   with a headline (things to fix before paying, to check, notes), then the Summary and each person with the cells, and
+   the month's amounts to pay per person and per authority; **Excel report** exports it. The workbook is filed as the
+   month's payroll summary on the checklist; **Check again** with a corrected file keeps the earlier checks listed. IC
+   numbers show only their last 4 characters. While the latest check has things to fix, Next up says so in one line.
 4. **Bank statements** – import each Maybank statement PDF. Lines are matched to payments automatically; explain the rest.
 5. **SQL import** (AISB) – sign in to SQL Account yourself, export the PV / JV / Cash Book listing to Excel, and import it here.
    Each entry's doc no. is saved on the payment it records; estimated bills take SQL's actual amount. Entries in SQL but not
@@ -223,7 +233,7 @@ after it a note.
   audit_trail_test, before_tracking_test, books_excel_test, books_test, checklist_equivalence_test, checklist_test,
   extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, myinvois_amount_test,
-  myinvois_test, pack_check_test, parties_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
+  myinvois_test, pack_check_test, parties_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
   recon_review_fixes_test, restore_test, seed_names_test, setup_test, sql_books_item_test, sql_exports_test,
   stage1_leftovers_test, stage1_settle_test, statements_test, statutory_test, trail_view_test and types_test.
   `synthetic_tests.masters_equivalence_test --golden <file>` also compares this code's results with a snapshot taken on
