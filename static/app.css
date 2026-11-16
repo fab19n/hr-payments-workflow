@@ -388,3 +388,9 @@ table.ar th.ar-age, table.ar td.ar-age { background: var(--bg); }  /* the ageing
   main { padding: 0; }
   .printonly { display: inline; }
 }
+
+/* Payroll check */
+.pc-g { padding: 6px 0 10px; border-bottom: 1px solid var(--line); }
+.pc-g:last-of-type { border-bottom: 0; }
+.pc-f { padding: 6px 0; }
+.pc-f .row.tight { margin-bottom: 2px; }

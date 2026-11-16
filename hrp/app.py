@@ -15,8 +15,8 @@ import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
 from . import (appsettings, audit, auditpack, auditread, books, booksexcel, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, recon, reports,
-               monthly, myinvois, packcheck, partybook, receivables, restore, rulebook, rules, setupfile, sqlfetch, sqlimport, statements,
-               statutory)
+               monthly, myinvois, packcheck, partybook, payrollcheck, receivables, restore, rulebook, rules, setupfile, sqlfetch,
+               sqlimport, statements, statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -2165,6 +2165,64 @@ def statutory_check():
     if not statutory.ready(c):
         return err("The records need update 29 for the statutory check. Restart the app.")
     return jsonify(statutory.report(c, eid, *months))
+
+
+# ---------- the payroll workbook check ----------
+
+@app.get("/api/payroll-check")
+def payroll_check():
+    """The Payroll check page for a company (entity_id=) and payroll month (month=): the month's checks, newest first,
+    and the report of one (check=, default the latest). IC numbers are masked in every report. Read-only."""
+    c = con()
+    e = _entity_arg(c)
+    month = month_from(request.args.get("month"))
+    chosen = request.args.get("check", type=int)
+    out = payrollcheck.view(c, e, month, chosen)
+    if not out["ready"]:
+        return err("The records need update 38 for the payroll check. Restart the app.")
+    if chosen and (not out["chosen"] or out["chosen"]["id"] != chosen):
+        return err("There is no such check for this company and month.", 404)
+    return jsonify(out)
+
+
+@app.post("/api/payroll-check")
+def payroll_check_upload():
+    """Checks the month's payroll workbook (file=, entity_id=, month=) and keeps it: the workbook is filed as the
+    month's payroll document (replacing the one an earlier check filed) and the report is kept with the earlier ones.
+    A file that can't be checked is refused and nothing is kept."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return err("Choose the month's payroll workbook (.xlsx) to check.")
+    c = con()
+    e = entity(c, id_from(request.form.get("entity_id") or ""))
+    month = month_from(request.form.get("month"))
+    if not payrollcheck.ready(c):
+        return err("The records need update 38 for the payroll check. Restart the app.")
+    data = f.read(payrollcheck.MAX_BYTES + 1)
+    try:
+        report = payrollcheck.check(data, month, f.filename)
+        cid = payrollcheck.save(c, e, month, f.filename, data, report)
+    except ValueError as ex:  # payrollcheck.Refused, or a file type docstore doesn't take
+        c.rollback()
+        return err(str(ex))
+    c.commit()
+    out = payrollcheck.view(c, e, month, cid)
+    return jsonify(out)
+
+
+@app.get("/api/payroll-check/export.xlsx")
+@audited_read("payroll check export")
+def payroll_check_export():
+    """A check's report as an Excel file (check=, default the month's latest): the findings and the amounts to pay,
+    IC numbers masked. Read-only."""
+    c = con()
+    e = _entity_arg(c)
+    month = month_from(request.args.get("month"))
+    out = payrollcheck.view(c, e, month, request.args.get("check", type=int))
+    if not out.get("ready") or not out.get("chosen"):
+        return err(f"There is no payroll check for {db.month_label(month)} to export.", 404)
+    data = reports.workbook_bytes(payrollcheck.workbook(e, month, out["chosen"]))
+    return send_file(io.BytesIO(data), mimetype=XLSX, as_attachment=True, download_name=payrollcheck.export_name(e, month))
 
 
 @app.post("/api/statutory/use-suggested")

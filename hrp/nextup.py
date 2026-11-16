@@ -4,7 +4,7 @@ import calendar
 from collections import Counter
 from datetime import date, timedelta
 
-from . import appsettings, auditpack, budget, checklistbook, db, rulebook, rules, statutory
+from . import appsettings, auditpack, budget, checklistbook, db, payrollcheck, rulebook, rules, statutory
 
 # Days (General settings): a row due within SOON is 'soon'; payments and checklist items show from AHEAD days before;
 # a backup is asked for after BACKUP days without one.
@@ -51,7 +51,7 @@ def older_open(con, today, entity_id=None):
 
 
 def items(con, today, entity_id=None):
-    """The list for the day given (a date), for one company with entity_id: one row per thing to do, {key, rule (1-14),
+    """The list for the day given (a date), for one company with entity_id: one row per thing to do, {key, rule (1-15),
     entity_id, entity, month, text (one sentence), due (a date, or None), state (overdue, today, soon: within SOON
     days, or later), priority (1-3), amount, currency, go: where it is done {view, entity_id, month, and payment_id
     (payment_ids for a row of several), task_id (task_ids for a row of several), account_id or filter, as_at for the
@@ -64,6 +64,7 @@ def items(con, today, entity_id=None):
         months, past = ([m for x, m in found if x["id"] == e["id"]] for found in (shown, older))
         if entity_id in (None, e["id"]) and (months or past):
             out += _company(con, e, months, past, today)
+            out += _payroll(con, e, months)
         if entity_id in (None, e["id"]):
             out += _statutory(con, e, today)
     if entity_id is None:
@@ -462,6 +463,21 @@ def _statutory(con, e, today):
                          {"view": "books", "tab": "statutory", "from": f"{p['month']}-01", "to": today.isoformat()},
                          f"{p['kind']}:{p['payable_code']}",
                          amount=-p["difference_sen"] / 100, currency="MYR"))
+    return rows
+
+
+def _payroll(con, e, months):
+    """Rule 15: the month's latest payroll workbook check (Payroll check page) found things to fix before paying: one
+    line, with no name or amount in it, to the page."""
+    if not payrollcheck.ready(con):
+        return []
+    rows = []
+    for m in months:
+        last = payrollcheck.latest(con, e["id"], m)
+        if last and last["to_fix"]:
+            n = last["to_fix"]
+            rows.append(_row(15, e, m, f"{_mon(m)} {e['code']}: the payroll check found {n} thing{_s(n)} to fix before "
+                                       "paying", None, P1, {"view": "payroll"}, "payroll"))
     return rows
 
 
