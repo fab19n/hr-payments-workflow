@@ -61,9 +61,15 @@ RATES = {
     # Wages up to RM 400 have smaller bands, not held here.
     "socso": {"from": "2024-10", "employer": Decimal("1.75"), "employee": Decimal("0.5"), "second_employer": Decimal("1.25"),
               "band": 10000, "ceiling": 600000, "smallest": 40000, "tolerance": 5},
-    # EIS: 0.2% employer and 0.2% employee of the same band midpoint, same ceiling. Not for workers aged 60 and over.
-    "eis": {"from": "2024-10", "employer": Decimal("0.2"), "employee": Decimal("0.2"), "age_limit": 60},
-    # SKBBK (Lindung 24 Jam): employee only, 0.75% of the same band midpoint, rounded as SOCSO.
+    # EIS: 0.2% employer and 0.2% employee of the same band midpoint, same ceiling, for workers aged 18 to 60. Not
+    # for workers aged 60 and over, and a worker aged 57 or over with no EIS contributions before 57 is exempt
+    # (PERKESO, https://www.perkeso.gov.my/en/our-services/employer-employee/contributions.html).
+    "eis": {"from": "2024-10", "employer": Decimal("0.2"), "employee": Decimal("0.2"), "age_limit": 60,
+            "exempt_from": 57, "min_age": 18},
+    # SKBBK (Lindung 24 Jam): employee only, 0.75% of the same band midpoint, rounded as SOCSO; from the June 2026
+    # contribution month, no age limit, voluntary for locals (opt-out) and mandatory for foreign workers. Rises to
+    # 1.00% from Jun 2028 and 1.25% from Jun 2031 (PERKESO's LINDUNG 24 Jam FAQ, Aug 2026,
+    # https://www.perkeso.gov.my/images/lindung/lindung-24-jam/130826-FAQ%20_LINDUNG24Jam_EN_version.pdf).
     "skbbk": {"from": "2026-06", "employee": Decimal("0.75")},
 }
 
@@ -183,7 +189,10 @@ def born(nric, month):
 
 def sixty_rates_from(nric, month):
     """The first payroll month (2026-11) paid at the 60-and-over rates: the month after the month of the 60th
-    birthday, whatever the day (KWSP's rule). None for a number that isn't a Malaysian IC."""
+    birthday, whatever the day. None for a number that isn't a Malaysian IC. This is common payroll practice, not a
+    published rule: KWSP's Third Schedule only says Part A applies "until the employees attain the age of sixty years"
+    (https://www.kwsp.gov.my/documents/d/guest/third_schedule_from_-1-october-2025) and PERKESO ties the SOCSO and
+    EIS change to reaching 60; neither says which month. To confirm with KWSP and PERKESO (scope doc, sections 6 and 11, rate checks)."""
     birth = birth_date(nric, month)
     if not birth:
         return None
@@ -998,7 +1007,8 @@ def _statutory(p, month, F):
     malaysian, age = born(p.get("nric"), month)
     m = month or "9999-12"
     # The 60-and-over rates start with the month after the month of the 60th birthday; the birthday month itself is
-    # still paid at the under-60 rates. (SOCSO and EIS are taken to change in the same month as EPF.)
+    # still paid at the under-60 rates. (SOCSO and EIS are taken to change in the same month as EPF.) Payroll
+    # practice, not a published KWSP or PERKESO rule: see sixty_rates_from.
     sixty_from = sixty_rates_from(p.get("nric"), month)
     over60 = bool(malaysian and sixty_from and (month or date.today().strftime("%Y-%m")) >= sixty_from)
     if malaysian and not over60 and sixty_from and month and month == _month_before(sixty_from):
@@ -1050,9 +1060,20 @@ def _statutory(p, month, F):
     # EIS
     if "eis" in cols and m >= RATES["eis"]["from"] and malaysian:
         exp_er, exp_ee = eis_expected(wage)
+        R = RATES["eis"]
+        none_paid = all(sen(pay.get(k) or 0) == 0 for k in ("eis", "er_eis") if k in cols)
         if over60:
             exp_er = exp_ee = Decimal(0)
             out.append("EIS: none, as EIS isn't for workers aged 60 or over.")
+        elif age is not None and none_paid and (age >= R["exempt_from"] or age < R["min_age"]):
+            # Zero is right for a worker under 18, and for one aged 57 or over who had no EIS contributions before 57.
+            exp_er = exp_ee = Decimal(0)
+            F.add("eis_exempt", "note", s, s, cell("eis"),
+                  (f"EIS is 0 for a worker aged {age}: right if they had no EIS contributions before age 57 "
+                   "(exempt); otherwise EIS is due until 60.") if age >= R["exempt_from"] else
+                  f"EIS is 0 for a worker aged {age}: EIS starts at 18.",
+                  "Nothing to do if exempt; else deduct it." if age >= R["exempt_from"] else "Nothing to do.")
+            out.append(f"EIS: none taken as right at age {age}.")
         for k, exp, who in (("eis", exp_ee, "Employee"), ("er_eis", exp_er, "Employer")):
             if k in cols and not within(pay.get(k) or 0, exp):
                 F.add("eis", "fix", s, s, cell(k),

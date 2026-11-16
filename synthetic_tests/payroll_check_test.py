@@ -520,6 +520,19 @@ r = pc.check(build(False, people=with_person("Staff A", nric="661030-14-5555")),
 check("and in the month of a 30th birthday the under-60 figures are still right",
       not {x["key"]: x for x in r["groups"]}["Staff A"]["findings"])
 
+# EIS: a worker aged 57 or over with no EIS before 57 is exempt (PERKESO), so EIS of 0 is a note, not a fix.
+r = pc.check(build(False, people=with_person("Staff A", nric="680505-14-5555", eis=0)), "2026-10", "x.xlsx")
+g58 = {x["key"]: x for x in r["groups"]}["Staff A"]
+check("aged 58 with no EIS: a note on the exemption, nothing to fix",
+      [(f["kind"], f["severity"]) for f in g58["findings"]] == [("eis_exempt", "note")]
+      and "57" in g58["findings"][0]["what"] and r["counts"]["fix"] == 0, g58["findings"])
+r = pc.check(build(False, people=with_person("Staff A", nric="680505-14-5555")), "2026-10", "x.xlsx")
+check("aged 58 and paying EIS at the table's rate: nothing to fix or note",
+      not {x["key"]: x for x in r["groups"]}["Staff A"]["findings"])
+r = pc.check(build(False, people=with_person("Staff A", nric="700505-14-5555", eis=0)), "2026-10", "x.xlsx")
+check("aged 56 with no EIS is still to fix",
+      {(f["kind"], f["severity"]) for f in {x["key"]: x for x in r["groups"]}["Staff A"]["findings"]} == {("eis", "fix")})
+
 # A payslip figure taken from another workbook is to fix, and the workbook's note names the cell.
 r = pc.check(build(False, cells={("Staff A", "C17"): "=[1]OTHERS!C17"}, other_book={("OTHERS", "C17"): 6000}), "2026-10", "x.xlsx")
 ext = [f for f in found(r) if f["kind"] == "external_link"]
