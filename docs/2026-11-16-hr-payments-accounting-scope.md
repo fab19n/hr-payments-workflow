@@ -56,6 +56,9 @@ new shape now, or it would draw a shell without HR and have to be redone.
 | Unapproved items (17 Nov) | Shown only on Payments › Approvals; To pay lists only what is ready to pay. |
 | Month review sheet (17 Nov) | Yes: one approver signs a printed Month review each month, with a checklist item that ticks once it is uploaded, while one person does every step. |
 | Leave approval (17 Nov) | Recorded by HR only for now; a director's approval can come with logins later. |
+| Users and access (17 Nov) | The redesign draws an **Admin › Users and access** page now: add a person, sign-in name, and six access rights (HR, Payroll figures, Payments, Accounting, Approver, Admin), plus how the menu looks for a user without HR access. It is built later, with hosting and logins; until then the app runs for one person as today. |
+| Phone upload (17 Nov) | Yes: a fifth phone screen to photograph a signed approval form; the code is read from its QR and HR confirms which approver signed (question 14). |
+| Language (17 Nov) | English only, on screens and on everything printed (payslips, approval forms, Month review). Wording can change later without a redesign. |
 | Placements (17 Nov) | SQL import, e-Invoices and printed invoices go under Accounting, e-Invoices and invoices with a page of their own; each company's month page splits into the Payments register and the Monthly checklist. |
 
 On screen, "stage 1" and "stage 2" are never shown. A stage 1 company is labelled **Kept in SQL Account**; a stage 2
@@ -63,9 +66,9 @@ company is labelled **Kept here**.
 
 ### Still open
 
-Two questions are still open (section 11): question 3's values (what the company gives above the legal leave
-minimums, and the carry-forward), and question 14 (whether a signed approval form can be uploaded from a phone, which
-the redesign may propose). Neither holds up the redesign. Everything else was answered on 17 November 2026.
+One question is still open (section 11): question 3's values (what the company gives above the legal leave
+minimums, and the carry-forward). It does not hold up the redesign: the leave policy screen is the same whatever the
+values. Everything else was answered on 17 November 2026.
 
 ---
 
@@ -102,6 +105,7 @@ the redesign may propose). Neither holds up the redesign. Everything else was an
 | | Audit pack | Before you print, build, check, auditor package, mark filed. |
 | | Audit trail | Every change, with filters, check and export. |
 | | Backup | Encrypted backup and the backup log. |
+| | Users and access | Who can sign in and what each person can see (designed now, built with logins later). |
 
 Approvals sits in Payments, not HR, because it also covers supplier bills, and because once logins exist finance
 staff must see approvals for their own payments without having HR access. The pay detail on a salary-run form stays
@@ -113,6 +117,8 @@ visible only to people with HR or payroll access.
 - Count badges: Approvals (waiting for approval), To pay (items due), and the existing badges.
 - If the menu is too crowded on a laptop, Calendar and reminders may become a tab of Staff, and Salary advances a tab
   of Claims ("Claims and advances"). The designer decides; the pages' content does not change.
+- Users and access shows only to a user with the Admin right. A user without HR access sees no HR section and no HR
+  cards; one without Payroll figures sees payroll pages without pay amounts.
 - Draw the menu for three cases: a Kept in SQL Account company without payroll, the same with payroll, and a Kept here
   company.
 
@@ -876,7 +882,7 @@ What the app does about it:
 | The staff Excel export asks which columns, with IC, pay, religion and race off by default | Every view of a staff record is logged, not only changes |
 | The audit trail already records every change, including HR records | Search and notifications respect access rights |
 | Document file names inside a backup can be read without the password (as today): HR documents are stored under a code, not the person's name | Approvals and To pay visible to finance without HR access; salary-run detail only to HR and payroll |
-| Audit pack HR pages hold only what an auditor needs (approvals, totals per authority, headcount), not payslips, unless chosen | |
+| Audit pack HR pages hold only what an auditor needs (approvals, totals per authority, headcount), not payslips, unless chosen | Admin › Users and access sets each person's rights: HR, Payroll figures, Payments, Accounting, Approver, Admin |
 
 The app helps; it does not make the company compliant on its own. The privacy notice and how long records are kept are
 the company's decisions (section 11).
@@ -904,14 +910,15 @@ Shell and Overview
       switcher
 - [ ] Overview with the audit-trail notice, Next up and the four card rows; All companies version (mixed company
       kinds); empty company; each card's empty, out-of-date and could-not-load states; the "Paid without approval on
-      file" card shown and hidden; HR cards hidden for a user without HR access (later)
+      file" card shown and hidden; HR cards hidden for a user without HR access (later); the side menu for a user without HR access
 
 Phone
 - [ ] Overview: every card stacked, Next up first, company switcher and month in the top bar
 - [ ] Company month; Payment (with the Approval marker and the link to its claim); New payment (with "needs approval")
 - [ ] The "best done on a computer" page, used by every other screen (all HR, Approvals, To pay, Payroll and
       Accounting pages)
-- [ ] (Only if the owner says yes to open question 14) upload a photo of a signed form
+- [ ] Upload a photo of a signed approval form (agreed 17 November 2026): take the photo, code read from the QR,
+      "which approver signed", code not readable (type it), reached from the Payment screen's Approval marker
 
 HR
 - [ ] Staff list (in employment, left, filters, All companies read only, empty state, first run "Add your staff or
@@ -964,6 +971,8 @@ Admin
 - [ ] Audit pack with HR pages, Paid without approval on file / Approved after payment, approver history, steps done
       by one name alone, "declared, not verified" labels
 - [ ] Audit trail, Backup (moved)
+- [ ] Users and access: list of people, add or edit a person, the six access rights, remove access; drawn now, built
+      with logins later
 
 Carried over, now with HR and approvals
 - [ ] Search results including staff and requests
@@ -974,7 +983,7 @@ Carried over, now with HR and approvals
 - [ ] Sign-in set: sign in, session timed out, user menu, real names in the audit trail
 
 Printed and downloaded
-- [ ] Approval form, payslip, Month review sheet, staff record PDF, leave and claim lists as printed, audit pack HR
+- [ ] All in English. Approval form, payslip, Month review sheet, staff record PDF, leave and claim lists as printed, audit pack HR
       pages and Paid without approval page, bank payment list, statutory file preview, budget print (exists), payroll
       journal summary. Excel columns are listed by the build, not drawn.
 
@@ -1019,7 +1028,7 @@ logins), benefits-in-kind valuation, foreign worker levy, submitting files direc
     once it is uploaded? (Suggested: yes, while one person does every step.) *Answered 17 November 2026:* yes.
 13. **Leave approval.** Is leave only recorded by HR for now, or should a director approve leave too? *Answered 17 November 2026:* recorded by HR only for now.
 14. **Phone upload.** Is uploading a photo of a signed approval form from a phone wanted as a fifth phone screen, or is
-    it done on the computer? *Still open; the redesign may propose it.*
+    it done on the computer? *Answered 17 November 2026:* yes, as a fifth phone screen.
 
 **Rate checks answered on 17 November 2026:**
 - EPF, SOCSO and EIS rates applied from October 2024: *confirmed by the owner.*
