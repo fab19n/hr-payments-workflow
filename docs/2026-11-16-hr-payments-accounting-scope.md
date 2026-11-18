@@ -59,6 +59,7 @@ new shape now, or it would draw a shell without HR and have to be redone.
 | Users and access (17 Nov) | The redesign draws an **Admin › Users and access** page now: add a person, sign-in name, and six access rights (HR, Payroll figures, Payments, Accounting, Approver, Admin), plus how the menu looks for a user without HR access. It is built later, with hosting and logins; until then the app runs for one person as today. |
 | Phone upload (17 Nov) | Yes: a fifth phone screen to photograph a signed approval form; the code is read from its QR and HR confirms which approver signed (question 14). |
 | Language (17 Nov) | English only, on screens and on everything printed (payslips, approval forms, Month review). Wording can change later without a redesign. |
+| Bank reconciliation statement (18 Nov) | A printed, signed reconciliation statement per bank account and month, in the standard layout, with Prepared by and Reviewed by; book entries where no money moved (such as a duplicated self-billed receipt and payment that cancel out) are listed as pairs with their reason, and the reason is kept with the sign-off so the auditor's copy needs nothing written by hand (section 8). |
 | Placements (17 Nov) | SQL import, e-Invoices and printed invoices go under Accounting, e-Invoices and invoices with a page of their own; each company's month page splits into the Payments register and the Monthly checklist. |
 
 On screen, "stage 1" and "stage 2" are never shown. A stage 1 company is labelled **Kept in SQL Account**; a stage 2
@@ -839,6 +840,61 @@ and 8).
 Books, Customers and suppliers, and Statutory payables share the same From / To and "financial year to date" control
 (Customers and suppliers uses its To date as the as-at date).
 
+### Bank reconciliation statement and sign-off (decided 18 November 2026)
+
+Today the reconciliation is printed only inside the audit pack and the month's Excel report, and the sign-off records a
+date but no names. The redesign adds a printed **Bank reconciliation statement**, one per bank account and month,
+printed from Bank and reconciliation. It applies to both kinds of company, and to Kept in SQL Account companies now.
+
+**Layout (standard practice):**
+
+```
+Balance per bank statement at <last day>               X
+Add: money in the books, not yet on the bank (each)   +
+Less: payments in the books, not yet cleared (each)   −
+Add / less: on the bank, not yet in the books (each)  ±
+Adjusted bank balance                                  = Balance per books at <last day>
+```
+
+followed by:
+- **Book entries where no money moved** (see below), each pair with its reason and net amount (nil);
+- **Totals check:** money in and money out per the books, less the entries where no money moved, against the
+  statement's total credits and total debits, so the debit and credit totals are shown to tally, not only the closing;
+- for a Kept in SQL Account cash book: the check against SQL's balance on the bank's GL account (as today);
+- **Prepared by** and **Reviewed by**: name, date and signature lines, and the sign-off note.
+
+The form carries the same reference code, keyed check and QR as an approval form (section 4). The signed copy is
+uploaded the same way and filed against the month; it is the detail behind the Month review sheet. If the
+reconciliation changes after printing, the code no longer matches and the upload says so.
+
+**Book entries where no money moved.** A receipt and a payment in the books that cancel out and never touched the
+bank: for example a duplicated self-billed e-Invoice, where the PV was recorded twice and an OR was entered to refund
+the duplicate, or a contra or reversal. In SQL Account these sit in the bank account, so SQL's bank reconciliation
+clearing report lists them as uncleared, and the book debit and credit totals don't tally with the statement's even
+when the closing balances agree. The app already spots such pairs on the SQL import page (a receipt and a payment for
+the same amount on the same day, or a description saying reversal or contra). On the review screen:
+
+- they show as a group **No money moved**, each pair together (the OR, the PV it cancels, the self-billed e-Invoice
+  number when there is one) with its net, which must be nil;
+- a reason is filled in for each pair, worded from the documents ("Duplicated self-billed e-Invoice SB…: PV… recorded
+  twice, OR… refunds the duplicate; no money moved"), and can be edited;
+- the person ticks each pair to confirm it. Sign-off is refused while a pair is unconfirmed, or while a pair's net is
+  not nil (the remainder is then a difference to explain);
+- a single entry with no partner is never explained away: it stays a reconciling item ("in the books, not on the
+  bank") until it is corrected.
+
+**The sign-off note.** On sign-off the app writes the note itself: each confirmed pair with its reason and amounts,
+each line explained without documents, and anything left as a reconciling item, plus an optional free-text note. It
+is kept with the sign-off as it stood (figures and reasons), shown on the screen, printed on the statement and in the
+audit pack, so nothing has to be written by hand for the auditor. Undoing the sign-off keeps the old note in the
+audit trail.
+
+**What to do in SQL Account** (Kept in SQL Account; the statement says it in words): the pair stays in SQL's books.
+The usual fix is to tick both the OR and the PV as cleared in the same month in SQL's bank reconciliation, since they
+net to nil, so SQL's clearing report agrees; or to record future corrections like this as a contra or journal that
+does not go through the bank account. A Kept here company never needs this: a duplicate is corrected by a credit note
+or reversal on the payable, not through the bank (stage 2 rules).
+
 **Supplier bills, Kept here.** A supplier bill's request is a Purchases supplier invoice (PI series), posted when
 recorded: expense / Accounts payable. The approval covers that invoice. Paying it posts a payment voucher: Accounts
 payable / Bank, knocked off to the invoice. So a bill approved but not yet paid at month end is in the books, and
@@ -955,6 +1011,10 @@ Payments
 Accounting
 - [ ] Bank and reconciliation (moved), with "book this statement line" for Kept here, one line matched to a group of
       payments, locked month and reopen
+- [ ] Review screen's "No money moved" group: pairs with their documents, reason (filled in, editable), net nil or
+      not, tick to confirm; sign-off refused while a pair is open; the sign-off note as written by the app, plus a free
+      note; undo sign-off
+- [ ] Bank reconciliation statement: print, upload the signed copy (code read, matched, "changed since printed")
 - [ ] SQL import (Kept in SQL Account only): nothing waiting, preview of a fetch, changed in SQL, replaced by a later
       version, probably a correction, deleted in SQL and Ignored, before tracking, journals and invoices, find an SQL
       entry, imported files, folder setting, and the "this company is not kept in SQL" message
@@ -983,7 +1043,8 @@ Carried over, now with HR and approvals
 - [ ] Sign-in set: sign in, session timed out, user menu, real names in the audit trail
 
 Printed and downloaded
-- [ ] All in English. Approval form, payslip, Month review sheet, staff record PDF, leave and claim lists as printed, audit pack HR
+- [ ] All in English. Bank reconciliation statement (standard layout, No money moved pairs, totals check, Prepared by
+      and Reviewed by, code and QR), approval form, payslip, Month review sheet, staff record PDF, leave and claim lists as printed, audit pack HR
       pages and Paid without approval page, bank payment list, statutory file preview, budget print (exists), payroll
       journal summary. Excel columns are listed by the build, not drawn.
 
