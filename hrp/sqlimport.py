@@ -520,7 +520,8 @@ def payments_by_ref(con, entity_id):
     """Payments whose SQL ref box names a voucher that isn't linked yet (typed by hand), by voucher number.
     A number already linked is left out: a new row with it is that voucher changed in SQL, for a person to check."""
     linked, out = linked_vouchers(con, entity_id), {}
-    for p in con.execute("SELECT id, description, sql_ref FROM payments WHERE entity_id = ? AND sql_ref IS NOT NULL ORDER BY id",
+    for p in con.execute("SELECT id, description, sql_ref, month, due_date, paid_date FROM payments WHERE entity_id = ? AND sql_ref IS NOT NULL"
+                         " ORDER BY id",
                          (entity_id,)):
         for ref in refs_of(p["sql_ref"]):
             if ref not in linked:

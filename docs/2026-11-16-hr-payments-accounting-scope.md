@@ -62,7 +62,8 @@ new shape now, or it would draw a shell without HR and have to be redone.
 | Payroll check (17 Nov, redesign questions) | Every company has the payroll workbook check; using it is up to the company. A company whose pay has no statutory deductions does not use it. HR › Payroll shows the check for every company; the run shows only where Setup › Companies has "Runs payroll in this app" on. |
 | Built for any company (17 Nov) | Nothing is fixed to the owner's company in the code: payroll, approvers and every HR setting are per-company settings, and the owner's company is simply the first to use them. |
 | Net salaries payable (17 Nov) | Follow the account the company's books use (420-000 Accruals in the owner's SQL books), chosen per company in Setup › Statutory accounts. |
-| Customers overdue (17 Nov) | Older than 30 days. |
+| Customers overdue (17 Nov) | Older than 30 days. Balances from before tracking are not counted as overdue; they are shown apart, labelled "Before tracking" (owner, 19 Nov). |
+| Bank sign-off rule (19 Nov) | Owner: keep today's rule. A month is signed off only when the book closing equals the bank closing; sign-off with reconciling items listed is not allowed. |
 | Per company (17 Nov) | Approvers, leave policy, public holidays and claim types are set per company. |
 | Leave values (17 Nov) | The legal minimums are the entitlement. Anything above the legal days (leave recorded beyond them, or a Setup value set higher) shows a warning only and is never refused. Question 3 closed. |
 | Payslip password (17 Nov) | Agreed by the owner: the person's IC number without dashes by default (passport number for a foreign worker); HR may set a personal password on the staff record instead, stored encrypted and resettable. The email names the rule, never the password. |
@@ -70,6 +71,7 @@ new shape now, or it would draw a shell without HR and have to be redone.
 | Joiner reminders (19 Nov) | One merged reminder "Register {name} with KWSP and PERKESO" due 7 days after the start date, and "Stamp the contract of {name}", replacing the app's separate KWSP (7 days) and PERKESO (30 days) registration reminders and "Stamp {name}'s appointment letter". An app change, built with HR step 1. |
 | One Next up row per unpaid statutory payment (19 Nov) | When a statutory payment for the month is entered and still unpaid, Next up shows only its payment row ("Pay KWSP for October", marked overdue after the due date), not also the statutory check row. The check row (rule 14) shows only when there is no unpaid payment to point at, for example when the payment was made short or never entered. An app change (hrp/nextup.py). |
 | Placements (17 Nov) | SQL import, e-Invoices and printed invoices go under Accounting, e-Invoices and invoices with a page of their own; each company's month page splits into the Payments register and the Monthly checklist. |
+| Phone design deferred (18 Nov) | Owner: the phone design waits. The five phone boards are not built, and the fifth phone screen (photograph a signed approval form, row "Phone upload" above) waits with them. Today's narrow-screen layout stays. The upload is done on the computer, on Approvals. |
 
 On screen, "stage 1" and "stage 2" are never shown. A stage 1 company is labelled **Kept in SQL Account**; a stage 2
 company is labelled **Kept here**.
@@ -892,7 +894,7 @@ the same amount on the same day, or a description saying reversal or contra). On
   bank") until it is corrected.
 
 **The sign-off note.** On sign-off the app writes the note itself: each confirmed pair with its reason and amounts,
-each line explained without documents, and anything left as a reconciling item, plus an optional free-text note. It
+each line explained without documents, plus an optional free-text note. Sign-off needs the book closing to equal the bank closing, so no reconciling item is left on a signed statement. It
 is kept with the sign-off as it stood (figures and reasons), shown on the screen, printed on the statement and in the
 audit pack, so nothing has to be written by hand for the auditor. Undoing the sign-off keeps the old note in the
 audit trail.

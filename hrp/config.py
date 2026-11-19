@@ -4,7 +4,10 @@ import os
 from pathlib import Path
 
 PROGRAM_DIR = Path(__file__).resolve().parent.parent
-SETTINGS_FILE = PROGRAM_DIR / "settings.json"
+# With HRP_DATA_DIR set (a test or a copy run beside the real app) the settings live in that folder, so the program
+# folder's own settings.json is neither read nor written; otherwise it is the program folder's file, as always.
+_ENV_DATA_DIR = os.environ.get("HRP_DATA_DIR")
+SETTINGS_FILE = (Path(_ENV_DATA_DIR) if _ENV_DATA_DIR else PROGRAM_DIR) / "settings.json"
 
 DEFAULTS = {
     "data_dir": r"C:\HR-Records",
@@ -22,6 +25,7 @@ def load_settings():
 
 
 def save_settings(s):
+    SETTINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
     tmp = SETTINGS_FILE.with_name(SETTINGS_FILE.name + ".tmp")  # written whole, then swapped in, so a crash can't truncate it
     tmp.write_text(json.dumps(s, indent=2), encoding="utf-8")
     os.replace(tmp, SETTINGS_FILE)
@@ -30,7 +34,7 @@ def save_settings(s):
 SETTINGS = load_settings()
 if os.environ.get("HRP_PORT"):  # lets a test copy run beside the real app
     SETTINGS["port"] = int(os.environ["HRP_PORT"])
-DATA_DIR = Path(os.environ.get("HRP_DATA_DIR") or SETTINGS["data_dir"])
+DATA_DIR = Path(_ENV_DATA_DIR or SETTINGS["data_dir"])
 DOCS_DIR = DATA_DIR / "documents"
 PACKS_DIR = DATA_DIR / "audit-packs"
 BACKUP_DIR = DATA_DIR / "backups"

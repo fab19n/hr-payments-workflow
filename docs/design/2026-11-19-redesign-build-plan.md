@@ -16,7 +16,7 @@ in the app yet.
 - A **board** is one design file (`Name.dc.html`). Each board draws one page or part, in several **states** (empty,
   loading, an error, a filled form, and so on).
 - A **slice** is one piece of the build, made on its own branch, reviewed and merged before the next depends on it.
-- A **route** is an address the server answers (the `@app.get` / `@app.post` lines in `hrp/app.py`, 123 today).
+- A **route** is an address the server answers (the `@app.get` / `@app.post` lines in `hrp/app.py`, 128 today).
 - A **migration** is a numbered update to the records file that runs once (`MIGRATIONS` in `hrp/db.py`, at update 38
   today).
 - An **address** is the part of the page link after `#`, for example `#/AISB/2026-10/payments/register`.
@@ -29,7 +29,7 @@ in the app yet.
   what is still open) and the leftovers list `design/notes/design-leftovers.md`.
 - The app as it is: `static/app.js` (the `VIEWS` menu list and the `view…` page functions), the modules in `hrp/`, the
   local test files in `tests/` (gitignored, they hold real data) and the committed made-up-data suite in
-  `synthetic_tests/` (36 test files).
+  `synthetic_tests/` (38 test files).
 
 **What it builds, in the owner's order.**
 1. **The redesign build** (slices 0 to 10): the new five-area shell, every existing page moved to its new place and
@@ -72,7 +72,9 @@ Kept from the old plan:
 New:
 - **Company differences are settings.** Nothing is fixed to AISB or any company code. Payroll, approvers, leave
   policy, public holidays, claim types and statutory accounts are per-company settings; the owner's main company is
-  simply the first to use them. A grep for company codes in `hrp/` and `static/` is part of every review.
+  simply the first to use them. A grep for company codes in `hrp/` and `static/` is part of every review. One exception: `rules.CHECKLIST` (keyed
+  "AISB" and "AI", `hrp/rules.py`) is the documented fallback for records from before update 21 and for tests. It stays
+  a fallback only: no new code may read it.
 - **The canvas is the spec; its sample data is not real data.** Build to the boards' layout, wording and states. Never
   copy the boards' names, figures or codes into the app, seed files or commits. Test data is made up, and every new
   person name is checked against the app's git history first (the "Soon" rule).
@@ -170,6 +172,20 @@ landing until that slice is merged, then its real address. The slice that builds
 
 ### 3.3 Each slice
 
+**Stage 0: ready to build** (before slice 0). Three jobs, all done before any slice opens.
+1. **The settings fix.** `hrp/config.py` always reads and writes `settings.json` in the program folder, so a test that
+   saves a setting under `HRP_DATA_DIR` would change the live app's file. Keep `settings.json` in the `HRP_DATA_DIR`
+   folder when that is set, or read a separate `HRP_SETTINGS_FILE`. One synthetic test: a settings save under
+   `HRP_DATA_DIR` leaves the program folder's file alone.
+2. **The six failing local tests sorted.** Six files in `tests/` fail today (`b1_payments_test`, `b3_sql_months_test`,
+   `b5_frontend_test`, `b6_auditpack_test`, `n12_recon_test`, `n4_next_api_test`), each at one line with an
+   AssertionError. For each: if the app changed on purpose, update the test locally; if the app broke, fix the app and
+   add a synthetic test. Report by line and error type only. Rule 5 of "A slice is done when" cannot hold until this is
+   done.
+3. **The corrections folded into this plan** (from `docs/design/2026-11-19-build-check-and-stages.md`).
+
+Exit: both suites pass (38 synthetic, 23 local), and the settings test proves a save stays in the temporary folder.
+
 ---
 
 **Slice 0 · Shell and foundations, Payroll check moved** (L, branch `slice-0-shell`)
@@ -206,9 +222,22 @@ landing until that slice is merged, then its real address. The slice that builds
     update 38" and the IC masking.
   - Sidebar badges by the existing one-badge rule (a number is how many Next up rows belong to that area).
   - `app.js` is split into one plain module per page (no build step).
-- **Server work.** `/api/meta` gives each company's kind and which pages it uses. Next up rows carry their area, so
-  badges and new addresses can be worked out; rule 15's target opens HR › Payroll. No migration.
-- **Depends on:** nothing. Nothing else runs while it is open.
+- **Server work.** `/api/meta` gives each company's kind and which pages it uses: the kind is worked out from
+  `entities.uses_sql` (0 or 1), so no migration. Next up rows carry a new `area` field on every row (`_row` in
+  `hrp/nextup.py`; today the nearest thing is `go.view`), so badges and new addresses can be worked out; rule 15's
+  target opens HR › Payroll. No migration.
+- **Steps.** One branch, cut into six steps, each reviewed before the next. Today the app has no addresses at all
+  (`app.js` keeps the page, company and month in memory), so the router is new work.
+
+  | Step | What | Visible change | Check |
+  |---|---|---|---|
+  | 0a | Split `app.js` into classic scripts: `static/js/core/` (util, api, state, ui, router, events), `static/js/pages/` (one per page), `main.js` last. No `type="module"` | None | The local front end tests, every page opens with no console error, a click through of today's app |
+  | 0b | Tokens (light and dark in one place), fonts linked, the 80 glyph sprite, buttons, pills, fields, reduced motion | The new look on the old layout | Contrast in both themes |
+  | 0c | The dialog shell (focus trap, Escape, focus return, `role="dialog"`, a styled "Discard your changes?" replacing `confirm()`) and the States patterns | Dialogs and empty, loading and error states | Keyboard only walk |
+  | 0d | Addresses `#/CODE/YYYY-MM/page/state`: a hash router replacing `render()`'s chain; `go()` and `goTo()` write the address | Back and Refresh keep your place | New synthetic test: every old page key opens its address |
+  | 0e | The shell: five area menu, top bar, company and month switchers, breadcrumbs, badges; `/api/meta` kind and pages; Next up area; Coming soon pages, Kept here placeholders, interim landings | The new menu | Tests for the interim landings, the company switch toast and the Kept here menu; phone width (375 px) |
+  | 0f | Payroll check moves to HR › Payroll › Workbook check; rule 15's target follows | One page moves | `payroll_check_test` unchanged |
+- **Depends on:** stage 0 (above). Nothing else runs while it is open.
 - **Phone note:** none. The shell is checked at phone width (375 pixels): menu, switchers and every existing page
   usable with no sideways scroll of the page.
 - **Checked by:** local `smoke_test`, `b5_frontend_test`, `n5_next_ui_test` updated for the new shell. Synthetic:
@@ -243,17 +272,21 @@ landing until that slice is merged, then its real address. The slice that builds
 
     Slices 2 and 4 are likely merged before slice 1 (section 6.2); then only the later rows apply.
 - **Server work.** One small route per card, so one failing card never hides the others. The 19 November rule: one
-  Next up row per unpaid statutory payment (`hrp/nextup.py`, section 4.2). The rollover banner counts the rows of the
-  company it names. **Customers overdue at 30 days:** this slice owns the change to `hrp/receivables.py` ageing that
-  counts only customer balances older than 30 days; slice 7's Customers overdue view reuses it and does not change
-  it.
+  Next up row per unpaid statutory payment (`hrp/nextup.py`, section 4.2): rule 5 (`_to_pay`) already lists unpaid
+  statutory payments, and rule 14 comes from `statutory.next_up`, which returns late and short only, so the change is
+  a de-duplication between the two. The rollover banner counts the rows of the company it names. **Customers overdue
+  at 30 days:** this slice owns the change to `hrp/receivables.py`. The ageing already has buckets (current up to 30
+  days, 31 to 60, 61 to 90, over 90, brought forward); the card is the sum of the 31 and over buckets, a small
+  change. **Balances from before tracking** (the brought forward bucket) do not count as overdue: the card shows them
+  apart, labelled "Before tracking" (owner, 19 November). Slice 7's Customers overdue view reuses this and does not
+  change it.
 - **Depends on:** 0 and 8 (Funds to request uses slice 8's Budget rules: the no-balance sentence, payments counted up
   to the balance date, the company's own bank label).
 - **Phone note:** none; cards stack at narrow widths.
 - **Checked by:** local `n4_next_api_test`, `n5_next_ui_test`. Synthetic: `receivables_test`, `statutory_test`. New
   synthetic tests: each card's figures on made-up data; the one-row rule (unpaid gives only "Pay KWSP for October";
-  short-paid or not entered gives the rule 14 row); Customers overdue counts only balances older than 30 days; each
-  card's link opens its target or interim landing. Click-through: All companies, one company, a company with nothing
+  short-paid or not entered gives the rule 14 row); Customers overdue counts only balances older than 30 days inside the tracked period, with brought forward
+  balances shown apart as "Before tracking"; each card's link opens its target or interim landing. Click-through: All companies, one company, a company with nothing
   yet.
 
 ---
@@ -317,9 +350,15 @@ landing until that slice is merged, then its real address. The slice that builds
 - **Server work.**
   - A link table so one statement line can carry several payments (migration; today a line holds one payment).
   - Pair finding reused from the SQL import page; pair confirmation with its reason (migration).
-  - The sign-off keeps its note as it stood, the free note and the declared Prepared by name (migration).
-  - The lock: a signed-off month refuses changes to its lines and to its payments' bank fields. Reopening is logged
-    with the reason, needs a new sign-off, and keeps the old note in the audit trail.
+  - The sign-off keeps its note as it stood, the free note and the declared Prepared by name (migration). The free
+    note column exists (`statements.reconciled_note`); `recon.sign_off` sets it to empty today, and there is no
+    Prepared by yet.
+  - The lock: a signed-off month refuses changes to its lines and to its payments' bank fields. **It replaces
+    today's clear on change:** `recon.line_changed` removes the sign-off when a line changes. Find every caller
+    (`hrp/app.py`) and update the tests that rely on the clearing (local `n12_recon_test` at least). Reopening is
+    logged with the reason, needs a new sign-off, and keeps the old note in the audit trail.
+  - The sign-off rule is today's: the book closing must equal the bank closing (owner, 19 November; section 7.1). A
+    reconciling items section is not needed for sign-off.
   - **Reopen replaces Undo sign-off.** Today's `/api/recon/undo-sign-off` route (`recon.undo_sign_off`) becomes the
     reopen route, which takes a reason; the old route is retired, not kept beside it. The "Undo sign-off" button
     (`data-rc-undo` in `app.js`) goes. The local `n12_recon_test` and `b2_undo_links_test` are updated to the reopen
@@ -337,8 +376,7 @@ landing until that slice is merged, then its real address. The slice that builds
     reconciliation checklist item.
 - **Waits for stage 2:** booking a bank-only line for a Kept here company (BankBookLine). In its place the line stays
   a line to explain, as today.
-- **Decision first:** section 7, decision 2 (sign-off with items left).
-- **Depends on:** 3.
+- **Depends on:** 3 (decision 2 is closed, so nothing else waits).
 - **Phone note:** needed on the review (BankReview: statement lines beside payments) and on the statement print
   preview. The year table and month panel keep the narrow layout.
 - **Checked by:** local `n12_recon_test`, `b2_undo_links_test`, `n10_backup_match_test`. Synthetic:
@@ -398,11 +436,13 @@ landing until that slice is merged, then its real address. The slice that builds
   - Setup › Statutory accounts with the new kinds, built into whichever Setup shell is merged at the time: inside
     today's Setup page if slice 9a is not merged yet (9a then moves it into the new Setup menu), or straight into the
     new Setup menu if it is.
-- **Server work.** Statutory kinds gain **Net salaries payable** and **Zakat** (`statutory.KIND_WORDS` has EPF, SOCSO,
-  EIS, SKBBK, PCB, HRDF and Other today; migration). Net salaries payable follows the account each company chooses
+- **Server work.** Statutory kinds gain **Net salaries payable** and **Zakat**. `statutory.KIND_WORDS` has EPF, SOCSO,
+  EIS, SKBBK, PCB, HRDF and Other today, so SKBBK and HRDF already exist. The statutory accounts table has a `CHECK`
+  on kind (`statutory.py`), which SQLite cannot change, so the migration **rebuilds the table**. Net salaries payable follows the account each company chooses
   (420-000 Accruals in the owner's SQL books). Rule 14's wording and target (section 4.2). The Books fixes in 4.1.
 - **Depends on:** 5 (Books reads what the SQL import keeps). The 30-day Customers overdue rule comes from slice 1;
-  if slice 7 merges first, it shows today's ageing until slice 1 lands. It switches the Customers and suppliers and
+  if slice 7 merges first, it shows today's ageing until slice 1 lands. Balances from before tracking show apart as
+  "Before tracking", not as overdue. It switches the Customers and suppliers and
   Statutory payables menu items and the Overview's Profit or loss, Customers overdue and Suppliers due links from
   their interim landings.
 - **Phone note:** needed on the trial balance, general ledger and statutory tables; the party lists keep the narrow
@@ -420,12 +460,16 @@ landing until that slice is merged, then its real address. The slice that builds
 - **Screens.** Budget under Payments: stored budget, editable lines, set-up, Print, Excel, each company's own bank
   label, "Enter the bank balance to see funds to request" when no balance is entered. Recurring under Payments: the
   full form, types with Setup's labels, Add to month. Salary advances stay on Recurring until slice 14.
-- **Server work.** The Budget rules in section 4.3, after checking `hrp/budget.py`.
+- **Server work.** The Budget rules in section 4.3, checked against `hrp/budget.py`. Payments counted up to the balance
+  date is already done (`line_left`, `payment_left`). Left: the no balance state (today a blank balance counts as 0
+  and reads "None (balance covers the budget)"), the balance read only from the stored budget (the page also keeps it
+  in the browser's `localStorage` today), and a new bank label taken from the company's own account (none exists).
 - **Depends on:** 0. Slice 1 waits for it (Funds to request).
 - **Phone note:** needed on the budget table and its print; Recurring keeps the narrow layout.
 - **Checked by:** local `b4_budget_test`, `n6_budget_test`, `n7_money_in_test`. No synthetic test covers Budget
-  today; new synthetic tests: the no-balance sentence and hidden fund-request print, payments counted up to the
-  balance date, the company's own bank label. Click-through: a budget print.
+  today; new synthetic tests: the no-balance sentence and hidden fund-request print, the balance read only from the
+  stored budget, the company's own bank label, and payments counted up to the balance date (done in the code, but no synthetic
+  test covers it). Click-through: a budget print.
 
 ---
 
@@ -472,8 +516,9 @@ landing until that slice is merged, then its real address. The slice that builds
   reason). Each later slice adds its own records to search and its own events to notifications.
 - **Depends on:** 9a and 9b, so Undo covers the Setup pages in one go.
 - **Phone note:** none; search and the bell open full width at narrow widths.
-- **Checked by:** new synthetic tests for search per record kind, read state, an undo written and reversed, an undo
-  that has expired; `audit_trail_test` for the undo entries. Click-through.
+- **Checked by:** local `n11_ui_extras_test` (updated if it touches the list search). New synthetic tests for
+  search per record kind, read state, an undo written and reversed, an undo that has expired; `audit_trail_test` for
+  the undo entries. Click-through.
 
 ---
 
@@ -540,7 +585,13 @@ landing until that slice is merged, then its real address. The slice that builds
   filter and IC and pay masking on AuditTrail. The HR summary page of AuditPackHR. HR settings in SetupMove (staff
   records never). FirstRun's next step.
 - **Server work.** Section 4.6. New tables (migration): staff records, pay history, staff documents, reminders,
-  holidays per company. The merged joiner reminders (section 4.2).
+  holidays per company. The merged joiner reminders (section 4.2): the reminders live in the records (`people_tasks`,
+  `people_task_terms`), seeded from `rules.PEOPLE_TASKS`, with short names in `checklistbook.PEOPLE_NAMES`, so the
+  migration rewrites the stored tasks, terms and short names and the Move setup `reminders` section; the merged
+  reminder gets a new key with a 7 day term.
+  - **Preferred name** (owner, 19 November: yes). A preferred name field on the staff record, used as {name} in
+    reminders. Today {name} is `db.short_name()`, the bracketed part of the payee name; that stays the fallback for
+    payees and for staff records with no preferred name.
   - **Moving from payees to staff records.** A company's joiner and leaver reminders keep coming from its recurring
     salary rows until that company has at least one staff record. From then on they come from staff records, and a
     salary row linked to a staff record no longer makes its own. Existing open reminders are not lost or doubled at
@@ -555,7 +606,7 @@ landing until that slice is merged, then its real address. The slice that builds
   override needs a reason; IC masked to the last 4; the import is all or nothing; a director on the payroll imports
   as staff and a contract worker not on the payroll does not; the export leaves sensitive columns off; merged
   reminder dates; reminders from salary rows for a company with no staff records, and from staff records once it has
-  one, with none lost or doubled; holidays below 11 refused; replacement days. `seed_names_test` and
+  one, with none lost or doubled; holidays below 11 refused; replacement days. a preferred name is used in a reminder and the bracketed payee name is the fallback; `seed_names_test` and
   `checklist_test` for the reminder wording. Click-through with made-up staff.
 
 ---
@@ -569,7 +620,7 @@ landing until that slice is merged, then its real address. The slice that builds
 - **Finishes on earlier boards.** The On leave card (no leave type). "Back on Monday" notifications. The Leave tab on
   HrStaffRecord. The leave lists on PrintHrLists. The Leave filter on AuditTrail.
 - **Server work.** Section 4.7. New tables (migration): leave, policy per company with dated values, opening balances.
-- **Depends on:** 12. Can run beside 14.
+- **Depends on:** 12. Can run beside 14, with migration numbers agreed before both open.
 - **Phone note:** needed on the team calendar and Balances at a date; the leave list keeps the narrow layout.
 - **Checked by:** new synthetic tests: working days skip rest days and holidays; entitlement by service and work
   location; proration; leave above the legal days warns and is never refused; a policy below the legal minimum is
@@ -606,7 +657,7 @@ landing until that slice is merged, then its real address. The slice that builds
 - **Waits for stage 2:** HrClaim's "Recorded" journal voucher for a Kept here company, and HrAdvances' Kept here
   booking (a payment voucher to Advances to staff). In their place both show the state the boards draw for a Kept
   here company with no chart of accounts: nothing is posted, the claim or advance is paid and recorded as a payment.
-- **Depends on:** 11, 12. Can run beside 13.
+- **Depends on:** 11, 12. Can run beside 13, with migration numbers agreed before both open.
 - **Phone note:** needed on a new claim with its lines and receipts; the Claims and Advances lists keep the narrow
   layout.
 - **Checked by:** new synthetic tests: a claim over its limit is flagged, not refused; receipts become the payment's
@@ -648,7 +699,8 @@ landing until that slice is merged, then its real address. The slice that builds
     run can never use different rates. `payroll_check_test` must still pass unchanged after the switch.
   - **Payslip password key.** Personal payslip passwords are stored encrypted with a key kept like the form secret:
     in the records, made on first use, its creation logged, never in a Move setup file, an export or an audit entry.
-    Backups carry it so a restore can still open payslips. It uses `cryptography`, already in `requirements.txt`.
+    Backups carry it so a restore can still open payslips. `cryptography` is in `requirements.txt` already, but only `pypdf` uses it today (encrypted bank PDFs) and nothing
+    imports it directly, so this key is its first direct use.
   - **Email sending** of payslips waits for decision 3 (section 7). Until then payslips are made as password-protected
     PDFs for download and the email states are not offered.
   - Routes: payroll settings, pay items and rates (list, add from a date), runs (start, recalculate a draft, check,
@@ -662,7 +714,8 @@ landing until that slice is merged, then its real address. The slice that builds
 - **Phone note:** needed on the run, Summary, Statutory files, Parallel run and Opening year to date tabs; the
   payslip PDF is unaffected.
 - **Checked by:** every figure tested against the government calculators and the payroll workbook check; then the
-  parallel run for 2 to 3 months before the switch-over. Synthetic: `payroll_check_test` (unchanged on the dated
+  parallel run for 2 to 3 months before the switch-over. Local `n8_payslips_test` (updated for the new payslips).
+  Synthetic: `payroll_check_test` (unchanged on the dated
   rates), `statutory_test` (per-authority totals become statutory payments), new synthetic tests for each rate table
   by date, frozen figures, the payslip password never shown or exported, and the opening year-to-date import.
 
@@ -686,6 +739,17 @@ landing until that slice is merged, then its real address. The slice that builds
 - **Checked by:** new synthetic tests per right on every route; click-through as each of the four sample kinds of
   user.
 
+### 3.4 Stays as it is
+
+Routes and modules the slices do not name, which the pages keep calling as they are: `/api/open-payments`,
+`/api/export`, `/api/overview`, `/api/integrity`, `/api/statement-suggestions`, `/api/statement-lines`, `/api/audit/*`,
+`/api/auditor-export`, `/api/settings`, `/api/upload`, `/api/tasks`; and the modules `docstore`, `trail`,
+`finstatements`, `sqlgl`, `ledger` and `partybook`. A slice that moves a page keeps its calls to these, and changes
+one only where its "Server work" says so.
+
+**Local tests no slice cited.** `n8_payslips_test` is added to slice 15 and `n11_ui_extras_test` to slice 10. All the
+other tests named in this plan exist.
+
 ---
 
 ## 4. App changes the design asks for
@@ -695,28 +759,34 @@ slice and gets a test.
 
 ### 4.1 Stage 1 app fixes (old plan section 3b)
 
-Some may already be fixed by the stage 1 click-through of 15 November (`stage1-gaps`). Check each against the app
-first; build those still different.
+Checked against the code on 19 November: only "Confirm again" exists; the rest are still to build. Lines are in
+`static/app.js` unless named.
 
-- **Slice 4, Bank:** "Confirm again" when book figures change after sign-off. The route exists
-  (`/api/recon/confirm-book`); match the board's state and wording.
+- **Slice 4, Bank:** "Confirm again" when book figures change after sign-off. Done in the app (line 1037, route
+  `/api/recon/confirm-book`); only compare it with the board's state and wording.
 - **Slice 5, SQL import:** supplier invoices labelled as such in the preview; a "Deleted in SQL" pill under Ignored;
-  check-table sections in words; the unfinished import toast's sentence completed.
+  check-table sections in words; the unfinished import toast's sentence completed (no unfinished sentence was found in
+  the code: compare the toasts at lines 4372 to 4386 with the Sql board). Today: every invoice is labelled "Customer
+  invoice" (line 2160; `sqlimport.py` puts PI, SD and SC under the same kind); Deleted in SQL not shown (1588; the date
+  is in the row data); raw `bank` / `general` sections (1496; `BOOK_NAMES` at 1651).
 - **Slice 6, e-Invoices:** the print month defaults to the month being worked; MyInvois times as "1 Oct 2026, 11:19";
-  each document's print note beside its PDF button.
+  each document's print note beside its PDF button. Today: the newest month (2084), raw ISO times (2053, 2058), no
+  print note (2072).
 - **Slice 7, Books:** a grey "Can't be totalled" pill on the trial balance when an opening is missing (it shows
-  "Doesn't balance" today); no pill on an empty trial balance; an Excel failure shown in place, not as a raw error
-  page; the statutory check does not judge months the kept journal doesn't cover; one date style on Books pages.
-- **Slice 9, Setup:** Printed invoices and Printed company names hidden for a company not kept in SQL; "Open Setup"
-  from a print note opens that company's drawer; the Move setup "Everything" sentence names statutory accounts, print
-  settings and printed company names.
+  "Doesn't balance" today); no pill on an empty trial balance (a third, unknown, state in `books.py`, which has two today); an Excel failure shown in place, not as a raw error
+  page; the statutory check does not judge months the kept journal doesn't cover (only months before tracking are greyed,
+  `statutory.py`); one date style on Books pages (three in use).
+- **Slice 9, Setup:** Printed invoices and Printed company names hidden for a company not kept in SQL (shown for every
+  company today, line 2912); "Open Setup" from a print note opens that company's drawer (opens the list, 4393); the Move
+  setup "Everything" sentence names statutory accounts, print settings and printed company names (line 3232 misses
+  them; the export has all three).
 
 ### 4.2 The owner's decisions of 19 November
 
 | Change | Slice | Where |
 |---|---|---|
-| **Joiner reminders merged.** One reminder "Register {name} with KWSP and PERKESO", due 7 days after the start date, replaces the separate KWSP (7 days) and PERKESO (30 days) registration reminders. "Stamp the contract of {name}" replaces "Stamp {name}'s appointment letter". The LHDN titles drop "to LHDN": "e-CP22 for {name}", "CP22A for {name}". {name} is the preferred name from the staff record. A migration merges open, unticked registration items; ticked ones stay in history as they were. | 12 | `hrp/rules.py` reminder list, `hrp/checklistbook.py` wording |
-| **One Next up row per unpaid statutory payment.** While a statutory payment for the month is entered and unpaid, Next up shows only its payment row ("Pay KWSP for October", overdue after the due date). The rule 14 check row shows only when there is no unpaid payment to point at (paid short, or never entered). | 1 | `hrp/nextup.py` (`_statutory`, `_to_pay`) |
+| **Joiner reminders merged.** One reminder "Register {name} with KWSP and PERKESO", due 7 days after the start date, replaces the separate KWSP (7 days) and PERKESO (30 days) registration reminders. "Stamp the contract of {name}" replaces "Stamp {name}'s appointment letter". The LHDN titles drop "to LHDN": "e-CP22 for {name}", "CP22A for {name}". {name} is the preferred name from the staff record (owner, 19 November: a preferred name field is added; the bracketed payee name, `db.short_name()`, is the fallback). A migration merges open, unticked registration items; ticked ones stay in history as they were. | 12 | The reminders live in the records (`people_tasks`, `people_task_terms`), seeded from `rules.PEOPLE_TASKS`, with short names in `checklistbook.PEOPLE_NAMES`: the migration rewrites those and the Move setup `reminders` section |
+| **One Next up row per unpaid statutory payment.** While a statutory payment for the month is entered and unpaid, Next up shows only its payment row ("Pay KWSP for October", overdue after the due date). The rule 14 check row shows only when there is no unpaid payment to point at (paid short, or never entered). | 1 | `hrp/nextup.py` (`_statutory` rule 14, `_to_pay` rule 5) and `statutory.next_up` (`hrp/statutory.py`): rule 5 already lists unpaid statutory payments, so the change is a de-duplication |
 | **Rule 14 wording and target.** "…Check it on Statutory payables." (not "on the Statutory tab"), opening the Statutory payables page, with the meta "Accounting › Statutory payables". | 7 | `hrp/nextup.py` line 462 |
 
 ### 4.3 Design-sweep decisions that change app behaviour
@@ -732,10 +802,10 @@ build ignores them.
 | Rollover banner | Counts only the open month's Next up rows of the company it names. | 1 |
 | Card and tab links | Every card and cross-page link opens the named tab or filter, through the address. | 0, then each slice |
 | Discard and Undo | "Discard your changes?" on every form, except a dialog that discards a whole new item. Every Setup toast that confirms a change offers Undo. | 0, 10 |
-| Many rows | Every new list has a many-rows state ("Showing 25 of 120", "Show 25 more"). | each slice |
-| Budget with no balance | With no ringgit balance entered, Funds to request reads "Enter the bank balance to see funds to request", the fund-request print is hidden, and the print says "not worked out, bank balance not entered". Paid against the budget counts payments up to the balance date. The bank label comes from the company's own account. | 8 |
+| Many rows | Every new list has a many-rows state ("Showing 25 of 120", "Show 25 more"). Exception: six boards drawn before the scope (Setup, SetupCompanies, SetupParties, SetupChart, SetupMatching, SqlBooks) draw none; the sweep accepted that, so slices 9a and 5 build those states from the States patterns, without a board. | each slice |
+| Budget with no balance | With no ringgit balance entered, Funds to request reads "Enter the bank balance to see funds to request", the fund-request print is hidden, and the print says "not worked out, bank balance not entered". Paid against the budget counts payments up to the balance date (already done in `hrp/budget.py`). Not done: the no balance state (a blank balance counts as 0 today), the balance read only from the stored budget (the browser keeps a copy today), and the bank label from the company's own account. | 8 |
 | Paid date typed in | A payment can be paid with a typed date while the statement isn't imported, noted "Entered by hand"; the payment shows when its linked voucher changed in SQL, with "Move the link on the SQL import page to follow it". | 3 |
-| Payment types | Setup's payment types are the one list on every page. The "Needs approval" default is set per type, following SetupTypes: no for Statutory, Utility / telco and Money received; yes for every other type, including Salary, Director allowance, Rental, Consultant fee, Other payment, Staff claim, Staff claim - overseas service, Inter-company transfer, Salary advance, Payroll run, and any type a company added. Slice 11's migration sets this default on every type in use. | 11 |
+| Payment types | Setup's payment types are the one list on every page. The "Needs approval" default is set per type, following SetupTypes: no for Statutory, Utility / telco and Money received; yes for every other type, including Salary, Director allowance, Rental, Consultant fee, Other payment, Staff claim, Staff claim - overseas service, Inter-company transfer, Salary advance, Payroll run, and any type a company added. Slice 11's migration sets this default on every type in use. Owner-confirmed on 19 November: the Yes for Staff claim - overseas service, Inter-company transfer and any type a company added (the design sweep, D12, named only the others). | 11 |
 | No approvers | A company with no approvers cannot print a form; Approvals says so and links to Setup. Form (AF) and advance (SA) numbers run app-wide, not per company. | 11, 14 |
 | Bank reconciliation statement | The printed statement, the No money moved pairs, and the bank-rec upload states. | 4, 11 |
 | Signature block | Every printed form has separate Signature and Date lines; with one approver it reads "The approver's signature approves this form." | 4, 11 |
@@ -756,7 +826,7 @@ without hiding the others.
 | Paid without approval on file | Count, including Paid more than approved and Paid, approval refused | Yes | Hidden | | Approvals, filtered (slice 11) |
 | Bank | Balance per account at the latest statement line, with its date; the month's money in and out | Yes | "No statement imported for <month>" | "Statement runs to 12 Nov" | Bank and reconciliation |
 | Profit or loss | This month and the financial year to date | Yes, plus year to date | "No books yet" (Kept here); "Nothing fetched from SQL yet" | "SQL data runs to 12 Nov, fetch again" | Books › Profit and loss |
-| Customers overdue | Number and amount of customer balances **older than 30 days** | No, as at today | "No balances" | "as at 12 Nov, fetch again" | Customers and suppliers, customers overdue |
+| Customers overdue | Number and amount of customer balances **older than 30 days** inside the tracked period; balances brought forward from before tracking are not counted and show apart as "Before tracking" | No, as at today | "No balances" | "as at 12 Nov, fetch again" | Customers and suppliers, customers overdue |
 | Suppliers due | Owed to suppliers, due in the next 14 days and overdue | No, as at today | "No balances" | "as at 12 Nov, fetch again" | Customers and suppliers, suppliers due |
 | On leave | Names on leave today and a count for the week; never the leave type | No | "Add your staff to see this" | | Leave, team calendar (slice 13) |
 | Dates coming up | Probation ends, contract ends, passport and permit expiries in 60 days, counted with no name; this month's birthdays and anniversaries, day and month only | No | "Add your staff to see this" | | Staff › Calendar and reminders, filtered (slice 12) |
@@ -806,7 +876,8 @@ The payroll total shows only as one Payments line ("Salaries, October").
   stay payees unless they are on the payroll.
 - **From payees to staff records:** joiner and leaver reminders come from recurring salary rows until a company has
   staff records, then from the records (slice 12 block).
-- **The record:** personal, job, pay (salary history from a date, never overwritten), statutory numbers, PCB details,
+- **The record:** personal (including a **preferred name**, used in reminders, with the bracketed payee name as the
+  fallback), job, pay (salary history from a date, never overwritten), statutory numbers, PCB details,
   documents with expiry dates (stored under a code, not the person's name), emergency contact, notes.
 - **Worked out:** EPF rate group, SOCSO category and EIS cover from date of birth, citizenship and first-contribution
   date, changing from the month after the 60th birthday (common practice, marked "check with KWSP and PERKESO").
@@ -914,7 +985,7 @@ before the switch-over.
 **Never side by side:**
 - Anything with slice 0: every other slice builds on it.
 - Two slices that both add migrations, unless their numbers are agreed first (one chain in `hrp/db.py`).
-- Two slices that both change `hrp/nextup.py`: 1, 7, 11, 12, 13 and 15.
+- Two slices that both change `hrp/nextup.py`: 0, 1, 7, 11, 12, 15 (and 13, if it adds Next up work; its block has none today).
 - Slices 5 and 6: both take code out of today's SQL page.
 - Slice 11 with any HR slice: they all build on its request model.
 - Slice 1 beside or before slice 8: Funds to request needs 8's Budget rules.
@@ -950,12 +1021,8 @@ Every slice ends with a click-through on sample data. These are the larger walk-
 
 ### 7.1 Decisions still open for the owner
 
-1. **Fonts** (slice 0): **decided 19 November, bundled.** Inter and Space Grotesk (variable, SIL Open Font License) are
-   in `static/fonts/` with `fonts.css` and the two licences. Slice 0 links `/static/fonts/fonts.css` from `index.html`.
-2. **Sign-off with items left** (slice 4). The scope's statement lists reconciling items (money in the books not yet
-   on the bank, payments not yet cleared). The app today signs off only when the book closing equals the bank closing,
-   and the boards keep that rule. Keep the app's rule, or allow sign-off with reconciling items listed on the
-   statement?
+Decisions 1 and 2 are closed (below); the numbers stay as they are.
+
 3. **How payslips are emailed** (slice 15b). The boards draw emailed and failed payslips "with the mail server's
    reason". Which mail account sends them, and where is it set? Nothing in the sources decides this.
 4. **Maybank bulk payment** (slice 15b). The scope says to confirm, when payroll is built, that the company uses
@@ -968,7 +1035,13 @@ Every slice ends with a click-through on sample data. These are the larger walk-
    makes QR codes. A typed code is the fallback either way. Signers of digitally signed PDFs are read with `pypdf`,
    already there, with no new library.
 
-**Closed since the old plan:** KWSP on Next up (one row, 19 November); the tenant sample figure (sample data only);
+**Closed since the old plan:**
+- **Decision 1, fonts** (slice 0): decided 19 November, bundled. Inter and Space Grotesk (variable, SIL Open Font
+  License) are in `static/fonts/` with `fonts.css` and the two licences. Slice 0 links `/static/fonts/fonts.css` from
+  `index.html`.
+- **Decision 2, sign-off with items left** (slice 4): owner, 19 November: **no**. Keep today's rule, the book closing
+  must equal the bank closing. The boards already keep it. Slice 4 does not wait on it.
+- KWSP on Next up (one row, 19 November); the tenant sample figure (sample data only);
 sign-in timing (with hosting, slice 16).
 
 **Checks, not decisions, before payroll goes live:** whether the 60-and-over rates start in the birthday month or the

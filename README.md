@@ -37,6 +37,9 @@ inside your OneDrive folder, for example `C:\Users\<you>\OneDrive\HR-Backup`, an
 backups are copied there; a plain backup stays on this PC. After you mark a month as filed, the app offers to make an
 encrypted backup.
 
+`settings.json` is kept in the program folder. When the `HRP_DATA_DIR` environment variable is set (the tests do this),
+the settings are kept in that folder instead and the program folder's file is neither read nor written.
+
 Only the contents of an encrypted backup are protected. The names of the files inside (the documents and
 company-assets folders) can be seen without the password, so avoid putting a person's name in a document's file name if
 the backup goes to OneDrive.
@@ -234,8 +237,8 @@ after it a note.
   extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, myinvois_amount_test,
   myinvois_test, pack_check_test, parties_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
-  recon_review_fixes_test, restore_test, seed_names_test, setup_test, sql_books_item_test, sql_exports_test,
-  stage1_leftovers_test, stage1_settle_test, statements_test, statutory_test, trail_view_test and types_test.
+  recon_review_fixes_test, restore_test, seed_names_test, settings_isolation_test, setup_test, sql_books_item_test,
+  sql_exports_test, sql_typed_ref_test, stage1_leftovers_test, stage1_settle_test, statements_test, statutory_test, trail_view_test and types_test.
   `synthetic_tests.masters_equivalence_test --golden <file>` also compares this code's results with a snapshot taken on
   older code (`--write-golden <file>` on that code makes one); `synthetic_tests.checklist_equivalence_test --golden
   <file>` does the same for update 21.
