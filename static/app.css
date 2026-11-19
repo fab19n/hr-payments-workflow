@@ -775,3 +775,22 @@ table.ar th.ar-age, table.ar td.ar-age { background: var(--bg); }  /* the ageing
 .kh-items .plate { flex: none; }
 /* A long folder path or name wraps instead of pushing the page sideways at phone width */
 .note { overflow-wrap: anywhere; }
+
+/* HR > Payroll > Workbook check (step 0f) */
+.pc-top { margin-bottom: 12px; }
+.pc-top h1 { margin: 0 0 4px; }
+.pc-tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 16px; }
+.pc-tab { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; margin-bottom: -1px; background: none;
+  border: 0; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; font-weight: 600; color: var(--ink-2);
+  transition: color var(--t-fast), border-color var(--t-fast); }
+.pc-tab.on { border-bottom-color: var(--accent-solid); color: var(--accent); }
+.pc-tab .glyph { width: 18px; height: 18px; }
+.pc-tab:focus-visible { outline-offset: -2px; }
+.banner#pc-head { margin-top: 12px; }
+.banner#pc-head > div { display: grid; gap: 2px; }
+.banner .glyph { width: 22px; height: 22px; flex: none; }
+.pc-none { margin-top: 12px; display: grid; gap: 4px; }
+.pc-chip { cursor: pointer; }
+.pc-chip.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-solid); }
+#pc-f-h { margin: 0 0 8px; }
+#pcRefused:empty { display: none; }
