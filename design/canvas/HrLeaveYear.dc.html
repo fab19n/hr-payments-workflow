@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HR · Leave opening balances and year end · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hd:hover:not(:disabled){background:#8F140C !important}
+.hr:hover{background:#F8FAFD}
+/* motion and focus base */
+.hb,.hs,.hd,.hr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .8s linear infinite;box-sizing:border-box}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.kbd{display:inline-block;padding:0 5px;border:1px solid #C9D2DF;border-radius:5px;background:#FFFFFF;font:600 11px Inter,sans-serif;color:#2B3A50}
+/* pills, as Foundations draws them */
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+/* tabs */
+.tbs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid #E3E7ED}
+.tb{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:#46546A;font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:border-color .12s ease-out,color .12s ease-out}
+.tb:hover{color:#0F1A2B}
+.tb[aria-selected="true"]{border-bottom-color:#2450B8;color:#0F1A2B}
+/* tables */
+.lt{width:100%;border-collapse:collapse;font-size:14px}
+.lt th{background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.lt td{padding:12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.lt .r{text-align:right;font-variant-numeric:tabular-nums}
+.lt thead th{position:sticky;top:0;z-index:1}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.sk{animation:none}.spin{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="leave" company="{{shCo}}" kind="{{shKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Leave" sub="Opening balances and year end" company="{{shCo}}" on-company="{{onTopCo}}" month-offset="{{tbOff}}" on-month="{{onMonth}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+
+      <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+        <a href="HrLeave.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="14" hint-size="14px,14px"></dc-import>HR › Leave</a>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Opening balances and year end</h1>
+        <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 760px">{{intro}}</p>
+      </div>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" aria-label="Loading opening balances" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 14px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 12px; align-items: center"><span role="status" style="font-size: 13px; color: #46546A">Loading…</span><div class="sk" style="height: 30px; width: 320px; border-radius: 8px"></div></div>
+          <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 16px">
+            <sc-for list="{{skRows}}" as="k" hint-placeholder-count="6">
+              <div style="display: flex; gap: 16px; align-items: center"><div class="sk" style="height: 14px; width: 18%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 8%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 8%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 8%; border-radius: 5px; margin-left: auto"></div></div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+          <span style="width: 52px; height: 52px; border-radius: 14px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="28" hint-size="28px,28px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+          <p style="margin: 0; color: #46546A; max-width: 460px; font-size: 13px">The leave balances couldn't be read from the records folder. Check the drive is connected, then try again. Nothing was changed.</p>
+          <button type="button" id="ly-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isReady}}" hint-placeholder-val="{{ true }}">
+        <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="leave" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b>The legal minimums are the entitlement</b> (Employment Act 1955, as at Nov 2026): annual leave 8, 12 or 16 days by years of service. By law, untaken annual leave carries into the next year, to take within 12 months. Nothing above the law is given until the owner sets it on <a href="SetupLeave.dc.html">Leave types and policy</a>; leave beyond a person's legal days is a warning only, never refused.</span></div>
+        <sc-if value="{{sabahOn}}" hint-placeholder-val="{{ false }}">
+          <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>AI's staff work in Sabah.</b> Sabah follows its own Labour Ordinance: check these minimums. The app uses the days set on Leave types and policy for AI.</span></div>
+        </sc-if>
+
+        <div role="tablist" aria-label="Opening balances and year end" class="tbs">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="2">
+            <button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="ly-panel" tabindex="{{t.ti}}" class="tb fr" onClick="{{t.pick}}" onKeyDown="{{t.key}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</button>
+          </sc-for>
+        </div>
+
+        <div id="ly-panel" role="tabpanel" aria-labelledby="{{panelBy}}" class="{{panelCls}}" style="display: flex; flex-direction: column; gap: 16px">
+
+          <!-- ================= Opening balances ================= -->
+          <sc-if value="{{tabOpen}}" hint-placeholder-val="{{ true }}">
+
+            <!-- first run -->
+            <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+              <section class="rv" aria-labelledby="ly-empty-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+                <span style="width: 52px; height: 52px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="history" tone="brand" size="28" hint-size="28px,28px"></dc-import></span>
+                <h2 id="ly-empty-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No opening balances for {{coCode}} yet</h2>
+                <p style="margin: 0; color: #46546A; max-width: 560px; font-size: 13px">Bring in the annual leave each person took from 1 Jan to 30 Sep 2026, and any days carried from 2025, from your Excel list. Until then, HR › Leave shows each person’s entitlement only: taken and balance appear once the opening balances are in.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+                  <button type="button" id="ly-first-file" class="hb" onClick="{{startFile}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="white" size="18" hint-size="18px,18px"></dc-import>Choose the Excel file</button>
+                  <button type="button" id="ly-first-paste" class="hs" onClick="{{startPaste}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="clipboard" tone="brand" size="18" hint-size="18px,18px"></dc-import>Paste the rows</button>
+                </div>
+              </section>
+            </sc-if>
+
+            <!-- the import, paste or file, preview, all or nothing -->
+            <sc-if value="{{impOn}}" hint-placeholder-val="{{ false }}">
+              <section class="rv" aria-labelledby="ly-imp-h" aria-busy="{{impBusy}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+                <div style="padding: 18px 22px 14px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 12px">
+                  <div style="display: flex; gap: 14px; align-items: flex-start">
+                    <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{impGlyph}}" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+                    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                      <h2 id="ly-imp-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{impTitle}}</h2>
+                      <span style="color: #46546A; font-size: 13px">One person per row: staff number, name, annual leave taken from 1 Jan to 30 Sep 2026, and days carried from 2025. Nothing is imported until every row passes: it is all or nothing.</span>
+                    </div>
+                  </div>
+                  <ol aria-label="Steps" style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px">
+                    <sc-for list="{{impSteps}}" as="s" hint-placeholder-count="3"><li aria-current="{{s.current}}" style="{{s.style}}"><span style="{{s.dot}}">{{s.n}}</span>{{s.label}}<span class="vh">{{s.sr}}</span></li></sc-for>
+                  </ol>
+                </div>
+
+                <div style="padding: 18px 22px; display: flex; flex-direction: column; gap: 16px">
+                  <div role="group" aria-label="How to bring in the rows" style="display: inline-flex; align-self: flex-start; gap: 2px; padding: 3px; border-radius: 10px; background: #EEF1F5">
+                    <sc-for list="{{impModes}}" as="m" hint-placeholder-count="2">
+                      <button type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}"><dc-import name="Icon" glyph="{{m.glyph}}" tone="{{m.tone}}" size="16" hint-size="16px,16px"></dc-import>{{m.label}}</button>
+                    </sc-for>
+                  </div>
+
+                  <sc-if value="{{impPasteMode}}" hint-placeholder-val="{{ true }}">
+                    <p style="margin: 0; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px">In Excel, select the list with its header row, press <span class="kbd">Ctrl+C</span>, and paste below with <span class="kbd">Ctrl+V</span>. Columns separated by tabs, commas or | work too.</p>
+                    <div style="display: flex; flex-direction: column; gap: 6px">
+                      <label for="ly-text" style="font-size: 13px; font-weight: 600; color: #46546A">The rows</label>
+                      <textarea id="ly-text" rows="8" value="{{impText}}" onChange="{{onImpText}}" spellCheck="false" autoComplete="off" placeholder="Paste the rows here" aria-invalid="{{impTextInv}}" aria-describedby="{{impTextBy}}" style="{{impTextStyle}}"></textarea>
+                      <sc-if value="{{impTextErr}}" hint-placeholder-val="{{ false }}"><span id="ly-text-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Paste the rows first.</span></sc-if>
+                      <span id="ly-text-hint" style="color: #5F6C80; font-size: 12px">Rows are matched by staff number; names are only checked. Whole or half days, with a dot: 7.5. Leave from 1 Oct is entered on HR › Leave, so it isn't part of this list.</span>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{impFileMode}}" hint-placeholder-val="{{ false }}">
+                    <sc-if value="{{impFileHas}}" hint-placeholder-val="{{ true }}">
+                      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 12px; border: 1px solid #E3E7ED; background: #FAFBFC">
+                        <span style="width: 40px; height: 40px; border-radius: 10px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="sheet" tone="ok" size="22" hint-size="22px,22px"></dc-import></span>
+                        <div style="flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 14px">{{impFileName}}</b><span style="color: #5F6C80; font-size: 12px">11 KB · sheet “Leave 2026” · read on this computer, not uploaded anywhere</span></div>
+                        <button type="button" class="hs" onClick="{{chooseFile}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="folder" tone="brand" size="16" hint-size="16px,16px"></dc-import>Choose another file</button>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{impFileNone}}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; flex-direction: column; gap: 6px">
+                        <button type="button" id="ly-file" class="hs" onClick="{{chooseFile}}" aria-describedby="{{impFileBy}}" style="{{impFileStyle}}"><dc-import name="Icon" glyph="folder" tone="brand" size="18" hint-size="18px,18px"></dc-import>Choose the Excel file</button>
+                        <sc-if value="{{impFileErr}}" hint-placeholder-val="{{ false }}"><span id="ly-file-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Choose the file first.</span></sc-if>
+                      </div>
+                    </sc-if>
+                    <span id="ly-file-hint" style="color: #5F6C80; font-size: 12px">An .xlsx file with a header row. The file itself isn't kept: only the balances imported, and the import, in the audit trail.</span>
+                  </sc-if>
+
+                  <div><button type="button" id="ly-read" class="hs" onClick="{{impRead}}" disabled="{{impSaving}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{impReadLabel}}</button></div>
+
+                  <sc-if value="{{impPrevOn}}" hint-placeholder-val="{{ false }}">
+                    <section aria-labelledby="ly-prev-h" class="ex" style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 14px; border: 1px solid #E3E7ED; background: #FAFBFC">
+                      <h3 id="ly-prev-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Preview: nothing is imported yet</h3>
+                      <sc-if value="{{impBadOn}}" hint-placeholder-val="{{ false }}">
+                        <div id="ly-bad" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">{{impBadHead}}</b><div style="color: #46546A; font-size: 13px">{{impBadTxt}}</div></div></div>
+                      </sc-if>
+                      <b role="status" style="font-size: 14px">{{impCounts}}</b>
+                      <div style="overflow-x: auto; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 10px">
+                        <table class="lt" style="min-width: 860px; font-size: 13px">
+                          <caption class="vh">What happens to each row of the list</caption>
+                          <thead><tr><th scope="col" class="r">Row</th><th scope="col">Staff no.</th><th scope="col">Name in the list</th><th scope="col" class="r">Taken to 30 Sep</th><th scope="col" class="r">From 2025</th><th scope="col" class="r">By law 2026</th><th scope="col" class="r">Balance at 30 Sep</th><th scope="col">What happens</th></tr></thead>
+                          <tbody>
+                            <sc-for list="{{impRows}}" as="x" hint-placeholder-count="9">
+                              <tr style="{{x.rowStyle}}">
+                                <td class="r" style="color: #5F6C80">{{x.row}}</td>
+                                <td style="font-family: ui-monospace, Consolas, monospace">{{x.no}}</td>
+                                <td>{{x.name}}<div style="color: #5F6C80; font-size: 12px">{{x.match}}</div></td>
+                                <td class="r">{{x.taken}}</td>
+                                <td class="r">{{x.carried}}</td>
+                                <td class="r">{{x.ent}}</td>
+                                <td class="r" style="font-weight: 600">{{x.bal}}</td>
+                                <td style="min-width: 260px"><span class="{{x.pillCls}}"><dc-import name="Icon" glyph="{{x.pillGlyph}}" tone="{{x.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{x.pill}}</span>
+                                  <sc-for list="{{x.msgs}}" as="mm" hint-placeholder-count="1"><div style="{{mm.style}}">{{mm.txt}}</div></sc-for>
+                                </td>
+                              </tr>
+                            </sc-for>
+                          </tbody>
+                        </table>
+                      </div>
+                      <sc-if value="{{impMissOn}}" hint-placeholder-val="{{ false }}">
+                        <div style="display: flex; gap: 8px; align-items: flex-start; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="help" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>{{impMiss}}</span></div>
+                      </sc-if>
+                    </section>
+                  </sc-if>
+                </div>
+
+                <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+                  <sc-if value="{{impConfirmOn}}" hint-placeholder-val="{{ false }}">
+                    <div role="alertdialog" aria-labelledby="ly-idisc-q" aria-describedby="ly-idisc-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+                      <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ly-idisc-q">Discard your changes?</b><div id="ly-idisc-d" style="color: #5F6C80; font-size: 12px">The rows aren't imported. The opening balances stay as they are.</div></div></div>
+                      <div style="display: flex; gap: 8px">
+                        <button type="button" id="ly-ikeep" class="hs" onClick="{{impKeep}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+                        <button type="button" class="hd" onClick="{{impDiscard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{impFootOn}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+                      <span id="ly-imp-note" role="status" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #5F6C80">{{impNote}}</span>
+                      <div style="display: flex; gap: 8px">
+                        <button type="button" id="ly-imp-cancel" class="hs" onClick="{{impCancel}}" disabled="{{impSaving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                        <button type="button" id="ly-imp-go" class="hb" onClick="{{impGo}}" aria-disabled="{{impGoAria}}" aria-describedby="ly-imp-note" style="{{impGoStyle}}"><sc-if value="{{impSaving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{impGoLabel}}</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </div>
+              </section>
+            </sc-if>
+
+            <!-- the opening balances in use -->
+            <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+              <section aria-labelledby="ly-open-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+                <div style="padding: 14px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+                  <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                    <h2 id="ly-open-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Annual leave 2026 · opening balances at 30 Sep</h2>
+                    <span style="color: #46546A; font-size: 13px">{{openRec}}</span>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                    <button type="button" id="ly-xl-open" class="hs" onClick="{{xlOpen}}" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="download" tone="muted" size="16" hint-size="16px,16px"></dc-import>Excel</button>
+                    <button type="button" id="ly-again" class="hs" onClick="{{startFile}}" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="brand" size="16" hint-size="16px,16px"></dc-import>Import again</button>
+                  </div>
+                </div>
+                <sc-if value="{{manyOn}}" hint-placeholder-val="{{ false }}">
+                  <p style="margin: 0; padding: 8px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 12px">Many rows: a what-if of 140 staff for AISB, as on HR › Staff. 139 are listed here: Kavitha (S010) left on 31 Aug, so she has no opening balance or year end here. Rows after S010 are stand-ins named by their staff number, so no new names are made up. The header row stays at the top while the rows scroll; the list shows 25 at a time.</p>
+                </sc-if>
+                <div style="{{scrollStyle}}">
+                  <table class="lt" style="min-width: 820px">
+                    <caption class="vh">Opening balances for annual leave 2026, {{coCode}}, one row per person in employment</caption>
+                    <thead><tr><th scope="col">Person</th><th scope="col">Service at 1 Jan 2026</th><th scope="col" class="r">By law 2026</th><th scope="col" class="r">From 2025</th><th scope="col" class="r">Taken 1 Jan to 30 Sep</th><th scope="col" class="r">Balance at 30 Sep</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{openRows}}" as="o" hint-placeholder-count="9">
+                        <tr class="{{o.cls}}">
+                          <th scope="row" style="text-align: left; padding: 12px; border-top: 1px solid #EEF1F5; font-weight: 600; vertical-align: top">{{o.name}}<div style="font-weight: 400; color: #5F6C80; font-size: 12px">{{o.sub}}</div></th>
+                          <td>{{o.svc}}<sc-if value="{{o.entSubOn}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{o.entSub}}</div></sc-if></td>
+                          <td class="r">{{o.ent}}</td>
+                          <td class="r">{{o.carried}}</td>
+                          <td class="r">{{o.taken}}</td>
+                          <td class="r" style="font-weight: 600">{{o.bal}}</td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 18px; border-top: 1px solid #EEF1F5">
+                    <span role="status" style="color: #46546A; font-size: 13px">{{moreTxt}}</span>
+                    <button type="button" class="hs" onClick="{{showMore}}" style="height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreBtn}}</button>
+                  </div>
+                </sc-if>
+                <p style="margin: 0; padding: 12px 18px; border-top: 1px solid #EEF1F5; color: #5F6C80; font-size: 12px">Balance at 30 Sep = by law + from 2025 − taken. Leave from 1 Oct 2026 is entered on <a href="HrLeave.dc.html">HR › Leave</a>, and the balances there follow it. Importing again replaces these opening balances, all or nothing, and is recorded in the audit trail.</p>
+              </section>
+            </sc-if>
+          </sc-if>
+
+          <!-- ================= Year end ================= -->
+          <sc-if value="{{tabYear}}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{yeNeedOn}}" hint-placeholder-val="{{ false }}">
+              <section class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+                <span style="width: 52px; height: 52px; border-radius: 14px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="calendar" tone="muted" size="28" hint-size="28px,28px"></dc-import></span>
+                <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">The year end needs the opening balances</h2>
+                <p style="margin: 0; color: #46546A; max-width: 520px; font-size: 13px">Without what {{coCode}}'s staff took before leave was entered here, the days to carry into 2027 can't be worked out. Import them first.</p>
+                <button type="button" class="hb" onClick="{{goOpen}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="history" tone="white" size="18" hint-size="18px,18px"></dc-import>Go to Opening balances</button>
+              </section>
+            </sc-if>
+
+            <sc-if value="{{yeOn}}" hint-placeholder-val="{{ true }}">
+              <section aria-labelledby="ly-ye-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+                <div style="padding: 16px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between">
+                  <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 420px">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><h2 id="ly-ye-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Year end 2026 · annual leave</h2><span class="{{yePillCls}}"><dc-import name="Icon" glyph="{{yePillGlyph}}" tone="{{yePillTone}}" size="14" hint-size="14px,14px"></dc-import>{{yePill}}</span></div>
+                    <span style="color: #46546A; font-size: 13px">{{yeDateline}}</span>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                    <button type="button" id="ly-xl-ye" class="hs" onClick="{{xlYe}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="download" tone="muted" size="16" hint-size="16px,16px"></dc-import>Excel</button>
+                    <sc-if value="{{runBtnOn}}" hint-placeholder-val="{{ true }}">
+                      <button type="button" id="ly-run" class="hb" onClick="{{openRun}}" disabled="{{runDis}}" aria-haspopup="dialog" aria-describedby="ly-run-note" style="{{runStyle}}"><dc-import name="Icon" glyph="calendar" tone="white" size="16" hint-size="16px,16px"></dc-import>Run the year end</button>
+                    </sc-if>
+                  </div>
+                </div>
+                <div style="padding: 14px 18px; display: flex; flex-direction: column; gap: 14px">
+                  <p id="ly-run-note" style="margin: 0; color: #46546A; font-size: 13px">{{runNote}}</p>
+                  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+                    <sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+                      <div style="{{t.style}}"><span style="font-size: 12px; font-weight: 600; color: #5F6C80">{{t.label}}</span><b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums">{{t.value}}</b><span style="font-size: 12px; color: #46546A">{{t.sub}}</span></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="{{scrollStyle}}">
+                  <table class="lt" style="min-width: 1040px">
+                    <caption class="vh">Year end 2026 for {{coCode}}: annual leave untaken at 31 December, what goes into 2027, and what 2027 starts at</caption>
+                    <thead><tr><th scope="col">Person</th><th scope="col" class="r">By law 2026</th><th scope="col" class="r">Taken and booked</th><th scope="col" class="r">Untaken at 31 Dec</th><th scope="col" class="r">Into 2027</th><th scope="col" class="r">2027 by law</th><th scope="col" class="r">2027 starts at</th><th scope="col">Note</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{yeRows}}" as="y" hint-placeholder-count="9">
+                        <tr class="{{y.cls}}">
+                          <th scope="row" style="text-align: left; padding: 12px; border-top: 1px solid #EEF1F5; font-weight: 600; vertical-align: top">{{y.name}}<div style="font-weight: 400; color: #5F6C80; font-size: 12px">{{y.sub}}</div></th>
+                          <td class="r">{{y.ent}}</td>
+                          <td class="r">{{y.taken}}</td>
+                          <td class="r"><span style="{{y.untakenStyle}}"><sc-if value="{{y.negOn}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import></sc-if>{{y.untaken}}</span></td>
+                          <td class="r"><span style="{{y.carryStyle}}">{{y.carry}}</span><sc-if value="{{y.ovOn}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 4px"><span class="pl warn"><dc-import name="Icon" glyph="edit" tone="warn" size="14" hint-size="14px,14px"></dc-import>Overridden</span></div></sc-if></td>
+                          <td class="r">{{y.law27}}<sc-if value="{{y.upOn}}" hint-placeholder-val="{{ false }}"><div style="color: #0A6B3D; font-size: 12px; font-weight: 600">Up from {{y.ent}}</div></sc-if></td>
+                          <td class="r"><span style="{{y.startsStyle}}">{{y.starts}}</span><sc-if value="{{y.belowOn}}" hint-placeholder-val="{{ false }}"><div style="color: #934100; font-size: 12px">Below the law</div></sc-if></td>
+                          <td style="min-width: 280px; font-size: 13px">
+                            <div style="{{y.noteStyle}}">{{y.note}}</div>
+                            <sc-if value="{{y.linkOn}}" hint-placeholder-val="{{ false }}"><a href="PayrollLeaver.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-weight: 600; text-decoration: none">His final pay on HR › Payroll<dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></a></sc-if>
+                            <sc-if value="{{y.canOv}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 6px"><button type="button" id="{{y.btnId}}" class="hs" onClick="{{y.ovOpen}}" aria-haspopup="dialog" aria-label="{{y.ovLabel}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="edit" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{y.ovBtn}}</button></div></sc-if>
+                          </td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 10px 18px; border-top: 1px solid #EEF1F5">
+                    <span role="status" style="color: #46546A; font-size: 13px">{{moreTxt}}</span>
+                    <button type="button" class="hs" onClick="{{showMore}}" style="height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreBtn}}</button>
+                  </div>
+                </sc-if>
+                <div style="padding: 12px 18px; border-top: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 6px; color: #5F6C80; font-size: 12px">
+                  <sc-if value="{{leftOn}}" hint-placeholder-val="{{ false }}"><span>Kavitha Nair left on Mon 31 Aug 2026: her untaken leave was settled in her final pay, so she isn't in the year end.</span></sc-if>
+                  <span>By law, every untaken day of 2026 carries into 2027, to take by Fri 31 Dec 2027; days carried from 2025 and still not taken lapse on Thu 31 Dec 2026. Someone whose last day is 31 Dec is paid for untaken days instead. 2027 by law counts service at 1 Jan 2027. An override needs a reason and is recorded in the audit trail; one above the law is a warning only.</span>
+                </div>
+              </section>
+              <sc-if value="{{doneOn}}" hint-placeholder-val="{{ false }}">
+                <div role="note" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; border: 1px solid #BFE8D0; background: #F0FBF5; color: #0A4D2C; font-size: 13px"><dc-import name="Icon" glyph="check" tone="ok" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1 1 360px"><b>2027 starts from these balances.</b> HR › Leave now counts annual leave for 2027 from the column “2027 starts at”. The year-end figures go to the audit pack's HR pages.</span><a href="HrLeave.dc.html#balances" style="display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-weight: 600; text-decoration: none">Balances on HR › Leave<dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></a></div>
+              </sc-if>
+            </sc-if>
+          </sc-if>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 720px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <!-- override one person's carry forward, with a reason -->
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ly-o-title" aria-describedby="ly-o-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" aria-busy="{{savingAria}}" style="pointer-events: auto; width: 640px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="edit" tone="warn" size="24" hint-size="24px,24px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">HR › Leave › Year end 2026 · {{coCode}}</span>
+          <h2 id="ly-o-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{oTitle}}</h2>
+          <span id="ly-o-sub" style="color: #46546A; font-size: 13px">{{oSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ly-o-refuse" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A; font-size: 13px">{{refuseTxt}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{errSumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>Check the fields marked below.</b> {{errSum}}</span></div>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; font-size: 13px">
+          <span style="font-weight: 600; color: #46546A">Worked out by the law</span>
+          <span>{{oWorked}}</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; max-width: 260px">
+          <label for="ly-o-carry" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Days into 2027<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+          <input id="ly-o-carry" type="text" inputMode="decimal" value="{{fCarry}}" onChange="{{onCarry}}" autoComplete="off" aria-required="true" aria-invalid="{{carryInv}}" aria-describedby="{{carryBy}}" style="{{carryStyle}}">
+          <sc-if value="{{carryErrOn}}" hint-placeholder-val="{{ false }}"><span id="ly-o-carry-err" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{carryErr}}</span></sc-if>
+          <span id="ly-o-carry-h" style="color: #5F6C80; font-size: 12px">Whole or half days. A minus number takes days from 2027.</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="ly-o-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Reason<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+          <input id="ly-o-why" type="text" value="{{fWhy}}" onChange="{{onWhy}}" maxLength="200" autoComplete="off" aria-required="true" aria-invalid="{{whyInv}}" aria-describedby="{{whyBy}}" style="{{whyStyle}}">
+          <sc-if value="{{whyErrOn}}" hint-placeholder-val="{{ false }}"><span id="ly-o-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Give a reason. It stays with the override.</span></sc-if>
+          <span id="ly-o-why-h" style="color: #5F6C80; font-size: 12px">Shown beside the Overridden marker and kept in the audit trail with your name. No medical detail.</span>
+        </div>
+
+        <sc-if value="{{effOn}}" hint-placeholder-val="{{ false }}">
+          <div role="status" style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px"><dc-import name="Icon" glyph="calendar" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>{{eff}}</span></div>
+        </sc-if>
+        <sc-for list="{{oWarns}}" as="w" hint-placeholder-count="1">
+          <div role="status" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>{{w.head}}</b> {{w.txt}}</span></div>
+        </sc-for>
+        <sc-if value="{{oHadOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{oHad}}</span></sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ly-disc-q" aria-describedby="ly-disc-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ly-disc-q">Discard your changes?</b><div id="ly-disc-d" style="color: #5F6C80; font-size: 12px">The override isn't saved. The carry forward stays as it was.</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ly-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+              <sc-if value="{{canRemove}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{removeOv}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer">Remove the override</button></sc-if>
+              <span id="ly-foot" role="status" style="display: inline-flex; align-items: center; gap: 8px; color: #5F6C80; font-size: 12px"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            </div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ly-close" class="hs" onClick="{{askClose}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Close</button>
+              <button type="submit" class="hb" aria-describedby="ly-foot" aria-disabled="{{savingAria}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; min-width: 140px; justify-content: center; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{saveLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+
+  <!-- run the year end -->
+  <sc-if value="{{runOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{rDimCls}}" onClick="{{rClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 72px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{rCls}}" role="dialog" aria-modal="true" aria-labelledby="ly-r-title" aria-describedby="ly-r-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{rConfirm}}" onKeyDown="{{rKey}}" onAnimationEnd="{{rAnim}}" aria-busy="{{rBusy}}" style="pointer-events: auto; width: 600px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 24px 14px; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="calendar" tone="brand" size="22" hint-size="22px,22px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <h2 id="ly-r-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Run the year end for 2026?</h2>
+          <span id="ly-r-sub" style="color: #46546A; font-size: 13px">{{rSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{rClose}}" disabled="{{rSaving}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 0 24px 18px; display: flex; flex-direction: column; gap: 10px">
+        <sc-for list="{{rLines}}" as="l" hint-placeholder-count="4">
+          <div style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px"><dc-import name="Icon" glyph="{{l.glyph}}" tone="{{l.tone}}" size="18" hint-size="18px,18px"></dc-import><span><b>{{l.head}}</b> {{l.txt}}</span></div>
+        </sc-for>
+        <span style="color: #5F6C80; font-size: 12px">The run is recorded in the audit trail with your name. Undo is offered right after it.</span>
+      </div>
+      <div style="padding: 14px 24px; border-top: 1px solid #EEF1F5; background: #FAFBFC; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+        <span role="status" style="color: #5F6C80; font-size: 12px">{{rNote}}</span>
+        <div style="display: flex; gap: 8px">
+          <button type="button" id="ly-r-keep" class="hs" onClick="{{rClose}}" disabled="{{rSaving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep 2026 open</button>
+          <button type="submit" class="hb" aria-disabled="{{rBusy}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; min-width: 160px; justify-content: center; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{rSaving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{rLabel}}</button>
+        </div>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"opening","options":["opening","empty","paste","paste-discard","preview","errors","importing","imported","year-end","override","override-errors","override-saving","override-refused","override-discard","override-saved","run","running","done","many","loading","error"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'opening', (p && p.company) || 'aisb');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); clearTimeout(this._rt); clearTimeout(this._it); }
+
+  // ---------- the world (samples sections 2, 5 and 8; the same people and days as HR › Leave) ----------
+  TODAY() { return '2026-11-18'; }
+  RUNDAY() { return '2027-01-04'; }
+  // ent = by law for 2026; open = annual leave taken 1 Jan to 30 Sep (the import); later = annual leave entered on HR › Leave from 1 Oct to 31 Dec, not cancelled
+  people(co) {
+    const P = (id, n, full, joined, svc, ent, open, later, l27, svc27, g, x) => ({ id, n, full, joined, svc, ent, open, later, l27, svc27, g, leaving: '', entNote: '', away: '', booked: '', up: false, stand: false, ...(x || {}) });
+    if (co === 'AI') return [
+      P('A001', 'Faizal', 'Mohd Faizal bin Yusof', '2020-04-01', '5 years 9 months', 16, null, 0, 16, '6 years 9 months', 'M'),
+      P('A002', 'Pei Shan', 'Chong Pei Shan', '2021-10-01', '4 years 3 months', 12, null, 0, 16, '5 years 3 months', 'F', { up: true }),
+      P('A003', 'Priya', 'Priya Subramaniam', '2022-08-16', '3 years 4 months', 12, null, 0, 12, '4 years 4 months', 'F'),
+      P('A004', 'Jun Wei', 'Lee Jun Wei', '2023-03-01', '2 years 10 months', 12, null, 0, 12, '3 years 10 months', 'M'),
+      P('A005', 'Rina', 'Rina Santoso', '2025-01-15', '11 months', 8, null, 0, 8, '1 year 11 months', 'F')];
+    return [
+      P('S001', 'Aisha', 'Aisha Rahman', '2019-05-02', '6 years 8 months', 16, 11, 0, 16, '7 years 8 months', 'F'),
+      P('S002', 'Wei Ming', 'Ong Wei Ming', '2021-06-01', '4 years 7 months', 12, 8, 0.5, 16, '5 years 7 months', 'M', { up: true }),
+      P('S003', 'Aina', 'Nurul Aina binti Hashim', '2016-10-03', '9 years 3 months', 16, 9, 5, 16, '10 years 3 months', 'F'),
+      P('S004', 'Hafiz', 'Mohd Hafiz bin Rosli', '2019-03-04', '6 years 10 months', 16, 10, 1, 16, '7 years 10 months', 'M'),
+      P('S005', 'Khadijah', 'Nor Khadijah binti Omar', '2020-02-01', '5 years 11 months', 16, 6, 0, 16, '6 years 11 months', 'F', { away: 'On maternity leave until Sun 10 Jan 2027: the days wait for her return.' }),
+      P('S006', 'Kah Seng', 'Wong Kah Seng', '2024-01-01', '2 years', 12, 7, 0, 0, '', 'M', { leaving: '2026-12-31', entNote: 'Leaving 31 Dec: 12 of 12 months' }),
+      P('S007', 'Jia Hui', 'Goh Jia Hui', '2026-09-01', 'Joined 1 Sep 2026', 3, 0, 4, 8, '4 months', 'F', { entNote: '8 × 4/12 = 2.67, rounded to 3', booked: 'Mon 7 to Thu 10 Dec' }),
+      P('S008', 'Izzati', 'Nur Izzati binti Kamal', '2025-01-15', '11 months', 8, 5, 0, 8, '1 year 11 months', 'F'),
+      P('S009', 'Daniel', 'Daniel Lee Chee Keong', '2026-11-03', 'Joined 3 Nov 2026', 1, 0, 0, 8, '2 months', 'M', { entNote: '8 × 2/12 = 1.33, rounded to 1' })];
+  }
+  // the many-rows what-if: stand-ins named by staff number, so no new names are made up
+  standIns() {
+    const out = [], J = ['2024-03-01', '2022-07-01', '2018-02-01'], S = ['1 year 10 months', '3 years 6 months', '7 years 11 months'], S27 = ['2 years 10 months', '4 years 6 months', '8 years 11 months'], E = [8, 12, 16], E27 = [12, 12, 16];
+    for (let i = 11; i <= 140; i++) {
+      const id = 'S' + String(i).padStart(3, '0'), k = i % 3;
+      out.push({ id, n: 'Staff ' + id, full: 'Stand-in', joined: J[k], svc: S[k], ent: E[k], open: (i % 5) + 2, later: 0, l27: E27[k], svc27: S27[k], g: i % 2 ? 'M' : 'F', leaving: '', entNote: '', away: '', booked: '', up: E27[k] > E[k], stand: true });
+    }
+    return out;
+  }
+  roster(co) { return co === 'AISB' && this.state && this.state.many ? [...this.people('AISB'), ...this.standIns()] : this.people(co); }
+  balOf(co, src, when, list) {
+    const rows = {};
+    (list || this.people(co)).forEach(p => { rows[p.id] = { taken: p.open || 0, carried: 0 }; });
+    return { when, by: 'Aisha Rahman', src, n: Object.keys(rows).length, rows };
+  }
+  // the list as it sits in "Leave balances 2026.xlsx"
+  CLEAN() {
+    return ['Staff no.\tName\tAnnual leave taken 1 Jan to 30 Sep 2026\tCarried from 2025',
+      'S001\tAisha Rahman\t11\t0', 'S002\tOng Wei Ming\t8\t0', 'S003\tNurul Aina binti Hashim\t9\t0', 'S004\tMohd Hafiz bin Rosli\t10\t0', 'S005\tNor Khadijah binti Omar\t6\t0',
+      'S006\tWong Kah Seng\t7\t0', 'S007\tGoh Jia Hui\t0\t0', 'S008\tNur Izzati binti Kamal\t5\t0', 'S009\tDaniel Lee Chee Keong\t0\t0'].join('\n');
+  }
+  // a pasted list with three problems and one warning
+  BAD() {
+    return ['Staff no.\tName\tAnnual leave taken 1 Jan to 30 Sep 2026\tCarried from 2025',
+      'S001\tAisha Rahman\t11\t0', 'S002\tOng Wei Ming\t13\t0', 'S003\tNurul Aina binti Hashim\t9\t0', 'S04\tMohd Hafiz bin Rosli\t10\t0', 'S005\tNor Khadijah binti Omar\t6\t0',
+      'S006\tWong Kah Seng\t7,5\t0', 'S007\tGoh Jia Hui\t0\t0', 'S008\tNur Izzati binti Kamal\t5\t0', 'S009\tDaniel Lee Chee Keong\t2\t0'].join('\n');
+  }
+
+  // ---------- dates and numbers ----------
+  utc(iso) { const p = String(iso).split('-'); return new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]))); }
+  long(iso) { const d = this.utc(iso); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+  num(n) { const s = Math.abs(n) % 1 ? Math.abs(n).toFixed(1) : String(Math.abs(n)); return (n < 0 ? '−' : '') + s; }
+  dayWord(n) { const a = Math.abs(n); return a === 0.5 ? 'half a day' : a === 1 ? '1 day' : this.num(a) + ' days'; }
+  cap(s) { return s.replace(/^./, c => c.toUpperCase()); }
+  his(p) { return p.g === 'M' ? 'his' : 'her'; }
+
+  // ---------- the rules ----------
+  // the year end for one person: untaken at 31 Dec, what goes into 2027 by law, and any override
+  ye(per, b, ov) {
+    const r = b && b.rows[per.id];
+    const carried = r ? r.carried : 0, taken = (r ? r.taken : 0) + (per.later || 0);
+    const untaken = per.ent + carried - taken;
+    const lapse = Math.max(carried - taken, 0);
+    const leaving = !!per.leaving && per.leaving <= '2026-12-31';
+    const worked = leaving ? 0 : Math.max(untaken - lapse, 0);
+    const o = ov ? ov[per.id] : null;
+    const carry = o ? o.carry : worked;
+    return { taken, carried, untaken, lapse, leaving, worked, carry, o, starts: leaving ? null : per.l27 + carry };
+  }
+  parseNum(s) { const t = String(s == null ? '' : s).trim(); if (t === '') return { ok: true, v: 0, empty: true }; if (!/^-?\d+(\.\d+)?$/.test(t)) return { ok: false }; const v = Number(t); return { ok: v * 2 === Math.round(v * 2), v, half: true }; }
+  parse(co, text) {
+    const lines = String(text || '').split(/\r?\n/).filter(l => l.trim());
+    if (!lines.length) return null;
+    const cut = l => l.split(l.indexOf('\t') >= 0 ? '\t' : l.indexOf('|') >= 0 ? '|' : ',').map(s => s.trim());
+    const first = cut(lines[0]);
+    const head = !/^[A-Z]{1,3}\d+$/i.test(first[0] || '');
+    const people = this.people(co), seen = {}, rows = [];
+    lines.slice(head ? 1 : 0).forEach((l, i) => {
+      const c = cut(l), row = i + (head ? 2 : 1), no = String(c[0] || '').toUpperCase(), name = c[1] || '';
+      const bad = [], warns = [];
+      const per = people.find(p => p.id === no);
+      if (!no) bad.push('No staff number.');
+      else if (!per) {
+        const digits = Number(no.replace(/\D/g, ''));
+        const near = people.find(p => Number(p.id.replace(/\D/g, '')) === digits);
+        bad.push('No staff number ' + no + ' at ' + co + '.' + (near ? ' Did you mean ' + near.id + ' (' + near.n + ')?' : ''));
+      } else if (seen[no]) bad.push(no + ' is on row ' + seen[no] + ' too.');
+      if (no && !seen[no]) seen[no] = row;
+      const tk = this.parseNum(c[2]), cf = this.parseNum(c[3]);
+      if (!tk.ok) bad.push('“' + c[2] + '” isn’t a number of days. Use whole or half days with a dot, like 7.5.');
+      else if (tk.v < 0) bad.push('Days taken can’t be below 0.');
+      if (!cf.ok) bad.push('“' + c[3] + '” in From 2025 isn’t a number of days.');
+      else if (cf.v < 0) bad.push('Days from 2025 can’t be below 0.');
+      let bal = null;
+      if (per && tk.ok && tk.v > 0 && per.joined > '2026-09-30') bad.push(per.n + ' joined on ' + this.long(per.joined) + ', after 30 Sep: nothing can be taken before then.');
+      if (per && name && name.toLowerCase() !== per.full.toLowerCase()) warns.push('The staff record says ' + per.full + '. Matched by staff number.');
+      if (per && tk.ok && cf.ok && tk.v >= 0 && cf.v >= 0 && !bad.length) {
+        bal = per.ent + cf.v - tk.v;
+        if (bal < 0) warns.push(this.cap(this.dayWord(-bal)) + ' beyond ' + this.his(per) + ' ' + per.ent + (per.ent === 1 ? ' legal day' : ' legal days') + ' for 2026: a warning only. It is imported as it is.');
+      }
+      rows.push({ row, no: no || '—', name: name || '—', per, taken: tk.ok ? this.num(tk.v) : (c[2] || '—'), carried: cf.ok ? this.num(cf.v) : (c[3] || '—'), ent: per ? String(per.ent) : '—', bal: bal == null ? '—' : this.num(bal), bad, warns, tv: tk.ok ? tk.v : 0, cv: cf.ok ? cf.v : 0 });
+    });
+    const ids = rows.filter(r => r.per && !r.bad.length).map(r => r.per.id);
+    const missing = people.filter(p => !rows.some(r => r.per && r.per.id === p.id));
+    return { rows, nBad: rows.filter(r => r.bad.length).length, nWarn: rows.filter(r => !r.bad.length && r.warns.length).length, nOk: rows.filter(r => !r.bad.length && !r.warns.length).length, ids, missing };
+  }
+
+  // ---------- states ----------
+  init(view, company) {
+    let co = String(company || 'aisb').toUpperCase() === 'AI' ? 'AI' : 'AISB';
+    const flowViews = ['paste', 'paste-discard', 'preview', 'errors', 'importing', 'imported', 'override', 'override-errors', 'override-saving', 'override-refused', 'override-discard', 'override-saved', 'run', 'running', 'done', 'many'];
+    if (flowViews.indexOf(view) >= 0) co = 'AISB';
+    const bal = { AISB: this.balOf('AISB', 'Leave balances 2026.xlsx', 'Wed 4 Nov 2026'), AI: null };
+    const jia = { S007: { carry: -1, why: 'Agreed in writing with Jia Hui on 18 Nov 2026: the extra day comes from her 2027 leave', by: 'Aisha Rahman', when: 'Wed 18 Nov 2026' } };
+    const base = { co, phase: 'ready', tab: 'open', tabN: 0, today: this.TODAY(), bal, imp: null, many: false, limit: 25, ov: { AISB: {}, AI: {} }, done: { AISB: null, AI: null },
+      dlg: null, form: null, loaded: null, tried: false, refuse: '', confirm: false, saving: false, closing: false, footMsg: '',
+      run: null, toast: null, toastLeaving: false, undo: null, flashIds: [], flashN: 0, tbOff: null };
+    const imp = x => ({ mode: 'paste', text: '', file: false, res: null, tried: false, confirm: false, saving: false, refused: false, ...(x || {}) });
+    const noBal = { AISB: null, AI: null };
+    const yeBase = { ...base, tab: 'year' };
+    const ovDlg = (pid, f, extra) => { const loaded = this.ovForm(pid, {}); return { ...yeBase, dlg: { pid }, form: { ...loaded, ...(f || {}) }, loaded, ...(extra || {}) }; };
+    const jiaF = { carry: '-1', why: jia.S007.why };
+    // on the run day (Mon 4 Jan 2027) the payroll month is December 2026: the top bar's month is two on from October
+    const atRun = { ...yeBase, today: this.RUNDAY(), tbOff: 2, ov: { AISB: jia, AI: {} } };
+    switch (view) {
+      case 'loading': return { ...base, phase: 'loading' };
+      case 'error': return { ...base, phase: 'error' };
+      case 'empty': return { ...base, bal: noBal };
+      case 'paste': return { ...base, bal: noBal, imp: imp({ text: this.CLEAN() }) };
+      case 'paste-discard': return { ...base, bal: noBal, imp: imp({ text: this.CLEAN(), confirm: true }) };
+      case 'preview': return { ...base, bal: noBal, imp: imp({ mode: 'file', file: true, text: this.CLEAN(), res: this.parse('AISB', this.CLEAN()) }) };
+      case 'errors': return { ...base, bal: noBal, imp: imp({ text: this.BAD(), res: this.parse('AISB', this.BAD()), refused: true }) };
+      case 'importing': return { ...base, bal: noBal, imp: imp({ mode: 'file', file: true, text: this.CLEAN(), res: this.parse('AISB', this.CLEAN()), saving: true }) };
+      case 'imported': {
+        const b = { ...bal, AISB: this.balOf('AISB', 'Leave balances 2026.xlsx', 'Wed 18 Nov 2026') };
+        return { ...base, bal: b, toast: { text: 'Opening balances imported: 9 people from Leave balances 2026.xlsx. Recorded in the audit trail.', undo: true }, undo: { kind: 'import', co: 'AISB', prev: null }, flashIds: Object.keys(b.AISB.rows), flashN: 1 };
+      }
+      case 'many': return { ...base, many: true, bal: { ...bal, AISB: this.balOf('AISB', 'Leave balances 2026.xlsx', 'Wed 4 Nov 2026', [...this.people('AISB'), ...this.standIns()]) } };
+      case 'year-end': return yeBase;
+      case 'override': return ovDlg('S007', jiaF);
+      case 'override-errors': return ovDlg('S007', { carry: '-1', why: '' }, { tried: true });
+      case 'override-saving': return ovDlg('S007', jiaF, { saving: true });
+      case 'override-discard': return ovDlg('S007', jiaF, { confirm: true });
+      case 'override-refused': { const f = { carry: '2', why: 'Asked to keep 2 days for January' }; return ovDlg('S006', f, { tried: true, refuse: this.refusal('S006') }); }
+      case 'override-saved': return { ...yeBase, ov: { AISB: jia, AI: {} }, toast: { text: 'Override saved: Jia Hui, −1 day into 2027. Recorded in the audit trail.', undo: true }, undo: { kind: 'ov', co: 'AISB', pid: 'S007', prev: null }, flashIds: ['S007'], flashN: 1 };
+      case 'run': return { ...atRun, run: { saving: false, closing: false } };
+      case 'running': return { ...atRun, run: { saving: true, closing: false } };
+      case 'done': return { ...atRun, done: { AISB: { when: 'Mon 4 Jan 2027, 09:15', by: 'Aisha Rahman' }, AI: null }, toast: { text: this.doneText('AISB', bal.AISB, jia), undo: true }, undo: { kind: 'run', co: 'AISB' } };
+      default: return base;
+    }
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); clearTimeout(this._rt); clearTimeout(this._it);
+      const nx = this.init(this.props.view || 'opening', this.props.company || 'aisb');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (st.dlg && !prev.dlg) { this.focusId('ly-o-title'); return; }
+    if (st.run && !prev.run) { this.focusId('ly-r-title'); return; }
+    if ((!st.dlg && prev.dlg) || (!st.run && prev.run)) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true });
+      this._opener = null;
+      if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); }
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('ly-keep'); return; }
+    if (prev.confirm && !st.confirm && st.dlg && !st.closing) { this.focusId('ly-o-carry'); return; }
+    const ic = st.imp && st.imp.confirm, pic = prev.imp && prev.imp.confirm;
+    if (ic && !pic) this.focusId('ly-ikeep');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+
+  // ---------- the import ----------
+  setImp(patch) { this.setState({ imp: { ...this.state.imp, ...patch } }); }
+  startImp(mode) {
+    if (this.state.imp) return;
+    this._focusId = 'ly-imp-h';
+    this.setState({ tab: 'open', imp: { mode, text: '', file: false, res: null, tried: false, confirm: false, saving: false, refused: false } });
+  }
+  impDirty() { const i = this.state.imp; return !!i && (!!String(i.text || '').trim() && (i.mode === 'paste' || i.file)); }
+  impRead() {
+    const i = this.state.imp;
+    if (!i || i.saving) return;
+    if (i.mode === 'paste' && !String(i.text || '').trim()) { this._focusId = 'ly-text'; this.setImp({ tried: true, res: null }); return; }
+    if (i.mode === 'file' && !i.file) { this._focusId = 'ly-file'; this.setImp({ tried: true, res: null }); return; }
+    const res = this.parse(this.state.co, i.text);
+    this._focusId = res && res.nBad ? 'ly-bad' : 'ly-prev-h';
+    this.setImp({ res, tried: false, refused: false });
+  }
+  impGo() {
+    const i = this.state.imp;
+    if (!i || i.saving || i.confirm) return;
+    if (!i.res) { this.impRead(); return; }
+    if (i.res.nBad) { this._focusId = 'ly-bad'; this.setImp({ refused: true }); return; }
+    this.setImp({ saving: true });
+    clearTimeout(this._it);
+    this._it = setTimeout(() => this.finishImport(), 900);
+  }
+  finishImport() {
+    const st = this.state, i = st.imp;
+    if (!i || !i.saving) return;
+    const co = st.co, rows = {};
+    i.res.rows.forEach(r => { rows[r.per.id] = { taken: r.tv, carried: r.cv }; });
+    const src = i.mode === 'file' ? 'Leave balances 2026.xlsx' : 'rows pasted from Excel';
+    const nb = { when: 'Wed 18 Nov 2026', by: 'Aisha Rahman', src, n: i.res.rows.length, rows };
+    this.setState({ bal: { ...st.bal, [co]: nb }, imp: null, undo: { kind: 'import', co, prev: st.bal[co] }, flashIds: Object.keys(rows), flashN: st.flashN + 1 });
+    this._focusId = 'ly-open-h';
+    this.toast('Opening balances imported: ' + i.res.rows.length + ' people from ' + (i.mode === 'file' ? 'Leave balances 2026.xlsx' : 'the pasted rows') + '. Recorded in the audit trail.', { undo: true });
+  }
+  impCancel() {
+    const i = this.state.imp;
+    if (!i || i.saving) return;
+    if (this.impDirty()) { this.setImp({ confirm: true }); return; }
+    this.impLeave();
+  }
+  // leaving the import puts focus back on the button that starts one
+  impLeave() {
+    const st = this.state, i = st.imp;
+    this._focusId = st.bal[st.co] ? 'ly-again' : i && i.mode === 'file' ? 'ly-first-file' : 'ly-first-paste';
+    this.setState({ imp: null });
+  }
+
+  // ---------- the override ----------
+  ovForm(pid, ovs) { const o = (ovs || {})[pid]; return { carry: o ? String(o.carry) : '', why: o ? o.why : '' }; }
+  refusal(pid) {
+    const per = this.people('AISB').find(p => p.id === pid);
+    if (per && per.leaving) return per.n + '’s last day is ' + this.long(per.leaving) + ', so nothing carries into 2027: ' + this.his(per) + ' untaken days are paid out in ' + this.his(per) + ' final pay. What you typed is kept below.';
+    return '';
+  }
+  ovErrors(f) {
+    const e = {};
+    const n = this.parseNum(f.carry);
+    if (String(f.carry || '').trim() === '') e.carry = 'Enter the days into 2027, like 2 or 1.5.';
+    else if (!n.ok) e.carry = 'Enter whole or half days with a dot, like 1.5. A minus number takes days from 2027.';
+    if (!String(f.why || '').trim()) e.why = 1;
+    return e;
+  }
+  openOv(pid) {
+    const st = this.state;
+    if (st.dlg || st.run) return;
+    this._opener = document.activeElement;
+    const f = this.ovForm(pid, st.ov[st.co]);
+    this.setState({ dlg: { pid }, form: f, loaded: f, tried: false, refuse: '', confirm: false, saving: false, closing: false, footMsg: '' });
+  }
+  dirty() { const st = this.state; return !!st.dlg && JSON.stringify(st.form) !== JSON.stringify(st.loaded); }
+  askClose() {
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDlg();
+  }
+  closeDlg() {
+    const st = this.state;
+    if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.dlg) return;
+    const next = { dlg: null, closing: false, confirm: false, saving: false, refuse: '', tried: false };
+    if (this._changed) { next.flashIds = [this._changed]; next.flashN = this.state.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  setForm(patch) { const st = this.state; this.setState({ form: { ...st.form, ...patch }, footMsg: '' }); }
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    const errs = this.ovErrors(st.form);
+    if (errs.carry || errs.why) { this._focusId = errs.carry ? 'ly-o-carry' : 'ly-o-why'; this.setState({ tried: true, refuse: '' }); return; }
+    const why = this.refusal(st.dlg.pid);
+    if (why) { this._focusId = 'ly-o-refuse'; this.setState({ tried: true, refuse: why }); return; }
+    if (!this.dirty()) { this.setState({ footMsg: 'Nothing has changed.' }); return; }
+    this.setState({ saving: true });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => this.finishSave(), 700);
+  }
+  finishSave() {
+    const st = this.state;
+    if (!st.dlg || !st.saving) return;
+    const co = st.co, pid = st.dlg.pid, per = this.roster(co).find(p => p.id === pid), v = Number(st.form.carry);
+    const prev = st.ov[co][pid] || null;
+    this._changed = pid;
+    this.setState({ ov: { ...st.ov, [co]: { ...st.ov[co], [pid]: { carry: v, why: String(st.form.why).trim(), by: 'Aisha Rahman', when: this.long(st.today) } } }, undo: { kind: 'ov', co, pid, prev } });
+    this.closeDlg();
+    this.toast('Override saved: ' + per.n + ', ' + (v < 0 ? '−' + this.dayWord(v) : this.dayWord(v)) + ' into 2027. Recorded in the audit trail.', { undo: true });
+  }
+  removeOv() {
+    const st = this.state;
+    if (!st.dlg || st.saving) return;
+    const co = st.co, pid = st.dlg.pid, per = this.roster(co).find(p => p.id === pid), prev = st.ov[co][pid];
+    if (!prev) return;
+    const rest = { ...st.ov[co] }; delete rest[pid];
+    this._changed = pid;
+    this.setState({ ov: { ...st.ov, [co]: rest }, undo: { kind: 'ov', co, pid, prev }, confirm: false });
+    this.closeDlg();
+    this.toast('Override removed: ' + per.n + ' goes back to what the law works out. Recorded in the audit trail.', { undo: true });
+  }
+
+  // ---------- the run ----------
+  canRun() { const st = this.state; return st.today >= '2027-01-01' && !st.done[st.co] && !!st.bal[st.co]; }
+  openRun() { const st = this.state; if (st.run || st.dlg || !this.canRun()) return; this._opener = document.activeElement; this.setState({ run: { saving: false, closing: false } }); }
+  rClose() {
+    const st = this.state;
+    if (!st.run || st.run.saving || st.run.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.rFinish();
+    this.setState({ run: { ...st.run, closing: true } });
+    clearTimeout(this._rt);
+    this._rt = setTimeout(() => this.rFinish(), 400);
+  }
+  rFinish() { clearTimeout(this._rt); if (this.state.run) this.setState({ run: null }); }
+  rConfirm(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.run || st.run.saving || st.run.closing) return;
+    this.setState({ run: { ...st.run, saving: true } });
+    clearTimeout(this._rt);
+    this._rt = setTimeout(() => {
+      const s2 = this.state, co = s2.co;
+      this._focusId = 'ly-ye-h';
+      this.setState({ done: { ...s2.done, [co]: { when: 'Mon 4 Jan 2027, 09:15', by: 'Aisha Rahman' } }, run: { saving: false, closing: true }, undo: { kind: 'run', co } });
+      this.toast(this.doneText(co, s2.bal[co], s2.ov[co]), { undo: true });
+      clearTimeout(this._rt);
+      this._rt = setTimeout(() => this.rFinish(), 180);
+    }, 900);
+  }
+  summary(co, b, ovs) {
+    const rows = this.roster(co).map(p => ({ p, y: this.ye(p, b, ovs) }));
+    const carried = rows.filter(r => !r.y.leaving && r.y.carry > 0), taken27 = rows.filter(r => !r.y.leaving && r.y.carry < 0), paid = rows.filter(r => r.y.leaving && r.y.untaken > 0);
+    const sum = a => a.reduce((t, x) => t + x, 0);
+    return { rows, carriedDays: sum(carried.map(r => r.y.carry)), carriedN: carried.length, takenDays: sum(taken27.map(r => -r.y.carry)), taken27, paid, paidDays: sum(paid.map(r => r.y.untaken)), lapsed: sum(rows.map(r => r.y.lapse)) };
+  }
+  doneText(co, b, ovs) { const s = this.summary(co, b, ovs); return 'Year end 2026 run for ' + co + ': ' + this.num(s.carriedDays) + ' days into 2027 for ' + s.carriedN + ' people. Recorded in the audit trail.'; }
+
+  // ---------- undo, toast, tabs, dialogs ----------
+  undo() {
+    const st = this.state, u = st.undo;
+    if (!u) return;
+    if (u.kind === 'import') { this.setState({ bal: { ...st.bal, [u.co]: u.prev }, undo: null }); this.toast(u.prev ? 'Import undone. The earlier opening balances are back.' : 'Import undone. ' + u.co + ' has no opening balances again.'); return; }
+    if (u.kind === 'ov') {
+      const m = { ...st.ov[u.co] };
+      if (u.prev) m[u.pid] = u.prev; else delete m[u.pid];
+      this.setState({ ov: { ...st.ov, [u.co]: m }, undo: null, flashIds: [u.pid], flashN: st.flashN + 1 });
+      this.toast('Undone. The carry forward is as it was.');
+      return;
+    }
+    if (u.kind === 'run') { this.setState({ done: { ...st.done, [u.co]: null }, undo: null }); this.toast('Year end undone. 2026 is open again.'); }
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  pickTab(k, focus) { if (focus) this._focusId = 'ly-t-' + k; this.setState({ tab: k, tabN: this.state.tabN + 1, limit: 25 }); }
+  trap(e, onEsc) {
+    if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); onEsc(); return; }
+    if (e.key !== 'Tab') return;
+    const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    if (!fs.length) { e.preventDefault(); return; }
+    const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+    if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+  }
+
+  // ---------- what the page shows ----------
+  renderVals() {
+    const st = this.state, co = st.co, isAI = co === 'AI', b = st.bal[co], ovs = st.ov[co] || {}, done = st.done[co];
+    const SH = isAI ? ['ai', 'here'] : ['aisb', 'sqlPayroll'];
+    const people = this.roster(co);
+    const flash = id => (st.flashIds.indexOf(id) >= 0 ? (st.flashN % 2 ? 'hr fa' : 'hr fb') : 'hr');
+    const atRun = st.today >= '2027-01-01';
+
+    // ---- the import
+    const i = st.imp;
+    let iv = { impTitle: '', impGlyph: 'clipboard', impSteps: [], impModes: [], impPasteMode: false, impFileMode: false, impText: '', onImpText: () => {}, impTextInv: 'false', impTextBy: 'ly-text-hint', impTextStyle: '', impTextErr: false,
+      impFileHas: false, impFileNone: false, impFileName: '', chooseFile: () => {}, impFileBy: 'ly-file-hint', impFileStyle: '', impFileErr: false, impRead: () => {}, impReadLabel: 'Read the rows', impSaving: false, impBusy: 'false',
+      impPrevOn: false, impBadOn: false, impBadHead: '', impBadTxt: '', impCounts: '', impRows: [], impMissOn: false, impMiss: '', impConfirmOn: false, impFootOn: true, impNote: '', impCancel: () => {}, impGo: () => {}, impGoAria: 'false', impGoStyle: '', impGoLabel: 'Import', impKeep: () => {}, impDiscard: () => {} };
+    if (i) {
+      const r = i.res, step = i.saving ? 3 : r ? 2 : 1;
+      const steps = [['Paste or choose the file', 1], ['Check the preview', 2], ['Import, all or nothing', 3]];
+      const textBad = i.tried && i.mode === 'paste' && !String(i.text || '').trim(), fileBad = i.tried && i.mode === 'file' && !i.file;
+      const btnBase = 'display:inline-flex;align-items:center;gap:8px;height:40px;min-width:180px;justify-content:center;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;cursor:pointer;';
+      const blocked = !!(r && r.nBad);
+      iv = {
+        impTitle: b ? 'Import the opening balances again' : 'Import the opening balances for 2026', impGlyph: i.mode === 'file' ? 'upload' : 'clipboard',
+        impSteps: steps.map(([label, n]) => ({ n: String(n), label, current: n === step ? 'step' : 'false', sr: n < step ? ', done' : n === step ? ', current step' : '',
+          style: 'display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px 0 6px;border-radius:99px;font-size:13px;font-weight:600;' + (n === step ? 'background:#EAF0FD;color:#1D3A80' : n < step ? 'background:#E3F7EC;color:#0A6B3D' : 'background:#F5F6F8;color:#5F6C80'),
+          dot: 'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:99px;font-size:12px;' + (n === step ? 'background:#2450B8;color:#FFFFFF' : n < step ? 'background:#0A6B3D;color:#FFFFFF' : 'background:#FFFFFF;color:#5F6C80;border:1px solid #C9D2DF;box-sizing:border-box') })),
+        impModes: [['paste', 'Paste the rows', 'clipboard'], ['file', 'Choose the Excel file', 'upload']].map(([k, label, glyph]) => ({ label, glyph, tone: i.mode === k ? 'brand' : 'muted', pressed: i.mode === k ? 'true' : 'false',
+          pick: () => { if (this.state.imp.saving) return; this.setImp({ mode: k, res: null, tried: false, refused: false, text: k === 'paste' ? (this.state.imp.mode === 'paste' ? this.state.imp.text : '') : (this.state.imp.file ? this.CLEAN() : '') , file: k === 'file' ? this.state.imp.file : false }); },
+          style: 'display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:0;border-radius:8px;font:600 13px Inter,sans-serif;cursor:pointer;' + (i.mode === k ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(13,27,46,.16)' : 'background:transparent;color:#46546A') })),
+        impPasteMode: i.mode === 'paste', impFileMode: i.mode === 'file', impText: i.text,
+        onImpText: e => this.setImp({ text: e.target.value, res: null, tried: false, refused: false }),
+        impTextInv: textBad ? 'true' : 'false', impTextBy: textBad ? 'ly-text-err ly-text-hint' : 'ly-text-hint', impTextErr: textBad,
+        impTextStyle: 'width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;font:400 13px ui-monospace,Consolas,monospace;color:#0F1A2B;background:#FFFFFF;resize:vertical;border:1px solid ' + (textBad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+        impFileHas: i.mode === 'file' && i.file, impFileNone: i.mode === 'file' && !i.file, impFileName: co === 'AI' ? 'Leave balances 2026 AI.xlsx' : 'Leave balances 2026.xlsx',
+        chooseFile: () => { if (this.state.co === 'AI') { this.toast('No file chosen. In this design, AI’s list is pasted.'); return; } this.setImp({ file: true, text: this.CLEAN(), res: null, tried: false, refused: false }); },
+        impFileBy: fileBad ? 'ly-file-err ly-file-hint' : 'ly-file-hint', impFileErr: fileBad,
+        impFileStyle: 'display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 16px;border-radius:10px;background:#FFFFFF;font:600 14px Inter,sans-serif;color:#0F1A2B;cursor:pointer;border:1px dashed ' + (fileBad ? '#B0190F' : '#8792A2'),
+        impRead: () => this.impRead(), impReadLabel: r ? 'Read the rows again' : 'Read the rows', impSaving: !!i.saving, impBusy: i.saving ? 'true' : 'false',
+        impPrevOn: !!r,
+        impBadOn: blocked, impBadHead: blocked ? (r.nBad === 1 ? '1 row has a problem, so nothing will be imported' : r.nBad + ' rows have a problem, so nothing will be imported') : '',
+        impBadTxt: blocked ? 'It is all or nothing. Fix row' + (r.nBad === 1 ? ' ' : 's ') + r.rows.filter(x => x.bad.length).map(x => x.row).join(', ').replace(/, (\d+)$/, ' and $1') + ' in Excel, paste the rows again and read them again. The other rows wait; none is imported on its own.' : '',
+        impCounts: r ? r.rows.length + ' rows read: ' + r.nOk + ' ready' + (r.nWarn ? ', ' + r.nWarn + ' with a warning only' : '') + (r.nBad ? ', ' + r.nBad + ' with a problem' : '') + '.' : '',
+        impRows: r ? r.rows.map(x => {
+          const k = x.bad.length ? 'bad' : x.warns.length ? 'warn' : 'ok';
+          const P = { ok: ['pl ok', 'check', 'ok', 'Ready'], warn: ['pl warn', 'alert', 'warn', 'Warning only'], bad: ['pl bad', 'alert', 'bad', 'Problem'] }[k];
+          return { row: String(x.row), no: x.no, name: x.name, match: x.per ? 'Matched: ' + x.per.id + ' ' + x.per.n : 'Not matched', taken: x.taken, carried: x.carried, ent: x.ent, bal: x.bal,
+            rowStyle: k === 'bad' ? 'background:#FFF6F5' : k === 'warn' ? 'background:#FFFBF2' : '', pillCls: P[0], pillGlyph: P[1], pillTone: P[2], pill: P[3],
+            msgs: [...x.bad.map(t => ({ txt: t, style: 'margin-top:4px;color:#8F140C;font-weight:500' })), ...x.warns.map(t => ({ txt: t, style: 'margin-top:4px;color:#5C2B00' }))] };
+        }) : [],
+        impMissOn: !!(r && r.missing.length), impMiss: r && r.missing.length ? 'Not in the list: ' + r.missing.map(p => p.n + ' (' + p.id + ')').join(', ') + '. ' + (r.missing.length === 1 ? 'That person’s' : 'Their') + ' leave taken to 30 Sep counts as 0.' : '',
+        impConfirmOn: !!i.confirm, impFootOn: !i.confirm,
+        impNote: i.saving ? 'Importing…' : blocked && i.refused ? 'Nothing was imported: fix the rows marked Problem first.' : blocked ? 'Rows with a problem must be fixed first.' : r ? (b ? 'Replaces the opening balances imported ' + b.when + '.' : 'Ready. Recorded in the audit trail when imported.') : 'Read the rows to see the preview.',
+        impCancel: () => this.impCancel(), impGo: () => this.impGo(), impGoAria: blocked || i.saving ? 'true' : 'false',
+        impGoStyle: btnBase + (blocked ? 'background:#C9D2DF;color:#2B3A50' : 'background:#2450B8;color:#FFFFFF'),
+        impGoLabel: i.saving ? 'Importing…' : r && !blocked ? 'Import ' + r.rows.length + ' opening balances' : 'Import',
+        impKeep: () => this.setImp({ confirm: false }), impDiscard: () => this.impLeave()
+      };
+    }
+
+    // ---- opening balances list
+    const shown = st.many ? people.slice(0, st.limit) : people;
+    const openRows = b ? shown.map(p => {
+      const r = b.rows[p.id] || { taken: 0, carried: 0 };
+      return { name: p.n, sub: p.id + (p.stand ? ' · stand-in' : ' · ' + p.full), svc: p.svc, entSubOn: !!p.entNote, entSub: p.entNote, ent: String(p.ent), carried: this.num(r.carried), taken: this.num(r.taken), bal: this.num(p.ent + r.carried - r.taken), cls: flash(p.id) };
+    }) : [];
+    const moreOn = st.many && people.length > 25;
+
+    // ---- year end
+    const s = b ? this.summary(co, b, ovs) : null;
+    const yeRows = s ? s.rows.slice(0, st.many ? st.limit : s.rows.length).map(({ p, y }) => {
+      let note = '', noteStyle = 'color:#46546A';
+      if (y.leaving) note = 'Last day ' + this.long(p.leaving) + ': ' + this.dayWord(y.untaken) + ' untaken, paid out in ' + this.his(p) + ' final pay instead of carried.';
+      else if (y.o) { note = 'Overridden by ' + y.o.by + ', ' + y.o.when + ': “' + y.o.why + '”. Worked out by the law: ' + this.num(y.worked) + '.'; noteStyle = 'color:#5C2B00'; }
+      else if (y.untaken < 0) { note = this.cap(this.dayWord(y.untaken)) + ' beyond ' + this.his(p) + ' legal days in 2026' + (p.booked ? ' (booked ' + p.booked + ')' : '') + '. A warning only: nothing to carry, and 2027 starts at ' + this.his(p) + ' full ' + p.l27 + ' days.'; noteStyle = 'color:#934100'; }
+      else if (p.away) note = p.away;
+      else if (p.up) note = '5 years or more at 1 Jan 2027, so 2027 is 16 days by law.';
+      else if (p.entNote && p.joined > '2026-01-01') note = 'Joined ' + this.long(p.joined) + ': 2026 prorated (' + p.entNote + ').';
+      if (y.lapse) note += ' ' + this.cap(this.dayWord(y.lapse)) + ' from 2025 lapse.';
+      const neg = y.untaken < 0, starts = y.starts;
+      const below = !y.leaving && starts != null && starts < p.l27;
+      return { name: p.n, sub: p.id + (p.stand ? ' · stand-in' : ' · service at 1 Jan 2027: ' + (p.svc27 || '—')), ent: String(p.ent), taken: this.num(y.taken),
+        untaken: this.num(y.untaken), negOn: neg, untakenStyle: 'display:inline-flex;align-items:center;gap:4px;font-weight:600;' + (neg ? 'color:#934100' : ''),
+        carry: y.leaving ? '—' : this.num(y.carry), carryStyle: 'font-weight:600;' + (y.carry < 0 ? 'color:#934100' : y.carry > 0 ? 'color:#0A6B3D' : 'color:#46546A'), ovOn: !!y.o,
+        law27: y.leaving ? '—' : String(p.l27), upOn: !!p.up && !y.leaving, starts: y.leaving ? 'Leaves 31 Dec' : this.num(starts), startsStyle: 'font-weight:600;' + (below ? 'color:#934100' : ''), belowOn: below,
+        note, noteStyle, linkOn: y.leaving, canOv: !done, btnId: 'ly-ov-' + p.id, ovOpen: () => this.openOv(p.id), ovBtn: y.o ? 'Change the override' : 'Override',
+        ovLabel: (y.o ? 'Change the override for ' : 'Override the carry forward for ') + p.n, cls: flash(p.id) };
+    }) : [];
+    const tile = (label, value, sub, tone) => ({ label, value, sub, style: 'display:flex;flex-direction:column;gap:2px;padding:12px 14px;border-radius:12px;border:1px solid ' + (tone === 'warn' ? '#F0C98A;background:#FFF8EC' : tone === 'ok' ? '#BFE8D0;background:#F0FBF5' : '#E3E7ED;background:#FAFBFC') });
+    const tiles = s ? [
+      tile('Into 2027', this.num(s.carriedDays) + ' days', s.carriedN + ' people · to take by Fri 31 Dec 2027', 'ok'),
+      tile('Taken from 2027', this.num(s.takenDays) + (s.takenDays === 1 ? ' day' : ' days'), s.taken27.length ? s.taken27.map(r => r.p.n).join(', ') + ', overridden' : 'Only by an override', s.takenDays ? 'warn' : ''),
+      tile('Paid out on leaving', this.num(s.paidDays) + ' days', s.paid.length ? s.paid.map(r => r.p.n).join(', ') + ', in the final pay' : 'No one leaves on 31 Dec', ''),
+      tile('Lapsed', this.num(s.lapsed) + ' days', s.lapsed ? 'Days from 2025 not taken in 2026' : 'Nothing was carried from 2025', '')] : [];
+    const yePill = done ? ['pl ok', 'check', 'ok', 'Done'] : atRun ? ['pl warn', 'clock', 'warn', 'Ready to run'] : ['pl info', 'eye', 'brand', 'Preview'];
+    const yeDateline = done ? 'Run on ' + done.when + ' by ' + done.by + '. Recorded in the audit trail.' : atRun ? 'Worked out at Thu 31 Dec 2026 · today is ' + this.long(st.today) + '.' : 'Worked out at Thu 31 Dec 2026 with the leave entered and booked today, ' + this.long(st.today) + '.';
+    const runNote = done ? 'Carried as the law gives, with ' + (Object.keys(ovs).length ? Object.keys(ovs).length + ' override' + (Object.keys(ovs).length === 1 ? '' : 's') : 'no overrides') + '. Overrides are closed for 2026; undo the run to change one.' : atRun ? 'The year has ended. Check the overrides, then run the year end: 2027 then starts from these balances.' : 'You can run it from Fri 1 Jan 2027, once the year has ended. Until then this is a preview that follows the leave entered on HR › Leave. Overrides can be set now.';
+    const runDis = !this.canRun();
+
+    // ---- the override dialog
+    const dlg = st.dlg, f = st.form;
+    let v = { oTitle: '', oSub: '', oWorked: '', refuseOn: false, refuseTxt: '', errSumOn: false, errSum: '', fCarry: '', onCarry: () => {}, carryInv: 'false', carryBy: 'ly-o-carry-h', carryStyle: '', carryErrOn: false, carryErr: '',
+      fWhy: '', onWhy: () => {}, whyInv: 'false', whyBy: 'ly-o-why-h', whyStyle: '', whyErrOn: false, effOn: false, eff: '', oWarns: [], oHadOn: false, oHad: '', canRemove: false, confirmOn: false, footOn: true, footDirty: false, footNote: '', saveLabel: 'Save the override', savingAria: 'false' };
+    if (dlg && f && b) {
+      const p = people.find(x => x.id === dlg.pid), y = this.ye(p, b, ovs), errs = st.tried ? this.ovErrors(f) : {};
+      const field = bad => 'height:40px;width:100%;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;background:#FFFFFF;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2');
+      const n = this.parseNum(f.carry), valid = String(f.carry || '').trim() !== '' && n.ok;
+      const warns = [];
+      let eff = '';
+      if (valid && !y.leaving) {
+        const startsAt = p.l27 + n.v;
+        eff = this.his(p).replace(/^./, c => c.toUpperCase()) + ' 2027 annual leave would start at ' + this.num(startsAt) + ' days: ' + p.l27 + ' by law ' + (n.v < 0 ? '− ' + this.num(-n.v) : '+ ' + this.num(n.v)) + '.';
+        if (n.v > Math.max(y.worked, 0)) warns.push({ head: 'More than the law carries.', txt: this.cap(this.dayWord(n.v - Math.max(y.worked, 0))) + ' above the ' + this.num(y.worked) + ' worked out. It can be saved: above the law is a warning only.' });
+        if (startsAt < p.l27) warns.push({ head: 'Below ' + p.n + '’s legal days for 2027.', txt: this.num(startsAt) + ' days is ' + this.dayWord(p.l27 - startsAt) + ' below ' + this.his(p) + ' ' + p.l27 + ' legal days. A warning only: keep ' + this.his(p) + ' written agreement on file.' });
+      }
+      const errList = [];
+      if (st.tried && !st.refuse) { if (errs.carry) errList.push('Days into 2027'); if (errs.why) errList.push('Reason'); }
+      v = {
+        oTitle: 'Override ' + p.n + '’s carry forward', oSub: 'Annual leave from 2026 into 2027. The law’s figure stays beside it, and the change is recorded in the audit trail.',
+        oWorked: y.leaving ? p.n + ' leaves on ' + this.long(p.leaving) + ': nothing carries into 2027. ' + this.cap(this.dayWord(y.untaken)) + ' untaken, paid out in ' + this.his(p) + ' final pay.'
+          : y.untaken < 0 ? '0 days. ' + p.n + ' has ' + this.num(y.untaken) + ': ' + this.dayWord(y.untaken) + ' beyond ' + this.his(p) + ' ' + p.ent + ' legal days in 2026' + (p.booked ? ' (booked ' + p.booked + ')' : '') + ', a warning only. 2027 starts at ' + this.his(p) + ' ' + p.l27 + ' legal days.'
+          : this.num(y.worked) + ' days: every untaken day of 2026, to take by Fri 31 Dec 2027.',
+        refuseOn: !!st.refuse, refuseTxt: st.refuse, errSumOn: errList.length > 0, errSum: errList.join(', ') + '.',
+        fCarry: f.carry, onCarry: e => this.setForm({ carry: e.target.value }), carryInv: errs.carry ? 'true' : 'false', carryBy: errs.carry ? 'ly-o-carry-err ly-o-carry-h' : 'ly-o-carry-h', carryStyle: field(!!errs.carry), carryErrOn: !!errs.carry, carryErr: errs.carry || '',
+        fWhy: f.why, onWhy: e => this.setForm({ why: e.target.value }), whyInv: errs.why ? 'true' : 'false', whyBy: errs.why ? 'ly-o-why-err ly-o-why-h' : 'ly-o-why-h', whyStyle: field(!!errs.why), whyErrOn: !!errs.why,
+        effOn: !!eff, eff, oWarns: warns,
+        oHadOn: !!y.o, oHad: y.o ? 'Set by ' + y.o.by + ' on ' + y.o.when + '.' : '',
+        canRemove: !!y.o, confirmOn: !!st.confirm, footOn: !st.confirm,
+        footDirty: this.dirty() && !st.saving, footNote: st.saving ? 'Saving…' : st.footMsg ? st.footMsg : this.dirty() ? 'Not saved yet' : 'No changes.',
+        saveLabel: st.saving ? 'Saving…' : 'Save the override', savingAria: st.saving ? 'true' : 'false'
+      };
+    }
+
+    // ---- the run dialog
+    const rOn = !!st.run && !!s;
+    let rv = { rSub: '', rLines: [], rNote: '', rLabel: 'Run the year end', rSaving: false, rBusy: 'false' };
+    if (rOn) {
+      const ovN = Object.keys(ovs).length;
+      rv = {
+        rSub: co + ', annual leave at Thu 31 Dec 2026. 2027 then starts from the balances on this page.',
+        rLines: [
+          { glyph: 'leave', tone: 'ok', head: 'Into 2027: ' + this.num(s.carriedDays) + ' days for ' + s.carriedN + ' people,', txt: 'to take by Fri 31 Dec 2027, as the law gives.' },
+          { glyph: 'edit', tone: 'warn', head: 'Taken from 2027: ' + this.num(s.takenDays) + (s.takenDays === 1 ? ' day.' : ' days.'), txt: s.taken27.length ? s.taken27.map(r => r.p.n).join(', ') + ', by override with a reason. ' + (ovN === 1 ? '1 override' : ovN + ' overrides') + ' in all.' : 'No override takes days from 2027.' },
+          { glyph: 'payroll', tone: 'muted', head: 'Paid out: ' + this.num(s.paidDays) + ' days.', txt: s.paid.length ? s.paid.map(r => r.p.n + ' (' + this.num(r.y.untaken) + ')').join(', ') + ', in the final pay on HR › Payroll.' : 'No one leaves on 31 Dec.' },
+          { glyph: 'clock', tone: 'muted', head: 'Lapsed: ' + this.num(s.lapsed) + ' days.', txt: s.lapsed ? 'Days carried from 2025 and not taken in 2026.' : 'Nothing was carried from 2025.' }],
+        rNote: st.run.saving ? 'Running the year end…' : 'Today, ' + this.long(st.today) + '.', rLabel: st.run.saving ? 'Running…' : 'Run the year end', rSaving: !!st.run.saving, rBusy: st.run.saving ? 'true' : 'false'
+      };
+    }
+
+    const tabs = [['open', 'Opening balances', 'history'], ['year', 'Year end 2026', 'calendar']];
+    return {
+      ...iv, ...v, ...rv,
+      shCo: SH[0], shKind: SH[1], coCode: co, sabahOn: isAI,
+      onTopCo: code => {
+        const u = String(code || '').toUpperCase(), s2 = this.state;
+        if (u !== 'AISB' && u !== 'AI') return;
+        if (s2.imp || s2.dlg || s2.run) { if (u !== s2.co) this.toast('Still showing ' + s2.co + ': ' + (s2.imp ? 'finish or cancel the import' : s2.dlg ? 'save or close the override' : 'run or close the year end') + ' first, then switch company.'); return; }
+        this.setState({ co: u, many: false, limit: 25 });
+      },
+      tbOff: typeof st.tbOff === 'number' ? st.tbOff : null, onMonth: o => this.setState({ tbOff: o }),
+      anyDlg: !!(dlg || st.run),
+      isReady: st.phase === 'ready', isLoading: st.phase === 'loading', isError: st.phase === 'error', retry: () => this.setState({ phase: 'ready' }), skRows: [1, 2, 3, 4, 5, 6],
+      intro: 'Annual leave for ' + (isAI ? 'AI (Agrinexus International)' : 'AISB (AISB Sdn Bhd)') + ': the opening balances bring in what was taken before leave was entered here, and the year end carries untaken days into 2027 as the law gives. For HR only.',
+      tabs: tabs.map(([k, label, glyph], n) => ({ id: 'ly-t-' + k, label, glyph, tone: st.tab === k ? 'brand' : 'muted', sel: st.tab === k ? 'true' : 'false', ti: st.tab === k ? 0 : -1, pick: () => this.pickTab(k),
+        key: e => { let j = -1; if (e.key === 'ArrowRight') j = (n + 1) % 2; else if (e.key === 'ArrowLeft') j = (n + 1) % 2; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = 1; if (j < 0) return; e.preventDefault(); this.pickTab(tabs[j][0], true); } })),
+      panelBy: 'ly-t-' + st.tab, panelCls: st.tabN % 2 ? 'swapA' : 'swapB', tabOpen: st.tab === 'open', tabYear: st.tab === 'year',
+      // opening
+      emptyOn: !b && !i, impOn: !!i, listOn: !!b && !i,
+      startFile: () => this.startImp('file'), startPaste: () => this.startImp('paste'),
+      openRec: b ? 'Imported ' + b.when + ' by ' + b.by + ' from ' + b.src + ': ' + b.n + ' people, annual leave taken 1 Jan to 30 Sep 2026.' : '',
+      openRows, manyOn: !!st.many, scrollStyle: st.many ? 'max-height: 620px; overflow: auto' : 'overflow-x: auto',
+      moreOn, moreTxt: 'Showing ' + Math.min(st.limit, people.length) + ' of ' + people.length + ' people', moreBtn: st.limit < people.length ? 'Show ' + Math.min(25, people.length - st.limit) + ' more' : 'Show fewer',
+      showMore: () => this.setState({ limit: this.state.limit < people.length ? this.state.limit + 25 : 25 }),
+      xlOpen: () => this.toast('Excel downloaded: Leave opening balances ' + co + ' 2026.xlsx. The download is recorded in the audit trail.'),
+      // year end
+      yeNeedOn: !b, yeOn: !!b, goOpen: () => this.pickTab('open'),
+      yePillCls: yePill[0], yePillGlyph: yePill[1], yePillTone: yePill[2], yePill: yePill[3], yeDateline, runNote,
+      runBtnOn: !done, runDis, openRun: () => this.openRun(),
+      runStyle: 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;' + (runDis ? 'background:#C9D2DF;color:#2B3A50;cursor:default' : 'background:#2450B8;color:#FFFFFF;cursor:pointer'),
+      tiles, yeRows, leftOn: !isAI, doneOn: !!done,
+      xlYe: () => this.toast('Excel downloaded: Leave year end ' + co + ' 2026.xlsx. The download is recorded in the audit trail.'),
+      // override dialog
+      dlgOn: !!(dlg && b), dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      onPanelAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      askClose: () => this.askClose(), save: e => this.save(e), saving: !!st.saving, removeOv: () => this.removeOv(),
+      keepEditing: () => this.setState({ confirm: false }), discard: () => { this.setState({ confirm: false }); this.closeDlg(); },
+      dlgKey: e => this.trap(e, () => { if (this.state.confirm) this.setState({ confirm: false }); else this.askClose(); }),
+      // run dialog
+      runOn: rOn, rDimCls: st.run && st.run.closing ? 'dim-out' : 'dim-in', rCls: st.run && st.run.closing ? 'dr-out' : 'dr-in',
+      rClose: () => this.rClose(), rConfirm: e => this.rConfirm(e), rKey: e => this.trap(e, () => this.rClose()),
+      rAnim: e => { if (this.state.run && this.state.run.closing && e && e.target === e.currentTarget) this.rFinish(); },
+      // toast
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo), toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      toastUndo: () => this.undo(),
+      onToastAnim: () => { if (this.state.toastLeaving) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt), toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

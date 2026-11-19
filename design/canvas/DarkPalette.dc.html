@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dark colours · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+/* motion and focus base (dark ring) */
+button{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #8DB0FA;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #8DB0FA;outline-offset:-1px}
+@keyframes shd{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.sk{background:linear-gradient(90deg,#172133 0,#1E2838 50%,#172133 100%);background-size:600px 100%;animation:shd 1.4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{animation:spin .7s linear infinite}
+/* the five status tones, dark: a deep wash with a lighter ink */
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#10291E;color:#5BD49A}.warn{background:#2E2210;color:#F2B35B}.bad{background:#33171A;color:#F58C80}.info{background:#1B2A4A;color:#8DB0FA}.mute{background:#1E2838;color:#B4BFCE}
+.cp.ok{border-color:#1F5C42}.cp.warn{border-color:#6B4D1F}.cp.bad{border-color:#7D2F2B}.cp.info{border-color:#2F4A86}.cp.mute{border-color:#2C3A52}
+.cp.miss{background:#121A27;color:#F2B35B;border:1px dashed #A77A2E}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#10291E;border-color:#1F5C42}.rb.warn{background:#2E2210;border-color:#6B4D1F}.rb.bad{background:#33171A;border-color:#7D2F2B}
+/* shell pieces, dark: same shapes as light, tokens from the table above */
+.cb{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:20px;height:20px;padding:0 7px;border-radius:99px;box-sizing:border-box;font:700 11px Inter,sans-serif;background:#1B2A4A;color:#8DB0FA}
+.cb.red{background:#C9372C;color:#FFFFFF}
+.cb.grey{background:#1E2838;color:#B4BFCE}
+.sw{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 10px 0 12px;border-radius:10px;border:1px solid #7A89A3;background:#121A27;color:#E6EBF2;font:600 14px Inter,sans-serif;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.sw:hover{background:#172133}
+.mi{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 12px;border:0;border-radius:8px;background:transparent;font:400 13px Inter,sans-serif;color:#E6EBF2;text-align:left;cursor:pointer;box-sizing:border-box}
+.mi:hover{background:#1E2838}
+.mi[aria-current="true"]{background:#1B2A4A}
+.mi:focus-visible{outline-offset:-2px}
+.ovc{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;background:#121A27;border:1px solid #243044;border-radius:16px;padding:14px 16px;font:inherit;color:inherit;cursor:pointer;box-sizing:border-box}
+.ovc:hover{background:#172133;border-color:#2C3A52}
+.ovc:focus-visible{outline-offset:-2px}
+.sv{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;background:#E6EBF2;color:#0B111C;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ic-mask{font:600 13px ui-monospace,Consolas,monospace;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.tb3{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:64px;border:0;background:transparent;font:600 12px Inter,sans-serif;color:#B4BFCE;cursor:pointer;position:relative}
+.tb3[aria-current="page"]{color:#8DB0FA}
+.tb3[aria-current="page"]::before{content:"";position:absolute;left:24px;right:24px;top:0;height:3px;border-radius:0 0 3px 3px;background:#8DB0FA}
+.tb3:focus-visible{outline-offset:-2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cd{background:#121A27;border:1px solid #243044;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.dz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:18px 14px;border-radius:12px;box-sizing:border-box;min-height:140px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 3200px; box-sizing: border-box; padding: 48px 56px; background: #0B111C; font-family: Inter, system-ui, sans-serif; color: #E6EBF2; font-size: 14px; display: flex; flex-direction: column; gap: 32px">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+    <div><span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #8DB0FA">HR Payments · dark</span><h1 style="margin: 4px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 36px; font-weight: 600">Dark colours</h1></div>
+    <p style="margin: 0; max-width: 560px; color: #B4BFCE">Same roles as light, re-tuned: surfaces step up in lightness instead of using shadows, accents get lighter so text still passes 4.5:1, and status tints become deep washes. Follows the system setting; the sidebar's theme control chooses Auto, Light or Dark.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px">
+    <sc-for list="{{sw}}" as="s" hint-placeholder-count="26">
+      <div style="border: 1px solid #243044; border-radius: 12px; overflow: hidden; background: #121A27"><div style="{{s.chip}}"></div><div style="padding: 8px 10px"><b style="font-size: 12px">{{s.name}}</b><div style="color: #8E9BB0; font-size: 11px; font-family: ui-monospace, Consolas, monospace">{{s.hex}}</div></div></div>
+    </sc-for>
+  </div>
+  <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center; padding: 18px 20px; border-radius: 14px; background: #121A27; border: 1px solid #243044">
+    <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #3D6BE0; color: #FFFFFF; font: 600 14px Inter, sans-serif"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Primary</button>
+    <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #2C3A52; background: #172133; color: #E6EBF2; font: 600 14px Inter, sans-serif"><dc-import name="Icon" glyph="refresh" tone="dbrand" size="18" hint-size="18px,18px"></dc-import>Secondary</button>
+    <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #C9372C; color: #FFFFFF; font: 600 14px Inter, sans-serif"><dc-import name="Icon" glyph="trash" tone="white" size="18" hint-size="18px,18px"></dc-import>Remove</button>
+    <span class="pl ok">Complete</span>
+    <span class="pl warn">Paid, documents missing</span>
+    <span class="pl bad">Not on Oct statement</span>
+    <span class="pl mute">Not paid</span>
+    <span style="flex: 1"></span>
+    <dc-import name="Icon" glyph="bank" tone="dbrand" size="28" hint-size="28px,28px"></dc-import>
+    <dc-import name="Icon" glyph="check" tone="dok" size="28" hint-size="28px,28px"></dc-import>
+    <dc-import name="Icon" glyph="clock" tone="dwarn" size="28" hint-size="28px,28px"></dc-import>
+    <dc-import name="Icon" glyph="alert" tone="dbad" size="28" hint-size="28px,28px"></dc-import>
+    <dc-import name="Icon" glyph="document" tone="dmuted" size="28" hint-size="28px,28px"></dc-import>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8E9BB0">The States board in dark</h2><span style="color: #8E9BB0; font-size: 12px">Every overlay and state a dark page can open, proving the tones, borders and focus on the dark surface.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start">
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Confirm over the dim</span>
+        <div style="background: rgba(0,0,0,.6); border-radius: 18px; padding: 16px">
+          <div role="alertdialog" aria-labelledby="dp-k1" aria-describedby="dp-k1-d" style="background: #172133; border: 1px solid #2C3A52; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+            <div style="display: flex; gap: 12px"><span style="width: 40px; height: 40px; border-radius: 12px; background: #2E2210; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="edit" tone="dwarn" size="22" hint-size="22px,22px"></dc-import></span><div><h3 id="dp-k1" style="margin: 0; font-size: 16px; font-weight: 600">Discard your changes?</h3><p id="dp-k1-d" style="margin: 4px 0 0; color: #B4BFCE; font-size: 13px">You have unsaved changes on “Electricity bill”. Closing now loses them.</p></div></div>
+            <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #8E9BB0"><dc-import name="Icon" glyph="alert" tone="dmuted" size="16" hint-size="16px,16px"></dc-import>Discarded changes can't be recovered.</div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #2C3A52; background: #172133; font: 600 14px Inter, sans-serif; color: #E6EBF2; cursor: pointer; outline: 2px solid #8DB0FA; outline-offset: 2px">Keep editing</button><button type="button" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #C9372C; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Toasts · success with Undo, error, progress</span>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div role="status" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #1E2838; border: 1px solid #2C3A52; box-shadow: 0 10px 28px rgba(0,0,0,.4)">
+            <dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import>
+            <div style="flex: 1; min-width: 0"><b style="font-size: 13px">Details saved</b><div style="font-size: 12px; color: #B4BFCE">Electricity bill · AISB</div></div>
+            <button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #1B2A4A; color: #8DB0FA; font: 600 12px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="dbrand" size="14" hint-size="14px,14px"></dc-import>Undo</button>
+            <button type="button" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button>
+          </div>
+          <div role="alert" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #1E2838; border: 1px solid #7D2F2B">
+            <dc-import name="Icon" glyph="alert" tone="dbad" size="20" hint-size="20px,20px"></dc-import>
+            <div style="flex: 1; min-width: 0"><b style="font-size: 13px">Couldn't upload Approval.pdf</b><div style="font-size: 12px; color: #B4BFCE">The PDF has a password. Save an unlocked copy and try again.</div></div>
+            <button type="button" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button>
+          </div>
+          <div role="status" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #1E2838; border: 1px solid #2C3A52">
+            <dc-import name="Icon" glyph="refresh" tone="dbrand" size="20" hint-size="20px,20px"></dc-import>
+            <div style="flex: 1; min-width: 0"><b style="font-size: 13px">Matching 48 statement lines</b><div style="font-size: 12px; color: #B4BFCE">Maybank current · October</div><div role="progressbar" aria-label="Matching 48 statement lines" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" style="height: 4px; margin-top: 8px; border-radius: 99px; background: #243044; overflow: hidden"><div style="width: 64%; height: 100%; border-radius: 99px; background: #8DB0FA"></div></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Inline field error · why note</span>
+        <div style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="dp-amt" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #B4BFCE">Amount (RM) <span style="font-weight: 500; font-size: 12px; color: #8E9BB0">Required</span></label>
+            <input id="dp-amt" type="text" value="4l2" aria-invalid="true" aria-describedby="dp-amt-err" readonly style="height: 40px; padding: 0 12px; border: 1px solid #F58C80; box-shadow: 0 0 0 1px #F58C80; border-radius: 10px; background: #0B111C; color: #E6EBF2; font: 400 14px Inter, sans-serif; text-align: right; box-sizing: border-box; width: 100%">
+            <span id="dp-amt-err" role="alert" style="display: flex; gap: 6px; align-items: center; color: #F58C80; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="dbad" size="15" hint-size="15px,15px"></dc-import>Use numbers only, for example 412.00.</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600; color: #B4BFCE">Payee</span>
+            <div style="display: flex; align-items: center; height: 40px; padding: 0 12px; border: 1px solid #7A89A3; border-radius: 10px; background: #0B111C; color: #E6EBF2; box-sizing: border-box">TNB Electricity</div>
+            <div style="display: flex; align-items: center; height: 40px; padding: 0 12px; border: 1px solid #243044; border-radius: 10px; background: #172133; color: #8E9BB0; box-sizing: border-box">Disabled while saving</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap"><span class="pl warn"><dc-import name="Icon" glyph="clock" tone="dwarn" size="14" hint-size="14px,14px"></dc-import>Waiting for SQL record<dc-import name="Icon" glyph="help" tone="dwarn" size="14" hint-size="14px,14px"></dc-import></span></div>
+          <div role="note" style="padding: 12px 14px; border-radius: 12px; background: #E6EBF2; color: #0B111C; font-size: 13px"><b style="display: block; font-size: 12px; color: #46546A; margin-bottom: 2px">Why?</b>SQL Account has no voucher for this payment yet. It completes once the listing that holds it is imported.</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Drop zone · idle, drag over, refused</span>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <div class="dz" style="border: 1.5px dashed #7A89A3; background: #121A27"><dc-import name="Icon" glyph="upload" tone="dbrand" size="26" hint-size="26px,26px"></dc-import><span style="font-size: 14px"><b style="color: #8DB0FA">Choose an SQL export</b> or drop it here</span><span style="color: #8E9BB0; font-size: 12px">.xlsx, .xls, .csv, .ods or .txt</span></div>
+          <div class="dz" style="border: 2px solid #8DB0FA; background: #1B2A4A; min-height: 90px"><span style="font-size: 14px; font-weight: 600; color: #8DB0FA">Drop the file to add it</span></div>
+          <div role="alert" class="dz" style="border: 1.5px dashed #F58C80; background: #33171A; min-height: 90px"><span style="font-size: 13px; font-weight: 600; color: #F58C80">Couldn't upload Approval.pdf</span><span style="color: #B4BFCE; font-size: 12px">The PDF has a password. Save an unlocked copy and try again.</span></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Result blocks · done, warning, failed</span>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div class="rb ok"><dc-import name="Icon" glyph="verified" tone="dok" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #5BD49A">Audit trail intact</b><div style="color: #B4BFCE">All 1,284 entries check out, and all 312 records match the trail. Check code 7F3A-92C1.</div></div></div>
+          <div class="rb warn"><dc-import name="Icon" glyph="alert" tone="dwarn" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #F2B35B">Backup · made, not copied</b><div style="color: #B4BFCE">The backup folder isn't reachable, so there is no second copy yet.</div></div></div>
+          <div role="alert" class="rb bad"><dc-import name="Icon" glyph="alert" tone="dbad" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #F58C80">Audit pack · failed</b><div style="color: #B4BFCE">The pack wasn't built: invoice-oct.pdf is missing.</div></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Loading · filtered to nothing</span>
+        <div aria-busy="true" aria-label="Loading payments" style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+          <div class="sk" style="height: 16px; width: 40%; border-radius: 6px"></div>
+          <div style="display: flex; gap: 12px; align-items: center"><div class="sk" style="width: 36px; height: 36px; border-radius: 10px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 70%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 45%; border-radius: 5px"></div></div><div class="sk" style="width: 80px; height: 22px; border-radius: 99px"></div></div>
+          <div style="display: flex; gap: 12px; align-items: center"><div class="sk" style="width: 36px; height: 36px; border-radius: 10px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 60%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 35%; border-radius: 5px"></div></div><div class="sk" style="width: 80px; height: 22px; border-radius: 99px"></div></div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 18px 12px; border-radius: 12px; background: #121A27; border: 1px solid #243044">
+          <span style="width: 44px; height: 44px; border-radius: 14px; background: #1E2838; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="search" tone="dmuted" size="24" hint-size="24px,24px"></dc-import></span>
+          <b style="font-size: 14px">No payments match “Telephone”</b>
+          <span style="color: #B4BFCE; font-size: 13px">Check the spelling, or clear the filter.</span>
+          <button type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #2C3A52; background: #172133; font: 600 14px Inter, sans-serif; color: #E6EBF2; cursor: pointer">Clear filter</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Banners · new month, connection lost</span>
+        <div role="status" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 14px; background: #1B2A4A; border: 1px solid #2F4A86">
+          <dc-import name="Icon" glyph="calendar" tone="dbrand" size="24" hint-size="24px,24px"></dc-import>
+          <div style="flex: 1 1 160px"><b style="color: #8DB0FA">November payroll has started</b><div style="color: #B4BFCE; font-size: 13px">October is still open: 3 things left.</div></div>
+          <span style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 8px; background: #3D6BE0; color: #FFFFFF; font: 600 13px Inter, sans-serif">Go to October</span>
+        </div>
+        <div role="alert" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; background: #2E2210; border: 1px solid #6B4D1F">
+          <dc-import name="Icon" glyph="wifiOff" tone="dwarn" size="20" hint-size="20px,20px"></dc-import>
+          <span style="flex: 1 1 160px; font-size: 13px; color: #F2B35B">Connection lost. Nothing you typed has been sent, and the form is as you left it.</span>
+          <span class="sp" aria-hidden="true" style="width: 16px; height: 16px; box-sizing: border-box; border-radius: 50%; border: 2px solid #6B4D1F; border-top-color: #F2B35B"></span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Status pills and chips</span>
+        <div style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px">
+            <span class="pl ok"><dc-import name="Icon" glyph="check" tone="dok" size="14" hint-size="14px,14px"></dc-import>Complete</span>
+            <span class="pl warn"><dc-import name="Icon" glyph="clock" tone="dwarn" size="14" hint-size="14px,14px"></dc-import>Due in 2 days</span>
+            <span class="pl bad"><dc-import name="Icon" glyph="alert" tone="dbad" size="14" hint-size="14px,14px"></dc-import>Overdue 3 days</span>
+            <span class="pl info"><dc-import name="Icon" glyph="payment" tone="dbrand" size="14" hint-size="14px,14px"></dc-import>Open</span>
+            <span class="pl mute"><dc-import name="Icon" glyph="clock" tone="dmuted" size="14" hint-size="14px,14px"></dc-import>Not paid</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px">
+            <span class="cp ok"><dc-import name="Icon" glyph="check" tone="dok" size="14" hint-size="14px,14px"></dc-import>Bank slip</span>
+            <span class="cp miss"><dc-import name="Icon" glyph="plus" tone="dwarn" size="14" hint-size="14px,14px"></dc-import>Invoice</span>
+            <span class="cp bad"><dc-import name="Icon" glyph="lock" tone="dbad" size="14" hint-size="14px,14px"></dc-import>Couldn't open</span>
+            <span class="cp warn"><dc-import name="Icon" glyph="company" tone="dwarn" size="14" hint-size="14px,14px"></dc-import>Another company</span>
+            <span class="cp mute"><dc-import name="Icon" glyph="link" tone="dmuted" size="14" hint-size="14px,14px"></dc-import>PV2610-014</span>
+            <span class="cp info"><dc-import name="Icon" glyph="document" tone="dbrand" size="14" hint-size="14px,14px"></dc-import>Approval.pdf</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8E9BB0">New shell pieces in dark</h2><span style="color: #8E9BB0; font-size: 12px">The company button and switcher menu, count badges, Overview card states, the Approval marker, the new pills and markers, the phone tab bar. No new colours: each piece uses the tokens above.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: start">
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Company button and switcher menu</span>
+        <div class="cd" style="min-height: 330px">
+          <div style="display: flex; align-items: center; gap: 10px">
+            <button type="button" class="sw" aria-haspopup="menu" aria-expanded="true"><dc-import name="Icon" glyph="company" tone="dbrand" size="18" hint-size="18px,18px"></dc-import><span>AISB · Kept in SQL Account</span><dc-import name="Icon" glyph="chevronDown" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button>
+          </div>
+          <div role="menu" aria-label="Company" style="box-sizing: border-box; padding: 6px; border-radius: 16px; background: #172133; border: 1px solid #2C3A52; box-shadow: 0 12px 32px rgba(0,0,0,.45)">
+            <sc-for list="{{menu}}" as="it" hint-placeholder-count="4">
+              <sc-if value="{{it.rule}}" hint-placeholder-val="{{ false }}"><div role="separator" style="height: 1px; background: #243044; margin: 4px 8px"></div></sc-if>
+              <button type="button" role="menuitem" tabindex="-1" class="mi" aria-current="{{it.cur}}" style="{{it.focus}}"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; font-weight: 600">{{it.code}} <span style="font-weight: 400; color: #B4BFCE">{{it.full}}</span></span><span style="font-size: 12px; color: #B4BFCE">{{it.kind}}</span></span><span class="{{it.cb}}" aria-hidden="true">{{it.next}}</span></button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <span class="cp info"><dc-import name="Icon" glyph="database" tone="dbrand" size="14" hint-size="14px,14px"></dc-import>Kept in SQL Account</span>
+          <span class="cp mute"><dc-import name="Icon" glyph="books" tone="dmuted" size="14" hint-size="14px,14px"></dc-import>Kept here</span>
+          <span class="cb" aria-label="3 waiting for approval">3</span>
+          <span class="cb red" aria-label="6 to pay, 2 overdue"><dc-import name="Icon" glyph="alert" tone="white" size="12" hint-size="12px,12px"></dc-import>6</span>
+          <span class="cb grey" aria-label="No items">0</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Overview card · normal, empty, out of date, could not load</span>
+        <button type="button" class="ovc">
+          <span style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 10px; background: #1B2A4A; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="bank" tone="dbrand" size="20" hint-size="20px,20px"></dc-import></span><b style="font-size: 14px; flex: 1">Bank balance</b></span>
+          <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 13px"><span>Maybank current</span><b style="font-variant-numeric: tabular-nums">RM 34,314.15</b></span>
+          <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 13px"><span>Maybank savings</span><b style="font-variant-numeric: tabular-nums">RM 58,011.40</b></span>
+          <span style="padding-top: 8px; border-top: 1px solid #243044; font-size: 12px; color: #8E9BB0">Statement, 31 Oct</span>
+          <span class="vh">Opens Accounting, Bank and reconciliation</span>
+        </button>
+        <button type="button" class="ovc">
+          <span style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 10px; background: #1E2838; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="bank" tone="dmuted" size="20" hint-size="20px,20px"></dc-import></span><b style="font-size: 14px; flex: 1">Bank balance</b></span>
+          <span style="font-size: 13px; color: #B4BFCE">No statement imported for November 2026</span>
+          <span class="vh">Opens Accounting, Bank and reconciliation</span>
+        </button>
+        <button type="button" class="ovc"><span class="vh">Bank balance.</span>
+          <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 13px"><span>Maybank current</span><b style="font-variant-numeric: tabular-nums">RM 34,314.15</b></span>
+          <span class="pl warn" style="align-self: flex-start"><dc-import name="Icon" glyph="clock" tone="dwarn" size="14" hint-size="14px,14px"></dc-import>Statement runs to 12 Nov</span>
+          <span class="vh">Opens Accounting, Bank and reconciliation</span>
+        </button>
+        <div class="ovc" style="cursor: default; border-color: #7D2F2B">
+          <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #F58C80; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="dbad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+          <button type="button" style="align-self: flex-start; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7A89A3; background: #172133; font: 600 13px Inter, sans-serif; color: #E6EBF2; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="dbrand" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+          <sc-for list="{{counters}}" as="c" hint-placeholder-count="3"><div class="cd" style="padding: 10px 12px; gap: 2px; border-radius: 12px"><span style="{{c.fig}}">{{c.n}}</span><span style="font-size: 12px; color: #B4BFCE">{{c.label}}</span></div></sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Approval marker, request, leave and staff pills</span>
+        <div class="cd">
+          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+            <sc-for list="{{markers}}" as="m" hint-placeholder-count="6"><span class="{{m.cls}}"><dc-import name="Icon" glyph="{{m.glyph}}" tone="{{m.tone}}" size="14" hint-size="14px,14px"></dc-import>{{m.text}}</span></sc-for>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{pills}}" as="p" hint-placeholder-count="16"><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.text}}</span></sc-for></div>
+        </div>
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0; margin-top: 4px">Overridden, Sensitive, masked IC, Payroll check tones</span>
+        <div class="cd">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+            <span class="cp warn"><dc-import name="Icon" glyph="edit" tone="dwarn" size="14" hint-size="14px,14px"></dc-import>Overridden</span>
+            <span class="sv"><dc-import name="Icon" glyph="lock" tone="brand" size="14" hint-size="14px,14px"></dc-import>Sensitive</span>
+            <span class="ic-mask" aria-label="IC number ending 1234">••••••-••-1234</span>
+            <span class="ic-mask" aria-label="Passport number ending 1307">••••1307</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{checks}}" as="p" hint-placeholder-count="4"><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.text}}</span></sc-for></div>
+          <div class="rb bad" role="status"><dc-import name="Icon" glyph="alert" tone="dbad" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #F58C80">3 things to fix before paying, 2 to check</b><div style="color: #B4BFCE">Example Payroll - NOV 2026.xlsx · 10 notes</div></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #8E9BB0">Phone tab bar and switcher sheet</span>
+        <div style="position: relative; overflow: hidden; border: 1px solid #243044; border-radius: 22px; background: #0B111C; height: 330px">
+          <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; display: flex; background: #121A27; border-top: 1px solid #243044">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+              <button type="button" class="tb3" aria-current="{{t.cur}}" aria-label="{{t.sr}}"><span style="position: relative; display: inline-flex"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="24" hint-size="24px,24px"></dc-import><sc-if value="{{t.hasN}}" hint-placeholder-val="{{ true }}"><span class="cb red" aria-hidden="true" style="position: absolute; left: 14px; top: -6px">{{t.n}}</span></sc-if></span><span>{{t.text}}</span></button>
+            </sc-for>
+          </nav>
+          <div aria-hidden="true" style="position: absolute; left: 0; right: 0; top: 0; bottom: 64px; background: rgba(0,0,0,.6)"></div>
+          <div role="dialog" aria-modal="true" aria-label="Company and month" style="position: absolute; left: 0; right: 0; bottom: 64px; box-sizing: border-box; padding: 8px 16px 14px; background: #172133; border-radius: 20px 20px 0 0; border-top: 1px solid #2C3A52; display: flex; flex-direction: column; gap: 2px">
+            <span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 99px; background: #2C3A52; margin-bottom: 6px"></span>
+            <b style="font: 600 16px 'Space Grotesk', Inter, sans-serif; margin-bottom: 4px">Company and month</b>
+            <button type="button" class="mi" aria-current="false" style="min-height: 44px"><b style="flex: 1; font-size: 14px">All companies</b><span class="cb red" aria-hidden="true">15</span></button>
+            <button type="button" class="mi" aria-current="true" style="min-height: 44px"><b style="flex: 1; font-size: 14px">AISB</b><span class="cb red" aria-hidden="true">12</span><dc-import name="Icon" glyph="check" tone="dbrand" size="20" hint-size="20px,20px"></dc-import></button>
+          </div>
+        </div>
+        <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #172133; border: 1px solid #2C3A52; font-size: 12px; color: #B4BFCE"><dc-import name="Icon" glyph="printer" tone="dmuted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #E6EBF2">Printed pages never go dark.</b> The approval form, payslip and every A4 sheet print black on white whatever the theme; only their on-screen preview frame follows it.</span></div>
+      </div>
+    </div>
+
+    <div class="cd" style="gap: 10px">
+      <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap"><b style="font-size: 13px">Contrast, checked</b><span style="font-size: 12px; color: #8E9BB0">Text needs 4.5 to 1, control borders and focus rings 3 to 1. Ratios are worked out from the two colours.</span></div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px 24px">
+        <sc-for list="{{contrast}}" as="r" hint-placeholder-count="21">
+          <div style="display: grid; grid-template-columns: 22px minmax(0, 1fr) 54px 42px; gap: 8px; align-items: center; font-size: 12px; padding: 4px 0; border-bottom: 1px solid #243044"><span aria-hidden="true" style="{{r.sw}}">Aa</span><span style="color: #B4BFCE">{{r.name}}</span><b style="font-variant-numeric: tabular-nums">{{r.ratio}} : 1</b><span class="{{r.cls}}" style="height: 20px; padding: 0 6px; font-size: 11px">{{r.verdict}}</span></div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const S = [['Canvas', '#0B111C'], ['Surface', '#121A27'], ['Raised', '#172133'], ['Line', '#243044'], ['Line strong', '#2C3A52'], ['Sidebar', '#070C15'], ['Ink', '#E6EBF2'], ['Ink 2', '#B4BFCE'],
+      ['Ink 3', '#8E9BB0'], ['Control border', '#7A89A3'], ['Cobalt text', '#8DB0FA'], ['Cobalt solid', '#3D6BE0'], ['Cobalt wash', '#1B2A4A'], ['Focus ring', '#8DB0FA'], ['Flash tint', '#1B2B4A'], ['Neutral wash', '#1E2838'],
+      ['OK', '#5BD49A'], ['OK wash', '#10291E'], ['OK line', '#1F5C42'], ['Warn', '#F2B35B'], ['Warn wash', '#2E2210'], ['Warn line', '#6B4D1F'],
+      ['Bad', '#F58C80'], ['Bad wash', '#33171A'], ['Bad line', '#7D2F2B'], ['Bad solid', '#C9372C']];
+    const L = h => { const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+    const ratio = (a, b) => { const x = L(a), y = L(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+    const CT = [
+      ['Count badge, blue', '#8DB0FA', '#1B2A4A', 4.5], ['Count badge, red', '#FFFFFF', '#C9372C', 4.5], ['Count badge, grey', '#B4BFCE', '#1E2838', 4.5],
+      ['Company button text', '#E6EBF2', '#121A27', 4.5], ['Company button border', '#7A89A3', '#121A27', 3], ['Menu row, current', '#E6EBF2', '#1B2A4A', 4.5],
+      ['Menu row, hover', '#E6EBF2', '#1E2838', 4.5], ['Menu line 2', '#B4BFCE', '#172133', 4.5], ['Card footer and hint', '#8E9BB0', '#121A27', 4.5],
+      ['Card footer on hover', '#8E9BB0', '#172133', 4.5], ['Zero counter', '#8E9BB0', '#121A27', 4.5], ['Past due counter', '#F58C80', '#121A27', 4.5],
+      ['Part paid counter', '#F2B35B', '#121A27', 4.5], ['Marker, approved', '#5BD49A', '#10291E', 4.5], ['Marker, waiting', '#F2B35B', '#2E2210', 4.5],
+      ['Marker, not needed', '#B4BFCE', '#1E2838', 4.5], ['Marker, paid without approval', '#F58C80', '#33171A', 4.5], ['Sensitive marker', '#0B111C', '#E6EBF2', 4.5],
+      ['Phone tab, open', '#8DB0FA', '#121A27', 4.5], ['Phone tab, other', '#B4BFCE', '#121A27', 4.5], ['Focus ring on a card', '#8DB0FA', '#121A27', 3]
+    ];
+    const contrast = CT.map(([name, fg, bg, need]) => { const r = ratio(fg, bg), ok = r >= need; return { name, ratio: r.toFixed(2), verdict: ok ? 'Pass' : 'Fails', cls: 'pl ' + (ok ? 'ok' : 'bad'), sw: 'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;font:700 10px Inter,sans-serif;color:' + fg + ';background:' + bg + ';border:1px solid #2C3A52' }; });
+    const mk = (cls, glyph, tone, text) => ({ cls, glyph, tone, text });
+    const markers = [mk('cp mute', 'approval', 'dmuted', 'Not needed'), mk('cp warn', 'clock', 'dwarn', 'Waiting'), mk('cp ok', 'check', 'dok', 'Approved by Rajesh Kumar, 1 Oct 2026'), mk('cp bad', 'alert', 'dbad', 'Paid without approval on file'), mk('cp bad', 'alert', 'dbad', 'Paid more than approved (RM 120.00)'), mk('cp bad', 'alert', 'dbad', 'Paid, approval refused')];
+    const pills = [['mute', 'edit', 'dmuted', 'Draft'], ['warn', 'clock', 'dwarn', 'Waiting for approval'], ['ok', 'check', 'dok', 'Approved'], ['bad', 'close', 'dbad', 'Not approved'], ['bad', 'alert', 'dbad', 'Paid, approval refused'], ['mute', 'undo', 'dmuted', 'Withdrawn'], ['ok', 'payment', 'dok', 'Paid'], ['info', 'payment', 'dbrand', 'Part paid'], ['info', 'books', 'dbrand', 'Recorded'], ['ok', 'verified', 'dok', 'Done'],
+      ['info', 'calendar', 'dbrand', 'Booked'], ['ok', 'check', 'dok', 'Taken'], ['mute', 'close', 'dmuted', 'Cancelled'], ['ok', 'person', 'dok', 'In employment'], ['warn', 'clock', 'dwarn', 'On probation'], ['mute', 'logout', 'dmuted', 'Left']].map(([c, glyph, tone, text]) => mk('pl ' + c, glyph, tone, text));
+    const checks = [mk('cp bad', 'alert', 'dbad', 'Fix before paying'), mk('cp warn', 'eye', 'dwarn', 'Check'), mk('cp mute', 'help', 'dmuted', 'Note'), mk('cp ok', 'check', 'dok', 'Nothing found')];
+    const counters = [['1', 'Past due', '#F58C80'], ['1', 'Part paid', '#F2B35B'], ['0', 'Documents missing', '#8E9BB0']].map(([n, label, col]) => ({ n, label, fig: 'font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:' + col }));
+    const menu = [
+      { code: 'All companies', full: '', kind: 'One line per company', next: '14', cb: 'cb red', cur: 'false', rule: false, focus: '' },
+      { code: 'AISB', full: 'AISB Sdn Bhd', kind: 'Kept in SQL Account', next: '11', cb: 'cb red', cur: 'true', rule: true, focus: 'outline:2px solid #8DB0FA;outline-offset:-2px' },
+      { code: 'AI', full: 'Agrinexus International', kind: 'Kept here', next: '5', cb: 'cb red', cur: 'false', rule: false, focus: '' },
+      { code: 'AIL', full: 'Agrinexus Logistics', kind: 'Kept in SQL Account', next: '2', cb: 'cb', cur: 'false', rule: false, focus: '' }
+    ];
+    const tabs = [['overview', 'Overview', true, '11'], ['payment', 'Payments', false, ''], ['more', 'More', false, '']].map(([glyph, text, cur, n]) => ({ glyph, text, cur: cur ? 'page' : 'false', tone: cur ? 'dbrand' : 'dmuted', n, hasN: !!n, sr: text + (n ? ', 11 to do, 3 overdue' : '') }));
+    return { menu, counters, markers, pills, checks, tabs, contrast, sw: S.map(([name, hex]) => ({ name, hex, chip: 'height:40px;background:' + hex + ';border-bottom:1px solid #243044' })) };
+  }
+}
+</script>
+</body>
+</html>

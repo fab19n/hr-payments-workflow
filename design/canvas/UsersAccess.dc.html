@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Users and access · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:not(.on):hover{background:#F8FAFD !important}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+input:disabled,select:disabled{background:#F5F6F8 !important;color:#46546A !important}
+/* motion and focus base */
+.hb,.hs,.hd,.hr,.nv,.nb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{width:16px;height:16px;flex:none;box-sizing:border-box;border-radius:50%;border:2px solid rgba(255,255,255,.35);border-top-color:#FFFFFF;animation:spin .7s linear infinite}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.sk{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="users" company="aisb" kind="sqlPayroll" hosting="{{host}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Users and access" company="aisb" hosting="{{host}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+
+      <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: 12px; border: 1px dashed #8793A6; background: #F7F8FA; color: #46546A; font-size: 13px">
+        <dc-import name="Icon" glyph="access" tone="muted" size="20" hint-size="20px,20px"></dc-import>
+        <span><b style="color: #0F1A2B">Drawn now, built with hosting and logins.</b> Until then the app runs on this PC for one person, as today, and every name in the audit trail is declared, not verified. The page shows only to someone with the Admin right.</span>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Admin</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Users and access</h1>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 680px">Who can sign in, and what each person can see and do. Six rights: HR, Payroll figures, Payments, Accounting, Approver and Admin. A page someone has no right to is left out of their menu.</p>
+        </div>
+        <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+          <button type="button" id="ua-add" class="hb" onClick="{{openNew}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a person</button>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{pcOn}}" hint-placeholder-val="{{ false }}">
+        <div role="status" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px">
+          <dc-import name="Icon" glyph="laptop" tone="warn" size="20" hint-size="20px,20px"></dc-import>
+          <span><b>Sign-in isn't switched on.</b> The app runs on this PC only, so whoever is at the keyboard sees every page, and the name on each change is declared, not verified. The people and rights below apply once the app is hosted with sign-in.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{loadOn}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" aria-label="Loading people" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; gap: 12px; padding: 14px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 12px; width: 24%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div></div>
+          <sc-for list="{{skRows}}" as="k" hint-placeholder-count="4">
+            <div style="display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="width: 36px; height: 36px; border-radius: 99px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="{{k.a}}"></div><div class="sk" style="height: 10px; width: 22%; border-radius: 5px"></div></div><div class="sk" style="{{k.b}}"></div><div class="sk" style="width: 64px; height: 22px; border-radius: 99px"></div></div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{errOn}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the people who sign in</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 520px">The sign-in service didn't answer. Everyone who is signed in stays signed in. Try again in a minute. Nothing was changed.</p>
+          <div style="display: flex; gap: 8px"><button type="button" id="ua-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ownerOn}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 16px 18px; border-radius: 16px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px">
+            <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="person" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+            <span style="flex: 1 1 320px"><b style="color: #0F1A2B">You're the only person who signs in.</b> Add someone to share the work, with only the rights they need. The Admin right stays with you until someone else has it.</span>
+          </div>
+        </sc-if>
+
+        <section aria-labelledby="ua-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <h2 id="ua-list-h" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0">People who sign in</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+            <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 220px; max-width: 320px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search people" aria-label="Search people" aria-describedby="ua-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+            <span id="ua-count" aria-live="polite" style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{countTxt}}</span>
+            <label style="margin-left: auto; display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{showRemoved}}" onChange="{{toggleRemoved}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Show removed ({{nRemoved}})</label>
+          </div>
+          <p style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">Click a person to change their rights, set a new password or remove their access. Changes apply from their next page.</p>
+          <div role="region" aria-labelledby="ua-list-h" tabindex="0" class="fr" style="{{scrollStyle}}">
+            <table style="width: 100%; min-width: 820px; border-collapse: collapse">
+              <thead>
+                <tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                  <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 18px; font-weight: 600">Person</th>
+                  <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Rights</th>
+                  <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Staff record</th>
+                  <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Last signed in</th>
+                  <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 18px; font-weight: 600">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+                  <tr class="{{r.cls}}" onClick="{{r.open}}" style="border-top: 1px solid #EEF1F5; cursor: pointer; vertical-align: top">
+                    <td style="padding: 12px 18px">
+                      <div style="display: flex; gap: 12px; align-items: center">
+                        <span aria-hidden="true" style="{{r.avatar}}">{{r.initials}}</span>
+                        <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                          <span style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><button type="button" id="{{r.id}}" onKeyDown="{{r.key}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; min-height: 24px; font: 600 14px Inter, sans-serif; color: inherit; cursor: pointer; text-align: left">{{r.name}}</button><sc-if value="{{r.you}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; border: 1px solid #C9D7F6; color: #2450B8; font-size: 12px; font-weight: 600">You</span></sc-if></span>
+                          <span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{r.signin}}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="padding: 12px"><div style="display: flex; flex-wrap: wrap; gap: 6px; max-width: 380px"><sc-for list="{{r.rights}}" as="g" hint-placeholder-count="3"><span style="{{g.style}}">{{g.label}}</span></sc-for></div><sc-if value="{{r.apprOn}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px; margin-top: 4px">Approver for {{r.apprCos}}</div></sc-if></td>
+                    <td style="padding: 12px; font-size: 13px"><sc-if value="{{r.staffOn}}" hint-placeholder-val="{{ false }}"><a href="{{r.staffHref}}" style="font-weight: 600; text-decoration: none">{{r.staff}}</a></sc-if><sc-if value="{{r.staffOff}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80">None</span></sc-if></td>
+                    <td style="padding: 12px; font-size: 13px; color: #46546A; white-space: nowrap">{{r.last}}</td>
+                    <td style="padding: 12px 18px"><span class="{{r.pillCls}}" style="{{r.pill}}">{{r.status}}</span></td>
+                  </tr>
+                </sc-for>
+                <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+                  <tr><td colspan="5" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="search" tone="muted" size="28" hint-size="28px,28px"></dc-import><span>No people match “{{q}}”.</span><button type="button" class="hs" onClick="{{clearQ}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear the search</button></div></td></tr>
+                </sc-if>
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 12px 18px; border-top: 1px solid #EEF1F5; background: #FAFBFC; font-size: 13px; color: #46546A">
+            <span role="status" aria-live="off">{{footTxt}}</span>
+            <sc-if value="{{paperOn}}" hint-placeholder-val="{{ true }}"><span>{{paperWho}} on paper: they are on <a href="SetupApprovers.dc.html" style="font-weight: 600">Setup › HR › Approvers</a> without a sign-in.</span></sc-if>
+          </div>
+        </section>
+
+        <sc-if value="{{manyNote}}" hint-placeholder-val="{{ false }}">
+          <span style="color: #5F6C80; font-size: 12px">Many rows: every name in the samples with a sign-in, 18 people, rights made up for the stress case. The header row stays at the top while the rows scroll. Over 25 people the list shows 25 and Show 25 more, as States › Many rows.</span>
+        </sc-if>
+
+        <sc-if value="{{showRemoved}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="ua-rm-h" class="ex" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="padding: 16px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 4px">
+              <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="20" hint-size="20px,20px"></dc-import><h2 id="ua-rm-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Removed</h2></div>
+              <p style="margin: 0; color: #5F6C80; font-size: 13px">They can't sign in. Their names stay on everything they did, in the audit trail.</p>
+            </div>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 18px; font-weight: 600">Person</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Removed</th><th scope="col" style="padding: 10px 12px; font-weight: 600">By</th><th scope="col" style="padding: 10px 18px; font-weight: 600">Why</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{rmRows}}" as="d" hint-placeholder-count="1">
+                    <tr style="border-top: 1px solid #EEF1F5; vertical-align: top"><td style="padding: 12px 18px; font-weight: 600">{{d.name}}<div style="color: #5F6C80; font-size: 12px; font-weight: 400; font-family: ui-monospace, Consolas, monospace">{{d.signin}}</div></td><td style="padding: 12px; white-space: nowrap">{{d.at}}</td><td style="padding: 12px">{{d.by}}</td><td style="padding: 12px 18px; color: #46546A">{{d.why}}</td></tr>
+                  </sc-for>
+                  <sc-if value="{{rmEmpty}}" hint-placeholder-val="{{ true }}"><tr><td colspan="4" style="padding: 24px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5">None removed.</td></tr></sc-if>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </sc-if>
+
+        <section aria-labelledby="ua-rights-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 id="ua-rights-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What each right opens</h2>
+            <span style="color: #5F6C80; font-size: 13px">Everyone with a right also sees the Overview, with only the cards their rights allow. The rights are the same for every company.</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px">
+            <sc-for list="{{legend}}" as="l" hint-placeholder-count="6">
+              <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA">
+                <span style="width: 36px; height: 36px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{l.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import></span>
+                <div style="display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #46546A"><b style="color: #0F1A2B; font-size: 14px">{{l.name}}</b><span>{{l.txt}}</span><sc-if value="{{l.linkOn}}" hint-placeholder-val="{{ false }}"><a href="SetupApprovers.dc.html" style="font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">Open Setup › HR › Approvers</a></sc-if></div>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+
+  <div style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <div role="status" aria-live="polite">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+        <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 620px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); background: #0F1A2B"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 40px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ua-title" aria-describedby="ua-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 940px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="access" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dEyebrow}}</span>
+          <h2 id="ua-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2>
+          <span id="ua-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 18px">
+        <sc-if value="{{refusedOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ua-refused" tabindex="-1" role="alert" class="rv" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{refusedTitle}}</b> {{refused}} Nothing was changed.</span></div>
+        </sc-if>
+        <sc-if value="{{sumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{sumTitle}}</b> {{sumList}}</span></div>
+        </sc-if>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+          <div style="flex: 999 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+            <fieldset disabled="{{busy}}" style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+              <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">The person</legend>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+                <sc-for list="{{fields}}" as="f" hint-placeholder-count="3">
+                  <div style="{{f.wrap}}">
+                    <label for="{{f.id}}" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}<sc-if value="{{f.req}}" hint-placeholder-val="{{ false }}"><span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></sc-if></label>
+                    <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><input id="{{f.id}}" type="text" value="{{f.val}}" onChange="{{f.change}}" maxLength="120" aria-required="{{f.reqAria}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" autoComplete="off" spellCheck="false" style="{{f.style}}"></sc-if>
+                    <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><select id="{{f.id}}" value="{{f.val}}" onChange="{{f.change}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" style="{{f.style}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></sc-if>
+                    <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{f.err}}</span></sc-if>
+                    <span id="{{f.hintId}}" style="color: #5F6C80; font-size: 12px">{{f.hint}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </fieldset>
+
+            <fieldset disabled="{{busy}}" aria-describedby="{{rtBy}}" style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+              <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Rights</legend>
+              <sc-for list="{{rts}}" as="t" hint-placeholder-count="5">
+                <label for="{{t.id}}" style="{{t.rowStyle}}"><input id="{{t.id}}" type="checkbox" checked="{{t.on}}" disabled="{{t.dis}}" onChange="{{t.change}}" aria-describedby="{{t.hintId}}" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: #2450B8; flex: none"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><b style="font-size: 14px; color: #0F1A2B">{{t.name}}</b><span id="{{t.hintId}}" style="font-size: 12px; color: #5F6C80">{{t.hint}}</span></span></label>
+              </sc-for>
+              <div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid #E3E7ED">
+                <span style="width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; margin-top: 2px; flex: none"><dc-import name="Icon" glyph="approval" tone="brand" size="18" hint-size="18px,18px"></dc-import></span>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                  <label for="ua-f-approver" style="font-size: 14px; font-weight: 700; color: #0F1A2B">Approver</label>
+                  <select id="ua-f-approver" value="{{apprVal}}" onChange="{{apprChange}}" aria-invalid="{{apprInv}}" aria-describedby="{{apprBy}}" style="{{apprStyle}}"><sc-for list="{{apprOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+                  <sc-if value="{{apprErrOn}}" hint-placeholder-val="{{ false }}"><span id="ua-f-approver-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{apprErr}}</span></sc-if>
+                  <span id="ua-f-approver-hint" style="font-size: 12px; color: #5F6C80">Approves requests on Payments › Approvals. Only people on <a href="SetupApprovers.dc.html" style="font-weight: 600">Setup › HR › Approvers</a> are offered, so there is one list of approvers. An approver never approves their own request.</span>
+                </div>
+              </div>
+              <sc-if value="{{rtErrOn}}" hint-placeholder-val="{{ false }}"><span id="ua-rt-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Tick at least one right, or choose an approver.</span></sc-if>
+            </fieldset>
+
+            <sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}">
+              <section aria-labelledby="ua-pw-h" style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+                <h3 id="ua-pw-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Password</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+                  <button type="button" id="ua-pw-open" class="hs" onClick="{{pwToggle}}" aria-expanded="{{pwExp}}" disabled="{{busy}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="key" tone="muted" size="18" hint-size="18px,18px"></dc-import>Set a new password</button>
+                  <span style="color: #5F6C80; font-size: 12px">{{pwNote}}</span>
+                </div>
+                <sc-if value="{{pwOn}}" hint-placeholder-val="{{ false }}">
+                  <div role="group" aria-labelledby="ua-pw-l" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE">
+                    <label id="ua-pw-l" for="ua-pw" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">New password for {{dFirst}} <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+                    <input id="ua-pw" type="password" value="{{pwText}}" onChange="{{onPw}}" onKeyDown="{{pwKey}}" autoComplete="new-password" aria-required="true" aria-invalid="{{pwInv}}" aria-describedby="{{pwBy}}" style="{{pwStyle}}">
+                    <sc-if value="{{pwErrOn}}" hint-placeholder-val="{{ false }}"><span id="ua-pw-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{pwErr}}</span></sc-if>
+                    <span id="ua-pw-hint" style="color: #5F6C80; font-size: 12px">At least 12 characters. Tell {{dFirst}} in person: it is never emailed, and nobody sees it again after this.</span>
+                    <label style="display: flex; gap: 10px; align-items: center; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{pwAsk}}" onChange="{{togglePwAsk}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Ask for a new one at the next sign-in</label>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end">
+                      <button type="button" id="ua-pw-cancel" class="hs" onClick="{{pwCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                      <button type="button" id="ua-pw-go" class="hb" onClick="{{pwGo}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Set password</button>
+                    </div>
+                  </div>
+                </sc-if>
+              </section>
+
+              <section aria-labelledby="ua-acc-h" style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+                <h3 id="ua-acc-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Access</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+                  <button type="button" id="ua-rm-open" onClick="{{rmOpen}}" aria-expanded="{{rmExp}}" disabled="{{busy}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer"><dc-import name="Icon" glyph="eyeOff" tone="bad" size="18" hint-size="18px,18px"></dc-import>Remove access</button>
+                  <span style="color: #5F6C80; font-size: 12px">They can't sign in any more. Their name stays on everything they did.</span>
+                </div>
+                <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Changes to {{dFirst}}'s access, in the audit trail</a>
+              </section>
+            </sc-if>
+          </div>
+
+          <aside aria-labelledby="ua-pv-h" style="flex: 1 1 280px; max-width: 300px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+            <h3 id="ua-pv-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{pvHeading}}</h3>
+            <span class="{{pvCls}}" style="font-size: 13px; color: #0F1A2B">{{pvSees}}</span>
+            <sc-for list="{{pvNotes}}" as="n" hint-placeholder-count="1"><span style="display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: #FFF8EC; border: 1px solid #F0C98A; color: #5C2B00; font-size: 12px"><dc-import name="Icon" glyph="{{n.glyph}}" tone="warn" size="16" hint-size="16px,16px"></dc-import><span>{{n.txt}}</span></span></sc-for>
+            <sc-if value="{{pvMenuOn}}" hint-placeholder-val="{{ true }}">
+              <div aria-hidden="true" style="height: 520px; overflow: auto; border-radius: 12px; border: 1px solid #D5DBE4; background: #0D1B2E">
+                <div inert="{{ true }}" style="width: 264px">
+                  <dc-import name="Sidebar" active="{{pvActive}}" company="aisb" kind="sqlPayroll" access="{{pvAccess}}" hosting="hosted" hint-size="264px,1020px"></dc-import>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{pvMenuOff}}" hint-placeholder-val="{{ false }}">
+              <div class="{{pvCls}}" style="height: 520px; box-sizing: border-box; border-radius: 12px; border: 1px dashed #8793A6; background: #F7F8FA; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 24px; text-align: center; color: #46546A; font-size: 13px">
+                <dc-import name="Icon" glyph="eyeOff" tone="muted" size="28" hint-size="28px,28px"></dc-import>
+                <b style="color: #0F1A2B; font-size: 14px">No menu yet</b>
+                <span>Tick a right or choose an approver to see the side menu.</span>
+              </div>
+            </sc-if>
+            <span style="color: #5F6C80; font-size: 12px">A preview of the side menu on AISB, as it follows the ticks. It changes when you tick; nothing is saved until Save.</span>
+          </aside>
+        </div>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ua-discard-q" aria-describedby="ua-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ua-discard-q">Discard your changes?</b><div id="ua-discard-d" style="color: #5F6C80; font-size: 12px">What you changed here is not kept.</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ua-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="ua-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{rmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ua-rm-q" aria-describedby="ua-rm-d" class="ex" style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div><b id="ua-rm-q">Remove {{dTitle}}'s access?</b><div id="ua-rm-d" style="color: #46546A; font-size: 13px">{{rmDetail}}</div></div></div>
+            <label for="ua-rm-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="ua-rm-why" type="text" value="{{rmWhy}}" onChange="{{onRmWhy}}" onKeyDown="{{rmKey}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{rmInv}}" aria-describedby="{{rmBy}}" placeholder="Kept in the audit trail with the change" style="{{rmStyle}}">
+            <sc-if value="{{rmErr}}" hint-placeholder-val="{{ false }}"><span id="ua-rm-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+            <div style="display: flex; gap: 8px; justify-content: flex-end">
+              <button type="button" id="ua-rm-keep" class="hs" onClick="{{rmCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep access</button>
+              <button type="button" id="ua-rm-go" class="hd" onClick="{{rmGo}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Remove access</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="ua-foot" class="{{footCls}}" style="{{footStyle}}"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ua-cancel" class="hs" onClick="{{askClose}}" disabled="{{busy}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{closeLabel}}</button>
+              <button type="submit" id="ua-save" class="hb" aria-describedby="ua-foot" aria-busy="{{busyAria}}" disabled="{{busy}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 128px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Saving…</sc-if><sc-if value="{{notBusy}}" hint-placeholder-val="{{ true }}">{{saveLabel}}</sc-if></button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","pc-only","only-owner","loading","error","many","no-match","add","add-errors","edit","saving","saved","discard","menu-no-hr","menu-no-payroll","approver","approver-taken","last-admin","remove","remove-error","removed","last-admin-remove","password","password-error","password-set"],"section":"State"},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  // Admin › Users and access (scope section 9; samples section 4). New work: nothing of this page exists in the app yet.
+  // It is built with hosting and logins; until then the app runs on this PC for one person and names are declared.
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'list');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._ts); }
+
+  // ---------- sample data (samples.md section 4; approvers section 2; staff section 5) ----------
+  approvers() {
+    // Setup › HR › Approvers: one list, so the Approver right is picked from it (review: "Approver right | Tied to the Setup › HR › Approvers list")
+    return [['hassan', 'Hassan Ismail', 'AISB, AI and AIL'], ['tan', 'Tan Mei Ling', 'AISB, AIL and AIP'], ['rajesh', 'Rajesh Kumar', 'AISB']];
+  }
+  staffList() {
+    return [['S001', 'Aisha Rahman', 'AISB'], ['S002', 'Ong Wei Ming', 'AISB'], ['S003', 'Nurul Aina binti Hashim', 'AISB'], ['S004', 'Mohd Hafiz bin Rosli', 'AISB'], ['S005', 'Nor Khadijah binti Omar', 'AISB'],
+      ['S006', 'Wong Kah Seng', 'AISB'], ['S007', 'Goh Jia Hui', 'AISB'], ['S008', 'Nur Izzati binti Kamal', 'AISB'], ['S009', 'Daniel Lee Chee Keong', 'AISB'],
+      ['A001', 'Mohd Faizal bin Yusof', 'AI'], ['A002', 'Chong Pei Shan', 'AI'], ['A003', 'Priya Subramaniam', 'AI'], ['A004', 'Lee Jun Wei', 'AI'], ['A005', 'Rina Santoso', 'AI']];
+  }
+  basePeople() {
+    const P = (id, name, signin, staff, r, approver, last, you) => ({ id, name, signin, staff, hr: r.includes('hr') ? 1 : 0, pay: r.includes('pay') ? 1 : 0, payments: r.includes('payments') ? 1 : 0, accounting: r.includes('accounting') ? 1 : 0, admin: r.includes('admin') ? 1 : 0, approver: approver || '', last, you: !!you });
+    return [
+      P(1, 'Aisha Rahman', 'aisha.rahman', 'S001', ['hr', 'pay', 'payments', 'accounting', 'admin'], '', 'Wed 18 Nov, 08:52', true),
+      P(2, 'Nurul Aina', 'nurul.aina', 'S003', ['hr'], '', 'Fri 13 Nov, 17:10'),
+      P(3, 'Marcus Teoh', 'marcus.teoh', '', ['payments', 'accounting'], '', 'Mon 16 Nov, 10:05'),
+      P(4, 'Hassan Ismail', 'hassan.ismail', '', [], 'hassan', 'Never signed in')
+    ];
+  }
+  // the stress case: every name in the samples with a sign-in (rights made up for it)
+  manyPeople() {
+    const P = (id, name, signin, staff, r, approver) => ({ id, name, signin, staff, hr: r.includes('hr') ? 1 : 0, pay: r.includes('pay') ? 1 : 0, payments: r.includes('payments') ? 1 : 0, accounting: r.includes('accounting') ? 1 : 0, admin: r.includes('admin') ? 1 : 0, approver: approver || '', last: 'Never signed in', you: false });
+    return this.basePeople().concat([
+      P(5, 'Tan Mei Ling', 'tan.meiling', '', [], 'tan'), P(6, 'Rajesh Kumar', 'rajesh.kumar', '', [], 'rajesh'),
+      P(7, 'Daniel Lee Chee Keong', 'daniel.lee', 'S009', ['payments', 'accounting']), P(8, 'Chong Pei Shan', 'chong.peishan', 'A002', ['payments', 'accounting']),
+      P(9, 'Wong Kah Seng', 'wong.kahseng', 'S006', ['admin']), P(10, 'Ong Wei Ming', 'ong.weiming', 'S002', ['payments']),
+      P(11, 'Mohd Hafiz bin Rosli', 'hafiz.rosli', 'S004', ['payments']), P(12, 'Nor Khadijah binti Omar', 'khadijah.omar', 'S005', ['payments']),
+      P(13, 'Goh Jia Hui', 'goh.jiahui', 'S007', ['payments']), P(14, 'Nur Izzati binti Kamal', 'izzati.kamal', 'S008', ['hr']),
+      P(15, 'Mohd Faizal bin Yusof', 'faizal.yusof', 'A001', ['payments']), P(16, 'Priya Subramaniam', 'priya.s', 'A003', ['accounting']),
+      P(17, 'Lee Jun Wei', 'lee.junwei', 'A004', ['payments']), P(18, 'Rina Santoso', 'rina.santoso', 'A005', ['payments'])
+    ]);
+  }
+  blank() { return { name: '', signin: '', staff: '', hr: 0, pay: 0, payments: 0, accounting: 0, admin: 0, approver: '' }; }
+  formOf(p) { return { name: p.name, signin: p.signin, staff: p.staff, hr: p.hr, pay: p.pay, payments: p.payments, accounting: p.accounting, admin: p.admin, approver: p.approver }; }
+
+  init(view) {
+    const people = this.basePeople();
+    const base = { people, removed: [], q: '', showRemoved: false, load: 'ok', host: 'hosted', many: false,
+      dlg: null, closing: false, form: null, loaded: null, tried: false, refused: '', busy: false, confirm: false,
+      rm: false, rmWhy: '', rmErr: false, pw: false, pwText: '', pwAsk: true, pwErr: '', pwSetN: 0,
+      footMsg: '', footN: 0, pvN: 0, toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0 };
+    const edit = (id, extra) => { const p = people.find(x => x.id === id); return { ...base, dlg: { id, isNew: false }, form: this.formOf(p), loaded: this.formOf(p), ...extra }; };
+    const withForm = (s, patch) => ({ ...s, form: { ...s.form, ...patch } });
+    switch (view) {
+      case 'pc-only': return { ...base, host: 'pc' };
+      case 'only-owner': return { ...base, people: people.slice(0, 1) };
+      case 'loading': return { ...base, load: 'loading' };
+      case 'error': return { ...base, load: 'error' };
+      case 'many': return { ...base, people: this.manyPeople(), many: true };
+      case 'no-match': return { ...base, q: 'zeta' };
+      case 'add': return { ...base, dlg: { id: null, isNew: true }, form: this.blank(), loaded: this.blank() };
+      case 'add-errors': { const f = { ...this.blank(), signin: 'aisha.rahman' }; return { ...base, dlg: { id: null, isNew: true }, form: f, loaded: this.blank(), tried: true }; }
+      case 'edit': return edit(1, {});
+      case 'saving': return withForm(edit(3, { busy: true }), { signin: 'marcus' });
+      case 'saved': return edit(3, { toast: { text: 'Saved. Marcus Teoh sees the change on his next page.' }, undo: { people, removed: [], text: 'Change undone' } });
+      case 'discard': return withForm(edit(3, { confirm: true }), { signin: 'marcus' });
+      case 'menu-no-hr': return edit(3, {});
+      case 'menu-no-payroll': return edit(2, {});
+      case 'approver': return edit(4, {});
+      case 'approver-taken': return withForm(edit(3, { tried: true }), { approver: 'hassan' });
+      case 'last-admin': { const s = withForm(edit(1, {}), { admin: 0 }); return { ...s, refused: 'Someone must keep the Admin right. Aisha Rahman is the only person with it: give Admin to another person first.' }; }
+      case 'last-admin-remove': return edit(1, { refused: this.lastAdminRmText(people.find(x => x.id === 1)) });
+      case 'remove': return edit(3, { rm: true, rmWhy: 'The year-end audit is finished.' });
+      case 'remove-error': return edit(3, { rm: true, rmErr: true });
+      case 'removed': {
+        const gone = people.find(x => x.id === 3);
+        return { ...base, people: people.filter(x => x.id !== 3), showRemoved: true,
+          removed: [{ ...gone, at: '18 Nov 2026, 10:20', by: 'Aisha Rahman', why: 'The year-end audit is finished.' }],
+          toast: { text: 'Marcus Teoh’s access removed. His name stays on everything he did.' }, undo: { people, removed: [], text: 'Marcus Teoh’s access is back' } };
+      }
+      case 'password': return edit(2, { pw: true });
+      case 'password-error': return edit(2, { pw: true, pwText: 'aina2026', pwErr: 'Use at least 12 characters.' });
+      case 'password-set': return edit(2, { pwSetN: 1, toast: { text: 'New password set for Nurul Aina. She chooses her own at the next sign-in.' } });
+      default: return base;
+    }
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._ts);
+      const nx = this.init(this.props.view || 'list');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (st.dlg && !prev.dlg) { this.focusId(st.refused ? 'ua-refused' : 'ua-title'); return; }
+    if (!st.dlg && prev.dlg) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('ua-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('ua-keep'); return; }
+    if (prev.confirm && !st.confirm && st.dlg && !st.closing) this.focusId('ua-cancel');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+
+  // ---------- rules ----------
+  errors(f) {
+    const st = this.state, me = st.dlg ? st.dlg.id : null, e = {};
+    if (!String(f.name || '').trim()) e.name = 'This can’t be empty.';
+    const s = String(f.signin || '').trim();
+    if (!s) e.signin = 'This can’t be empty.';
+    else if (!/^[a-z0-9][a-z0-9._-]*$/.test(s)) e.signin = 'Small letters, digits, dots or dashes only, like nurul.aina.';
+    else if (st.people.concat(st.removed).some(p => p.id !== me && p.signin === s)) e.signin = 'Another person already signs in as ' + s + '.';
+    if (f.approver) { const other = st.people.find(p => p.id !== me && p.approver === f.approver); if (other) e.approver = this.apprName(f.approver) + ' is already the approver of ' + other.name + '’s sign-in.'; }
+    if (!f.hr && !f.payments && !f.accounting && !f.admin && !f.approver) e.rights = 'none';
+    return e;
+  }
+  // the server's refusal: someone must keep the Admin right
+  lastAdmin(id) { const st = this.state; const others = st.people.filter(p => p.id !== id && p.admin); return others.length === 0; }
+  // one wording for the drawn state and the live refusal
+  lastAdminRmText(p) {
+    return 'Someone must keep the Admin right. ' + (p.you ? 'You are the only person with it, so your access' : p.name + ' is the only person with it, so their access') + ' can’t be removed: give Admin to another person first.';
+  }
+  apprName(k) { const a = this.approvers().find(x => x[0] === k); return a ? a[1] : ''; }
+  apprCos(k) { const a = this.approvers().find(x => x[0] === k); return a ? a[2] : ''; }
+  rightsOf(p) {
+    const r = [];
+    if (p.hr) r.push('HR'); if (p.hr && p.pay) r.push('Payroll figures'); if (p.payments) r.push('Payments'); if (p.accounting) r.push('Accounting'); if (p.approver) r.push('Approver'); if (p.admin) r.push('Admin');
+    return r;
+  }
+  // which side menu the preview shows (Sidebar's access cases)
+  accessOf(f) {
+    const pa = f.payments || f.accounting;
+    if (!f.hr && !pa && !f.admin) return f.approver ? 'approver' : 'none';
+    if (f.hr && !pa && !f.admin) return 'hrOnly';
+    if (!f.hr && !f.admin) return 'noHrNoAdmin';
+    if (!f.hr) return 'noHr';
+    if (!f.admin) return 'noAdmin';
+    return 'full';
+  }
+  dirty() { const st = this.state; if (!st.dlg) return false; return JSON.stringify(st.form) !== JSON.stringify(st.loaded) || !!st.rmWhy.trim() || !!st.pwText; }
+
+  // ---------- dialog ----------
+  openRec(id) {
+    const st = this.state;
+    if (st.dlg) return;
+    this._opener = document.activeElement;
+    const p = st.people.find(x => x.id === id);
+    if (!p) return;
+    clearTimeout(this._t);
+    this.setState({ dlg: { id, isNew: false }, closing: false, form: this.formOf(p), loaded: this.formOf(p), tried: false, refused: '', busy: false, confirm: false, rm: false, rmWhy: '', rmErr: false, pw: false, pwText: '', pwErr: '', footMsg: '' });
+  }
+  openNew() {
+    if (this.state.dlg) return;
+    this._opener = document.activeElement;
+    clearTimeout(this._t);
+    this.setState({ dlg: { id: null, isNew: true }, closing: false, form: this.blank(), loaded: this.blank(), tried: false, refused: '', busy: false, confirm: false, rm: false, rmWhy: '', rmErr: false, pw: false, pwText: '', pwErr: '', footMsg: '' });
+  }
+  askClose() {
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.busy) return;
+    if (this.dirty()) { this.setState({ confirm: true, rm: false, pw: false }); return; }
+    this.closeDrawer();
+  }
+  closeDrawer() {
+    const st = this.state;
+    if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.dlg) return;
+    const next = { dlg: null, closing: false, confirm: false, rm: false, rmWhy: '', rmErr: false, pw: false, pwText: '', pwErr: '', refused: '', busy: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = this.state.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  toast(text, undo) { clearTimeout(this._tt); this.setState({ toast: { text }, toastLeaving: false, undo: undo || null }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.busy || st.rm) return;
+    const errs = this.errors(st.form);
+    const order = ['name', 'signin', 'staff', 'rights', 'approver'];
+    const first = order.find(k => errs[k]);
+    if (first) { this._focusId = first === 'rights' ? 'ua-rt-hr' : 'ua-f-' + first; this.setState({ tried: true, refused: '' }); return; }
+    if (!st.dlg.isNew && st.loaded.admin && !st.form.admin && this.lastAdmin(st.dlg.id)) {
+      this._focusId = 'ua-refused';
+      this.setState({ refused: 'Someone must keep the Admin right. ' + st.loaded.name + ' is the only person with it: give Admin to another person first.', tried: false });
+      return;
+    }
+    if (!st.dlg.isNew && JSON.stringify(st.form) === JSON.stringify(st.loaded)) { this.setState({ footMsg: 'Nothing has changed.', footN: st.footN + 1, refused: '' }); return; }
+    this.setState({ busy: true, refused: '' });
+    clearTimeout(this._ts);
+    this._ts = setTimeout(() => this.finishSave(), 900);
+  }
+  finishSave() {
+    const st = this.state;
+    if (!st.busy || !st.dlg) return;
+    const before = { people: st.people, removed: st.removed };
+    const f = { ...st.form, name: st.form.name.trim(), signin: st.form.signin.trim(), pay: st.form.hr ? st.form.pay : 0 };
+    if (st.dlg.isNew) {
+      const id = 100 + st.people.length + st.removed.length;
+      this._changed = id;
+      this.setState({ busy: false, people: st.people.concat([{ id, ...f, last: 'Never signed in', you: false }]), dlg: { id, isNew: false }, form: { ...f }, loaded: { ...f }, tried: false, footMsg: '' });
+      this.toast(f.name + ' added. Tell them their sign-in name; they choose a password at the first sign-in.', { ...before, text: f.name + ' taken off again' });
+      return;
+    }
+    const id = st.dlg.id;
+    this._changed = id;
+    this.setState({ busy: false, people: st.people.map(p => (p.id === id ? { ...p, ...f } : p)), form: { ...f }, loaded: { ...f }, tried: false, footMsg: '' });
+    this.toast('Saved. ' + f.name + ' sees the change on the next page.', { ...before, text: 'Change undone' });
+  }
+  rmGo() {
+    const st = this.state;
+    if (!st.dlg || st.dlg.isNew) return;
+    const why = st.rmWhy.trim();
+    if (!why) { this._focusId = 'ua-rm-why'; this.setState({ rmErr: true }); return; }
+    const id = st.dlg.id, p = st.people.find(x => x.id === id);
+    if (!p) return;
+    const before = { people: st.people, removed: st.removed };
+    this._opener = document.getElementById('ua-add');
+    this.setState({ people: st.people.filter(x => x.id !== id), removed: [{ ...p, at: '18 Nov 2026, 10:20', by: 'Aisha Rahman', why }].concat(st.removed), rm: false, rmWhy: '', rmErr: false, form: { ...st.loaded } });
+    this.closeDrawer();
+    this.toast(p.name + '’s access removed. Their name stays on everything they did.', { ...before, text: p.name + '’s access is back' });
+  }
+  rmOpen() {
+    const st = this.state;
+    if (!st.dlg || st.dlg.isNew || st.busy) return;
+    if (st.rm) { this._focusId = 'ua-rm-open'; this.setState({ rm: false, rmWhy: '', rmErr: false }); return; }
+    const p = st.people.find(x => x.id === st.dlg.id);
+    if (p && p.admin && this.lastAdmin(p.id)) {
+      this._focusId = 'ua-refused';
+      this.setState({ refused: this.lastAdminRmText(p) });
+      return;
+    }
+    this._focusId = 'ua-rm-why';
+    this.setState({ rm: true, rmWhy: '', rmErr: false, pw: false, refused: '' });
+  }
+  pwGo() {
+    const st = this.state, p = st.dlg ? st.people.find(x => x.id === st.dlg.id) : null;
+    if (!p) return;
+    if (String(st.pwText).length < 12) { this._focusId = 'ua-pw'; this.setState({ pwErr: st.pwText ? 'Use at least 12 characters.' : 'Type the new password.' }); return; }
+    this._focusId = 'ua-pw-open';
+    this.setState({ pw: false, pwText: '', pwErr: '', pwSetN: st.pwSetN + 1 });
+    // a new password can't be undone: the old one is gone, so this toast has no Undo
+    this.toast('New password set for ' + p.name + (st.pwAsk ? '. They choose their own at the next sign-in.' : '.'));
+  }
+  undo() {
+    const st = this.state, u = st.undo;
+    if (!u) return;
+    const next = { people: u.people, removed: u.removed, undo: null, flashN: st.flashN + 1 };
+    // the open dialog follows the undo: back to the restored values, or closed when the person is gone again
+    let gone = false;
+    if (st.dlg && !st.closing && !st.busy) {
+      const p = st.dlg.id != null ? u.people.find(x => x.id === st.dlg.id) : null;
+      if (p) Object.assign(next, { form: this.formOf(p), loaded: this.formOf(p), tried: false, refused: '', confirm: false, rm: false, rmWhy: '', rmErr: false, footMsg: '', pvN: st.pvN + 1 });
+      else gone = true;
+    }
+    if (gone) { this._opener = document.getElementById('ua-add'); this._changed = null; }
+    this.setState(next);
+    if (gone) this.closeDrawer();
+    this.toast(u.text);
+  }
+
+  renderVals() {
+    const st = this.state;
+    const pill = (bg, fg) => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const ctl = 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;';
+    const border = bad => 'border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2');
+    const listOn = st.load === 'ok';
+    const q = st.q.trim().toLowerCase();
+    const textOf = p => [p.name, p.signin, this.rightsOf(p).join(' '), p.staff].join(' ').toLowerCase();
+    const shown = st.people.filter(p => !q || textOf(p).includes(q));
+    const rows = shown.map((p, k) => {
+      const ini = p.name.split(' ').filter(w => !/^(bin|binti)$/i.test(w)).slice(0, 2).map(w => w.charAt(0)).join('');
+      const staff = this.staffList().find(s => s[0] === p.staff);
+      const flash = st.flashId === p.id && st.flashN;
+      return { id: 'ua-row-' + p.id, name: p.name, signin: p.signin, you: p.you, initials: ini,
+        avatar: 'width:36px;height:36px;border-radius:99px;flex:none;display:inline-flex;align-items:center;justify-content:center;font:700 13px Inter,sans-serif;' + (p.you ? 'background:#2450B8;color:#FFFFFF' : 'background:#EAF0FD;color:#1D3A80'),
+        rights: this.rightsOf(p).map(label => ({ label, style: pill(label === 'Admin' ? '#EAF0FD' : '#EEF1F5', label === 'Admin' ? '#1D3A80' : '#26364D') })),
+        apprOn: !!p.approver, apprCos: this.apprCos(p.approver),
+        staffOn: !!staff, staffOff: !staff, staff: staff ? staff[0] + ' · ' + staff[2] : '', staffHref: staff ? 'HrStaffRecord.dc.html#' + staff[0] : 'HrStaffRecord.dc.html',
+        last: st.host === 'pc' ? '—' : p.last,
+        status: 'Active', pill: pill('#E3F7EC', '#0A6B3D'), pillCls: '',
+        cls: 'hr' + (flash ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        open: () => this.openRec(p.id),
+        key: e => {
+          const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? k - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? shown.length - 1 : null;
+          if (to === null || to < 0 || to >= shown.length) return;
+          e.preventDefault();
+          this.focusId('ua-row-' + shown[to].id);
+        } };
+    });
+    // approvers on Setup › HR › Approvers with no sign-in here approve on paper
+    const paper = this.approvers().filter(a => !st.people.some(p => p.approver === a[0])).map(a => a[1]);
+    const paperAnd = paper.length < 2 ? paper.join('') : paper.slice(0, -1).join(', ') + ' and ' + paper[paper.length - 1];
+    const legend = [
+      ['staff', 'HR', 'Staff, Leave, Claims and advances and Payroll, and the HR cards on the Overview.', false],
+      ['payroll', 'Payroll figures', 'Pay amounts on the payroll pages, payslips and page 2 of a salary-run form. Needs HR. Without it, payroll pages show without pay amounts.', false],
+      ['payment', 'Payments', 'Approvals, To pay, Payments register, Monthly checklist, Budget and Recurring.', false],
+      ['books', 'Accounting', 'Bank and reconciliation, SQL import, e-Invoices, Books, Customers and suppliers and Statutory payables.', false],
+      ['approval', 'Approver', 'Approves requests on Payments › Approvals. Only for someone on the approvers list of a company.', true],
+      ['sliders', 'Admin', 'Setup, Audit pack, Audit trail, Backup and this page.', false]
+    ].map(([glyph, name, txt, linkOn]) => ({ glyph, name, txt, linkOn }));
+
+    // the dialog
+    const dlg = st.dlg, f = st.form || this.blank(), me = dlg && !dlg.isNew ? st.people.find(p => p.id === dlg.id) : null;
+    const errsAll = dlg ? this.errors(f) : {}, errs = st.tried ? errsAll : {};
+    const first = (dlg && dlg.isNew ? (f.name.trim() || 'the new person') : (me ? me.name : '')).split(' ')[0];
+    const staffOpts = [['', 'None']].concat(this.staffList().map(s => [s[0], s[0] + ' · ' + s[1] + ' (' + s[2] + ')']));
+    const fdefs = [
+      { k: 'name', l: 'Name', req: true, hint: 'As the person is known at work. It is the name on every change they make.' },
+      { k: 'signin', l: 'Sign-in name', req: true, hint: 'What they type to sign in, like nurul.aina.', mono: true },
+      { k: 'staff', l: 'Staff record', sel: staffOpts, wide: true, hint: 'Optional. Ties the sign-in to the person’s staff record, so the app knows a request is their own.' }
+    ];
+    const fields = fdefs.map(x => {
+      const id = 'ua-f-' + x.k, err = errs[x.k] || '';
+      return { id, label: x.l, req: !!x.req, reqAria: x.req ? 'true' : 'false', isInput: !x.sel, isSelect: !!x.sel,
+        opts: (x.sel || []).map(([v, l]) => ({ v, l })), val: String(f[x.k] || ''),
+        errOn: !!err, err, errId: id + '-err', inv: err ? 'true' : 'false', hint: x.hint, hintId: id + '-hint',
+        by: (err ? id + '-err ' : '') + id + '-hint',
+        wrap: 'display:flex;flex-direction:column;gap:6px;min-width:0;' + (x.wide ? 'grid-column:1 / -1' : ''),
+        style: ctl + (x.mono ? 'font-family:ui-monospace,Consolas,monospace;' : '') + (x.sel ? 'padding:0 10px;' : '') + border(!!err),
+        change: e => { const v = e && e.target ? e.target.value : ''; this.setState({ form: { ...this.state.form, [x.k]: v }, footMsg: '' }); } };
+    });
+    const rdefs = [
+      ['hr', 'HR', 'Staff, Leave, Claims and advances, Payroll.'],
+      ['pay', 'Payroll figures', f.hr ? 'Pay amounts on payroll pages and payslips.' : 'Needs HR first.'],
+      ['payments', 'Payments', 'Approvals, To pay, Payments register, Monthly checklist, Budget, Recurring.'],
+      ['accounting', 'Accounting', 'Bank and reconciliation, SQL import, e-Invoices, Books, Customers and suppliers, Statutory payables.'],
+      ['admin', 'Admin', 'Setup, Audit pack, Audit trail, Backup, Users and access.']
+    ];
+    const rtErr = !!errs.rights;
+    const rts = rdefs.map(([k, name, hint]) => {
+      const dis = k === 'pay' && !f.hr;
+      return { id: 'ua-rt-' + k, hintId: 'ua-rt-' + k + '-h', name, hint, on: !!(f[k] && !dis), dis,
+        rowStyle: 'display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-radius:10px;cursor:' + (dis ? 'default' : 'pointer') + ';border:1px solid ' + (rtErr ? '#F4C7C1' : '#E3E7ED') + ';' + (dis ? 'background:#F7F8FA;' : ''),
+        change: e => {
+          const v = e && e.target && e.target.checked ? 1 : 0, nf = { ...this.state.form, [k]: v };
+          if (k === 'hr' && !v) nf.pay = 0;
+          this.setState({ form: nf, footMsg: '', pvN: this.state.pvN + 1 });
+        } };
+    });
+    const apprErr = errs.approver || '';
+    const apprOpts = [{ v: '', l: 'Not an approver' }].concat(this.approvers().map(([v, n, cos]) => ({ v, l: n + ' · approves for ' + cos })));
+    const acc = this.accessOf(f);
+    // 'What X sees' comes from the ticks themselves; the preview can only draw the Sidebar's six access cases
+    const anyRight = !!(f.hr || f.payments || f.accounting || f.admin);
+    const gotKeys = !anyRight ? (f.approver ? ['approvals'] : []) : ['overview'].concat(f.hr ? ['hr'] : [], f.payments ? ['payments'] : f.approver ? ['approvals'] : [], f.accounting ? ['accounting'] : [], f.admin ? ['admin'] : []);
+    const GROUP = { overview: 'Overview', hr: 'HR', payments: 'Payments', approvals: 'Payments › Approvals', accounting: 'Accounting', admin: 'Admin' };
+    const sees = acc === 'none' ? 'Nothing yet: tick a right.' : !anyRight ? 'Payments › Approvals only' : gotKeys.map(k => GROUP[k]).join(' · ');
+    const PREVIEW = { full: ['overview', 'hr', 'payments', 'accounting', 'admin'], noHr: ['overview', 'payments', 'accounting', 'admin'], noAdmin: ['overview', 'hr', 'payments', 'accounting'], noHrNoAdmin: ['overview', 'payments', 'accounting'], hrOnly: ['overview', 'hr'], approver: ['approvals'], none: [] }[acc];
+    const whose = dlg && dlg.isNew && !f.name.trim() ? 'their' : first + '’s';
+    const andList = xs => xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' and ' + xs[xs.length - 1];
+    const pvNotes = [];
+    if (f.hr && !f.pay) pvNotes.push({ glyph: 'eyeOff', txt: 'Without Payroll figures, the payroll pages show without pay amounts and payslips can’t be opened.' });
+    if (!f.hr && acc !== 'none') pvNotes.push({ glyph: 'eyeOff', txt: 'Without HR, the HR menu and the Overview’s HR cards are left out, and search finds no staff.' });
+    if (acc !== 'none') {
+      // where the Sidebar has no matching case, say what the preview gets wrong
+      const onlyAppr = gotKeys.includes('approvals') && PREVIEW.includes('payments');
+      const extra = PREVIEW.filter(k => !gotKeys.includes(k) && !(k === 'payments' && onlyAppr)).map(k => GROUP[k]);
+      const missing = gotKeys.filter(k => !PREVIEW.includes(k) && !(k === 'approvals' && PREVIEW.includes('payments'))).map(k => GROUP[k]);
+      if (onlyAppr) pvNotes.push({ glyph: 'help', txt: 'The preview shows all of Payments; ' + whose + ' menu has only Payments › Approvals.' });
+      if (extra.length) pvNotes.push({ glyph: 'help', txt: 'The preview also shows ' + andList(extra) + '; ' + whose + ' menu leaves ' + (extra.length > 1 ? 'them' : 'it') + ' out.' });
+      if (missing.length) pvNotes.push({ glyph: 'help', txt: 'The preview leaves out ' + andList(missing) + '; ' + whose + ' menu has ' + (missing.length > 1 ? 'them' : 'it') + '.' });
+    }
+    const pvAccess = acc === 'none' ? 'approver' : acc;
+    const dirty = this.dirty();
+    const badN = Object.keys(errs).length;
+    const labels = { name: 'Name', signin: 'Sign-in name', rights: 'Rights', approver: 'Approver' };
+
+    return {
+      host: st.host, pcOn: listOn && st.host === 'pc', loadOn: st.load === 'loading', errOn: st.load === 'error', listOn,
+      skRows: [['38%', '120px'], ['30%', '160px'], ['44%', '90px'], ['34%', '140px']].map(([a, b]) => ({ a: 'height:12px;width:' + a + ';border-radius:5px', b: 'width:' + b + ';height:22px;border-radius:99px' })),
+      retry: () => { this.setState({ load: 'loading' }); clearTimeout(this._ts); this._ts = setTimeout(() => this.setState({ load: 'ok' }), 900); },
+      ownerOn: st.people.length === 1 && !q,
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '' }), clearQ: () => this.setState({ q: '' }),
+      countTxt: shown.length + ' of ' + st.people.length + ' shown',
+      showRemoved: !!st.showRemoved, nRemoved: st.removed.length, toggleRemoved: () => this.setState({ showRemoved: !this.state.showRemoved }),
+      rows, noMatch: listOn && !shown.length,
+      scrollStyle: st.many ? 'max-height: 520px; overflow: auto' : 'overflow-x: auto',
+      footTxt: st.people.length === 1 ? '1 person signs in' : st.people.length + ' people sign in',
+      paperOn: paper.length > 0, paperWho: paperAnd + (paper.length > 1 ? ' approve' : ' approves'),
+      manyNote: !!st.many,
+      rmRows: st.removed.map(d => ({ name: d.name, signin: d.signin, at: d.at, by: d.by, why: d.why })), rmEmpty: !st.removed.length,
+      legend,
+      openNew: () => this.openNew(),
+
+      anyDlg: !!dlg, dlgOn: !!dlg,
+      dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      dEyebrow: dlg && dlg.isNew ? 'New person' : 'Person' + (me && me.you ? ' · you' : ''),
+      dTitle: !dlg ? '' : dlg.isNew ? 'Add a person' : (me ? me.name : ''),
+      dSub: !dlg ? '' : dlg.isNew ? 'They choose their own password at the first sign-in. Nothing is kept until you add them.' : 'Changes are kept in the audit trail with your name.',
+      dIsEdit: !!me, dFirst: first,
+      refusedOn: !!st.refused, refusedTitle: 'This can’t be done.', refused: st.refused,
+      sumOn: badN > 0, sumTitle: badN === 1 ? '1 thing needs a fix:' : badN + ' things need a fix:', sumList: Object.keys(errs).map(k => labels[k] || k).join(', ') + '.',
+      fields, rts, busy: !!st.busy, notBusy: !st.busy, busyAria: st.busy ? 'true' : 'false',
+      rtErrOn: rtErr, rtBy: rtErr ? 'ua-rt-err' : '',
+      apprVal: f.approver || '', apprOpts, apprErrOn: !!apprErr, apprErr, apprInv: apprErr ? 'true' : 'false',
+      apprBy: (apprErr ? 'ua-f-approver-err ' : '') + 'ua-f-approver-hint',
+      apprStyle: ctl + 'padding:0 10px;' + border(!!apprErr),
+      apprChange: e => { const v = e && e.target ? e.target.value : ''; this.setState({ form: { ...this.state.form, approver: v }, footMsg: '', pvN: this.state.pvN + 1 }); },
+      pvHeading: dlg && dlg.isNew && !f.name.trim() ? 'What they see' : 'What ' + first + ' sees', pvSees: sees, pvNotes, pvAccess, pvMenuOn: acc !== 'none', pvMenuOff: acc === 'none',pvActive: pvAccess === 'approver' ? 'approvals' : 'overview', pvCls: st.pvN ? (st.pvN % 2 ? 'swapA' : 'swapB') : '',
+
+      pwOn: !!st.pw, pwExp: st.pw ? 'true' : 'false',
+      pwNote: st.pwSetN ? 'A new password was set today. Nobody can see it.' : 'Nobody can see a password, not even an admin.',
+      pwToggle: () => { if (this.state.busy) return; const on = !this.state.pw; this._focusId = on ? 'ua-pw' : 'ua-pw-open'; this.setState({ pw: on, pwText: '', pwErr: '', rm: false }); },
+      pwText: st.pwText, onPw: e => this.setState({ pwText: e && e.target ? e.target.value : '', pwErr: '' }),
+      pwKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.pwGo(); } },
+      pwErrOn: !!st.pwErr, pwErr: st.pwErr, pwInv: st.pwErr ? 'true' : 'false', pwBy: (st.pwErr ? 'ua-pw-err ' : '') + 'ua-pw-hint',
+      pwStyle: ctl + border(!!st.pwErr), pwAsk: !!st.pwAsk, togglePwAsk: () => this.setState({ pwAsk: !this.state.pwAsk }),
+      pwCancel: () => { this._focusId = 'ua-pw-open'; this.setState({ pw: false, pwText: '', pwErr: '' }); },
+      pwGo: () => this.pwGo(),
+
+      rmOn: !!st.rm, rmExp: st.rm ? 'true' : 'false', rmOpen: () => this.rmOpen(),
+      rmDetail: me ? (me.name.split(' ')[0] + ' can’t sign in any more, from the next page. Their name stays on everything they did, in the audit trail. Undo puts the access back.') : '',
+      rmWhy: st.rmWhy, onRmWhy: e => this.setState({ rmWhy: e && e.target ? e.target.value : '', rmErr: false }),
+      rmKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.rmGo(); } },
+      rmErr: !!st.rmErr, rmInv: st.rmErr ? 'true' : 'false', rmBy: st.rmErr ? 'ua-rm-err' : 'ua-rm-d',
+      rmStyle: ctl + border(!!st.rmErr),
+      rmCancel: () => { this._focusId = 'ua-rm-open'; this.setState({ rm: false, rmWhy: '', rmErr: false }); },
+      rmGo: () => this.rmGo(),
+
+      confirmOn: !!st.confirm, footOn: !st.confirm && !st.rm,
+      footDirty: dirty && !st.footMsg && !st.busy,
+      footNote: st.busy ? 'Saving…' : st.footMsg ? st.footMsg : !dlg ? '' : dlg.isNew ? (badN ? 'Fix the things above, then add them.' : 'They can sign in once added.') : dirty ? 'Unsaved changes' : 'Saved changes are kept in the audit trail.',
+      footCls: st.footN ? (st.footN % 2 ? 'swapA' : 'swapB') : '',
+      footStyle: 'display:inline-flex;align-items:center;gap:8px;font-size:13px;' + (dirty && !st.footMsg && !st.busy ? 'color:#934100;font-weight:600' : 'color:#5F6C80'),
+      closeLabel: dlg && dlg.isNew ? 'Cancel' : 'Close', saveLabel: dlg && dlg.isNew ? 'Add the person' : 'Save',
+      save: e => this.save(e), askClose: () => this.askClose(),
+      keepEditing: () => this.setState({ confirm: false }),
+      discard: () => { this.setState({ confirm: false, form: this.state.loaded ? { ...this.state.loaded } : this.state.form, rmWhy: '', pwText: '' }); this.closeDrawer(); },
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); e.preventDefault();
+          const s = this.state;
+          if (s.confirm) this.setState({ confirm: false });
+          else if (s.rm) { this._focusId = 'ua-rm-open'; this.setState({ rm: false, rmWhy: '', rmErr: false }); }
+          else if (s.pw) { this._focusId = 'ua-pw-open'; this.setState({ pw: false, pwText: '', pwErr: '' }); }
+          else this.askClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(el => !el.closest('[inert]'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const a = fs[0], z = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === a || !inside)) { e.preventDefault(); z.focus(); }
+        else if (!e.shiftKey && (at === z || !inside)) { e.preventDefault(); a.focus(); }
+      },
+
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.undo),
+      toastUndo: () => this.undo(),
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

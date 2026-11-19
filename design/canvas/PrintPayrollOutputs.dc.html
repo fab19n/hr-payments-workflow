@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payroll printouts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hg{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out both}
+.swapB{animation:swapB .12s ease-out both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* status chips, as Foundations draws them */
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box;white-space:nowrap}
+.cp.ok{background:#E3F7EC;color:#0A6B3D;border-color:#BFE8D0}.cp.warn{background:#FEF1D6;color:#934100;border-color:#F3D9A6}.cp.info{background:#EAF0FD;color:#2450B8;border-color:#C9D7F7}.cp.mute{background:#EEF1F5;color:#46546A;border-color:#D5DBE4}
+.cd{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:12px;min-width:0;box-sizing:border-box}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+/* the printed page: A4 portrait at real size, black and grey on white */
+.pg{position:relative;flex:none;width:210mm;height:297mm;box-sizing:border-box;padding:14mm 15mm 11mm;background:#FFFFFF;color:#000000;font:400 9pt/1.35 Inter,Arial,sans-serif;display:flex;flex-direction:column;gap:4.2mm;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.22),0 10px 28px rgba(16,24,40,.14)}
+.pg h3{margin:0;font:600 15pt/1.2 'Space Grotesk',Inter,sans-serif}
+.pg .co{display:flex;justify-content:space-between;align-items:flex-start;gap:6mm;padding-bottom:3mm;border-bottom:0.35mm solid #000000}
+.pg .cn{font-weight:700;font-size:11pt}
+.pg .g{color:#333333}
+.pg .conf{flex:none;border:0.35mm solid #000000;padding:1mm 2.2mm;font-weight:700;font-size:8pt;text-transform:uppercase;letter-spacing:.04em}
+.pg .cont{display:flex;justify-content:space-between;gap:6mm;padding-bottom:2mm;border-bottom:0.35mm solid #000000;font-size:8pt}
+.pg dl{margin:0;display:grid;grid-template-columns:max-content 1fr;gap:1mm 5mm;font-size:8.5pt}
+.pg dt{color:#333333}
+.pg dd{margin:0;font-weight:600}
+.pt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.pt caption{text-align:left;font-weight:700;font-size:9.5pt;padding-bottom:1.2mm}
+.pt th{font-weight:600;text-align:left;border-bottom:0.35mm solid #000000;padding:0.9mm 1mm;vertical-align:bottom}
+.pt td{padding:0.9mm 1mm;border-bottom:0.15mm solid #9A9A9A;vertical-align:top}
+.pt .r{text-align:right;white-space:nowrap}
+.pt th.r{white-space:normal}
+.pt .nw{white-space:nowrap}
+.pt .sn{color:#333333;margin-right:1.6mm;font-size:.92em}
+.pt tr.tot td{border-top:0.35mm solid #000000;border-bottom:0.7mm double #000000;font-weight:700}
+.pt tr.grp td{font-weight:600}
+.pt tr.sub td{color:#333333}
+.pt tr.sub td:first-child{padding-left:5mm}
+.pt.s7{font-size:7pt}
+.pt.s8{font-size:8pt}
+.pn{margin:0;font-size:7.5pt;color:#333333}
+.bx{border:0.3mm solid #000000;padding:2.2mm 3mm;display:flex;flex-direction:column;gap:1mm;font-size:8.5pt}
+.bx.hv{border-width:0.8mm}
+.bx b{font-size:9pt}
+.sg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5mm;font-size:8pt}
+.sg span{border-top:0.3mm solid #000000;padding-top:1mm;margin-top:9mm;color:#333333}
+.ft{margin-top:auto;display:flex;flex-direction:column;gap:1.4mm;font-size:7.5pt;color:#333333}
+.ft .rl{display:flex;justify-content:space-between;gap:6mm;border-top:0.3mm solid #333333;padding-top:1.4mm}
+@media (max-width:760px){.ppo-main{padding:24px 16px 48px !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" sub="Payroll printouts" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="ppo-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="PayrollRun.dc.html" class="hg" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 4px; margin: -6px 0 4px -4px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>Payroll · Run</a>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px">
+          <h1 id="ppo-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payroll printouts</h1>
+          <sc-if value="{{exampleOn}}" hint-placeholder-val="{{ true }}"><span class="cp info"><dc-import name="Icon" glyph="payroll" tone="brand" size="14" hint-size="14px,14px"></dc-import>Example run</span></sc-if>
+        </div>
+        <p style="margin: 0; color: #46546A; max-width: 820px">{{intro}}</p>
+      </div>
+
+      <div role="group" aria-label="State to show" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%">
+        <sc-for list="{{states}}" as="s" hint-placeholder-count="9"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+      </div>
+
+      <sc-if value="{{showAi}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ppo-ai-h" class="cd rv" style="max-width: 860px">
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <dc-import name="Icon" glyph="sliders" tone="brand" size="24" hint-size="24px,24px"></dc-import>
+            <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+              <h2 id="ppo-ai-h" class="h2">Payroll printouts aren't used for AI</h2>
+              <p style="margin: 0; color: #46546A">Agrinexus International doesn't run payroll in this app (“Runs payroll in this app” is off in Setup › Companies), so there is no run and nothing prints here. AI pays its 5 staff through the recurring row “Salaries — staff”, RM 21,300.00 a month, approved on AF-2610-002.</p>
+              <p style="margin: 0; color: #46546A">HR › Payroll for AI holds the Workbook check only. Turning the run on for a company is a setting, not something fixed to AISB.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 20px">
+                <a href="SetupCompanies.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px">Open Setup › Companies</a>
+                <a href="Recurring.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px">Recurring payments</a>
+                <a href="PayrollCheck.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px">Workbook check</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showHidden}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ppo-hid-h" class="cd rv" style="max-width: 860px; background: #F7F8FA">
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <dc-import name="Icon" glyph="eyeOff" tone="muted" size="24" hint-size="24px,24px"></dc-import>
+            <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+              <h2 id="ppo-hid-h" class="h2">Shown only to users with the Payroll figures right</h2>
+              <p style="margin: 0; color: #46546A">The bank payment list, the monthly summary and the payroll journal summary all hold pay figures. Nurul Aina has HR without the Payroll figures right, so HR › Payroll › Run offers her no Print outputs, and this page shows no sheet. Nothing is printed and nothing is added to the audit trail.</p>
+              <p style="margin: 0; color: #46546A">She can still see that October's run was approved on AF-2610-009, paid on 24 Oct and recorded as JV2610-007, without the amounts.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 20px">
+                <a href="PayrollRun.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px">Back to the run</a>
+                <a href="UsersAccess.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px">Users and access</a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showSheet}}" hint-placeholder-val="{{ true }}">
+        <div class="{{swapCls}}" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+          <section aria-labelledby="ppo-lead-h" class="cd" style="flex: 2 1 440px">
+            <h2 id="ppo-lead-h" tabindex="-1" class="h2">{{leadTitle}}</h2>
+            <p style="margin: 0; color: #46546A">{{leadText}}</p>
+            <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px">
+              <sc-for list="{{facts}}" as="f" hint-placeholder-count="5"><dt style="color: #5F6C80; font-weight: 600">{{f.k}}</dt><dd style="margin: 0; color: #0F1A2B; min-width: 0; overflow-wrap: anywhere">{{f.v}}</dd></sc-for>
+            </dl>
+          </section>
+
+          <section aria-labelledby="ppo-side-h" class="cd" style="flex: 1 1 340px">
+            <h2 id="ppo-side-h" class="h2">{{sideTitle}}</h2>
+            <sc-if value="{{isBulk}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+                <button type="button" disabled="{{ true }}" aria-describedby="ppo-fmt" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #C3CAD5; background: #F7F8FA; font: 600 14px Inter, sans-serif; color: #5F6C80"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Bank upload file</button>
+                <span class="cp warn"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>To be confirmed</span>
+              </div>
+              <span id="ppo-fmt" style="font-size: 13px; color: #0F1A2B; font-weight: 600">Maybank bulk format to be confirmed. Until then, key the payments in from the Excel list.</span>
+            </sc-if>
+            <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; font-size: 13px; color: #46546A">
+              <sc-for list="{{sideItems}}" as="m" hint-placeholder-count="4"><li style="overflow-wrap: anywhere">{{m.t}}</li></sc-for>
+            </ul>
+            <div style="margin-top: auto; display: flex; flex-wrap: wrap; gap: 4px 18px">
+              <sc-for list="{{sideLinks}}" as="l" hint-placeholder-count="2"><a href="{{l.href}}" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px">{{l.label}}</a></sc-for>
+            </div>
+          </section>
+        </div>
+
+        <section aria-labelledby="ppo-paper-h" style="background: #E9ECF1; border: 1px solid #DDE2EA; border-radius: 16px; padding: 20px 24px 28px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 16px">
+            <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+            <h2 id="ppo-paper-h" style="margin: 0; font-size: 14px; font-weight: 600">{{fileName}}</h2>
+            <span style="color: #46546A; font-size: 13px">{{pageCount}} · A4 portrait, 210 × 297 mm · opens in a new tab</span>
+            <span class="{{chipCls}}"><dc-import name="Icon" glyph="{{chipGlyph}}" tone="{{chipTone}}" size="14" hint-size="14px,14px"></dc-import>{{chipText}}</span>
+          </div>
+          <div role="region" aria-label="Printed pages, scroll sideways on a narrow screen" tabindex="0" class="fr" style="overflow-x: auto; border-radius: 8px">
+            <div class="{{swapCls}}" style="display: flex; flex-direction: column; align-items: center; gap: 28px; width: max-content; min-width: 100%; padding: 4px 0 8px">
+              <sc-for list="{{pages}}" as="pg" hint-placeholder-count="1">
+                <article class="pg" aria-label="{{pg.aria}}">
+                  <sc-if value="{{pg.first}}" hint-placeholder-val="{{ true }}">
+                    <div class="co">
+                      <div style="display: flex; flex-direction: column; gap: 0.6mm">
+                        <span class="cn">AISB Sdn Bhd</span>
+                        <span class="g">Registration no. 201901023456 (1331234-K)</span>
+                        <span class="g">Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor</span>
+                      </div>
+                      <span class="conf">Confidential: pay figures</span>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 1mm">
+                      <h3>{{pg.title}}</h3>
+                      <span class="g">{{pg.sub}}</span>
+                    </div>
+                    <dl>
+                      <sc-for list="{{pg.meta}}" as="mt" hint-placeholder-count="4"><dt>{{mt.k}}</dt><dd>{{mt.v}}</dd></sc-for>
+                    </dl>
+                  </sc-if>
+                  <sc-if value="{{pg.cont}}" hint-placeholder-val="{{ false }}">
+                    <div class="cont"><span><b>AISB Sdn Bhd</b> · {{pg.contText}}</span><span class="conf">Confidential: pay figures</span></div>
+                  </sc-if>
+
+                  <sc-for list="{{pg.tables}}" as="tb" hint-placeholder-count="1">
+                    <div style="display: flex; flex-direction: column; gap: 1.2mm">
+                      <table class="{{tb.cls}}">
+                        <caption>{{tb.cap}}</caption>
+                        <thead><tr><sc-for list="{{tb.cols}}" as="c" hint-placeholder-count="6"><th scope="col" class="{{c.c}}">{{c.t}}</th></sc-for></tr></thead>
+                        <tbody>
+                          <sc-for list="{{tb.rows}}" as="r" hint-placeholder-count="8"><tr class="{{r.c}}"><sc-for list="{{r.cells}}" as="x" hint-placeholder-count="6"><td class="{{x.c}}"><sc-if value="{{x.s}}" hint-placeholder-val="{{ false }}"><span class="sn">{{x.s}}</span></sc-if>{{x.t}}</td></sc-for></tr></sc-for>
+                        </tbody>
+                      </table>
+                      <sc-if value="{{tb.note}}" hint-placeholder-val="{{ false }}"><p class="pn">{{tb.note}}</p></sc-if>
+                    </div>
+                  </sc-for>
+
+                  <sc-for list="{{pg.boxes}}" as="b" hint-placeholder-count="1">
+                    <div class="{{b.c}}"><b>{{b.title}}</b><span>{{b.text}}</span></div>
+                  </sc-for>
+
+                  <sc-if value="{{pg.signsOn}}" hint-placeholder-val="{{ false }}">
+                    <div class="sg"><sc-for list="{{pg.signs}}" as="sg" hint-placeholder-count="3"><span>{{sg.t}}</span></sc-for></div>
+                  </sc-if>
+
+                  <div class="ft">
+                    <sc-for list="{{pg.lines}}" as="ln" hint-placeholder-count="2"><span>{{ln.t}}</span></sc-for>
+                    <div class="rl"><span>{{pg.footL}}</span><span>{{pg.footR}}</span></div>
+                  </div>
+                </article>
+              </sc-for>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"bank-list","options":["bank-list","summary","journal-waiting","journal-matched","bulk-format","parallel","parallel-signed","no-payroll-figures","ai"],"section":"State to show"},"$preview":{"width":1440,"height":2950}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the sheet: PrintPayrollOutputs.dc.html#parallel or #parallel-signed (from Payroll · Parallel run),
+    // #summary, #journal-waiting and so on. It applies on first load, over the default state.
+    let v = (p && p.view) || 'bank-list', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'bank-list' && ['summary', 'journal-waiting', 'journal-matched', 'bulk-format', 'parallel', 'parallel-signed'].includes(h)) v = h;
+    this.state = { stage: v, co: v === 'ai' ? 'AI' : 'AISB', say: '', swap: 0 };
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      const v = this.props.view || 'bank-list';
+      this.setState({ stage: v, co: v === 'ai' ? 'AI' : 'AISB', say: '' });
+    }
+  }
+  // ---- sample data (samples.md sections 5 and 6, as PayrollRun and PayrollTotals hold it). Money in sen. ----
+  // [no, name, basic, allowance, overtime, EPF ee, SOCSO ee, EIS ee, PCB, EPF er, SOCSO er, EIS er, bank, account]
+  people() {
+    if (this._ppl) return this._ppl;
+    const rows = [
+      ['S001', 'Aisha Rahman', 860000, 120000, 0, 94600, 2975, 1190, 108000, 103200, 10415, 1190, 'Maybank', '····2210'],
+      ['S002', 'Ong Wei Ming', 780000, 300000, 0, 85800, 2975, 1190, 118000, 93600, 10415, 1190, 'CIMB', '····8841'],
+      ['S003', 'Nurul Aina binti Hashim', 700000, 80000, 0, 77000, 2975, 1190, 70000, 84000, 10415, 1190, 'Maybank', '····5532'],
+      ['S004', 'Mohd Hafiz bin Rosli', 570000, 260000, 0, 62700, 2825, 1130, 56000, 68400, 9890, 1130, 'Public Bank', '····0917'],
+      ['S005', 'Nor Khadijah binti Omar', 550000, 60000, 0, 60500, 2725, 1090, 34000, 66000, 9540, 1090, 'Maybank', '····7764'],
+      ['S006', 'Wong Kah Seng', 780000, 60000, 84790, 85800, 2975, 1190, 100000, 93600, 10415, 1190, 'RHB', '····3390'],
+      ['S007', 'Goh Jia Hui', 340000, 60000, 0, 37400, 1675, 665, 5500, 44200, 5860, 665, 'Maybank', '····6128'],
+      ['S008', 'Nur Izzati binti Kamal', 280000, 30000, 0, 30800, 1375, 545, 0, 36400, 4810, 545, 'Bank Islam', '····4405']
+    ];
+    this._ppl = rows.map(a => {
+      const p = { no: a[0], name: a[1], basic: a[2], allow: a[3], ot: a[4], epf: a[5], socso: a[6], eis: a[7], pcb: a[8], erEpf: a[9], erSocso: a[10], erEis: a[11], bank: a[12], acct: a[13], l24: 0 };
+      p.gross = p.basic + p.allow + p.ot;
+      p.net = p.gross - p.epf - p.socso - p.eis - p.l24 - p.pcb;
+      p.er = p.erEpf + p.erSocso + p.erEis;
+      return p;
+    });
+    return this._ppl;
+  }
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  pick(k, label) {
+    this.setState({ stage: k, co: k === 'ai' ? 'AI' : 'AISB', swap: this.state.swap + 1, say: label + ' shown.' });
+  }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if ((c !== 'AISB' && c !== 'AI') || c === this.state.co) return;
+    if (c === 'AI') this.setState({ co: 'AI', stage: 'ai', swap: this.state.swap + 1, say: "Payroll printouts aren't used for AI: it doesn't run payroll in this app." });
+    else this.setState({ co: 'AISB', stage: this.state.stage === 'ai' ? 'bank-list' : this.state.stage, swap: this.state.swap + 1, say: "Showing AISB's payroll printouts." });
+  }
+
+  renderVals() {
+    const st = this.state, F = n => this.fmt(n);
+    const stage = st.co === 'AI' ? 'ai' : st.stage;
+    const isAI = stage === 'ai', aina = stage === 'no-payroll-figures';
+    const ppl = this.people();
+    const sum = k => ppl.reduce((s, p) => s + p[k], 0);
+    const T = { basic: sum('basic'), allow: sum('allow'), ot: sum('ot'), gross: sum('gross'), epf: sum('epf'), socso: sum('socso'), eis: sum('eis'), l24: sum('l24'), pcb: sum('pcb'), net: sum('net'), erEpf: sum('erEpf'), erSocso: sum('erSocso'), erEis: sum('erEis'), er: sum('er') };
+    const eeAll = T.epf + T.socso + T.eis + T.l24 + T.pcb;
+    const perkesoEe = T.socso + T.eis + T.l24, perkesoEr = T.erSocso + T.erEis;
+
+    // generic pieces of a printed page
+    const cell = (t, c, s) => ({ t: t, c: c || '', s: s || '' });
+    const col = (t, c) => ({ t: t, c: c || '' });
+    const row = (cells, c) => ({ c: c || '', cells: cells });
+    const PREP = 'Prepared by Aisha Rahman, as declared on this computer (declared, not verified).';
+    const APPROVED = 'Approved on AF-2610-009 by Hassan Ismail, 22 Oct 2026.';
+    const page = o => ({ first: false, cont: false, contText: '', title: '', sub: '', meta: [], tables: [], boxes: [], signs: [], signsOn: false, lines: [], footL: '', footR: '', aria: '', ...o, signsOn: !!(o.signs && o.signs.length) });
+
+    // ---- the bank payment list (one page) ----
+    const bankPage = heavy => page({
+      first: true, title: 'Bank payment list', sub: 'October 2026 salaries · net pay per person',
+      meta: [{ k: 'Pay from', v: 'Maybank current ····4417, AISB Sdn Bhd' }, { k: 'Pay on', v: 'Sat 24 Oct 2026' }, { k: 'Payments', v: '8, one per person' }, { k: 'Approved', v: 'AF-2610-009 · Hassan Ismail, 22 Oct 2026' }],
+      tables: [{ cls: 'pt', cap: 'Payments', note: 'Account numbers print the last 4 only. The Excel list (AISB 2026-10 bank list.xlsx) holds them in full for the bank.',
+        cols: [col('No.'), col('Staff no.'), col('Name'), col('Bank'), col('Account'), col('Net pay (RM)', 'r')],
+        rows: ppl.map((p, i) => row([cell(String(i + 1)), cell(p.no, 'nw'), cell(p.name), cell(p.bank, 'nw'), cell(p.acct, 'nw'), cell(F(p.net), 'r')]))
+          .concat([row([cell('Total, 8 payments'), cell(''), cell(''), cell(''), cell(''), cell(F(T.net), 'r')], 'tot')]) }],
+      boxes: [{ c: heavy ? 'bx hv' : 'bx', title: 'Bank upload file: Maybank bulk format to be confirmed', text: 'Until it is confirmed, key these payments in at Maybank from the Excel list, then write the bank\'s reference below. The total keyed in must be ' + F(T.net) + '.' }],
+      signs: [{ t: 'Keyed in at the bank by' }, { t: 'Date' }, { t: 'Bank reference' }],
+      lines: [{ t: PREP + ' Printed Thu 22 Oct 2026, 11:12.' }],
+      footL: 'AISB Sdn Bhd · Bank payment list · October 2026', footR: 'Page 1 of 1',
+      aria: 'Printed bank payment list, October 2026, page 1 of 1: 8 payments from Maybank current, total RM ' + F(T.net)
+    });
+
+    // ---- the monthly summary (two pages: pay and deductions; employer shares and amounts to pay) ----
+    const sumPages = () => {
+      const dash = n => (n ? F(n) : '—');
+      const p1 = page({
+        first: true, title: 'Monthly payroll summary', sub: 'October 2026 · 8 people · from the payslips, never typed',
+        meta: [{ k: 'Run', v: 'October 2026 · pay day Sat 24 Oct 2026' }, { k: 'Approved', v: 'AF-2610-009 · Hassan Ismail, 22 Oct 2026' }, { k: 'Wages for EPF, SOCSO, EIS', v: 'Basic pay; travelling allowance and overtime are outside them' }],
+        tables: [{ cls: 'pt s7', cap: 'Pay and employee deductions (RM)', note: 'Lindung 24 Jam: none deducted in October. Zakat: 0.00 for everyone. Employer shares and the amounts to pay are on page 2.',
+          cols: [col('Person'), col('Basic', 'r'), col('Allowance', 'r'), col('Overtime', 'r'), col('Gross', 'r'), col('EPF', 'r'), col('SOCSO', 'r'), col('EIS', 'r'), col('Lindung 24 Jam', 'r'), col('PCB', 'r'), col('Net pay', 'r')],
+          rows: ppl.map(p => row([cell(p.name, '', p.no), cell(F(p.basic), 'r'), cell(dash(p.allow), 'r'), cell(dash(p.ot), 'r'), cell(F(p.gross), 'r'), cell(F(p.epf), 'r'), cell(F(p.socso), 'r'), cell(F(p.eis), 'r'), cell(F(p.l24), 'r'), cell(F(p.pcb), 'r'), cell(F(p.net), 'r')]))
+            .concat([row([cell('Total, 8 people'), cell(F(T.basic), 'r'), cell(F(T.allow), 'r'), cell(F(T.ot), 'r'), cell(F(T.gross), 'r'), cell(F(T.epf), 'r'), cell(F(T.socso), 'r'), cell(F(T.eis), 'r'), cell(F(T.l24), 'r'), cell(F(T.pcb), 'r'), cell(F(T.net), 'r')], 'tot')]) }],
+        lines: [{ t: PREP + ' Printed Thu 22 Oct 2026, 11:13. Continued on page 2.' }],
+        footL: 'AISB Sdn Bhd · Monthly payroll summary · October 2026', footR: 'Page 1 of 2',
+        aria: 'Printed monthly payroll summary, October 2026, page 1 of 2: pay and employee deductions for 8 people, gross RM ' + F(T.gross) + ', net RM ' + F(T.net)
+      });
+      const p2 = page({
+        cont: true, contText: 'Monthly payroll summary · October 2026 (continued)',
+        tables: [
+          { cls: 'pt s8', cap: 'Employer contributions (RM)', note: '',
+            cols: [col('Person'), col('EPF', 'r'), col('SOCSO', 'r'), col('EIS', 'r'), col('Total', 'r')],
+            rows: ppl.map(p => row([cell(p.name, '', p.no), cell(F(p.erEpf), 'r'), cell(F(p.erSocso), 'r'), cell(F(p.erEis), 'r'), cell(F(p.er), 'r')]))
+              .concat([row([cell('Total, 8 people'), cell(F(T.erEpf), 'r'), cell(F(T.erSocso), 'r'), cell(F(T.erEis), 'r'), cell(F(T.er), 'r')], 'tot')]) },
+          { cls: 'pt s8', cap: 'Amounts to pay to the authorities (RM)', note: 'Due by the 15th of the following month, as kept in Setup › Statutory accounts.',
+            cols: [col('Pay to'), col('Employer no.'), col('Employee', 'r'), col('Employer', 'r'), col('Total', 'r'), col('Due')],
+            rows: [
+              row([cell('KWSP · EPF'), cell('012345678', 'nw'), cell(F(T.epf), 'r'), cell(F(T.erEpf), 'r'), cell(F(T.epf + T.erEpf), 'r'), cell('Sun 15 Nov 2026', 'nw')], 'grp'),
+              row([cell('PERKESO · one payment'), cell('E1234567891A', 'nw'), cell(F(perkesoEe), 'r'), cell(F(perkesoEr), 'r'), cell(F(perkesoEe + perkesoEr), 'r'), cell('Sun 15 Nov 2026', 'nw')], 'grp'),
+              row([cell('SOCSO'), cell(''), cell(F(T.socso), 'r'), cell(F(T.erSocso), 'r'), cell(F(T.socso + T.erSocso), 'r'), cell('')], 'sub'),
+              row([cell('EIS'), cell(''), cell(F(T.eis), 'r'), cell(F(T.erEis), 'r'), cell(F(T.eis + T.erEis), 'r'), cell('')], 'sub'),
+              row([cell('Lindung 24 Jam'), cell(''), cell(F(T.l24), 'r'), cell('—', 'r'), cell(F(T.l24), 'r'), cell('')], 'sub'),
+              row([cell('LHDN · PCB'), cell('E 9876543210', 'nw'), cell(F(T.pcb), 'r'), cell('—', 'r'), cell(F(T.pcb), 'r'), cell('Sun 15 Nov 2026', 'nw')], 'grp'),
+              row([cell('Zakat'), cell('Not set up'), cell(F(0), 'r'), cell('—', 'r'), cell(F(0), 'r'), cell('—')], 'grp'),
+              row([cell('HRD Corp · HRDF levy'), cell('Not registered'), cell('—', 'r'), cell('—', 'r'), cell('—', 'r'), cell('—')], 'grp'),
+              row([cell('Total to the authorities'), cell(''), cell(F(eeAll), 'r'), cell(F(T.er), 'r'), cell(F(eeAll + T.er), 'r'), cell('')], 'tot')
+            ] },
+          { cls: 'pt s8', cap: 'The month in one place (RM)', note: '',
+            cols: [col('What'), col('Amount', 'r')],
+            rows: [
+              row([cell('Net pay to staff, on the bank payment list, Sat 24 Oct 2026'), cell(F(T.net), 'r')]),
+              row([cell('To the authorities, above'), cell(F(eeAll + T.er), 'r')]),
+              row([cell('Cost of the month: gross pay ' + F(T.gross) + ' and employer contributions ' + F(T.er)), cell(F(T.gross + T.er), 'r')], 'tot')
+            ] }
+        ],
+        signs: [],
+        lines: [{ t: PREP + ' ' + APPROVED }],
+        footL: 'AISB Sdn Bhd · Monthly payroll summary · October 2026', footR: 'Page 2 of 2',
+        aria: 'Printed monthly payroll summary, October 2026, page 2 of 2: employer contributions RM ' + F(T.er) + ', to the authorities RM ' + F(eeAll + T.er)
+      });
+      return [p1, p2];
+    };
+
+    // ---- the payroll journal summary for SQL Account (one page), before and after Fetch finds JV2610-007 ----
+    const jPage = found => {
+      const JV = [['900-100', 'Salaries and wages', T.gross, 0], ['420-000', 'Accruals (net salaries payable)', 0, T.net], ['430-100', 'KWSP payable', 0, T.epf], ['430-200', 'PERKESO payable', 0, T.socso], ['430-210', 'EIS (SIP) payable', 0, T.eis], ['430-300', 'PCB payable', 0, T.pcb]];
+      const cols = [col('Account'), col('Name'), col('Debit (RM)', 'r'), col('Credit (RM)', 'r')].concat(found ? [col('In SQL')] : []);
+      const rows = JV.map(j => row([cell(j[0], 'nw'), cell(j[1]), cell(j[2] ? F(j[2]) : '', 'r'), cell(j[3] ? F(j[3]) : '', 'r')].concat(found ? [cell('JV2610-007', 'nw')] : [])))
+        .concat([row([cell('Total'), cell(''), cell(F(T.gross), 'r'), cell(F(T.gross), 'r')].concat(found ? [cell('')] : []), 'tot')]);
+      return page({
+        first: true, title: 'Payroll journal summary', sub: 'October 2026 run · for SQL Account',
+        meta: [{ k: 'Enter in SQL Account as', v: 'A journal voucher, dated 31 Oct 2026' }, { k: 'Description', v: 'Payroll journal October' }, { k: 'Run', v: 'October 2026 · 8 people · approved on AF-2610-009 (Hassan Ismail, 22 Oct 2026)' }, { k: 'When printed', v: found ? 'Recorded · JV2610-007' : 'Waiting for SQL record' }],
+        tables: [{ cls: 'pt', cap: 'Journal lines', note: 'Employer shares (EPF ' + F(T.erEpf) + ', SOCSO ' + F(T.erSocso) + ', EIS ' + F(T.erEis) + ') are not in this journal: AISB\'s books record them when each authority is paid. Accounts come from Setup › Statutory accounts; Net salaries payable is 420-000 Accruals.', cols, rows }],
+        boxes: [found
+          ? { c: 'bx', title: 'Recorded in SQL Account', text: 'Fetch on Wed 18 Nov 2026, 10:42 found JV2610-007 “Payroll journal October”, dated 31 Oct 2026, with the same accounts and totals. This app posts nothing for a company kept in SQL Account.' }
+          : { c: 'bx', title: 'Waiting for SQL record', text: 'AISB is kept in SQL Account, so this app posts nothing. Enter this journal in SQL Account. Fetch on Accounting › SQL import then finds a journal with the same accounts and totals, and the run reads Recorded.' }],
+        signs: found ? [] : [{ t: 'Entered in SQL as (JV no.)' }, { t: 'Entered by' }, { t: 'Date' }],
+        lines: [{ t: PREP + (found ? ' Printed Wed 18 Nov 2026, 10:50.' : ' Printed Thu 22 Oct 2026, 11:14.') }],
+        footL: 'AISB Sdn Bhd · Payroll journal summary · October 2026', footR: 'Page 1 of 1',
+        aria: 'Printed payroll journal summary, October 2026, page 1 of 1: 6 lines, debit and credit RM ' + F(T.gross) + (found ? ', recorded in SQL Account as JV2610-007' : ', waiting for SQL record')
+      });
+    };
+
+    // ---- the parallel-run comparison (two pages), as PayrollParallel holds it: the app's October run against the
+    // Summary of the latest Workbook check. Only Lindung 24 Jam (SKBBK) and so net pay differ. ----
+    const L24 = { S001: 4465, S002: 4465, S003: 4465, S004: 4240, S005: 4090, S006: 4465, S007: 2515, S008: 2065 };
+    const sgnF = d => (d > 0 ? '+' + F(d) : d < 0 ? '−' + F(-d) : '—');
+    const cmpPages = signed => {
+      const cmp = ppl.map(p => {
+        const both = { basic: p.basic, allow: p.allow + p.ot, epf: p.epf, erEpf: p.erEpf, socso: p.socso, erSocso: p.erSocso, eis: p.eis, erEis: p.erEis, pcb: p.pcb };
+        const app = Object.assign({}, both, { skb: L24[p.no], net: p.net - L24[p.no] });
+        const wb = Object.assign({}, both, { skb: 0, net: p.net });
+        return { p, app, wb };
+      });
+      const FIG = [['basic', 'Basic'], ['allow', 'Allowances and overtime'], ['epf', 'KWSP · employee'], ['erEpf', 'KWSP · employer'], ['socso', 'SOCSO · employee'], ['erSocso', 'SOCSO · employer'], ['eis', 'EIS · employee'], ['erEis', 'EIS · employer'], ['skb', 'Lindung 24 Jam (SKBBK)'], ['pcb', 'PCB'], ['net', 'Net pay']];
+      const tot = (side, k) => cmp.reduce((s, x) => s + x[side][k], 0);
+      const totRows = FIG.map(([k, label]) => {
+        const a = tot('app', k), w = tot('wb', k), d = a - w;
+        return row([cell(label), cell(F(a), 'r'), cell(F(w), 'r'), cell(sgnF(d), 'r'), cell(d ? 'Differs, 8 people' : 'Agrees', 'nw')], d ? 'grp' : '');
+      });
+      const EX = [
+        ['Lindung 24 Jam (SKBBK)', '+' + F(tot('app', 'skb')), "The workbook doesn't deduct Lindung 24 Jam yet. No one at AISB opted out, so the app's figures stand.", 'Aisha Rahman, Wed 18 Nov 2026, 10:05'],
+        ['Net pay', '−' + F(tot('app', 'skb')), 'Follows from Lindung 24 Jam: each net pay is lower by that person’s Lindung 24 Jam.', 'Aisha Rahman, Wed 18 Nov 2026, 10:07']
+      ];
+      const printed = signed ? 'Wed 18 Nov 2026, 10:32' : 'Wed 18 Nov 2026, 10:12';
+      const p1 = page({
+        first: true, title: 'Parallel run comparison', sub: 'October 2026 · 8 people · the app\'s run against the workbook',
+        meta: [{ k: 'The app\'s figures', v: 'October 2026 run, calculated as a parallel run: it paid nothing and posted nothing' }, { k: 'The workbook\'s figures', v: 'Summary of Example Payroll - OCT 2026 (corrected).xlsx, Workbook check Thu 22 Oct 2026, 09:40' }, { k: 'Result', v: '2 figures differ: Lindung 24 Jam +' + F(tot('app', 'skb')) + ', net pay −' + F(tot('app', 'skb')) + '. The other 9 agree for everyone.' }, { k: 'Signed off', v: signed ? 'Hassan Ismail, Wed 18 Nov 2026 (declared, not verified)' : 'Not signed off yet' }],
+        tables: [
+          { cls: 'pt s8', cap: 'Totals, 8 people (RM)', note: 'Difference is the app\'s figure less the workbook\'s. Each person\'s figures are on page 2.',
+            cols: [col('Figure'), col('App', 'r'), col('Workbook', 'r'), col('Difference', 'r'), col('')],
+            rows: totRows },
+          { cls: 'pt s8', cap: 'Each difference and its explanation', note: '',
+            cols: [col('Figure'), col('Difference', 'r'), col('Explanation'), col('Explained by (declared, not verified)')],
+            rows: EX.map(e => row([cell(e[0]), cell(e[1], 'r'), cell(e[2]), cell(e[3])])) }
+        ],
+        boxes: [signed
+          ? { c: 'bx hv', title: 'Signed off by Hassan Ismail (declared, not verified)', text: 'Date signed off Wed 18 Nov 2026. Entered by Aisha Rahman, Wed 18 Nov 2026, 10:30. Every difference is explained; the comparison and its explanations are frozen as printed here. The app\'s payroll can now become the source from the switch-over month.' }
+          : { c: 'bx', title: 'Sign-off', text: 'Every difference is explained. The app\'s payroll becomes the source only when a whole month agrees, or every difference is explained and the owner signs it off on HR › Payroll › Parallel run. A signature on this paper doesn\'t sign it off by itself.' }],
+        signs: signed ? [] : [{ t: 'Owner\'s name' }, { t: 'Signature' }, { t: 'Date' }],
+        lines: [{ t: PREP + ' Printed ' + printed + '. Continued on page 2.' }],
+        footL: 'AISB Sdn Bhd · Parallel run comparison · October 2026', footR: 'Page 1 of 2',
+        aria: 'Printed parallel run comparison, October 2026, page 1 of 2: 2 figures differ, Lindung 24 Jam and net pay, both explained' + (signed ? ', signed off by Hassan Ismail' : ', not signed off yet')
+      });
+      const p2 = page({
+        cont: true, contText: 'Parallel run comparison · October 2026 (continued)',
+        tables: [
+          { cls: 'pt s7', cap: 'Figures that agree, per person (RM): the same in the app and the workbook', note: '',
+            cols: [col('Person'), col('Basic', 'r'), col('Allowances and overtime', 'r'), col('KWSP ee', 'r'), col('KWSP er', 'r'), col('SOCSO ee', 'r'), col('SOCSO er', 'r'), col('EIS ee', 'r'), col('EIS er', 'r'), col('PCB', 'r')],
+            rows: cmp.map(x => row([cell(x.p.name, '', x.p.no), cell(F(x.app.basic), 'r'), cell(F(x.app.allow), 'r'), cell(F(x.app.epf), 'r'), cell(F(x.app.erEpf), 'r'), cell(F(x.app.socso), 'r'), cell(F(x.app.erSocso), 'r'), cell(F(x.app.eis), 'r'), cell(F(x.app.erEis), 'r'), cell(F(x.app.pcb), 'r')]))
+              .concat([row([cell('Total, 8 people'), cell(F(tot('app', 'basic')), 'r'), cell(F(tot('app', 'allow')), 'r'), cell(F(tot('app', 'epf')), 'r'), cell(F(tot('app', 'erEpf')), 'r'), cell(F(tot('app', 'socso')), 'r'), cell(F(tot('app', 'erSocso')), 'r'), cell(F(tot('app', 'eis')), 'r'), cell(F(tot('app', 'erEis')), 'r'), cell(F(tot('app', 'pcb')), 'r')], 'tot')]) },
+          { cls: 'pt s8', cap: 'Figures that differ, per person (RM)', note: 'ee: employee share; er: employer share. Allowances include Kah Seng\'s overtime. Net pay is gross pay less the employee deductions.',
+            cols: [col('Person'), col('Lindung 24 Jam, app', 'r'), col('Workbook', 'r'), col('Difference', 'r'), col('Net pay, app', 'r'), col('Workbook', 'r'), col('Difference', 'r')],
+            rows: cmp.map(x => row([cell(x.p.name, '', x.p.no), cell(F(x.app.skb), 'r'), cell(F(x.wb.skb), 'r'), cell(sgnF(x.app.skb - x.wb.skb), 'r'), cell(F(x.app.net), 'r'), cell(F(x.wb.net), 'r'), cell(sgnF(x.app.net - x.wb.net), 'r')]))
+              .concat([row([cell('Total, 8 people'), cell(F(tot('app', 'skb')), 'r'), cell(F(tot('wb', 'skb')), 'r'), cell(sgnF(tot('app', 'skb') - tot('wb', 'skb')), 'r'), cell(F(tot('app', 'net')), 'r'), cell(F(tot('wb', 'net')), 'r'), cell(sgnF(tot('app', 'net') - tot('wb', 'net')), 'r')], 'tot')]) }
+        ],
+        signs: [],
+        lines: [{ t: PREP + ' Printed ' + printed + '.' }],
+        footL: 'AISB Sdn Bhd · Parallel run comparison · October 2026', footR: 'Page 2 of 2',
+        aria: 'Printed parallel run comparison, October 2026, page 2 of 2: each person\'s figures; app net pay RM ' + F(tot('app', 'net')) + ' against the workbook\'s RM ' + F(tot('wb', 'net'))
+      });
+      return [p1, p2];
+    };
+
+    // ---- per state: the board around the paper ----
+    const AUD = (what, when) => 'Opened file · payroll · ' + what + ' · ' + when + ' · Aisha Rahman';
+    const S = {
+      'bank-list': {
+        file: 'AISB 2026-10 bank list.pdf', pages: () => [bankPage(false)], chip: ['cp ok', 'check', 'ok', 'Paid Sat 24 Oct as PAYROLL BULK 8 ITEMS'],
+        title: 'Bank payment list, as printed',
+        text: 'Net pay per person with bank and account, for paying October\'s salaries from Maybank current. It is printed once the run is sent to pay, and the person who keys the payments in at the bank writes the reference on it. It agrees with the monthly summary, the payslips and To pay.',
+        facts: [['File', 'AISB 2026-10 bank list.pdf · 1 page'], ['Printed', 'Thu 22 Oct 2026, 11:12, by Aisha Rahman (declared, not verified)'], ['Opened from', 'Print outputs on HR › Payroll › Run, once the run was sent to pay'], ['Audit trail', AUD('bank list, October 2026', 'Thu 22 Oct 2026, 11:12')], ['Ties to', '8 payments, ' + F(T.net) + ', as on Totals › Bank list; paid Sat 24 Oct (bank reference BULK 241026, SQL PV2610-014)']],
+        side: 'On the paper',
+        items: ['No IC numbers, leave types or deductions: only what the bank needs and the net pay.', 'Each person\'s account prints the last 4. The Excel list holds them in full for keying in, and each download is recorded in the audit trail.', 'The company\'s own account is the one chosen for salaries: Maybank current ····4417.', 'Printed only by a user with the Payroll figures right.'],
+        links: [['Totals › Bank list', 'PayrollTotals.dc.html'], ['To pay', 'ToPay.dc.html']]
+      },
+      'bulk-format': {
+        file: 'AISB 2026-10 bank list.pdf', pages: () => [bankPage(true)], chip: ['cp warn', 'clock', 'warn', 'Bank upload file: format to be confirmed'],
+        title: 'Maybank bulk format to be confirmed',
+        text: 'The owner\'s answer (17 Nov 2026): payroll makes Maybank\'s bulk payment file for the salary transfer, if the company uses Maybank bulk payment, and the format is confirmed when payroll is built. Until then the bank list carries the same note in a box (drawn heavier here), and the payments are keyed in from the Excel list.',
+        facts: [['File', 'AISB 2026-10 bank list.pdf · 1 page, the same list as printed'], ['Bank upload file', 'Not offered yet: the button stays off and says why'], ['Keyed in from', 'AISB 2026-10 bank list.xlsx, with account numbers in full'], ['Per company', 'Whether a company uses a bank upload file, and which bank\'s, is its own choice; nothing is fixed to AISB or to Maybank']],
+        side: 'Bank upload file',
+        items: ['When the format is confirmed, Bank upload file makes Maybank\'s file from the same 8 payments, and this printout stays the record of what was sent.', 'A company with no bank upload file keys its payments in from the Excel list and this printout, as AISB does today.'],
+        links: [['Totals › Bank list', 'PayrollTotals.dc.html']]
+      },
+      'summary': {
+        file: 'AISB 2026-10 payroll summary.pdf', pages: sumPages, chip: ['cp info', 'approval', 'brand', 'Approved · AF-2610-009'],
+        title: 'Monthly summary, as printed',
+        text: 'Like today\'s Summary sheet in the workbook: one row per person with the totals, from the payslips. Page 1 holds pay and the employee\'s deductions; page 2 repeats the header and holds the employer\'s shares, what each authority is owed and when, and the month\'s cost.',
+        facts: [['File', 'AISB 2026-10 payroll summary.pdf · 2 pages'], ['Printed', 'Thu 22 Oct 2026, 11:13, by Aisha Rahman (declared, not verified)'], ['Opened from', 'Print outputs on HR › Payroll › Run'], ['Audit trail', AUD('payroll summary, October 2026', 'Thu 22 Oct 2026, 11:13')], ['Ties to', 'Gross ' + F(T.gross) + ', net ' + F(T.net) + '; KWSP ' + F(T.epf + T.erEpf) + ', PERKESO ' + F(perkesoEe + perkesoEr) + ', PCB ' + F(T.pcb) + ', as on Totals and Statutory payables']],
+        side: 'On the paper',
+        items: ['No IC numbers, bank accounts or leave types.', 'Lindung 24 Jam prints 0.00: none was deducted in October, as the Workbook check notes (SKBBK is 0 on each payslip).', 'Zakat is not set up and HRDF is not registered for AISB, so both print as such rather than being left out.', 'Printed only by a user with the Payroll figures right.'],
+        links: [['Totals › Summary', 'PayrollTotals.dc.html'], ['Statutory payables', 'BooksStatutory.dc.html']]
+      },
+      'journal-waiting': {
+        file: 'AISB 2026-10 payroll journal summary.pdf', pages: () => [jPage(false)], chip: ['cp warn', 'clock', 'warn', 'Waiting for SQL record'],
+        title: 'Payroll journal summary, waiting',
+        text: 'AISB is kept in SQL Account, so the app makes this summary for the bookkeeper to enter in SQL and posts nothing itself. Printed the day the run was sent to pay; the bookkeeper writes the JV number on it once entered. A company kept here gets no journal summary: the app posts the run as one journal voucher when it is approved.',
+        facts: [['File', 'AISB 2026-10 payroll journal summary.pdf · 1 page'], ['Printed', 'Thu 22 Oct 2026, 11:14, by Aisha Rahman (declared, not verified)'], ['Opened from', 'Print outputs on HR › Payroll › Run'], ['Audit trail', AUD('payroll journal summary, October 2026', 'Thu 22 Oct 2026, 11:14')], ['Ties to', '6 lines, ' + F(T.gross) + ' each side, as in Record on the Run page']],
+        side: 'On the paper',
+        items: ['Account totals only: no person\'s name or pay.', 'Laid out as AISB\'s books keep it, so Fetch can match it to SQL\'s journal by accounts and totals.', 'Printed only by a user with the Payroll figures right.'],
+        links: [['Payroll · Run', 'PayrollRun.dc.html'], ['Accounting › SQL import', 'Sql.dc.html']]
+      },
+      'journal-matched': {
+        file: 'AISB 2026-10 payroll journal summary.pdf', pages: () => [jPage(true)], chip: ['cp info', 'books', 'brand', 'Recorded · JV2610-007'],
+        title: 'Payroll journal summary, matched',
+        text: 'Printed again after Fetch found SQL\'s journal JV2610-007 with the same accounts and totals: each line shows where it is in SQL, and the box says when it was found. The run reads Recorded.',
+        facts: [['File', 'AISB 2026-10 payroll journal summary.pdf · 1 page'], ['Printed', 'Wed 18 Nov 2026, 10:50, by Aisha Rahman (declared, not verified)'], ['Found by', 'Fetch on Accounting › SQL import, Wed 18 Nov 2026, 10:42'], ['Audit trail', AUD('payroll journal summary, October 2026', 'Wed 18 Nov 2026, 10:50')], ['Ties to', 'JV2610-007 “Payroll journal October”, 31 Oct 2026, 59,147.90 (6 lines)']],
+        side: 'On the paper',
+        items: ['The In SQL column and the box replace the hand-written lines of the waiting copy.', 'The When printed line tells this copy from the waiting one: a print shows the run as it is at that moment.', 'Printed only by a user with the Payroll figures right.'],
+        links: [['Payroll · Run', 'PayrollRun.dc.html'], ['Accounting › SQL import', 'Sql.dc.html']]
+      },
+      'parallel': {
+        file: 'AISB 2026-10 parallel run comparison.pdf', pages: () => cmpPages(false), chip: ['cp warn', 'clock', 'warn', 'Not signed off yet'],
+        title: 'Parallel run comparison, as printed',
+        text: 'What Print the comparison on HR › Payroll › Parallel run gives: the app\'s October run against the workbook\'s Summary, the totals of every figure, each difference with its explanation, and each person\'s figures on page 2. Printed here after both differences were explained and before the owner signed off. A difference not explained yet prints “Not explained yet”.',
+        facts: [['File', 'AISB 2026-10 parallel run comparison.pdf · 2 pages'], ['Printed', 'Wed 18 Nov 2026, 10:12, by Aisha Rahman (declared, not verified)'], ['Opened from', 'Print the comparison on HR › Payroll › Parallel run'], ['Audit trail', AUD('parallel run comparison, October 2026', 'Wed 18 Nov 2026, 10:12')], ['Ties to', '2 figures differ: Lindung 24 Jam +307.70, net pay −307.70 (app ' + F(T.net - 30770) + ', workbook ' + F(T.net) + ')']],
+        side: 'On the paper',
+        items: ['Every compared figure, employee and employer shares each on its own, for all 8 people.', 'No IC numbers, bank accounts or leave types.', 'The sign-off lines are for the owner\'s reference: the sign-off itself is entered on the Parallel run page.', 'Printed only by a user with the Payroll figures right.'],
+        links: [['Payroll · Parallel run', 'PayrollParallel.dc.html'], ['Workbook check', 'PayrollCheck.dc.html']]
+      },
+      'parallel-signed': {
+        file: 'AISB 2026-10 parallel run comparison, signed off.pdf', pages: () => cmpPages(true), chip: ['cp ok', 'approval', 'ok', 'Signed off · Hassan Ismail'],
+        title: 'Signed comparison, as printed',
+        text: 'What Print the signed comparison gives once October 2026 is signed off: the same two pages, frozen, with the declared name and date in place of the blank lines. It is kept with the audit pack as the record of why the app\'s payroll could become the source.',
+        facts: [['File', 'AISB 2026-10 parallel run comparison, signed off.pdf · 2 pages'], ['Printed', 'Wed 18 Nov 2026, 10:32, by Aisha Rahman (declared, not verified)'], ['Signed off', 'Hassan Ismail, Wed 18 Nov 2026 (declared, not verified); entered by Aisha Rahman, 10:30'], ['Opened from', 'Print the signed comparison on HR › Payroll › Parallel run'], ['Audit trail', AUD('signed parallel run comparison, October 2026', 'Wed 18 Nov 2026, 10:32')]],
+        side: 'On the paper',
+        items: ['The comparison and its explanations as they stood at sign-off: a later change to the workbook doesn\'t alter this copy.', 'The name is declared, not verified, until sign-in is in use.', 'Printed only by a user with the Payroll figures right.'],
+        links: [['Payroll · Parallel run', 'PayrollParallel.dc.html'], ['Audit pack · HR and approval pages', 'AuditPackHR.dc.html']]
+      }
+    };
+    const cur = S[stage] || null;
+    const showSheet = !!cur && !isAI && !aina;
+    const pages = showSheet ? cur.pages() : [];
+
+    const LABELS = [['bank-list', 'Bank list'], ['summary', 'Monthly summary'], ['journal-waiting', 'Journal, waiting'], ['journal-matched', 'Journal, matched'], ['bulk-format', 'Bulk format to confirm'], ['parallel', 'Parallel run comparison'], ['parallel-signed', 'Comparison, signed off'], ['no-payroll-figures', 'Without Payroll figures'], ['ai', 'AI, no payroll']];
+    const btn = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const states = LABELS.map(([k, label]) => ({ label, pressed: stage === k ? 'true' : 'false', style: btn(stage === k), pick: () => this.pick(k, label) }));
+
+    return {
+      say: st.say, states,
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: aina ? 'hrOnly' : 'full', tbUser: aina ? 'aina' : 'aisha',
+      onTopCo: code => this.pickCo(code),
+      eyebrow: isAI ? 'AI · Kept here' : 'AISB · Kept in SQL Account',
+      exampleOn: !isAI,
+      intro: isAI ? 'The run\'s printed sheets, for a company that runs payroll in this app.'
+        : 'What Print outputs on HR › Payroll › Run gives once a run is sent to pay: the bank payment list, the monthly summary and, for a company kept in SQL Account, the payroll journal summary. The Parallel run tab prints the comparison of the app\'s run with the workbook, before and after sign-off. A4 portrait, black and grey on white, English. October 2026 is drawn as the example run, as on the Run and Totals pages.',
+      showAi: isAI, showHidden: aina && !isAI, showSheet,
+      swapCls: st.swap % 2 ? 'swapA' : 'swapB',
+      leadTitle: cur ? cur.title : '', leadText: cur ? cur.text : '',
+      facts: cur ? cur.facts.map(x => ({ k: x[0], v: x[1] })) : [],
+      sideTitle: cur ? cur.side : '', isBulk: stage === 'bulk-format',
+      sideItems: cur ? cur.items.map(t => ({ t })) : [],
+      sideLinks: cur ? cur.links.map(l => ({ label: l[0], href: l[1] })) : [],
+      fileName: cur ? cur.file : '', pageCount: pages.length === 2 ? '2 pages' : '1 page',
+      chipCls: cur ? cur.chip[0] : 'cp mute', chipGlyph: cur ? cur.chip[1] : 'document', chipTone: cur ? cur.chip[2] : 'muted', chipText: cur ? cur.chip[3] : '',
+      pages
+    };
+  }
+}
+</script>
+</body>
+</html>

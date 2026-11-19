@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile · Best on a computer · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+/* motion and focus base */
+.md-b{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.md-b:active{filter:brightness(.94)}
+.md-ic{transition:background-color .12s ease-out}
+.md-ic:active{background-color:#F1F3F7 !important}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.spin{display:inline-block;width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+  <header style="display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px; background: #FFFFFF; border-bottom: 1px solid #E3E7ED">
+    <a href="MobileOverview.dc.html" class="md-ic" aria-label="Back to Overview" style="width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="22" hint-size="22px,22px"></dc-import></a>
+    <span style="flex: 1; font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 600; font-size: 17px">HR Payments</span>
+  </header>
+
+  <main style="flex: 1; min-height: 0; overflow-y: auto; padding: 28px 20px 24px; display: flex; flex-direction: column; gap: 20px">
+    <div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; padding: 8px 4px 0">
+      <span style="width: 72px; height: 72px; border-radius: 22px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="laptop" tone="brand" size="36" hint-size="36px,36px"></dc-import></span>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #2450B8">BEST DONE ON A COMPUTER</span>
+        <h1 id="md-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px; font-weight: 600">{{screen}}</h1>
+      </div>
+      <p style="margin: 0; color: #46546A; font-size: 15px; max-width: 34ch">{{reason}}</p>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <button type="button" id="md-send" class="md-b" onClick="{{sendLink}}" aria-busy="{{busy}}" aria-disabled="{{sentOrBusy}}" style="{{sendStyle}}"><sc-if value="{{sending}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Sending…</sc-if><sc-if value="{{notSending}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="{{sendGlyph}}" tone="{{sendTone}}" size="20" hint-size="20px,20px"></dc-import>{{sendLabel}}</sc-if></button>
+      <div role="status" aria-live="polite">
+        <sc-if value="{{sent}}" hint-placeholder-val="{{ false }}"><p class="rv" style="margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #E3F7EC; border: 1px solid #BFE8D0; color: #0A6B3D; font-size: 13px"><dc-import name="Icon" glyph="check" tone="ok" size="18" hint-size="18px,18px"></dc-import><span>The link to {{screen}} was sent to aisha.rahman@example.com. Open it on your computer and sign in.</span></p></sc-if>
+        <sc-if value="{{copied}}" hint-placeholder-val="{{ false }}"><p class="rv" style="margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #EEF1F5; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="check" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Link copied.</span></p></sc-if>
+      </div>
+      <button type="button" class="md-b" onClick="{{copyLink}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 14px; border: 1px solid #8593A8; background: #FFFFFF; color: #0F1A2B; font: 600 15px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="copy" tone="brand" size="20" hint-size="20px,20px"></dc-import>Copy link</button>
+      <a href="MobileOverview.dc.html" class="md-b" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 14px; color: #2450B8; font-weight: 600; font-size: 15px; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>Back to Overview</a>
+    </div>
+
+    <section aria-labelledby="md-can" style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED">
+      <h2 id="md-can" style="margin: 0; font-size: 14px; font-weight: 600">On your phone you can</h2>
+      <sc-for list="{{can}}" as="c" hint-placeholder-count="4">
+        <a href="{{c.href}}" class="md-b" style="display: flex; align-items: center; gap: 10px; min-height: 44px; color: #0F1A2B; text-decoration: none"><dc-import name="Icon" glyph="{{c.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1">{{c.label}}</span><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></a>
+      </sc-for>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"screen":{"editor":"enum","default":"Bank statements","options":["Bank statements","SQL import","Budget","Recurring","Audit pack","Audit trail","Backup","Setup","Search","Notifications"],"section":"Screen"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { send: 'idle', copied: false }; }
+  componentDidMount() { const t = document.getElementById('md-title'); if (t && t.focus) t.focus({ preventScroll: true }); }
+  componentWillUnmount() { clearTimeout(this._s); clearTimeout(this._c); }
+  componentDidUpdate(prevProps) { if (prevProps && prevProps.screen !== this.props.screen) { clearTimeout(this._s); this.setState({ send: 'idle', copied: false }); } }
+  renderVals() {
+    const R = {
+      'Bank statements': 'Matching bank lines needs the statement and the payments side by side, with a wide table.',
+      'SQL import': 'Pasting a SQL listing and linking its vouchers works best with a keyboard and a wide screen.',
+      'Budget': 'The budget is a wide grid of figures for both months, easier to read and enter on a computer.',
+      'Recurring': 'Planning recurring payments means editing a long list of rows, which suits a computer.',
+      'Audit pack': 'Building and checking the audit pack means reading many documents at once.',
+      'Audit trail': 'The audit trail is a long, detailed log that is easier to read on a wide screen.',
+      'Backup': 'Backing up and restoring the records saves files to this computer, so do it there.',
+      'Setup': 'Setup changes how everything works. It is safer with a keyboard and the full page in view.',
+      'Search': 'Searching across every payment, document and bank line works best on a computer, where you can press Ctrl K.',
+      'Notifications': 'The full list of what has happened is easier to scan on a wide screen.'
+    };
+    const screen = (this.props && this.props.screen) || 'Bank statements';
+    const st = this.state, sending = st.send === 'sending', sent = st.send === 'sent';
+    return {
+      screen, reason: R[screen] || R['Bank statements'],
+      sending, notSending: !sending, sent, copied: st.copied, busy: sending ? 'true' : 'false', sentOrBusy: sending || sent ? 'true' : 'false',
+      sendLabel: sent ? 'Link sent' : 'Send me the link', sendGlyph: sent ? 'check' : 'arrow', sendTone: 'white',
+      sendStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;border-radius:14px;border:0;font:600 15px Inter,sans-serif;color:#FFFFFF;cursor:' + (sending ? 'progress' : sent ? 'default' : 'pointer') + ';background:' + (sent ? '#0A6B3D' : '#2450B8'),
+      sendLink: () => {
+        if (this.state.send !== 'idle') return;
+        this.setState({ send: 'sending', copied: false });
+        clearTimeout(this._s); this._s = setTimeout(() => this.setState({ send: 'sent' }), 900);
+      },
+      copyLink: () => { this.setState({ copied: true }); clearTimeout(this._c); this._c = setTimeout(() => this.setState({ copied: false }), 3000); },
+      can: [['Overview', 'overview', 'MobileOverview.dc.html'], ['Payments', 'company', 'MobileCompany.dc.html'], ['A payment and its documents', 'payment', 'MobilePayment.dc.html'], ['Add a payment', 'plus', 'MobileNewPayment.dc.html']].map(([label, glyph, href]) => ({ label, glyph, href }))
+    };
+  }
+}
+</script>
+</body>
+</html>

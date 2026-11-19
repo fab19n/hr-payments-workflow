@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sn:hover{background:#ECEFF4 !important}
+</style>
+</helmet>
+<nav aria-label="Setup sections" style="width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; font-family: Inter, system-ui, sans-serif; color: #0F1A2B">
+  <sc-for list="{{groups}}" as="g" hint-placeholder-count="6">
+    <div role="group" aria-labelledby="{{g.lid}}" style="display: flex; flex-direction: column; gap: 2px">
+      <span id="{{g.lid}}" style="padding: 0 10px 4px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #5F6C80">{{g.label}}</span>
+      <sc-for list="{{g.items}}" as="s" hint-placeholder-count="3">
+        <sc-if value="{{s.isLink}}" hint-placeholder-val="{{ true }}">
+          <a href="{{s.href}}" class="sn" aria-current="{{s.current}}" aria-describedby="{{s.noteId}}" style="{{s.style}}"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25"><span>{{s.label}}</span><sc-if value="{{s.noteOn}}" hint-placeholder-val="{{ false }}"><span id="{{s.noteId}}" style="font-size: 12px; font-weight: 500; color: #5F6C80">{{s.note}}</span></sc-if></span><sc-if value="{{s.noteOn}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="external" tone="muted" size="14" hint-size="14px,14px"></dc-import></sc-if></a>
+        </sc-if>
+        <sc-if value="{{s.isBtn}}" hint-placeholder-val="{{ false }}">
+          <button type="button" class="sn" aria-current="{{s.current}}" onClick="{{s.pick}}" style="{{s.btnStyle}}"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1; min-width: 0">{{s.label}}</span></button>
+        </sc-if>
+      </sc-for>
+    </div>
+  </sc-for>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","default":"accounts","options":["entities","accounts","gl_accounts","statutory_accounts","payees","parties","payment_types","doc_types","required","checklist","reminders","guess_words","hint_words","filing_words","settings","move","approvers","leave_policy","public_holidays","claim_types","payroll_settings","matching"]},"kind":{"editor":"enum","default":"sql","options":["sql","here"]},"payroll":{"editor":"boolean","default":false},"sameBoard":{"editor":null,"default":""},"pickSection":{"editor":null},"$preview":{"width":260,"height":1150}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // The app's 16 Setup sections plus the 5 HR ones (hrp/masters.py GROUPS), each named as the app names it, each on its own board.
+    // Older keys some boards still pass are read as the section they meant.
+    // Matching words is one entry, not three: active="matching" lights it (the first of its three keys).
+    const ALIAS = { gl: 'gl_accounts', matching: 'guess_words', types: 'payment_types' };
+    const raw = this.props.active ?? 'accounts';
+    const active = ALIAS[raw] || raw;
+    // sameBoard: the sections the page showing this menu draws itself (as tabs). Those become buttons that call
+    // pickSection(key), so the tab and the lit item change together instead of reloading the board.
+    const same = String(this.props.sameBoard || '').split(',').map(x => x.trim()).filter(Boolean);
+    const pick = typeof this.props.pickSection === 'function' ? this.props.pickSection : null;
+    // kind: "sql" = Kept in SQL Account, "here" = Kept here. Matching words only make sense with SQL Account.
+    // payroll: "Runs payroll in this app" is on, which is the only case Payroll settings is shown.
+    const kind = this.props.kind === 'here' ? 'here' : 'sql';
+    const payroll = this.props.payroll === true || this.props.payroll === 'true';
+    const nav0 = [
+      ['Companies and banks', [['entities', 'Companies', 'company', 'SetupCompanies.dc.html'], ['accounts', 'Bank accounts', 'bank', 'Setup.dc.html'], ['gl_accounts', 'Chart of accounts', 'trail', 'SetupChart.dc.html'], ['statutory_accounts', 'Statutory accounts', 'vault', 'SetupStatutory.dc.html']]],
+      // Recurring payments has one home, the Recurring page in Monthly work; Setup links to it and says so.
+      ['People and payments', [['payees', 'Recurring payments', 'recurring', 'Recurring.dc.html', 'Opens Payments › Recurring'], ['parties', 'Customers and suppliers', 'users', 'SetupParties.dc.html']]],
+      ['Payments and documents', [['payment_types', 'Payment types', 'payment', 'SetupTypes.dc.html'], ['doc_types', 'Document types', 'document', 'SetupTypes.dc.html'], ['required', 'Required documents', 'upload', 'SetupRequired.dc.html']]],
+      ['Monthly work', [['checklist', 'Monthly checklist', 'checklist', 'SetupChecklist.dc.html'], ['reminders', 'Joiner and leaver reminders', 'person', 'SetupChecklist.dc.html']]],
+      ['Matching words', [['guess_words', 'Payment type guesses', 'database', 'SetupMatching.dc.html'], ['hint_words', 'Salary words', 'search', 'SetupMatching.dc.html'], ['filing_words', 'Filing words', 'filter', 'SetupMatching.dc.html']]],
+      ['HR', [['approvers', 'Approvers', 'approval', 'SetupApprovers.dc.html'], ['leave_policy', 'Leave types and policy', 'leave', 'SetupLeave.dc.html'], ['public_holidays', 'Public holidays', 'calendar', 'SetupHolidays.dc.html'], ['claim_types', 'Claim types', 'claim', 'SetupClaimTypes.dc.html'], ['payroll_settings', 'Payroll settings', 'payroll', 'SetupPayroll.dc.html']]],
+      ['General', [['settings', 'General settings', 'sliders', 'SetupGeneral.dc.html'], ['move', 'Move setup', 'archive', 'SetupMove.dc.html']]]
+    ];
+    const nav = nav0.filter(([label]) => !(label === 'Matching words' && kind === 'here'))
+      .map(([label, items]) => [label, label === 'HR' && !payroll ? items.filter(it => it[0] !== 'payroll_settings') : items]);
+    const base = 'transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;display:flex;align-items:center;gap:10px;min-height:38px;padding:6px 10px;border-radius:9px;text-decoration:none;font-size:14px;font-weight:500;';
+    const groups = nav.map(([label, items], gi) => ({ label, lid: 'sn-g-' + gi, items: items.map(([key, l, glyph, href, note]) => {
+      const on = key === active;
+      const asBtn = !!pick && same.includes(key);
+      const style = base + (on ? 'background:#FFFFFF;color:#0F1A2B;font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08),inset 0 0 0 1px #E3E7ED' : 'color:#46546A');
+      return { key, label: l, glyph, href, current: on ? 'page' : 'false', tone: on ? 'brand' : 'muted',
+        isLink: !asBtn, isBtn: asBtn, noteOn: !!note, note: note || '', noteId: note ? 'sn-note-' + key : '',
+        pick: () => { if (pick) pick(key); },
+        style, btnStyle: style + ';width:100%;border:0;background-color:' + (on ? '#FFFFFF' : 'transparent') + ';font-family:inherit;text-align:left;cursor:pointer' };
+    }) }));
+    return { groups };
+  }
+}
+</script>
+</body>
+</html>

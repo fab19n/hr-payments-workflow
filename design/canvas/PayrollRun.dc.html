@@ -1,0 +1,944 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payroll · October run · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hd:hover:not(:disabled){background:#8E1A10 !important}
+.ht:hover{background:#F0F3F8}
+/* motion and focus base */
+.hb,.hs,.hd,.ht{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.bar{transition:background-color .32s ease-out}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.num{font-variant-numeric:tabular-nums}
+/* pills and chips, as Foundations draws them */
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;border:0;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box;white-space:nowrap}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#F0FBF5;border-color:#BFE8D0;color:#0F1A2B}.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}.rb.info{background:#F3F6FE;border-color:#C9D7F7;color:#1D2F5C}.rb.mute{background:#F7F8FA;border-color:#E3E7ED;color:#46546A}
+/* cards, buttons, fields */
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.sub{color:#5F6C80;font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;box-sizing:border-box;text-decoration:none;white-space:nowrap}
+.pri{border:0;background:#2450B8;color:#FFFFFF}a.pri,a.pri:hover{color:#FFFFFF}
+.sec{border:1px solid #778588;background:#FFFFFF;color:#0F1A2B}a.sec,a.sec:hover{color:#0F1A2B}
+.dng{border:0;background:#B0190F;color:#FFFFFF}
+.sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.lk{border:0;background:transparent;padding:0 2px;min-height:32px;color:#2450B8;font:600 13px Inter,sans-serif;text-decoration:underline;cursor:pointer}
+.in{height:36px;width:100%;min-width:84px;padding:0 10px;border:1px solid #7B8798;border-radius:8px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;text-align:right;font-variant-numeric:tabular-nums}
+.in[aria-invalid="true"]{border-color:#B0190F;box-shadow:0 0 0 1px #B0190F}
+.err{display:flex;gap:6px;align-items:center;color:#B0190F;font-size:12px;font-weight:500}
+/* tables */
+.tb{width:100%;border-collapse:collapse;font-size:14px}
+.tb th{background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap;vertical-align:bottom}
+.tb td{padding:10px 12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.tb .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tb tr.tot td{background:#FAFBFC;border-top:1px solid #D5DBE4;font-weight:700}
+/* the run stepper */
+.stp{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:12px 10px}
+.st{flex:1 1 128px;min-width:120px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.seg{display:block;height:4px;border-radius:99px}
+@media (max-width:760px){.pr-main{padding:24px 16px 48px !important}.card{padding:16px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" sub="Run" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" month-offset="{{off}}" on-month="{{onMonth}}" hint-size="100%,64px"></dc-import>
+    <main class="pr-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+        <h1 id="pr-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payroll</h1>
+        <p style="margin: 0; color: #46546A; max-width: 760px">{{intro}}</p>
+      </div>
+
+      <sc-if value="{{tabsOn}}" hint-placeholder-val="{{ true }}">
+        <div role="tablist" aria-label="Payroll pages" onKeyDown="{{tabKey}}" style="display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #D5DBE4">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+            <a href="{{t.href}}" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="{{t.ctl}}" tabindex="{{t.tabindex}}" class="ht" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</a>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div role="tabpanel" id="pr-panel" aria-labelledby="{{panelBy}}" style="display: flex; flex-direction: column; gap: 20px">
+
+        <sc-if value="{{notUsed}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="pr-nu-h" class="card rv" style="flex-direction: row; gap: 16px; align-items: flex-start">
+            <span style="flex: none; width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="payroll" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+              <h2 id="pr-nu-h" tabindex="-1" class="h2">The payroll run isn't used for Agrinexus International</h2>
+              <p style="margin: 0; color: #46546A">“Runs payroll in this app” is off for AI, so its HR › Payroll holds only the Workbook check. Its 5 staff are paid from the recurring row Salaries — staff (RM 21,300.00 a month, net, entered by hand). The setting is per company and is turned on in <a href="SetupCompanies.dc.html" style="font-weight: 600">Setup › Companies</a>.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px"><a href="PayrollCheck.dc.html" class="btn pri hb"><dc-import name="Icon" glyph="verified" tone="white" size="16" hint-size="16px,16px"></dc-import>Open the Workbook check</a><a href="Recurring.dc.html" class="btn sec hs"><dc-import name="Icon" glyph="recurring" tone="muted" size="16" hint-size="16px,16px"></dc-import>Payments › Recurring</a></div>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+            <span class="sr" role="status">Loading the October run</span>
+            <div class="card"><span class="sk" style="height: 22px; width: 38%"></span><div style="display: flex; gap: 10px"><span class="sk" style="height: 52px; flex: 1"></span><span class="sk" style="height: 52px; flex: 1"></span><span class="sk" style="height: 52px; flex: 1"></span><span class="sk" style="height: 52px; flex: 1"></span><span class="sk" style="height: 52px; flex: 1"></span></div></div>
+            <div class="card"><span class="sk" style="height: 18px; width: 26%"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 class="h2" style="font-size: 18px">Couldn't load the October run</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 480px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was calculated or changed.</p>
+            <button type="button" class="btn pri hb" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="pr-empty-h" class="card rv" style="align-items: center; text-align: center; padding: 36px 28px; gap: 12px">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="{{empty.glyph}}" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 id="pr-empty-h" tabindex="-1" class="h2" style="font-size: 18px">{{empty.title}}</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">{{empty.text}}</p>
+            <sc-if value="{{empty.whatIf}}" hint-placeholder-val="{{ false }}"><span class="pl mute"><dc-import name="Icon" glyph="help" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{empty.whatIf}}</span></sc-if>
+            <a href="{{empty.href}}" class="btn pri hb"><dc-import name="Icon" glyph="{{empty.btnGlyph}}" tone="white" size="16" hint-size="16px,16px"></dc-import>{{empty.btn}}</a>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{hasRun}}" hint-placeholder-val="{{ true }}">
+          <!-- the run: title, state, as-on date, actions, then the stepper -->
+          <section aria-labelledby="pr-h2" class="card">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; justify-content: space-between">
+              <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+                <h2 id="pr-h2" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">October 2026 run · AISB Sdn Bhd</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                  <sc-for list="{{pills}}" as="p" hint-placeholder-count="2"><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.text}}</span></sc-for>
+                  <span class="pl info" title="October 2026 is drawn as an example of a run. In today's world October was the parallel-run month, paid from the recurring rows on AF-2610-001; AISB's first run paid from this app is December 2026."><dc-import name="Icon" glyph="payroll" tone="brand" size="14" hint-size="14px,14px"></dc-import>Example run</span>
+                  <span style="color: #5F6C80; font-size: 13px">{{asOf}}</span>
+                  <sc-if value="{{whatIf}}" hint-placeholder-val="{{ false }}"><span class="pl mute" title="A state drawn to show the design; the samples differ"><dc-import name="Icon" glyph="help" tone="muted" size="14" hint-size="14px,14px"></dc-import>What-if</span></sc-if>
+                </div>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                <sc-for list="{{actions}}" as="a" hint-placeholder-count="2">
+                  <sc-if value="{{a.isLink}}" hint-placeholder-val="{{ false }}"><a href="{{a.href}}" class="{{a.cls}}"><dc-import name="Icon" glyph="{{a.glyph}}" tone="{{a.tone}}" size="16" hint-size="16px,16px"></dc-import>{{a.label}}</a></sc-if>
+                  <sc-if value="{{a.isBtn}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{a.id}}" class="{{a.cls}}" onClick="{{a.go}}" aria-disabled="{{a.dis}}" aria-describedby="{{a.by}}" aria-busy="{{a.busy}}"><sc-if value="{{a.spin}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{a.icon}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="{{a.glyph}}" tone="{{a.tone}}" size="16" hint-size="16px,16px"></dc-import></sc-if>{{a.label}}</button></sc-if>
+                </sc-for>
+              </div>
+            </div>
+            <sc-if value="{{actWhy}}" hint-placeholder-val="{{ false }}"><span id="pr-act-why" class="sub" style="text-align: right">{{actWhy}}</span></sc-if>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 16px 20px; align-items: flex-start; padding-top: 4px">
+              <div style="flex: 5 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+                <span style="font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #5F6C80">Run</span>
+                <ol class="stp" aria-label="Run steps">
+                  <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+                    <li class="st" aria-current="{{s.cur}}"><span class="seg bar" style="{{s.segStyle}}"></span><span style="{{s.labStyle}}"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="16" hint-size="16px,16px"></dc-import>{{s.label}}<span class="sr">{{s.srState}}</span></span><span style="color: #5F6C80; font-size: 12px">{{s.sub}}</span></li>
+                  </sc-for>
+                </ol>
+              </div>
+              <div style="flex: 2 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding-left: 16px; border-left: 1px solid #E3E7ED">
+                <span style="font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #5F6C80">Record · Kept in SQL Account</span>
+                <ol class="stp" aria-label="Record steps, kept in SQL Account">
+                  <sc-for list="{{recSteps}}" as="s" hint-placeholder-count="2">
+                    <li class="st" aria-current="{{s.cur}}"><span class="seg bar" style="{{s.segStyle}}"></span><span style="{{s.labStyle}}"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="16" hint-size="16px,16px"></dc-import>{{s.label}}<span class="sr">{{s.srState}}</span></span><span style="color: #5F6C80; font-size: 12px">{{s.sub}}</span></li>
+                  </sc-for>
+                </ol>
+              </div>
+            </div>
+
+            <sc-for list="{{banners}}" as="b" hint-placeholder-count="1">
+              <div id="{{b.id}}" role="{{b.role}}" tabindex="-1" class="{{b.cls}}"><dc-import name="Icon" glyph="{{b.glyph}}" tone="{{b.tone}}" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><b style="{{b.inkStyle}}">{{b.title}}</b><span style="color: #46546A">{{b.text}}</span><sc-if value="{{b.hasLinks}}" hint-placeholder-val="{{ false }}"><span style="display: flex; flex-wrap: wrap; gap: 6px 16px"><sc-for list="{{b.links}}" as="l" hint-placeholder-count="2"><a href="{{l.href}}" style="font-weight: 600">{{l.text}}</a></sc-for></span></sc-if></div></div>
+            </sc-for>
+          </section>
+
+          <!-- inputs: what changes this month (Draft) -->
+          <sc-if value="{{showInputs}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="pr-in-h" class="card">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between">
+                <div><h2 id="pr-in-h" tabindex="-1" class="h2">What changes this month</h2><span class="sub">Basic pay and fixed allowances come from each staff record, unpaid leave from Leave. Type only overtime, one-off pay and other deductions, or paste them from Excel.</span></div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                  <button type="button" id="pr-paste-b" class="btn sec sm hs" onClick="{{openPaste}}" disabled="{{busy}}"><dc-import name="Icon" glyph="clipboard" tone="muted" size="16" hint-size="16px,16px"></dc-import>Paste from Excel</button>
+                  <sc-if value="{{dirty}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn sec sm hs" onClick="{{saveDraft}}" disabled="{{busy}}">Save draft</button><button type="button" id="pr-discard-b" class="btn sec sm hs" onClick="{{askDiscard}}" disabled="{{busy}}">Discard changes</button></sc-if>
+                </div>
+              </div>
+              <sc-if value="{{inRefused.on}}" hint-placeholder-val="{{ false }}">
+                <div id="pr-in-refused" role="alert" tabindex="-1" class="ex rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was calculated</b><div style="color: #46546A">{{inRefused.text}} What you typed is kept.</div></div></div>
+              </sc-if>
+              <sc-if value="{{showPaste}}" hint-placeholder-val="{{ false }}">
+                <div class="ex" style="border: 1px solid #C9D7F7; background: #F7F9FE; border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+                  <label for="pr-paste-in" style="font-size: 13px; font-weight: 600; color: #1D2F5C">Paste rows from Excel: staff no., item (Overtime, Other pay or Other deduction), amount</label>
+                  <textarea id="pr-paste-in" rows="3" value="{{pasteText}}" onChange="{{onPaste}}" aria-describedby="pr-paste-sum" style="width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid #7B8798; border-radius: 10px; font: 400 13px ui-monospace, Consolas, monospace; resize: vertical"></textarea>
+                  <div role="region" aria-label="Pasted rows, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px; background: #FFFFFF">
+                    <table class="tb" style="min-width: 640px; font-size: 13px">
+                      <caption class="sr">What the paste reads, row by row</caption>
+                      <thead><tr><th scope="col">Row</th><th scope="col">Person</th><th scope="col">Item</th><th scope="col" class="r">Amount</th><th scope="col">Read as</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{pasteRows}}" as="p" hint-placeholder-count="1">
+                          <tr><td class="num">{{p.line}}</td><td>{{p.who}}</td><td>{{p.item}}</td><td class="r">{{p.amount}}</td><td><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.status}}</span></td></tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                  <span id="pr-paste-sum" class="sub">{{pasteSum}}</span>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end"><button type="button" class="btn sec sm hs" onClick="{{closePaste}}">Cancel</button><button type="button" id="pr-paste-use" class="btn pri sm hb" onClick="{{usePaste}}" aria-disabled="{{pasteDis}}">{{pasteUse}}</button></div>
+                </div>
+              </sc-if>
+              <form id="pr-in-form" onSubmit="{{submitCalc}}" noValidate="{{ true }}" aria-busy="{{busyAttr}}">
+                <div role="region" aria-label="This month's inputs, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                  <table class="tb" style="min-width: 920px">
+                    <caption class="sr">October 2026 inputs per person. Basic and allowance come from the staff record.</caption>
+                    <thead><tr><th scope="col">Person</th><th scope="col" class="r">Basic</th><th scope="col" class="r">Fixed allowance</th><th scope="col" class="r" style="width: 128px">Overtime</th><th scope="col" class="r" style="width: 128px">Other pay</th><th scope="col" class="r" style="width: 128px">Other deductions</th><th scope="col">Leave in October (none unpaid)</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{inRows}}" as="r" hint-placeholder-count="8">
+                        <tr class="{{r.flash}}">
+                          <th scope="row" style="background: transparent; text-transform: none; letter-spacing: 0; font-size: 14px; color: #0F1A2B; border: 0; border-top: 1px solid #EEF1F5; padding: 10px 12px; vertical-align: top"><a href="{{r.href}}" style="font-weight: 600; color: #0F1A2B">{{r.name}}</a><div style="font-weight: 400; color: #5F6C80; font-size: 12px">{{r.no}} · {{r.job}}</div></th>
+                          <td class="r">{{r.basic}}</td><td class="r">{{r.allow}}</td>
+                          <sc-for list="{{r.fields}}" as="f" hint-placeholder-count="3">
+                            <td class="r" style="padding: 6px 8px"><input id="{{f.id}}" class="in" type="text" inputMode="decimal" autoComplete="off" value="{{f.value}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-label="{{f.aria}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" placeholder="0.00"><sc-if value="{{f.err}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" class="err" style="justify-content: flex-end; margin-top: 4px">{{f.err}}</span></sc-if></td>
+                          </sc-for>
+                          <td style="color: #46546A; font-size: 13px">{{r.leave}}</td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 4px 0">
+                    <span role="status" aria-live="off" style="font-size: 13px; color: #46546A">{{many.text}}</span>
+                    <button type="button" class="btn sec hs" onClick="{{many.more}}" aria-disabled="{{many.done}}">{{many.btn}}</button>
+                  </div>
+                  <span class="sub">What-if: a company with 120 staff. The board draws 8 of the first 25 rows to save room. The header row stays at the top while the rows scroll, and Excel always holds every row.</span>
+                </sc-if>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding-top: 12px">
+                  <span class="sub">Overtime is typed as an amount. For Jia Hui and Izzati (RM 4,000 a month or less, so covered by the overtime rules) it can be typed in hours, valued at 1.5, 2 or 3 times the hourly rate.</span>
+                  <button type="submit" id="pr-calc" class="btn pri hb" disabled="{{busy}}" aria-busy="{{busyAttr}}" style="min-width: 190px"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="verified" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{calcLabel}}</button>
+                </div>
+                <sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><div role="status" class="ex rb info" style="margin-top: 10px"><dc-import name="Icon" glyph="clock" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>Calculating 8 payslips from the staff records and the rates in Setup, then checking them. The draft is saved first, so nothing typed is lost.</span></div></sc-if>
+              </form>
+            </section>
+          </sc-if>
+
+          <!-- calculated: the payslips, with the totals -->
+          <sc-if value="{{showCalc}}" hint-placeholder-val="{{ true }}">
+            <section aria-labelledby="pr-calc-h" class="card">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between">
+                <div><h2 id="pr-calc-h" tabindex="-1" class="h2">Payslips · 8 people</h2><span class="sub">{{calcSub}}</span></div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                  <div role="group" aria-label="Show" style="display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: #EEF1F5">
+                    <sc-for list="{{showSeg}}" as="g" hint-placeholder-count="2"><button type="button" aria-pressed="{{g.pressed}}" onClick="{{g.pick}}" style="{{g.style}}">{{g.label}}</button></sc-for>
+                  </div>
+                  <button type="button" class="btn sec sm hs" onClick="{{doExcel}}"><dc-import name="Icon" glyph="sheet" tone="muted" size="16" hint-size="16px,16px"></dc-import>Excel</button>
+                </div>
+              </div>
+              <div role="region" aria-label="Payslips, scrolls sideways" tabindex="0" class="fr {{calcSwap}}" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                <table class="tb" style="min-width: 1040px">
+                  <caption class="sr">{{calcCaption}}</caption>
+                  <thead><tr><th scope="col">Person</th><sc-for list="{{calcCols}}" as="c" hint-placeholder-count="10"><th scope="col" class="r">{{c.label}}<sc-if value="{{c.over}}" hint-placeholder-val="{{ false }}"><span class="cp warn" style="margin-left: 6px; text-transform: none; letter-spacing: 0"><dc-import name="Icon" glyph="edit" tone="warn" size="12" hint-size="12px,12px"></dc-import>Overridden</span></sc-if></th></sc-for><th scope="col"><span class="sr">Payslip</span></th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{calcRows}}" as="r" hint-placeholder-count="8">
+                      <tr class="{{r.cls}}">
+                        <th scope="row" style="background: transparent; text-transform: none; letter-spacing: 0; font-size: 14px; color: #0F1A2B; border: 0; border-top: 1px solid #EEF1F5; padding: 10px 12px; white-space: nowrap; vertical-align: top">{{r.name}}<div style="font-weight: 400; color: #5F6C80; font-size: 12px">{{r.no}}</div></th>
+                        <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="10"><td class="r" style="{{c.style}}">{{c.v}}<sc-if value="{{c.sub}}" hint-placeholder-val="{{ false }}"><div style="font-weight: 400; color: #5F6C80; font-size: 12px">{{c.sub}}</div></sc-if></td></sc-for>
+                        <td style="white-space: nowrap"><sc-if value="{{r.slip}}" hint-placeholder-val="{{ true }}"><a href="PrintPayslip.dc.html" aria-label="{{r.slipLabel}}" style="font-size: 13px; font-weight: 600">Payslip</a></sc-if></td>
+                      </tr>
+                    </sc-for>
+                    <tr class="tot"><td>Total</td><sc-for list="{{calcTot}}" as="c" hint-placeholder-count="10"><td class="r">{{c.v}}<sc-if value="{{c.sub}}" hint-placeholder-val="{{ false }}"><div style="font-weight: 500; color: #5F6C80; font-size: 12px">{{c.sub}}</div></sc-if></td></sc-for><td></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <span class="sub">{{calcFoot}}</span>
+            </section>
+          </sc-if>
+          <sc-if value="{{calcHidden}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="pr-hid-h" class="card" style="flex-direction: row; gap: 12px; align-items: flex-start">
+              <dc-import name="Icon" glyph="eyeOff" tone="muted" size="22" hint-size="22px,22px"></dc-import>
+              <div><h2 id="pr-hid-h" class="h2">Payslips · 8 people</h2><p style="margin: 4px 0 0; color: #46546A; font-size: 13px">Later, with logins: each person's pay is shown only to users with the Payroll figures right. Nurul Aina has HR without it, so she sees the run's state, who approved it, its checks and whether each payment is made, with every amount hidden. Rights are set on <a href="UsersAccess.dc.html" style="font-weight: 600">Users and access</a> (later, with logins).</p></div>
+            </section>
+          </sc-if>
+
+          <!-- recalculate for comparison -->
+          <sc-if value="{{showCmp}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="pr-cmp-h" class="card rv" style="border-color: #C9D7F7">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-start; justify-content: space-between">
+                <div style="max-width: 820px"><h2 id="pr-cmp-h" tabindex="-1" class="h2">Recalculated for comparison · 1 person differs</h2><span class="sub">Recalculated Wed 18 Nov 2026, 11:05. What-if: Setup › HR › Payroll settings start the 60-and-over rates in the month after the 60th birthday; this comparison tries them from the birthday month, as if KWSP and PERKESO had said so. Kah Seng turned 60 on 12 Oct.</span></div>
+                <button type="button" id="pr-cmp-close" class="btn sec sm hs" onClick="{{closeCmp}}">Close the comparison</button>
+              </div>
+              <div role="region" aria-label="Comparison, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                <table class="tb" style="min-width: 620px">
+                  <caption class="sr">Wong Kah Seng, October 2026: the approved run against a fresh calculation</caption>
+                  <thead><tr><th scope="col">Wong Kah Seng (Kah Seng)</th><th scope="col" class="r">In the approved run</th><th scope="col" class="r">Recalculated</th><th scope="col" class="r">Difference</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{cmpRows}}" as="c" hint-placeholder-count="8"><tr><td>{{c.what}}</td><td class="r">{{c.was}}</td><td class="r">{{c.now}}</td><td class="r" style="{{c.style}}">{{c.diff}}</td></tr></sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <div class="rb info"><dc-import name="Icon" glyph="lock" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>For comparison only. The October run, its payslips, statutory files and journal stay as approved. The other 7 people agree to the sen; PCB doesn't change, as Kah Seng's EPF relief for 2026 was already at the RM 4,000 cap. A difference is put right by an adjustment in the next run, never by editing this one.</span></div>
+            </section>
+          </sc-if>
+
+          <!-- the run's own checks -->
+          <sc-if value="{{showChecks}}" hint-placeholder-val="{{ true }}">
+            <section aria-labelledby="pr-checks-h" class="card">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between"><h2 id="pr-checks-h" tabindex="-1" class="h2">Checks</h2><span class="{{checkHead.cls}}"><dc-import name="Icon" glyph="{{checkHead.glyph}}" tone="{{checkHead.tone}}" size="14" hint-size="14px,14px"></dc-import>{{checkHead.text}}</span></div>
+              <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+                <sc-for list="{{checks}}" as="c" hint-placeholder-count="8">
+                  <li style="display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid #EEF1F5"><span class="{{c.cls}}" style="flex: none; min-width: 132px"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.tone}}" size="14" hint-size="14px,14px"></dc-import>{{c.label}}</span><span style="flex: 1 1 420px; min-width: 0">{{c.text}}<sc-if value="{{c.link}}" hint-placeholder-val="{{ false }}"> <a href="{{c.href}}" style="font-weight: 600">{{c.link}}</a></sc-if></span></li>
+                </sc-for>
+              </ul>
+              <span class="sub">Every run checks itself before it can be approved: totals agree, deductions not over 50% of wages, basic pay not below the minimum wage, and no recurring salary rows paying the same people for the same month. Warnings never block; disagreeing totals and recurring rows in use do.</span>
+            </section>
+          </sc-if>
+
+          <!-- totals per authority, and the request -->
+          <sc-if value="{{showTotals}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+              <section aria-labelledby="pr-tot-h" class="card" style="flex: 3 1 520px; min-width: 0">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between"><h2 id="pr-tot-h" class="h2">Totals</h2><a href="PayrollTotals.dc.html" style="font-size: 13px; font-weight: 600">Summary, authorities and bank list</a></div>
+                <div role="region" aria-label="Totals per authority, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto">
+                  <table class="tb" style="min-width: 480px">
+                    <caption class="sr">October 2026 totals: net pay and each authority</caption>
+                    <thead><tr><th scope="col">Paid to</th><th scope="col">Made of</th><th scope="col" class="r">Amount</th><th scope="col">Due</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{totRows}}" as="t" hint-placeholder-count="6"><tr><td style="font-weight: 600">{{t.who}}</td><td style="color: #46546A; font-size: 13px">{{t.made}}</td><td class="r" style="font-weight: 600">{{t.amt}}</td><td style="color: #46546A; font-size: 13px; white-space: nowrap">{{t.due}}</td></tr></sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <span class="sub">{{totFoot}}</span>
+              </section>
+              <section aria-labelledby="pr-req-h" class="card" style="flex: 2 1 340px; min-width: 0">
+                <h2 id="pr-req-h" class="h2">This run is a request</h2>
+                <div style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="approval" tone="brand" size="20" hint-size="20px,20px"></dc-import><div style="min-width: 0"><b>Approve</b><div style="color: #46546A; font-size: 13px">{{reqApprove}}</div><sc-if value="{{linksOn}}" hint-placeholder-val="{{ true }}"><a href="Approvals.dc.html" style="font-size: 13px; font-weight: 600">Payments › Approvals</a></sc-if><sc-if value="{{linksOff}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #5F6C80">Payments › Approvals (needs the Payments right)</span></sc-if></div></div>
+                <div style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="toPay" tone="brand" size="20" hint-size="20px,20px"></dc-import><div style="min-width: 0"><b>Pay</b><div style="color: #46546A; font-size: 13px">{{reqPay}}</div><sc-if value="{{linksOn}}" hint-placeholder-val="{{ true }}"><a href="ToPay.dc.html" style="font-size: 13px; font-weight: 600">Payments › To pay</a></sc-if><sc-if value="{{linksOff}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #5F6C80">Payments › To pay (needs the Payments right)</span></sc-if></div></div>
+                <span class="sub">Any one signature approves the form: Hassan Ismail, Tan Mei Ling or Rajesh Kumar (Setup › HR › Approvers). Page 1 of the form shows the totals; page 2 each person. Approval never blocks paying.</span>
+              </section>
+            </div>
+          </sc-if>
+
+          <!-- the payments that came from the run -->
+          <sc-if value="{{showPays}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="pr-pay-h" class="card">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between"><h2 id="pr-pay-h" tabindex="-1" class="h2">Sent to pay · 11 payments</h2><span class="sub">{{paysSub}}</span></div>
+              <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+                <sc-for list="{{pays}}" as="p" hint-placeholder-count="4">
+                  <li style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 0; border-top: 1px solid #EEF1F5">
+                    <dc-import name="Icon" glyph="{{p.glyph}}" tone="muted" size="20" hint-size="20px,20px"></dc-import>
+                    <div style="flex: 1 1 280px; min-width: 0"><b>{{p.what}}</b><div style="color: #5F6C80; font-size: 13px">{{p.made}}</div></div>
+                    <span class="num" style="flex: none; min-width: 96px; text-align: right; font-weight: 600">{{p.amt}}</span>
+                    <div style="flex: 1 1 300px; min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span class="{{p.stCls}}"><dc-import name="Icon" glyph="{{p.stGlyph}}" tone="{{p.stTone}}" size="14" hint-size="14px,14px"></dc-import>{{p.status}}</span><span class="{{p.apCls}}"><dc-import name="Icon" glyph="{{p.apGlyph}}" tone="{{p.apTone}}" size="14" hint-size="14px,14px"></dc-import>{{p.approval}}</span></div>
+                    <sc-if value="{{p.canOpen}}" hint-placeholder-val="{{ true }}"><a href="{{p.href}}" aria-label="{{p.openLabel}}" class="btn sec sm hs">{{p.open}}</a></sc-if>
+                  </li>
+                </sc-for>
+              </ul>
+              <span class="sub">Net pay is one payment per person, paid together with one bank reference. Statutory payments need no approval form. Zakat: none deducted in October. HRDF levy: AISB isn't registered (Setup › Companies).</span>
+            </section>
+          </sc-if>
+
+          <!-- record: the journal summary for SQL Account -->
+          <sc-if value="{{showRecord}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="pr-rec-h" class="card">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between"><h2 id="pr-rec-h" tabindex="-1" class="h2">Record · journal summary for SQL Account</h2><span class="{{rec.cls}}"><dc-import name="Icon" glyph="{{rec.glyph}}" tone="{{rec.tone}}" size="14" hint-size="14px,14px"></dc-import>{{rec.pill}}</span></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">{{rec.text}}<sc-if value="{{linksOn}}" hint-placeholder-val="{{ true }}"> <a href="Sql.dc.html" style="font-weight: 600">Accounting › SQL import</a></sc-if></p>
+              <div role="region" aria-label="Journal summary, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                <table class="tb" style="min-width: 560px">
+                  <caption class="sr">Payroll journal summary, October 2026, dated 31 Oct 2026</caption>
+                  <thead><tr><th scope="col">Account</th><th scope="col" class="r">Debit</th><th scope="col" class="r">Credit</th><th scope="col">In SQL</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{jvRows}}" as="j" hint-placeholder-count="6"><tr><td><span class="num" style="color: #46546A">{{j.code}}</span> {{j.name}}</td><td class="r">{{j.dr}}</td><td class="r">{{j.cr}}</td><td><sc-if value="{{j.found}}" hint-placeholder-val="{{ false }}"><span class="pl ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>{{j.found}}</span></sc-if><sc-if value="{{j.notYet}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80; font-size: 13px">{{j.notYet}}</span></sc-if></td></tr></sc-for>
+                    <tr class="tot"><td>Total</td><td class="r">{{jvTot}}</td><td class="r">{{jvTot}}</td><td></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <span class="sub">{{jvFoot}}</span>
+            </section>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{showFoot}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 980px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Rates, pay items and their ticks come from <a href="SetupPayroll.dc.html">Setup › HR › Payroll settings</a>, as at Nov 2026, each with the date it applies from. October 2026 is drawn as the example run, as if AISB had already switched over; in today's world October was paid from the recurring row Salaries — staff (AF-2610-001), which is why the refused state matters, and AISB switches over on Tue 1 Dec 2026. Every change to a run is recorded in the <a href="AuditTrail.dc.html">audit trail</a>.</span></div>
+        </sc-if>
+      </div>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 640px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="{{toastTone}}" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="pr-undo" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+  <sc-if value="{{dlg.show}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dlg.dimCls}}" onClick="{{dlg.cancel}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div>
+    <div style="position: fixed; inset: 0; z-index: 51; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none">
+      <div role="dialog" aria-modal="true" aria-labelledby="pr-dlg-title" aria-describedby="pr-dlg-desc" tabindex="-1" class="{{dlg.panelCls}}" onKeyDown="{{dlg.key}}" onAnimationEnd="{{dlg.onAnim}}" style="pointer-events: auto; position: relative; width: 100%; max-width: 480px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; box-shadow: 0 16px 40px rgba(13,27,46,.18); display: flex; flex-direction: column">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 20px 60px 14px 22px">
+          <span style="flex: none; width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: #FEF1D6"><dc-import name="Icon" glyph="edit" tone="warn" size="22" hint-size="22px,22px"></dc-import></span>
+          <div><h2 id="pr-dlg-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Discard your changes?</h2><p id="pr-dlg-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{dlg.desc}}</p></div>
+        </div>
+        <button type="button" class="hs" onClick="{{dlg.cancel}}" aria-label="Close" style="position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+        <p style="margin: 0; padding: 0 22px 16px; color: #5F6C80; font-size: 12px">The draft saved at Wed 21 Oct, 09:15 stays as it was. Escape, a click outside, Cancel, changing month and leaving the page all ask this first.</p>
+        <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; border-radius: 0 0 16px 16px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end">
+          <button type="button" id="pr-dlg-keep" class="btn sec hs" onClick="{{dlg.cancel}}">Keep editing</button>
+          <button type="button" id="pr-dlg-go" class="btn dng hd" onClick="{{dlg.discard}}">Discard</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"recorded","options":["recorded","draft","paste","saving","discard","many-rows","checked","failing","refused","printed","approved","sent","paid-no-approval","waiting-sql","late","recalc","filed","no-staff","no-payroll-figures","loading","load-error","ai"],"section":"State to show"},"$preview":{"width":1440,"height":3300}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'recorded'); }
+  componentDidMount() {
+    const v = this.props.view || 'recorded';
+    if (this.state.busy) this.startBusy();
+    if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000);
+    const f = { refused: 'pr-refused', failing: 'pr-checks-h', recalc: 'pr-cmp-h', discard: 'pr-dlg-title', paste: 'pr-paste-in', 'paid-no-approval': 'pr-pwa', late: 'pr-late', ai: 'pr-nu-h' }[v];
+    if (f) this.focusId(f);
+  }
+  componentWillUnmount() { clearTimeout(this._busy); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._t); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._busy); this.setState(this.initial(this.props.view || 'recorded')); return; }
+    const st = this.state, was = prev || {};
+    if (st.dlg && !was.dlg) { this.focusId('pr-dlg-title'); return; }
+    if (was.dlg && !st.dlg) {
+      const o = this._opener; this._opener = null;
+      if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+      if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); else this.focusId('pr-h2');
+      return;
+    }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: false }); return true; } return false; }
+
+  // ---- sample data: samples.md sections 5 and 6 (AISB, October 2026). Money in sen. ----
+  // [no, name, preferred, job, basic, fixed allowance, overtime, EPF, SOCSO, EIS, Lindung 24 Jam worked out, PCB,
+  //  employer EPF, SOCSO, EIS, leave in October]
+  people() {
+    if (this._ppl) return this._ppl;
+    const rows = [
+      ['S001', 'Aisha Rahman', 'Aisha', 'HR and finance executive', 860000, 120000, 0, 94600, 2975, 1190, 4465, 108000, 103200, 10415, 1190, 'None'],
+      ['S002', 'Ong Wei Ming', 'Wei Ming', 'Sales executive', 780000, 300000, 0, 85800, 2975, 1190, 4465, 118000, 93600, 10415, 1190, 'Annual leave, half day Wed 14 Oct'],
+      ['S003', 'Nurul Aina binti Hashim', 'Aina', 'HR and admin executive', 700000, 80000, 0, 77000, 2975, 1190, 4465, 70000, 84000, 10415, 1190, 'None'],
+      ['S004', 'Mohd Hafiz bin Rosli', 'Hafiz', 'Operations executive', 570000, 260000, 0, 62700, 2825, 1130, 4240, 56000, 68400, 9890, 1130, 'None'],
+      ['S005', 'Nor Khadijah binti Omar', 'Khadijah', 'Customer service executive', 550000, 60000, 0, 60500, 2725, 1090, 4090, 34000, 66000, 9540, 1090, 'Maternity from Mon 5 Oct, paid in full'],
+      ['S006', 'Wong Kah Seng', 'Kah Seng', 'IT support, contract', 780000, 60000, 84790, 85800, 2975, 1190, 4465, 100000, 93600, 10415, 1190, 'None'],
+      ['S007', 'Goh Jia Hui', 'Jia Hui', 'Marketing executive', 340000, 60000, 0, 37400, 1675, 665, 2515, 5500, 44200, 5860, 665, 'None'],
+      ['S008', 'Nur Izzati binti Kamal', 'Izzati', 'Office assistant', 280000, 30000, 0, 30800, 1375, 545, 2065, 0, 36400, 4810, 545, 'None']
+    ];
+    this._ppl = rows.map(a => ({ no: a[0], name: a[1], pref: a[2], job: a[3], basic: a[4], allow: a[5], ot: a[6], epf: a[7], socso: a[8], eis: a[9], skb: a[10], pcb: a[11], erEpf: a[12], erSocso: a[13], erEis: a[14], leave: a[15] }));
+    return this._ppl;
+  }
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  sen(s) { const t = String(s == null ? '' : s).replace(/,/g, '').trim(); if (!t) return 0; if (!/^\d+(\.\d{1,2})?$/.test(t)) return null; return Math.round(parseFloat(t) * 100); }
+  // inputs typed for the month: { S006: { ot: '847.90', other: '', ded: '' } }
+  inputsWith(ot) { const o = {}; this.people().forEach(p => { o[p.no] = { ot: p.no === 'S006' && ot ? '847.90' : '', other: '', ded: '' }; }); return o; }
+  // the payslips worked out from the inputs; EPF, SOCSO and EIS are on basic pay (samples section 6)
+  calc(inputs) {
+    return this.people().map(p => {
+      const i = (inputs && inputs[p.no]) || {}, ot = this.sen(i.ot) || 0, other = this.sen(i.other) || 0, ded = this.sen(i.ded) || 0;
+      const gross = p.basic + p.allow + ot + other;
+      const net = gross - p.epf - p.socso - p.eis - p.pcb - ded;   // Lindung 24 Jam overridden to 0.00
+      return { ...p, ot, other, ded, gross, net };
+    });
+  }
+
+  // as on: each view is the run as it was on a day (today is Wed 18 Nov 2026)
+  initial(view) {
+    const base = { view, co: 'AISB', off: 0, stage: 'draft', record: 'none', payAt: 'none', asOf: 'As on Wed 21 Oct 2026, 09:15', whatIf: false,
+      inputs: this.inputsWith(true), saved: this.inputsWith(true), dirty: false, tried: false, inErr: false, paste: null, busy: false, load: 'ok',
+      refused: null, recurring: false, fail: false, late: false, pwa: false, cmp: false, show: 'ee', noStaff: false, aina: false, many: false, shown: 25,
+      dlg: null, closing: false, toast: null, say: '', flash: { keys: [], n: 0 }, swap: 0 };
+    // today the example run is filed: its three statutory files were marked uploaded on Tue 3 Nov (PayrollFiles)
+    const today = { asOf: 'Today, Wed 18 Nov 2026', stage: 'filed', record: 'recorded', payAt: 'nov18' };
+    const set = {
+      draft: {},
+      paste: { asOf: 'As on Wed 21 Oct 2026, 09:20', inputs: this.inputsWith(false), saved: this.inputsWith(false), paste: { text: 'S006\tOvertime\t847.90' } },
+      saving: { asOf: 'As on Wed 21 Oct 2026, 09:48', busy: true },
+      discard: { asOf: 'As on Wed 21 Oct 2026, 09:30', saved: this.inputsWith(false), dirty: true, dlg: { kind: 'discard' } },
+      'many-rows': { whatIf: true, many: true, asOf: 'As on Wed 21 Oct 2026, 09:15' },
+      checked: { stage: 'checked', asOf: 'As on Wed 21 Oct 2026, 09:50' },
+      failing: { stage: 'checked', fail: true, whatIf: true, asOf: 'As on Wed 21 Oct 2026, 09:50' },
+      refused: { stage: 'checked', recurring: true, refused: 'print', asOf: 'As on Wed 21 Oct 2026, 10:30' },
+      printed: { stage: 'printed', asOf: 'As on Wed 21 Oct 2026, 10:30' },
+      approved: { stage: 'approved', record: 'waiting', asOf: 'As on Thu 22 Oct 2026, 11:00' },
+      sent: { stage: 'sent', record: 'waiting', payAt: 'oct22', asOf: 'As on Thu 22 Oct 2026, 11:10',
+        toast: { msg: 'Sent to To pay: net pay for 8 people (48,600.00) and KWSP, PERKESO and PCB. The figures are frozen.', undo: { stage: 'approved', payAt: 'none' }, glyph: 'toPay', tone: 'dok', n: 1 } },
+      'paid-no-approval': { stage: 'sent', pwa: true, record: 'waiting', payAt: 'nov2', whatIf: true, asOf: 'As on Mon 2 Nov 2026' },
+      'waiting-sql': { stage: 'sent', record: 'waiting', payAt: 'nov2', asOf: 'As on Mon 2 Nov 2026' },
+      late: { stage: 'approved', late: true, record: 'waiting', whatIf: true, asOf: 'As on Mon 9 Nov 2026' },
+      recorded: today,
+      recalc: { ...today, cmp: true, whatIf: true },
+      filed: { ...today },
+      'no-staff': { noStaff: true, whatIf: true },
+      'no-payroll-figures': { ...today, aina: true },
+      loading: { load: 'loading' }, 'load-error': { load: 'error' },
+      ai: { co: 'AI' }
+    }[view] || today;
+    if (view === 'discard') set.inputs = this.inputsWith(true);
+    return { ...base, ...set };
+  }
+
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo, glyph, tone) { this.startToast(undo ? 15000 : 6000); return { toast: { msg, undo: undo || null, glyph: glyph || 'check', tone: tone || 'dok', n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+  startBusy() { clearTimeout(this._busy); this._busy = setTimeout(() => this.finishCalc(), 1400); }
+  bad(inputs) {
+    const out = [];
+    this.people().forEach(p => ['ot', 'other', 'ded'].forEach(k => { if (this.sen(inputs[p.no][k]) === null) out.push({ p, k }); }));
+    return out;
+  }
+  submitCalc() {
+    const st = this.state;
+    if (st.busy) return;
+    const b = this.bad(st.inputs);
+    if (b.length) { this._upFocus = ['pr-in-refused']; return this.setState({ tried: true, inErr: true, say: 'Nothing was calculated' }); }
+    this.setState({ busy: true, tried: false, inErr: false, saved: st.inputs, say: 'Calculating and checking 8 payslips' });
+    this.startBusy();
+  }
+  finishCalc() {
+    if (!this.state.busy) return;
+    const back = { stage: 'draft', inputs: this.state.inputs, dirty: this.state.dirty };
+    this._upFocus = ['pr-h2'];
+    this.setState({ busy: false, stage: 'checked', dirty: false, asOf: 'As on Wed 21 Oct 2026, 09:50', say: 'Checked: the checks pass, 1 to check',
+      ...this.toastPart('Checked: 8 payslips, totals agree. 1 thing to check, nothing to fix.', back, 'verified', 'dok') });
+  }
+  // refused while recurring salary rows pay the same people for the month (scope 6, Switching over)
+  refuse(what) { this._upFocus = ['pr-refused']; this.setState({ refused: what, say: 'Refused: the recurring row Salaries — staff is still in use for October 2026' }); }
+  print() {
+    const st = this.state;
+    if (st.fail) { this._upFocus = ['pr-checks-h']; return this.setState({ say: 'Fix what the checks found first' }); }
+    if (st.recurring) return this.refuse('print');
+    this._upFocus = ['pr-h2'];
+    this.setState({ stage: 'printed', refused: null, asOf: 'As on Wed 21 Oct 2026, 10:30', say: 'Approval form AF-2610-009 printed',
+      ...this.toastPart('Printed AF-2610-009 (keyed check Q7L-3DXA): page 1 the totals, page 2 each person. Upload it on Approvals once signed.', { stage: 'checked' }, 'printer', 'dok') });
+  }
+  send() {
+    const st = this.state;
+    if (st.fail) { this._upFocus = ['pr-checks-h']; return this.setState({ say: 'Fix what the checks found first' }); }
+    if (st.recurring) return this.refuse('send');
+    const before = st.stage !== 'approved';
+    const back = { stage: st.stage, payAt: st.payAt, record: st.record, pwa: st.pwa };
+    this._upFocus = ['pr-pay-h'];
+    this.setState({ stage: 'sent', payAt: st.late ? 'nov9' : 'oct22', record: 'waiting', pwa: before, refused: null, say: 'Sent to To pay',
+      ...this.toastPart(before ? 'Sent to To pay before approval: the figures are frozen now. Once paid, its payments read “Paid without approval on file” until AF-2610-009 is uploaded.'
+        : 'Sent to To pay: net pay for 8 people (' + this.fmt(this.netOf(st)) + ') and KWSP, PERKESO and PCB. The figures are frozen.', back, 'toPay', before ? 'dwarn' : 'dok') });
+  }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if (c !== 'AISB' && c !== 'AI') return;
+    if (c === this.state.co) return;
+    clearTimeout(this._busy);
+    if (c === 'AI') { this._upFocus = ['pr-nu-h']; return this.setState({ co: 'AI', busy: false, paste: null, say: "The payroll run isn't used for Agrinexus International" }); }
+    this._upFocus = ['pr-h2'];
+    this.setState(this.initial('recorded'));
+  }
+  pickMonth(o) {
+    if (o === this.state.off) return;
+    if (this.state.dirty && this.state.stage === 'draft') { this._opener = document.activeElement; return this.setState({ dlg: { kind: 'discard', then: { off: o, paste: null, say: 'Showing ' + this.monthLabel(o) } }, closing: false }); }
+    clearTimeout(this._busy);
+    this.setState({ off: o, busy: false, paste: null, say: 'Showing ' + this.monthLabel(o) });
+  }
+  netOf(st) { const order = ['draft', 'checked'], at = order.indexOf(st.stage); return this.calc(st.saved && at !== 0 ? st.saved : st.inputs).reduce((s, r) => s + r.net, 0); }
+  monthLabel(off) { return ['August 2026', 'September 2026', 'October 2026', 'November 2026'][off + 2] || 'October 2026'; }
+
+  steps(st) {
+    const order = ['draft', 'checked', 'printed', 'approved', 'sent', 'filed'], at = order.indexOf(st.stage);
+    const S = (label, state, sub, glyph) => {
+      const col = { done: '#0E8A50', cur: '#2450B8', warn: '#C77700', bad: '#B0190F', todo: '#D5DBE4' }[state];
+      const ink = state === 'todo' ? '#46546A' : '#0F1A2B';
+      return { label, sub, glyph: state === 'done' ? 'check' : state === 'warn' || state === 'bad' ? 'alert' : glyph,
+        tone: { done: 'ok', cur: 'brand', warn: 'warn', bad: 'bad', todo: 'muted' }[state],
+        cur: state === 'cur' || state === 'warn' || state === 'bad' ? 'step' : 'false',
+        srState: { done: ', done', cur: ', current step', warn: ', needs attention', bad: ', refused', todo: ', to do' }[state],
+        segStyle: 'background:' + col, labStyle: 'display:flex;align-items:center;gap:6px;font-weight:600;color:' + ink };
+    };
+    const run = [
+      at === 0 ? S('Draft', 'cur', 'Started Wed 21 Oct, 09:15 · Aisha Rahman', 'edit') : S('Draft', 'done', 'Wed 21 Oct · Aisha Rahman', 'edit'),
+      at === 0 ? S('Checked', 'todo', 'Calculate and check', 'verified')
+        : at === 1 ? (st.fail ? S('Checked', 'bad', '1 to fix before approval', 'verified') : st.recurring ? S('Checked', 'bad', 'Recurring row in use', 'verified') : S('Checked', 'cur', 'Wed 21 Oct, 09:50 · 1 to check', 'verified'))
+        : S('Checked', 'done', 'Wed 21 Oct, 09:50', 'verified'),
+      at < 2 ? S('Approved', 'todo', 'Print the approval form', 'approval')
+        : st.pwa ? S('Approved', 'warn', 'AF-2610-009 printed Wed 21 Oct, not uploaded', 'approval')
+        : at === 2 ? S('Approved', 'cur', 'AF-2610-009 printed Wed 21 Oct, waiting for the signed form', 'approval')
+        : st.late ? S('Approved', 'warn', 'AF-2610-009 · Hassan Ismail, 9 Nov · after the 7th', 'approval')
+        : S('Approved', at === 3 ? 'cur' : 'done', 'AF-2610-009 · Hassan Ismail, 22 Oct', 'approval'),
+      at < 4 ? S('Sent to pay', 'todo', 'After approval, or before it', 'toPay')
+        : st.pwa ? S('Sent to pay', 'warn', 'Thu 22 Oct, before approval', 'toPay')
+        : S('Sent to pay', at === 4 ? 'cur' : 'done', (st.late ? 'Mon 9 Nov' : 'Thu 22 Oct') + ' · 11 payments', 'toPay'),
+      at === 5 ? S('Filed', 'done', 'Marked Tue 3 Nov · Aisha Rahman', 'statutory') : S('Filed', 'todo', 'Mark it on Statutory files', 'statutory')
+    ];
+    const rec = [
+      st.record === 'none' ? S('Waiting for SQL record', 'todo', 'From approval', 'clock')
+        : st.record === 'waiting' ? S('Waiting for SQL record', 'warn', st.late ? 'Since Mon 9 Nov' : 'Since Thu 22 Oct', 'clock')
+        : S('Waiting for SQL record', 'done', 'Thu 22 Oct to Wed 18 Nov', 'clock'),
+      st.record === 'recorded' ? S('Recorded', 'done', 'JV2610-007 · Wed 18 Nov', 'books') : S('Recorded', 'todo', 'When Fetch finds the journal', 'books')
+    ];
+    return { run, rec };
+  }
+
+  renderVals() {
+    const st = this.state, F = n => this.fmt(n), isAI = st.co === 'AI', aina = st.aina;
+    const off = st.off;
+    // tabs: Workbook check always; the run tabs only where Runs payroll in this app is on (AISB in the samples)
+    const TABS = [['Workbook check', 'PayrollCheck.dc.html', 'verified'], ['Run', 'PayrollRun.dc.html', 'payroll'], ['Totals', 'PayrollTotals.dc.html', 'sheet'],
+      ['Statutory files', 'PayrollFiles.dc.html', 'statutory'], ['Leaver', 'PayrollLeaver.dc.html', 'person'], ['Parallel run', 'PayrollParallel.dc.html', 'refresh'],
+      ['Opening year to date', 'PayrollOpeningYtd.dc.html', 'history']];
+    const SEL = isAI ? 0 : 1;
+    const tabs = (isAI ? TABS.slice(0, 1) : TABS).map((t, i) => ({ id: 'pr-tab-' + i, label: t[0], href: t[1], glyph: t[2], sel: i === SEL ? 'true' : 'false', ctl: i === SEL ? 'pr-panel' : null, tabindex: i === SEL ? '0' : '-1',
+      tone: i === SEL ? 'brand' : 'muted',
+      style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid ' + (i === SEL ? '#2450B8' : 'transparent') + ';border-radius:8px 8px 0 0;font:600 14px Inter,sans-serif;text-decoration:none;transition:border-color .12s ease-out,color .12s ease-out;color:' + (i === SEL ? '#1D419A' : '#46546A') + ';box-sizing:border-box' }));
+    const tabKey = ev => {
+      const ids = tabs.map(t => t.id), i = ids.indexOf(ev && ev.target && ev.target.id), n = ids.length;
+      if (i < 0) return;
+      const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i - 1 + n) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : null;
+      if (j === null) return;
+      if (ev.preventDefault) ev.preventDefault();
+      this.focusId(ids[j]);
+    };
+
+    const showLoading = !isAI && st.load === 'loading', showError = !isAI && st.load === 'error', ok = !isAI && st.load === 'ok';
+    // the month: only October is drawn, as the example run. AISB switches over on Tue 1 Dec 2026: months up to November are paid
+    // from the recurring rows and come in as the opening year to date; December 2026 is the first run paid from this app
+    const emptyKind = !ok ? null : st.noStaff ? 'staff' : off < 0 ? 'before' : off > 0 ? 'nov' : null;
+    const EMPTY = {
+      staff: { glyph: 'staff', title: 'No one to pay in October 2026', text: 'AISB has no staff in employment for October. Add your staff or paste the Excel list: the run starts from each staff record (pay from a date, fixed allowances, statutory categories, bank account).', whatIf: 'What-if: a company that has just turned on Runs payroll in this app', href: 'HrStaff.dc.html', btn: 'Add your staff', btnGlyph: 'plus' },
+      before: { glyph: 'history', title: this.monthLabel(off) + ' was paid before payroll ran in this app', text: "AISB's first run paid from this app is December 2026. Each person's pay, EPF, PCB and zakat for January to November are the opening year to date, imported once from the November workbook.", whatIf: '', href: 'PayrollOpeningYtd.dc.html', btn: 'Opening year to date', btnGlyph: 'history' },
+      nov: { glyph: 'payroll', title: 'November 2026 run not started', text: '9 people are in employment for November, Daniel Lee Chee Keong from 3 Nov. Kah Seng is paid at the 60-and-over rates from November. November is the last month paid from the recurring rows, so its run here is a parallel run that pays nothing; December 2026 is the first run paid from this app.', whatIf: '', href: 'PayrollParallel.dc.html', btn: 'Open the parallel run', btnGlyph: 'refresh' }
+    };
+    const empty = emptyKind ? EMPTY[emptyKind] : { glyph: 'payroll', title: '', text: '', whatIf: '', href: 'HrStaff.dc.html', btn: '', btnGlyph: 'plus' };
+    const hasRun = ok && !emptyKind;
+
+    const order = ['draft', 'checked', 'printed', 'approved', 'sent', 'filed'], at = order.indexOf(st.stage);
+    const sp = this.steps(st);
+    // the run's figures, from the payslips (so the texts follow the inputs); every amount hidden without the Payroll figures right
+    const runRows = this.calc(st.saved && at > 0 ? st.saved : st.inputs), tsum = k => runRows.reduce((s, r) => s + r[k], 0);
+    const G = tsum('gross'), N = tsum('net'), OP = tsum('other'), OD = tsum('ded'), H = n => (aina ? '•••' : F(n));
+
+    // pills
+    const P = (cls, glyph, tone, text) => ({ cls: 'pl ' + cls, glyph, tone, text });
+    const pills = [];
+    pills.push([P('mute', 'edit', 'muted', 'Draft'), st.fail || st.recurring ? P('bad', 'alert', 'bad', 'Checks failing') : P('info', 'verified', 'brand', 'Checked'),
+      P('warn', 'clock', 'warn', 'Waiting for approval'), P('ok', 'check', 'ok', 'Approved'), P('info', 'toPay', 'brand', 'Sent to pay'), P('ok', 'verified', 'ok', 'Filed')][at]);
+    if (st.pwa) pills.push(st.payAt === 'oct22' ? P('warn', 'clock', 'warn', 'Waiting for approval') : P('bad', 'alert', 'bad', 'Paid without approval on file'));
+    if (st.record === 'waiting') pills.push(P('warn', 'clock', 'warn', 'Waiting for SQL record'));
+    if (st.record === 'recorded') pills.push(P('info', 'books', 'brand', 'Recorded'));
+
+    // actions, by stage
+    const A = (o) => ({ isLink: !!o.href, isBtn: !o.href, href: o.href || '', id: o.id || null, go: o.go || (() => {}), dis: o.dis ? 'true' : 'false', by: o.dis ? 'pr-act-why' : null, busy: 'false', spin: false, icon: true,
+      cls: 'btn ' + (o.pri ? 'pri hb' : 'sec hs'), glyph: o.glyph, tone: o.pri ? 'white' : 'muted', label: o.label });
+    const actions = [];
+    let actWhy = '';
+    if (hasRun && !aina) {
+      if (at === 1) {
+        actions.push(A({ id: 'pr-back', label: 'Back to Draft', glyph: 'edit', go: () => { const back = { stage: 'checked' }; this._upFocus = ['pr-in-h']; this.setState({ stage: 'draft', refused: null, say: 'Back to Draft', ...this.toastPart('Back to Draft: change the inputs, then calculate and check again.', back, 'edit', 'dbrand') }); } }));
+        actions.push(A({ id: 'pr-send-early', label: 'Send to pay before approval', glyph: 'toPay', dis: st.fail, go: () => this.send() }));
+        actions.push(A({ id: 'pr-print', label: 'Print approval form', glyph: 'printer', pri: true, dis: st.fail, go: () => this.print() }));
+        if (st.fail) actWhy = "Fix what the checks found first: a run whose totals don't agree can't be approved or sent to pay.";
+      }
+      if (at === 2) actions.push(A({ href: 'PrintApprovalForm.dc.html#salary', label: 'Open the printed form', glyph: 'document' }), A({ id: 'pr-send-early', label: 'Send to pay before approval', glyph: 'toPay', go: () => this.send() }), A({ href: 'ApprovalUpload.dc.html', label: 'Upload the signed form', glyph: 'upload', pri: true }));
+      if (at === 3) actions.push(A({ href: 'PrintPayslip.dc.html', label: 'Payslips', glyph: 'document' }), A({ id: 'pr-send', label: 'Send to pay', glyph: 'toPay', pri: true, go: () => this.send() }));
+      if (at >= 4) {
+        actions.push(A({ href: 'PrintPayslip.dc.html', label: 'Payslips', glyph: 'document' }), A({ href: 'PrintPayrollOutputs.dc.html', label: 'Print outputs', glyph: 'printer' }));
+        if (st.record === 'recorded' && !st.cmp) actions.push(A({ id: 'pr-recalc', label: 'Recalculate for comparison', glyph: 'refresh', go: () => { this._upFocus = ['pr-cmp-h']; this.setState({ cmp: true, say: 'Recalculated for comparison: 1 person differs' }); } }));
+      }
+    }
+
+    // banners
+    const B = (id, role, cls, glyph, tone, ink, title, text, links) => ({ id, role, cls: 'ex rb ' + cls, glyph, tone, inkStyle: 'color:' + ink, title, text, links: links || [], hasLinks: !!(links && links.length) });
+    const banners = [];
+    if (hasRun) {
+      if (st.refused) banners.push(B('pr-refused', 'alert', 'bad', 'alert', 'bad', '#8E1A10', st.refused === 'send' ? 'Nothing was sent to pay' : 'Nothing was printed',
+        "A run can't be approved or sent to pay while recurring salary rows pay the same people for the same month. Salaries — staff (8 people" + (aina ? "" : ", RM 48,600.00 a month") + ", approved on AF-2610-001) is in use for October 2026, so October would be paid twice. The recurring rows pay salaries until the switch-over, which stops the row with November 2026 as its last month; runs are paid from here from December 2026.",
+        [{ href: 'PayrollParallel.dc.html', text: 'Parallel run and switch-over' }, { href: 'Recurring.dc.html', text: 'Payments › Recurring' }]));
+      if (st.pwa && st.payAt !== 'oct22') banners.push(B('pr-pwa', 'alert', 'bad', 'alert', 'bad', '#8E1A10', 'Paid without approval on file',
+        'Net pay for 8 people' + (aina ? '' : ' (' + F(N) + ')') + ' was paid on Sat 24 Oct, and AF-2610-009 isn\'t uploaded yet. It is listed on Payments › Approvals and on the Overview until the signed form is uploaded; then it moves to "Approved after payment". In the samples the form was uploaded on Thu 22 Oct.',
+        aina ? [] : [{ href: 'ApprovalUpload.dc.html', text: 'Upload the signed form' }, { href: 'Approvals.dc.html', text: 'Payments › Approvals' }]));
+      if (st.late) banners.push(B('pr-late', 'status', 'warn', 'alert', 'warn', '#7A3500', 'Approved after the 7th',
+        'AF-2610-009 was signed on Mon 9 Nov. October\'s wages were due by Sat 7 Nov (Employment Act s.19), so send this run to pay today. A warning only: nothing is blocked. In the samples the form was signed on Thu 22 Oct.', []));
+      if (at >= 3 && st.stage !== 'filed') banners.push(B('pr-frozen', 'note', 'mute', 'lock', 'muted', '#0F1A2B', st.pwa ? 'Frozen when sent to pay, Thu 22 Oct' : st.late ? 'Frozen on approval, Mon 9 Nov' : 'Frozen on approval, Thu 22 Oct',
+        'The figures, payslips, files and journal no longer change. Recalculating is for comparison only; a mistake is put right by an adjustment in the next run.', []));
+      if (st.stage === 'filed') banners.push(B('pr-locked', 'note', 'ok', 'lock', 'ok', '#0A6B3D', 'October 2026 is filed and locked',
+        'The month\'s statutory files were marked uploaded on Statutory files. The run, payslips, files and journal stay as they are; corrections go into a later run.', [{ href: 'PayrollFiles.dc.html', text: 'Statutory files' }]));
+    }
+
+    // inputs (Draft)
+    const showInputs = hasRun && at === 0 && !aina;
+    const errs = st.tried ? this.bad(st.inputs) : [];
+    const errOf = (no, k) => errs.some(e => e.p.no === no && e.k === k);
+    const FIELD = { ot: 'Overtime', other: 'Other pay', ded: 'Other deductions' };
+    const flashOn = st.flash.keys;
+    const inRows = this.people().map(p => ({ no: p.no, href: 'HrStaffRecord.dc.html#' + p.no, name: p.name + ' (' + p.pref + ')', job: p.job, basic: F(p.basic), allow: F(p.allow), leave: p.leave,
+      flash: flashOn.indexOf(p.no) >= 0 ? (st.flash.n % 2 ? 'fa' : 'fb') : '',
+      fields: ['ot', 'other', 'ded'].map(k => { const bad = errOf(p.no, k), id = 'pr-in-' + p.no + '-' + k;
+        return { id, value: st.inputs[p.no][k], dis: st.busy, aria: FIELD[k] + ' for ' + p.pref + ', October 2026', inv: bad ? 'true' : 'false', err: bad ? 'Type an amount, like 847.90' : '', errId: id + '-err', by: bad ? id + '-err' : null,
+          change: ev => { const v = ev && ev.target ? ev.target.value : ''; const ins = { ...this.state.inputs, [p.no]: { ...this.state.inputs[p.no], [k]: v } }; this.setState({ inputs: ins, dirty: true, inErr: false }); } }; }) }));
+    const firstBad = errs[0];
+    const inRefused = st.inErr && firstBad ? { on: true, text: firstBad.p.pref + "'s " + FIELD[firstBad.k].toLowerCase() + " isn't an amount" + (errs.length > 1 ? ', and ' + (errs.length - 1) + ' more field' + (errs.length > 2 ? 's' : '') + " aren't." : '.') } : { on: false, text: '' };
+    const many = st.many ? { on: true, text: 'Showing ' + Math.min(st.shown, 120) + ' of 120 people', btn: st.shown >= 120 ? 'All 120 shown' : 'Show 25 more', done: st.shown >= 120 ? 'true' : 'false',
+      more: () => { if (this.state.shown >= 120) return; const n = Math.min(this.state.shown + 25, 120); this.setState({ shown: n, say: 'Showing ' + n + ' of 120 people' }); } } : { on: false, text: '', btn: '', done: 'true', more: () => {} };
+
+    // paste from Excel: staff no., item, amount (tab, semicolon or two spaces between); all or nothing
+    const ppl = this.people();
+    const pasteRows = [];
+    if (st.paste) String(st.paste.text || '').split(/\r?\n/).forEach((line, i) => {
+      if (!line.trim()) return;
+      const c = line.split(/\t|;|\s{2,}/).map(x => x.trim());
+      const who = ppl.find(p => p.no === String(c[0] || '').toUpperCase() || p.pref.toLowerCase() === String(c[0] || '').toLowerCase());
+      const itemRaw = String(c[1] || ''), k = /^over/i.test(itemRaw) ? 'ot' : /^other pay/i.test(itemRaw) ? 'other' : /deduct/i.test(itemRaw) ? 'ded' : null;
+      const amt = this.sen(c[2]);
+      const err = !who ? 'No one in employment in October has staff no. ' + (c[0] || '(blank)') : !k ? '“' + itemRaw + '” isn\'t Overtime, Other pay or Other deduction' : amt === null || !c[2] ? '“' + (c[2] || '') + '” isn\'t an amount' : '';
+      pasteRows.push({ line: String(i + 1), who: who ? who.name + ' (' + who.pref + ')' : c[0] || '—', item: k ? FIELD[k] : itemRaw || '—', amount: amt ? F(amt) : c[2] || '—', ok: !err, no: who ? who.no : '', k, raw: c[2] || '',
+        status: err || 'Matched to ' + (who ? who.no : ''), cls: 'cp ' + (err ? 'bad' : 'ok'), glyph: err ? 'alert' : 'check', tone: err ? 'bad' : 'ok' });
+    });
+    const pasteBad = pasteRows.filter(r => !r.ok).length, pasteOk = pasteRows.length - pasteBad;
+    const pasteSum = !pasteRows.length ? 'Nothing pasted yet.' : pasteBad ? pasteBad + ' row' + (pasteBad > 1 ? 's' : '') + " can't be read, so nothing is taken. Correct the paste, or remove the row." :
+      pasteOk + ' row' + (pasteOk > 1 ? 's' : '') + ' read. The other ' + (8 - new Set(pasteRows.map(r => r.no)).size) + ' people have nothing pasted: what is typed for them stays.';
+
+    // payslips table
+    const rows = runRows;
+    const ee = st.show === 'ee';
+    const COLS = ee ? [['Basic', 'basic'], ['Allowance', 'allow'], ['Overtime', 'ot'], ['Gross', 'gross'], ['EPF', 'epf'], ['SOCSO', 'socso'], ['EIS', 'eis'], ['Lindung 24 Jam', 'skb', true], ['PCB', 'pcb'], ['Net pay', 'net']]
+      : [['Basic', 'basic'], ['Gross', 'gross'], ['Employer EPF', 'erEpf'], ['Employer SOCSO', 'erSocso'], ['Employer EIS', 'erEis'], ['Employer total', 'erTot'], ['Net pay', 'net']];
+    const calcCols = COLS.map(c => ({ label: c[0], over: !!c[2] }));
+    const cellOf = (r, key) => key === 'skb' ? { v: '0.00', sub: F(r.skb) + ' worked out', style: '' }
+      : key === 'erTot' ? { v: F(r.erEpf + r.erSocso + r.erEis), sub: '', style: '' }
+      : { v: key === 'ot' && !r.ot ? '—' : F(r[key]), sub: '', style: key === 'net' || key === 'gross' ? 'font-weight:600' : '' };
+    const calcRows = rows.map(r => ({ name: r.name + ' (' + r.pref + ')', no: r.no, slip: at >= 3, slipLabel: 'Payslip for ' + r.name + ', October 2026',
+      cls: '', cells: COLS.map(c => cellOf(r, c[1])) }));
+    const sum = k => rows.reduce((s, r) => s + r[k], 0);
+    const calcTot = COLS.map(c => c[1] === 'skb' ? { v: '0.00', sub: F(sum('skb')) + ' worked out' } : c[1] === 'erTot' ? { v: F(sum('erEpf') + sum('erSocso') + sum('erEis')), sub: '' } : { v: F(sum(c[1])), sub: '' });
+    const showSeg = [['ee', "Employee's deductions"], ['er', "Employer's share"]].map(([k, l]) => ({ label: l, pressed: st.show === k ? 'true' : 'false',
+      pick: () => { if (this.state.show === k) return; this.setState({ show: k, swap: this.state.swap + 1, say: 'Showing ' + l.toLowerCase() }); },
+      style: 'height:32px;padding:0 12px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (st.show === k ? 'background:#FFFFFF;color:#1D419A;box-shadow:0 1px 2px rgba(13,27,46,.16)' : 'background:transparent;color:#46546A') }));
+    const showCalc = hasRun && at >= 1 && !aina;
+    const calcSub = at >= 3 ? 'Frozen ' + (st.pwa ? 'when sent to pay' : 'on approval') + '. Each payslip opens as its PDF; it is emailed saying which password opens it ("Open it with your IC number, without dashes", or the person\'s own password if HR set one), never the password itself.'
+      : 'Worked out ' + (st.stage === 'checked' ? 'Wed 21 Oct, 09:50' : 'Wed 21 Oct') + ' from the staff records and the rates in Setup. EPF, SOCSO and EIS are on basic pay; the allowance and overtime are outside their wages.';
+    const calcFoot = ee ? 'Lindung 24 Jam (SKBBK) is overridden to 0.00 for all 8: the app works out 307.70 at 0.75% (from the June 2026 contribution month). Who made the override, and when, is in the audit trail.'
+      : 'Employer EPF is 12% on wages over RM 5,000 and 13% up to it, from the Third Schedule. SOCSO first category and EIS on the band midpoint, wages above RM 6,000 counted as RM 6,000. 5 sen either way is the table\'s rounding.';
+
+    // comparison (Kah Seng at the 60-and-over rates from his birthday month)
+    const ks = rows.find(r => r.no === 'S006');
+    const CMP = [['EPF, employee', ks.epf, 0], ['SOCSO, employee', ks.socso, 0], ['EIS, employee', ks.eis, 0], ['PCB', ks.pcb, ks.pcb], ['Net pay', ks.net, ks.net + ks.epf + ks.socso + ks.eis],
+      ['EPF, employer (4% from 60)', ks.erEpf, 31200], ['SOCSO, employer (second category, 1.25%)', ks.erSocso, 7440], ['EIS, employer', ks.erEis, 0]];
+    const cmpRows = CMP.map(([what, was, now]) => { const d = now - was; return { what, was: F(was), now: F(now), diff: d === 0 ? '0.00' : (d > 0 ? '+' : '−') + F(Math.abs(d)), style: d === 0 ? 'color:#5F6C80' : 'font-weight:600;color:' + (d > 0 ? '#0A6B3D' : '#B0190F') }; });
+
+    // checks
+    const C = (kind, text, link, href) => ({ cls: 'cp ' + { ok: 'ok', fix: 'bad', check: 'warn', note: 'mute', refused: 'bad' }[kind], glyph: { ok: 'check', fix: 'alert', check: 'eye', note: 'help', refused: 'alert' }[kind],
+      tone: { ok: 'ok', fix: 'bad', check: 'warn', note: 'muted', refused: 'bad' }[kind], label: { ok: 'Passes', fix: 'Fix before approval', check: 'Check', note: 'Note', refused: 'Refused' }[kind], text, link: link || '', href: href || '' });
+    const jhNet = (runRows.find(r => r.no === 'S007') || { net: 0 }).net;
+    const checks = [
+      st.fail ? C('fix', aina ? "Totals don't agree: the bank list comes to less than net pay. Jia Hui (S007) has no bank account on her staff record, so her net pay can't go on the bank list."
+          : "Totals don't agree: the bank list comes to " + F(N - jhNet) + " and net pay to " + F(N) + ". Jia Hui (S007) has no bank account on her staff record, so her " + F(jhNet) + " can't go on the bank list.", 'Open her staff record', 'HrStaffRecord.dc.html#S007')
+        : C('ok', 'Totals agree: the 8 payslips, the monthly summary, the authority totals and the bank list all come to ' + (aina ? 'the same net pay.' : F(N) + ' net.')),
+      C('ok', 'No deductions over 50% of wages.'),
+      C('ok', 'No basic pay below the minimum wage (RM 1,700 a month from 2025).'),
+      st.recurring ? C('refused', 'Recurring salary rows: Salaries — staff pays these 8 people for October 2026, so this run can\'t be approved or sent to pay.', 'Payments › Recurring', 'Recurring.dc.html')
+        : C('ok', 'No recurring salary rows pay these 8 people for October 2026.'),
+      C('check', aina ? 'Lindung 24 Jam (SKBBK) is overridden for all 8 people. Who made the override, and when, is in the audit trail.'
+        : 'Lindung 24 Jam (SKBBK) is overridden to 0.00 for all 8 people; the app works out 307.70 at 0.75%. Who made the override, and when, is in the audit trail.'),
+      C('note', "Kah Seng turned 60 on 12 Oct: October is paid at the under-60 rates; the 60-and-over rates start with November 2026's pay. Check with KWSP (03-8922 6000) and PERKESO (1-300-22-8000): common payroll practice, not a published rule."),
+      C('note', 'Khadijah is on maternity leave from 5 Oct, paid in full (eligibility confirmed by Aisha Rahman on 1 Oct, from HR › Leave).'),
+      C('note', "PCB follows LHDN's computerised method for 2026. Compare it with LHDN's calculator for the first months run here.")
+    ];
+    const nFix = checks.filter(c => c.label === 'Fix before approval' || c.label === 'Refused').length;
+    const checkHead = nFix ? { cls: 'cp bad', glyph: 'alert', tone: 'bad', text: nFix + ' to fix · 1 to check · 3 notes' } : { cls: 'cp warn', glyph: 'eye', tone: 'warn', text: 'Nothing to fix · 1 to check · 3 notes' };
+    const showChecks = hasRun && at >= 1;
+
+    // totals per authority: who is paid and when for everyone; the amounts only with the Payroll figures right
+    // (EPF, SOCSO and EIS are on basic pay, so only net pay follows overtime, other pay and other deductions)
+    const totRows = [
+      { who: 'Staff · net pay', made: '8 people, by bank transfer', amt: H(N), due: 'Pay day Sat 24 Oct' },
+      { who: 'KWSP', made: aina ? 'Employee and employer shares' : 'Employee 5,346.00 + employer 5,894.00', amt: H(1124000), due: 'By Sun 15 Nov' },
+      { who: 'PERKESO', made: aina ? 'SOCSO, EIS and Lindung 24 Jam' : 'SOCSO 205.00 + 717.60 · EIS 81.90 + 81.90 · Lindung 24 Jam 0.00', amt: H(108640), due: 'By Sun 15 Nov' },
+      { who: 'LHDN · PCB', made: aina ? 'e-PCB Plus, with any zakat' : 'e-PCB Plus · zakat 0.00', amt: H(491500), due: 'By Sun 15 Nov' },
+      { who: 'HRD Corp · HRDF levy', made: 'Not registered (Setup › Companies)', amt: '—', due: '—' }
+    ];
+    const showTotals = hasRun && at >= 1;
+    const totFoot = aina ? 'Amounts are shown only to users with the Payroll figures right. Due dates from Setup › Statutory accounts.'
+      : 'Gross pay ' + F(G) + ' = basic ' + F(tsum('basic')) + ' + fixed allowances ' + F(tsum('allow')) + ' + overtime ' + F(tsum('ot')) + (OP ? ' + other pay ' + F(OP) : '') + '. Net pay ' + F(N)
+        + ' = gross less EPF ' + F(tsum('epf')) + ', SOCSO ' + F(tsum('socso')) + ', EIS ' + F(tsum('eis')) + ', Lindung 24 Jam 0.00, PCB ' + F(tsum('pcb')) + (OD ? ' and other deductions ' + F(OD) : '') + '. Due dates from Setup › Statutory accounts.';
+    const reqApprove = at < 2 ? 'Not printed yet. Print the approval form once the run is checked; the signed form is uploaded on Approvals.'
+      : at === 2 || st.pwa ? 'AF-2610-009 · keyed check Q7L-3DXA · printed Wed 21 Oct · waiting for the signed form.'
+      : st.late ? 'AF-2610-009 · Approved by Hassan Ismail, 9 Nov 2026 · uploaded Mon 9 Nov.'
+      : 'AF-2610-009 · Approved by Hassan Ismail, 22 Oct 2026 · uploaded Thu 22 Oct.';
+    const reqPay = at < 4 ? 'Not sent yet. Once sent, each person\'s net pay and each authority\'s total wait in To pay.'
+      : '11 payments sent on ' + (st.late ? 'Mon 9 Nov' : 'Thu 22 Oct') + (st.pwa ? ', before approval' : '') + ': net pay for 8 people, KWSP, PERKESO and PCB.';
+
+    // payments from the run, by the date the view is as on
+    const pa = st.payAt;
+    const T = (cls, glyph, tone, text) => ({ c: 'pl ' + cls, g: glyph, t: tone, x: text });
+    const later = pa === 'later';
+    const netSt = st.late ? T('bad', 'alert', 'bad', 'In To pay · late, due by Sat 7 Nov') : pa === 'oct22' ? T('info', 'toPay', 'brand', 'In To pay · pay day Sat 24 Oct') : T('ok', 'payment', 'ok', 'Paid Sat 24 Oct · BULK 241026');
+    const due = T('info', 'toPay', 'brand', 'In To pay · due Sun 15 Nov');
+    const kw = later ? T('warn', 'payment', 'warn', 'Paid Fri 20 Nov, after the due day') : pa === 'nov18' ? T('bad', 'alert', 'bad', 'Overdue since 15 Nov · in To pay') : due;
+    const pk = pa === 'nov18' || later ? T('warn', 'payment', 'warn', 'Paid Tue 17 Nov, after the due day') : due;
+    const pc = pa === 'nov18' || later ? T('ok', 'payment', 'ok', 'Paid Sat 14 Nov') : due;
+    const apNet = st.pwa ? (pa === 'oct22' ? T('warn', 'clock', 'warn', 'Waiting') : T('bad', 'alert', 'bad', 'Paid without approval on file')) : st.late ? T('ok', 'check', 'ok', 'Approved by Hassan Ismail, 9 Nov 2026') : T('ok', 'check', 'ok', 'Approved by Hassan Ismail, 22 Oct 2026');
+    const none = T('mute', 'approval', 'muted', 'Not needed');
+    const PAY = (glyph, what, made, amt, s, ap, paid, label) => ({ glyph, what, made, amt: H(amt), status: s.x, stCls: s.c, stGlyph: s.g, stTone: s.t, approval: ap.x, apCls: ap.c, apGlyph: ap.g, apTone: ap.t,
+      canOpen: !aina, href: paid ? 'PaymentsRegister.dc.html' : 'ToPay.dc.html', open: paid ? 'Open payment' : 'Open in To pay', openLabel: (paid ? 'Open the payment ' : 'Open in To pay: ') + label });
+    const netPaid = pa !== 'oct22' && !st.late;
+    // without the Payroll figures right: what each payment is and its state, no amounts and no Accounting references
+    const paidSince = pa === 'nov18' || later;
+    const pays = [
+      PAY('staff', 'Net pay for October · 8 people', netPaid && !aina ? 'One payment per person, bank reference BULK 241026 · SQL PV2610-014' : 'One payment per person, paid together', N, netSt, apNet, netPaid, 'net pay for October'),
+      PAY('statutory', 'KWSP for October', aina ? 'Employee and employer shares' : 'Employee 5,346.00 + employer 5,894.00', 1124000, kw, none, later, 'KWSP for October'),
+      PAY('statutory', 'PERKESO for October', aina ? 'SOCSO, EIS and Lindung 24 Jam' : paidSince ? 'SOCSO 922.60 · EIS 163.80 · FPX 1711093 · SQL PV2611-015' : 'SOCSO 922.60 · EIS 163.80 · Lindung 24 Jam 0.00', 108640, pk, none, paidSince, 'PERKESO for October'),
+      PAY('statutory', 'PCB for October', paidSince && !aina ? 'LHDN · SQL PV2611-012' : 'LHDN, by e-PCB Plus', 491500, pc, none, paidSince, 'PCB for October')
+    ];
+    const showPays = hasRun && at >= 4;
+    const paysSub = st.late ? 'As sent, Mon 9 Nov' : { oct22: 'As sent, Thu 22 Oct', nov2: 'Net pay paid Sat 24 Oct; the authorities are due Sun 15 Nov', nov18: 'KWSP for October is overdue: it is in To pay and on Statutory payables', later: 'All 11 paid. KWSP for October went on Fri 20 Nov, after the due day' }[pa] || '';
+
+    // record: the journal summary for SQL Account, then JV2610-007 once Fetch finds it
+    const found = st.record === 'recorded';
+    const JV = [['900-100', 'Salaries and wages', G, 0], ['420-000', 'Accruals (net salaries payable)', 0, N], ['430-100', 'KWSP payable', 0, tsum('epf')], ['430-200', 'PERKESO payable', 0, tsum('socso')], ['430-210', 'EIS (SIP) payable', 0, tsum('eis')], ['430-300', 'PCB payable', 0, tsum('pcb')]]
+      .concat(OD ? [['', 'Other deductions, to the account set on the pay item', 0, OD]] : []);
+    const jvRows = JV.map(j => ({ code: j[0], name: j[1], dr: j[2] ? H(j[2]) : '', cr: j[3] ? H(j[3]) : '', found: found ? 'JV2610-007' : '', notYet: found ? '' : 'Not found yet' }));
+    const rec = found ? { cls: 'pl info', glyph: 'books', tone: 'brand', pill: 'Recorded · JV2610-007',
+      text: 'Fetch on Wed 18 Nov, 10:42 found JV2610-007 “Payroll journal October”, dated 31 Oct 2026, with the same accounts and totals, so the run reads Recorded. This app posts nothing for a company kept in SQL Account.' }
+      : { cls: 'pl warn', glyph: 'clock', tone: 'warn', pill: 'Waiting for SQL record',
+      text: 'AISB is kept in SQL Account, so this app posts nothing. Enter this journal in SQL Account, dated 31 Oct 2026. The run reads “Waiting for SQL record” until Fetch on the SQL import page finds a journal with the same accounts and totals.' };
+    const showRecord = hasRun && st.record !== 'none';
+    const jvFoot = "Laid out as AISB's books keep it: the employee's deductions are in the journal, the employer's shares " + (aina ? '' : '(EPF 5,894.00, SOCSO 717.60, EIS 81.90) ')
+      + "are booked when each authority is paid. Accounts from Setup › Statutory accounts; Net salaries payable is AISB's 420-000 Accruals. A company Kept here posts this itself, as one journal voucher, when the run is approved."
+      + (aina ? ' Amounts are shown only to users with the Payroll figures right.' : '');
+
+    // discard dialog
+    const d = st.dlg;
+    const changed = this.people().filter(p => ['ot', 'other', 'ded'].some(k => (st.inputs[p.no][k] || '') !== ((st.saved && st.saved[p.no][k]) || '')));
+    const dlg = { show: !!d, dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in',
+      desc: changed.length ? changed.map(p => p.pref + "'s " + ['ot', 'other', 'ded'].filter(k => (st.inputs[p.no][k] || '') !== ((st.saved && st.saved[p.no][k]) || '')).map(k => FIELD[k].toLowerCase() + ' ' + (st.inputs[p.no][k] || 'cleared')).join(', ')).join('; ') + " isn't saved. Discarding loses it." : 'Your changes to the inputs aren\'t saved. Discarding loses them.',
+      cancel: () => this.closeDlg(),
+      discard: () => { const back = { inputs: this.state.inputs, dirty: true }; this._upFocus = ['pr-in-h']; this.closeDlg({ inputs: this.state.saved, dirty: false, tried: false, inErr: false, say: 'Changes discarded', ...((this.state.dlg && this.state.dlg.then) || {}), ...this.toastPart('Changes discarded: the draft is as it was at 09:15.', back, 'undo', 'dbrand') }); },
+      onAnim: ev => { if (this.state.closing && ev && ev.target === ev.currentTarget) this.finishClose(); },
+      key: ev => {
+        if (!ev) return;
+        if (ev.key === 'Escape') { if (ev.preventDefault) ev.preventDefault(); if (ev.stopPropagation) ev.stopPropagation(); this.closeDlg(); return; }
+        if (ev.key !== 'Tab' || !ev.currentTarget || !ev.currentTarget.querySelectorAll) return;
+        const fs = [...ev.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], ae = document.activeElement, inside = ev.currentTarget.contains(ae);
+        if (ev.shiftKey && (!inside || ae === first || ae === ev.currentTarget || (ae && ae.id === 'pr-dlg-title'))) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && (!inside || ae === last)) { ev.preventDefault(); first.focus(); }
+      } };
+
+    const t = st.toast, busy = !!st.busy;
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: aina ? 'hrOnly' : 'full', tbUser: aina ? 'aina' : 'aisha',
+      off, say: st.say,
+      onTopCo: code => this.pickCo(code),
+      onMonth: o => this.pickMonth(o),
+      intro: isAI ? "Agrinexus International uses only the Workbook check: “Runs payroll in this app” is off for it."
+        : "The month's pay, worked out from the staff records: type only what changes, check it, get it approved, send it to pay, then file and record it. AISB runs payroll in this app (Setup › Companies). October 2026 is drawn as the example run: AISB switches over on Tue 1 Dec 2026, so its first run paid from here is December 2026.",
+      tabsOn: true, tabs, tabKey, notUsed: isAI, panelBy: isAI ? 'pr-tab-0' : 'pr-tab-1',
+      showLoading, showError, showEmpty: !!emptyKind, empty, hasRun,
+      retry: () => { this._upFocus = ['pr-h2']; this.setState({ load: 'ok', say: 'October run loaded' }); },
+      pills, asOf: st.asOf, whatIf: !!st.whatIf || !!st.cmp, actions, actWhy,
+      steps: sp.run, recSteps: sp.rec, banners,
+      showInputs, inRows, inRefused, many, dirty: !!st.dirty && !busy,
+      openPaste: () => this.openPaste(),
+      saveDraft: () => { const prevSaved = this.state.saved; this.setState({ saved: this.state.inputs, dirty: false, say: 'Draft saved', ...this.toastPart('Draft saved, Wed 21 Oct 09:31.', { saved: prevSaved, dirty: true }, 'check', 'dok') }); },
+      askDiscard: ev => { this._opener = (ev && ev.currentTarget) || document.activeElement; this.setState({ dlg: { kind: 'discard' }, closing: false }); },
+      submitCalc: ev => { if (ev && ev.preventDefault) ev.preventDefault(); this.submitCalc(); },
+      busy, idle: !busy, busyAttr: busy ? 'true' : 'false', calcLabel: busy ? 'Calculating…' : 'Calculate and check',
+      showPaste: showInputs && !!st.paste, pasteText: st.paste ? st.paste.text : '', pasteRows, pasteSum,
+      onPaste: ev => { const v = ev && ev.target ? ev.target.value : ''; this.setState({ paste: { text: v } }); },
+      closePaste: () => { this._upFocus = ['pr-paste-b']; this.setState({ paste: null, say: 'Paste closed' }); },
+      pasteDis: pasteBad || !pasteOk ? 'true' : 'false', pasteUse: pasteOk && !pasteBad ? 'Use ' + pasteOk + ' row' + (pasteOk > 1 ? 's' : '') : 'Use these rows',
+      usePaste: () => {
+        if (pasteBad || !pasteOk) return this.setState({ say: pasteSum });
+        const ins = JSON.parse(JSON.stringify(this.state.inputs)), keys = [];
+        pasteRows.forEach(r => { ins[r.no][r.k] = r.raw; keys.push(r.no); });
+        const back = { inputs: this.state.inputs, dirty: this.state.dirty };
+        this._upFocus = ['pr-in-' + keys[0] + '-' + pasteRows[0].k];
+        this.setState({ inputs: ins, dirty: true, paste: null, flash: { keys, n: this.state.flash.n + 1 }, say: 'Took ' + pasteOk + ' pasted row' + (pasteOk > 1 ? 's' : ''),
+          ...this.toastPart('Took ' + pasteOk + ' row' + (pasteOk > 1 ? 's' : '') + ' from the paste: ' + pasteRows.map(r => r.who.replace(/^.*\((.*)\)$/, '$1') + "'s " + r.item.toLowerCase() + ' ' + r.amount).join(', ') + '. Not saved yet.', back, 'clipboard', 'dok') });
+      },
+      showCalc, calcHidden: hasRun && at >= 1 && aina, calcSub, calcFoot, calcCols, calcRows, calcTot, showSeg,
+      calcSwap: st.swap % 2 ? 'swapA' : st.swap ? 'swapB' : '',
+      calcCaption: 'October 2026 payslips, ' + (ee ? "with the employee's deductions" : "with the employer's share") + ', and the totals',
+      doExcel: () => this.setState({ say: 'Excel downloaded', ...this.toastPart('Downloaded AISB 2026-10 payroll run.xlsx: payslips, summary and totals, IC numbers masked. Recorded in the audit trail.', null, 'download', 'dok') }),
+      showCmp: hasRun && !!st.cmp && !aina, cmpRows,
+      closeCmp: () => { this._upFocus = ['pr-h2']; this.setState({ cmp: false, say: 'Comparison closed. Nothing in the run changed.' }); },
+      showChecks, checks, checkHead,
+      showTotals, totRows, totFoot, reqApprove, reqPay, linksOn: !aina, linksOff: aina,
+      showPays, pays, paysSub,
+      showRecord, rec, jvRows, jvTot: H(G), jvFoot,
+      showFoot: hasRun,
+      dlg,
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastGlyph: t ? t.glyph || 'check' : 'check', toastTone: t ? t.tone || 'dok' : 'dok',
+      toastCls: t ? (t.out ? 'tOut' : t.n % 2 ? 'tA' : 'tB') : '',
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); },
+      toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); clearTimeout(this._to); this.setState({ toast: null }); },
+      undo: () => {
+        const u = this.state.toast && this.state.toast.undo;
+        if (!u) return;
+        clearTimeout(this._tt); clearTimeout(this._to);
+        this._upFocus = ['pr-h2'];
+        this.setState({ ...u, toast: null, refused: null, say: 'Undone' });
+      }
+    };
+  }
+  openPaste() { this._upFocus = ['pr-paste-in']; this.setState({ paste: { text: (this.state.paste && this.state.paste.text) || '' }, say: 'Paste from Excel opened' }); }
+  closeDlg(patch) {
+    if (!this.state.dlg || this.state.closing) { if (patch) this.setState(patch); return; }
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.setState({ dlg: null, closing: false, ...(patch || {}) });
+    this.setState({ closing: true, ...(patch || {}) });
+    clearTimeout(this._t); this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false }); }
+}
+</script>
+</body>
+</html>

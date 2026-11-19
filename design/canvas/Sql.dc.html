@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SQL import · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+button.hr:focus-visible,[role="tab"]:focus-visible{outline-offset:-2px}
+.tb:focus-visible{outline-color:#8DB0FA}
+::placeholder{color:#5F6C80;opacity:1}
+@media (max-width:640px){.ib{position:static !important;box-shadow:none !important}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes menuIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.mn{transform-origin:top right;animation:menuIn .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.spd{border-color:#C9D2DF;border-top-color:#2450B8}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="sql" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="SQL import" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 420px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">SQL import</h1>
+          <sc-if value="{{isSql}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; color: #46546A; max-width: 760px">Fetch (or paste) each SQL listing for the month: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to the payments in HR Payments; customer invoices are filed against their checklist item of their own month and linked to the money in they are for, and a payroll journal against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine. The e-Invoices this fetch reads, and the printed invoices, have their own page: e-Invoices.</p></sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{notSql}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sql-notsql-h" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="database" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="sql-notsql-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">SQL import isn't used for AI</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">Agrinexus International is kept here, so there is nothing to import from SQL Account. Switch to a company that is Kept in SQL Account to import its SQL listings.</p>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px"><button type="button" class="hs" onClick="{{goAisb}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Go to AISB</button><a href="Main.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none">Open the Overview</a></div>
+        </section>
+        <p style="margin: -12px 0 0; color: #5F6C80; font-size: 12px; max-width: 820px"><b>Design note</b> (not app text): shown only for an old address or bookmark. Switching to AI in the top bar from SQL import lands on AI's Overview with the toast "SQL import isn't used for AI (Kept here). Showing AI's Overview." (States board).</p>
+      </sc-if>
+
+      <sc-if value="{{isSql}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 24px">
+
+      <ol style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr)); gap: 12px">
+        <li style="display: flex; gap: 12px; padding: 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED"><span style="width: 28px; height: 28px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">1</span><div><b>Sign in to SQL Account</b><div style="color: #5F6C80; font-size: 13px">You sign in yourself. HR Payments never signs in for you.</div></div></li>
+        <li style="display: flex; gap: 12px; padding: 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED"><span style="width: 28px; height: 28px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none">2</span><div><b>Export each listing</b><div style="color: #5F6C80; font-size: 13px">Open the listing, click the arrow beside the print button and choose Export to Microsoft Excel Workbook. Save it in SQL Drive, in the Download folder.</div></div></li>
+        <li style="{{step3}}"><span style="{{step3Tile}}">3</span><div><b>{{step3Title}}</b><div style="color: #5F6C80; font-size: 13px">{{step3Text}}</div></div></li>
+      </ol>
+
+      <section aria-labelledby="sql-fetch-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center">
+          <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="folder" tone="brand" size="28" hint-size="28px,28px"></dc-import></span>
+          <div style="flex: 1 1 320px; min-width: 0"><h2 id="sql-fetch-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 19px; font-weight: 600">Fetch exported listings (one click)</h2><span style="color: #5F6C80; font-size: 13px">Reads every SQL listing saved in the folder, whatever the files are called, and shows what is new and what is already imported.</span></div>
+          <div style="flex: 0 1 236px; min-width: 0; display: flex; flex-direction: column; gap: 6px; text-align: right">
+            <button type="button" class="{{fetchCls}}" disabled="{{fetchOff}}" aria-busy="{{busyFetchAttr}}" onClick="{{fetch}}" style="{{fetchStyle}}"><sc-if value="{{busyFetch}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if><sc-if value="{{idleFetch}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="download" tone="{{fetchTone}}" size="18" hint-size="18px,18px"></dc-import></sc-if>{{fetchLabel}}</button>
+            <span style="color: #5F6C80; font-size: 12px">{{fetchHint}}</span>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #F7F8FA">
+          <dc-import name="Icon" glyph="folder" tone="muted" size="18" hint-size="18px,18px"></dc-import>
+          <span style="font-size: 13px; color: #46546A">Reads</span>
+          <span style="flex: 0 1 auto; min-width: 0; font: 500 13px ui-monospace, Consolas, monospace; color: #0F1A2B; overflow-wrap: anywhere">{{folder}}</span>
+          <sc-if value="{{isDefault}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600">Your Downloads folder</span></sc-if>
+          <sc-if value="{{hasFolderMsg}}" hint-placeholder-val="{{ false }}"><span class="rv" style="display: inline-flex; align-items: center; gap: 5px; color: #0A6B3D; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>{{folderMsg}}</span></sc-if>
+          <span style="flex: 1"></span>
+          <button type="button" class="hs" id="sql-folder-btn" aria-expanded="{{folderEdit}}" onClick="{{openFolder}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="edit" tone="muted" size="16" hint-size="16px,16px"></dc-import>Use another folder</button>
+        </div>
+
+        <sc-if value="{{folderEdit}}" hint-placeholder-val="{{ false }}">
+          <div id="sql-folder-edit" class="rv" style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end">
+              <label style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Folder the exports are saved in (leave empty for your Downloads folder)</span><input type="text" id="sql-folder-input" value="{{folderVal}}" onChange="{{onFolder}}" onKeyDown="{{folderKey}}" placeholder="{{folder}}" autocomplete="off" spellcheck="false" aria-describedby="sql-folder-help" aria-invalid="{{folderBad}}" style="{{folderInput}}"></label>
+              <button type="button" class="hs" onClick="{{openFolder}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+              <button type="button" class="hb" onClick="{{saveFolder}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Save folder</button>
+            </div>
+            <sc-if value="{{folderBad}}" hint-placeholder-val="{{ false }}"><span role="alert" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{folderErr}}</span></sc-if>
+            <span id="sql-folder-help" style="color: #5F6C80; font-size: 12px">The full path, starting with the drive letter. Leave it empty to use your Downloads folder. Nothing in the folder is ever changed.</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FEF3F1; border: 1px solid #F4C2BC">
+            <dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="color: #8E1A10">The fetch couldn't read the folder</b><div style="color: #46546A; font-size: 13px; overflow-wrap: anywhere">The folder D:\SQL exports can't be found. Choose the folder your SQL exports are saved in. Nothing was imported.</div></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="hs" onClick="{{fixFolder}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Use another folder</button><a href="#sql-paste" style="display: inline-flex; align-items: center; height: 34px; padding: 0 6px; font-weight: 600; font-size: 13px; text-decoration: none">Paste a listing instead</a></div>
+          </div>
+        </sc-if>
+
+        <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">In SQL: open the listing, then the arrow beside the print button, <b>Export to Microsoft Excel Workbook</b>, and save it in <b>SQL Drive on SQL Connect › Download</b>. It reads the <b>Cash Book</b>, <b>Payment Voucher</b>, <b>Official Receipt</b>, <b>Journal Voucher</b>, <b>Customer Invoice</b>, <b>Sales Invoice</b>, <b>Customer Payment</b>, <b>Supplier Invoice</b> and <b>Supplier Payment</b> listings (not their GST layouts). It also reads SQL’s <b>GL Journal of Transaction</b> (the account lines of every document), <b>GL Ledger</b> (Local - Ledger - Detail, Level 1) and <b>Trial Balance</b> (This Month vs This Year with Opening): export them for the same dates as the listings, and the lines are kept and checked against SQL’s own figures. It also reads a copy of SQL’s <b>MyInvois Transaction</b> screen: click its grid, press <b>Ctrl+A</b> then <b>Ctrl+C</b>, paste it into a new Excel workbook with its headings and save it in the same folder under any name.</p>
+      </section>
+
+      <section id="sql-paste" aria-label="Bring in one listing yourself" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 4px 24px; align-items: center; padding: 0 22px; border-bottom: 1px solid #EEF1F5">
+          <h2 style="margin: 0; font-size: 13px; font-weight: 600; color: #5F6C80; padding: 8px 0">Or bring in one listing yourself</h2>
+          <div role="tablist" aria-label="How to bring in one listing" style="display: flex; flex-wrap: wrap; gap: 0 24px">
+            <button type="button" role="tab" id="sql-tab-paste" aria-selected="{{pasteSel}}" aria-controls="sql-panel" tabindex="{{pasteTab}}" onKeyDown="{{tabKey}}" onClick="{{usePaste}}" style="{{tabPaste}}"><dc-import name="Icon" glyph="clipboard" tone="{{tonePaste}}" size="18" hint-size="18px,18px"></dc-import>Copy and paste</button>
+            <button type="button" role="tab" id="sql-tab-file" aria-selected="{{fileSel}}" aria-controls="sql-panel" tabindex="{{fileTab}}" onKeyDown="{{tabKey}}" onClick="{{useFile}}" style="{{tabFile}}"><dc-import name="Icon" glyph="document" tone="{{toneFile}}" size="18" hint-size="18px,18px"></dc-import>Choose an exported file</button>
+          </div>
+        </div>
+        <div id="sql-panel" role="tabpanel" aria-labelledby="{{panelBy}}" style="padding: 18px 22px 20px; display: flex; flex-direction: column; gap: 12px">
+          <sc-if value="{{paste}}" hint-placeholder-val="{{ true }}">
+            <label class="ex" style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px; color: #46546A">In SQL, open the listing, click any row, press <b>Ctrl+A</b> then <b>Ctrl+C</b>. Click in the box below and press <b>Ctrl+V</b>. </span><textarea rows="4" value="{{pasteVal}}" onChange="{{onPaste}}" placeholder="Paste the SQL rows here" aria-invalid="{{pasteBad}}" style="padding: 12px; border:1px solid #5F6C80; border-radius: 12px; font: 400 13px ui-monospace, Consolas, monospace; color: #0F1A2B; background: #FAFBFC; resize: vertical"></textarea></label>
+            <sc-if value="{{pasteBad}}" hint-placeholder-val="{{ false }}"><span role="alert" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{pasteErr}}</span></sc-if>
+            <div class="ex" style="display: flex; justify-content: flex-end"><button type="button" class="hs" disabled="{{busyOther}}" aria-busy="{{busyOtherAttr}}" onClick="{{readPaste}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 168px; padding: 0 16px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{busyOther}}" hint-placeholder-val="{{ false }}"><span class="sp spd" aria-hidden="true"></span></sc-if>{{pasteLabel}}</button></div>
+          </sc-if>
+          <sc-if value="{{file}}" hint-placeholder-val="{{ false }}">
+            <label id="sql-drop" class="hg fx ex" onDragOver="{{dragOver}}" onDragLeave="{{dragLeave}}" onDrop="{{onDrop}}" style="{{dropStyle}}"><dc-import name="Icon" glyph="upload" tone="brand" size="28" hint-size="28px,28px"></dc-import><sc-if value="{{dragIdle}}" hint-placeholder-val="{{ true }}"><span><b style="color: #2450B8">Choose an SQL export</b> or drop it here</span></sc-if><sc-if value="{{dragOn}}" hint-placeholder-val="{{ false }}"><span><b style="color: #2450B8">Drop the file to choose it</b></span></sc-if><span id="sql-file-hint" style="color: #46546A; font-size: 12px; overflow-wrap: anywhere">{{fileHint}}</span><input type="file" accept=".xlsx,.xls,.csv,.ods,.txt" aria-describedby="sql-file-hint" aria-invalid="{{fileBad}}" onChange="{{onFile}}" style="position: absolute; width: 1px; height: 1px; opacity: 0"></label>
+            <sc-if value="{{fileBad}}" hint-placeholder-val="{{ false }}"><div role="alert" class="ex" style="display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><span style="display: inline-flex; gap: 6px; align-items: center"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{fileErr}}</span><sc-if value="{{fileSum}}" hint-placeholder-val="{{ false }}"><button type="button" class="hg" onClick="{{usePaste}}" style="display: inline-flex; align-items: center; height: 34px; padding: 0 10px; border-radius: 9px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer">Paste this listing instead</button></sc-if></div></sc-if>
+            <div class="ex" style="display: flex; justify-content: flex-end"><button type="button" class="hs" disabled="{{busyOther}}" aria-busy="{{busyOtherAttr}}" onClick="{{readFile}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 168px; padding: 0 16px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{busyOther}}" hint-placeholder-val="{{ false }}"><span class="sp spd" aria-hidden="true"></span></sc-if>{{fileLabel}}</button></div>
+          </sc-if>
+        </div>
+      </section>
+
+      <sc-if value="{{hasResult}}" hint-placeholder-val="{{ true }}">
+      <div id="sql-result" tabindex="-1" style="display: flex; flex-direction: column; gap: 24px; scroll-margin-top: 16px; outline: 0">
+
+        <sc-if value="{{isReading}}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Reading" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; align-items: center; gap: 10px"><span class="sp spd" aria-hidden="true"></span><b>{{readingText}}</b></div>
+            <span class="sk" style="height: 16px; width: 46%"></span>
+            <span class="sk" style="height: 44px; width: 100%"></span>
+            <span class="sk" style="height: 44px; width: 100%"></span>
+            <span class="sk" style="height: 44px; width: 72%"></span>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{showReview}}" hint-placeholder-val="{{ true }}">
+          <section class="rv" aria-labelledby="sql-review-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 18px 22px; border-bottom: 1px solid #EEF1F5">
+              <span style="width: 40px; height: 40px; border-radius: 12px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="search" tone="ok" size="22" hint-size="22px,22px"></dc-import></span>
+              <div style="flex: 1 1 300px; min-width: 0"><h2 id="sql-review-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What the fetch found</h2><span style="color: #46546A; font-size: 13px; overflow-wrap: anywhere"><b>{{reviewLead}}</b>{{reviewRest}}<b>{{reviewReports}}</b><b>{{reviewMi}}</b></span></div>
+              <sc-if value="{{hasDocs}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 13px; font-weight: 600">{{nDocs}} documents</span>
+                <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 99px; background: #EAF0FD; color: #2450B8; font-size: 13px; font-weight: 600">{{nNew}} new</span>
+                <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 11px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 13px; font-weight: 600">{{nOld}} already imported</span>
+              </div></sc-if>
+            </div>
+            <sc-for list="{{readFiles}}" as="f" hint-placeholder-count="5">
+              <div class="{{f.cls}}" style="{{f.row}}">
+                <dc-import name="Icon" glyph="{{f.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+                <div style="flex: 1 1 260px; min-width: 0"><b style="font-size: 13px; overflow-wrap: anywhere">{{f.name}}</b><div style="color: #5F6C80; font-size: 12px">{{f.meta}}</div></div>
+                <span style="color: #46546A; font-size: 13px; font-variant-numeric: tabular-nums">{{f.counts}}</span>
+                <span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Read</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{hasUnused}}" hint-placeholder-val="{{ true }}"><div style="padding: 16px 22px 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; border-top: 1px solid #EEF1F5"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><h3 style="margin: 0; font-size: 14px; font-weight: 600">{{nUnusedText}}</h3><span style="color: #5F6C80; font-size: 13px">Each says why. Nothing was taken from them.</span></div></sc-if>
+            <sc-for list="{{unused}}" as="f" hint-placeholder-count="5">
+              <div style="{{f.row}}">
+                <dc-import name="Icon" glyph="{{f.glyph}}" tone="{{f.tone}}" size="20" hint-size="20px,20px"></dc-import>
+                <div style="flex: 1 1 320px; min-width: 0"><div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 13px; overflow-wrap: anywhere">{{f.name}}</b><span style="{{f.chip}}"><dc-import name="Icon" glyph="{{f.chipGlyph}}" tone="{{f.tone}}" size="14" hint-size="14px,14px"></dc-import>{{f.word}}</span></div><div id="{{f.reasonId}}" style="color: #46546A; font-size: 13px; margin-top: 2px">{{f.reason}}</div></div>
+                <sc-if value="{{f.isFetch}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{f.go}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; flex: none">Fetch again</button></sc-if>
+                <sc-if value="{{f.isPaste}}" hint-placeholder-val="{{ false }}"><a href="#sql-paste" style="display: inline-flex; align-items: center; height: 34px; padding: 0 6px; font-weight: 600; font-size: 13px; text-decoration: none; flex: none">Paste this listing instead</a></sc-if>
+                <sc-if value="{{f.isTake}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" aria-describedby="{{f.reasonId}}" onClick="{{f.take}}" style="{{f.takeStyle}}">{{f.takeLabel}}</button></sc-if><sc-if value="{{f.isSetup}}" hint-placeholder-val="{{ false }}"><a href="SetupCompanies.dc.html" style="display: inline-flex; align-items: center; height: 34px; padding: 0 6px; font-weight: 600; font-size: 13px; text-decoration: none; flex: none">Open Setup › Companies</a></sc-if>
+              </div>
+            </sc-for>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 22px; background: #FAFBFC; border-top: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">
+              <span style="flex: 1 1 320px">{{leftAlone}}</span>
+              <button type="button" class="hg" aria-expanded="{{legendOn}}" onClick="{{toggleLegend}}" style="display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 8px; border-radius: 9px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer">What the labels mean<span class="{{legendChevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></span></button>
+              <button type="button" class="hg" aria-expanded="{{left}}" onClick="{{toggleLeft}}" style="display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 8px; border-radius: 9px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer">{{leftLabel}}<span class="{{leftChevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></span></button>
+            </div>
+            <sc-if value="{{legendOn}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; background: #FAFBFC; padding: 0 22px 12px">
+                <sc-for list="{{legend}}" as="l" hint-placeholder-count="6">
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 8px 0; border-top: 1px solid #EEF1F5; font-size: 13px"><span style="flex: 0 0 190px"><span style="{{l.chip}}"><dc-import name="Icon" glyph="{{l.chipGlyph}}" tone="{{l.tone}}" size="14" hint-size="14px,14px"></dc-import>{{l.word}}</span></span><span style="flex: 1 1 280px; color: #46546A">{{l.means}}</span></div>
+                </sc-for>
+              </div>
+            </sc-if>
+            <sc-if value="{{left}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; background: #FAFBFC; padding: 0 22px 12px">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 0; font-size: 13px"><span style="flex: 1 1 260px; overflow-wrap: anywhere">PV Listing Oct.xlsx</span><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600">Imported before</span></div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #EEF1F5; font-size: 13px"><span style="flex: 1 1 260px; overflow-wrap: anywhere">export (2).xlsx</span><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600">Imported before</span></div>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #EEF1F5; font-size: 13px"><span style="flex: 1 1 260px; overflow-wrap: anywhere">PV Listing Oct-Nov (1).xlsx <span style="color: #5F6C80">· a copy of PV Listing Oct-Nov.xlsx</span></span><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600">A copy</span></div>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isFound}}" hint-placeholder-val="{{ true }}">
+          <section class="rv" aria-labelledby="sql-preview-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; animation-delay: .06s">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 18px 22px 6px">
+              <h2 id="sql-preview-h" style="flex: 1 1 320px; margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600; overflow-wrap: anywhere">{{pvTitle}}</h2>
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 99px; background: #EAF0FD; color: #2450B8; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="eye" tone="brand" size="14" hint-size="14px,14px"></dc-import>Preview: nothing is saved yet</span>
+              <span style="color: #5F6C80; font-size: 13px">{{pvCount}}</span>
+            </div>
+            <sc-if value="{{hasSigned}}" hint-placeholder-val="{{ false }}">
+              <div role="note" style="margin: 0 22px 14px; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FFFBF2; border: 1px solid #F3D9A6"><dc-import name="Icon" glyph="lock" tone="warn" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px; color: #5C3100">{{signedText}}</span></div>
+            </sc-if>
+            <sc-if value="{{hasLedger}}" hint-placeholder-val="{{ true }}">
+              <div role="group" aria-labelledby="sql-lines-h" style="margin: 0 22px 14px; border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                <div style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 12px 14px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="sheet" tone="brand" size="18" hint-size="18px,18px"></dc-import><h3 id="sql-lines-h" style="margin: 0; font-size: 14px; font-weight: 600">Account lines</h3><span style="flex: 1 1 300px; min-width: 0; color: #46546A; font-size: 13px">{{lb.docs}}, {{lb.lines}}: <b>{{lb.fresh}} new</b>, {{lb.changed}} changed, {{lb.same}} unchanged, {{lb.gone}} no longer in SQL.</span></div>
+                <sc-for list="{{lb.files}}" as="f" hint-placeholder-count="3">
+                  <div style="display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; padding: 9px 14px; border-top: 1px solid #F1F3F7; font-size: 13px"><span style="flex: 1 1 300px; min-width: 0; overflow-wrap: anywhere">{{f.name}}<span style="color: #5F6C80"> · {{f.title}}, {{f.period}}</span></span><span style="color: #5F6C80; font-variant-numeric: tabular-nums">{{f.note}}</span></div>
+                </sc-for>
+                <div style="padding: 10px 14px; border-top: 1px solid #F1F3F7; font-size: 13px; color: #46546A"><b style="color: #0F1A2B">No longer in SQL</b> (deleted or renumbered there; kept here, marked): {{lb.goneList}}.</div>
+                <div style="margin: 0 14px 12px; padding: 10px 12px; border-radius: 10px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 13px; color: #5C3100"><div style="display: flex; gap: 6px; align-items: center"><dc-import name="Icon" glyph="bank" tone="warn" size="16" hint-size="16px,16px"></dc-import><span><b>{{lb.countHead}}</b> (lines on 310-000):</span></div><sc-for list="{{lb.counting}}" as="j" hint-placeholder-count="1"><div style="padding: 4px 0 0 22px; font-variant-numeric: tabular-nums">{{j.text}}</div></sc-for></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{hasPvNote}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; padding: 0 22px 14px; color: #46546A; font-size: 13px">{{pvNote}}</p></sc-if>
+            <sc-if value="{{showCols}}" hint-placeholder-val="{{ false }}">
+              <div style="margin: 0 22px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+                <button type="button" class="hr" aria-expanded="{{cols}}" onClick="{{toggleCols}}" style="width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border: 0; border-radius: 12px; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; text-align: left; cursor: pointer"><span class="{{colsChevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>Columns read<span style="font-weight: 400; color: #5F6C80">Doc No, Date, SQL code, Description and Amount were found. Changing a column reads the rows again; payments you picked stay.</span></button>
+                <sc-if value="{{cols}}" hint-placeholder-val="{{ false }}">
+                  <div class="ex" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; padding: 4px 14px 14px">
+                    <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">Doc No</span><select style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option>Column 1</option><option>Column 2</option><option>Column 3</option><option>Column 4</option><option>Column 5</option><option>(none)</option></select></label>
+                    <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">Date</span><select style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option>Column 2</option><option>Column 1</option><option>Column 3</option><option>Column 4</option><option>Column 5</option><option>(none)</option></select></label>
+                    <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">SQL code</span><select style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option>Column 3</option><option>Column 1</option><option>Column 2</option><option>Column 4</option><option>Column 5</option><option>(none)</option></select></label>
+                    <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">Description</span><select style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option>Column 4</option><option>Column 1</option><option>Column 2</option><option>Column 3</option><option>Column 5</option><option>(none)</option></select></label>
+                    <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">Amount</span><select style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option>Column 5</option><option>Column 1</option><option>Column 2</option><option>Column 3</option><option>Column 4</option><option>(none)</option></select></label>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{hasTable}}" hint-placeholder-val="{{ true }}">
+            <div style="overflow-x: auto; border-top: 1px solid #EEF1F5">
+              <table style="width: 100%; min-width: 860px; border-collapse: collapse">
+                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">Doc no.</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Date</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Amount (RM)</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">Records this payment</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+                    <tr class="hr" style="{{r.tr}}">
+                      <td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{r.no}}</td>
+                      <td style="padding: 12px; color: #46546A; white-space: nowrap">{{r.date}}</td>
+                      <td style="padding: 12px">{{r.desc}}<div style="color: #5F6C80; font-size: 12px">{{r.sub}}</div><sc-if value="{{r.moneyIn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; margin-top: 4px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 11px; font-weight: 600">Money in</span></sc-if></td>
+                      <td style="{{r.amtStyle}}">{{r.amtText}}</td>
+                      <td style="padding: 12px 22px 12px 12px">
+                        <sc-if value="{{r.exists}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600">Already imported</span></sc-if>
+                        <sc-if value="{{r.isBefore}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600; white-space: nowrap"><dc-import name="Icon" glyph="history" tone="muted" size="14" hint-size="14px,14px"></dc-import>Before tracking, kept with SQL's books</span></sc-if>
+                        <sc-if value="{{r.isTask}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="checklist" tone="ok" size="14" hint-size="14px,14px"></dc-import>{{r.task}}</span></sc-if>
+                        <sc-if value="{{r.isKept}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600">{{r.keptText}}</span></sc-if>
+                        <sc-if value="{{r.isPay}}" hint-placeholder-val="{{ true }}"><select value="{{r.sel}}" onChange="{{r.pick}}" aria-label="{{r.aria}}" style="{{r.selStyle}}"><option value="">Not linked</option><sc-for list="{{r.same}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for><optgroup label="{{r.otherLabel}}"><sc-for list="{{r.other}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></optgroup></select></sc-if>
+                        <sc-if value="{{r.hasAlso}}" hint-placeholder-val="{{ false }}"><div style="color: #46546A; font-size: 12px; margin-top: 4px">Also: {{r.also}}</div></sc-if>
+                        <sc-if value="{{r.hasChanged}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 5px; align-items: flex-start; color: #7A4300; font-size: 12px; margin-top: 4px; max-width: 300px"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import><span>{{r.changed}}</span></div></sc-if>
+                        <sc-if value="{{r.hasRcpt}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px"><span style="color: #46546A; font-size: 12px">Receipt:</span><select value="{{r.rsel}}" onChange="{{r.rpick}}" aria-label="{{r.raria}}" style="height: 34px; width: 220px; max-width: 100%; padding: 0 8px; border:1px solid #5F6C80; border-radius: 9px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="">Not linked</option><sc-for list="{{r.ins}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></div></sc-if>
+                        <sc-if value="{{r.unl}}" hint-placeholder-val="{{ false }}"><div style="color: #7A4300; font-size: 12px; margin-top: 4px">No payment yet. It will wait under entries not linked.</div></sc-if>
+                      </td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            </sc-if>
+            <div class="ib" style="position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 22px; background: #FFFFFF; border-top: 1px solid #E3E7ED; border-radius: 0 0 16px 16px; box-shadow: 0 -6px 16px rgba(16,24,40,.06)">
+              <span role="status" style="flex: 1 1 280px; color: #46546A; font-size: 13px">{{importNote}}</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="hs" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" class="hb" onClick="{{doImport}}" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>{{importLabel}}</button></div>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isNone}}" hint-placeholder-val="{{ false }}">
+          <section class="rv" aria-labelledby="sql-none-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 20px 22px">
+              <span style="{{noneTile}}"><dc-import name="Icon" glyph="{{noneGlyph}}" tone="{{noneTone}}" size="26" hint-size="26px,26px"></dc-import></span>
+              <div style="flex: 1 1 320px; min-width: 0"><h2 id="sql-none-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{noneTitle}}</h2><span style="color: #46546A; font-size: 13px; overflow-wrap: anywhere">{{noneText}}</span></div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><a href="#sql-paste" style="display: inline-flex; align-items: center; height: 40px; padding: 0 6px; font-weight: 600; font-size: 13px; text-decoration: none">Paste a listing instead</a><button type="button" class="hs" onClick="{{fixFolder}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Use another folder</button><button type="button" class="hs" onClick="{{discard}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Close</button></div>
+            </div>
+            <sc-if value="{{noneFiles}}" hint-placeholder-val="{{ false }}">
+              <div style="padding: 12px 22px 6px; display: flex; align-items: center; gap: 8px; border-top: 1px solid #EEF1F5"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><h3 style="margin: 0; font-size: 14px; font-weight: 600">{{nUnusedText}}</h3></div>
+              <sc-for list="{{unused}}" as="f" hint-placeholder-count="5">
+                <div style="{{f.row}}">
+                  <dc-import name="Icon" glyph="{{f.glyph}}" tone="{{f.tone}}" size="20" hint-size="20px,20px"></dc-import>
+                  <div style="flex: 1 1 320px; min-width: 0"><div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 13px; overflow-wrap: anywhere">{{f.name}}</b><span style="{{f.chip}}"><dc-import name="Icon" glyph="{{f.chipGlyph}}" tone="{{f.tone}}" size="14" hint-size="14px,14px"></dc-import>{{f.word}}</span></div><div id="{{f.reasonId}}" style="color: #46546A; font-size: 13px; margin-top: 2px">{{f.reason}}</div></div>
+                  <sc-if value="{{f.isFetch}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{f.go}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; flex: none">Fetch again</button></sc-if>
+                  <sc-if value="{{f.isPaste}}" hint-placeholder-val="{{ false }}"><a href="#sql-paste" style="display: inline-flex; align-items: center; height: 34px; padding: 0 6px; font-weight: 600; font-size: 13px; text-decoration: none; flex: none">Paste this listing instead</a></sc-if>
+                  <sc-if value="{{f.isTake}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" aria-describedby="{{f.reasonId}}" onClick="{{f.take}}" style="{{f.takeStyle}}">{{f.takeLabel}}</button></sc-if><sc-if value="{{f.isSetup}}" hint-placeholder-val="{{ false }}"><a href="SetupCompanies.dc.html" style="display: inline-flex; align-items: center; height: 34px; padding: 0 6px; font-weight: 600; font-size: 13px; text-decoration: none; flex: none">Open Setup › Companies</a></sc-if>
+                </div>
+              </sc-for>
+              <div style="padding: 12px 22px; background: #FAFBFC; border-top: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">Left alone: 8 files imported before; 4 other workbooks that aren't SQL listings or reports.</div>
+            </sc-if>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Import result" class="rv" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 18px 22px; border-radius: 16px; background: #F0FBF5; border: 1px solid #BFE8D0">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="verified" tone="ok" size="28" hint-size="28px,28px"></dc-import></span>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="color: #0A6B3D; font-size: 15px">{{doneTitle}}</b><div style="color: #46546A; font-size: 13px">{{doneText}}</div></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><sc-if value="{{doneChanged}}" hint-placeholder-val="{{ true }}"><a href="SqlBooks.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none">See Changed in SQL</a></sc-if><a href="#sql-unlinked" class="hb" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none">{{doneNext}}<dc-import name="Icon" glyph="arrow" tone="white" size="16" hint-size="16px,16px"></dc-import></a><button type="button" class="hg" aria-label="Close this message" onClick="{{discard}}" style="width: 40px; height: 40px; border-radius: 10px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button></div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isRdone}}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Account lines kept" class="rv" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 18px 22px; border-radius: 16px; background: #F0FBF5; border: 1px solid #BFE8D0">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="sheet" tone="ok" size="28" hint-size="28px,28px"></dc-import></span>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="color: #0A6B3D; font-size: 15px">Kept the account lines</b><div style="color: #46546A; font-size: 13px">Kept the account lines of 34 documents from 3 reports of SQL's general ledger.</div></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><a href="SqlBooks.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none">See Checks against SQL's reports<dc-import name="Icon" glyph="arrow" tone="white" size="16" hint-size="16px,16px"></dc-import></a><button type="button" class="hg" aria-label="Close this message" onClick="{{discard}}" style="width: 40px; height: 40px; border-radius: 10px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button></div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isJournal}}" hint-placeholder-val="{{ false }}">
+          <section class="rv" aria-labelledby="sql-jl-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 18px 22px 6px">
+              <h2 id="sql-jl-h" style="flex: 1 1 320px; margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">SQL listing pasted 18 Nov 2026, 10:42</h2>
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 99px; background: #EAF0FD; color: #2450B8; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="eye" tone="brand" size="14" hint-size="14px,14px"></dc-import>Preview: nothing is saved yet</span>
+              <span style="color: #5F6C80; font-size: 13px">{{jlCount}}</span>
+            </div>
+            <p style="margin: 0; padding: 0 22px 14px; color: #46546A; font-size: 13px">These are a journal's lines, pasted as text. They are kept for the bank reconciliation; nothing is matched to payments.</p>
+            <div style="padding: 0 22px 18px; display: flex; flex-direction: column; gap: 12px">
+              <sc-if value="{{jlBad}}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FEF3F1; border: 1px solid #F4C2BC"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px; color: #46546A">{{jlMsg}}</span></div>
+              </sc-if>
+              <sc-if value="{{jlOk}}" hint-placeholder-val="{{ true }}">
+                <label style="display: flex; flex-direction: column; gap: 6px; max-width: 520px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Which journal are these lines from?</span><select value="{{jlSel}}" onChange="{{jlPick}}" style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="">Choose a journal</option><sc-for list="{{jlOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></label>
+                <sc-if value="{{jlHasMsg}}" hint-placeholder-val="{{ true }}"><span style="color: #46546A; font-size: 13px">{{jlMsg}}</span></sc-if>
+                <sc-if value="{{jlHasNote}}" hint-placeholder-val="{{ true }}"><div style="{{jlNoteBox}}"><dc-import name="Icon" glyph="{{jlNoteGlyph}}" tone="{{jlNoteTone}}" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px; color: #0F1A2B">{{jlNote}}</span></div></sc-if>
+              </sc-if>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 14px 22px; border-top: 1px solid #E3E7ED"><button type="button" class="hs" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" class="hb" disabled="{{jlOff}}" onClick="{{keepLines}}" style="{{jlKeepStyle}}"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>{{jlKeepLabel}}</button></div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isKept}}" hint-placeholder-val="{{ false }}">
+          <section aria-label="Journal lines kept" class="rv" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 18px 22px; border-radius: 16px; background: #F0FBF5; border: 1px solid #BFE8D0">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="bank" tone="ok" size="28" hint-size="28px,28px"></dc-import></span>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="color: #0A6B3D; font-size: 15px">{{keptTitle}}</b><div style="color: #46546A; font-size: 13px">{{keptText}}</div></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><a href="#sql-docs" class="hb" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none">See the journal<dc-import name="Icon" glyph="arrow" tone="white" size="16" hint-size="16px,16px"></dc-import></a><button type="button" class="hg" aria-label="Close this message" onClick="{{discard}}" style="width: 40px; height: 40px; border-radius: 10px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button></div>
+          </section>
+        </sc-if>
+      </div>
+      </sc-if>
+
+      <section aria-label="Find an SQL entry" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 12px 16px">
+        <label class="fx" style="flex: 1 1 320px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border:1px solid #5F6C80; border-radius: 10px"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Find an SQL entry</span><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Find an SQL entry: doc no., description, amount or payment" style="flex: 1; min-width: 0; border: 0; outline: 0; font: 400 14px Inter, sans-serif; background: transparent; color: #0F1A2B"></label>
+        <span role="status" style="color: #5F6C80; font-size: 13px">{{findCount}}</span>
+      </section>
+
+      <section id="sql-unlinked" aria-labelledby="sql-unlinked-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 16px 22px; border-bottom: 1px solid #EEF1F5">
+          <dc-import name="Icon" glyph="inbox" tone="warn" size="22" hint-size="22px,22px"></dc-import>
+          <div style="flex: 1 1 360px; min-width: 0"><h2 id="sql-unlinked-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">SQL entries not linked to a payment <span style="font-family: Inter, sans-serif; font-weight: 500; font-size: 14px; color: #5F6C80">· {{waitN}}</span></h2><span style="color: #5F6C80; font-size: 13px">These are in SQL but not in HR Payments. Link each one to a payment, create a payment for it, or ignore it (for example a reversal).</span></div>
+          <sc-if value="{{canAll}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" id="sql-all-btn" onClick="{{askAll}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{allLabel}}</button></sc-if>
+        </div>
+        <sc-if value="{{confirmAll}}" hint-placeholder-val="{{ false }}">
+          <div role="group" aria-label="Create payments for all" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 22px; background: #FFFBF2; border-bottom: 1px solid #F3D9A6">
+            <dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import>
+            <span style="flex: 1 1 320px; font-size: 13px; color: #5C3100"><b>{{allAsk}}</b> Each one takes its voucher's date, description and amount. A voucher whose number is typed on a payment is linked to that payment instead; one whose number is already linked is left for you to check. Probable corrections are left out.</span>
+            <div style="display: flex; gap: 8px"><button type="button" class="hs" onClick="{{cancelAll}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" class="hb" onClick="{{doAll}}" style="height: 34px; padding: 0 14px; border-radius: 9px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer">{{allYes}}</button></div>
+          </div>
+        </sc-if>
+        <sc-for list="{{groups}}" as="g" hint-placeholder-count="1">
+          <sc-if value="{{g.head}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 16px 22px 12px; border-top: 1px solid #E3E7ED; background: #FAFBFC">
+              <div style="flex: 1 1 360px; min-width: 0"><h3 style="margin: 0; font-size: 14px; font-weight: 600">{{g.title}}</h3><span style="color: #5F6C80; font-size: 13px">{{g.note}}</span></div>
+              <button type="button" class="hs" onClick="{{g.all}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{g.allLabel}}</button>
+            </div>
+            <sc-if value="{{g.ask}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-label="Ignore all probable corrections" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 22px; background: #FFFBF2; border-top: 1px solid #F3D9A6">
+                <dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import>
+                <span style="flex: 1 1 320px; font-size: 13px; color: #5C3100"><b>{{g.askText}}</b> They move to Ignored, below. Un-ignore one there if money really moved.</span>
+                <div style="display: flex; gap: 8px"><button type="button" class="hs" onClick="{{g.cancel}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" class="hb" onClick="{{g.yes}}" style="height: 34px; padding: 0 14px; border-radius: 9px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer">{{g.yesLabel}}</button></div>
+              </div>
+            </sc-if>
+          </sc-if>
+          <sc-if value="{{g.some}}" hint-placeholder-val="{{ true }}">
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 980px; border-collapse: collapse">
+                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" aria-sort="{{g.hd.doc.aria}}" style="padding: 6px 12px 6px 14px; font-weight: 600"><button type="button" class="hg" aria-label="{{g.hd.doc.label}}" onClick="{{g.hd.doc.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Doc no.<sc-if value="{{g.hd.doc.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{g.hd.doc.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{g.hd.date.aria}}" style="padding: 6px 4px; font-weight: 600"><button type="button" class="hg" aria-label="{{g.hd.date.label}}" onClick="{{g.hd.date.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Date<sc-if value="{{g.hd.date.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{g.hd.date.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{g.hd.desc.aria}}" style="padding: 6px 4px; font-weight: 600"><button type="button" class="hg" aria-label="{{g.hd.desc.label}}" onClick="{{g.hd.desc.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Description<sc-if value="{{g.hd.desc.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{g.hd.desc.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{g.hd.amt.aria}}" style="padding: 6px 4px; font-weight: 600; text-align: right"><button type="button" class="hg" aria-label="{{g.hd.amt.label}}" onClick="{{g.hd.amt.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Amount (RM)<sc-if value="{{g.hd.amt.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{g.hd.amt.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" style="padding: 10px 12px; font-weight: 600">Link to</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">Or</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{g.rows}}" as="u" hint-placeholder-count="2">
+                    <tr class="hr" style="border-top: 1px solid #EEF1F5">
+                      <td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{u.no}}</td>
+                      <td style="padding: 12px; color: #46546A; white-space: nowrap">{{u.date}}</td>
+                      <td style="padding: 12px">{{u.desc}}<div style="color: #5F6C80; font-size: 12px">{{u.sub}}</div><sc-if value="{{u.isNew}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; margin: 4px 4px 0 0; border-radius: 99px; background: #EAF0FD; color: #2450B8; font-size: 11px; font-weight: 600">Just imported</span></sc-if><sc-if value="{{u.moneyIn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; margin-top: 4px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 11px; font-weight: 600">Money in</span></sc-if><sc-if value="{{u.hasChanged}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 5px; align-items: flex-start; color: #7A4300; font-size: 12px; margin-top: 4px; max-width: 340px"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import><span>{{u.changed}}</span></div></sc-if></td>
+                      <td style="{{u.amtStyle}}">{{u.amtText}}</td>
+                      <td style="padding: 12px"><div style="display: flex; gap: 6px; align-items: center"><select value="{{u.sel}}" onChange="{{u.pick}}" aria-label="{{u.aria}}" style="height: 34px; width: 220px; max-width: 100%; padding: 0 8px; border:1px solid #5F6C80; border-radius: 9px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="">Choose a payment…</option><sc-for list="{{u.same}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for><optgroup label="{{u.otherLabel}}"><sc-for list="{{u.other}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></optgroup></select><button type="button" class="hs" disabled="{{u.noSel}}" aria-label="{{u.linkAria}}" onClick="{{u.link}}" style="{{u.linkStyle}}">Link</button></div></td>
+                      <td style="padding: 12px 22px 12px 12px"><div style="display: flex; gap: 6px"><button type="button" class="hs" aria-label="{{u.createAria}}" onClick="{{u.create}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; white-space: nowrap">Create payment</button><button type="button" class="hg" aria-label="{{u.ignoreAria}}" onClick="{{u.ignore}}" style="height: 34px; padding: 0 10px; border-radius: 9px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #46546A; cursor: pointer">Ignore</button></div></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+          <sc-if value="{{g.none}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 22px; color: #46546A"><dc-import name="Icon" glyph="{{g.noneGlyph}}" tone="{{g.noneTone}}" size="20" hint-size="20px,20px"></dc-import>{{g.noneText}}</div>
+          </sc-if>
+        </sc-for>
+      </section>
+
+      <section aria-labelledby="sql-linked-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <h2 style="margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit"><button type="button" class="hr" aria-expanded="{{openLinked}}" onClick="{{toggleLinked}}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 22px; border: 0; background: #FFFFFF; font: inherit; color: inherit; text-align: left; cursor: pointer"><span class="{{linkedChevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></span><dc-import name="Icon" glyph="link" tone="ok" size="22" hint-size="22px,22px"></dc-import><span id="sql-linked-h" style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Linked to payments</span><span style="color: #5F6C80">· {{linkedN}}</span></button></h2>
+        <sc-if value="{{openLinked}}" hint-placeholder-val="{{ false }}">
+          <div id="sql-linked" class="ex" style="border-top: 1px solid #EEF1F5">
+            <p style="margin: 0; padding: 12px 22px; color: #46546A; font-size: 13px">Linked to the wrong payment? Unlink it: it goes back to the list above, and the payment's amount and paid date go back to what they were. A payment made with Create payment, with nothing added since, is removed.</p>
+            <sc-if value="{{linkedSome}}" hint-placeholder-val="{{ true }}">
+              <div style="overflow-x: auto">
+                <table style="width: 100%; min-width: 860px; border-collapse: collapse">
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" aria-sort="{{hd.doc.aria}}" style="padding: 6px 12px 6px 14px; font-weight: 600"><button type="button" class="hg" aria-label="{{hd.doc.label}}" onClick="{{hd.doc.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Doc no.<sc-if value="{{hd.doc.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.doc.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{hd.date.aria}}" style="padding: 6px 4px; font-weight: 600"><button type="button" class="hg" aria-label="{{hd.date.label}}" onClick="{{hd.date.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Date<sc-if value="{{hd.date.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.date.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{hd.desc.aria}}" style="padding: 6px 4px; font-weight: 600"><button type="button" class="hg" aria-label="{{hd.desc.label}}" onClick="{{hd.desc.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Description<sc-if value="{{hd.desc.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.desc.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{hd.amt.aria}}" style="padding: 6px 4px; font-weight: 600; text-align: right"><button type="button" class="hg" aria-label="{{hd.amt.label}}" onClick="{{hd.amt.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Amount (RM)<sc-if value="{{hd.amt.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.amt.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{hd.pay.aria}}" style="padding: 6px 4px; font-weight: 600"><button type="button" class="hg" aria-label="{{hd.pay.label}}" onClick="{{hd.pay.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Payment<sc-if value="{{hd.pay.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.pay.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Action</span></th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{linked}}" as="u" hint-placeholder-count="3">
+                      <tr class="hr" style="border-top: 1px solid #EEF1F5">
+                        <td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{u.no}}</td>
+                        <td style="padding: 12px; color: #46546A; white-space: nowrap">{{u.date}}</td>
+                        <td style="padding: 12px">{{u.desc}}<div style="color: #5F6C80; font-size: 12px">{{u.sub}}</div></td>
+                        <td style="{{u.amtStyle}}">{{u.amtText}}</td>
+                        <td style="padding: 12px"><b style="font-weight: 600">{{u.pay}}</b> <span style="color: #5F6C80; font-size: 13px">({{u.month}})</span></td>
+                        <td style="padding: 12px 22px 12px 12px; text-align: right"><button type="button" class="hs" aria-label="{{u.backAria}}" onClick="{{u.back}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Unlink</button></td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+            <sc-if value="{{linkedNone}}" hint-placeholder-val="{{ false }}"><div style="padding: 0 22px 18px; color: #46546A">{{linkedNoneText}}</div></sc-if>
+          </div>
+        </sc-if>
+      </section>
+
+      <sc-if value="{{hasIgnored}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sql-ignored-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <h2 style="margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit"><button type="button" class="hr" aria-expanded="{{openIgnored}}" onClick="{{toggleIgnored}}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 22px; border: 0; background: #FFFFFF; font: inherit; color: inherit; text-align: left; cursor: pointer"><span class="{{ignoredChevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></span><span id="sql-ignored-h" style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Ignored</span><span style="color: #5F6C80">· {{ignoredN}}</span></button></h2>
+          <sc-if value="{{openIgnored}}" hint-placeholder-val="{{ false }}">
+            <div id="sql-ignored" class="ex" style="overflow-x: auto; border-top: 1px solid #EEF1F5">
+              <table style="width: 100%; min-width: 720px; border-collapse: collapse">
+                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" aria-sort="{{hd.doc.aria}}" style="padding: 6px 12px 6px 14px; font-weight: 600"><button type="button" class="hg" aria-label="{{hd.doc.label}}" onClick="{{hd.doc.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Doc no.<sc-if value="{{hd.doc.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.doc.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{hd.date.aria}}" style="padding: 6px 4px; font-weight: 600"><button type="button" class="hg" aria-label="{{hd.date.label}}" onClick="{{hd.date.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Date<sc-if value="{{hd.date.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.date.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{hd.desc.aria}}" style="padding: 6px 4px; font-weight: 600"><button type="button" class="hg" aria-label="{{hd.desc.label}}" onClick="{{hd.desc.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Description<sc-if value="{{hd.desc.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.desc.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" aria-sort="{{hd.amt.aria}}" style="padding: 6px 4px; font-weight: 600; text-align: right"><button type="button" class="hg" aria-label="{{hd.amt.label}}" onClick="{{hd.amt.go}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer">Amount (RM)<sc-if value="{{hd.amt.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.amt.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Action</span></th></tr></thead>
+                <tbody>
+                  <sc-for list="{{ignored}}" as="u" hint-placeholder-count="2">
+                    <tr class="hr" style="border-top: 1px solid #EEF1F5">
+                      <td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{u.no}}</td>
+                      <td style="padding: 12px; color: #46546A; white-space: nowrap">{{u.date}}</td>
+                      <td style="padding: 12px">{{u.desc}}<div style="color: #5F6C80; font-size: 12px">{{u.sub}}</div></td>
+                      <td style="{{u.amtStyle}}">{{u.amtText}}</td>
+                      <td style="padding: 12px 22px 12px 12px; text-align: right"><button type="button" class="hs" aria-label="{{u.backAria}}" onClick="{{u.back}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Un-ignore</button></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <section id="sql-docs" aria-labelledby="sql-docs-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="receipt" tone="brand" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1 1 360px; min-width: 0"><h2 id="sql-docs-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Journals and invoices</h2><span style="color: #5F6C80; font-size: 13px">Journals, customer invoices and supplier invoices, kept on file against their checklist item. A journal that moves the bank counts in the bank reconciliation.</span></div></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 22px; border-bottom: 1px solid #EEF1F5; background: #FAFBFC">
+          <dc-import name="Icon" glyph="printer" tone="muted" size="18" hint-size="18px,18px"></dc-import>
+          <span style="flex: 1 1 320px; min-width: 0; font-size: 13px; color: #46546A">Printed invoices, debit and credit notes, self-billed invoices and the month's zip are on e-Invoices, in its Print column and <b style="color: #0F1A2B">All of the month</b>.</span>
+          <a href="MyInvois.dc.html" style="display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 4px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap">Open e-Invoices<dc-import name="Icon" glyph="arrow" tone="brand" size="14" hint-size="14px,14px"></dc-import></a>
+        </div>
+        <div style="overflow-x: auto">
+          <table style="width: 100%; min-width: 960px; border-collapse: collapse">
+            <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">Doc no.</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Date</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Amount (RM)</th><th scope="col" style="padding: 10px 12px; font-weight: 600">e-Invoice</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">Checklist item</th></tr></thead>
+            <tbody>
+              <sc-for list="{{docs}}" as="d" hint-placeholder-count="2">
+                <tr class="hr" style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                  <td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{d.no}}</td>
+                  <td style="padding: 12px; color: #46546A; white-space: nowrap">{{d.date}}</td>
+                  <td style="padding: 12px">{{d.desc}}<sc-if value="{{d.isNew}}" hint-placeholder-val="{{ false }}"><div><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; margin-top: 4px; border-radius: 99px; background: #EAF0FD; color: #2450B8; font-size: 11px; font-weight: 600">Just imported</span></div></sc-if></td>
+                  <td style="padding: 12px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap">{{d.amt}}</td>
+                  <td style="padding: 12px; white-space: nowrap"><sc-if value="{{d.hasEinv}}" hint-placeholder-val="{{ false }}"><span style="{{d.einvStyle}}"><dc-import name="Icon" glyph="{{d.einvGlyph}}" tone="{{d.einvTone}}" size="14" hint-size="14px,14px"></dc-import>{{d.einvText}}</span><sc-if value="{{d.einvLink}}" hint-placeholder-val="{{ false }}"> <a href="{{d.einvUrl}}" target="_blank" rel="noopener noreferrer" aria-label="{{d.einvAria}}" style="display: inline-flex; align-items: center; height: 34px; font-size: 13px; font-weight: 600; text-decoration: none">MyInvois ↗</a></sc-if></sc-if><sc-if value="{{d.noEinv}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80">—</span></sc-if></td>
+                  <td style="padding: 12px 22px 12px 12px">
+                    <sc-if value="{{d.hasTask}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="checklist" tone="ok" size="14" hint-size="14px,14px"></dc-import>{{d.task}}</span></sc-if>
+                    <sc-if value="{{d.noTask}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80">—</span></sc-if>
+                    <sc-if value="{{d.hasRun}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; margin-top: 6px"><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600; white-space: nowrap"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Matches the October payroll run</span><a href="PayrollRun.dc.html" aria-label="Open the October payroll run of AISB" style="display: inline-flex; align-items: center; height: 32px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap">Open the payroll run</a></div><div style="color: #46546A; font-size: 13px">Gross 59,147.90 and net 48,600.00, as the run approved on AF-2610-009; the run now reads Recorded.</div></sc-if>
+                    <sc-if value="{{d.hasMove}}" hint-placeholder-val="{{ false }}"><div style="color: #46546A; font-size: 13px; margin-top: 6px">{{d.move}}</div></sc-if>
+                    <sc-if value="{{d.hasPay}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px"><span style="color: #46546A; font-size: 13px">{{d.payNote}}</span><button type="button" class="hs" aria-label="{{d.unlinkAria}}" onClick="{{d.unlink}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Unlink</button></div></sc-if>
+                    <sc-if value="{{d.canLink}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px"><select value="{{d.sel}}" onChange="{{d.pick}}" aria-label="{{d.aria}}" style="height: 34px; width: 220px; max-width: 100%; padding: 0 8px; border:1px solid #5F6C80; border-radius: 9px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="">Choose a payment…</option><sc-for list="{{d.same}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for><optgroup label="{{d.otherLabel}}"><sc-for list="{{d.other}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></optgroup></select><button type="button" class="hs" disabled="{{d.noSel}}" aria-label="{{d.linkAria}}" onClick="{{d.link}}" style="{{d.linkStyle}}">Link</button><button type="button" class="hs" aria-label="{{d.createAria}}" onClick="{{d.create}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; white-space: nowrap">Create payment</button></div></sc-if>
+                  </td>
+                </tr>
+              </sc-for>
+              <sc-if value="{{docsNone}}" hint-placeholder-val="{{ false }}"><tr><td colspan="6" style="padding: 22px; color: #46546A">Fetch SQL's Journal Voucher and Customer Invoice listings on this page to see them here.</td></tr></sc-if>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <p style="margin: -12px 0 0; color: #5F6C80; font-size: 12px; max-width: 820px"><b>Design note</b> (not app text), later with HR › Payroll: the <b>payroll-matched</b> state shows JV2610-007 with "Matches the October payroll run" under its checklist item, linking to <a href="PayrollRun.dc.html">Payroll run</a>. It applies only once AISB runs payroll in this app; until then the row shows its checklist item alone. The e-Invoices card that sat here moved to <a href="MyInvois.dc.html">e-Invoices</a>.</p>
+
+      <section aria-labelledby="sql-imports-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="history" tone="brand" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1 1 360px; min-width: 0"><h2 id="sql-imports-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Imported files</h2><span style="color: #5F6C80; font-size: 13px">A fetch keeps the listings it read, so the evidence for each import stays with it.</span></div></div>
+        <sc-for list="{{imports}}" as="i" hint-placeholder-count="3">
+          <div class="{{i.cls}}" style="border-top: 1px solid #F1F3F7">
+            <sc-if value="{{i.fetch}}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="hr" aria-expanded="{{i.open}}" onClick="{{i.toggle}}" style="width: 100%; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 22px; border: 0; background: #FFFFFF; font: inherit; color: inherit; text-align: left; cursor: pointer"><span class="{{i.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></span><dc-import name="Icon" glyph="folder" tone="brand" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1 1 260px; min-width: 0"><b style="font-size: 13px">{{i.title}}</b><span style="color: #5F6C80; font-size: 13px"> · {{i.sub}}</span></span><span style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{i.when}}</span></button>
+              <sc-if value="{{i.open}}" hint-placeholder-val="{{ false }}">
+                <div class="ex" style="padding: 0 22px 12px 60px; display: flex; flex-direction: column">
+                  <sc-for list="{{i.files}}" as="f" hint-placeholder-count="2">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 8px 0; border-top: 1px solid #F1F3F7"><dc-import name="Icon" glyph="document" tone="muted" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1 1 240px; min-width: 0; font-size: 13px; overflow-wrap: anywhere">{{f.name}}<span style="color: #5F6C80"> · {{f.meta}}</span></span><button type="button" class="hs" aria-label="{{f.viewAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="muted" size="14" hint-size="14px,14px"></dc-import>View</button></div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{i.plain}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 22px 12px 52px"><dc-import name="Icon" glyph="{{i.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1 1 260px; min-width: 0"><b style="font-size: 13px">{{i.title}}</b><span style="color: #5F6C80; font-size: 13px"> · {{i.sub}}</span></span><span style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{i.when}}</span></div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </section>
+
+      </div>
+      </sc-if>
+
+      <sc-if value="{{hasFlash}}" hint-placeholder-val="{{ false }}">
+        <div class="rv" style="position: sticky; bottom: 20px; z-index: 5; align-self: flex-end; max-width: min(480px, 100%); box-sizing: border-box; display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22)">
+          <dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>
+          <span style="flex: 1; min-width: 0; font-size: 13px">{{flashText}}</span>
+          <sc-if value="{{canUndo}}" hint-placeholder-val="{{ false }}"><button type="button" class="tb" onClick="{{undo}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer">Undo</button></sc-if>
+          <button type="button" class="tb" aria-label="Close this message" onClick="{{clearFlash}}" style="width: 34px; height: 34px; border-radius: 9px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="white" size="16" hint-size="16px,16px"></dc-import></button>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"found","options":["before","reading","found","found-older","reports-only","take-confirm","taken","nothing","empty","error","imported","payroll-matched","journal","file","file-dragging","file-chosen","file-refused","file-no-add-up","not-sql"],"section":"State to show"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State to show"},"$preview":{"width":1440,"height":5000}}'>
+class Component extends DCLogic {
+  // Journal lines as SQL's expanded journal copies them (a heading row with an account column, then debit and credit), and rows of a listing.
+  sample(journal) {
+    const j = 'Account Code\tDescription\tDR\tCR\n310-100\tMaybank savings\t5,000.00\t\n900-010\tBank charges\t1.00\t\n310-000\tMaybank current\t\t5,001.00';
+    const p = 'PV2611-004\t05/11/2026\t400-T003\tINTERNET AND PHONE\t420.00\nPV2611-006\t05/11/2026\t400-W001\tWATER BILL OCT\t84.30';
+    return journal ? j : p;
+  }
+  constructor(p) {
+    super(p);
+    const view = (p && p.view) || 'found';
+    this.state = { ...this.fileView(view), stage: null, src: view === 'journal' ? 'paste' : 'fetch', co: p && (p.company === 'ai' || view === 'not-sql') ? 'AI' : 'AISB', legend: false,
+      folder: 'C:\\Users\\you\\Downloads', isDefault: true, folderEdit: false, folderVal: '', folderErr: '', folderMsg: '',
+      pasteVal: this.sample(view === 'journal'),
+      pasteErr: '', cols: false, left: false, picks: null, imported: null, bad: false, say: '',
+      st: {}, sel: {}, flash: null, confirmAll: false, confirmIgnore: false, openLinked: null, openIgnored: true, openImp: {}, q: '',
+      sort: null, dl: {}, dsel: {}, jPick: '', kept: null, jText: view === 'journal' ? this.sample(true) : null, repKept: false,
+      ...this.fetchView(view) };
+    this.timer = null;
+  }
+  // The fetch variants the tweak can open: only SQL's reports read, older entries (before tracking, a signed-off month),
+  // and Take it for, asked once (the button waits for the second click) or taken (the toast, then the fetch again).
+  fetchView(view) {
+    const TAKE = 'PV Listing Nov (2).xlsx', NAME = 'AISB (M) SDN BHD (1331234-K)';
+    return { rep: view === 'reports-only', older: view === 'found-older', take: view === 'take-confirm' ? TAKE : '', taken: view === 'taken' ? [TAKE] : [],
+      flash: view === 'taken' ? { text: 'Exports printed for "' + NAME + '" are taken for AISB from now on. Fetching again…', undo: null } : null };
+  }
+  // The file box states the "State to show" tweak can open: nothing chosen, a file over the box, a file chosen, a refused file.
+  fileView(view) {
+    const SUM = 'This Cash Book Listing says it has 22 documents, but 21 could be read, so nothing was taken from it. Copy and paste this listing instead.';
+    const TYPE = "Statement Oct.pdf: Export the SQL report as Excel (.xlsx or .xls), CSV or ODS.";
+    return { mode: view.indexOf('file') === 0 ? 'file' : 'paste', drag: view === 'file-dragging',
+      fileName: view === 'file-chosen' || view === 'file-no-add-up' ? (view === 'file-chosen' ? 'PV Listing Nov.xlsx' : 'Cash Book Listing Nov.xlsx') : '',
+      fileErr: view === 'file-refused' ? TYPE : view === 'file-no-add-up' ? SUM : '', fileKind: view === 'file-refused' ? 'type' : view === 'file-no-add-up' ? 'sum' : '' };
+  }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.company !== this.props.company) this.setState({ co: this.props.company === "ai" ? "AI" : "AISB" });
+        if (prevProps && prevProps.view !== this.props.view) {
+      // The "State to show" tweak was changed: start that state afresh.
+      clearTimeout(this.timer);
+      const j = this.props.view === 'journal';
+      this.setState({ ...this.fileView(this.props.view || 'found'), stage: null, src: j ? 'paste' : 'fetch', pasteVal: this.sample(j), picks: null, imported: null, kept: null, jPick: '', jText: j ? this.sample(true) : null,
+        bad: false, folderEdit: false, folderErr: '', folderMsg: '', pasteErr: '', cols: false, left: false, legend: false, say: '', repKept: false, ...this.fetchView(this.props.view || 'found'),
+        co: this.props.view === 'not-sql' || this.props.company === 'ai' ? 'AI' : 'AISB' });
+      return;
+    }
+    if (!prev) return;
+    const now = this.state;
+    if (prev.stage !== now.stage && ['found', 'none', 'empty', 'done', 'journal', 'kept', 'rdone'].includes(now.stage)) {
+      // A result has arrived below the fold: bring it into view and move focus to it.
+      const el = document.getElementById('sql-result');
+      if (el) {
+        const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'start' });
+        el.focus({ preventScroll: true });
+      }
+    }
+    if (prev.folderEdit !== now.folderEdit) {
+      const el = document.getElementById(now.folderEdit ? 'sql-folder-input' : 'sql-folder-btn');
+      if (el) el.focus();
+    }
+  }
+  renderVals() {
+    const BANK_CODE = '310-000';
+    const num = v => { const n = parseFloat(String(v || '').replace(/,/g, '')); return isFinite(n) ? n : 0; };
+    const fmt = n => n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Pasted text is journal lines when its first row is a heading with an account column and no doc no. column.
+    const isJournalText = t => {
+      const first = (t || '').split('\n').find(l => l.trim());
+      if (!first) return false;
+      const heads = first.split('\t').map(h => h.trim().toLowerCase());
+      return heads.some(h => ['account code', 'account', 'gl code', 'code'].includes(h)) && !heads.some(h => ['doc no', 'doc no.', 'docno', 'document no'].includes(h));
+    };
+    const journalLines = t => (t || '').split('\n').filter(l => l.trim()).slice(1).map(l => l.split('\t')).filter(c => c.join('').trim())
+      .map(c => ({ code: (c[0] || '').trim().toUpperCase(), dr: num(c[2]), cr: num(c[3]) }));
+    const s = this.state;
+    const set = x => this.setState(x);
+    const view = this.props.view ?? 'found';
+    const VIEW = { file: 'idle', 'file-dragging': 'idle', 'file-chosen': 'idle', 'file-refused': 'idle', 'file-no-add-up': 'idle', before: 'idle', reading: 'reading', found: 'found', 'found-older': 'found', 'reports-only': 'found', 'take-confirm': 'found', taken: 'found', nothing: 'none', empty: 'empty', error: 'error', imported: 'done', 'payroll-matched': 'done', journal: 'journal' };
+    const stage = s.stage ?? VIEW[view] ?? 'found';
+    const isSql = s.co === 'AISB';
+    const badFolder = stage === 'error' || (stage === 'reading' && s.bad);
+    const folder = badFolder ? 'D:\\SQL exports' : s.folder;
+    const src = s.src;
+    const reading = stage === 'reading';
+
+    // The payments an SQL document can be linked to (sqlimport.candidates), and the vouchers each already has.
+    const PAYS = [
+      { id: 'p1', d: 'Office rental', a: '6,500.00', dir: 'out' },
+      { id: 'p2', d: 'Salaries', a: '48,600.00', dir: 'out' },
+      { id: 'p3', d: 'Water bill', a: '84.30', dir: 'out' },
+      { id: 'p4', d: 'Internet and phone', a: '420.00', dir: 'out' },
+      { id: 'p7', d: 'Printer supplies', a: '312.00', dir: 'out', has: ['PV2609-027'] },
+      { id: 'p12', d: 'Fixed deposit placement', a: '20,000.00', dir: 'out' },
+      { id: 'p8', d: 'Electricity bill', a: '1,163.20', dir: 'out', has: ['PV2611-003'] },
+      { id: 'p6', d: 'Rental received', a: '1,800.00', dir: 'in' },
+      { id: 'p6o', d: 'Rental received October', a: '1,800.00', dir: 'in' },
+      { id: 'p9', d: 'Fund receipt', a: '45,000.00', dir: 'in', has: ['OR2610-006'] }
+    ];
+    const NAME = Object.fromEntries(PAYS.map(p => [p.id, p.d]));
+    // Same way first; among them those already holding another voucher last, with it named; the other way in a group.
+    const opts = (no, dir) => {
+      const has = p => (p.has || []).filter(n => n !== no);
+      const list = ps => [...ps.filter(p => !has(p).length), ...ps.filter(p => has(p).length)]
+        .map(p => ({ v: p.id, l: p.d + ' · RM ' + p.a + (has(p).length ? ' (already has ' + has(p).join(', ') + ')' : '') }));
+      return { same: list(PAYS.filter(p => p.dir === dir)), other: list(PAYS.filter(p => p.dir !== dir)),
+        otherLabel: dir === 'in' ? 'Payments out (if this refunds one)' : 'Money in (if this pays one back)' };
+    };
+    const ins = opts('', 'in').same;
+
+    // The documents a fetch (or a paste) read: new ones first, then those imported before.
+    const ROWS = [
+      { id: 'r1', kind: 'payment', no: 'PV2610-021', date: '30 Oct', iso: '2026-10-30', desc: 'Office rental October', sub: 'Code 400-R001 · Chq 104420', amt: '6,500.00', def: 'p1' },
+      { id: 'r2', kind: 'payment', no: 'PV2610-014', date: '24 Oct', iso: '2026-10-24', desc: 'Salaries October', sub: 'Code 400-S001 · Method Maybank', amt: '48,600.00', def: 'p2', also: 'Salary PVs in SQL (one per person)' },
+      { id: 'r11', kind: 'invoice', no: 'PI2610-011', date: '30 Oct', iso: '2026-10-30', desc: 'Office rental October (INV-1043)', sub: 'Supplier invoice · Code 400-R001', amt: '6,500.00', def: '', doc_type: 'PI' },
+      { id: 'r13', kind: 'invoice', no: 'PI2610-013', date: '30 Oct', iso: '2026-10-30', desc: 'Payroll advisory October (PA-1010)', sub: 'Supplier invoice · Code 400-P004', amt: '3,200.00', def: '', doc_type: 'PI' },
+      { id: 'r7', kind: 'journal', no: 'JV2610-007', date: '31 Oct', iso: '2026-10-31', desc: 'Payroll journal October', sub: 'Journal', amt: '59,147.90', task: 'Checklist: Salary PVs in SQL (one per person)' },
+      { id: 'r12', kind: 'invoice', no: 'PI2610-012', date: '31 Oct', iso: '2026-10-31', desc: 'Electricity October (TNB)', sub: 'Supplier invoice · Code 400-E012', amt: '1,136.20', def: '', doc_type: 'PI' },
+      { id: 'r8', kind: 'invoice', no: 'IV2611-002', date: '2 Nov', iso: '2026-11-02', desc: 'Office rental November, Unit 3A', sub: 'Customer invoice', amt: '1,800.00', task: 'Checklist: e-Invoice to the office tenant for rental', def: 'p6', doc_type: 'IV' },
+      { id: 'r9', kind: 'invoice', no: 'IV2611-005', date: '2 Nov', iso: '2026-11-02', desc: 'Utilities recharge November, Unit 3A', sub: 'Customer invoice', amt: '245.60', def: '', doc_type: 'IV' },
+      { id: 'r10', kind: 'payment', no: 'PV2611-003', date: '4 Nov', iso: '2026-11-04', desc: 'Electricity October', sub: 'Code 400-E012', amt: '1,136.20', def: '', linkedTo: 'Electricity bill', linkedAmt: '1,163.20' },
+      { id: 'r4', kind: 'payment', no: 'PV2611-004', date: '5 Nov', iso: '2026-11-05', desc: 'Internet and phone', sub: 'Code 400-T003', amt: '420.00', def: 'p4' },
+      { id: 'r3', kind: 'payment', no: 'PV2611-006', date: '5 Nov', iso: '2026-11-05', desc: 'Water bill October', sub: 'Code 400-W001', amt: '84.30', def: 'p3' },
+      { id: 'r6', kind: 'payment', no: 'OR2611-002', date: '5 Nov', iso: '2026-11-05', desc: 'Rental received, Unit 3A', sub: 'Code 300-U001', amt: '1,800.00', def: 'p6', moneyIn: true },
+      { id: 'r5', kind: 'payment', no: 'PV2611-009', date: '6 Nov', iso: '2026-11-06', desc: 'Courier charges October', sub: 'Code 400-C007', amt: '186.50', def: '' },
+      // Older entries (the found-older variant): one before the first month tracked (September 2026), one in a month whose bank reconciliation is signed off.
+      ...(s.older ? [
+        { id: 'o1', kind: 'payment', no: 'PV2608-019', date: '28 Aug', iso: '2026-08-28', desc: 'Office rental August', sub: 'Code 400-R001 · Chq 104398', amt: '6,500.00', def: '', before: true },
+        { id: 'o2', kind: 'payment', no: 'PV2609-031', date: '29 Sep', iso: '2026-09-29', desc: 'Courier charges September', sub: 'Code 400-C007', amt: '95.40', def: '' }] : []),
+      { id: 'x4', kind: 'invoice', no: 'IV2610-014', date: '1 Oct', iso: '2026-10-01', desc: 'Office rental October, Unit 3A', sub: 'Customer invoice', amt: '1,800.00', exists: true, def: '', doc_type: 'IV', rcptBase: 'Rental received October' },
+      { id: 'x1', kind: 'payment', no: 'OR2610-006', date: '20 Oct', iso: '2026-10-20', desc: 'Fund received', sub: 'Code 500-F001', amt: '45,000.00', moneyIn: true, exists: true },
+      { id: 'x2', kind: 'payment', no: 'PV2610-005', date: '15 Oct', iso: '2026-10-15', desc: 'KWSP September', sub: 'Code 400-K001', amt: '11,180.00', exists: true }
+    ];
+    const fresh = ROWS.filter(r => !r.exists), old = ROWS.filter(r => r.exists);
+    // A row of a month before the first month tracked is kept with SQL's books only: nothing to link it to.
+    const payRows = fresh.filter(r => r.kind === 'payment' && !r.before);
+    const linkable = ROWS.filter(r => (!r.exists && r.kind === 'payment' && !r.before) || r.kind === 'invoice');
+    const defs = Object.fromEntries(linkable.map(r => [r.id, r.def || '']));
+    const picks = s.picks ?? defs;
+    // The Import button counts what will be linked or filed (applyLabel); the server's result counts the links made.
+    const nLinked = fresh.filter(r => picks[r.id] || r.task).length + old.filter(r => r.kind === 'invoice' && picks[r.id]).length;
+    // An already-imported invoice is linked only while it has no receipt (sql_apply: payment_id IS NULL).
+    const curRcpt = r => ((r.no in s.dl ? s.dl[r.no] : r.rcptBase) || '');
+    const linkMade = (r, pk) => !!pk[r.id] && !(r.exists && curRcpt(r));
+    const nLinks = linkable.filter(r => linkMade(r, picks)).length;
+    const noPay = payRows.filter(r => !picks[r.id]);
+    const changedText = r => r.linkedTo ? 'Changed in SQL? This number is already linked to ' + r.linkedTo + ' at RM ' + r.linkedAmt + '.' : '';
+    const amtCell = (moneyIn, dim) => 'padding:12px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap' + (moneyIn ? ';color:#0A6B3D' : dim ? ';color:#46546A' : '');
+    const selBase = 'height:34px;width:250px;max-width:100%;padding:0 8px;border-radius:9px;font:400 13px Inter,sans-serif;background:#FFFFFF;color:#0F1A2B;';
+    const rows = ROWS.map(r => {
+      const isPay = !r.exists && r.kind === 'payment' && !r.before, sel = picks[r.id] ?? '', o = opts(r.no, r.moneyIn ? 'in' : 'out');
+      return { ...r, exists: !!r.exists, isTask: !r.exists && !!r.task, task: r.task || '', isPay, sel, moneyIn: !!r.moneyIn,
+        isKept: !r.exists && r.kind !== 'payment' && !r.task, keptText: (r.kind === 'journal' ? 'Journal' : r.doc_type === 'PI' ? 'Supplier invoice' : 'Customer invoice') + ', kept on file',
+        isBefore: !!r.before,
+        same: o.same, other: o.other, otherLabel: o.otherLabel,
+        hasAlso: isPay && !!r.also, also: r.also || '', hasChanged: !r.exists && !!r.linkedTo, changed: changedText(r),
+        hasRcpt: r.kind === 'invoice' && r.doc_type === 'IV' && ins.length > 0, ins, rsel: sel, raria: 'Receipt that ' + r.no + ' is for',
+        rpick: e => set({ picks: { ...picks, [r.id]: e.target.value } }),
+        unl: isPay && !sel,
+        amtText: (r.moneyIn ? '+' : '') + r.amt, amtStyle: amtCell(r.moneyIn, r.exists),
+        tr: 'border-top:1px solid #EEF1F5;vertical-align:top' + (r.exists ? ';background:#FAFBFC;color:#46546A' : ''),
+        selStyle: selBase + (isPay && !sel ? 'border:1px solid #B7791F' : 'border:1px solid #5F6C80'),
+        aria: 'Payment that ' + r.no + ' records',
+        pick: e => set({ picks: { ...picks, [r.id]: e.target.value } }) };
+    });
+
+    // What has been imported: from this session, or the sample result when the board is set to show it.
+    // A voucher whose number is already linked (edited in SQL since) waits under Changed in SQL, not under not linked.
+    const SAMPLE = { n: fresh.length, links: linkable.filter(r => linkMade(r, defs)).length, skipped: old.length, src: 'fetch',
+      wait: payRows.filter(r => !defs[r.id] && !r.linkedTo).map(r => r.id), pays: { ...defs }, changed: payRows.filter(r => r.linkedTo).map(r => r.id) };
+    const imp = s.imported ?? (['imported', 'payroll-matched', 'nothing'].includes(view) ? SAMPLE : null);
+
+    // Fetching, pasting and choosing a file all read first, then show the preview.
+    const run = from => {
+      clearTimeout(this.timer);
+      const next = from === 'paste' && isJournalText(s.pasteVal) ? 'journal' : from !== 'fetch' ? 'found' : badFolder ? 'error' : imp ? 'none' : 'found';
+      set({ stage: 'reading', src: from, bad: from === 'fetch' && badFolder, folderEdit: false, folderErr: '', folderMsg: '', pasteErr: '', fileErr: '', cols: false, left: false, jPick: '', jText: from === 'paste' ? s.pasteVal : null, say: 'Reading' });
+      const told = next === 'found' && s.rep ? "3 reports of SQL's general ledger read. Nothing is saved yet."
+        : next === 'found' ? ROWS.length + ' entries read: ' + fresh.length + ' new, ' + old.length + ' already imported. Nothing is saved yet.'
+        : next === 'none' ? 'Nothing new to import. ' + UNUSED.length + ' files were not used.' : next === 'journal' ? 'Journal lines read. Nothing is saved yet.' : '';
+      this.timer = setTimeout(() => this.setState({ stage: next, say: told }), 1100);
+    };
+    const relinked = Object.fromEntries(old.filter(r => r.kind === 'invoice' && linkMade(r, picks)).map(r => [r.no, NAME[picks[r.id]]]));
+    const doImport = () => s.rep
+      ? set({ stage: 'rdone', repKept: true, say: "Kept the account lines of 34 documents from 3 reports of SQL's general ledger." })
+      : set({ stage: 'done', picks, dl: { ...s.dl, ...relinked }, say: 'Imported ' + fresh.length + ' entries.',
+        imported: { n: fresh.length, links: nLinks, skipped: old.length, src, wait: noPay.filter(r => !r.linkedTo).map(r => r.id), pays: { ...picks },
+          changed: payRows.filter(r => r.linkedTo).map(r => r.id) } });
+
+    // The folder a fetch reads.
+    const saveFolder = () => {
+      const v = s.folderVal.trim().replace(/^"|"$/g, '');
+      const back = badFolder ? 'idle' : s.stage;
+      const ok = x => { if (badFolder) clearTimeout(this.timer); set({ ...x, bad: false, folderEdit: false, folderErr: '', stage: back, say: x.folderMsg }); };
+      if (!v) return ok({ folder: 'C:\\Users\\you\\Downloads', isDefault: true, folderMsg: 'Reading your Downloads folder' });
+      if (!/^[A-Za-z]:\\/.test(v)) return set({ folderErr: 'Give the full path of the folder, starting with the drive letter, for example C: and then the folders.' });
+      if (!/^c:/i.test(v)) return set({ folderErr: "That folder can't be found. Check the path, or leave it empty to use your Downloads folder." });
+      ok({ folder: v, isDefault: false, folderMsg: 'Folder saved' });
+    };
+    const takeFile = f => {
+      if (!f) return set({ drag: false });
+      if (!/\.(xlsx|xls|csv|ods|txt)$/i.test(f.name)) return set({ drag: false, fileName: '', fileKind: 'type', fileErr: f.name + ": Export the SQL report as Excel (.xlsx or .xls), CSV or ODS.", say: 'That file was not used.' });
+      // SQL's general-ledger reports and files over 25 MB are refused here, with the app's sentences.
+      const gl = /trial balance/i.test(f.name) ? 'Trial Balance' : /gl ledger/i.test(f.name) ? 'GL Ledger' : /gl journal|journal of transaction/i.test(f.name) ? 'GL Journal of Transaction' : '';
+      if (gl) return set({ drag: false, fileName: '', fileKind: 'gl', fileErr: "This is SQL's " + gl + ': save it in the exports folder and use Fetch from SQL exports.', say: 'That file was not used.' });
+      const mb = (f.size || 0) / 1024 / 1024;
+      if (mb > 25) return set({ drag: false, fileName: '', fileKind: 'big', fileErr: 'This file is too large to read (' + mb.toFixed(1) + ' MB; at most 25 MB). Export a shorter period from SQL Account.', say: 'That file was not used.' });
+      set({ drag: false, fileName: f.name, fileKind: '', fileErr: '', say: f.name + ' chosen.' });
+    };
+    const openFolder = () => set({ folderEdit: !s.folderEdit, folderVal: badFolder ? folder : s.isDefault ? '' : s.folder, folderErr: '', folderMsg: '' });
+
+    // Files the fetch looked at.
+    const fileRow = () => 'display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:12px 22px;border-top:1px solid #F1F3F7';
+    // What the fetch read, in the order the review lists it: listings, then SQL's general-ledger reports, then MyInvois copies.
+    const TAKEN = { 'PV Listing Nov (2).xlsx': { meta: 'Payment Voucher Listing, 1 Nov to 12 Nov', counts: '0 new, 0 already imported, 4 also in another file' },
+      'PV Listing ZZ Trading.xlsx': { meta: 'Payment Voucher Listing, 1 Oct to 31 Oct', counts: '0 new, 0 already imported, 2 also in another file' } };
+    const LISTINGS = [
+      { name: 'PV Listing Oct-Nov.xlsx', meta: 'Payment Voucher Listing, 1 Oct to 12 Nov', counts: '6 new, 1 already imported' },
+      { name: 'export (3).xlsx', meta: 'Official Receipt Listing, 1 Oct to 12 Nov', counts: '1 new, 1 already imported' },
+      { name: 'Journal Voucher Listing.xlsx', meta: 'Journal Voucher Listing, 1 Oct to 31 Oct', counts: '1 new, 0 already imported' },
+      { name: 'Customer Invoice Listing.xlsx', meta: 'Customer Invoice Listing, 1 Oct to 12 Nov', counts: '2 new, 1 already imported' },
+      { name: 'Supplier Invoice Listing Oct.xlsx', meta: 'Supplier Invoice Listing, 1 Oct to 31 Oct', counts: '3 new, 0 already imported' },
+      { name: 'PV Listing Nov.xlsx', meta: 'Payment Voucher Listing, 1 Nov to 12 Nov', counts: '0 new, 0 already imported, 4 also in another file' },
+      ...(s.older ? [{ name: 'PV Listing Aug-Sep.xlsx', meta: 'Payment Voucher Listing, 1 Aug to 30 Sep', counts: '2 new, 0 already imported' }] : []),
+      ...s.taken.filter(n => TAKEN[n]).map(n => ({ name: n, ...TAKEN[n], cls: 'rv' }))
+    ].map(f => ({ glyph: 'document', cls: '', ...f }));
+    const REPORTS = [
+      { name: 'GL Journal Oct-Nov.xlsx', meta: 'GL Journal of Transaction, 1 Oct to 17 Nov', counts: '34 documents, 78 lines' },
+      { name: 'Trial Balance Oct.xlsx', meta: 'Trial Balance, 1 Oct to 31 Oct', counts: '31 accounts' },
+      { name: 'GL Ledger.xlsx', meta: 'GL Ledger, 1 Oct to 12 Nov', counts: '12 accounts' }
+    ].map(f => ({ glyph: 'sheet', cls: '', ...f }));
+    const MICOPY = [{ name: 'MyInvois Sep-Nov.xlsx', meta: 'MyInvois e-Invoices, 3 Sep to 13 Nov', glyph: 'verified', cls: '',
+      counts: '18 e-Invoices: 18 new, 0 status or details changed, 0 unchanged (11 issued, 1 self-billed, 6 received)' }];
+    const READ = s.rep ? REPORTS : [...LISTINGS, ...REPORTS, ...MICOPY];
+    const readFiles = READ.map(f => ({ ...f, row: fileRow() }));
+    const chip = (bg, fg) => 'display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const CHIP = { warn: chip('#FEF1D6', '#7A4300'), bad: chip('#FDE6E3', '#B0190F'), ok: chip('#E3F7EC', '#0A6B3D'), muted: chip('#E3E7ED', '#46546A') };
+    // One system for every file a fetch looks at (sqlfetch.py): seven statuses, each with one chip, one icon and the sentence the server sends.
+    // "Couldn't be read" covers several cases; the reason says which, and so what to do next. Anything else is left alone and only counted.
+    const STATUS = {
+      read: { word: 'Read', tone: 'ok', glyph: 'check', means: "A listing, a report of SQL's general ledger or a MyInvois copy this app reads. What is new is in the preview." },
+      imported_before: { word: 'Imported before', tone: 'muted', glyph: 'history', means: 'This exact file was imported earlier, so it is left alone.' },
+      copy: { word: 'A copy', tone: 'muted', glyph: 'copy', means: 'The same file as another one in this fetch, so it is read once.' },
+      other_company: { word: 'Another company', tone: 'warn', glyph: 'company', means: 'It is for a different company in Setup (a MyInvois copy is told by the TIN on its e-Invoices). Nothing was taken from it.' },
+      unknown_company: { word: 'Company not in Setup', tone: 'warn', glyph: 'company', means: "The company printed on it matches no company's name or registration number in Setup (a MyInvois copy: no company's TIN). If it is this company's, Take it for says so, once." },
+      too_large: { word: 'Too large', tone: 'bad', glyph: 'alert', means: 'An SQL export over 25 MB is not opened. Export a shorter period.' },
+      unreadable: { word: "Couldn't be read", tone: 'bad', glyph: 'alert', means: 'The file is locked, is in another currency, is a listing this app does not read yet, or does not add up. The reason says which.' }
+    };
+    const legend = Object.keys(STATUS).map(k => ({ word: STATUS[k].word, chip: CHIP[STATUS[k].tone], chipGlyph: STATUS[k].glyph, tone: STATUS[k].tone, means: STATUS[k].means }));
+    // An export printed with a company name that matches no company in Setup: taken only when the owner says whose it is.
+    const notInSetup = (title, name) => 'This ' + title + ' is from a company not in Setup: "' + name + '" matches no company\'s name or registration number in Setup, so nothing was taken from it. If it is AISB\'s, click Take it for AISB; otherwise correct the company\'s name or registration number in Setup › Companies, then fetch again.';
+    const UNUSED = s.rep ? [] : [
+      { name: 'PV Listing AI Oct.xlsx', status: 'other_company', reason: 'This Payment Voucher Listing is for AI (Agrinexus International), not AISB.' },
+      { name: 'PV Listing Nov (2).xlsx', status: 'unknown_company', company: 'AISB (M) SDN BHD (1331234-K)', reason: notInSetup('Payment Voucher Listing', 'AISB (M) SDN BHD (1331234-K)') },
+      { name: 'PV Listing ZZ Trading.xlsx', status: 'unknown_company', company: 'ZZ TRADING SDN BHD', reason: notInSetup('Payment Voucher Listing', 'ZZ TRADING SDN BHD') },
+      { name: 'GL Journal 2026.xlsx', status: 'too_large', reason: 'Too large to read (31.4 MB; at most 25 MB). Export a shorter period.' },
+      { name: 'PV Listing USD.xlsx', status: 'unreadable', reason: "This Payment Voucher Listing shows its amounts in USD, not ringgit (MYR). This app reads SQL's reports in ringgit only: export it again with the amounts in MYR." },
+      { name: 'PV Listing (GST) Oct.xlsx', status: 'unreadable', reason: "This is the GST layout of a listing, which this app doesn't read. Export the same listing with the layout that has no (GST) in its name." },
+      { name: 'Cash Book Listing Nov.xlsx', status: 'unreadable', act: 'paste', reason: 'This Cash Book Listing says it has 22 documents, but 21 could be read, so nothing was taken from it. Copy and paste this listing instead.' },
+      { name: 'OR Listing Nov.xlsx', status: 'unreadable', act: 'fetch', reason: "This file couldn't be opened. Close it if it is open in Excel, then fetch again." },
+      // The three MyInvois copies this fetch left out, as e-Invoices lists them under its source line.
+      { name: 'MyInvois Oct.xlsx', status: 'unreadable', reason: "Row 7 of this MyInvois copy has a UUID that isn't one LHDN gives (3KQ7WN2XHD), so nothing was taken from it. Copy the whole MyInvois Transaction grid again, with its headings." },
+      { name: 'MyInvois AI.xlsx', status: 'other_company', reason: 'This MyInvois copy is for AI (Agrinexus International), not AISB.' },
+      { name: 'MyInvois Other.xlsx', status: 'unknown_company', isSetup: true, reason: "This MyInvois copy has no e-Invoice whose supplier or buyer TIN is AISB's, so it was left out. Enter the company's TIN in Setup › Companies, then fetch again." }
+    ].filter(f => !s.taken.includes(f.name));
+    const takeBase = 'height:34px;padding:0 12px;border-radius:9px;font:600 13px Inter,sans-serif;color:#0F1A2B;cursor:pointer;flex:none;max-width:100%;text-align:left;';
+    const unused = UNUSED.map((f, i) => { const t = STATUS[f.status], asked = s.take === f.name;
+      return { ...f, word: t.word, tone: t.tone, glyph: t.tone === 'bad' ? 'alert' : 'document', chipGlyph: t.glyph, chip: CHIP[t.tone], row: fileRow(), reasonId: 'sql-un-' + i,
+        isFetch: f.act === 'fetch', isPaste: f.act === 'paste', isTake: !!f.company, isSetup: !!f.isSetup, go: () => run('fetch'),
+        // Take it for asks twice: the first click turns the button into the question, the second takes the printed name and fetches again.
+        takeLabel: asked ? 'Click again: "' + f.company + '" is AISB' : 'Take it for AISB',
+        takeStyle: takeBase + (asked ? 'border:1px solid #B7791F;background:#FFFBF2' : 'border:1px solid #5F6C80;background:#FFFFFF'),
+        take: () => {
+          if (!asked) return set({ take: f.name, say: 'Click again to confirm that "' + f.company + '" is AISB.' });
+          const text = 'Exports printed for "' + f.company + '" are taken for AISB from now on. Fetching again…';
+          set({ take: '', taken: [...s.taken, f.name], flash: { text, undo: null } });
+          run('fetch');
+        } }; });
+
+    // SQL entries already saved: waiting for a payment, probably a correction, linked, or ignored.
+    const BASE = [
+      { id: 'e1', no: 'PV2609-027', date: '30 Sep', iso: '2026-09-30', desc: 'Printer toner', sub: 'Code 400-P004 · Chq 104417', amt: '312.00', grp: 'linked', pay: 'Printer supplies', month: 'September 2026' },
+      { id: 'c1', no: 'CB2610-041', date: '31 Oct', iso: '2026-10-31', desc: 'Bank charges', sub: 'Code 310-000', amt: '48.00', grp: 'corr' },
+      { id: 'c2', no: 'CB2610-044', date: '31 Oct', iso: '2026-10-31', desc: 'Reversal of CB2610-041', sub: 'Code 310-000', amt: '48.00', grp: 'corr', moneyIn: true },
+      { id: 'x3', no: 'PV2611-003', date: '4 Nov', iso: '2026-11-04', desc: 'Electricity October', sub: 'Code 400-E012', amt: '1,163.20', grp: 'linked', pay: 'Electricity bill', month: 'October 2026' },
+      { id: 'x2', no: 'PV2610-005', date: '15 Oct', iso: '2026-10-15', desc: 'KWSP September', sub: 'Code 400-K001', amt: '11,180.00', grp: 'linked', pay: 'KWSP', month: 'September 2026' },
+      { id: 'x1', no: 'OR2610-006', date: '20 Oct', iso: '2026-10-20', desc: 'Fund received', sub: 'Code 500-F001', amt: '45,000.00', grp: 'linked', pay: 'Fund receipt', month: 'October 2026', moneyIn: true }
+    ];
+    // A voucher changed in SQL whose earlier entry is linked (PV2611-003) is listed once, under Changed in SQL, until its link is moved.
+    const added = imp ? payRows.filter(r => !(imp.changed || []).includes(r.id)).map(r => imp.wait.includes(r.id)
+      ? { ...r, grp: 'wait', isNew: true }
+      : { ...r, grp: 'linked', pay: NAME[imp.pays[r.id]] || r.desc, month: 'October 2026', isNew: true }) : [];
+    const ALL = [...added, ...BASE].map(e => {
+      const o = s.st[e.id];
+      if (!o) return e;
+      if (o.s === 'linked') return { ...e, grp: 'linked', pay: o.pay, month: 'October 2026' };
+      if (o.s === 'ignored') return { ...e, grp: 'ignored', pay: '', month: '' };
+      return { ...e, grp: e.grp === 'corr' ? 'corr' : 'wait', pay: '', month: '' };
+    });
+    const q = s.q.trim().toLowerCase();
+    const hit = e => !q || [e.no, e.date, e.desc, e.sub, e.amt, e.pay || '', e.moneyIn ? 'money in' : ''].join(' ').toLowerCase().includes(q);
+
+    // One sort for all four lists, as in the app: up, then down, then back to the list's own order.
+    const SORTS = { doc: e => e.no, date: e => e.iso, desc: e => e.desc.toLowerCase(), amt: e => num(e.amt), pay: e => (e.pay || '').toLowerCase() };
+    const srt = s.sort;
+    const order = list => !srt ? list : [...list].sort((a, b) => { const x = SORTS[srt.col](a), y = SORTS[srt.col](b); return (x < y ? -1 : x > y ? 1 : 0) * srt.dir; });
+    const LABELS = { doc: 'Doc no.', date: 'Date', desc: 'Description', amt: 'Amount', pay: 'Payment' };
+    const hd = Object.fromEntries(Object.keys(SORTS).map(col => {
+      const on = !!srt && srt.col === col;
+      const next = !on ? 'ascending' : srt.dir > 0 ? 'descending' : 'the list order';
+      return [col, { aria: on ? (srt.dir > 0 ? 'ascending' : 'descending') : 'none', up: on && srt.dir > 0, down: on && srt.dir < 0,
+        label: 'Sort by ' + LABELS[col] + ', ' + next,
+        go: () => set({ sort: !on ? { col, dir: 1 } : srt.dir > 0 ? { col, dir: -1 } : null }) }];
+    }));
+
+    const mark = (id, v, flash) => set({ st: { ...s.st, [id]: v }, flash: { ...flash, prev: s.st[id] }, confirmAll: false, confirmIgnore: false, say: flash.text });
+    const smallBtn = 'height:34px;padding:0 12px;border-radius:9px;border:1px solid #5F6C80;font:600 13px Inter,sans-serif;';
+    const linkBtn = off => smallBtn + (off ? 'background:#F4F6F9;color:#5F6C80' : 'background:#FFFFFF;color:#0F1A2B;cursor:pointer');
+    const deco = e => {
+      const sel = s.sel[e.id] ?? '', o = opts(e.no, e.moneyIn ? 'in' : 'out');
+      return { ...e, isNew: !!e.isNew, moneyIn: !!e.moneyIn, sel, noSel: !sel, linkStyle: linkBtn(!sel),
+        same: o.same, other: o.other, otherLabel: o.otherLabel,
+        hasChanged: e.grp !== 'linked' && !!e.linkedTo, changed: changedText(e),
+        amtText: (e.moneyIn ? '+' : '') + e.amt, amtStyle: amtCell(e.moneyIn, false), aria: 'Payment to link ' + e.no + ' to',
+        linkAria: 'Link ' + e.no, createAria: 'Create payment for ' + e.no, ignoreAria: 'Ignore ' + e.no, backAria: (e.grp === 'ignored' ? 'Un-ignore ' : 'Unlink ') + e.no,
+        pick: ev => set({ sel: { ...s.sel, [e.id]: ev.target.value } }),
+        link: () => mark(e.id, { s: 'linked', pay: NAME[sel] }, { text: 'Linked ' + e.no + ' to ' + NAME[sel] + '. The voucher number is now on the payment.', undo: e.id }),
+        create: () => mark(e.id, { s: 'linked', pay: e.desc }, { text: 'Created the payment "' + e.desc + '" from ' + e.no + ' and linked it.', undo: e.id }),
+        ignore: () => mark(e.id, { s: 'ignored' }, { text: 'Ignored ' + e.no + '. It is kept under Ignored, below.', undo: e.id }),
+        back: () => mark(e.id, { s: 'wait' }, { text: e.grp === 'ignored' ? e.no + ' is back under SQL entries not linked' : e.no + ' unlinked from ' + e.pay + "; it's back under SQL entries not linked", undo: null }) };
+    };
+    const wait = ALL.filter(e => e.grp === 'wait'), corr = ALL.filter(e => e.grp === 'corr');
+    const linkedAll = ALL.filter(e => e.grp === 'linked'), ignoredAll = ALL.filter(e => e.grp === 'ignored');
+    const waitRows = order(wait.filter(hit)).map(deco), corrRows = order(corr.filter(hit)).map(deco);
+    const linked = order(linkedAll.filter(hit)).map(deco), ignored = order(ignoredAll.filter(hit)).map(deco);
+    const groups = [{ head: false, hd, rows: waitRows, some: waitRows.length > 0, none: waitRows.length === 0,
+      noneText: wait.length ? 'No entry matches.' : 'Nothing waiting. Every SQL entry is linked to a payment or ignored.',
+      noneGlyph: wait.length ? 'search' : 'check', noneTone: wait.length ? 'muted' : 'ok' }];
+    if (corr.length) groups.push({ head: true, hd, title: 'Probably a correction (no money moved)',
+      note: 'Reversals and contras made in SQL, or a receipt and a payment for the same amount on the same day. Create payments for all leaves these out. Ignore them, unless money really moved.',
+      allLabel: 'Ignore all ' + corr.length,
+      all: () => set({ confirmIgnore: true, confirmAll: false, flash: null }), ask: s.confirmIgnore, cancel: () => set({ confirmIgnore: false }),
+      askText: 'Ignore ' + corr.length + ' probable corrections?', yesLabel: 'Ignore all ' + corr.length,
+      yes: () => { const st = { ...s.st }; corr.forEach(e => { st[e.id] = { s: 'ignored' }; }); const text = corr.length === 1 ? '1 entry ignored; it is listed under Ignored' : corr.length + ' entries ignored; they are listed under Ignored'; set({ st, confirmIgnore: false, say: text, flash: { text, undo: null } }); },
+      rows: corrRows, some: corrRows.length > 0, none: corrRows.length === 0, noneText: 'No entry matches.', noneGlyph: 'search', noneTone: 'muted' });
+    const total = ALL.length, shown = waitRows.length + corrRows.length + linked.length + ignored.length;
+    const doAll = () => { const st = { ...s.st }; const go = wait.filter(e => !e.linkedTo), left = wait.length - go.length;
+      go.forEach(e => { st[e.id] = { s: 'linked', pay: e.desc }; });
+      const text = 'Created ' + go.length + ' payments from SQL' + (left ? '; ' + left + ' left for you to check (number already linked, changed in SQL?)' : '')
+        + (corr.length ? '; ' + corr.length + ' left out as probably corrections (no money moved)' : '') + '; 2 bank lines matched';
+      set({ st, confirmAll: false, say: text, flash: { text, undo: null } }); };
+
+    // Journals and invoices kept on file. A journal's bank move comes from its account lines (fetched or pasted).
+    const jl = journalLines(s.jText ?? '');
+    const jdr = Math.round(jl.reduce((t, l) => t + l.dr, 0) * 100) / 100, jcr = Math.round(jl.reduce((t, l) => t + l.cr, 0) * 100) / 100;
+    const jnet = Math.round(jl.filter(l => l.code === BANK_CODE).reduce((t, l) => t + l.dr - l.cr, 0) * 100) / 100;
+    const kept = s.kept;
+    // A fetch that read MyInvois Sep-Nov.xlsx and was imported keeps what MyInvois says: the UUID, the status and the share link.
+    const miOn = !!imp && imp.src === 'fetch';
+    const EINV = {
+      ok: { text: 'Validated', glyph: 'verified', tone: 'ok', style: CHIP.ok },
+      cancelled: { text: 'Cancelled by CN2609-002', glyph: 'alert', tone: 'warn', style: CHIP.warn },
+      cancelledOct: { text: 'Cancelled by CN2611-002', glyph: 'alert', tone: 'warn', style: CHIP.warn },
+      uuid: { text: 'Has UUID', glyph: 'clock', tone: 'warn', style: CHIP.warn },
+      submitted: { text: 'Submitted, not validated', glyph: 'clock', tone: 'warn', style: CHIP.warn }
+    };
+    // The e-Invoices of MyInvois Sep-Nov.xlsx, by their row in the copy as the e-Invoices board numbers them. The UUIDs and
+    // Long IDs are made up for the sample, with the same generator as the e-Invoices and printed invoice boards, so the links agree.
+    const A26 = 'ABCDEFGHJKMNPQRSTVWXYZ0123456789';
+    const gen = (n, seed) => { let x = seed * 7919 + 13, o = ''; for (let i = 0; i < n; i++) { x = (Math.imul(x, 1103515245) + 12345) & 0x7fffffff; o += A26[(x >>> 16) % A26.length]; } return o; };
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const when = iso => { const d = iso.slice(0, 10).split('-'); return Number(d[2]) + ' ' + MON[Number(d[1]) - 1] + ' ' + d[0] + ', ' + iso.slice(11, 16); };
+    // doc: [row in the copy, type, MyInvois status, validated, Long ID known, date, description, amount, pill word after the read]
+    const MI = {
+      'IV2609-015': [1, 'Invoice', 'Valid', '2026-09-03 10:02:11', true, '3 Sep', 'Management fee August', '4,500.00', 'cancelled'],
+      'CN2609-002': [2, 'Credit Note', 'Valid', '2026-09-10 09:40:05', true, '10 Sep', 'Credit note: Management fee August', '4,500.00', 'ok'],
+      'IV2609-028': [3, 'Invoice', 'Valid', '2026-09-25 15:12:30', true, '25 Sep', 'Consultancy recharge September', '1,200.00', 'ok'],
+      'IV2609-022': [4, 'Invoice', 'Valid', '2026-09-30 16:45:02', false, '30 Sep', 'Management fee September', '4,500.00', 'uuid'],
+      'IV2609-030': [5, 'Invoice', 'Valid', '2026-09-30 16:50:18', true, '30 Sep', 'Rent September, Block A', '2,800.00', 'ok'],
+      'PV2609-027': [15, 'Invoice', 'Valid', '2026-09-28 11:05:47', true, '30 Sep', 'Printer toner', '312.00', 'ok'],
+      'IV2610-014': [6, 'Invoice', 'Valid', '2026-10-01 11:19:44', true, '1 Oct', 'Office rental October, Unit 3A', '1,800.00', 'ok'],
+      'IV2610-031': [7, 'Invoice', 'Valid', '2026-10-31 17:02:40', true, '31 Oct', 'Rent October, Block A', '2,800.00', 'cancelledOct'],
+      'IV2610-033': [8, 'Invoice', 'Valid', '2026-10-31 17:05:20', true, '31 Oct', 'Management fee October', '4,500.00', 'ok'],
+      'IV2611-002': [9, 'Invoice', 'Valid', '2026-11-02 10:11:09', true, '2 Nov', 'Office rental November, Unit 3A', '1,800.00', 'ok'],
+      'IV2611-005': [10, 'Invoice', 'Submitted', '', false, '2 Nov', 'Utilities recharge November, Unit 3A', '245.60', 'submitted'],
+      'PV2611-004': [13, 'Invoice', 'Valid', '2026-11-03 09:14:52', true, '5 Nov', 'Internet and phone', '420.00', 'ok'],
+      'PV2611-006': [14, 'Invoice', 'Valid', '2026-11-02 14:31:08', true, '5 Nov', 'Water bill October', '84.30', 'ok'],
+      'PV2611-007': [12, 'Self-billed Invoice', 'Valid', '2026-11-06 14:19:44', true, '6 Nov', 'Cloud software subscription October', '470.00', 'ok'],
+      'PV2611-009': [16, 'Invoice', 'Valid', '2026-10-20 10:22:31', true, '6 Nov', 'Courier charges October', '186.50', 'ok'],
+      'CN2611-002': [11, 'Credit Note', 'Valid', '2026-11-10 09:31:27', true, '10 Nov', 'Credit note: Rent October, Block A', '2,800.00', 'ok']
+    };
+    const miOf = no => { const m = MI[no]; if (!miOn || !m) return null;
+      const uuid = gen(26, m[0]); return { uuid, note: m[1] + ' · ' + m[2] + (m[3] ? ' · validated ' + when(m[3]) : ''), url: m[4] ? 'https://myinvois.hasil.gov.my/' + uuid + '/share/' + gen(40, m[0] + 100) : '' }; };
+    const DOCS = [
+      ...(imp ? [
+        { no: 'JV2610-007', kind: 'journal', iso: '2026-10-31', date: '31 Oct', desc: 'Payroll journal October', amt: '59,147.90', total: 59147.90, task: 'Salary PVs in SQL (one per person) (Oct 2026)', isNew: true, run: view === 'payroll-matched' },
+        { no: 'IV2611-002', kind: 'invoice', type: 'IV', date: '2 Nov', desc: 'Office rental November, Unit 3A', amt: '1,800.00', task: 'e-Invoice to the office tenant for rental (Nov 2026)', isNew: true, base: NAME[imp.pays.r8] || '', einv: miOn ? 'ok' : '' },
+        { no: 'IV2611-005', kind: 'invoice', type: 'IV', date: '2 Nov', desc: 'Utilities recharge November, Unit 3A', amt: '245.60', isNew: true, base: NAME[imp.pays.r9] || '', einv: miOn ? 'submitted' : '' },
+        { no: 'PI2610-011', kind: 'invoice', type: 'PI', date: '30 Oct', desc: 'Office rental October (INV-1043)', amt: '6,500.00', isNew: true },
+        { no: 'PI2610-012', kind: 'invoice', type: 'PI', date: '31 Oct', desc: 'Electricity October (TNB)', amt: '1,136.20', isNew: true },
+        { no: 'PI2610-013', kind: 'invoice', type: 'PI', date: '30 Oct', desc: 'Payroll advisory October (PA-1010)', amt: '3,200.00', isNew: true }] : []),
+      // JV2610-006's lines come with the GL Journal of Transaction of this fetch: from then on it moves the bank.
+      { no: 'JV2610-006', kind: 'journal', iso: '2026-10-24', date: '24 Oct', desc: 'Director fee October', amt: '12,000.00', total: 12000, moved: miOn ? -12000 : null },
+      { no: 'JV2611-004', kind: 'journal', iso: '2026-11-08', date: '8 Nov', desc: 'Transfer to Maybank savings', amt: '5,001.00', total: 5001, moved: -5001 },
+      { no: 'JV2611-001', kind: 'journal', iso: '2026-11-03', date: '3 Nov', desc: 'Transfer to fixed deposit', amt: '20,000.00', total: 20000, moved: -20000 },
+      { no: 'IV2610-014', kind: 'invoice', type: 'IV', date: '1 Oct', desc: 'Office rental October, Unit 3A', amt: '1,800.00', einv: 'ok', task: 'e-Invoice to the office tenant for rental (Oct 2026)',
+        base: 'Rental received October' },
+      { no: 'IV2610-031', kind: 'invoice', type: 'IV', date: '31 Oct', desc: 'Rent October, Block A', amt: '2,800.00', einv: miOn ? 'cancelledOct' : 'ok' },
+      { no: 'IV2610-033', kind: 'invoice', type: 'IV', date: '31 Oct', desc: 'Management fee October', amt: '4,500.00', einv: 'ok' },
+      { no: 'IV2609-028', kind: 'invoice', type: 'IV', date: '25 Sep', desc: 'Consultancy recharge September', amt: '1,200.00', einv: miOn ? 'ok' : 'submitted' },
+      { no: 'IV2609-022', kind: 'invoice', type: 'IV', date: '30 Sep', desc: 'Management fee September', amt: '4,500.00', einv: 'uuid' },
+      { no: 'IV2609-015', kind: 'invoice', type: 'IV', date: '3 Sep', desc: 'Management fee August', amt: '4,500.00', einv: 'cancelled' }
+    ];
+    const payOf = d => (d.no in s.dl ? s.dl[d.no] : d.base) || '';
+    const moveOf = d => kept && kept.to === d.no ? kept.move : d.moved;
+    const docs = DOCS.map(d => {
+      const pay = payOf(d), mv = moveOf(d), hasMove = d.kind === 'journal' && mv != null && Math.abs(mv) >= 0.005, sel = s.dsel[d.no] ?? '';
+      const o = opts(d.no, mv > 0 ? 'in' : 'out'), e = d.einv ? EINV[d.einv] : null;
+      const setPay = v => v ? set({ dl: { ...s.dl, [d.no]: v }, say: d.no + ' linked to ' + v + '.' })
+        : set({ dl: { ...s.dl, [d.no]: '' }, flash: { text: d.no + ' unlinked from ' + pay, undo: null }, say: d.no + ' unlinked from ' + pay });
+      const mi = miOf(d.no);
+      return { ...d, isNew: !!d.isNew, hasEinv: !!e, noEinv: !e, einvText: e ? e.text : '', einvGlyph: e ? e.glyph : 'clock', einvTone: e ? e.tone : 'muted',
+        einvStyle: e ? e.style : '', einvLink: !!(e && mi && mi.url), einvUrl: mi ? mi.url : '', einvAria: d.no + ' on MyInvois, opens in a new tab',
+        hasTask: !!d.task, noTask: !d.task, task: d.task || '', hasRun: !!d.run,
+        hasMove, move: hasMove ? 'Moves RM ' + fmt(Math.abs(mv)) + ' ' + (mv > 0 ? 'into' : 'out of') + ' the bank, so it counts in the bank reconciliation.' : '',
+        hasPay: !!pay, payNote: pay ? (d.kind === 'journal' ? 'Payment: ' : 'Receipt: ') + pay : '', unlinkAria: 'Unlink ' + d.no,
+        canLink: hasMove && !pay, same: o.same, other: o.other, otherLabel: o.otherLabel,
+        sel, noSel: !sel, linkStyle: linkBtn(!sel), aria: 'Payment to link ' + d.no + ' to', linkAria: 'Link ' + d.no, createAria: 'Create payment for ' + d.no,
+        pick: ev => set({ dsel: { ...s.dsel, [d.no]: ev.target.value } }),
+        link: () => setPay(NAME[sel]), create: () => setPay(d.desc), unlink: () => setPay('') };
+    });
+    // The journal-lines preview: which imported journal the pasted lines belong to (app.py _text_lines_preview).
+    const balanced = Math.abs(jdr - jcr) < 0.005 && jl.length > 0;
+    const JOURNALS = DOCS.filter(d => d.kind === 'journal').sort((a, b) => b.iso.localeCompare(a.iso)).map(d => ({ ...d, match: Math.abs(d.total - jdr) < 0.005 }));
+    const hits = JOURNALS.filter(j => j.match);
+    const jOpts = [...JOURNALS.filter(j => j.match), ...JOURNALS.filter(j => !j.match)]
+      .map(j => ({ v: j.no, l: j.no + ', ' + j.date + ' 2026, ' + fmt(j.total) + (j.match ? ' (same total)' : '') }));
+    const chosen = s.jPick || (hits.length === 1 ? hits[0].no : '');
+    const head = JOURNALS.find(j => j.no === chosen);
+    let jMsg = '', jNote = '', jWarn = false;
+    if (!balanced) jMsg = "These lines don't balance: debits add up to " + fmt(jdr) + ' and credits to ' + fmt(jcr) + ". They can't be kept.";
+    else if (!s.jPick && hits.length === 1) jMsg = 'Only ' + hits[0].no + ' has a total of ' + fmt(jdr) + ', so it is chosen. Change it if these lines are from another journal.';
+    else if (!chosen) jMsg = hits.length ? hits.length + ' journals have a total of ' + fmt(jdr) + ': choose the one these lines are from.' : 'No imported journal has a total of ' + fmt(jdr) + ': choose the journal these lines are from.';
+    if (balanced && head) {
+      const on = jl.filter(l => l.code === BANK_CODE).length;
+      jNote = Math.abs(jnet) < 0.005
+        ? (on ? 'Journal lines for ' + head.no + ': its ' + on + ' lines on the bank account ' + BANK_CODE + ' net to nothing, so it moves no money. The lines are kept.'
+          : 'Journal lines for ' + head.no + ': none of the ' + jl.length + ' lines is on the bank account ' + BANK_CODE + ', so it moves no money. The lines are kept.')
+        : 'Journal lines for ' + head.no + ': bank account ' + BANK_CODE + ' ' + (jnet > 0 ? '+' : '-') + fmt(Math.abs(jnet)) + ' (' + (jnet > 0 ? 'money in' : 'money out') + '). Counts in the bank reconciliation once applied.';
+      if (payOf(head)) jNote += ' It is linked to a payment, which keeps the amount it has: check that payment.';
+      if (!head.match) { jNote += ' These lines add up to ' + fmt(jdr) + ', but ' + head.no + ' is ' + fmt(head.total) + ': choose the journal they come from.'; jWarn = true; }
+    }
+    const jOk = balanced && !!head;
+    const keepLines = () => set({ stage: 'kept', kept: { to: head.no, n: jl.length, move: jnet }, jPick: '', say: 'Kept ' + jl.length + ' journal lines.' });
+
+    // Import history: a fetch opens to the listings it read.
+    const IMPORTS = [
+      ...(kept ? [{ id: 'kept', fetch: false, title: 'SQL listing pasted', sub: kept.n + ' entries, 0 linked · ' + kept.n + ' lines', when: 'Just now', isNew: true, glyph: 'clipboard' }] : []),
+      ...(s.repKept ? [{ id: 'rep', fetch: true, title: "SQL reports fetched 20261118-1042: GL Journal Oct-Nov.xlsx, Trial Balance Oct.xlsx, GL Ledger.xlsx", sub: '0 entries, 0 linked · 78 lines',
+        when: 'Just now', files: REPORTS, isNew: true }] : []),
+      ...(imp ? [{ id: 'new', fetch: imp.src === 'fetch', title: imp.src === 'fetch' ? 'SQL exports fetched 20261118-1042.csv' : imp.src === 'paste' ? 'SQL listing pasted' : 'PV Listing Nov.xlsx',
+        sub: imp.n + ' entries, ' + imp.links + ' linked' + (imp.src === 'fetch' ? ' · 78 lines' : ''), when: 'Just now', files: READ, isNew: true, glyph: imp.src === 'paste' ? 'clipboard' : 'document' }] : []),
+      { id: 'i1', fetch: true, title: 'SQL exports fetched 20261112-1604.csv', sub: '14 entries, 11 linked · 28 lines', when: '12 Nov 2026, 16:04',
+        files: [{ name: 'PV Listing Oct.xlsx', meta: 'Payment Voucher Listing, 1 Oct to 31 Oct' }, { name: 'export (2).xlsx', meta: 'Official Receipt Listing, 1 Oct to 31 Oct' },
+          { name: 'GL Journal Nov.xlsx', meta: 'GL Journal of Transaction, 1 Nov to 12 Nov' }] },
+      { id: 'i2', fetch: false, title: 'SQL listing pasted', sub: '12 entries, 12 linked', when: '5 Nov 2026, 09:31', glyph: 'clipboard' },
+      { id: 'i3', fetch: false, title: 'Cash Book Listing Oct.xlsx', sub: '22 entries, 19 linked', when: '2 Nov 2026, 10:15', glyph: 'document' }
+    ];
+    const imports = IMPORTS.map(i => {
+      const open = !!s.openImp[i.id];
+      return { ...i, plain: !i.fetch, open, chev: open ? 'chevronDown' : 'chevronRight', chevCls: open ? 'chev on' : 'chev', glyph: i.glyph || 'document', cls: i.isNew ? 'rv' : '',
+        files: (i.files || []).map(f => ({ name: f.name, meta: f.meta, viewAria: 'View ' + f.name })),
+        toggle: () => set({ openImp: { ...s.openImp, [i.id]: !open } }) };
+    });
+
+    // Styles that follow the state.
+    const seg = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const tabBase = 'display:inline-flex;align-items:center;gap:8px;white-space:nowrap;height:48px;padding:0 2px;border:0;background:transparent;font:600 14px Inter,sans-serif;cursor:pointer;margin-bottom:-1px;transition:border-color .12s ease-out,color .12s ease-out;';
+    const tabOn = tabBase + 'color:#0F1A2B;border-bottom:2px solid #2450B8', tabOff = tabBase + 'color:#5F6C80;border-bottom:2px solid transparent';
+    const paste = s.mode === 'paste';
+    const done = stage === 'done' || stage === 'kept';
+    const busyFetch = reading && src === 'fetch', busyOther = reading && src !== 'fetch';
+    const fetchPrimary = !['found', 'done', 'journal', 'kept'].includes(stage) && !s.folderEdit;
+    const fetchedOnce = src === 'fetch' && ['found', 'none', 'empty', 'done'].includes(stage);
+    const stepBase = 'display:flex;gap:12px;border-radius:14px;background:#FFFFFF;';
+    const tileBase = 'width:28px;height:28px;border-radius:99px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none;';
+    const empty = stage === 'empty';
+    const inputBase = 'width:100%;box-sizing:border-box;height:40px;padding:0 12px;border-radius:10px;font:400 13px ui-monospace,Consolas,monospace;color:#0F1A2B;';
+    const linkedOpen = s.openLinked ?? (!!q && linked.length > 0);
+    const nUnused = UNUSED.length;
+    const waitN0 = noPay.filter(r => !r.linkedTo).length, nChanged = noPay.filter(r => r.linkedTo).length;
+    const keepStyle = 'display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;'
+      + (jOk ? 'background:#2450B8;cursor:pointer' : 'background:#9AAAC6;cursor:not-allowed');
+
+    return {
+      eyebrow: s.co + (isSql ? ' · Kept in SQL Account' : ' · Kept here'), isSql, notSql: !isSql,
+      // The top-bar switcher: back to AISB from the old-address view. Choosing AI lands on AI's Overview (Topbar), so the page is left as it is.
+      onTopCo: code => { if (code === 'aisb' && this.state.co !== 'AISB') set({ co: 'AISB', say: 'Showing SQL import for AISB.' }); },
+      goAisb: () => set({ co: 'AISB', say: 'Showing SQL import for AISB.' }),
+      sbCo: isSql ? "aisb" : "ai", sbKind: isSql ? "sqlPayroll" : "here",
+      coA: seg(isSql), coB: seg(!isSql), coAOn: isSql ? 'true' : 'false', coBOn: isSql ? 'false' : 'true',
+      pickA: () => set({ co: 'AISB' }), pickB: () => set({ co: 'AI' }),
+      step3: stepBase + (done ? 'padding:16px;border:1px solid #BFE8D0' : 'padding:15px;border:2px solid #2450B8'),
+      step3Tile: tileBase + (done ? 'background:#E3F7EC;color:#0A6B3D' : 'background:#2450B8;color:#FFFFFF'),
+      step3Title: done ? 'Imported' : 'Fetch them here',
+      step3Text: done ? 'Export again whenever SQL has something new. A document is never imported twice.' : 'Press Fetch from SQL exports, check the preview, then import.',
+
+      folder, isDefault: s.isDefault && !badFolder, folderEdit: s.folderEdit, folderVal: s.folderVal, folderErr: s.folderErr, folderBad: !!s.folderErr,
+      folderMsg: s.folderMsg, hasFolderMsg: !!s.folderMsg && !s.folderEdit,
+      folderInput: inputBase + (s.folderErr ? 'border:1px solid #C7372B;background:#FFFBFA' : 'border:1px solid #5F6C80;background:#FFFFFF'),
+      openFolder, saveFolder, onFolder: e => set({ folderVal: e.target.value, folderErr: '' }),
+      fixFolder: () => set({ folderEdit: true, folderVal: badFolder ? folder : s.isDefault ? '' : s.folder, folderErr: '', folderMsg: '' }),
+      folderKey: e => { if (e.key === 'Enter') saveFolder(); else if (e.key === 'Escape') openFolder(); },
+      say: s.say,
+
+      fetch: () => run('fetch'), busyFetch, fetchOff: busyFetch && s.stage !== null, idleFetch: !busyFetch, busyFetchAttr: busyFetch ? 'true' : 'false',
+      fetchCls: fetchPrimary ? 'hb' : 'hs', fetchTone: fetchPrimary ? 'white' : 'brand',
+      fetchLabel: busyFetch ? 'Reading the folder…' : fetchedOnce ? 'Fetch again' : 'Fetch from SQL exports',
+      fetchHint: busyFetch ? 'Opening each workbook in the folder' : 'Nothing in the folder is moved or changed',
+      fetchStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;width:100%;box-sizing:border-box;padding:6px 18px;border-radius:10px;font:600 14px Inter,sans-serif;'
+        + (fetchPrimary ? 'border:0;background:#2450B8;color:#FFFFFF;' : 'border:1px solid #5F6C80;background:#FFFFFF;color:#0F1A2B;') + (busyFetch ? 'cursor:progress' : 'cursor:pointer'),
+      isError: stage === 'error',
+
+      paste, file: !paste, pasteSel: paste ? 'true' : 'false', fileSel: paste ? 'false' : 'true', panelBy: paste ? 'sql-tab-paste' : 'sql-tab-file',
+      tabPaste: paste ? tabOn : tabOff, tabFile: paste ? tabOff : tabOn, tonePaste: paste ? 'brand' : 'muted', toneFile: paste ? 'muted' : 'brand',
+      usePaste: () => set({ mode: 'paste' }), useFile: () => set({ mode: 'file' }), pasteTab: paste ? 0 : -1, fileTab: paste ? -1 : 0,
+      tabKey: e => { const to = { ArrowRight: paste ? 'file' : 'paste', ArrowLeft: paste ? 'file' : 'paste', Home: 'paste', End: 'file' }[e.key]; if (!to) return; e.preventDefault(); set({ mode: to });
+        const el = document.getElementById(to === 'paste' ? 'sql-tab-paste' : 'sql-tab-file'); if (el) el.focus(); },
+      pasteVal: s.pasteVal, onPaste: e => set({ pasteVal: e.target.value, pasteErr: '' }), pasteErr: s.pasteErr, pasteBad: !!s.pasteErr,
+      // A copy of SQL's MyInvois Transaction grid is refused: it is read from the exports folder, never pasted.
+      readPaste: () => (!s.pasteVal.trim() ? set({ pasteErr: 'Paste the rows copied from SQL first.' })
+        : /\bUUID\b/i.test(s.pasteVal.split('\n')[0]) && /Supplier TIN/i.test(s.pasteVal.split('\n')[0])
+          ? set({ pasteErr: "This is a copy of SQL's MyInvois Transaction screen: paste it into Excel, save it in the exports folder and use Fetch from SQL exports." })
+          : run('paste')),
+      readFile: () => (s.fileName ? run('file') : set({ fileErr: 'Choose the SQL export file first.' })), fileErr: s.fileErr, fileBad: !!s.fileErr,
+      // The box takes a click or a drop. A file that is not a spreadsheet or text export is refused here, in line, with the app's sentence.
+      onFile: e => takeFile(e.target.files && e.target.files[0]),
+      dragOver: e => { e.preventDefault(); if (!s.drag) set({ drag: true }); },
+      dragLeave: e => { if (e.currentTarget && e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; set({ drag: false }); },
+      onDrop: e => { e.preventDefault(); const fl = e.dataTransfer && e.dataTransfer.files ? e.dataTransfer.files : []; if (fl.length > 1) return set({ drag: false, fileName: '', fileKind: 'many', fileErr: 'Drop one file at a time.' }); takeFile(fl[0]); },
+      dragOn: s.drag, dragIdle: !s.drag, fileSum: s.fileKind === 'sum',
+      dropStyle: 'position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:26px;border-radius:12px;cursor:pointer;text-align:center;' + (s.drag ? 'border:1.5px solid #2450B8;background:#F3F6FE' : s.fileErr ? 'border:1.5px dashed #C7372B;background:#FFFBFA' : 'border:1.5px dashed #5F6C80;background:#FAFBFC'),
+      fileHint: s.fileName ? 'Chosen: ' + s.fileName : '.xlsx, .xls, .csv, .ods or .txt, exported from SQL Account', busyOther, busyOtherAttr: busyOther ? 'true' : 'false',
+      pasteLabel: busyOther ? 'Reading the rows…' : 'Read pasted rows', fileLabel: busyOther ? 'Reading the file…' : 'Read file',
+
+      hasResult: ['reading', 'found', 'none', 'empty', 'done', 'journal', 'kept', 'rdone'].includes(stage), isRdone: stage === 'rdone',
+      isReading: reading, readingText: src === 'fetch' ? 'Reading the folder…' : src === 'paste' ? 'Reading the pasted rows…' : 'Reading the file…',
+      isFound: stage === 'found', showReview: stage === 'found' && src === 'fetch', showCols: stage === 'found' && src !== 'fetch',
+      nRead: READ.length, nDocs: ROWS.length, nNew: fresh.length, nOld: old.length, hasDocs: !s.rep,
+      // The review's first line, as sqlFetchReview words it.
+      reviewLead: s.rep ? '' : LISTINGS.length + ' listings read',
+      reviewRest: s.rep ? 'No new SQL listing was found in ' + folder + '.' : ' from ' + folder + ': ' + ROWS.length + ' documents, ' + fresh.length + ' new, ' + old.length + ' already imported.',
+      reviewReports: " 3 reports of SQL's general ledger read.", reviewMi: s.rep ? '' : ' MyInvois e-Invoices: 18.',
+      hasUnused: nUnused > 0, nUnusedText: nUnused + (nUnused === 1 ? ' file' : ' files') + ' not used',
+      leftAlone: s.rep ? 'Left alone: 9 files imported before.' : "Left alone: 2 files imported before; 1 copy of a file read; 4 other workbooks that aren't SQL listings or reports.",
+      readFiles, unused, legend, legendOn: s.legend, toggleLegend: () => set({ legend: !s.legend }), legendChevCls: s.legend ? 'chev on' : 'chev', nUnused, left: s.left, toggleLeft: () => set({ left: !s.left }), leftLabel: s.left ? 'Hide files' : 'Show files', leftChev: s.left ? 'chevronDown' : 'chevronRight', leftChevCls: s.left ? 'chev on' : 'chev',
+      pvTitle: s.rep && src === 'fetch' ? "SQL's general-ledger reports" : src === 'fetch' ? 'SQL exports fetched 18 Nov 2026, 10:42' : src === 'paste' ? 'SQL listing pasted 18 Nov 2026, 10:42' : 'PV Listing Nov.xlsx',
+      pvCount: s.rep && src === 'fetch' ? 'No new listing entries' : ROWS.length + ' entries found',
+      pvNote: src === 'fetch' ? 'Check each suggested payment, then import. The new documents are listed first.' : 'Check the columns were read correctly, then check each suggested payment.',
+      hasPvNote: !(s.rep && src === 'fetch'), hasTable: !(s.rep && src === 'fetch'),
+      // A fetch that read SQL's general-ledger reports: what keeping the account lines would do (sqlLedgerBox).
+      hasLedger: src === 'fetch', lb: { docs: '34 documents', lines: '78 lines', fresh: 22, changed: 1, same: 11, gone: 1,
+        files: [{ name: 'GL Journal Oct-Nov.xlsx', title: 'GL Journal of Transaction', period: '01/10/2026-17/11/2026', note: '34 documents, 78 lines' },
+          { name: 'Trial Balance Oct.xlsx', title: 'Trial Balance', period: '01/10/2026-31/10/2026', note: 'Checked against the account lines on import.' },
+          { name: 'GL Ledger.xlsx', title: 'GL Ledger', period: '01/10/2026-12/11/2026', note: 'Checked against the account lines on import.' }],
+        goneList: 'PV2611-008 (7 Nov, moved RM 250.00 on the bank)', countHead: '1 journal will count in the bank reconciliation',
+        counting: [{ text: 'JV2610-006, 24 Oct: RM 12,000.00 out of the bank' }] },
+      hasSigned: !!s.older, signedText: 'New entries fall in September 2026, whose bank reconciliation is signed off: its book figures may change. Nothing is un-signed: check that month again after importing.',
+      cols: s.cols, toggleCols: () => set({ cols: !s.cols }), colsChev: s.cols ? 'chevronDown' : 'chevronRight', colsChevCls: s.cols ? 'chev on' : 'chev',
+      // applyLabel: the entries not imported yet and how many are linked, then what else the fetch keeps.
+      rows, importLabel: s.rep && src === 'fetch' ? 'Keep account lines' : 'Import ' + fresh.length + ' entries (' + nLinked + ' linked)' + (src === 'fetch' ? ' and keep account lines and keep MyInvois e-Invoices' : ''), doImport,
+      importNote: s.rep && src === 'fetch' ? "Nothing is matched to payments: SQL's account lines are kept and checked against its reports."
+        : (waitN0 ? waitN0 + (waitN0 === 1 ? ' new document has' : ' new documents have') + ' no payment yet. Import anyway: ' + (waitN0 === 1 ? 'it waits' : 'they wait') + ' under SQL entries not linked to a payment.' : 'Every new document is linked to a payment or a checklist item.')
+          + (nChanged ? ' ' + nChanged + ' changed in SQL ' + (nChanged === 1 ? 'waits' : 'wait') + ' under Changed in SQL.' : ''),
+      discard: () => { clearTimeout(this.timer); set({ stage: 'idle', picks: null, cols: false, left: false, jPick: '' }); },
+
+      isNone: stage === 'none' || empty, noneFiles: stage === 'none',
+      noneTitle: 'Nothing new to import',
+      noneText: empty ? 'No new SQL listing was found in ' + folder + '. In SQL Account, export the listing and save it in SQL Drive, in the Download folder, then fetch again.'
+        : 'No new SQL listing was found in ' + folder + '. ' + nUnused + ' files were not used: see why below. Nothing was changed.',
+      noneGlyph: empty ? 'folder' : 'alert', noneTone: empty ? 'muted' : 'warn',
+      noneTile: 'width:48px;height:48px;border-radius:14px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + (empty ? '#EEF1F5' : '#FEF1D6'),
+
+      isDone: stage === 'done', doneTitle: imp ? 'Imported ' + imp.n + ' entries' : '',
+      // The rest of the import toast: links, the account lines and MyInvois e-Invoices kept, and a linked voucher changed in SQL.
+      doneText: imp ? imp.links + ' linked to payments, ' + imp.skipped + ' already imported; 2 bank lines matched'
+        + (imp.src === 'fetch' ? ". Kept the account lines of 34 documents from 3 reports of SQL's general ledger. Kept 18 MyInvois e-Invoices (18 new, 0 changed); 6 SQL documents filled in" : '')
+        + ((imp.changed || []).length ? '. ' + imp.changed.length + ' linked ' + (imp.changed.length === 1 ? 'voucher was' : 'vouchers were') + ' changed in SQL: see Changed in SQL' : '') + '.' : '',
+      doneChanged: !!(imp && (imp.changed || []).length),
+      doneNext: 'See entries not linked',
+
+      isJournal: stage === 'journal', jlCount: jl.length + ' journal lines found', jlBad: !balanced, jlOk: balanced,
+      jlSel: chosen, jlOpts: jOpts, jlPick: e => set({ jPick: e.target.value }), jlMsg: jMsg, jlHasMsg: balanced && !!jMsg,
+      jlNote: jNote, jlHasNote: !!jNote, jlNoteGlyph: jWarn ? 'alert' : 'bank', jlNoteTone: jWarn ? 'warn' : 'brand',
+      jlNoteBox: 'display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;' + (jWarn ? 'background:#FFFBF2;border:1px solid #F3D9A6' : 'background:#F4F7FE;border:1px solid #D6E2FB'),
+      jlOff: !jOk, jlKeepStyle: keepStyle, jlKeepLabel: 'Keep ' + jl.length + ' journal lines', keepLines,
+      isKept: stage === 'kept', keptTitle: kept ? 'Kept ' + kept.n + ' journal lines' : '',
+      keptText: kept ? 'They are kept with ' + kept.to + '.' : '',
+
+      q: s.q, onQ: e => set({ q: e.target.value, openLinked: null }), findCount: q ? 'Showing ' + shown + ' of ' + total + ' SQL entries' : total + ' SQL entries',
+      hd, groups, waitN: wait.length, canAll: wait.length > 1 && !s.confirmAll, allLabel: 'Create payments for all ' + wait.length,
+      askAll: () => set({ confirmAll: true, confirmIgnore: false, flash: null }), confirmAll: s.confirmAll && wait.length > 1, cancelAll: () => set({ confirmAll: false }), doAll,
+      allAsk: 'Create ' + wait.length + ' payments?', allYes: 'Create ' + wait.length + ' payments',
+      hasFlash: !!s.flash, flashText: s.flash ? s.flash.text : '', canUndo: !!(s.flash && s.flash.undo),
+      undo: () => { const st = { ...s.st }; if (s.flash.prev) st[s.flash.undo] = s.flash.prev; else delete st[s.flash.undo]; set({ st, flash: null, say: 'Undone.' }); }, clearFlash: () => set({ flash: null }),
+      linked, linkedN: linkedAll.length, linkedSome: linked.length > 0, linkedNone: linked.length === 0, linkedNoneText: linkedAll.length ? 'No entry matches.' : 'None yet.',
+      openLinked: linkedOpen, toggleLinked: () => set({ openLinked: linkedOpen ? (q ? false : null) : true }), linkedChev: linkedOpen ? 'chevronDown' : 'chevronRight', linkedChevCls: linkedOpen ? 'chev on' : 'chev',
+      ignored, ignoredN: ignoredAll.length, hasIgnored: ignoredAll.length > 0,
+      openIgnored: s.openIgnored, toggleIgnored: () => set({ openIgnored: !s.openIgnored }), ignoredChev: s.openIgnored ? 'chevronDown' : 'chevronRight', ignoredChevCls: s.openIgnored ? 'chev on' : 'chev',
+      docs, imports, docsNone: docs.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

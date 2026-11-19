@@ -1,0 +1,676 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add payment · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD !important}
+.hd:hover{background:#8F140C !important}
+/* motion and focus base */
+.hb,.hs,.hr,.hd{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,nav[aria-label="Main"] .nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.spin{display:inline-block;width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+/* status pills and chips, as Foundations draws them */
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;border:0;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.tb:hover{background:#2D4670 !important}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+input:disabled,select:disabled{background:#F5F6F8 !important;color:#5F6C80 !important}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{dlgOn}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="register" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{dlgOn}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Payments" page="Payments register" sub="Add payment" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #2450B8">{{coCode}}</span><span class="cp mute">{{coKind}}</span><span style="color: #5F6C80; font-size: 13px">October 2026</span></div>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600; letter-spacing: -.01em">Payments register</h1>
+          <a href="Main.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none">{{todoText}}</a>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" class="hs" onClick="{{excel}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="download" tone="brand" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+          <button type="button" id="np-add" class="hb" onClick="{{openNew}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a payment</button>
+        </div>
+      </div>
+
+      <nav aria-label="Register views" style="display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid #E3E7ED">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6"><a href="PaymentsRegister.dc.html" aria-current="{{t.cur}}" class="hs" style="{{t.style}}">{{t.label}}<sc-if value="{{t.hasCount}}" hint-placeholder-val="{{ true }}"><span style="{{t.cntStyle}}">{{t.count}}</span></sc-if></a></sc-for>
+      </nav>
+
+      <section aria-labelledby="np-pay-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #EEF1F5">
+          <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="payment" tone="brand" size="22" hint-size="22px,22px"></dc-import><h2 id="np-pay-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">All payments</h2><span style="color: #5F6C80">· {{payCount}}</span></div>
+          <span style="color: #5F6C80; font-size: 13px">Click a payment to upload its documents.</span>
+        </div>
+        <div style="overflow-x: auto">
+          <table style="width: 100%; min-width: 1120px; border-collapse: collapse">
+            <thead>
+              <tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                <th scope="col" style="padding: 10px 20px; font-weight: 600">Payment</th>
+                <th scope="col" style="padding: 10px 12px; font-weight: 600">Type</th>
+                <th scope="col" style="padding: 10px 12px; font-weight: 600">Paid / received</th>
+                <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Amount</th>
+                <th scope="col" style="padding: 10px 12px; font-weight: 600">Documents</th>
+                <th scope="col" style="padding: 10px 12px; font-weight: 600">Status</th>
+                <th scope="col" style="padding: 10px 20px 10px 12px; font-weight: 600">Approval</th>
+              </tr>
+            </thead>
+            <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+              <tbody>
+                <tr style="background: #F7F8FA; border-top: 1px solid #EEF1F5">
+                  <td colspan="3" style="padding: 8px 20px; font-weight: 600; font-size: 13px; color: #46546A">{{g.label}}</td>
+                  <td style="padding: 8px 12px; text-align: right; font-weight: 600; font-size: 13px; font-variant-numeric: tabular-nums; color: #46546A"><sc-if value="{{g.hasOut}}" hint-placeholder-val="{{ true }}"><div>{{g.outTxt}} out</div></sc-if><sc-if value="{{g.hasIn}}" hint-placeholder-val="{{ false }}"><div style="color: #0A6B3D">+{{g.inTxt}} in</div></sc-if></td>
+                  <td colspan="3"></td>
+                </tr>
+                <sc-for list="{{g.rows}}" as="p" hint-placeholder-count="2">
+                  <tr id="{{p.rowId}}" class="{{p.rowCls}}" style="border-top: 1px solid #EEF1F5">
+                    <td style="padding: 12px 20px"><a href="Payment.dc.html" style="font-weight: 600; color: #0F1A2B; text-decoration: none">{{p.name}}</a><sc-if value="{{p.estimate}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; height: 20px; align-items: center; padding: 0 7px; border-radius: 6px; background: #EEF1F5; color: #46546A; font-size: 11px; font-weight: 600; margin-left: 6px">estimate</span></sc-if><sc-if value="{{p.isNew}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; height: 20px; align-items: center; padding: 0 7px; border-radius: 6px; background: #EAF0FD; color: #2450B8; font-size: 11px; font-weight: 700; margin-left: 6px">New</span></sc-if><div style="color: #5F6C80; font-size: 12px">{{p.sub}}</div></td>
+                    <td style="padding: 12px; color: #46546A">{{p.type}}</td>
+                    <td style="padding: 12px; color: #46546A; white-space: nowrap">{{p.paid}}</td>
+                    <td style="{{p.amtStyle}}">{{p.amount}}</td>
+                    <td style="padding: 12px"><div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{p.docs}}" as="d" hint-placeholder-count="2"><span style="{{d.style}}">{{d.mark}} {{d.label}}</span></sc-for></div></td>
+                    <td style="padding: 12px"><span style="{{p.pill}}">{{p.status}}</span><sc-if value="{{p.hasHint}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px; margin-top: 4px; max-width: 260px; white-space: normal">{{p.hint}}</div></sc-if></td>
+                    <td style="padding: 12px 20px 12px 12px"><span class="{{p.mkCls}}" style="white-space: normal; height: auto; min-height: 24px; padding: 2px 9px"><dc-import name="Icon" glyph="{{p.mkGlyph}}" tone="{{p.mkTone}}" size="14" hint-size="14px,14px"></dc-import>{{p.mkText}}</span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </sc-for>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; max-width: 560px; min-height: 44px; padding: 8px 10px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1; min-width: 0">{{toastText}}</span><sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="np-undo" class="tb" onClick="{{undo}}" style="flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="navOn" size="14" hint-size="14px,14px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ true }}">
+    <div class="{{dimClass}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 72px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgClass}}" role="dialog" aria-modal="true" aria-labelledby="np-title" aria-describedby="np-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{submit}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 640px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="payment" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{eyebrow}}</span>
+          <h2 id="np-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">New payment</h2>
+          <span id="np-sub" style="color: #46546A; font-size: 13px">For one-off bills and money in, not coming from a request. Claims and salary advances are entered on HR › Claims and advances.</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" disabled="{{saving}}" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start">
+        <sc-if value="{{refOn}}" hint-placeholder-val="{{ false }}">
+          <div id="np-refused" role="alert" tabindex="-1" class="ex" style="grid-column: 1 / -1; display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F5C2BB; background: #FDF3F2; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A">{{refText}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{summaryOn}}" hint-placeholder-val="{{ false }}">
+          <div id="np-summary" role="alert" class="ex" style="grid-column: 1 / -1; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{summaryTitle}}</b> {{summaryList}}</span></div>
+        </sc-if>
+
+        <sc-if value="{{fromOv}}" hint-placeholder-val="{{ false }}">
+          <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px">
+            <label for="np-co" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Company <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <select id="np-co" value="{{fCo.val}}" onChange="{{fCo.change}}" required="{{ true }}" aria-required="true" aria-invalid="{{fCo.inv}}" aria-describedby="{{fCo.by}}" disabled="{{saving}}" style="{{fCo.style}}">
+              <sc-for list="{{coOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.k}}" disabled="{{o.dis}}">{{o.label}}</option></sc-for>
+            </select>
+            <sc-if value="{{fCo.errOn}}" hint-placeholder-val="{{ false }}"><span id="np-co-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fCo.err}}</span></sc-if>
+            <span id="np-co-hint" style="color: #5F6C80; font-size: 12px">A payment belongs to one company's month. Its bank accounts follow.</span>
+          </div>
+        </sc-if>
+
+        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px">
+          <label for="np-desc" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Description <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+          <input id="np-desc" type="text" value="{{fDesc.val}}" onChange="{{fDesc.change}}" placeholder="e.g. Printer toner, Stationery Mart" required="{{ true }}" aria-required="true" aria-invalid="{{fDesc.inv}}" aria-describedby="{{fDesc.by}}" disabled="{{saving}}" autoComplete="off" style="{{fDesc.style}}">
+          <sc-if value="{{fDesc.errOn}}" hint-placeholder-val="{{ false }}"><span id="np-desc-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fDesc.err}}</span></sc-if>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span id="np-dir-l" style="font-size: 13px; font-weight: 600; color: #46546A">Money</span>
+          <div role="group" aria-labelledby="np-dir-l" aria-describedby="np-dir-hint" style="display: flex; gap: 4px; padding: 4px; background: #F1F3F7; border-radius: 10px">
+            <sc-for list="{{dirs}}" as="m" hint-placeholder-count="2">
+              <button type="button" id="{{m.id}}" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" disabled="{{m.dis}}" style="{{m.style}}"><dc-import name="Icon" glyph="{{m.glyph}}" tone="{{m.tone}}" size="16" hint-size="16px,16px"></dc-import>{{m.label}}</button>
+            </sc-for>
+          </div>
+          <span id="np-dir-hint" style="color: #5F6C80; font-size: 12px">{{dirHint}}</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="np-type" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Type <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+          <select id="np-type" value="{{fType.val}}" onChange="{{fType.change}}" required="{{ true }}" aria-required="true" aria-invalid="{{fType.inv}}" aria-describedby="{{fType.by}}" disabled="{{saving}}" style="{{fType.style}}">
+            <sc-for list="{{typeOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.k}}">{{o.label}}</option></sc-for>
+          </select>
+          <sc-if value="{{fType.errOn}}" hint-placeholder-val="{{ false }}"><span id="np-type-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fType.err}}</span></sc-if>
+          <span id="np-type-hint" style="color: #5F6C80; font-size: 12px">{{typeHint}}</span>
+        </div>
+
+        <sc-if value="{{hrOn}}" hint-placeholder-val="{{ false }}">
+          <div id="np-hr" role="note" class="ex" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 14px; border-radius: 12px; border: 1px solid #C9D7F7; background: #F7F9FE">
+            <dc-import name="Icon" glyph="{{hrGlyph}}" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+            <div style="flex: 1 1 300px; min-width: 0; font-size: 13px"><b>{{hrTitle}}</b><div style="color: #46546A">{{hrText}}</div></div>
+            <a href="{{hrHref}}" class="hb" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">{{hrLink}}</a>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{salesOn}}" hint-placeholder-val="{{ false }}">
+          <div id="np-sales" role="note" class="ex" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 14px; border-radius: 12px; border: 1px solid #C9D7F7; background: #F7F9FE">
+            <dc-import name="Icon" glyph="receipt" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+            <div style="flex: 1 1 300px; min-width: 0; font-size: 13px"><b>{{salesTitle}}</b><div style="color: #46546A">{{salesText}}</div></div>
+            <a href="AccountingKeptHere.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">Open a Sales receipt</a>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{fieldsOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="np-amt" style="font-size: 13px; font-weight: 600; color: #46546A">Amount ({{cur}})</label>
+            <div class="fx" style="{{fAmt.style}}"><span aria-hidden="true" style="color: #5F6C80; font-weight: 600">{{cur}}</span><input id="np-amt" type="text" inputMode="decimal" value="{{fAmt.val}}" onChange="{{fAmt.change}}" placeholder="0.00" aria-invalid="{{fAmt.inv}}" aria-describedby="{{fAmt.by}}" disabled="{{saving}}" autoComplete="off" style="flex: 1; min-width: 0; height: 38px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 14px Inter, sans-serif; color: #0F1A2B; text-align: right; font-variant-numeric: tabular-nums"></div>
+            <sc-if value="{{fAmt.errOn}}" hint-placeholder-val="{{ false }}"><span id="np-amt-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fAmt.err}}</span></sc-if>
+            <span id="np-amt-hint" style="color: #5F6C80; font-size: 12px">Leave blank if you don't know it yet.</span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="np-due" style="font-size: 13px; font-weight: 600; color: #46546A">Due date</label>
+            <input id="np-due" type="date" value="{{fDue.val}}" onChange="{{fDue.change}}" aria-describedby="np-due-hint" disabled="{{saving}}" style="{{fDue.style}}">
+            <span id="np-due-hint" style="color: #5F6C80; font-size: 12px">Blank means today, 18 Nov.</span>
+          </div>
+
+          <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px">
+            <label for="np-acct" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Bank account</label>
+            <select id="np-acct" value="{{fAcct.val}}" onChange="{{fAcct.change}}" aria-invalid="{{fAcct.inv}}" aria-describedby="{{fAcct.by}}" disabled="{{acctOff}}" style="{{fAcct.style}}">
+              <sc-for list="{{acctOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.k}}" disabled="{{o.dis}}">{{o.label}}</option></sc-for>
+            </select>
+            <sc-if value="{{fAcct.errOn}}" hint-placeholder-val="{{ false }}"><span id="np-acct-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fAcct.err}}</span></sc-if>
+            <span id="np-acct-hint" style="color: #5F6C80; font-size: 12px">{{acctHint}}</span>
+          </div>
+
+          <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px">
+            <label style="{{apprBox}}"><input id="np-appr" type="checkbox" checked="{{apprOn}}" onChange="{{toggleAppr}}" disabled="{{saving}}" aria-describedby="np-appr-hint" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none"><dc-import name="Icon" glyph="approval" tone="brand" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1">Needs approval</span><sc-if value="{{apprChanged}}" hint-placeholder-val="{{ false }}"><span class="pl info">Changed from the type's default</span></sc-if></label>
+            <span id="np-appr-hint" style="color: #5F6C80; font-size: 12px">{{apprHint}}</span>
+          </div>
+        </sc-if>
+
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="np-discard-q" aria-describedby="np-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="np-discard-q">Discard this payment?</b><div id="np-discard-d" style="color: #5F6C80; font-size: 12px">What you typed is not kept.</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="np-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="np-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="np-foot" style="flex: 1 1 220px; color: #5F6C80; font-size: 13px">{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="np-cancel" class="hs" onClick="{{askClose}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+              <button type="submit" id="np-submit" class="{{addCls}}" aria-disabled="{{addAria}}" aria-busy="{{busy}}" aria-describedby="np-foot" disabled="{{saving}}" style="{{addStyle}}"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Adding…</sc-if><sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="plus" tone="{{addTone}}" size="16" hint-size="16px,16px"></dc-import>Add payment</sc-if></button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"money-out","options":["money-out","money-in","filled","errors","saving","refused","added","from-overview","hr-type","kept-here-in"],"section":"State"},"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'money-out');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(!!this.state.toast.undo); }
+  // The payment types in use, as Setup › Payment types lists them (rules.py CATEGORIES plus the types added there; Training
+  // fee is stopped, so it is not offered): direction, required documents, whether a payment of that type needs approval
+  // by default (scope samples D12), and the HR page that owns the request and payroll types.
+  types() {
+    return [
+      ['salary', 'Salary', 'out', ['pv', 'payslip', 'bank'], true],
+      ['director', 'Director allowance', 'out', ['pv', 'payslip', 'bank'], true],
+      ['consultant', 'Consultant fee', 'out', ['invoice', 'pv', 'bank'], true],
+      ['statutory', 'Statutory (KWSP / PERKESO / LHDN)', 'out', ['portal', 'pv', 'bank'], false],
+      ['utility', 'Utility / telco', 'out', ['invoice', 'pv', 'bank'], false],
+      ['rental', 'Rental', 'out', ['invoice', 'pv', 'bank'], true],
+      ['claim', 'Staff claim', 'out', ['claim', 'approval', 'pv', 'bank'], true, 'claims'],
+      ['advance', 'Salary advance', 'out', ['approval', 'bank'], true, 'advances'],
+      ['payroll_run', 'Payroll run', 'out', ['approval', 'pv', 'bank'], true, 'payroll'],
+      ['claim_overseas', 'Staff claim - overseas service (self-billed e-Invoice)', 'out', ['claim', 'approval', 'pv', 'bank', 'einvoice'], true, 'claims'],
+      ['transfer', 'Inter-company transfer', 'out', ['approval', 'bank'], true],
+      ['receipt', 'Money received', 'in', ['invoice', 'or'], false],
+      ['other', 'Other payment', 'out', ['invoice', 'pv', 'bank'], true],
+      ['water_bill', 'Water bill', 'out', ['invoice', 'pv', 'bank'], true],
+      ['insurance', 'Insurance premium', 'out', ['invoice', 'pv', 'bank'], true]
+    ].map(([k, label, dir, docs, appr, hr]) => ({ k, label, dir, docs, appr, hr: hr || '' }));
+  }
+  type(k) { return this.types().find(t => t.k === k) || null; }
+  accts(co) {
+    return ({ AISB: [{ k: 'mc', label: 'Maybank current', cash: true }, { k: 'ms', label: 'Maybank savings' }],
+      AI: [{ k: '', label: 'None: no ringgit account is set up', cash: true }, { k: 'fca', label: 'Maybank FCA (USD)', cur: 'USD' }] })[co] || [];
+  }
+  defAcct(co) { const a = this.accts(co); const c = a.find(x => x.cash) || a[0]; return c ? c.k : ''; }
+  coName(co) { return co === 'AI' ? 'Agrinexus International' : co === 'AISB' ? 'AISB Sdn Bhd' : ''; }
+  blank(co) { return { co, desc: '', dir: 'out', type: 'other', amt: '', due: '', acct: this.defAcct(co), appr: true, apprSet: false }; }
+  filled() { return { co: 'AISB', desc: 'Printer toner, Stationery Mart', dir: 'out', type: 'other', amt: '386.00', due: '2026-11-25', acct: 'mc', appr: true, apprSet: false }; }
+  init(view) {
+    const base = { open: true, closing: false, fromOv: false, pageCo: 'AISB', f: this.blank('AISB'), tried: false, saving: false, confirm: false,
+      pending: null, added: [], flashN: 0, toast: null, toastLeaving: false, refused: null, stopped: '' };
+    if (view === 'money-in') return { ...base, f: { ...base.f, dir: 'in', type: 'receipt', appr: false } };
+    if (view === 'filled') return { ...base, f: this.filled() };
+    if (view === 'errors') return { ...base, f: { ...this.filled(), desc: '', amt: '386.o0' }, tried: true };
+    if (view === 'saving') return { ...base, f: this.filled(), saving: true };
+    if (view === 'refused') return { ...base, stopped: 'rental', f: { ...this.filled(), desc: 'Store room rental, November', type: 'rental', amt: '650.00' }, refused: this.refusalText('rental') };
+    if (view === 'added') { const row = this.rowFrom(this.filled()); return { ...base, open: false, added: [row], flashN: 1, toast: { text: 'Payment added', undo: true, row } }; }
+    if (view === 'from-overview') return { ...base, fromOv: true, f: this.blank('') };
+    if (view === 'hr-type') return { ...base, f: { ...this.blank('AISB'), type: 'claim' } };
+    if (view === 'kept-here-in') return { ...base, pageCo: 'AI', f: { ...this.blank('AI'), desc: 'Produce export, buyer in Singapore', dir: 'in', type: 'receipt', appr: false } };
+    return base;
+  }
+  // The server's own words when a type was stopped in Setup while the form was open (hrp/app.py create_payment)
+  refusalText(k) { const t = this.type(k); return (t ? t.label : 'This type') + ' was stopped in Setup › Payment types while this form was open, so the payment wasn’t added. Choose one of the payment types in use.'; }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  num(s) {
+    const t = String(s || '').trim().replace(/^(RM|USD)\s*/i, '');
+    if (!/^-?(\d{1,3}(,\d{3})+|\d*)(\.\d*)?$/.test(t) || !/\d/.test(t)) return null;
+    return Math.round(parseFloat(t.replace(/,/g, '')) * 100) / 100;
+  }
+  // Kept here money in from a customer is a Sales receipt, not a payment here (scope section 7)
+  keptIn(f) { return f.co === 'AI' && f.dir === 'in'; }
+  errors(f, fromOv) {
+    const e = {};
+    const t = this.type(f.type);
+    if (fromOv && !f.co) e.co = 'Choose a company.';
+    if (t && t.hr) e.type = t.hr === 'payroll' ? 'The payroll run is made on HR › Payroll, not here.' : (t.hr === 'advances' ? 'Salary advances' : 'Staff claims') + ' are entered on HR › Claims and advances, not here.';
+    else if (this.keptIn(f)) e.type = 'Agrinexus International is kept here: money in from a customer is a Sales receipt.';
+    if (!f.desc.trim() && !e.type) e.desc = 'Give the payment a description.';
+    if (!t) e.type = 'Choose one of the payment types in use.';
+    if (!e.type && f.amt.trim() && this.num(f.amt) === null) e.amt = 'Write the amount as a number, like 386.00.';
+    if (!e.type && f.co && this.accts(f.co).length && !this.accts(f.co).some(a => a.k === f.acct)) e.acct = 'Choose one of the company’s own accounts.';
+    return e;
+  }
+  dirty() {
+    const f = this.state.f;
+    return !!(f.desc.trim() || f.amt.trim() || f.due || f.apprSet || (this.state.fromOv && f.co));
+  }
+  fmt(iso) {
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const [, m, d] = String(iso).split('-');
+    return m ? parseInt(d, 10) + ' ' + M[parseInt(m, 10) - 1] : '';
+  }
+  money(v) { return v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  // the Approval marker's readings, as Foundations draws them
+  marker(k, by) {
+    return ({ none: ['cp mute', 'approval', 'muted', 'Not needed'], wait: ['cp warn', 'clock', 'warn', 'Waiting'], ok: ['cp ok', 'check', 'ok', 'Approved by ' + by],
+      nofile: ['cp bad', 'alert', 'bad', 'Paid without approval on file'], over: ['cp bad', 'alert', 'bad', 'Paid more than approved (RM 120.00)'] })[k];
+  }
+  // the row the server would add: unpaid, flagged from its due date (today is 18 Nov; October's statements are imported, SQL entries up to 12 Nov)
+  rowFrom(f) {
+    const t = this.type(f.type) || this.type('other');
+    const TODAY = '2026-11-18', LEGAL = '2026-11-15', SQLTO = '2026-11-12';
+    const due = f.due || TODAY, inflow = t.dir === 'in';
+    const n = this.num(f.amt);
+    const acct = this.accts(f.co).find(a => a.k === f.acct) || {};
+    const cur = acct.cur || 'RM';
+    const SHORT = { pv: 'PV', or: 'OR', invoice: 'Invoice', bank: 'Bank slip', einvoice: 'e-Invoice', portal: 'Acknowledgement', claim: 'Claim form', approval: 'Approval', payslip: 'Payslip' };
+    const MON = this.fmt(due).split(' ')[1] || '', sql = f.co !== 'AI', legal = t.k === 'statutory' ? ' Legal deadline 15 Nov.' : '';
+    let status, tone, hint = '';
+    if (due > TODAY) { status = inflow ? 'Not received yet' : 'Not paid'; tone = 'grey'; hint = legal.trim(); }
+    else if (due === TODAY) { status = 'Due today'; tone = 'warn'; hint = (inflow ? 'Expected today: enter the date it was received once it is in.' : 'Pay it today, or enter the paid date once it has gone out.') + legal; }
+    else if (t.k === 'statutory' && TODAY > LEGAL) { status = 'Past legal deadline (15 Nov)'; tone = 'bad'; hint = 'Not recorded as paid by the legal deadline of 15 Nov. Pay it now, or link its bank line or SQL voucher if it was paid; a late-payment charge may follow.'; }
+    else if (sql && due > SQLTO) { status = 'Waiting for SQL record'; tone = 'warn'; hint = "Probably paid: the SQL entries imported go up to 12 Nov. Fetch SQL's latest listings on the SQL import page to record it."; }
+    else if (due < '2026-11-01') { status = 'Not on ' + MON + ' statement'; tone = 'bad'; hint = 'The ' + MON + ' bank statement is imported, but no line on it is linked to this payment. Link its line on the Bank and reconciliation page, or enter the paid date if it went out another way.'; }
+    else { status = 'Waiting for ' + MON + ' statement'; tone = 'warn'; hint = 'Probably paid: the ' + MON + ' bank statement isn’t imported yet. Import it on the Bank and reconciliation page to confirm this payment.'; }
+    if (f.appr && !inflow) hint = (hint ? hint + ' ' : '') + 'Listed under To print on Approvals.';
+    return { co: f.co, due, name: f.desc.trim(), sub: f.co === 'AI' ? 'Agrinexus International' : '', type: t.label,
+      paid: '', inflow, val: n === null ? 0 : n, cur,
+      amount: n === null ? '—' : (inflow ? '+' : '') + (cur === 'RM' ? '' : cur + ' ') + this.money(n),
+      docs: t.docs.filter(k => sql || (k !== 'pv' && k !== 'or')).map(k => ['need', SHORT[k]]), status, t: tone, hint, isNew: true, mk: f.appr && !inflow ? 'wait' : 'none' };
+  }
+  openNew() {
+    this._opener = document.activeElement;
+    clearTimeout(this._t); clearTimeout(this._ts);
+    this.setState({ open: true, closing: false, fromOv: false, f: this.blank(this.state.pageCo), tried: false, saving: false, confirm: false, pending: null, refused: null });
+  }
+  askClose() {
+    if (!this.state.open || this.state.closing || this.state.saving) return;
+    if (this.state.confirm) return;
+    if (this.dirty()) { this._confirmFrom = document.activeElement; this.setState({ confirm: true }); return; }
+    this.closeDrawer();
+  }
+  closeDrawer() {
+    if (!this.state.open || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.open) return;
+    const row = this.state.pending;
+    const next = { open: false, closing: false, confirm: false, saving: false, tried: false, pending: null, refused: null };
+    if (row) {
+      Object.assign(next, { added: [...this.state.added.map(r => ({ ...r, isNew: false })), row], flashN: this.state.flashN + 1,
+        toast: { text: row.co !== this.state.pageCo ? 'Payment added to ' + this.coName(row.co) : 'Payment added', undo: true, row }, toastLeaving: false });
+      this.toastTimer(true);
+    }
+    this.setState(next);
+  }
+  toastTimer(long) { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), long ? 8000 : 4000); }
+  // Undo takes the added payment off again; the add and the undo are two entries in the audit trail
+  undoAdd() {
+    const tt = this.state.toast;
+    if (!tt || !tt.row) return;
+    this.setState({ added: this.state.added.filter(r => r !== tt.row), toast: { text: 'Undone. The payment is taken off again; the undo is a new entry in the audit trail.', undo: false }, toastLeaving: false });
+    this.toastTimer(false);
+    this.focusId('np-add');
+  }
+  submit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.open || st.saving || st.closing || st.confirm) return;
+    const errs = this.errors(st.f, st.fromOv);
+    const order = ['co', 'desc', 'type', 'amt', 'acct'].filter(k => errs[k]);
+    if (order.length) { this._focusId = 'np-' + order[0]; this.setState({ tried: true }); return; }
+    this.setState({ saving: true, refused: null });
+    this.focusId('np-title');   // keep focus inside the dialog when the controls disable
+    clearTimeout(this._ts);
+    this._ts = setTimeout(() => {
+      if (!this.state.saving) return;
+      const f = this.state.f;
+      // refused by the server, with its reason: nothing is saved and what was typed is kept
+      if (this.state.stopped && f.type === this.state.stopped) { this._focusId = 'np-refused'; this.setState({ saving: false, refused: this.refusalText(f.type), tried: true }); return; }
+      this.setState({ pending: this.rowFrom(f) });
+      this.closeDrawer();
+    }, 900);
+  }
+  setF(patch) { this.setState({ f: { ...this.state.f, ...patch }, refused: null }); }
+  // a type change sets Needs approval to that type's default, unless it was set by hand
+  withType(f, k) { const ty = this.type(k); return { ...f, type: k, dir: ty ? ty.dir : f.dir, appr: f.apprSet ? f.appr : !!(ty && ty.appr && ty.dir === 'out') }; }
+  setDir(d) {
+    const f = this.state.f, cur = this.type(f.type);
+    if (f.dir === d) return;
+    // the app's pairTypeDir: keep the type if it goes that way, else the one-off default (Other payment), else that way's default
+    const keep = cur && cur.dir === d ? cur.k : d === 'in' ? 'receipt' : 'other';
+    this.setState({ f: { ...this.withType({ ...f, apprSet: false }, keep), dir: d }, refused: null });
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      clearTimeout(this._t); clearTimeout(this._ts); clearTimeout(this._tt);
+      const nx = this.init(this.props.view || 'money-out');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer(!!nx.toast.undo);
+      return;
+    }
+    const st = this.state;
+    if (!prev.open && st.open) { this.focusId('np-title'); return; }
+    if (prev.open && !st.open) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true });
+      else this.focusId('np-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('np-keep'); return; }
+    if (prev.confirm && !st.confirm && st.open && !st.closing) {
+      const o = this._confirmFrom;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('np-cancel');
+    }
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._ts); clearTimeout(this._tt); }
+  // the register behind the dialog: the same October rows, statuses, documents and tab counts as PaymentsRegister.dc.html
+  // (scope samples section 13). Documents are each required box: a file, or what SQL or the bank shows, ticks it; a paid
+  // AISB payment also shows whether it is in SQL. Statuses are the app's words (hrp/db.py payment_flag).
+  baseRows(co) {
+    const ST = 'Statutory (KWSP / PERKESO / LHDN)', LEGAL = 'Not recorded as paid by the legal deadline of 15 Nov. Pay it now, or link its bank line' + (co === 'AI' ? '' : ' or SQL voucher') + ' if it was paid; a late-payment charge may follow.';
+    const NOV = 'Probably paid: the Nov bank statement isn’t imported yet. Import it on the Bank and reconciliation page to confirm this payment.';
+    if (co === 'AI') return [
+      { due: '2026-10-20', name: 'Farm supplies', sub: 'Agro inputs · INV-7781', type: 'Other payment', paid: '19 Oct', val: 6750, docs: [['have', 'Invoice'], ['have', 'Bank slip']], status: 'Complete', t: 'ok', mk: 'ok', by: 'Hassan Ismail, 16 Oct 2026' },
+      { due: '2026-10-24', name: 'Salaries — staff', sub: '5 people', type: 'Salary', paid: '24 Oct', val: 21300, docs: [['have', 'Payslips'], ['have', 'Bank slip']], status: 'Complete', t: 'ok', mk: 'ok', by: 'Hassan Ismail, 1 Oct 2026' },
+      { due: '2026-10-31', name: 'Produce export', sub: 'Buyer in Singapore · money in', type: 'Money received', paid: '30 Oct', val: 8400, cur: 'USD', inflow: true, docs: [['have', 'Invoice'], ['have', 'Bank line']], status: 'Part received · USD 5,000.00 of 8,400.00', t: 'warn', mk: 'none', hint: 'USD 3,400.00 isn’t on the bank statement yet. Match the rest, or note why in the payment.' },
+      { due: '2026-11-07', name: 'Electricity bill', sub: 'Farm meter', type: 'Utility / telco', paid: '', val: 1420, docs: [['need', 'Invoice'], ['need', 'Bank slip']], status: 'Waiting for Nov statement', t: 'warn', mk: 'none', hint: NOV },
+      { due: '2026-11-15', name: 'KWSP', sub: 'October contributions', type: ST, paid: '', val: 4478, docs: [['need', 'Acknowledgement'], ['need', 'Bank slip']], status: 'Past legal deadline (15 Nov)', t: 'bad', mk: 'none', hint: LEGAL },
+      { due: '2026-11-15', name: 'PERKESO', sub: 'October contributions', type: ST, paid: '14 Nov', val: 612.4, docs: [['have', 'Acknowledgement'], ['have', 'Bank slip']], status: 'Complete', t: 'ok', mk: 'none' },
+      { due: '2026-11-30', name: 'Consultant — farm audit', sub: 'Quarterly', type: 'Consultant fee', paid: '', val: 2500, docs: [['need', 'Invoice'], ['need', 'Bank slip']], status: 'Not paid', t: 'grey', mk: 'ok', by: 'Hassan Ismail, 17 Nov 2026' }
+    ];
+    const PV = 'Still needed: PV.', TOPAY = 'Approved on AF-2611-003 and waiting in To pay since 13 Nov.';
+    return [
+      { due: '2026-10-06', name: 'Contractor — field works', sub: 'Contract FW-2026-03', type: 'Other payment', paid: '6 Oct', val: 24000, docs: [['have', 'Invoice'], ['have', 'PV2610-003'], ['have', 'Bank line']], status: 'Complete', t: 'ok', mk: 'nofile' },
+      { due: '2026-10-24', name: 'Salaries — staff', sub: '8 people', type: 'Salary', paid: '24 Oct', val: 48600, docs: [['have', 'PV2610-014'], ['have', 'Payslips'], ['have', 'Bank slip']], status: 'Complete', t: 'ok', mk: 'ok', by: 'Rajesh Kumar, 1 Oct 2026' },
+      { due: '2026-10-24', name: 'Director fee', sub: 'Monthly', type: 'Director allowance', paid: '24 Oct', val: 12000, docs: [['need', 'PV'], ['have', 'Payslips'], ['have', 'Bank slip'], ['need', 'SQL']], status: 'Paid · 1 doc missing', t: 'warn', mk: 'ok', by: 'Rajesh Kumar, 1 Oct 2026', hint: PV },
+      { due: '2026-10-28', name: 'Telephone & internet', sub: 'Planned figure', estimate: true, type: 'Utility / telco', paid: '28 Oct', val: 398.6, docs: [['have', 'Invoice'], ['need', 'PV'], ['have', 'Bank line'], ['need', 'SQL']], status: 'Paid · 1 doc missing', t: 'warn', mk: 'none', hint: PV + ' Estimated RM 420.00; the bank line is RM 398.60.' },
+      { due: '2026-10-30', name: 'Stationery Mart', sub: 'Quotation SQ-2210 · cheque 000214', type: 'Other payment', paid: '30 Oct', val: 1120, docs: [['have', 'Invoice'], ['have', 'PV2610-022'], ['have', 'Bank slip']], status: 'Complete', t: 'ok', mk: 'over' },
+      { due: '2026-10-31', name: 'Office rental', sub: 'Invoice INV-1043', type: 'Rental', paid: '30 Oct', val: 6500, docs: [['have', 'Invoice'], ['have', 'PV2610-021'], ['have', 'Bank slip']], status: 'Complete', t: 'ok', mk: 'ok', by: 'Hassan Ismail, 5 Nov 2026 (after payment)' },
+      { due: '2026-10-31', name: 'Consultant fee', sub: 'Payroll Advisory PLT · PA-1010', type: 'Consultant fee', paid: '', val: 3200, docs: [['need', 'Invoice'], ['need', 'PV'], ['need', 'Bank slip']], status: 'Not on Oct statement', t: 'bad', mk: 'wait', hint: 'The Oct bank statement is imported, but no line on it is linked to this payment. Link its line on the Bank and reconciliation page, or enter the paid date if it went out another way.' },
+      { due: '2026-11-05', name: 'Electricity bill', sub: 'TNB', type: 'Utility / telco', paid: '4 Nov', val: 1163.2, docs: [['have', 'Invoice'], ['have', 'PV2611-003'], ['need', 'Bank slip']], status: 'Paid · 1 doc missing', t: 'warn', mk: 'none', hint: 'Still needed: Bank slip. The paid date is typed in because the November statement isn’t imported yet.' },
+      { due: '2026-11-05', name: 'Rental received', sub: 'Tenant · money in', type: 'Money received', paid: '3 Nov', val: 2800, inflow: true, docs: [['have', 'IV2610-031'], ['have', 'OR'], ['need', 'e-Invoice'], ['have', 'SQL']], status: 'Received 3 Nov · 1 doc missing', t: 'warn', mk: 'none', hint: 'Still needed: e-Invoice. The one on IV2610-031 was cancelled by CN2611-002.' },
+      { due: '2026-11-14', name: 'Oct 2026 Claims - Wei Ming', sub: 'CL-2610-004 · 3 receipts', type: 'Staff claim', paid: '', val: 486.5, docs: [['have', 'Claim form'], ['have', 'Approval'], ['need', 'PV'], ['need', 'Bank slip']], status: 'Past due', t: 'bad', mk: 'ok', by: 'Tan Mei Ling, 12 Nov 2026', hint: TOPAY },
+      { due: '2026-11-15', name: 'KWSP', sub: 'October contributions', type: ST, paid: '', val: 11240, docs: [['need', 'Acknowledgement'], ['need', 'PV'], ['need', 'Bank slip']], status: 'Past legal deadline (15 Nov)', t: 'bad', mk: 'none', hint: LEGAL },
+      { due: '2026-11-15', name: 'PERKESO', sub: 'October contributions', type: ST, paid: '17 Nov', val: 1086.4, docs: [['have', 'Acknowledgement'], ['need', 'PV'], ['have', 'Bank slip'], ['need', 'SQL']], status: 'Paid · 1 doc missing', t: 'warn', mk: 'none', hint: PV + ' Paid after the legal deadline of 15 Nov: keep any late-payment notice with it.' },
+      { due: '2026-11-15', name: 'PCB', sub: 'October deductions', type: ST, paid: '14 Nov', val: 4915, docs: [['have', 'Acknowledgement'], ['need', 'PV'], ['have', 'Bank slip'], ['need', 'SQL']], status: 'Paid · 1 doc missing', t: 'warn', mk: 'none', hint: PV },
+      { due: '2026-11-20', name: 'Oct 2026 Claims - Aina', sub: 'CL-2610-005 · 3 receipts', type: 'Staff claim', paid: '', val: 408, docs: [['have', 'Claim form'], ['have', 'Approval'], ['need', 'PV'], ['need', 'Bank slip']], status: 'Not paid', t: 'grey', mk: 'ok', by: 'Tan Mei Ling, 12 Nov 2026', hint: TOPAY },
+      { due: '2026-11-20', name: 'Oct 2026 Claims - Jia Hui', sub: 'CL-2610-007 · 1 receipt', type: 'Staff claim', paid: '', val: 320, docs: [['have', 'Claim form'], ['have', 'Approval'], ['need', 'PV'], ['need', 'Bank slip']], status: 'Not paid', t: 'grey', mk: 'ok', by: 'Tan Mei Ling, 12 Nov 2026', hint: TOPAY },
+      { due: '2026-11-25', name: 'Cloud hosting', sub: 'Annual plan, billed in USD', type: 'Other payment', paid: '', val: 1200, cur: 'USD', docs: [['need', 'Invoice'], ['need', 'PV'], ['need', 'Bank slip']], status: 'Not paid', t: 'grey', mk: 'ok', by: 'Hassan Ismail, 5 Nov 2026', hint: 'Approved on AF-2611-002 with the office rental. It waits in To pay.' }
+    ];
+  }
+  renderVals() {
+    const st = this.state, f = st.f;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', warn: 'background:#FEF1D6;color:#934100',
+      bad: 'background:#FDE6E3;color:#B0190F', grey: 'background:#EEF1F5;color:#46546A' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const chip = ([k, label]) => ({ label,
+      mark: k === 'have' ? '✓' : k === 'need' ? '+' : '·',
+      style: 'display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 9px;border-radius:7px;font:600 12px Inter,sans-serif;white-space:nowrap;' +
+        (k === 'have' ? 'background:#E3F7EC;color:#0A6B3D;border:1px solid #BFE8D0' : 'background:#FFFFFF;color:#934100;border:1px dashed #E3A646') });
+    const money = v => this.money(v);
+    const pc = st.pageCo, isAI = pc === 'AI';
+
+    // the register behind the dialog, plus any payment added here for this company
+    const base = this.baseRows(pc);
+    const mine = st.added.filter(r => r.co === pc);
+    const all = [...base.map(p => ({ ...p, amount: (p.inflow ? '+' : '') + (p.cur ? p.cur + ' ' : '') + money(p.val), hint: p.hint || '', isNew: false, cur: p.cur || 'RM' })), ...mine]
+      .map((p, i) => ({ ...p, i })).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.i - b.i));
+    const groups = [];
+    for (const p of all) {
+      const label = 'Due ' + this.fmt(p.due);
+      let g = groups.find(x => x.label === label);
+      if (!g) { g = { label, rows: [], out: {}, inn: {} }; groups.push(g); }
+      const box = p.inflow ? g.inn : g.out;
+      box[p.cur] = (box[p.cur] || 0) + p.val;
+      const M = this.marker(p.mk || 'none', p.by);
+      g.rows.push({ inflow: !!p.inflow, name: p.name, sub: p.sub || '', type: p.type, paid: p.paid, amount: p.amount, status: p.status, hint: p.hint || '', hasHint: !!p.hint,
+        estimate: !!p.estimate, isNew: !!p.isNew,
+        rowId: p.isNew ? 'np-row-new' : 'np-row-' + p.i,
+        rowCls: 'hr' + (p.isNew && st.flashN ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        amtStyle: 'padding:12px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;' + (p.inflow ? 'color:#0A6B3D' : ''),
+        docs: p.docs.map(chip), pill: pill(p.t), mkCls: M[0], mkGlyph: M[1], mkTone: M[2], mkText: M[3] });
+    }
+    const sumTxt = o => Object.keys(o).map(c => c + ' ' + money(o[c])).join(' · ');
+    for (const g of groups) {
+      g.hasOut = g.rows.some(r => !r.inflow); g.hasIn = g.rows.some(r => r.inflow);
+      g.outTxt = sumTxt(g.out); g.inTxt = sumTxt(g.inn);
+    }
+    // the tab counts, worked out from the rows drawn as the register does, so they always agree with the table
+    const rowsAll = [...base, ...mine];
+    const nAll = rowsAll.length;
+    const isDone = p => p.status === 'Complete' || /^Received \d+ \w+$/.test(p.status);
+    const nOf = fn => rowsAll.filter(fn).length;
+    const TABS = [['All', nAll], ['Not paid', nOf(p => !p.paid)], ['Needs attention', nOf(p => !!p.paid && !isDone(p))], ['Paid without approval', nOf(p => !!p.paid && (p.mk === 'nofile' || p.mk === 'over'))]]
+      .concat(isAI ? [] : [['Not in SQL', nOf(p => !!p.paid && p.docs.some(d => d[0] === 'need' && d[1] === 'SQL'))]]).concat([['Complete', nOf(p => !!p.paid && isDone(p))]]);
+    const tabs = TABS.map(([label, n], i) => ({ label, count: n === null ? '' : String(n), hasCount: n !== null, cur: i === 0 ? 'page' : 'false',
+      style: 'display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;margin-bottom:-1px;border-bottom:2px solid ' + (i === 0 ? '#2450B8' : 'transparent') + ';border-radius:8px 8px 0 0;color:' + (i === 0 ? '#0F1A2B' : '#46546A') + ';font-weight:600;font-size:14px;text-decoration:none',
+      cntStyle: 'display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;font-size:11px;font-weight:700;box-sizing:border-box;' + (label === 'Paid without approval' && n ? 'background:#FDE6E3;color:#B0190F' : 'background:#EEF1F5;color:#46546A') }));
+
+    // the form
+    const shown = st.tried ? this.errors(f, st.fromOv) : {};
+    const errs = this.errors(f, st.fromOv);
+    if (st.refused) shown.type = shown.type || 'Choose one of the payment types in use.';
+    const valid = !Object.keys(errs).length;
+    const ctl = 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;';
+    const field = (k, hintId, change, extra) => ({
+      val: f[k], err: shown[k] || '', errOn: !!shown[k], inv: shown[k] ? 'true' : 'false',
+      by: [shown[k] ? 'np-' + k + '-err' : '', hintId].filter(Boolean).join(' '),
+      style: ctl + (extra || '') + 'border:1px solid ' + (shown[k] ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#5F6C80'),
+      change });
+    const val = e => (e && e.target ? e.target.value : '');
+    const t = this.type(f.type);
+    const coAccts = this.accts(f.co);
+    const acct = coAccts.find(a => a.k === f.acct) || {};
+    const fCo = field('co', 'np-co-hint', e => { const co = val(e); this.setF({ co, acct: this.defAcct(co) }); });
+    const fDesc = field('desc', '', e => this.setF({ desc: val(e) }));
+    const fType = field('type', 'np-type-hint' + (t && t.hr ? ' np-hr' : this.keptIn(f) ? ' np-sales' : ''), e => { const k = val(e); if (this.type(k)) this.setState({ f: this.withType(this.state.f, k), refused: null }); }, 'padding:0 10px;');
+    const fAmt = field('amt', 'np-amt-hint', e => this.setF({ amt: val(e) }), 'display:flex;align-items:center;gap:8px;');
+    const fDue = field('due', 'np-due-hint', e => this.setF({ due: val(e) }));
+    const fAcct = field('acct', 'np-acct-hint', e => this.setF({ acct: val(e) }), 'padding:0 10px;');
+    const DIRS = [['out', 'Paid out', 'arrow'], ['in', 'Received', 'coins']];
+    const dirs = DIRS.map(([k, label, glyph]) => {
+      const on = f.dir === k;
+      return { id: 'np-dir-' + k, label, glyph, tone: on ? 'brand' : 'muted', pressed: on ? 'true' : 'false', dis: !!st.saving,
+        pick: () => this.setDir(k),
+        style: 'flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 10px;border-radius:7px;border:2px solid ' + (on ? '#2450B8' : 'transparent') + ';font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' +
+          (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') };
+    });
+    const typeOpts = this.types().filter(x => x.dir === f.dir).map(x => ({ k: x.k, label: x.label + (x.hr ? ' · on HR' : '') + (st.stopped === x.k ? ' (stopped)' : '') }));
+    const coOpts = [{ k: '', label: 'Choose a company', dis: true }, { k: 'AISB', label: 'AISB · Kept in SQL Account', dis: false }, { k: 'AI', label: 'Agrinexus International · Kept here', dis: false }];
+    const acctOpts = coAccts.length ? coAccts.map(a => ({ k: a.k, label: a.label, dis: false })) : [{ k: '', label: 'Choose a company first', dis: true }];
+    const missing = [];
+    if (errs.co) missing.push('Company');
+    if (errs.desc) missing.push('Description');
+    if (errs.type && !(t && t.hr) && !this.keptIn(f)) missing.push('Type');
+    if (errs.amt) missing.push('A valid amount');
+    if (errs.acct && !errs.co) missing.push('Bank account');
+    const badN = Object.keys(shown).length;
+    const labelOf = { co: 'Company', desc: 'Description', type: 'Type', amt: 'Amount', acct: 'Bank account' };
+    const coName = this.coName(f.co);
+    const close = () => this.askClose();
+    const hrOn = !!(t && t.hr), salesOn = !hrOn && this.keptIn(f);
+    const apprDefault = !!(t && t.appr && t.dir === 'out');
+    const tt = st.toast;
+
+    return {
+      groups, tabs,
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll',
+      onTopCo: code => { const c = code === 'ai' ? 'AI' : code === 'aisb' ? 'AISB' : ''; if (c && c !== this.state.pageCo && !this.state.open) this.setState({ pageCo: c, flashN: 0 }); },
+      coCode: pc, coKind: isAI ? 'Kept here' : 'Kept in SQL Account', todoText: isAI ? '5 to-dos for AI on the Overview, 1 overdue' : '11 to-dos for AISB on the Overview, 3 overdue',
+      excel: () => { this.setState({ toast: { text: 'Downloading Payments register ' + pc + ' October 2026.xlsx', undo: false }, toastLeaving: false }); this.toastTimer(false); },
+      payCount: nAll,
+      openNew: () => this.openNew(),
+      dlgOn: !!st.open,
+      dimClass: st.closing ? 'dim-out' : 'dim-in',
+      dlgClass: st.closing ? 'dr-out' : 'dr-in',
+      eyebrow: st.fromOv ? 'From the Overview' + (coName ? ' · ' + coName : '') + ' · October 2026' : pc + ' · October 2026',
+      fromOv: !!st.fromOv,
+      saving: !!st.saving, notSaving: !st.saving, busy: st.saving ? 'true' : 'false',
+      fCo, fDesc, fType, fAmt, fDue, fAcct, coOpts, acctOpts, typeOpts, dirs,
+      acctOff: !!st.saving || !coAccts.length,
+      acctHint: !coAccts.length ? 'The accounts show once a company is chosen.' : f.dir === 'in' ? 'The account the money comes into.' : f.co === 'AI' && !f.acct ? 'AI has no ringgit account yet, so a ringgit payment is added without one.' : 'The account the money goes out from.',
+      cur: acct.cur || 'RM',
+      dirHint: f.dir === 'in' ? 'Type lists the payment types for money received.' : 'Type lists the payment types for money paid out.',
+      typeHint: hrOn ? (t.hr === 'payroll' ? 'The payroll run starts on HR, not here.' : 'Requests from staff start on HR, not here.') : t && t.dir === 'in' ? 'Money in: matched to a bank credit.' : 'Other payment is the usual one-off bill.',
+      hrOn, ...(() => { const h = t ? t.hr : '';
+        if (h === 'payroll') return { hrGlyph: 'payroll', hrTitle: 'The payroll run is made on HR › Payroll', hrText: 'There the month is checked and run, and approved once on its printed form. Its payment then reaches To pay.', hrHref: 'PayrollRun.dc.html', hrLink: 'Go to Payroll' };
+        return { hrGlyph: h === 'advances' ? 'advance' : 'claim',
+          hrTitle: h === 'advances' ? 'Salary advances are entered on HR › Claims and advances' : 'Staff claims are entered on HR › Claims and advances',
+          hrText: h === 'advances' ? 'There the advance gets its repayment schedule and approval form. Once approved, its payment reaches To pay.' : 'There the claim gets its lines, receipts and approval form. Once approved, its payment reaches To pay, with the receipts attached.',
+          hrHref: h === 'advances' ? 'HrAdvances.dc.html' : 'HrClaims.dc.html', hrLink: h === 'advances' ? 'Go to Advances' : 'Go to Claims' }; })(),
+      salesOn, salesTitle: 'Agrinexus International is kept here, so money in is a Sales receipt',
+      salesText: 'A receipt from a customer is recorded under Accounting › Sales as an official receipt, numbered when it posts, and knocked off against the customer’s invoice.',
+      fieldsOn: !hrOn && !salesOn,
+      apprOn: !!f.appr, apprChanged: !!f.apprSet && !!f.appr !== apprDefault,
+      toggleAppr: e => this.setState({ f: { ...this.state.f, appr: !!(e && e.target && e.target.checked), apprSet: true }, refused: null }),
+      apprHint: f.dir === 'in' ? 'Money in needs no approval.' : (apprDefault ? 'Ticked by default for ' + (t ? t.label : 'this type') : 'Not ticked by default for ' + (t ? t.label : 'this type')) + ' (Setup › Payment types). ' +
+        (f.appr ? 'It is listed under To print on Approvals. Approval never blocks paying: paid first, it shows as Paid without approval on file until the signed form is uploaded.' : 'Its Approval marker reads Not needed.'),
+      apprBox: 'display:flex;align-items:center;gap:10px;min-height:40px;padding:0 12px;border:1px solid #5F6C80;border-radius:10px;font-size:14px;font-weight:600;color:#0F1A2B;cursor:pointer;background:' + (f.appr ? '#F7F9FE' : '#FFFFFF'),
+      refOn: !!st.refused, refText: st.refused || '',
+      summaryOn: badN > 0 && !st.refused,
+      summaryTitle: badN === 1 ? '1 field needs a fix.' : badN + ' fields need a fix.',
+      summaryList: Object.keys(labelOf).filter(k => shown[k]).map(k => labelOf[k]).join(', ') + '.',
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      footNote: st.saving ? 'Adding the payment to October 2026…' : st.refused ? 'Nothing was added. Choose a type in use, then add it again.' : hrOn ? 'Nothing is added here: use the button above.' : salesOn ? 'Nothing is added here: open a Sales receipt instead.' : valid ? 'It is added as not paid yet' + (f.appr && f.dir === 'out' ? ', and listed under To print on Approvals.' : '.') : badN || !missing.length ? 'Fix the fields above, then add it.' : 'Still needed: ' + missing.join(', ') + '.',
+      addAria: valid ? 'false' : 'true',
+      addCls: valid && !st.saving ? 'hb' : '',
+      addTone: valid ? 'white' : 'muted',
+      addStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:150px;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out;' +
+        (st.saving ? 'background:#2450B8;color:#FFFFFF;cursor:progress' : valid ? 'background:#2450B8;color:#FFFFFF' : 'background:#E3E7ED;color:#46546A'),
+      submit: e => this.submit(e),
+      askClose: close,
+      keepEditing: () => this.setState({ confirm: false }),
+      discard: () => { this.setState({ confirm: false }); this.closeDrawer(); },
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); e.preventDefault();
+          if (this.state.confirm) this.setState({ confirm: false });   // Escape on the question keeps the payment
+          else this.askClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement;
+        const inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      toastOn: !!tt,
+      toastText: tt ? tt.text : '', toastGlyph: tt && /^Undone/.test(tt.text) ? 'undo' : /^Downloading/.test(tt ? tt.text : '') ? 'download' : 'check',
+      toastUndo: !!(tt && tt.undo), undo: () => this.undoAdd(),
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(!!this.state.toast.undo); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Budget · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+/* colours as tokens: light is the default, .dk swaps every one of them */
+.bd{--pg:#F5F6F8;--card:#FFFFFF;--line:#E3E7ED;--line2:#EEF1F5;--ctl:#7D8CA3;--head:#FAFBFC;--ink:#0F1A2B;--ink2:#46546A;--ink3:#5F6C80;--brand:#2450B8;--brandBg:#EAF0FD;--pri:#2450B8;--priHov:#1D419A;--hov:#F8FAFD;--hs:#F0F3F8;--okBg:#F0FBF5;--okLine:#BFE8D0;--okInk:#0A6B3D;--okChip:#E3F7EC;--okChipInk:#0A5A33;--badBg:#FFF4F2;--badLine:#F5C2BB;--badInk:#B0190F;--badChip:#FDE6E3;--badChipInk:#8E1A10;--warnBg:#FFFBF2;--warnLine:#F3D9A6;--warnInk:#8A4000;--warnChip:#FCE3B0;--warnChipInk:#7A3A00;--neuBg:#EEF1F5;--dim:rgba(15,26,43,.45);--ring:#2450B8;--budBar:#C9D7F6;--over:#D9480F;--overBg:#FBD9C7;--overInk:#A8350A;--dng:#B3261E;--dngHov:#8F1D17}
+.bd.dk{--pg:#0B1220;--card:#0F1724;--line:#243044;--line2:#1B2638;--ctl:#66758C;--head:#131D2E;--ink:#E6EBF2;--ink2:#C3CCDA;--ink3:#9BA8BC;--brand:#8DB0FA;--brandBg:#1B2B4A;--pri:#3D68D8;--priHov:#2F58C4;--hov:#16213A;--hs:#1B2638;--okBg:#0F2A1E;--okLine:#1E5A3D;--okInk:#5BD49A;--okChip:#14432E;--okChipInk:#8BE5B8;--badBg:#2A1618;--badLine:#6B2A2C;--badInk:#F58C80;--badChip:#4E2024;--badChipInk:#F9B1A8;--warnBg:#2A2012;--warnLine:#6B4E1A;--warnInk:#F2B35B;--warnChip:#4A3412;--warnChipInk:#F7C46C;--neuBg:#1B2638;--dim:rgba(3,7,14,.66);--ring:#8DB0FA;--budBar:#2A3F6E;--over:#F2874F;--overBg:#4A2A18;--overInk:#F5A173;--dng:#C9372C;--dngHov:#B02C22}
+.bd a{color:var(--brand)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat>span.t{color:var(--ink2);font-weight:500}
+.stat>div.v{font-family:'Space Grotesk',Inter,sans-serif;font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px}
+.stat>span.n{color:var(--ink3);font-size:13px}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fld>span.l{font-size:13px;font-weight:600;color:var(--ink2);display:flex;align-items:center;gap:8px}
+.inp{height:44px;width:100%;box-sizing:border-box;min-width:0;padding:0 14px;border:1px solid var(--ctl);border-radius:10px;font:600 16px Inter,sans-serif;background:var(--card);color:var(--ink);font-variant-numeric:tabular-nums}
+.inp[aria-invalid="true"],.cell[aria-invalid="true"]{border-color:var(--badInk);border-width:2px}
+.err{color:var(--badInk);font-size:12px;font-weight:600;min-height:16px}
+.ok{display:inline-flex;align-items:center;gap:4px;color:var(--okInk);font-size:12px;font-weight:600}
+.btn,.sec,.dng{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;box-sizing:border-box;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn{border:0;background:var(--pri);color:#FFFFFF}
+.btn:hover{background:var(--priHov)}
+.btn:disabled,.sec:disabled{opacity:.55;cursor:not-allowed}
+.sec{border:1px solid var(--ctl);background:var(--card);color:var(--ink)}
+.bd a.sec{color:var(--ink)}
+.sec:hover{background:var(--hs)}
+.dng{border:0;background:var(--dng);color:#FFFFFF}
+.dng:hover{background:var(--dngHov)}
+.sm{height:32px;padding:0 12px;font-size:13px;border-radius:9px}
+.ico{width:36px;padding:0}
+.lnk{border:0;background:transparent;color:var(--brand);font:600 13px Inter,sans-serif;text-decoration:underline;cursor:pointer;padding:0 2px;min-height:32px}
+.sgw{display:flex;gap:4px;padding:4px;background:var(--neuBg);border-radius:10px;flex-wrap:wrap}
+.sgb{height:34px;padding:0 14px;border-radius:8px;border:0;background:transparent;color:var(--ink2);font:600 13px Inter,sans-serif;cursor:pointer}
+.sgb.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(16,24,40,.18)}
+.sgb:hover{color:var(--ink)}
+.pl{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;box-sizing:border-box}
+.pl.g{background:var(--neuBg);color:var(--ink2)}
+.pl.o{background:var(--okChip);color:var(--okChipInk)}
+.pl.w{background:var(--warnChip);color:var(--warnChipInk)}
+.pl.b{background:var(--badChip);color:var(--badChipInk)}
+.cell{height:36px;width:100%;box-sizing:border-box;min-width:0;padding:0 8px;border:1px solid var(--ctl);border-radius:8px;background:var(--card);color:var(--ink);font:400 14px Inter,sans-serif}
+.cell.num{text-align:right;font-variant-numeric:tabular-nums}
+.tw{overflow-x:auto}
+.ltbl{width:100%;min-width:1040px;border-collapse:collapse;font-size:13px}
+.ltbl th{position:sticky;top:0;z-index:1;padding:8px 10px;font-weight:600;text-align:left;color:var(--ink3);background:var(--head);white-space:nowrap}
+.ltbl td{padding:8px 10px;border-top:1px solid var(--line2);vertical-align:top;color:var(--ink)}
+.ltbl .r{text-align:right}
+.ltbl tr.tot td{background:var(--head);font-weight:600}
+.stbl{width:100%;min-width:520px;border-collapse:collapse;font-size:13px}
+.stbl th{padding:8px 14px;font-weight:600;text-align:left;color:var(--ink3);background:var(--head)}
+.stbl td{padding:9px 14px;border-top:1px solid var(--line2);color:var(--ink)}
+.stbl .r{text-align:right}
+.hr:hover{background:var(--hov)}
+.cr{display:grid;grid-template-columns:minmax(120px,200px) minmax(0,1fr) minmax(130px,190px);gap:14px;align-items:center;padding:9px 20px;border-top:1px solid var(--line2);text-decoration:none;color:var(--ink)}
+.cr .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.cv{display:inline-block;padding:1px 6px;border-radius:5px}
+.cv.a{background:var(--okChip);color:var(--okChipInk)}
+.cv.bf{background:var(--badChip);color:var(--badChipInk);text-decoration:line-through}
+.sk{border-radius:8px;background:linear-gradient(90deg,var(--neuBg) 25%,var(--hov) 50%,var(--neuBg) 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sheet{background:#FFFFFF;color:#0F1A2B;width:794px;max-width:100%;box-sizing:border-box;padding:40px 44px;box-shadow:0 8px 30px rgba(0,0,0,.25);border-radius:4px;display:flex;flex-direction:column;gap:14px;font-size:12px}
+.sheet table{width:100%;border-collapse:collapse}
+.sheet th{text-align:left;padding:5px 8px;border-bottom:1.5px solid #0F1A2B;font-weight:700}
+.sheet td{padding:5px 8px;border-bottom:1px solid #D5DBE4;vertical-align:top}
+.sheet .r{text-align:right;font-variant-numeric:tabular-nums}
+/* motion and focus base */
+.hr,.btn,.sec,.dng,.sgb,.lnk{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid var(--ring);outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+@keyframes flashA{from{background-color:var(--brandBg)}}
+@keyframes flashB{from{background-color:var(--brandBg)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.plA{animation:swapA .12s ease-out,pulse .4s ease-out}
+.plB{animation:swapB .12s ease-out,pulse .4s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.to-in{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@media (max-width:760px){.bd-main{padding:24px 16px 48px !important}}
+@media print{.noprint{display:none !important}.bd,.bd.dk{background:#FFFFFF !important}.bd-main{padding:0 !important}.sheet{box-shadow:none !important;width:auto !important;padding:0 !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div class="{{rootCls}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--pg); font-family: Inter, system-ui, sans-serif; color: var(--ink); font-size: 14px; line-height: 1.45">
+  <div class="noprint" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="budget" company="{{sbCo}}" kind="{{sbKind}}" companies="{{sbPeers}}" theme="{{theme}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <div class="noprint"><dc-import name="Topbar" section="Payments" page="Budget" company="{{sbCo}}" companies="{{tbPeers}}" theme="{{theme}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import></div>
+    <main class="bd-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <sc-if value="{{showPrint}}" hint-placeholder-val="{{ false }}">
+        <div class="rv" style="display: flex; flex-direction: column; gap: 16px; align-items: center">
+          <div class="noprint" style="width: 794px; max-width: 100%; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+            <div><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3)">Print preview</span><h1 id="bd-print-title" tabindex="-1" style="margin: 2px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 24px; font-weight: 600">Print budget</h1></div>
+            <div style="display: flex; gap: 8px"><button type="button" class="sec" onClick="{{closePrint}}">Back to budget</button><button type="button" class="btn" onClick="{{doPrint}}"><dc-import name="Icon" glyph="printer" tone="white" size="18" hint-size="18px,18px"></dc-import>Print</button></div>
+          </div>
+          <p class="noprint" style="margin: 0; width: 794px; max-width: 100%; color: var(--ink2); font-size: 13px">Printing always uses light colours. The sidebar, the top bar, the buttons and this note are left out, and the Payment picker, the paid figures, the status and the row buttons are not printed. Each line's due date is.</p>
+          <div class="sheet">
+            <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-end; border-bottom: 2px solid #0F1A2B; padding-bottom: 8px">
+              <div><div style="font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #46546A">{{coLine}}</div><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 700">Budget for October 2026</div></div>
+              <div style="text-align: right; color: #46546A">As at {{effLabel}}</div>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px 28px">
+              <span>Bank balance: <b>{{balText}}</b></span>
+              <span>Still to pay: <b>RM {{toPayFmt}}</b></span>
+              <span>{{shortLabelPrint}}: <b>{{shortPrintVal}}</b></span>
+            </div>
+            <sc-for list="{{printTables}}" as="pt" hint-placeholder-count="2">
+              <div>
+                <div style="font-weight: 700; margin-bottom: 4px">{{pt.title}}</div>
+                <table>
+                  <thead><tr><th scope="col" style="width: 34px">No.</th><th scope="col">Description</th><th scope="col">Details</th><th scope="col" class="r">{{pt.budgetHead}}</th><th scope="col">Due date</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{pt.rows}}" as="pr" hint-placeholder-count="5">
+                      <tr><td>{{pr.no}}</td><td>{{pr.desc}}</td><td>{{pr.details}}</td><td class="r">{{pr.amt}}</td><td>{{pr.due}}</td></tr>
+                    </sc-for>
+                    <tr><td></td><td><b>TOTAL</b></td><td></td><td class="r"><b>{{pt.totBudget}}</b></td><td></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </sc-for>
+            <div style="color: #46546A; font-size: 11px">Prepared {{todayLabel}} by Aisha Rahman. Figures as at {{effLabel}}.</div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showHead}}" hint-placeholder-val="{{ true }}">
+        <div class="noprint" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3)">Payments</span>
+            <h1 id="bd-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Budget for October 2026</h1>
+            <p style="margin: 0; color: var(--ink2); max-width: 640px">The month's payments still to pay after the balance date, and the shortfall to request as funds. <b>{{coLine}}</b></p>
+            <p style="margin: 0; color: var(--ink2); max-width: 640px; font-size: 13px">Covers the payments for the October payroll month, including the bills and statutory payments paid in early November.</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: flex-end">
+            <sc-if value="{{showActions}}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="sec" onClick="{{doExcel}}"><dc-import name="Icon" glyph="download" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+              <button type="button" class="sec" id="bd-print-btn" onClick="{{openPrint}}"><dc-import name="Icon" glyph="printer" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>Print budget</button>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" style="display: flex; flex-direction: column; gap: 24px">
+          <span class="sr" role="status">Loading the budget</span>
+          <div class="card" style="padding: 20px 22px; display: flex; flex-wrap: wrap; gap: 20px"><span class="sk" style="width: 44px; height: 44px"></span><span class="sk" style="width: 220px; height: 44px"></span><span class="sk" style="width: 180px; height: 44px"></span></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px">
+            <div class="stat"><span class="sk" style="height: 14px; width: 60%"></span><span class="sk" style="height: 28px; width: 70%; margin-top: 8px"></span></div>
+            <div class="stat"><span class="sk" style="height: 14px; width: 60%"></span><span class="sk" style="height: 28px; width: 70%; margin-top: 8px"></span></div>
+            <div class="stat"><span class="sk" style="height: 14px; width: 60%"></span><span class="sk" style="height: 28px; width: 70%; margin-top: 8px"></span></div>
+            <div class="stat"><span class="sk" style="height: 14px; width: 60%"></span><span class="sk" style="height: 28px; width: 70%; margin-top: 8px"></span></div>
+          </div>
+          <div class="card" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+            <span class="sk" style="height: 18px; width: 30%"></span>
+            <span class="sk" style="height: 36px"></span><span class="sk" style="height: 36px"></span><span class="sk" style="height: 36px"></span><span class="sk" style="height: 36px"></span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="card rv" style="border-color: var(--badLine); padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: var(--badChip); display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the budget</h2>
+          <p style="margin: 0; color: var(--ink2); font-size: 13px; max-width: 460px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+          <button type="button" class="btn" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+        <div class="card rv" style="padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 280px; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: var(--brandBg); display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="calendar" tone="{{tn.brand}}" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">October 2026 isn't set up yet</h2>
+          <p style="margin: 0; color: var(--ink2); font-size: 13px; max-width: 440px">Setting it up adds the month's recurring payments and checklist. The budget is made from the month's payments. Months set up: September.</p>
+          <button type="button" class="btn" onClick="{{setUpMonth}}">Set up this month</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showBody}}" hint-placeholder-val="{{ true }}">
+
+        <sc-if value="{{notSet}}" hint-placeholder-val="{{ false }}">
+          <section class="noprint rv" style="background: var(--warnBg); border: 1px solid var(--warnLine); border-radius: 16px; padding: 16px 20px; display: flex; flex-wrap: wrap; gap: 14px; align-items: center">
+            <dc-import name="Icon" glyph="alert" tone="{{tn.warn}}" size="22" hint-size="22px,22px"></dc-import>
+            <div style="flex: 1 1 360px"><b>Not set up yet</b><div style="color: var(--ink2); font-size: 13px">This list is worked out from the month's payments and can't be edited. Setting it up copies September's budget with its amounts, so each line can then be changed, added to and deleted.</div></div>
+            <button type="button" class="btn" id="bd-setup" onClick="{{setUp}}">Set up budget</button>
+          </section>
+        </sc-if>
+
+        <section class="card noprint" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1 1 220px; min-height: 44px"><span style="width: 44px; height: 44px; border-radius: 12px; background: var(--brandBg); display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="bank" tone="{{tn.brand}}" size="24" hint-size="24px,24px"></dc-import></span><div><b>Bank balance</b><div style="color: var(--ink3); font-size: 13px">{{bankSub}}</div></div></div>
+            <div class="fld" style="flex: 0 1 200px"><label for="bd-date" class="l" style="font-size: 13px; font-weight: 600; color: var(--ink2); display: flex; align-items: center; gap: 8px">Bank balance as at<sc-if value="{{dateSaved}}" hint-placeholder-val="{{ false }}"><span class="ok rv"><dc-import name="Icon" glyph="check" tone="{{tn.ok}}" size="14" hint-size="14px,14px"></dc-import>Saved</span></sc-if></label>
+              <input id="bd-date" type="date" min="2026-09-01" max="2026-11-30" class="inp" value="{{dateVal}}" aria-invalid="{{dateInvalid}}" aria-describedby="bd-date-err" onChange="{{onDate}}" style="font-weight: 400; font-size: 15px">
+              <div id="bd-date-err" role="alert" class="err"><sc-if value="{{dateErr}}" hint-placeholder-val="{{ false }}">Choose a date between 1 Sep and 30 Nov</sc-if></div></div>
+            <div class="fld" style="flex: 0 1 220px"><label for="bd-bal" class="l" style="font-size: 13px; font-weight: 600; color: var(--ink2); display: flex; align-items: center; gap: 8px">Bank balance (RM)<sc-if value="{{balSaved}}" hint-placeholder-val="{{ false }}"><span class="ok rv"><dc-import name="Icon" glyph="check" tone="{{tn.ok}}" size="14" hint-size="14px,14px"></dc-import>Saved</span></sc-if></label>
+              <input id="bd-bal" type="text" inputmode="decimal" autocomplete="off" class="inp" placeholder="{{balPlaceholder}}" value="{{balVal}}" aria-invalid="{{balInvalid}}" aria-describedby="bd-bal-err" onInput="{{onBalInput}}" onBlur="{{commitBal}}" onKeyDown="{{balKey}}" style="text-align: right">
+              <div id="bd-bal-err" role="alert" class="err"><sc-if value="{{balErr}}" hint-placeholder-val="{{ false }}">Enter an amount such as 10,000.00</sc-if></div></div>
+          </div>
+          <div style="color: var(--ink3); font-size: 13px">Both boxes save when you leave them or press Enter, and the figures below follow the date. A payment paid on or before the date is already out of the balance, so it is not counted as still to pay.</div>
+          <sc-if value="{{noDate}}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="rv" style="display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; background: var(--warnBg); border: 1px solid var(--warnLine); font-size: 13px"><dc-import name="Icon" glyph="calendar" tone="{{tn.warn}}" size="18" hint-size="18px,18px"></dc-import><span>Enter the date this balance was taken. Until then the budget is as at today, {{todayShort}}.</span></div>
+          </sc-if>
+          <sc-if value="{{otherDate}}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="rv" style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 10px 14px; border-radius: 12px; background: var(--warnBg); border: 1px solid var(--warnLine); font-size: 13px"><dc-import name="Icon" glyph="calendar" tone="{{tn.warn}}" size="18" hint-size="18px,18px"></dc-import><span>As at today, {{todayShort}}, as Next up counts it. The balance you entered is as at {{savedShort}}.</span><button type="button" class="lnk" onClick="{{useSaved}}">Use {{savedShort}}</button></div>
+          </sc-if>
+        </section>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px">
+          <div class="stat noprint"><span class="t">{{balTitle}}</span><div class="v">{{balCard}}</div><span class="n">{{balNote}}</span></div>
+          <div class="stat noprint"><span class="t">Still to pay after {{effShort}}</span><div class="v">RM {{toPayFmt}}</div><span class="n">{{toPayNote}}</span></div>
+          <div class="{{shortCls}} noprint" aria-live="polite" style="{{shortCard}}">
+            <span style="{{shortLabel}}">{{shortTitle}}</span>
+            <sc-if value="{{hasBal}}" hint-placeholder-val="{{ true }}"><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums">RM {{shortFmt}}</div></sc-if>
+            <sc-if value="{{noBal}}" hint-placeholder-val="{{ false }}"><div style="font-size: 15px; font-weight: 600; margin-top: 4px">Enter the bank balance to see funds to request</div></sc-if>
+            <span style="font-size: 13px; color: var(--ink2)">{{shortNote}}</span>
+            <sc-if value="{{isShort}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px"><button type="button" class="btn" onClick="{{doFund}}"><dc-import name="Icon" glyph="printer" tone="white" size="18" hint-size="18px,18px"></dc-import>Print fund request</button><button type="button" class="sec" onClick="{{doExcel}}">Excel</button></div>
+            </sc-if>
+          </div>
+          <div class="stat noprint"><span class="t">Already paid (in the balance)</span><div class="v">RM {{paidFmt}}</div><span class="n">{{paidNote}}</span>
+            <sc-if value="{{hasIn}}" hint-placeholder-val="{{ true }}"><span style="color: var(--okInk); font-size: 13px; font-weight: 600">+ RM {{inFmt}} money in, shown apart: not taken off the figures</span></sc-if></div>
+          <sc-if value="{{hasOther}}" hint-placeholder-val="{{ true }}">
+            <div class="stat noprint"><span class="t">Other currencies (not in the shortfall)</span><div class="v">{{otherFmt}}</div><span class="n">{{otherNote}}</span></div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{stored}}" hint-placeholder-val="{{ true }}">
+          <section class="card noprint" aria-labelledby="bd-bvp-h" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px"><h2 id="bd-bvp-h" style="margin: 0; font-size: 15px; font-weight: 600">Budget vs paid</h2><span style="color: var(--ink3); font-size: 13px">The same figures as the Overview card, as at {{effShort}}</span></div>
+            <dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 20px">
+              <sc-for list="{{bvp}}" as="b" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><dt style="color: var(--ink2); font-size: 13px">{{b.label}}</dt><dd style="margin: 0; font-weight: 600; font-variant-numeric: tabular-nums">{{b.value}}</dd></div>
+              </sc-for>
+            </dl>
+            <span style="color: var(--ink3); font-size: 12px">Paid counts the payments on budget lines paid on or before {{effShort}}. Already paid (in the balance) also counts paid payments that have no line, listed under Paid but not in the budget.</span>
+          </section>
+        </sc-if>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+          <div style="flex: 3 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+            <sc-if value="{{stored}}" hint-placeholder-val="{{ true }}">
+              <section class="card" style="overflow: hidden">
+                <div class="noprint" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 20px">
+                  <div><h2 id="bd-lines-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Budget lines</h2><div style="color: var(--ink3); font-size: 13px; max-width: 520px">Change any figure, description or detail here; it saves when you leave the box. The payments themselves are not changed.</div></div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                    <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; font-weight: 600"><input type="checkbox" checked="{{allChecked}}" onChange="{{onAll}}" style="width: 18px; height: 18px">Select all</label>
+                    <button type="button" class="sec sm" disabled="{{delSelOff}}" onClick="{{askDelSel}}">{{delSelLabel}}</button>
+                    <sc-for list="{{addBtns}}" as="ab" hint-placeholder-count="2"><button type="button" class="btn sm" id="{{ab.id}}" aria-label="{{ab.aria}}" onClick="{{ab.add}}"><dc-import name="Icon" glyph="plus" tone="white" size="16" hint-size="16px,16px"></dc-import>{{ab.label}}</button></sc-for>
+                  </div>
+                </div>
+                <sc-if value="{{hasUnlinked}}" hint-placeholder-val="{{ false }}">
+                  <div class="noprint ex" style="padding: 10px 20px; background: var(--warnBg); border-top: 1px solid var(--warnLine); border-bottom: 1px solid var(--warnLine); color: var(--warnInk); font-size: 13px">{{unlinkedNote}}</div>
+                </sc-if>
+                <sc-for list="{{tables}}" as="t" hint-placeholder-count="2">
+                  <div style="border-top: 1px solid var(--line)">
+                    <div style="padding: 10px 20px; font-weight: 600; background: var(--head)">{{t.title}}</div>
+                    <div class="tw fr" role="region" aria-label="{{t.regionLabel}}" tabindex="0" style="{{t.twStyle}}">
+                      <table class="ltbl">
+                        <thead><tr>
+                          <th scope="col" class="noprint" style="width: 40px"><span class="sr">Select</span></th>
+                          <th scope="col" style="width: 44px">No.</th>
+                          <th scope="col" style="width: 22%">Description</th>
+                          <th scope="col" style="width: 17%">Bank / details</th>
+                          <th scope="col" class="r" style="width: 130px">{{t.budgetHead}}</th>
+                          <th scope="col" style="width: 170px">Paid · against budget</th>
+                          <th scope="col" class="noprint" style="width: 210px">Payment · date</th>
+                          <th scope="col" class="noprint" style="width: 118px"><span class="sr">Actions</span></th>
+                        </tr></thead>
+                        <tbody>
+                          <sc-for list="{{t.rows}}" as="l" hint-placeholder-count="10">
+                            <tr id="{{l.rowId}}" class="{{l.rowCls}}">
+                              <td class="noprint"><input type="checkbox" aria-label="{{l.selLabel}}" checked="{{l.checked}}" onChange="{{l.onSel}}" style="width: 18px; height: 18px; margin-top: 8px"></td>
+                              <td style="padding-top: 16px">{{l.no}}</td>
+                              <td><input class="cell" aria-label="{{l.descLabel}}" maxlength="200" autocomplete="off" value="{{l.desc}}" onInput="{{l.onDesc}}" onBlur="{{l.commit}}" onKeyDown="{{l.key}}"></td>
+                              <td><input class="cell" aria-label="{{l.detLabel}}" maxlength="200" autocomplete="off" value="{{l.details}}" onInput="{{l.onDet}}" onBlur="{{l.commit}}" onKeyDown="{{l.key}}"></td>
+                              <td><input class="cell num" inputmode="decimal" aria-label="{{l.amtLabel}}" autocomplete="off" aria-invalid="{{l.amtBad}}" aria-describedby="{{l.errId}}" value="{{l.amt}}" onInput="{{l.onAmt}}" onBlur="{{l.commit}}" onKeyDown="{{l.key}}"><div id="{{l.errId}}" role="alert" class="err" style="text-align: right">{{l.amtErr}}</div></td>
+                              <td style="padding-top: 8px"><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span style="font-variant-numeric: tabular-nums; font-weight: 600">{{l.paid}}</span><span class="{{l.pillCls}}">{{l.pillText}}</span></div></td>
+                              <td class="noprint"><select class="cell" aria-label="{{l.linkLabel}}" value="{{l.link}}" onChange="{{l.onLink}}"><sc-for list="{{l.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.t}}</option></sc-for></select></td>
+                              <td class="noprint"><div style="display: flex; gap: 6px; justify-content: flex-end"><button type="button" class="sec sm" id="{{l.histId}}" aria-label="{{l.histLabel}}" onClick="{{l.openHist}}"><dc-import name="Icon" glyph="history" tone="{{l.tnMuted}}" size="16" hint-size="16px,16px"></dc-import>History</button><button type="button" class="sec sm ico" aria-label="{{l.delLabel}}" onClick="{{l.askDel}}"><dc-import name="Icon" glyph="trash" tone="{{l.tnBad}}" size="16" hint-size="16px,16px"></dc-import></button></div></td>
+                            </tr>
+                          </sc-for>
+                          <sc-if value="{{t.empty}}" hint-placeholder-val="{{ false }}"><tr><td></td><td colspan="7" style="color: var(--ink3)">No lines.</td></tr></sc-if>
+                          <tr class="tot"><td class="noprint"></td><td></td><td>TOTAL</td><td></td><td class="r" style="font-variant-numeric: tabular-nums">{{t.totBudget}}</td><td><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span style="font-variant-numeric: tabular-nums">{{t.totPaid}}</span><sc-if value="{{t.hasPill}}" hint-placeholder-val="{{ true }}"><span class="{{t.pillCls}}">{{t.pillText}}</span></sc-if></div></td><td class="noprint"></td><td class="noprint"></td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}">
+                  <div class="noprint" style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid var(--line); background: var(--head)">
+                    <span role="status" aria-live="off" style="font-size: 13px; color: var(--ink2)">{{many.text}}</span>
+                    <button type="button" class="sec" onClick="{{many.more}}" disabled="{{many.off}}">{{many.label}}</button>
+                    <span style="flex-basis: 100%; color: var(--ink3); font-size: 12px">{{many.note}}</span>
+                  </div>
+                </sc-if>
+                <div class="noprint" style="padding: 12px 20px; border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: flex-start; color: var(--ink3); font-size: 13px"><dc-import name="Icon" glyph="printer" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import><span>Print budget puts these tables in light colours, without the sidebar, the buttons and the Payment picker. The paid figures and status are not printed; each line's due date is.</span></div>
+              </section>
+
+              <section class="card noprint" style="overflow: hidden">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px"><dc-import name="Icon" glyph="alert" tone="{{tn.warn}}" size="20" hint-size="20px,20px"></dc-import><h2 style="margin: 0; font-size: 15px; font-weight: 600">Paid but not in the budget</h2></div>
+                <sc-if value="{{hasNib}}" hint-placeholder-val="{{ true }}">
+                  <div style="padding: 0 20px 10px; color: var(--ink2); font-size: 13px">This month's payments with no line above, paid or still to pay.</div>
+                  <div class="tw"><table class="stbl">
+                    <thead><tr><th scope="col">Description</th><th scope="col" class="r">Amount</th><th scope="col">Paid on</th><th scope="col"><span class="sr">Action</span></th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{nib}}" as="x" hint-placeholder-count="1">
+                        <tr><td>{{x.name}}</td><td class="r" style="font-variant-numeric: tabular-nums">{{x.amt}}</td><td>{{x.paidOn}}</td><td class="r"><button type="button" class="sec sm" aria-label="{{x.aria}}" onClick="{{x.add}}">Add to budget</button></td></tr>
+                      </sc-for>
+                    </tbody>
+                  </table></div>
+                </sc-if>
+                <sc-if value="{{noNib}}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 0 20px 16px; color: var(--ink2); font-size: 13px">Every payment for this month is on a line.</div>
+                </sc-if>
+              </section>
+
+              <section class="card noprint" style="overflow: hidden">
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 20px">
+                  <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="chart" tone="{{tn.brand}}" size="22" hint-size="22px,22px"></dc-import><h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Budget against paid</h2></div>
+                  <div role="group" aria-label="Sort the bars" class="sgw"><sc-for list="{{sorts}}" as="so" hint-placeholder-count="3"><button type="button" class="{{so.cls}}" aria-pressed="{{so.on}}" onClick="{{so.pick}}">{{so.label}}</button></sc-for></div>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0 20px 12px; font-size: 12px; color: var(--ink2)">
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 14px; height: 8px; border-radius: 2px; background: var(--budBar)"></span>Budget</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 14px; height: 8px; border-radius: 2px; background: var(--brand)"></span>Paid</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 14px; height: 8px; border-radius: 2px; background: repeating-linear-gradient(135deg, var(--over) 0 3px, var(--overBg) 3px 6px)"></span>Paid above the budget (hatched)</span>
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 2px; height: 14px; background: var(--ink2)"></span>Budget amount</span>
+                </div>
+                <div>
+                  <sc-for list="{{chart}}" as="r" hint-placeholder-count="8">
+                    <a class="cr hr" href="PaymentsRegister.dc.html" title="{{r.title}}">
+                      <div style="min-width: 0"><div class="nm">{{r.name}}</div><span style="font-size: 12px; color: var(--ink3)">{{r.sub}}</span></div>
+                      <div aria-hidden="true" style="position: relative; height: 16px; border-radius: 4px; background: var(--neuBg)">
+                        <div class="bar" style="{{r.stBud}}"></div>
+                        <div class="bar" style="{{r.stPaid}}"></div>
+                        <sc-if value="{{r.hasOver}}" hint-placeholder-val="{{ false }}"><div class="bar" style="{{r.stOver}}"></div></sc-if>
+                        <div style="{{r.stTick}}"></div>
+                      </div>
+                      <div style="text-align: right; font-variant-numeric: tabular-nums"><div style="font-weight: 600">{{r.budget}}</div><span style="{{r.varStyle}}">{{r.variance}}</span></div>
+                    </a>
+                  </sc-for>
+                </div>
+                <div style="padding: 12px 20px; border-top: 1px solid var(--line2); color: var(--ink3); font-size: 12px">All bars are on one scale, so a small line is drawn at least 4 px wide: the text on the right has the exact figures. Lines in other currencies are in the tables only.</div>
+              </section>
+            </sc-if>
+
+            <sc-if value="{{notSet}}" hint-placeholder-val="{{ false }}">
+              <section class="card" style="overflow: hidden">
+                <div class="noprint" style="padding: 16px 20px"><h2 id="bd-lines-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Still to pay after {{effShort}}</h2><div style="color: var(--ink3); font-size: 13px">Read only. Change amounts in the Payments register; EST marks amounts not confirmed yet.</div></div>
+                <sc-for list="{{wtables}}" as="w" hint-placeholder-count="2">
+                  <div style="border-top: 1px solid var(--line)">
+                    <div style="padding: 10px 20px; font-weight: 600; background: var(--head)">{{w.title}}</div>
+                    <div class="tw"><table class="stbl">
+                      <thead><tr><th scope="col" style="width: 50px">No.</th><th scope="col">Description (EST)</th><th scope="col" class="r">{{w.head}}</th><th scope="col">Payment on</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{w.rows}}" as="v" hint-placeholder-count="6">
+                          <tr><td>{{v.no}}</td><td>{{v.name}}</td><td class="r" style="font-variant-numeric: tabular-nums">{{v.amt}}</td><td>{{v.on}}</td></tr>
+                        </sc-for>
+                        <tr><td></td><td><b>TOTAL</b></td><td class="r" style="font-variant-numeric: tabular-nums"><b>{{w.total}}</b></td><td></td></tr>
+                      </tbody>
+                    </table></div>
+                  </div>
+                </sc-for>
+              </section>
+            </sc-if>
+          </div>
+
+          <div class="noprint" style="flex: 2 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+            <section class="card" style="overflow: hidden">
+              <button type="button" class="fr" onClick="{{togglePaid}}" aria-expanded="{{paidExp}}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 20px; border: 0; background: var(--card); font: 600 15px Inter, sans-serif; color: var(--ink); cursor: pointer; text-align: left"><dc-import name="Icon" glyph="check" tone="{{tn.ok}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1">Already paid (in the balance)</span><span style="color: var(--ink3); font-weight: 500; font-variant-numeric: tabular-nums">{{paidFmt}}</span><span class="{{paidChev}}"><dc-import name="Icon" glyph="chevronRight" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import></span></button>
+              <sc-if value="{{paidOpen}}" hint-placeholder-val="{{ true }}">
+                <div class="ex" style="border-top: 1px solid var(--line2)">
+                  <sc-for list="{{paidList}}" as="x" hint-placeholder-count="5">
+                    <div style="display: flex; justify-content: space-between; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--line2)"><span>{{x.name}} <span style="color: var(--ink3); font-size: 12px">· {{x.date}}</span></span><b style="{{x.amtStyle}}">{{x.amt}}</b></div>
+                  </sc-for>
+                  <sc-if value="{{noPaid}}" hint-placeholder-val="{{ false }}"><div style="padding: 12px 20px; color: var(--ink3)">Nothing paid on or before {{effShort}}.</div></sc-if>
+                </div>
+              </sc-if>
+            </section>
+
+            <section class="card" style="padding: 18px 20px; display: flex; gap: 12px">
+              <dc-import name="Icon" glyph="help" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import>
+              <p style="margin: 0; color: var(--ink2); font-size: 13px">An estimate whose bank lines so far add up to less (a fund requisition paid in tranches) is budgeted at the estimate until you confirm the amount in the payment.</p>
+            </section>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <sc-if value="{{dlgOpen}}" hint-placeholder-val="{{ false }}">
+    <div class="noprint" style="{{dlgWrap}}">
+      <div aria-hidden="true" class="{{dimCls}}" onClick="{{closeDlg}}" style="position: absolute; inset: 0; background: var(--dim)"></div>
+      <div role="dialog" aria-modal="true" aria-labelledby="bd-dlg-title" tabindex="-1" class="{{panelCls}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="{{dlgPanel}}">
+        <div style="position: sticky; top: 0; z-index: 1; background: var(--card); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 22px 12px; border-bottom: 1px solid var(--line2)">
+          <div><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3)">{{dlgEyebrow}}</span><h2 id="bd-dlg-title" tabindex="-1" style="margin: 2px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dlgTitle}}</h2></div>
+          <button type="button" class="sec ico" aria-label="Close" onClick="{{closeDlg}}" style="width: 40px"><dc-import name="Icon" glyph="close" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import></button>
+        </div>
+
+        <sc-if value="{{dlgHist}}" hint-placeholder-val="{{ true }}">
+          <div style="padding: 16px 22px; display: flex; flex-direction: column; gap: 12px; flex: 1">
+            <div style="color: var(--ink2); font-size: 13px">Every change to this line, newest first: who made it, how, and why. Open a step to see what it was before and after.</div>
+            <sc-if value="{{histEmpty}}" hint-placeholder-val="{{ false }}">
+              <div role="status" class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 16px; text-align: center; border: 1px dashed var(--ctl); border-radius: 14px"><dc-import name="Icon" glyph="history" tone="{{tn.muted}}" size="28" hint-size="28px,28px"></dc-import><b>Nothing recorded yet.</b><span style="color: var(--ink3); font-size: 13px">Changes made from now on will be listed here.</span></div>
+            </sc-if>
+            <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+              <sc-for list="{{entries}}" as="e" hint-placeholder-count="3">
+                <li style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden">
+                  <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center"><b>{{e.op}}</b><span class="{{e.srcCls}}">{{e.src}}</span><span style="color: var(--ink2); font-size: 13px">{{e.who}}</span><span style="color: var(--ink3); font-size: 13px">{{e.when}}</span></div>
+                    <sc-if value="{{e.hasWhy}}" hint-placeholder-val="{{ true }}"><div style="font-size: 13px">Why: {{e.why}}</div></sc-if>
+                    <sc-if value="{{e.base}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: var(--ink2)">The audit trail starts from here: this is what the line looked like when it began.</div></sc-if>
+                  </div>
+                  <button type="button" class="fr" onClick="{{e.toggle}}" aria-expanded="{{e.exp}}" style="width: 100%; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 0; border-top: 1px solid var(--line2); background: var(--head); color: var(--ink); font: 600 13px Inter, sans-serif; cursor: pointer; text-align: left"><span class="{{e.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="{{e.tnMuted}}" size="16" hint-size="16px,16px"></dc-import></span>{{e.toggleLabel}}</button>
+                  <sc-if value="{{e.open}}" hint-placeholder-val="{{ false }}">
+                    <div class="ex tw"><table class="stbl" style="min-width: 380px">
+                      <thead><tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+                      <tbody><sc-for list="{{e.rows}}" as="f" hint-placeholder-count="2"><tr><td>{{f.f}}</td><td><span class="{{f.bCls}}">{{f.b}}</span></td><td><span class="{{f.aCls}}">{{f.a}}</span></td></tr></sc-for></tbody>
+                    </table></div>
+                  </sc-if>
+                </li>
+              </sc-for>
+            </ol>
+            <a href="AuditTrail.dc.html" style="font-weight: 600; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; min-height: 32px">Full history in the audit trail<dc-import name="Icon" glyph="external" tone="{{tn.brand}}" size="14" hint-size="14px,14px"></dc-import></a>
+          </div>
+          <div style="position: sticky; bottom: 0; background: var(--card); display: flex; justify-content: flex-end; padding: 12px 22px 18px; border-top: 1px solid var(--line2)"><button type="button" class="sec" onClick="{{closeDlg}}">Close</button></div>
+        </sc-if>
+
+        <sc-if value="{{dlgDel}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 16px 22px; display: flex; flex-direction: column; gap: 12px">
+            <div style="color: var(--ink2); font-size: 14px">{{delText}}</div>
+            <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; font-size: 13px"><sc-for list="{{delList}}" as="d" hint-placeholder-count="2"><li>{{d.t}}</li></sc-for></ul>
+            <div style="padding: 10px 14px; border-radius: 12px; background: var(--head); border: 1px solid var(--line); color: var(--ink2); font-size: 13px">The payments themselves are not changed. Each deleted line keeps its History.</div>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 22px 18px; border-top: 1px solid var(--line2)"><button type="button" class="sec" onClick="{{closeDlg}}">Cancel</button><button type="button" class="dng" onClick="{{doDelete}}">{{delLabel}}</button></div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" class="{{toastCls}} noprint" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastRelease}}" onFocus="{{toastHold}}" style="position: fixed; left: 50%; bottom: 24px; margin-left: -200px; width: 400px; max-width: calc(100% - 32px); z-index: 70; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; border: 1px solid #33415A; box-shadow: 0 12px 32px rgba(0,0,0,.3); font-size: 14px">
+      <dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import>
+      <span style="flex: 1">{{toastMsg}}</span>
+      <sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #8DB0FA; font: 700 14px Inter, sans-serif; cursor: pointer; text-decoration: underline">Undo</button></sc-if>
+      <button type="button" aria-label="Dismiss" onClick="{{toastClose}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"stored","options":["stored","not-set-up","covered","as-at-today","no-date","errors","history","history-empty","confirm-delete","print","month-empty","loading","load-error","many","ai"],"section":"State to show"},"theme":{"editor":"enum","default":"light","options":["light","dark"]},"companies":{"editor":"enum","default":"two","options":["two","one","four"],"section":"How many companies"},"$preview":{"width":1440,"height":3450}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.fresh((p && p.view) || 'stored');
+  }
+  componentDidMount() { if (this.state.dlg) this.focusId('bd-dlg-title'); else if (this.state.printing) this.focusId('bd-print-title'); }
+  componentWillUnmount() { clearTimeout(this._ct); clearTimeout(this._tt); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._ct); clearTimeout(this._tt); this.setState(this.fresh(this.props.view || 'stored')); return; }
+    if (!prev) return;
+    const n = this.state;
+    if (!prev.dlg && n.dlg) this.focusId('bd-dlg-title');
+    if (prev.dlg && !n.dlg) this.focusBack();
+    if (prev.load !== 'ok' && n.load === 'ok') this.focusId('bd-h1');
+    if (!prev.printing && n.printing) this.focusId('bd-print-title');
+    if (prev.printing && !n.printing) this.focusBack();
+  }
+  focusId(id) { const el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); }
+  focusBack() {
+    const o = this._opener;
+    if (o && o.isConnected) o.focus({ preventScroll: true }); else this.focusId('bd-lines-title');
+  }
+  // ---- sample data -------------------------------------------------------------------------------------------
+  dat(co) {
+    if (co === 'AI') return { code: 'AI', line: 'AI · Agrinexus International', bank: 'Maybank FCA (USD)', bankSub: "AI's only account is Maybank FCA (USD), so no RM balance is entered", pays: [
+      { id: 'a1', name: 'Salaries — staff', cur: 'MYR', amt: 21300, due: '2026-10-24', paid: '2026-10-24' },
+      { id: 'a2', name: 'Farm supplies', cur: 'MYR', amt: 6750, due: '2026-10-20', paid: '2026-10-19' },
+      { id: 'a3', name: 'KWSP', cur: 'MYR', amt: 4478, due: '2026-11-15', paid: null, legal: true },
+      { id: 'a4', name: 'PERKESO', cur: 'MYR', amt: 612.4, due: '2026-11-15', paid: '2026-11-14', legal: true },
+      { id: 'a5', name: 'Electricity bill', cur: 'MYR', amt: 1420, due: '2026-11-07', paid: null },
+      { id: 'a6', name: 'Consultant — farm audit', cur: 'MYR', amt: 2500, due: '2026-11-30', paid: null }
+    ] };
+    return { code: 'AISB', line: 'AISB · Maybank current', bank: 'Maybank current', bankSub: "Maybank current · from the bank's app or statement", pays: [
+      { id: 'p1', name: 'Salaries — staff', cur: 'MYR', amt: 48600, due: '2026-10-24', paid: '2026-10-24' },
+      { id: 'p2', name: 'Director fee', cur: 'MYR', amt: 12000, due: '2026-10-24', paid: '2026-10-24' },
+      { id: 'p3', name: 'Office rental', cur: 'MYR', amt: 6500, due: '2026-10-31', paid: '2026-10-30' },
+      { id: 'p4', name: 'Electricity bill', cur: 'MYR', amt: 1163.2, due: '2026-11-05', paid: '2026-11-04' },
+      { id: 'p5', name: 'Telephone & internet', cur: 'MYR', amt: 398.6, due: '2026-10-28', paid: '2026-10-28' },
+      { id: 'p6', name: 'Contractor — field works', cur: 'MYR', amt: 24000, due: '2026-10-06', paid: '2026-10-06' },
+      { id: 'p7', name: 'KWSP', cur: 'MYR', amt: 11240, due: '2026-11-15', paid: null, legal: true },
+      { id: 'p8', name: 'PCB', cur: 'MYR', amt: 4915, due: '2026-11-15', paid: '2026-11-14', legal: true },
+      { id: 'p9', name: 'Consultant fee', cur: 'MYR', amt: 3200, due: '2026-10-31', paid: null },
+      { id: 'p11', name: 'PERKESO', cur: 'MYR', amt: 1086.4, due: '2026-11-15', paid: '2026-11-17', legal: true },
+      { id: 'p12', name: 'Cloud hosting', cur: 'USD', amt: 1200, due: '2026-11-25', paid: null },
+      { id: 'p13', name: 'Rental received', cur: 'MYR', amt: 2800, due: '2026-10-02', paid: '2026-10-02', inflow: true },
+      { id: 'p14', name: 'Stationery Mart', cur: 'MYR', amt: 1120, due: '2026-10-30', paid: '2026-10-30' },
+      { id: 'p15', name: 'Oct 2026 Claims - Wei Ming', cur: 'MYR', amt: 486.5, due: '2026-11-14', paid: null },
+      { id: 'p16', name: 'Oct 2026 Claims - Aina', cur: 'MYR', amt: 408, due: '2026-11-20', paid: null },
+      { id: 'p17', name: 'Oct 2026 Claims - Jia Hui', cur: 'MYR', amt: 320, due: '2026-11-20', paid: null }
+    ] };
+  }
+  mkLines(co) {
+    if (co === 'AI') return [
+      { id: 'm1', desc: 'Salaries — staff', details: 'Payroll run', amt: 21300, cur: 'MYR', link: 'a1' },
+      { id: 'm2', desc: 'Farm supplies', details: 'Agro inputs', amt: 6750, cur: 'MYR', link: 'a2' },
+      { id: 'm3', desc: 'KWSP', details: 'EPF contribution', amt: 4478, cur: 'MYR', link: 'a3' },
+      { id: 'm4', desc: 'PERKESO', details: 'SOCSO contribution', amt: 612.4, cur: 'MYR', link: 'a4' },
+      { id: 'm5', desc: 'Electricity bill', details: 'Farm meter', amt: 1420, cur: 'MYR', link: 'a5' },
+      { id: 'm6', desc: 'Consultant — farm audit', details: 'Quarterly', amt: 2500, cur: 'MYR', link: 'a6' }
+    ];
+    return [
+      { id: 'l1', desc: 'Salaries — staff', details: 'Payroll run', amt: 48600, cur: 'MYR', link: 'p1' },
+      { id: 'l2', desc: 'Contractor — field works', details: 'Field works, October', amt: 24000, cur: 'MYR', link: 'p6' },
+      { id: 'l3', desc: 'Director fee', details: 'Monthly fee', amt: 12000, cur: 'MYR', link: 'p2' },
+      { id: 'l4', desc: 'KWSP', details: 'EPF contribution', amt: 11240, cur: 'MYR', link: 'p7' },
+      { id: 'l5', desc: 'Office rental', details: 'Lot 12 office', amt: 6500, cur: 'MYR', link: 'p3' },
+      { id: 'l6', desc: 'PCB', details: 'Monthly tax deduction', amt: 4915, cur: 'MYR', link: 'p8' },
+      { id: 'l7', desc: 'Consultant fee', details: 'Advisory, Sep and Oct', amt: 3200, cur: 'MYR', link: 'p9' },
+      { id: 'l8', desc: 'Insurance renewal', details: 'Annual renewal', amt: 2498.6, cur: 'MYR', link: null },
+      { id: 'l9', desc: 'Electricity bill', details: 'TNB', amt: 1150, cur: 'MYR', link: 'p4' },
+      { id: 'l10', desc: 'PERKESO', details: 'SOCSO contribution', amt: 1086.4, cur: 'MYR', link: 'p11' },
+      { id: 'l11', desc: 'Cloud hosting', details: 'Annual plan, billed in USD', amt: 1200, cur: 'USD', link: 'p12' }
+    ];
+  }
+  fresh(view) {
+    // AISB: the balance on the day the October fund requisition was signed (Maybank current after the 15 Oct line).
+    // AI: its only account is Maybank FCA (USD), so no RM balance is entered and the budget is as at today.
+    const mk = co => co === 'AISB' ? { setUp: true, bal: '56,790.35', date: '2026-10-19', useToday: false, lines: this.mkLines(co) }
+      : { setUp: true, bal: '', date: '', useToday: true, lines: this.mkLines(co) };
+    const B = { AISB: mk('AISB'), AI: mk('AI') };
+    if (view === 'not-set-up') B.AISB.setUp = false;
+    if (view === 'covered') B.AISB.bal = '100,000.00';
+    if (view === 'as-at-today') B.AISB.useToday = true;
+    if (view === 'no-date') B.AISB.date = '';
+    const errs = view === 'errors';
+    return { co: view === 'ai' ? 'AI' : 'AISB', B, draft: {}, rowErr: {}, sel: {}, sort: 'problems',
+      dlg: view === 'history' ? { kind: 'hist', id: 'l1' } : view === 'history-empty' ? { kind: 'hist', id: 'l10' } : view === 'confirm-delete' ? { kind: 'del', ids: ['l7'] } : null,
+      closing: false, hopen: view === 'history' ? { 'l1-0': true } : {}, balDraft: errs ? 'ten thousand' : null, dateDraft: errs ? '2026-12-05' : null,
+      balErr: errs, dateErr: errs, tick: null, flash: { id: null, n: 0 }, toast: null, printing: view === 'print', paidOpen: true, say: '', seq: 1,
+      load: view === 'loading' ? 'loading' : view === 'load-error' ? 'error' : 'ok', many: view === 'many', manyShown: 25 };
+  }
+  hist(id) {
+    const E = (op, src, who, when, why, rows, base) => ({ op, src, who, when, why, rows, base: !!base });
+    const sys = 'HR Payments';
+    const H = {
+      l1: [E('Changed', 'By hand', 'Aisha Rahman', '2 Oct 09:41', 'Added the new hire from October', [['Budget', 'RM 47,200.00', 'RM 48,600.00']]),
+           E('Added', 'System', sys, '1 Oct 08:00', 'Budget set up from September', [['Description', '', 'Salaries — staff'], ['Budget', '', 'RM 47,200.00']])],
+      l2: [E('Put back', 'By hand', 'Aisha Rahman', '14 Nov 16:10', 'Deleted by mistake', [['Line', 'Deleted', 'Contractor — field works, RM 24,000.00']]),
+           E('Deleted', 'By hand', 'Aisha Rahman', '14 Nov 16:05', 'Looked like a duplicate', [['Line', 'Contractor — field works, RM 24,000.00', 'Deleted']]),
+           E('Added', 'System', sys, '1 Oct 08:00', 'Budget set up from September', [['Description', '', 'Contractor — field works'], ['Budget', '', 'RM 24,000.00']])],
+      l5: [E('Changed', 'SQL import', 'Aisha Rahman', '30 Oct 17:20', '', [['Payment', 'Not linked', 'Office rental · paid 30 Oct']]),
+           E('As it stood when the audit trail started', 'System', sys, '24 Sep 08:00', '', [['Description', '', 'Office rental'], ['Budget', '', 'RM 6,500.00']], true)],
+      l9: [E('Changed', 'By hand', 'Aisha Rahman', '4 Nov 10:05', 'Linked to PV2611-003; the paid date was typed in because the November statement is not imported yet', [['Payment', 'Not linked', 'Electricity bill · PV2611-003 · paid 4 Nov']]),
+           E('Added', 'System', sys, '1 Oct 08:00', 'Budget set up from September', [['Description', '', 'Electricity bill'], ['Budget', '', 'RM 1,150.00']])],
+      l10: []
+    };
+    if (H[id]) return H[id];
+    if (/^n/.test(id)) return [E('Added', 'By hand', 'Aisha Rahman', '18 Nov, just now', '', [['Line', '', 'Added to the budget']])];
+    return [E('Added', 'System', sys, '1 Oct 08:00', 'Budget set up from September', [['Line', '', 'Copied from September']])];
+  }
+  // ---- helpers for handlers -----------------------------------------------------------------------------------
+  setBook(patch) { const s = this.state; this.setState({ B: { ...s.B, [s.co]: { ...s.B[s.co], ...patch } } }); }
+  showToast(msg, kind, id) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg, kind: kind || null, id: id || null } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+  }
+  openDlg(ev, dlg) { this._opener = (ev && ev.currentTarget) || null; this.setState({ dlg, closing: false }); }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._ct);
+    this._ct = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._ct); if (this.state.dlg) this.setState({ dlg: null, closing: false }); }
+  commitLine(id) {
+    const s = this.state, dr = s.draft[id];
+    if (!dr) return;
+    const book = s.B[s.co], ln = book.lines.find(x => x.id === id);
+    if (!ln) return;
+    const patch = {};
+    let bad = false;
+    if (dr.desc != null) patch.desc = dr.desc.trim();
+    if (dr.details != null) patch.details = dr.details.trim();
+    if (dr.amt != null) { const t = String(dr.amt).trim().replace(/,/g, ''); if (t === '') patch.amt = null; else if (/^\d+(\.\d{1,2})?$/.test(t)) patch.amt = parseFloat(t); else bad = true; }
+    if (bad) { this.setState({ rowErr: { ...s.rowErr, [id]: true } }); return; }
+    const nd = { ...s.draft }; delete nd[id];
+    const idx = book.lines.indexOf(ln);
+    this.setBook({ lines: book.lines.map(x => x.id === id ? { ...x, ...patch } : x) });
+    this.setState({ draft: nd, rowErr: { ...s.rowErr, [id]: false }, flash: { id, n: s.flash.n + 1 }, say: 'Line ' + (idx + 1) + ' saved' });
+  }
+  renderVals() {
+    const s = this.state, P = this.props, view = P.view || 'stored', dark = (P.theme || 'light') === 'dark', peers = P.companies || 'two';
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const TODAY = '2026-11-18';
+    const f2 = n => Math.abs(n).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const m = (n, cur) => (cur === 'MYR' ? 'RM ' : cur + ' ') + f2(n);
+    const dm = iso => { const p = String(iso).split('-').map(Number); return p[2] + ' ' + MON[p[1] - 1]; };
+    const dd = (a, b) => { const x = a.split('-').map(Number), y = b.split('-').map(Number); return Math.round((Date.UTC(x[0], x[1] - 1, x[2]) - Date.UTC(y[0], y[1] - 1, y[2])) / 864e5); };
+    const days = n => n + (n === 1 ? ' day' : ' days');
+    const parseAmt = v => { const t = String(v).trim().replace(/,/g, ''); return /^\d+(\.\d{1,2})?$/.test(t) ? parseFloat(t) : null; };
+    const co = s.co, bk = s.B[co], dat = this.dat(co), pays = dat.pays;
+    const pm = {}; pays.forEach(p => { pm[p.id] = p; });
+    const linked = {}; bk.lines.forEach(l => { if (l.link) linked[l.link] = l.id; });
+    const eff = (bk.useToday || !bk.date) ? TODAY : bk.date;
+    const balNum = bk.useToday ? 0 : (parseAmt(bk.bal) || 0);
+    const stored = bk.setUp;
+    const tn = dark ? { brand: 'dbrand', muted: 'dmuted', ok: 'dok', warn: 'dwarn', bad: 'dbad' } : { brand: 'brand', muted: 'muted', ok: 'ok', warn: 'warn', bad: 'bad' };
+    const afterD = p => !p.paid || p.paid > eff;
+
+    // ---- figures that follow the date ----
+    let toPay = 0, nPay = 0; const other = {}, nOther = {};
+    const add = (cur, n) => { if (cur === 'MYR') { toPay += n; nPay++; } else { other[cur] = (other[cur] || 0) + n; nOther[cur] = (nOther[cur] || 0) + 1; } };
+    if (stored) {
+      bk.lines.forEach(l => { const p = l.link ? pm[l.link] : null; if (!p || afterD(p)) add(l.cur, l.amt); });
+      pays.filter(p => !p.inflow && !linked[p.id] && afterD(p)).forEach(p => add(p.cur, p.amt));
+    } else pays.filter(p => !p.inflow && afterD(p)).forEach(p => add(p.cur, p.amt));
+    const paidList = pays.filter(p => p.paid && p.paid <= eff && p.cur === 'MYR').sort((a, b) => (a.paid < b.paid ? -1 : 1));
+    const paidOut = paidList.filter(p => !p.inflow), paidIn = paidList.filter(p => p.inflow);
+    const paidSum = paidOut.reduce((t, p) => t + p.amt, 0), inSum = paidIn.reduce((t, p) => t + p.amt, 0);
+    // No balance entered (as at today): funds to request can't be worked out, so no figure, print button or fund line.
+    const noBal = !!bk.useToday;
+    const short = toPay - balNum, isShort = !noBal && short > 0.005;
+    const otherKeys = Object.keys(other);
+
+    // ---- budget lines (stored) ----
+    const statusOf = (ln, p) => {
+      const paidAmt = p && p.paid ? p.amt : null;
+      if (p && p.paid && p.amt == null) return { paidAmt: null, cls: 'pl g', text: 'Paid, no amount' };
+      if (paidAmt == null) return { paidAmt, cls: 'pl g', text: 'Not paid yet' };
+      if (ln.amt == null || ln.amt <= 0) return { paidAmt, cls: 'pl g', text: 'No budget set' };
+      const diff = paidAmt - ln.amt;
+      if (Math.abs(diff) <= 0.005) return { paidAmt, cls: 'pl o', text: 'Matched' };
+      return diff < 0 ? { paidAmt, cls: 'pl w', text: 'Under by ' + m(-diff, ln.cur) } : { paidAmt, cls: 'pl b', text: 'Over by ' + m(diff, ln.cur) };
+    };
+    const curs = ['MYR'].concat(dat.code === 'AISB' ? ['USD'] : []);
+    const shownCurs = curs.filter(c => c === 'MYR' || bk.lines.some(l => l.cur === c));
+    const sumsFor = cur => {
+      const list = bk.lines.filter(l => l.cur === cur); let b = 0, pd = 0, dif = 0, anyPaid = false, pdEff = 0;
+      list.forEach(l => { b += l.amt || 0; const p = l.link ? pm[l.link] : null; if (p && p.paid && p.amt != null) { pd += p.amt; dif += p.amt - (l.amt || 0); anyPaid = true; if (p.paid <= eff) pdEff += p.amt; } });
+      return { b, pd, dif, anyPaid, pdEff };
+    };
+    const tables = shownCurs.map(cur => {
+      const list = bk.lines.filter(l => l.cur === cur), sm = sumsFor(cur), head = (cur === 'MYR' ? 'RM' : cur) + ' budget';
+      const pill = Math.abs(sm.dif) <= 0.005 ? ['pl o', 'Matched'] : sm.dif < 0 ? ['pl w', 'Under by ' + m(-sm.dif, cur)] : ['pl b', 'Over by ' + m(sm.dif, cur)];
+      const rows = list.map((ln, i) => {
+        const dr = s.draft[ln.id] || {}, p = ln.link ? pm[ln.link] : null, st = statusOf(ln, p), id = ln.id;
+        const opts = [{ v: '', t: 'Not linked' }].concat(pays.filter(x => !x.inflow && x.cur === cur && (!linked[x.id] || linked[x.id] === id)).map(x => ({ v: x.id, t: x.name + (x.paid ? ' · paid ' + dm(x.paid) : ' · due ' + dm(x.due)) })));
+        const no = i + 1;
+        return {
+          rowId: 'bd-row-' + id, rowCls: (s.flash.id === id ? (s.flash.n % 2 ? 'fa' : 'fb') : '') + ' hr', no,
+          selLabel: 'Select line ' + no + ', ' + ln.desc, checked: !!s.sel[id],
+          onSel: e => this.setState({ sel: { ...this.state.sel, [id]: !!(e && e.target && e.target.checked) } }),
+          descLabel: 'Description, line ' + no, detLabel: 'Bank or details, line ' + no, amtLabel: 'Budget amount, line ' + no, linkLabel: 'Linked payment, line ' + no,
+          desc: dr.desc != null ? dr.desc : ln.desc, details: dr.details != null ? dr.details : ln.details, amt: dr.amt != null ? dr.amt : (ln.amt == null ? '' : f2(ln.amt)),
+          amtBad: s.rowErr[id] ? 'true' : 'false', errId: 'bd-err-' + id, amtErr: s.rowErr[id] ? 'Enter an amount such as 10,000.00' : '',
+          onDesc: e => this.setState({ draft: { ...this.state.draft, [id]: { ...(this.state.draft[id] || {}), desc: e.target.value } } }),
+          onDet: e => this.setState({ draft: { ...this.state.draft, [id]: { ...(this.state.draft[id] || {}), details: e.target.value } } }),
+          onAmt: e => this.setState({ draft: { ...this.state.draft, [id]: { ...(this.state.draft[id] || {}), amt: e.target.value } } }),
+          commit: () => this.commitLine(id),
+          key: e => { if (e.key === 'Enter') { e.preventDefault(); this.commitLine(id); } },
+          paid: st.paidAmt == null ? '—' : f2(st.paidAmt), pillCls: st.cls, pillText: st.text,
+          link: ln.link || '', opts, onLink: e => {
+            const v = e.target.value || null, cur2 = this.state.B[this.state.co];
+            this.setBook({ lines: cur2.lines.map(x => x.id === id ? { ...x, link: v } : x) });
+            this.setState({ flash: { id, n: this.state.flash.n + 1 }, say: 'Line ' + no + ' saved' });
+          },
+          tnMuted: tn.muted, tnBad: tn.bad, histId: 'bd-h-' + id, histLabel: 'History of line ' + no + ', ' + ln.desc, openHist: ev => this.openDlg(ev, { kind: 'hist', id }),
+          delLabel: 'Delete line ' + no + ', ' + ln.desc, askDel: ev => this.openDlg(ev, { kind: 'del', ids: [id] })
+        };
+      });
+      return { title: (cur === 'MYR' ? 'Ringgit (RM)' : cur === 'USD' ? 'US dollars (USD)' : cur), budgetHead: head, rows, empty: !rows.length,
+        regionLabel: 'Budget lines in ' + (cur === 'MYR' ? 'ringgit' : cur) + ', scrolls', twStyle: s.many && cur === 'MYR' ? 'max-height:560px;overflow:auto' : 'overflow-x:auto',
+        totBudget: f2(sm.b), totPaid: sm.anyPaid ? f2(sm.pd) : '—', hasPill: sm.anyPaid, pillCls: pill[0], pillText: pill[1] };
+    });
+    const nib = pays.filter(p => !p.inflow && !linked[p.id]).map(p => ({
+      name: p.name, amt: m(p.amt, p.cur), paidOn: p.paid ? dm(p.paid) : 'Not paid yet', aria: 'Add ' + p.name + ' to the budget',
+      add: () => {
+        const sq = this.state.seq, nid = 'n' + sq, b2 = this.state.B[this.state.co];
+        this.setBook({ lines: b2.lines.concat([{ id: nid, desc: p.name, details: '', amt: p.amt, cur: p.cur, link: p.id }]) });
+        this.setState({ seq: sq + 1, flash: { id: nid, n: this.state.flash.n + 1 } });
+        this.showToast(p.name + ' added to the budget.', 'add', nid);
+      }
+    }));
+    const unlinkedN = bk.lines.filter(l => !l.link).length;
+    const selIds = bk.lines.filter(l => s.sel[l.id]).map(l => l.id);
+    const addBtns = shownCurs.length > 1 || (stored && dat.code === 'AISB') ? curs.map(cur => ({
+      id: 'bd-add-' + cur, label: 'Add line' + (curs.length > 1 ? ' (' + (cur === 'MYR' ? 'RM' : cur) + ')' : ''), aria: 'Add a blank line' + (curs.length > 1 ? ' in ' + (cur === 'MYR' ? 'ringgit' : cur) : ''),
+      add: () => {
+        const sq = this.state.seq, nid = 'n' + sq, b2 = this.state.B[this.state.co];
+        this.setBook({ lines: b2.lines.concat([{ id: nid, desc: '', details: '', amt: null, cur, link: null }]) });
+        this.setState({ seq: sq + 1, flash: { id: nid, n: this.state.flash.n + 1 } });
+        this.showToast('Line added. Describe it and set its amount.', 'add', nid);
+      }
+    })) : [{ id: 'bd-add-MYR', label: 'Add line', aria: 'Add a blank line', add: () => {
+      const sq = this.state.seq, nid = 'n' + sq, b2 = this.state.B[this.state.co];
+      this.setBook({ lines: b2.lines.concat([{ id: nid, desc: '', details: '', amt: null, cur: 'MYR', link: null }]) });
+      this.setState({ seq: sq + 1, flash: { id: nid, n: this.state.flash.n + 1 } });
+      this.showToast('Line added. Describe it and set its amount.', 'add', nid);
+    } }];
+
+    // ---- chart rows ----
+    const myr = bk.lines.filter(l => l.cur === 'MYR');
+    const rowsC = myr.map(ln0 => {
+      const ln = ln0.amt == null ? { ...ln0, amt: 0 } : ln0;
+      const p = ln.link ? pm[ln.link] : null, st = statusOf(ln, p), paid = st.paidAmt != null;
+      const diff = paid ? st.paidAmt - ln.amt : 0, over = paid && diff > 0.005;
+      let variance, vs = 'font-size:12px;', rank = 3;
+      if (paid) {
+        if (over) { variance = '+' + f2(diff) + ' over'; vs += 'color:var(--overInk);font-weight:600'; rank = 1; }
+        else if (diff < -0.005) { variance = f2(-diff) + ' under'; vs += 'color:var(--warnInk);font-weight:600'; rank = 2; }
+        else { variance = 'Matched'; vs += 'color:var(--okInk);font-weight:600'; }
+      } else if (!p) { variance = 'Not linked · not paid yet'; vs += 'color:var(--ink3)'; rank = 2; }
+      else {
+        const late = dd(TODAY, p.due);
+        if (late > 0) { variance = 'Overdue ' + days(late) + (p.legal ? ' · past legal deadline' : ''); vs += 'color:var(--badInk);font-weight:600'; rank = 0; }
+        else if (late === 0) { variance = 'Not paid · due today'; vs += 'color:var(--warnInk);font-weight:600'; rank = 2; }
+        else { variance = 'Not paid · due ' + dm(p.due); vs += 'color:var(--ink3)'; rank = 2; }
+      }
+      return { ln, p, paid, over, variance, vs, rank, due: p ? p.due : '9999-12-31', pd: paid ? st.paidAmt : 0 };
+    });
+    const maxV = Math.max(1, ...rowsC.map(r => Math.max(r.ln.amt, r.pd)));
+    const sorted = rowsC.slice().sort((a, b) => s.sort === 'big' ? b.ln.amt - a.ln.amt : s.sort === 'due' ? (a.due < b.due ? -1 : a.due > b.due ? 1 : b.ln.amt - a.ln.amt) : (a.rank - b.rank) || (b.ln.amt - a.ln.amt));
+    const chart = sorted.map(r => {
+      const b = r.ln.amt / maxV * 100, pp = Math.min(r.pd, r.ln.amt) / maxV * 100, ov = Math.max(0, r.pd - r.ln.amt) / maxV * 100;
+      const base = 'position:absolute;top:4px;height:8px;border-radius:2px;';
+      return { name: r.ln.desc || 'New line', sub: r.p ? (r.paid ? 'Paid ' + dm(r.p.paid) : 'Due ' + dm(r.p.due)) : 'Not linked', title: 'Open the payment: ' + (r.ln.desc || 'New line'),
+        budget: f2(r.ln.amt), variance: r.variance, varStyle: r.vs, hasOver: r.over,
+        stBud: base + 'left:0;min-width:4px;background:var(--budBar);width:' + b.toFixed(2) + '%',
+        stPaid: base + 'left:0;background:var(--brand);' + (r.paid ? 'min-width:4px;' : '') + 'width:' + pp.toFixed(2) + '%',
+        stOver: base + 'min-width:4px;background:repeating-linear-gradient(135deg,var(--over) 0 3px,var(--overBg) 3px 6px);left:' + b.toFixed(2) + '%;width:' + ov.toFixed(2) + '%',
+        stTick: 'position:absolute;top:0;width:2px;height:16px;background:var(--ink2);left:calc(' + b.toFixed(2) + '% - 1px)' };
+    });
+    const sortDefs = [['problems', 'Problems first'], ['big', 'Largest first'], ['due', 'Due date']];
+    const sorts = sortDefs.map(([k, label]) => ({ label, cls: 'sgb' + (s.sort === k ? ' on' : ''), on: s.sort === k ? 'true' : 'false', pick: () => this.setState({ sort: k }) }));
+
+    // ---- not set up: worked out, read only ----
+    const wtables = curs.map(cur => {
+      const list = pays.filter(p => !p.inflow && p.cur === cur && afterD(p)).sort((a, b) => (a.due < b.due ? -1 : 1));
+      return { title: cur === 'MYR' ? 'Ringgit (RM)' : 'US dollars (USD) · not in the shortfall', head: cur === 'MYR' ? 'RM' : cur, total: f2(list.reduce((t, p) => t + p.amt, 0)), _n: list.length,
+        rows: list.map((p, i) => ({ no: i + 1, name: p.name + (p.est ? ' · EST' : ''), amt: f2(p.amt), on: dm(p.due) })) };
+    }).filter(w => w._n > 0);
+
+    // ---- print sheet ----
+    const printTables = shownCurs.map(cur => {
+      const list = bk.lines.filter(l => l.cur === cur), sm = sumsFor(cur);
+      return { title: cur === 'MYR' ? 'Ringgit (RM)' : 'US dollars (USD), not in the shortfall', budgetHead: (cur === 'MYR' ? 'RM' : cur) + ' budget', totBudget: f2(sm.b),
+        rows: list.map((ln, i) => { const p = ln.link ? pm[ln.link] : null, st = statusOf(ln, p); return { no: i + 1, desc: ln.desc, details: ln.details, amt: f2(ln.amt || 0), due: p ? dm(p.due) : '—' }; }) };
+    });
+
+    // ---- dialog ----
+    const dl = s.dlg, dlgHist = !!dl && dl.kind === 'hist', dlgDel = !!dl && dl.kind === 'del';
+    let entries = [], dlgTitle = '', dlgEyebrow = '', delText = '', delList = [], delLabel = 'Delete';
+    if (dlgHist) {
+      const hl = bk.lines.find(x => x.id === dl.id) || { desc: 'line' }, hi = bk.lines.findIndex(x => x.id === dl.id);
+      dlgEyebrow = 'History'; dlgTitle = 'Line ' + (hi + 1) + ' · ' + (hl.desc || 'New line');
+      entries = this.hist(dl.id).map((e, i) => {
+        const key = dl.id + '-' + i, open = !!s.hopen[key];
+        return { tnMuted: tn.muted, op: e.op, src: e.src, srcCls: 'pl ' + (e.src === 'By hand' ? 'g' : e.src === 'SQL import' ? 'o' : 'w'), who: e.who, when: e.when, hasWhy: !!e.why, why: e.why, base: e.base,
+          exp: open ? 'true' : 'false', open, chev: open ? 'chev on' : 'chev', toggleLabel: open ? 'Hide before and after' : 'Show before and after',
+          toggle: () => this.setState({ hopen: { ...this.state.hopen, [key]: !this.state.hopen[key] } }),
+          rows: e.rows.map(r => ({ f: r[0], b: r[1] || '—', a: r[2] || '—', bCls: r[1] ? 'cv bf' : '', aCls: r[2] ? 'cv a' : '' })) };
+      });
+    }
+    if (dlgDel) {
+      const ids = dl.ids, gone = bk.lines.filter(x => ids.indexOf(x.id) >= 0);
+      dlgEyebrow = 'Delete'; dlgTitle = ids.length === 1 ? 'Delete this line?' : 'Delete ' + ids.length + ' lines?';
+      delText = ids.length === 1 ? 'The line comes out of the budget. This cannot be undone here.' : 'These ' + ids.length + ' lines come out of the budget. This cannot be undone here.';
+      delList = gone.map(x => ({ t: (x.desc || 'New line') + ' · ' + m(x.amt || 0, x.cur) }));
+      delLabel = ids.length === 1 ? 'Delete line' : 'Delete ' + ids.length + ' lines';
+    }
+    const trap = e => {
+      const f = e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+      if (!f || !f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    const eff2 = bk.useToday ? TODAY : bk.date;
+    const pickCo = c => () => { if (this.state.co === c) return; this.setState({ co: c, sel: {}, draft: {}, rowErr: {}, balDraft: null, dateDraft: null, balErr: false, dateErr: false, tick: null, say: 'Showing ' + c }); };
+    const t = s.toast;
+    const printing = s.printing;
+
+    return {
+      theme: dark ? 'dark' : 'light', rootCls: 'bd' + (dark ? ' dk' : ''), tn, say: s.say,
+      balText: bk.useToday ? 'not entered' : 'RM ' + f2(balNum), coLine: dat.line, coCode: dat.code, todayShort: dm(TODAY), todayLabel: '18 November 2026',
+      showPrint: printing, showHead: !printing, showActions: view !== 'month-empty' && s.load === 'ok',
+      showLoading: !printing && s.load === 'loading', showError: !printing && s.load === 'error', showEmpty: !printing && s.load === 'ok' && view === 'month-empty',
+      showBody: !printing && s.load === 'ok' && view !== 'month-empty', notSet: !stored, stored,
+      retry: () => this.setState({ load: 'ok', say: 'Budget loaded' }),
+      many: s.many && stored ? { on: true, off: s.manyShown >= 60, text: 'Showing ' + Math.min(60, s.manyShown) + ' of 60 lines', label: s.manyShown >= 60 ? 'All 60 shown' : 'Show 25 more',
+        more: () => { const v = Math.min(60, this.state.manyShown + 25); this.setState({ manyShown: v, say: 'Showing ' + v + ' of 60 lines' }); },
+        note: 'Many rows: 60 is an example count for a stress case, not a figure from the samples. The board draws ' + dat.code + '\'s ' + bk.lines.length + ' lines of the first 25, so the totals and cards drawn add up those lines only. The header row stays at the top while the lines scroll, and the Excel file and the print hold every line.' }
+        : { on: false, off: true, text: '', label: '', more: () => {}, note: '' },
+      sbCo: co === 'AI' ? 'ai' : 'aisb', sbKind: co === 'AI' ? 'here' : 'sqlPayroll', sbPeers: peers, tbPeers: peers === 'four' ? 'four' : peers === 'one' ? 'one' : 'two',
+      onTopCo: code => { const v = String(code).toUpperCase(); if (v === 'AISB' || v === 'AI') pickCo(v)(); else this.showToast('Only AISB and AI have sample figures in this mock.'); },
+      doExcel: () => this.showToast('Excel file ready: Budget ' + dat.code + ' 2026-10.xlsx'),
+      doFund: () => { if (isShort) this.showToast('Fund request ready to print: RM ' + f2(short)); },
+      openPrint: ev => { this._opener = (ev && ev.currentTarget) || null; this.setState({ printing: true }); },
+      closePrint: () => this.setState({ printing: false }), doPrint: () => this.showToast('Sent to the printer.'),
+      setUp: () => { this.setBook({ setUp: true }); this.showToast("Budget set up. It copies September's budget with its amounts.", 'setup'); },
+      setUpMonth: () => this.showToast('October 2026 set up.'),
+      // balance and date
+      balVal: s.balDraft != null ? s.balDraft : (bk.useToday ? '' : bk.bal), balPlaceholder: bk.useToday ? 'Not entered' : '10,000.00',
+      balInvalid: s.balErr ? 'true' : 'false', balErr: s.balErr, balSaved: s.tick === 'bal',
+      dateVal: s.dateDraft != null ? s.dateDraft : (bk.useToday ? TODAY : bk.date), dateInvalid: s.dateErr ? 'true' : 'false', dateErr: s.dateErr, dateSaved: s.tick === 'date',
+      onBalInput: e => this.setState({ balDraft: e.target.value, balErr: false, tick: null }),
+      commitBal: () => {
+        const st = this.state; if (st.balDraft == null) return;
+        const n = parseAmt(st.balDraft);
+        if (n == null) { this.setState({ balErr: true }); return; }
+        this.setBook(bk.useToday ? { bal: f2(n), date: TODAY, useToday: false } : { bal: f2(n) });
+        this.setState({ balDraft: null, balErr: false, tick: 'bal', say: 'Balance saved' });
+      },
+      balKey: e => { if (e.key === 'Enter') { e.preventDefault(); const st = this.state; if (st.balDraft == null) return; const n = parseAmt(st.balDraft); if (n == null) { this.setState({ balErr: true }); return; } this.setBook(bk.useToday ? { bal: f2(n), date: TODAY, useToday: false } : { bal: f2(n) }); this.setState({ balDraft: null, balErr: false, tick: 'bal', say: 'Balance saved' }); } },
+      onDate: e => {
+        const v = e.target.value;
+        if (v === '') { this.setBook({ date: '', useToday: false }); this.setState({ dateDraft: null, dateErr: false, tick: 'date', say: 'Date cleared' }); return; }
+        if (v < '2026-09-01' || v > '2026-11-30') { this.setState({ dateDraft: v, dateErr: true, tick: null }); return; }
+        this.setBook({ date: v, useToday: false });
+        this.setState({ dateDraft: null, dateErr: false, tick: 'date', say: 'Date saved' });
+      },
+      noDate: !bk.date && !bk.useToday, otherDate: bk.useToday && !!bk.date, savedShort: bk.date ? dm(bk.date) : '',
+      useSaved: () => { this.setBook({ useToday: false }); this.setState({ say: 'Using ' + dm(bk.date) }); },
+      // cards
+      effShort: dm(eff), effLabel: dm(eff) + ' 2026', balTitle: 'Balance on ' + dm(eff), balCard: bk.useToday ? 'Not entered' : 'RM ' + f2(balNum), balNote: dat.code === 'AI' && bk.useToday ? "AI's only account is Maybank FCA (USD)" : bk.useToday ? (bk.date ? 'The saved balance is as at ' + dm(bk.date) : 'No balance saved yet') : dat.bank,
+      bankSub: dat.bankSub,
+      toPayFmt: f2(toPay), toPayNote: nPay + (nPay === 1 ? ' payment' : ' payments'),
+      shortFmt: f2(short), isShort, hasBal: !noBal, noBal,
+      shortTitle: noBal ? 'Funds to request' : isShort ? 'Shortfall to request' : 'Covered by the balance',
+      shortLabelPrint: noBal ? 'Funds to request' : isShort ? 'Shortfall = fund requisition needed' : 'Covered, left over',
+      shortPrintVal: noBal ? 'not worked out, bank balance not entered' : 'RM ' + f2(short),
+      shortNote: noBal ? 'Worked out once a balance and its date are entered.' : isShort ? 'Fund requisition needed.' : 'Left over: no funds needed',
+      shortCls: '', shortCard: 'border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:4px;min-width:0;' + (noBal ? 'background:var(--card);border:1px solid var(--line)' : isShort ? 'background:var(--badBg);border:1px solid var(--badLine)' : 'background:var(--okBg);border:1px solid var(--okLine)'),
+      shortLabel: 'font-weight:600;' + (noBal ? 'color:var(--ink2)' : isShort ? 'color:var(--badInk)' : 'color:var(--okInk)'),
+      paidFmt: f2(paidSum), paidNote: paidOut.length + (paidOut.length === 1 ? ' payment' : ' payments') + ' on or before ' + dm(eff), hasIn: paidIn.length > 0, inFmt: f2(inSum),
+      hasOther: otherKeys.length > 0, otherFmt: otherKeys.map(c => m(other[c], c)).join(' · '), otherNote: otherKeys.map(c => nOther[c] + (nOther[c] === 1 ? ' payment' : ' payments')).join(' · ') + ', each currency on its own',
+      bvp: (() => { const sm = sumsFor('MYR'), usd = bk.lines.filter(l => l.cur !== 'MYR').reduce((t, l) => t + (l.amt || 0), 0);
+        const out = [{ label: 'Budgeted', value: 'RM ' + f2(sm.b) + (usd ? ' (and USD ' + f2(usd) + ')' : '') }, { label: 'Paid against the budget', value: 'RM ' + f2(sm.pdEff) },
+          { label: 'Still to pay', value: 'RM ' + f2(toPay) }];
+        if (!noBal) out.push({ label: 'Funds to request', value: isShort ? 'RM ' + f2(short) : 'None: covered by the balance' });
+        return out; })(),
+      // lines
+      tables, addBtns, wtables, nib, hasNib: nib.length > 0, noNib: nib.length === 0,
+      hasUnlinked: unlinkedN > 0, unlinkedNote: unlinkedN + (unlinkedN === 1 ? ' line is' : ' lines are') + ' not linked to a payment, so ' + (unlinkedN === 1 ? 'it shows' : 'they show') + ' Not paid yet. Link them in the Payment column or delete the ones you do not need.',
+      allChecked: bk.lines.length > 0 && selIds.length === bk.lines.length,
+      onAll: e => { const on = !!(e && e.target && e.target.checked), nx = {}; if (on) this.state.B[this.state.co].lines.forEach(x => { nx[x.id] = true; }); this.setState({ sel: nx }); },
+      delSelOff: selIds.length === 0, delSelLabel: 'Delete selected' + (selIds.length ? ' (' + selIds.length + ')' : ''),
+      askDelSel: ev => { if (selIds.length) this.openDlg(ev, { kind: 'del', ids: selIds }); },
+      sorts, chart, printTables,
+      togglePaid: () => this.setState({ paidOpen: !s.paidOpen }), paidOpen: s.paidOpen, paidExp: s.paidOpen ? 'true' : 'false', paidChev: s.paidOpen ? 'chev on' : 'chev',
+      noPaid: paidList.length === 0,
+      paidList: paidList.map(p => ({ name: p.name + (p.inflow ? ' (money in)' : ''), date: dm(p.paid), amt: (p.inflow ? '+ ' : '') + f2(p.amt), amtStyle: 'font-variant-numeric:tabular-nums;' + (p.inflow ? 'color:var(--okInk)' : '') })),
+      // dialog
+      dlgOpen: !!dl, dlgHist, dlgDel, dlgEyebrow, dlgTitle, entries, histEmpty: dlgHist && entries.length === 0, delText, delList, delLabel,
+      dlgWrap: 'position:fixed;inset:0;z-index:60;display:flex;box-sizing:border-box;' + (dlgHist ? 'align-items:stretch;justify-content:flex-end;padding:0' : 'align-items:center;justify-content:center;padding:16px'),
+      dlgPanel: 'position:relative;box-sizing:border-box;background:var(--card);color:var(--ink);border:1px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow-y:auto;' + (dlgHist ? 'width:560px;max-width:100%;height:100%;border-radius:18px 0 0 18px' : 'width:100%;max-width:520px;max-height:100%;border-radius:18px'),
+      dimCls: s.closing ? 'dim-out' : 'dim-in', panelCls: s.closing ? 'dr-out' : 'dr-in',
+      closeDlg: () => this.closeDlg(),
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => { if (e.key === 'Escape') { e.stopPropagation(); this.closeDlg(); return; } if (e.key === 'Tab') trap(e); },
+      doDelete: () => {
+        const ids = (this.state.dlg && this.state.dlg.ids) || [], b2 = this.state.B[this.state.co];
+        this.setBook({ lines: b2.lines.filter(x => ids.indexOf(x.id) < 0) });
+        this.setState({ sel: {}, say: ids.length + (ids.length === 1 ? ' line deleted' : ' lines deleted') });
+        this.closeDlg();
+        this.showToast(ids.length === 1 ? 'Line deleted.' : ids.length + ' lines deleted.');
+      },
+      // toast
+      hasToast: !!t, toastMsg: t ? t.msg : '', toastCls: 'to-in', toastUndoOn: !!(t && t.kind),
+      toastUndo: () => {
+        const tt = this.state.toast; if (!tt) return;
+        clearTimeout(this._tt);
+        if (tt.kind === 'add') { const b2 = this.state.B[this.state.co]; this.setBook({ lines: b2.lines.filter(x => x.id !== tt.id) }); }
+        else if (tt.kind === 'setup') this.setBook({ setUp: false });
+        this.setState({ toast: null, say: 'Undone' });
+      },
+      toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastRelease: () => { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 6000); }
+    };
+  }
+}
+</script>
+</body>
+</html>

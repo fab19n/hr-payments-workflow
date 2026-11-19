@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview cards · every state</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hs:hover{background:#F0F3F8 !important}
+.hs,.ovc,.ctr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.sk{background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFC 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:12px}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1)}
+/* ov cards: the same rules as Main.dc.html (Needs attention keeps the counters card; the other rows use the calm card) */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rh{margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F6C80}
+.sub{color:#5F6C80;font-size:12px}
+.cp{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp.info{background:#EAF0FD;color:#2450B8;border-color:#C9D7F7}
+.cp.mute{background:#EEF1F5;color:#46546A;border-color:#D5DBE4}
+.cp.ok{background:#E3F7EC;color:#0A6B3D;border-color:#BFE8D0}
+.cp.bad{background:#FDE6E3;color:#B0190F;border-color:#F5C2BB}
+.pl{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:99px;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.pl.warn{background:#FEF1D6;color:#934100}
+.ovc{position:relative;display:flex;flex-direction:column;gap:10px;min-width:0;background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:14px 16px;box-sizing:border-box}
+.ovc.lk:hover{background:#F7F8FA;border-color:#C9D2E0}
+.ovl{color:inherit;text-decoration:none}
+.ovl:hover{color:inherit}
+.ovl::after{content:"";position:absolute;inset:0;border-radius:16px}
+.ovl:focus-visible{outline:none}
+.ovl:focus-visible::after{outline:2px solid #2450B8;outline-offset:-2px}
+.ctr{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:32px;min-width:0;padding:8px 10px;border-radius:12px;border:1px solid #E3E7ED;background:#FFFFFF;color:inherit;text-decoration:none;box-sizing:border-box}
+.ctr:hover{background:#F0F3F8;border-color:#C9D2E0;color:inherit}
+.ctr:focus-visible{outline-offset:-2px}
+.tg{position:relative;z-index:1}
+/* calm cards (Payments, Accounting, HR): title, one headline, one note, a line per company, one link and an info tip */
+.ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:16px;align-items:stretch}
+.ovc.cm{gap:12px;height:100%}
+.ovt{display:flex;align-items:center;gap:8px;min-width:0}
+.ovtt{margin:0;flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tday{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:99px;background:#EEF1F5;color:#46546A;font:500 12px Inter,sans-serif}
+.ovb{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ovh{font-size:20px;font-weight:500;line-height:28px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ove{font-size:14px;line-height:20px;color:#46546A}
+.ovw{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#934100;white-space:nowrap}
+.ovk{display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid #EEF1F5}
+.ovr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;white-space:nowrap}
+.ovco{font-size:12px;font-weight:600;color:#46546A}
+.ovf{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
+.ovo{display:inline-flex;align-items:center;gap:4px;min-height:32px;font-size:13px;font-weight:600;color:#2450B8;text-decoration:none}
+.ovo:hover{color:#1D419A;text-decoration:underline}
+.ovo::after{content:"";position:absolute;inset:0;border-radius:16px}
+.ovo:focus-visible{outline:none}
+.ovo:focus-visible::after{outline:2px solid #2450B8;outline-offset:-2px}
+.tip{position:relative;z-index:1;flex:none;margin-right:-6px}
+.tipb{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:8px;background:transparent;cursor:pointer;transition:background-color .12s ease-out}
+.tipb:hover{background:#EEF1F5}
+.tt{position:absolute;right:0;bottom:calc(100% + 4px);z-index:6;width:240px;box-sizing:border-box;padding:10px 12px;border-radius:10px;background:#0F1A2B;color:#FFFFFF;font:400 12px/1.45 Inter,sans-serif;white-space:normal;text-align:left;box-shadow:0 10px 28px rgba(13,27,46,.22);opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .18s cubic-bezier(.22,1,.36,1),transform .18s cubic-bezier(.22,1,.36,1),visibility 0s linear .18s}
+.tip:hover .tt,.tipb:focus+.tt,.tt.on{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.tt.off{opacity:0 !important;visibility:hidden !important}
+.na{display:flex;flex-direction:column;justify-content:center;gap:4px;min-height:120px;height:100%;padding:14px 16px;border:1px dashed #C3CBD8;border-radius:16px;box-sizing:border-box;font-size:12px;color:#46546A}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; padding: 40px; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; gap: 40px">
+
+  <header style="display: flex; flex-direction: column; gap: 8px; max-width: 980px">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Overview · October 2026 · Wed 18 Nov</span>
+    <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: -.01em">Overview cards · every state</h1>
+    <p style="margin: 0; color: #46546A">The 13 cards of the Overview (Bank and Dates coming up each merge two earlier cards), each drawn normal, with All companies, empty, out of date and "Could not load". Every card opens its page for the same company and month. One card that fails never hides the others. The anatomy and its four states are on Foundations; this board fills them in with each card's own wording and the shared sample figures.</p>
+  </header>
+
+  <section aria-labelledby="oc-leg-h" style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px"><h2 id="oc-leg-h" class="rh">Which cards follow the month</h2><span class="sub">The month button in the top bar moves the cards marked "Follows the month". The others are worked out from today, whatever month is shown.</span></div>
+    <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow-x: auto">
+      <table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 980px">
+        <caption class="vh">For each Overview card: whether it follows the month switcher, what it shows when empty, when out of date, and what a click opens</caption>
+        <thead>
+          <tr style="background: #FAFBFC; text-align: left; color: #46546A">
+            <th scope="col" style="padding: 10px 16px; font-weight: 600; border-bottom: 1px solid #E3E7ED">Card</th>
+            <th scope="col" style="padding: 10px 16px; font-weight: 600; border-bottom: 1px solid #E3E7ED">Month</th>
+            <th scope="col" style="padding: 10px 16px; font-weight: 600; border-bottom: 1px solid #E3E7ED">Empty</th>
+            <th scope="col" style="padding: 10px 16px; font-weight: 600; border-bottom: 1px solid #E3E7ED">Out of date</th>
+            <th scope="col" style="padding: 10px 16px; font-weight: 600; border-bottom: 1px solid #E3E7ED">A click opens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <sc-for list="{{legend}}" as="l" hint-placeholder-count="13">
+            <tr>
+              <th scope="row" style="padding: 10px 16px; text-align: left; font-weight: 600; border-bottom: 1px solid #EEF1F5; white-space: nowrap"><span style="display: inline-flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="{{l.glyph}}" tone="{{l.tone}}" size="18" hint-size="18px,18px"></dc-import>{{l.name}}</span></th>
+              <td style="padding: 10px 16px; border-bottom: 1px solid #EEF1F5"><span class="{{l.cls}}">{{l.month}}</span></td>
+              <td style="padding: 10px 16px; border-bottom: 1px solid #EEF1F5; color: #46546A">{{l.empty}}</td>
+              <td style="padding: 10px 16px; border-bottom: 1px solid #EEF1F5; color: #46546A">{{l.stale}}</td>
+              <td style="padding: 10px 16px; border-bottom: 1px solid #EEF1F5; color: #46546A">{{l.opens}}</td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="oc-grid-h" style="display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px"><h2 id="oc-grid-h" class="rh">Every card in every state</h2><span class="sub">Normal is AISB · Kept in SQL Account, October 2026. All companies adds AI · Kept here. Try again on a card that could not load reloads that card alone.</span></div>
+    <div aria-hidden="true" style="display: grid; grid-template-columns: 140px repeat(5, minmax(0, 1fr)); gap: 12px; padding: 0 0 2px; font-size: 12px; font-weight: 600; color: #46546A">
+      <span></span>
+      <sc-for list="{{cols}}" as="h" hint-placeholder-count="5"><span>{{h.name}}<span style="display: block; font-weight: 400; color: #5F6C80">{{h.sub}}</span></span></sc-for>
+    </div>
+    <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+      <div role="group" aria-label="{{g.title}}" style="display: flex; flex-direction: column; gap: 14px; padding-top: 14px; border-top: 1px solid #E3E7ED">
+        <h3 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{g.title}}</h3>
+        <sc-for list="{{g.cards}}" as="cr" hint-placeholder-count="4">
+          <div style="display: grid; grid-template-columns: 140px repeat(5, minmax(0, 1fr)); gap: 12px; align-items: stretch">
+            <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 4px">
+              <b style="font-size: 14px">{{cr.name}}</b>
+              <span class="{{cr.cls}}" style="align-self: flex-start">{{cr.month}}</span>
+              <span class="sub">{{cr.note}}</span>
+            </div>
+            <sc-for list="{{cr.cells}}" as="c" hint-placeholder-count="5">
+              <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+                <span class="vh">{{c.colName}}</span>
+                <sc-if value="{{c.isOld}}" hint-placeholder-val="{{ false }}">
+<div class="{{c.cls}}" style="{{c.style}}">
+                  <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                    <span aria-hidden="true" style="{{c.tile}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.iconTone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                    <h4 id="{{c.headId}}" tabindex="-1" style="margin: 0; flex: 1; min-width: 0; font-size: 14px; font-weight: 700"><sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{c.href}}" id="{{c.linkId}}" class="ovl" title="{{c.tip}}">{{c.title}}<span class="vh">{{c.opens}}</span></a></sc-if><sc-if value="{{c.noLink}}" hint-placeholder-val="{{ false }}">{{c.title}}</sc-if></h4>
+                    <span class="sub" style="white-space: nowrap">{{c.when}}</span>
+                  </div>
+
+                  <sc-if value="{{c.isLoading}}" hint-placeholder-val="{{ false }}">
+                    <div aria-busy="true" style="display: flex; flex-direction: column; gap: 8px"><span class="vh">Loading {{c.title}}</span><div class="sk" style="height: 18px"></div><div class="sk" style="height: 18px; width: 70%"></div></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isFailed}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+                      <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #B0190F; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+                      <button type="button" id="{{c.retryId}}" class="hs tg" onClick="{{c.retry}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isEmpty}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #46546A">{{c.emptyText}}</span><sc-if value="{{c.hasEmptyNote}}" hint-placeholder-val="{{ false }}"><span class="sub">{{c.emptyNote}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.hasBlocks}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px">
+                      <sc-for list="{{c.blocks}}" as="b" hint-placeholder-count="2">
+                        <div style="{{b.style}}">
+                          <sc-if value="{{b.hasHead}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="{{b.chip}}">{{b.code}}</span><span class="sub">{{b.kind}}</span></span></sc-if>
+                          <sc-if value="{{b.isEmpty}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{b.empty}}</span></sc-if>
+                          <sc-if value="{{b.hasBig}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap"><b style="{{b.bigStyle}}">{{b.big}}</b><span style="font-size: 13px; color: #46546A">{{b.unit}}</span></span></sc-if>
+                          <sc-if value="{{b.hasBar}}" hint-placeholder-val="{{ false }}"><div style="height: 6px; border-radius: 99px; background: #EEF1F5; overflow: hidden"><div class="bar" role="progressbar" aria-label="{{b.barLabel}}" aria-valuenow="{{b.pct}}" aria-valuemin="0" aria-valuemax="100" style="{{b.bar}}"></div></div></sc-if>
+                          <sc-for list="{{b.rows}}" as="r" hint-placeholder-count="2">
+                            <span style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font-size: 13px"><span style="color: #46546A; min-width: 0">{{r.label}}</span><b style="{{r.vstyle}}">{{r.value}}</b></span>
+                          </sc-for>
+                          <sc-if value="{{b.hasCounters}}" hint-placeholder-val="{{ false }}">
+                            <div style="{{b.cgrid}}">
+                              <sc-for list="{{b.counters}}" as="k" hint-placeholder-count="5">
+                                <a href="{{k.href}}" id="{{k.id}}" class="ctr" aria-label="{{k.sr}}" title="{{k.tip}}"><span style="{{k.fig}}">{{k.n}}</span><span style="font-size: 12px; color: #46546A">{{k.label}}</span></a>
+                              </sc-for>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{b.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sub">{{b.note}}</span></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isStale}}" hint-placeholder-val="{{ false }}"><span class="pl warn" style="align-self: flex-start"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{c.stale}}</span></sc-if>
+
+                  <span style="margin-top: auto; display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid #EEF1F5; font-size: 12px; color: #46546A"><span style="flex: 1; min-width: 0">{{c.foot}}</span><sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></sc-if></span>
+                </div>
+                </sc-if>
+                <sc-if value="{{c.isNew}}" hint-placeholder-val="{{ true }}">
+                <div class="{{c.cls}}">
+                  <div class="ovt">
+                    <span aria-hidden="true" style="{{c.tile}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.iconTone}}" size="16" hint-size="16px,16px"></dc-import></span>
+                    <h4 id="{{c.headId}}" tabindex="-1" class="ovtt">{{c.title}}</h4>
+                    <sc-if value="{{c.isToday}}" hint-placeholder-val="{{ false }}"><span class="tday">Today</span></sc-if>
+                  </div>
+
+                  <sc-if value="{{c.isLoading}}" hint-placeholder-val="{{ false }}">
+                    <div aria-busy="true" style="display: flex; flex-direction: column; gap: 8px"><span class="vh">Loading {{c.title}}</span><div class="sk" style="height: 26px; width: 60%"></div><div class="sk" style="height: 16px"></div></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isFailed}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+                      <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #B0190F; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+                      <button type="button" id="{{c.retryId}}" class="hs tg" onClick="{{c.retry}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isEmpty}}" hint-placeholder-val="{{ false }}">
+                    <div class="ovb"><span class="ove">{{c.emptyText}}</span><sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sub ovn">{{c.note}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.hasHead}}" hint-placeholder-val="{{ true }}">
+                    <div class="ovb"><b class="ovh" style="{{c.headStyle}}">{{c.head}}</b><sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ true }}"><span class="sub ovn">{{c.note}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isStale}}" hint-placeholder-val="{{ false }}"><span class="ovw"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{c.stale}}</span></sc-if>
+
+                  <sc-if value="{{c.hasLines}}" hint-placeholder-val="{{ true }}">
+                    <div class="ovk">
+                      <sc-for list="{{c.lines}}" as="l" hint-placeholder-count="2">
+                        <span class="ovr"><span class="ovco">{{l.code}}</span><b style="{{l.vstyle}}">{{l.value}}</b></span>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <div class="ovf">
+                    <sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{c.href}}" id="{{c.linkId}}" class="ovo" title="{{c.tip}}">{{c.open}}<span class="vh">{{c.linkSr}}</span><span aria-hidden="true">›</span></a></sc-if>
+                    <sc-if value="{{c.noLink}}" hint-placeholder-val="{{ false }}"><span class="sub">{{c.foot}}</span></sc-if>
+                    <sc-if value="{{c.hasTip}}" hint-placeholder-val="{{ true }}">
+                      <span class="tip" onMouseLeave="{{c.tipReset}}">
+                        <button type="button" class="tipb" aria-label="{{c.tipLabel}}" aria-describedby="{{c.tipId}}" onClick="{{c.tipToggle}}" onKeyDown="{{c.tipKey}}" onBlur="{{c.tipReset}}"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                        <span role="tooltip" id="{{c.tipId}}" class="{{c.tipCls}}">{{c.source}}</span>
+                      </span>
+                    </sc-if>
+                  </div>
+                </div>
+                </sc-if>
+                <sc-if value="{{c.isNote}}" hint-placeholder-val="{{ false }}">
+                  <div class="na"><b style="color: #0F1A2B; font-size: 13px">{{c.noteTitle}}</b><span>{{c.noteText}}</span></div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </section>
+
+  <section aria-labelledby="oc-zero-h" style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px"><h2 id="oc-zero-h" class="rh">Counters at zero turn grey · a card hidden at zero</h2><span class="sub">A counter is still a link when it reads 0, so the list it opens can show it is empty. Paid without approval on file is the only card that is not drawn at all when there is nothing to show.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch">
+      <sc-for list="{{zeros}}" as="c" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+          <span class="sub" style="font-weight: 600">{{c.colName}}</span>
+          <sc-if value="{{c.isOld}}" hint-placeholder-val="{{ false }}">
+<div class="{{c.cls}}" style="{{c.style}}">
+                  <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                    <span aria-hidden="true" style="{{c.tile}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.iconTone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                    <h3 id="{{c.headId}}" tabindex="-1" style="margin: 0; flex: 1; min-width: 0; font-size: 14px; font-weight: 700"><sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{c.href}}" id="{{c.linkId}}" class="ovl" title="{{c.tip}}">{{c.title}}<span class="vh">{{c.opens}}</span></a></sc-if><sc-if value="{{c.noLink}}" hint-placeholder-val="{{ false }}">{{c.title}}</sc-if></h3>
+                    <span class="sub" style="white-space: nowrap">{{c.when}}</span>
+                  </div>
+
+                  <sc-if value="{{c.isLoading}}" hint-placeholder-val="{{ false }}">
+                    <div aria-busy="true" style="display: flex; flex-direction: column; gap: 8px"><span class="vh">Loading {{c.title}}</span><div class="sk" style="height: 18px"></div><div class="sk" style="height: 18px; width: 70%"></div></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isFailed}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+                      <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #B0190F; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+                      <button type="button" id="{{c.retryId}}" class="hs tg" onClick="{{c.retry}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isEmpty}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #46546A">{{c.emptyText}}</span><sc-if value="{{c.hasEmptyNote}}" hint-placeholder-val="{{ false }}"><span class="sub">{{c.emptyNote}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.hasBlocks}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px">
+                      <sc-for list="{{c.blocks}}" as="b" hint-placeholder-count="2">
+                        <div style="{{b.style}}">
+                          <sc-if value="{{b.hasHead}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="{{b.chip}}">{{b.code}}</span><span class="sub">{{b.kind}}</span></span></sc-if>
+                          <sc-if value="{{b.isEmpty}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{b.empty}}</span></sc-if>
+                          <sc-if value="{{b.hasBig}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap"><b style="{{b.bigStyle}}">{{b.big}}</b><span style="font-size: 13px; color: #46546A">{{b.unit}}</span></span></sc-if>
+                          <sc-if value="{{b.hasBar}}" hint-placeholder-val="{{ false }}"><div style="height: 6px; border-radius: 99px; background: #EEF1F5; overflow: hidden"><div class="bar" role="progressbar" aria-label="{{b.barLabel}}" aria-valuenow="{{b.pct}}" aria-valuemin="0" aria-valuemax="100" style="{{b.bar}}"></div></div></sc-if>
+                          <sc-for list="{{b.rows}}" as="r" hint-placeholder-count="2">
+                            <span style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font-size: 13px"><span style="color: #46546A; min-width: 0">{{r.label}}</span><b style="{{r.vstyle}}">{{r.value}}</b></span>
+                          </sc-for>
+                          <sc-if value="{{b.hasCounters}}" hint-placeholder-val="{{ false }}">
+                            <div style="{{b.cgrid}}">
+                              <sc-for list="{{b.counters}}" as="k" hint-placeholder-count="5">
+                                <a href="{{k.href}}" id="{{k.id}}" class="ctr" aria-label="{{k.sr}}" title="{{k.tip}}"><span style="{{k.fig}}">{{k.n}}</span><span style="font-size: 12px; color: #46546A">{{k.label}}</span></a>
+                              </sc-for>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{b.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sub">{{b.note}}</span></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isStale}}" hint-placeholder-val="{{ false }}"><span class="pl warn" style="align-self: flex-start"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{c.stale}}</span></sc-if>
+
+                  <span style="margin-top: auto; display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid #EEF1F5; font-size: 12px; color: #46546A"><span style="flex: 1; min-width: 0">{{c.foot}}</span><sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></sc-if></span>
+                </div>
+          </sc-if>
+          <sc-if value="{{c.isNew}}" hint-placeholder-val="{{ true }}">
+                <div class="{{c.cls}}">
+                  <div class="ovt">
+                    <span aria-hidden="true" style="{{c.tile}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.iconTone}}" size="16" hint-size="16px,16px"></dc-import></span>
+                    <h3 id="{{c.headId}}" tabindex="-1" class="ovtt">{{c.title}}</h3>
+                    <sc-if value="{{c.isToday}}" hint-placeholder-val="{{ false }}"><span class="tday">Today</span></sc-if>
+                  </div>
+
+                  <sc-if value="{{c.isLoading}}" hint-placeholder-val="{{ false }}">
+                    <div aria-busy="true" style="display: flex; flex-direction: column; gap: 8px"><span class="vh">Loading {{c.title}}</span><div class="sk" style="height: 26px; width: 60%"></div><div class="sk" style="height: 16px"></div></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isFailed}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+                      <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #B0190F; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+                      <button type="button" id="{{c.retryId}}" class="hs tg" onClick="{{c.retry}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isEmpty}}" hint-placeholder-val="{{ false }}">
+                    <div class="ovb"><span class="ove">{{c.emptyText}}</span><sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sub ovn">{{c.note}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.hasHead}}" hint-placeholder-val="{{ true }}">
+                    <div class="ovb"><b class="ovh" style="{{c.headStyle}}">{{c.head}}</b><sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ true }}"><span class="sub ovn">{{c.note}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isStale}}" hint-placeholder-val="{{ false }}"><span class="ovw"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{c.stale}}</span></sc-if>
+
+                  <sc-if value="{{c.hasLines}}" hint-placeholder-val="{{ true }}">
+                    <div class="ovk">
+                      <sc-for list="{{c.lines}}" as="l" hint-placeholder-count="2">
+                        <span class="ovr"><span class="ovco">{{l.code}}</span><b style="{{l.vstyle}}">{{l.value}}</b></span>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <div class="ovf">
+                    <sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{c.href}}" id="{{c.linkId}}" class="ovo" title="{{c.tip}}">{{c.open}}<span class="vh">{{c.linkSr}}</span><span aria-hidden="true">›</span></a></sc-if>
+                    <sc-if value="{{c.noLink}}" hint-placeholder-val="{{ false }}"><span class="sub">{{c.foot}}</span></sc-if>
+                    <sc-if value="{{c.hasTip}}" hint-placeholder-val="{{ true }}">
+                      <span class="tip" onMouseLeave="{{c.tipReset}}">
+                        <button type="button" class="tipb" aria-label="{{c.tipLabel}}" aria-describedby="{{c.tipId}}" onClick="{{c.tipToggle}}" onKeyDown="{{c.tipKey}}" onBlur="{{c.tipReset}}"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                        <span role="tooltip" id="{{c.tipId}}" class="{{c.tipCls}}">{{c.source}}</span>
+                      </span>
+                    </sc-if>
+                  </div>
+                </div>
+          </sc-if>
+          <sc-if value="{{c.isNote}}" hint-placeholder-val="{{ false }}">
+            <div class="na"><b style="color: #0F1A2B; font-size: 13px">{{c.noteTitle}}</b><span>{{c.noteText}}</span></div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-labelledby="oc-priv-h" style="display: flex; flex-direction: column; gap: 12px">
+    <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px"><h2 id="oc-priv-h" class="rh">The Overview privacy rule</h2><span class="sub">A rule for every card now and later. Staff records are personal data, so the Overview stays a page anyone at the desk can glance at.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: start">
+      <div class="ovc">
+        <span style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="eyeOff" tone="bad" size="20" hint-size="20px,20px"></dc-import><b>Never on the Overview</b></span>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+          <sc-for list="{{never}}" as="n" hint-placeholder-count="6"><li style="display: flex; gap: 8px"><span aria-hidden="true" style="flex: none; width: 6px; height: 6px; margin-top: 7px; border-radius: 99px; background: #B0190F"></span><span>{{n.text}}</span></li></sc-for>
+        </ul>
+      </div>
+      <div class="ovc">
+        <span style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import><b>Allowed</b></span>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+          <sc-for list="{{allowed}}" as="n" hint-placeholder-count="4"><li style="display: flex; gap: 8px"><span aria-hidden="true" style="flex: none; width: 6px; height: 6px; margin-top: 7px; border-radius: 99px; background: #0A6B3D"></span><span>{{n.text}}</span></li></sc-for>
+        </ul>
+      </div>
+      <div class="ovc">
+        <span style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="access" tone="brand" size="20" hint-size="20px,20px"></dc-import><b>Without the HR right</b></span>
+        <p style="margin: 0; font-size: 13px; color: #46546A">Marcus Teoh, the outside accountant, has Payments and Accounting only. For him the HR row of cards is not drawn at all: not greyed out, not locked. Next up and the Overview's count cover only what he may see, 8 rows on AISB.</p>
+        <p style="margin: 0; font-size: 13px; color: #46546A">Before logins exist, everyone at this PC sees the HR row; Recent activity never carries a pay figure or a person's detail either.</p>
+        <a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-weight: 600; font-size: 13px; text-decoration: none">The Overview<dc-import name="Icon" glyph="arrow" tone="brand" size="16" hint-size="16px,16px"></dc-import></a>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":5200}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { retried: {}, busy: null, tipOn: null, tipOff: null };
+  }
+  componentWillUnmount() { clearTimeout(this._c); }
+  componentDidUpdate() {
+    // After Try again, focus moves to the card's link once it has loaded; a card with no single link (Needs attention,
+    // Requests waiting) takes its first counter, else its heading. A flag, not a busy-to-idle test: under reduced
+    // motion the two updates are batched into one and the change would never be seen.
+    if (this._focusCard && !this.state.busy) {
+      const key = this._focusCard; this._focusCard = null;
+      const l = ['oc-card-' + key, 'oc-card-' + key + '-0-0', 'oc-head-' + key].map(x => document.getElementById(x)).find(Boolean);
+      if (l && l.focus) l.focus({ preventScroll: true });
+    }
+  }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  retry(key) {
+    clearTimeout(this._c);
+    const done = () => { this._focusCard = key; this.setState(s => ({ retried: { ...s.retried, [key]: true }, busy: null })); };
+    if (this.calm()) return done();          // reduced motion: no skeleton, the card is back at once
+    this.setState({ busy: key });
+    this._c = setTimeout(done, 320);
+  }
+  renderVals() {
+    const S = this.state;
+    const K = { ink: '#0F1A2B', ink2: '#46546A', ink3: '#5F6C80', bad: '#B0190F', warn: '#934100', ok: '#0A6B3D', surface: '#FFFFFF', line: '#E3E7ED', brandBar: '#2450B8', okBar: '#0E8A50',
+      wash: { brand: '#EAF0FD', bad: '#FDE6E3', warn: '#FEF1D6', muted: '#EEF1F5', ok: '#E3F7EC' } };
+    const tone = t => t;
+    const H = href => href, tip = () => '';
+    // novSet: November 2026 is set up (samples section 1: AISB only, 18 Nov 09:05). sqlTo: SQL data fetched, journal to
+    // that day (a Kept in SQL Account company with nothing fetched has none). Cards branch on these and on kind, never on the code.
+    const CO = {
+      aisb: { code: 'AISB', kind: 'sql', label: 'Kept in SQL Account', novSet: true, sqlTo: '17 Nov' },
+      ai: { code: 'AI', kind: 'here', label: 'Kept here', novSet: false, sqlTo: '' },
+      ail: { code: 'AIL', kind: 'sql', label: 'Kept in SQL Account', novSet: false, sqlTo: '' },
+      aip: { code: 'AIP', kind: 'here', label: 'Kept here', novSet: false, sqlTo: '' }
+    };
+    const REG = 'PaymentsRegister.dc.html', CHK = 'MonthlyChecklist.dc.html';
+    const MONEY = 'font-variant-numeric:tabular-nums;';
+    const vs = t => MONEY + 'font-weight:600;color:' + ({ bad: K.bad, warn: K.warn, ok: K.ok, muted: K.ink3 }[t] || K.ink);
+    const R = (label, value, t) => ({ label, value, vstyle: vs(t) });
+    const notSet = { empty: 'No checklist for this month yet' };
+    const noSql = 'Nothing fetched from SQL yet';
+    const NA_V = { oct: { aisb: [3, 0, 2, 5, 4], ai: [1, 1, 0, 0] }, sep: { aisb: [0, 0, 2, 0, 0] }, aug: { aisb: [0, 0, 1, 0, 0] } };
+    const NA_L = [['Past due', REG, 'bad'], ['Part paid', REG, 'warn'], ['Documents missing', CHK + '#missing-documents', 'warn'], ['Lines to explain', 'BankReview.dc.html', 'warn'], ['Not in SQL', 'Sql.dc.html', 'warn']];
+    const counters = (vals, labels) => vals.map((n, i) => ({ n: String(n), label: labels[i][0], href: H(labels[i][1]), tip: tip(labels[i][1]),
+      sr: labels[i][0] + ', ' + (n ? n : 'none') + '. Opens its list',
+      fig: 'font-size:20px;font-weight:700;' + MONEY + 'color:' + (n ? ({ bad: K.bad, warn: K.warn }[labels[i][2]] || K.ink) : K.ink3) }));
+    const ML = { oct: 'October 2026', sep: 'September 2026', nov: 'November 2026', aug: 'August 2026' };
+
+    // The card definitions, kept the same as Main.dc.html's (samples.md section 16).
+    const defs = (m, monthLabel, cos, isAll, cardMode) => {
+    const sqlShown = (cos.map(c => CO[c]).find(x => x.kind === 'sql' && x.sqlTo) || {}).sqlTo || '';
+    // the calm cards: copied from Main.dc.html, so the two cannot drift
+    const sqlDate = cardMode === 'out-of-date' ? '12 Nov' : sqlShown;
+    const r0 = n => String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const r2 = n => Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const C2 = {
+      checklist: { title: 'Checklist', glyph: 'checklist', tone: 'brand', href: CHK, open: 'Open checklist', where: ', Payments, Monthly checklist', empty: 'No checklist for this month yet',
+        src: () => 'Items ticked on the Monthly checklist for ' + monthLabel + ', out of that month’s total.',
+        get: c => {
+          // From October the two built-in items (Approvals on file for every payment, Month reviewed) join every company's
+          // checklist (samples D13): AIL and AIP have nothing paid without approval, so the approvals item ticks itself.
+          // AISB November (set up 18 Nov 09:05): the 27 items plus the three joiner tasks for Daniel, Register Daniel with KWSP and PERKESO done 10 Nov.
+          const D = { oct: { aisb: [18, 27], ai: [15, 22], ail: [10, 14], aip: [12, 18] }, sep: { aisb: [23, 25], ai: [20, 20, 'filed 5 Oct'], ail: [12, 12], aip: [15, 15] }, nov: { aisb: [1, 30] } };
+          const d = (D[m] || {})[c];
+          if (!d) return { empty: 'No checklist for this month yet', short: 'No checklist yet', note: m === 'aug' ? 'Tracked from September 2026' : '' };
+          return { u: 'items', n: d[0], t: d[1], head: d[0] + ' of ' + d[1], line: d[0] + ' of ' + d[1], note: d[1] - d[0] ? (d[1] - d[0]) + ' still to do' : 'All done' + (d[2] ? ', ' + d[2] : '') };
+        },
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), t = L.reduce((s, x) => s + (x.t || 0), 0); return t ? { head: n + ' of ' + t, note: t - n ? (t - n) + ' still to do' : 'All done' } : { head: n + ' ticked', note: '' }; } },
+      due: { title: 'Due and overdue', glyph: 'clock', tone: 'warn', today: true, href: 'ToPay.dc.html#from-due', open: 'Open To pay', where: ', Payments, To pay', empty: 'Nothing due',
+        src: () => 'From To pay, as at today: what is overdue, and what falls due in the next 7 days.',
+        get: c => ({ aisb: { u: 'n', n: 2, n2: 4, head: '2 overdue', headTone: 'bad', line: 'RM 11,726.50 overdue', lineTone: 'bad', note: '4 due in the next 7 days', bit: 'AISB: 2 overdue, RM 11,726.50; 4 due in the next 7 days, RM 2,228.00 and USD 1,200.00.' },
+          ai: { u: 'n', n: 1, n2: 0, head: '1 overdue', headTone: 'bad', line: 'RM 4,478.00 overdue', lineTone: 'bad', note: 'nothing due in the next 7 days', bit: 'AI: 1 overdue, RM 4,478.00; nothing due in the next 7 days.' } }[c]
+          || { u: 'n', n: 0, n2: 0, zero: true, head: '0 overdue', headTone: 'muted', line: 'None', note: 'nothing due in the next 7 days' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), n2 = L.reduce((s, x) => s + x.n2, 0); return { head: n + ' overdue', headTone: n ? 'bad' : 'muted', note: n2 ? n2 + ' due in the next 7 days' : 'nothing due in the next 7 days' }; } },
+      funds: { title: 'Funds to request', glyph: 'budget', tone: 'brand', href: 'Budget.dc.html', open: 'Open Budget', where: ', Payments, Budget', empty: 'No checklist for this month yet',
+        src: () => (m === 'oct' ? 'From the Budget as at 19 Oct' : 'From the Budget') + ': what is still to pay for ' + monthLabel + ', less the bank balance entered.',
+        get: c => {
+          // null: no RM balance entered (AI has only Maybank FCA, in USD). It counts as none in the All companies total,
+          // which is then the total of the companies with a balance; its line reads Balance not entered.
+          const F = { oct: { aisb: 37132.75, ai: null, ail: 6420, aip: 9880 }, sep: { aisb: 31200, ai: null, ail: 5980, aip: 9100 } }[m] || {};
+          const B = m === 'oct' ? { aisb: 'AISB: still to pay RM 93,923.10, less RM 56,790.35 in the bank on 19 Oct.' } : {};
+          if (F[c] === null) return { empty: 'Enter the bank balance to see funds to request', short: 'Balance not entered', asZero: true };
+          if (F[c] !== undefined) return { u: 'RM', n: F[c], head: 'RM ' + r0(F[c]), line: 'RM ' + r2(F[c]), note: 'to cover what’s still to pay', bit: B[c] };
+          if (m === 'nov' && CO[c].novSet) return { empty: 'Enter the bank balance to see funds to request', short: 'Balance not entered' };
+          return { empty: 'No checklist for this month yet', short: 'Not set up' };
+        },
+        sum: L => ({ head: 'RM ' + r0(L.reduce((s, x) => s + x.n, 0)), note: 'to cover what’s still to pay' }) },
+      unapproved: { title: 'Paid without approval on file', glyph: 'approval', tone: 'bad', href: 'Approvals.dc.html#from-overview', open: 'Open Approvals', where: ', Payments, Approvals, filtered to these payments', empty: 'None', hideZero: true,
+        src: () => 'Payments made with no approved form on file, including paid more than approved.',
+        get: c => (m === 'oct' && c === 'aisb' ? { u: 'n', n: 2, amt: 25120, head: '2 payments', headTone: 'bad', line: '2', lineTone: 'bad', note: 'RM 25,120.00 paid', bit: 'AISB: Contractor — field works, RM 24,000.00; Stationery Mart, RM 1,120.00, RM 120.00 above approval.' }
+          : { u: 'n', n: 0, amt: 0, zero: true, head: '0 payments', line: 'None', note: '' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), a = L.reduce((s, x) => s + x.amt, 0); return { head: n + (n === 1 ? ' payment' : ' payments'), headTone: 'bad', note: 'RM ' + r2(a) + ' paid' }; } },
+      bank: { title: 'Bank', glyph: 'bank', tone: 'brand', href: 'Bank.dc.html', open: 'Open bank', where: ', Accounting, Bank and reconciliation', empty: 'No statement imported for ' + monthLabel,
+        src: () => 'Balances at the latest statement line; in and out are the month’s bank lines.',
+        get: c => {
+          // [currency, balance across the company's accounts, in, out, the accounts and statement dates]
+          const D = { oct: { aisb: ['RM', 92325.55, 55984.20, 106077.00, 'AISB: Maybank current RM 34,314.15 and Maybank savings RM 58,011.40, statements to 31 Oct.'], ai: ['USD', 17480.00, 5000.00, 0, 'AI: Maybank FCA USD 17,480.00, statement to 30 Oct.'] },
+            sep: { aisb: ['RM', 92418.35, 12000.00, 15581.65, 'AISB: Maybank current, statement to 30 Sep.'], ai: ['USD', 12480.00, 0, 0, 'AI: Maybank FCA, statement to 30 Sep.'] }, aug: { aisb: ['RM', 96000.00, 38500.00, 43939.60, 'AISB: Maybank current, statement to 31 Aug.'] } };
+          const d = (D[m] || {})[c];
+          if (!d) return { empty: 'No statement imported for ' + monthLabel, short: 'No statement' };
+          return { u: d[0], n: d[1], inn: d[2], out: d[3], head: d[0] + ' ' + r0(d[1]), line: d[0] + ' ' + r2(d[1]), note: 'in ' + d[0] + ' ' + r0(d[2]) + ' · out ' + d[0] + ' ' + r0(d[3]), bit: d[4] };
+        },
+        sum: L => { const u = L[0].u, s = k => L.reduce((t, x) => t + x[k], 0); return { head: u + ' ' + r0(s('n')), note: 'in ' + u + ' ' + r0(s('inn')) + ' · out ' + u + ' ' + r0(s('out')) }; } },
+      pl: { title: 'Profit or loss', glyph: 'chart', tone: 'brand', href: 'BooksStatements.dc.html', open: 'Open Books', where: ', Accounting, Books, Profit and loss', empty: 'No books yet', sql: true,
+        src: () => (sqlShown ? 'From SQL’s books, journal to ' + sqlDate + '.' : 'From the books.'),
+        get: c => {
+          if (CO[c].kind === 'here') return { empty: 'No books yet', short: 'No books yet' };
+          if (!CO[c].sqlTo) return { empty: noSql, short: 'Nothing fetched' };
+          if (m === 'oct') return { u: 'RM', n: -103852.70, head: 'Loss RM 103,853', headTone: 'bad', line: 'Loss RM 103,852.70', lineTone: 'bad', note: 'Loss RM 885,816 year to date' };
+          if (m === 'sep') return { u: 'RM', n: 0, head: '—', headTone: 'muted', line: '—', lineTone: 'muted', note: 'Loss RM 781,964 Jan to Sep', bit: 'The books kept start on 1 Oct 2026.' };
+          if (m === 'nov') return { u: 'RM', n: 0, head: '—', headTone: 'muted', line: '—', lineTone: 'muted', note: 'Loss RM 885,816 year to 31 Oct', bit: 'Trial balance as at 31 Oct.' };
+          return { empty: 'No books before 1 Oct 2026', short: 'Before 1 Oct' };
+        },
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0); return { head: (n < 0 ? 'Loss RM ' : 'Profit RM ') + r0(n), headTone: n < 0 ? 'bad' : '', note: L[0].note }; } },
+      customers: { title: 'Customers overdue', glyph: 'users', tone: 'brand', today: true, href: 'BooksParties.dc.html#customers-overdue', open: 'Open customers', where: ', Accounting, Customers and suppliers, customers overdue', empty: 'No balances', sql: true,
+        src: () => (sqlShown ? 'As at ' + sqlDate + ', from SQL. ' : '') + 'Balances older than 30 days.',
+        get: c => (CO[c].kind === 'sql' && !CO[c].sqlTo ? { empty: noSql, short: 'Nothing fetched' }
+          : { aisb: { u: 'RM', n: 8500, k: 1, head: 'RM 8,500', headTone: 'bad', line: 'RM 8,500.00', lineTone: 'bad', note: '1 balance over 30 days', bit: 'AISB: brought forward on 300-000, not split by customer.' } }[c]
+          || { u: 'RM', n: 0, k: 0, zero: true, head: 'RM 0', headTone: 'muted', line: 'None', note: 'no balances over 30 days' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), k = L.reduce((s, x) => s + x.k, 0); return { head: 'RM ' + r0(n), headTone: n ? 'bad' : 'muted', note: k + (k === 1 ? ' balance' : ' balances') + ' over 30 days' }; } },
+      suppliers: { title: 'Suppliers due', glyph: 'inbox', tone: 'brand', today: true, href: 'BooksParties.dc.html#suppliers-due', open: 'Open suppliers', where: ', Accounting, Customers and suppliers, suppliers', empty: 'No balances', sql: true,
+        src: () => (sqlShown ? 'As at ' + sqlDate + ', from SQL. ' : '') + 'Bills overdue, and bills due in the next 14 days.',
+        get: c => (CO[c].kind === 'sql' && !CO[c].sqlTo ? { empty: noSql, short: 'Nothing fetched' }
+          : { aisb: { u: 'RM', n: 4050, d14: 0, head: 'RM 4,050 overdue', headTone: 'bad', line: 'RM 4,050.00 overdue', lineTone: 'bad', note: 'none due in the next 14 days', bit: 'AISB: 2 bills overdue, PI2607-019 and PI2610-013.' } }[c]
+          || { u: 'RM', n: 0, d14: 0, zero: true, head: 'RM 0 overdue', headTone: 'muted', line: 'None', note: 'none due in the next 14 days' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), d = L.reduce((s, x) => s + x.d14, 0); return { head: 'RM ' + r0(n) + ' overdue', headTone: n ? 'bad' : 'muted', note: d ? 'RM ' + r0(d) + ' due in the next 14 days' : 'none due in the next 14 days' }; } },
+      leave: { title: 'On leave', glyph: 'leave', tone: 'brand', href: 'HrLeave.dc.html#calendar', open: 'Open leave', where: ', HR, Leave, team calendar', empty: 'Add your staff to see this',
+        src: () => 'From Leave, for today and this week. The type of leave is never shown.',
+        get: c => ({ aisb: { u: 'p', n: 2, wk: 3, names: ['Aina', 'Khadijah'], head: '2 on leave', line: '2 on leave', note: 'Aina, Khadijah · 3 this week' },
+          ai: { u: 'p', n: 0, wk: 0, names: [], head: '0 on leave', headTone: 'muted', line: 'None', lineTone: 'muted', note: 'No one this week' } }[c]
+          || { empty: 'Add your staff to see this', short: 'No staff yet', asZero: true }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), w = L.reduce((s, x) => s + x.wk, 0), names = [].concat(...L.map(x => x.names)); return { head: n + ' on leave', headTone: n ? '' : 'muted', note: (names.length ? names.join(', ') : 'No one today') + ' · ' + w + ' this week' }; } },
+      dates: { title: 'Dates coming up', glyph: 'reminder', tone: 'brand', href: 'HrCalendar.dc.html#coming-up', open: 'Open calendar', where: ', HR, Staff, Calendar and reminders, filtered', empty: 'Add your staff to see this',
+        src: () => 'Probation, contract, passport and permit dates in the next 60 days, and November’s birthdays and work anniversaries. No names; a birthday is the day and month only, never an age or a year of birth.',
+        get: c => ({ aisb: { u: 'd', n: 2, bd: 1, head: '2 in the next 60 days', line: '2 dates', note: 'and 1 birthday or anniversary in Nov' },
+          ai: { u: 'd', n: 1, bd: 1, head: '1 in the next 60 days', line: '1 date', note: 'and 1 birthday or anniversary in Nov' } }[c]
+          || { empty: 'Add your staff to see this', short: 'No staff yet', asZero: true }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), b = L.reduce((s, x) => s + x.bd, 0); return { head: n + ' in the next 60 days', note: 'and ' + (b ? b + (b === 1 ? ' birthday or anniversary' : ' birthdays or anniversaries') : 'no birthdays or anniversaries') + ' in Nov' }; } },
+      headcount: { title: 'Headcount', glyph: 'staff', tone: 'brand', href: 'HrStaff.dc.html', open: 'Open staff', where: ', HR, Staff', empty: 'Add your staff to see this',
+        src: () => 'From Staff, as at today: people in employment, and joiners and leavers this month.',
+        get: c => ({ aisb: { u: 'p', n: 9, j: 1, l: 0, head: '9 in employment', line: '9', note: '1 joiner and 0 leavers this month' },
+          ai: { u: 'p', n: 5, j: 0, l: 0, head: '5 in employment', line: '5', note: '0 joiners and 0 leavers this month' } }[c]
+          || { empty: 'Add your staff to see this', short: 'No staff yet', asZero: true }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), j = L.reduce((s, x) => s + x.j, 0), l = L.reduce((s, x) => s + x.l, 0); return { head: n + ' in employment', note: j + (j === 1 ? ' joiner' : ' joiners') + ' and ' + l + (l === 1 ? ' leaver' : ' leavers') + ' this month' }; } },
+      requests: { title: 'Requests waiting', glyph: 'claim', tone: 'brand', href: 'Approvals.dc.html#hr-requests', open: 'Open Approvals', where: ', Payments, Approvals', empty: 'Nothing waiting',
+        src: () => 'Claims, advances and salary runs: waiting for approval on Approvals, and approved but not yet paid on To pay.',
+        get: c => ({ aisb: { u: 'r', n: 6, a: 2, p: 4, head: '6 waiting', line: '6 waiting', note: '2 to approve · 4 approved, to pay' } }[c]
+          || { u: 'r', n: 0, a: 0, p: 0, zero: true, head: '0 waiting', line: 'None', note: '' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), a = L.reduce((s, x) => s + x.a, 0), p = L.reduce((s, x) => s + x.p, 0); return { head: n + ' waiting', note: a + ' to approve · ' + p + ' approved, to pay' }; } }
+    };
+    const CARDS = {
+      attention: { title: 'Needs attention', glyph: 'alert', tone: 'bad', follows: true, href: null, empty: 'Nothing needs attention',
+        foot: () => 'Each number opens its list, filtered', counters: true,
+        get: c => { const v = ((NA_V[m] || {})[c]) || (CO[c].kind === 'sql' ? [0, 0, 0, 0, 0] : [0, 0, 0, 0]); return { counters: counters(v, NA_L), zero: v.every(n => !n) }; } },
+    };
+      return Object.assign({}, CARDS, C2);
+    };
+
+    const STALE = { bank: 'Statement runs to 12 Nov', pl: 'SQL data runs to 12 Nov, fetch again', customers: 'as at 12 Nov, fetch again', suppliers: 'as at 12 Nov, fetch again' };
+    // a calm card as Main draws it (the Payments, Accounting and HR rows), for a set of companies, a month and a state
+    const card2 = (id, o) => {
+      const m = o.m, cos = o.cos;
+      const d = defs(m, ML[m], cos, cos.length > 1, o.stale ? 'out-of-date' : 'normal')[id];
+      const per = cos.map(c => ({ c, v: d.get(c) }));
+      const none = per.every(x => x.v.empty || x.v.zero);
+      const busy = S.busy === o.key, failed = !!o.failed && !S.retried[o.key] && !busy, shown = !busy && !failed;
+      const empty = shown && none;
+      const many2 = per.length > 1;
+      const live = per.filter(x => !x.v.empty);
+      const agree = live.length > 0 && per.every(x => !x.v.empty || x.v.asZero) && new Set(live.map(x => x.v.u)).size === 1;
+      const main = live.find(x => !x.v.zero) || live[0];
+      let head = '', note = '', headTone = '';
+      if (shown && !empty) {
+        if (many2 && agree) { const s = d.sum(live.map(x => x.v)); head = s.head; note = s.note || ''; headTone = s.headTone || ''; }
+        else { head = main.v.head; headTone = main.v.headTone || ''; note = main.v.note || ''; if (many2) note = CO[main.c].code + (note ? ' · ' + note : ' only'); }
+      }
+      const sentences = [...new Set(per.map(x => x.v.empty || d.empty))];
+      const emptyText = sentences.length === 1 ? sentences[0] : (per[0] && per[0].v.empty) || d.empty;
+      if (empty && !many2) note = (per[0] && per[0].v.empty && per[0].v.note) || '';   // only an empty sentence's own note, never a zero line's
+      const hasLines = shown && many2 && (!empty || sentences.length > 1);
+      const lines = hasLines ? per.map(({ c, v }) => ({ code: CO[c].code, value: v.empty ? v.short : v.line,
+        vstyle: 'font-variant-numeric:tabular-nums;font-weight:600;color:' + (v.empty || v.zero || v.lineTone === 'muted' ? K.ink3 : v.lineTone === 'bad' ? K.bad : K.ink) })) : [];
+      const stale = !!o.stale && shown;
+      const isLink = !failed;
+      const tTone = failed ? 'bad' : empty ? 'muted' : d.tone;
+      // out of date: the warning line carries the statement date, so the tip leaves each account's own date out
+      const bits = per.map(x => x.v.bit).filter(Boolean).map(b => (stale && id === 'bank' ? b.replace(/, statements? to [^.]+\./, '.') : b));
+      const source = [d.src()].concat(bits, stale && id === 'bank' ? ['Import the rest of the month on Bank and reconciliation.'] : []).join(' ');
+      return {
+        isCard: true, isNote: false, isOld: false, isNew: true, noteTitle: '', noteText: '', colName: o.col || '',
+        id, title: d.title, glyph: d.glyph, iconTone: tone(tTone), isToday: !!d.today,
+        tile: 'width:24px;height:24px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + K.wash[tTone],
+        cls: 'ovc cm' + (isLink ? ' lk' : ''),
+        isLoading: busy, isFailed: failed, retry: () => this.retry(o.key), retryId: 'oc-retry-' + o.key, linkId: 'oc-card-' + o.key, headId: 'oc-head-' + o.key,
+        isEmpty: empty, emptyText, hasHead: shown && !empty, head, headStyle: 'color:' + (headTone === 'bad' ? K.bad : headTone === 'muted' ? K.ink3 : K.ink), hasNote: shown && !!note, note,
+        isStale: stale, stale: STALE[id] || '',
+        hasLines, lines,
+        isLink, noLink: !isLink, href: isLink ? H(d.href) : '', tip: '', open: d.open, linkSr: d.where, foot: failed ? 'The other cards are not affected' : '',
+        hasTip: shown, tipId: 'oc-tip-' + o.key, tipLabel: 'Where the figures come from: ' + d.title, source,
+        tipCls: 'tt' + (S.tipOn === o.key ? ' on' : '') + (S.tipOff === o.key ? ' off' : ''),
+        tipToggle: () => this.setState(s => ({ tipOn: s.tipOn === o.key ? null : o.key, tipOff: null })),
+        tipKey: e => { if (e && e.key === 'Escape') this.setState({ tipOn: null, tipOff: o.key }); },
+        tipReset: () => { if (this.state.tipOn === o.key || this.state.tipOff === o.key) this.setState({ tipOn: null, tipOff: null }); }
+      };
+    };
+    // one card as Main draws it, for a set of companies, a month and a state
+    const card = (id, o) => {
+      if (id !== 'attention') return card2(id, o);
+      const m = o.m, cos = o.cos, isAll = cos.length > 1;
+      const monthLabel = ML[m];
+      const d = defs(m, monthLabel, cos, isAll, o.stale ? 'out-of-date' : 'normal')[id];
+      const per = cos.map(c => ({ c, v: d.get(c) })).filter(x => x.v !== null);
+      const busy = S.busy === o.key, failed = !!o.failed && !S.retried[o.key] && !busy;
+      const allEmpty = per.every(x => x.v.empty || x.v.zero);
+      // All companies with different empty sentences: one block each, not one sentence (as Main)
+      const mixed = isAll && per.length > 1 && new Set(per.map(x => x.v.empty || '')).size > 1;
+      const empty = !busy && !failed && allEmpty && !mixed;
+      const stale = !!o.stale && !failed && !busy;
+      const blocks = (empty || failed || busy) ? [] : per.map(({ c, v }, i) => ({ hasHead: isAll, code: CO[c].code, chip: 'cp ' + (CO[c].kind === 'sql' ? 'info' : 'mute'), kind: CO[c].label,
+        isEmpty: !!v.empty, empty: v.empty || '', hasBig: !!v.big, big: v.big || '', unit: v.unit || '',
+        bigStyle: (v.bigSmall ? 'font-size:15px;font-weight:700;' : 'font-family:\'Space Grotesk\',Inter,sans-serif;font-size:' + (isAll ? 20 : 26) + 'px;font-weight:600;') + MONEY + 'color:' + ({ bad: K.bad, muted: K.ink3 }[v.bigTone] || K.ink),
+        hasBar: v.pct !== undefined, pct: v.pct || 0, barLabel: v.barLabel || '', bar: 'width:' + (v.pct || 0) + '%;height:100%;border-radius:99px;background:' + (v.pct === 100 ? K.okBar : K.brandBar),
+        rows: v.empty ? [] : (v.rows || []), hasCounters: !!v.counters && !v.empty, counters: (v.counters || []).map((k, j) => ({ ...k, id: 'oc-card-' + o.key + '-' + i + '-' + j })),
+        cgrid: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(' + (id === 'requests' ? 150 : 104) + 'px,1fr));gap:8px',
+        hasNote: !!v.note, note: v.note || '',
+        style: 'display:flex;flex-direction:column;gap:6px;min-width:0' + (isAll && i ? ';padding-top:10px;border-top:1px solid ' + K.line : '') }));
+      if (!empty && !failed && !busy && isAll && per.length > 1) {
+        const totalBlock = rows => ({ hasHead: false, code: '', chip: '', kind: '', isEmpty: false, empty: '', hasBig: false, big: '', unit: '', bigStyle: '', hasBar: false, pct: 0, barLabel: '', bar: '',
+          rows, hasCounters: false, counters: [], cgrid: '', hasNote: false, note: '', style: 'display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid ' + K.line });
+        if (id === 'budget' && per.some(x => x.v.funds)) {
+          const sum = per.reduce((s, x) => s + (x.v.funds ? Number(x.v.funds.replace(/[^\d.]/g, '')) : 0), 0);
+          blocks.push(totalBlock([R('Funds to request, all companies', 'RM ' + sum.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','))]));
+        }
+        if (id === 'headcount') {
+          const t = per.reduce((s, x) => (x.v.count ? s.map((n, j) => n + x.v.count[j]) : s), [0, 0, 0]);
+          blocks.push(totalBlock([R('All companies', t[0] + ' in employment · ' + t[1] + ' joiner' + (t[1] === 1 ? '' : 's') + ' · ' + t[2] + ' leavers')]));
+        }
+      }
+      const isLink = !!d.href && !failed;
+      const firstEmpty = (per.find(x => x.v.empty) || {}).v || {};
+      const emptyText = d.counters ? d.empty : (per.length === 1 ? firstEmpty.empty : (per.every(x => x.v.empty === firstEmpty.empty) ? firstEmpty.empty : d.empty)) || d.empty;
+      const tTone = failed ? 'bad' : empty ? 'muted' : d.tone;
+      let foot = failed ? 'The other cards are not affected' : d.foot();
+      if (stale && (id === 'bank' || id === 'money')) foot = 'Import the rest of the month · Accounting › Bank and reconciliation';
+      return {
+        isCard: true, isNote: false, isOld: true, isNew: false, noteTitle: '', noteText: '', colName: o.col || '',
+        id, title: d.title, glyph: d.glyph, iconTone: tone(tTone), when: d.follows ? monthLabel : d.when,
+        tile: 'width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + K.wash[tTone],
+        isLink, noLink: !isLink, href: isLink ? H(d.href) : '', tip: '', opens: d.opens || '', linkId: 'oc-card-' + o.key, headId: 'oc-head-' + o.key,
+        cls: 'ovc' + (isLink ? ' lk' : ''), style: 'height:100%',
+        isLoading: busy, isFailed: failed, retry: () => this.retry(o.key), retryId: 'oc-retry-' + o.key,
+        isEmpty: empty, emptyText, hasEmptyNote: empty && per.length === 1 && !!firstEmpty.note, emptyNote: firstEmpty.note || '',
+        hasBlocks: blocks.length > 0, blocks,
+        isStale: stale, stale: STALE[id] || '',
+        foot
+      };
+    };
+    const BLANK = { isCard: false, isNote: true, isOld: false, isNew: false, colName: '', id: '', title: '', glyph: 'overview', iconTone: 'muted', when: '', tile: '', isLink: false, noLink: true, href: '', tip: '', opens: '', linkId: '', headId: '', cls: '', style: '',
+      isLoading: false, isFailed: false, retry: () => {}, retryId: '', isEmpty: false, emptyText: '', hasEmptyNote: false, emptyNote: '', hasBlocks: false, blocks: [], isStale: false, stale: '', foot: '' };
+    const note = (col, noteTitle, noteText) => ({ ...BLANK, colName: col, noteTitle, noteText });
+
+    const COLS = [['Normal', 'AISB, October 2026'], ['All companies', 'AISB and AI: the total, a line each'], ['Empty', 'its own sentence'], ['Out of date', 'Accounting cards only'], ['Could not load', 'Try again reloads it']];
+    const cols = COLS.map(([name, sub]) => ({ name, sub }));
+    const FM = { cls: 'cp info', month: 'Follows the month' };
+    const NOW = { cls: 'cp mute', month: 'Today' };
+    // id, month rule, the note under its name, the empty case (companies, month), whether it has an out-of-date state
+    const SPEC = {
+      attention: [FM, 'Five counters; Not in SQL only for Kept in SQL Account', { cos: ['aisb'], m: 'nov' }, false],
+      checklist: [FM, 'Items done out of the month’s total', { cos: ['ai'], m: 'nov' }, false],
+      due: [NOW, 'Overdue, and how many fall due in the next 7 days, from To pay', { cos: ['ail'], m: 'oct' }, false],
+      funds: [FM, 'Was Budget vs paid: what to request to cover what’s still to pay', { cos: ['ai'], m: 'aug' }, false],
+      unapproved: [FM, 'Includes paid more than approved and paid, approval refused', null, false],
+      bank: [FM, 'Bank balance and Money in and out in one card: the balance, then in and out', { cos: ['aisb'], m: 'nov' }, true],
+      pl: [FM, 'The month; the year to date in the note', { cos: ['ai'], m: 'oct' }, true],
+      customers: [NOW, 'Balances older than 30 days', { cos: ['ai'], m: 'oct' }, true],
+      suppliers: [NOW, 'Overdue, and due in the next 14 days', { cos: ['ai'], m: 'oct' }, true],
+      leave: [NOW, 'A count today; names and this week in the note; never the type', { cos: ['ail'], m: 'oct' }, false],
+      dates: [NOW, 'Dates in the next 60 days, and November’s birthdays and anniversaries; no names, no age', { cos: ['ail'], m: 'oct' }, false],
+      headcount: [NOW, 'In employment; joiners and leavers this month in the note', { cos: ['ail'], m: 'oct' }, false],
+      requests: [NOW, 'Claims, advances and salary runs only', { cos: ['ai'], m: 'oct' }, false]
+    };
+    const GROUPS = [['Needs attention', ['attention']], ['Payments · October 2026', ['checklist', 'due', 'funds', 'unapproved']], ['Accounting · October 2026, balances as at today', ['bank', 'pl', 'customers', 'suppliers']], ['HR · today', ['leave', 'dates', 'headcount', 'requests']]];
+    const NAMES = { attention: 'Needs attention', checklist: 'Checklist', due: 'Due and overdue', funds: 'Funds to request', unapproved: 'Paid without approval on file', bank: 'Bank', pl: 'Profit or loss',
+      customers: 'Customers overdue', suppliers: 'Suppliers due', leave: 'On leave', dates: 'Dates coming up', headcount: 'Headcount', requests: 'Requests waiting' };
+    const groups = GROUPS.map(([title, ids]) => ({ title, cards: ids.map(id => {
+      const [mon, sub, emptyCase, hasStale] = SPEC[id];
+      const cells = [
+        card(id, { cos: ['aisb'], m: 'oct', key: id + '-n', col: 'Normal' }),
+        card(id, { cos: ['aisb', 'ai'], m: 'oct', key: id + '-a', col: 'All companies' }),
+        emptyCase ? card(id, { ...emptyCase, key: id + '-e', col: 'Empty' }) : note('Empty', 'Hidden at zero', 'With nothing paid without approval the card is not drawn at all, as for AI in October. The Payments row then has three cards, each the width of one in four.'),
+        hasStale ? card(id, { cos: ['aisb'], m: 'oct', stale: true, key: id + '-s', col: 'Out of date' }) : note('Out of date', 'No out-of-date state', 'Worked out from the records kept in this app, so it is always current.'),
+        card(id, { cos: ['aisb'], m: 'oct', failed: true, key: id + '-f', col: 'Could not load' })
+      ];
+      return { name: NAMES[id], cls: mon.cls, month: mon.month, note: sub, cells };
+    }) }));
+
+    const zeros = [
+      card('attention', { cos: ['ai'], m: 'oct', key: 'z-na', col: 'Needs attention for AI: two counters set, two grey; Not in SQL is left out (Kept here)' }),
+      card('requests', { cos: ['aisb', 'ai'], m: 'oct', key: 'z-rq', col: 'Requests waiting, All companies: AI has nothing waiting, so its line reads None in grey' }),
+      note('Paid without approval on file, AI', 'Not drawn for AI', 'AI has no payment paid without an approved form on file in October, so its Payments row shows Checklist, Due and overdue and Funds to request only. With All companies, the card shows the total, AISB 2 and AI None.')
+    ];
+
+    const L = (id, glyph, empty, stale, opens) => { const [mon] = SPEC[id]; return { name: NAMES[id], glyph, tone: 'brand', cls: mon.cls, month: mon.month, empty, stale, opens }; };
+    const legend = [
+      L('attention', 'alert', '“Nothing needs attention”', '—', 'Each counter its own list: Payments register, Monthly checklist, Bank and reconciliation, SQL import'),
+      L('checklist', 'checklist', '“No checklist for this month yet”', '—', 'Open checklist: Payments › Monthly checklist'),
+      L('due', 'clock', '“Nothing due”', '—', 'Open To pay: Payments › To pay, filtered'),
+      L('funds', 'budget', '“No checklist for this month yet”; “Enter the bank balance to see funds to request”', '—', 'Open Budget: Payments › Budget'),
+      L('unapproved', 'approval', 'Hidden', '—', 'Open Approvals: Payments › Approvals, filtered to these'),
+      L('bank', 'bank', '“No statement imported for November 2026”', '“Statement runs to 12 Nov”', 'Open bank: Accounting › Bank and reconciliation. Merges Bank balance and Money in and out'),
+      L('pl', 'chart', '“No books yet” (Kept here, nothing posted); “Nothing fetched from SQL yet” (Kept in SQL Account)', '“SQL data runs to 12 Nov, fetch again”', 'Open Books: Accounting › Books › Profit and loss'),
+      L('customers', 'users', '“No balances”; “Nothing fetched from SQL yet” (Kept in SQL Account)', '“as at 12 Nov, fetch again”', 'Open customers: Accounting › Customers and suppliers, customers overdue'),
+      L('suppliers', 'inbox', '“No balances”; “Nothing fetched from SQL yet” (Kept in SQL Account)', '“as at 12 Nov, fetch again”', 'Open suppliers: Accounting › Customers and suppliers, suppliers'),
+      L('leave', 'leave', '“Add your staff to see this”', '—', 'Open leave: HR › Leave, team calendar'),
+      L('dates', 'reminder', '“Add your staff to see this”', '—', 'Open calendar: HR › Staff › Calendar and reminders, filtered. Merges Birthdays and anniversaries'),
+      L('headcount', 'staff', '“Add your staff to see this”', '—', 'Open staff: HR › Staff'),
+      L('requests', 'claim', '“Nothing waiting”', '—', 'Open Approvals: Payments › Approvals')
+    ];
+
+    const never = ['A salary or any pay figure, a payslip, or a per-person total',
+      'An IC number, passport number, bank account, address, tax number or EPF number',
+      'The reason for leave, the type of leave, any medical detail',
+      'A claim receipt or one person’s claim amount',
+      'An age or a year of birth (a birthday shows the day and month only)',
+      'The payroll total per person; it appears only as one line inside Payments amounts, for example “Salaries, October”'].map(text => ({ text }));
+    const allowed = ['Names on the On leave card, in its note (the name the staff record uses)',
+      'Counts: headcount, joiners, leavers, requests waiting, dates coming up, birthdays and anniversaries',
+      'Dates: probation ends, contract ends, permit expires, counted with no person named',
+      'Company totals: bank balances, money in and out, funds to request, profit or loss'].map(text => ({ text }));
+
+    return { legend, cols, groups, zeros, never, allowed };
+  }
+}
+</script>
+</body>
+</html>

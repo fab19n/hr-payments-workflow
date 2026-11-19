@@ -1,0 +1,1168 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "AuditPack.dc.html": {
+      "expand": "fill",
+      "h": 1910,
+      "is_interactive": true,
+      "title": "Audit pack",
+      "w": 1440,
+      "x": 0,
+      "y": 51370
+    },
+    "AuditTrail.dc.html": {
+      "expand": "fill",
+      "h": 1720,
+      "is_interactive": true,
+      "title": "Audit trail",
+      "w": 1440,
+      "x": 4560,
+      "y": 51370
+    },
+    "Backup.dc.html": {
+      "expand": "fill",
+      "h": 1700,
+      "is_interactive": true,
+      "title": "Backup",
+      "w": 1440,
+      "x": 6080,
+      "y": 51370
+    },
+    "Bank.dc.html": {
+      "expand": "fill",
+      "h": 2200,
+      "is_interactive": true,
+      "title": "Bank and reconciliation",
+      "w": 1440,
+      "x": 0,
+      "y": 42530
+    },
+    "BankReview.dc.html": {
+      "expand": "fill",
+      "h": 2200,
+      "is_interactive": true,
+      "title": "Bank and reconciliation · review",
+      "w": 1440,
+      "x": 1520,
+      "y": 42530
+    },
+    "Budget.dc.html": {
+      "expand": "fill",
+      "h": 3450,
+      "is_interactive": true,
+      "title": "Budget",
+      "w": 1440,
+      "x": 3040,
+      "y": 38440
+    },
+    "CommandPalette.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Search (Ctrl K)",
+      "w": 1440,
+      "x": 0,
+      "y": 62550
+    },
+    "Company.dc.html": {
+      "expand": "fill",
+      "h": 3060,
+      "is_interactive": true,
+      "title": "Payments register (source)",
+      "w": 1440,
+      "x": 6080,
+      "y": 38440
+    },
+    "DarkBank.dc.html": {
+      "expand": "fill",
+      "h": 2200,
+      "is_interactive": true,
+      "title": "Dark · Bank and reconciliation",
+      "w": 1440,
+      "x": 4560,
+      "y": 78634
+    },
+    "DarkCompany.dc.html": {
+      "expand": "fill",
+      "h": 2460,
+      "is_interactive": true,
+      "title": "Dark · Payments register",
+      "w": 1440,
+      "x": 1520,
+      "y": 78634
+    },
+    "DarkOverview.dc.html": {
+      "expand": "fill",
+      "h": 2300,
+      "is_interactive": true,
+      "title": "Dark · Overview",
+      "w": 1440,
+      "x": 0,
+      "y": 78634
+    },
+    "DarkPalette.dc.html": {
+      "h": 3200,
+      "title": "Dark · Palette",
+      "w": 1440,
+      "x": 6080,
+      "y": 78634
+    },
+    "DarkPayment.dc.html": {
+      "expand": "fill",
+      "h": 1480,
+      "is_interactive": true,
+      "title": "Dark · Payment drawer",
+      "w": 1440,
+      "x": 3040,
+      "y": 78634
+    },
+    "Foundations.dc.html": {
+      "h": 13340,
+      "title": "Foundations: tokens, two-tone icons, components",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Icon.dc.html": {
+      "h": 48,
+      "title": "Icon (shared)",
+      "w": 48,
+      "x": 3120,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 2300,
+      "is_interactive": true,
+      "title": "Overview",
+      "w": 1440,
+      "x": 0,
+      "y": 13980
+    },
+    "MobileCompany.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Mobile · Payments",
+      "w": 390,
+      "x": 470,
+      "y": 77150
+    },
+    "MobileNewPayment.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Mobile · New payment",
+      "w": 390,
+      "x": 1410,
+      "y": 77150
+    },
+    "MobileOverview.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Mobile · Overview",
+      "w": 390,
+      "x": 0,
+      "y": 77150
+    },
+    "MobilePayment.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Mobile · Payment",
+      "w": 390,
+      "x": 940,
+      "y": 77150
+    },
+    "NewPayment.dc.html": {
+      "expand": "fill",
+      "h": 1700,
+      "is_interactive": true,
+      "title": "Add payment",
+      "w": 1440,
+      "x": 1520,
+      "y": 38440
+    },
+    "Notifications.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "Notifications",
+      "w": 1440,
+      "x": 1520,
+      "y": 62550
+    },
+    "Payment.dc.html": {
+      "expand": "fill",
+      "h": 1480,
+      "is_interactive": true,
+      "title": "Payment drawer",
+      "w": 1440,
+      "x": 0,
+      "y": 38440
+    },
+    "Recurring.dc.html": {
+      "expand": "fill",
+      "h": 2500,
+      "is_interactive": true,
+      "title": "Recurring payments",
+      "w": 1440,
+      "x": 4560,
+      "y": 38440
+    },
+    "Setup.dc.html": {
+      "expand": "fill",
+      "h": 1180,
+      "is_interactive": true,
+      "title": "Setup · Bank accounts",
+      "w": 1440,
+      "x": 0,
+      "y": 54570
+    },
+    "SetupChart.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Setup · Chart of accounts",
+      "w": 1440,
+      "x": 3040,
+      "y": 54570
+    },
+    "SetupChecklist.dc.html": {
+      "expand": "fill",
+      "h": 2900,
+      "is_interactive": true,
+      "title": "Setup · Monthly checklist",
+      "w": 1440,
+      "x": 1520,
+      "y": 59010
+    },
+    "SetupCompanies.dc.html": {
+      "expand": "fill",
+      "h": 1180,
+      "is_interactive": true,
+      "title": "Setup · Companies",
+      "w": 1440,
+      "x": 1520,
+      "y": 54570
+    },
+    "SetupGeneral.dc.html": {
+      "expand": "fill",
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Setup · General settings",
+      "w": 1440,
+      "x": 4560,
+      "y": 59010
+    },
+    "SetupMatching.dc.html": {
+      "expand": "fill",
+      "h": 1180,
+      "is_interactive": true,
+      "title": "Setup · Matching words",
+      "w": 1440,
+      "x": 3040,
+      "y": 59010
+    },
+    "SetupNav.dc.html": {
+      "h": 1150,
+      "title": "Setup menu (shared)",
+      "w": 260,
+      "x": 1864,
+      "y": 160
+    },
+    "SetupRequired.dc.html": {
+      "expand": "fill",
+      "h": 1960,
+      "is_interactive": true,
+      "title": "Setup · Required documents",
+      "w": 1440,
+      "x": 0,
+      "y": 59010
+    },
+    "Sidebar.dc.html": {
+      "h": 1460,
+      "is_interactive": true,
+      "title": "Sidebar (shared)",
+      "w": 264,
+      "x": 1520,
+      "y": 0
+    },
+    "Sql.dc.html": {
+      "expand": "fill",
+      "h": 5000,
+      "is_interactive": true,
+      "title": "SQL import",
+      "w": 1440,
+      "x": 4560,
+      "y": 42530
+    },
+    "States.dc.html": {
+      "h": 8320,
+      "is_interactive": true,
+      "title": "Empty, error and confirm states",
+      "w": 1440,
+      "x": 3040,
+      "y": 62550
+    },
+    "Topbar.dc.html": {
+      "h": 64,
+      "is_interactive": true,
+      "title": "Top bar (shared)",
+      "w": 1176,
+      "x": 1864,
+      "y": 0
+    },
+    "FirstRun.dc.html": {
+      "x": 0,
+      "y": 19820,
+      "w": 1440,
+      "h": 1100,
+      "title": "First run",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SignIn.dc.html": {
+      "x": 1520,
+      "y": 19820,
+      "w": 1440,
+      "h": 900,
+      "title": "Sign in",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "MobileDesktopOnly.dc.html": {
+      "x": 1880,
+      "y": 77150,
+      "w": 390,
+      "h": 844,
+      "title": "Mobile · Best done on a computer",
+      "is_interactive": true
+    },
+    "SetupMove.dc.html": {
+      "x": 6080,
+      "y": 59010,
+      "w": 1440,
+      "h": 1240,
+      "title": "Setup · Move setup",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupTypes.dc.html": {
+      "x": 6080,
+      "y": 54570,
+      "w": 1440,
+      "h": 1560,
+      "title": "Setup · Payment and document types",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupParties.dc.html": {
+      "x": 4560,
+      "y": 54570,
+      "w": 1440,
+      "h": 1280,
+      "title": "Setup · Customers and suppliers",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SqlBooks.dc.html": {
+      "x": 6080,
+      "y": 42530,
+      "w": 1440,
+      "h": 3600,
+      "title": "SQL import · account lines and checks",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "MyInvois.dc.html": {
+      "x": 7600,
+      "y": 42530,
+      "w": 1440,
+      "h": 2000,
+      "title": "e-Invoices",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "InvoicePdf.dc.html": {
+      "x": 9120,
+      "y": 42530,
+      "w": 1440,
+      "h": 2500,
+      "title": "Printed invoice",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "Books.dc.html": {
+      "x": 0,
+      "y": 47730,
+      "w": 1440,
+      "h": 2280,
+      "title": "Books · Trial balance",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "BooksLedger.dc.html": {
+      "x": 1520,
+      "y": 47730,
+      "w": 1440,
+      "h": 1620,
+      "title": "Books · General ledger",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "BooksStatements.dc.html": {
+      "x": 3040,
+      "y": 47730,
+      "w": 1440,
+      "h": 1660,
+      "title": "Books · Profit and loss, balance sheet",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "BooksParties.dc.html": {
+      "x": 4560,
+      "y": 47730,
+      "w": 1440,
+      "h": 2300,
+      "title": "Customers and suppliers",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "BooksStatutory.dc.html": {
+      "x": 6080,
+      "y": 47730,
+      "w": 1440,
+      "h": 3000,
+      "title": "Statutory payables",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "AuditPackBooks.dc.html": {
+      "x": 1520,
+      "y": 51370,
+      "w": 1440,
+      "h": 1560,
+      "title": "Audit pack · books pages",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupStatutory.dc.html": {
+      "x": 7600,
+      "y": 54570,
+      "w": 1440,
+      "h": 1180,
+      "title": "Setup · Statutory accounts",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "ShellMenus.dc.html": {
+      "x": 1520,
+      "y": 1600,
+      "w": 1784,
+      "h": 3240,
+      "title": "Side menu · company kinds and access",
+      "is_interactive": true
+    },
+    "CompanySwitcher.dc.html": {
+      "x": 1520,
+      "y": 5040,
+      "w": 2520,
+      "h": 3480,
+      "title": "Company and month switcher",
+      "is_interactive": true
+    },
+    "OverviewCards.dc.html": {
+      "x": 1520,
+      "y": 13980,
+      "w": 1600,
+      "h": 5200,
+      "title": "Overview cards · every state",
+      "is_interactive": true
+    },
+    "PaymentsRegister.dc.html": {
+      "x": 0,
+      "y": 34340,
+      "w": 1440,
+      "h": 2460,
+      "title": "Payments register",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "MonthlyChecklist.dc.html": {
+      "x": 1520,
+      "y": 34340,
+      "w": 1440,
+      "h": 3900,
+      "title": "Monthly checklist",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "Approvals.dc.html": {
+      "x": 3040,
+      "y": 34340,
+      "w": 1440,
+      "h": 1500,
+      "title": "Approvals",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "ApprovalUpload.dc.html": {
+      "x": 4560,
+      "y": 34340,
+      "w": 1440,
+      "h": 1460,
+      "title": "Approvals · upload a signed form",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "ToPay.dc.html": {
+      "x": 6080,
+      "y": 34340,
+      "w": 1440,
+      "h": 1500,
+      "title": "To pay",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "BankBookLine.dc.html": {
+      "x": 3040,
+      "y": 42530,
+      "w": 1440,
+      "h": 1500,
+      "title": "Bank and reconciliation · book a statement line",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "AccountingKeptHere.dc.html": {
+      "x": 7600,
+      "y": 47730,
+      "w": 1440,
+      "h": 1160,
+      "title": "Sales, Purchases, Journals, Period close",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupApprovers.dc.html": {
+      "x": 0,
+      "y": 56770,
+      "w": 1440,
+      "h": 1380,
+      "title": "Setup › HR · Approvers",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupLeave.dc.html": {
+      "x": 1520,
+      "y": 56770,
+      "w": 1440,
+      "h": 1500,
+      "title": "Setup › HR · Leave types and policy",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupHolidays.dc.html": {
+      "x": 3040,
+      "y": 56770,
+      "w": 1440,
+      "h": 1500,
+      "title": "Setup › HR · Public holidays",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupClaimTypes.dc.html": {
+      "x": 4560,
+      "y": 56770,
+      "w": 1440,
+      "h": 1180,
+      "title": "Setup › HR · Claim types",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "SetupPayroll.dc.html": {
+      "x": 6080,
+      "y": 56770,
+      "w": 1440,
+      "h": 1600,
+      "title": "Setup › HR · Payroll settings",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "UsersAccess.dc.html": {
+      "x": 7600,
+      "y": 51370,
+      "w": 1440,
+      "h": 1240,
+      "title": "Users and access",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "AuditPackHR.dc.html": {
+      "x": 3040,
+      "y": 51370,
+      "w": 1440,
+      "h": 2560,
+      "title": "Audit pack · HR and approval pages",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrStaff.dc.html": {
+      "x": 0,
+      "y": 21560,
+      "w": 1440,
+      "h": 1400,
+      "title": "HR · Staff",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrStaffRecord.dc.html": {
+      "x": 1520,
+      "y": 21560,
+      "w": 1440,
+      "h": 2300,
+      "title": "HR · Staff record",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrStaffForm.dc.html": {
+      "x": 3040,
+      "y": 21560,
+      "w": 1440,
+      "h": 2600,
+      "title": "HR · Add or edit a person, Left",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrStaffExport.dc.html": {
+      "x": 4560,
+      "y": 21560,
+      "w": 1440,
+      "h": 1700,
+      "title": "HR · Staff Excel export",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrCalendar.dc.html": {
+      "x": 6080,
+      "y": 21560,
+      "w": 1440,
+      "h": 1960,
+      "title": "HR · Calendar and reminders",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrLeave.dc.html": {
+      "x": 0,
+      "y": 24360,
+      "w": 1440,
+      "h": 1500,
+      "title": "HR · Leave",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrLeaveYear.dc.html": {
+      "x": 1520,
+      "y": 24360,
+      "w": 1440,
+      "h": 1500,
+      "title": "HR · Leave opening balances and year end",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrClaims.dc.html": {
+      "x": 3040,
+      "y": 24360,
+      "w": 1440,
+      "h": 1320,
+      "title": "HR · Claims and advances · Claims",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrClaim.dc.html": {
+      "x": 4560,
+      "y": 24360,
+      "w": 1440,
+      "h": 1480,
+      "title": "HR · New claim and claim page",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "HrAdvances.dc.html": {
+      "x": 6080,
+      "y": 24360,
+      "w": 1440,
+      "h": 1400,
+      "title": "HR · Claims and advances · Advances",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PayrollCheck.dc.html": {
+      "x": 0,
+      "y": 26500,
+      "w": 1440,
+      "h": 3700,
+      "title": "Payroll · Workbook check",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PayrollRun.dc.html": {
+      "x": 1520,
+      "y": 26500,
+      "w": 1440,
+      "h": 3300,
+      "title": "Payroll · Run",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PayrollTotals.dc.html": {
+      "x": 3040,
+      "y": 26500,
+      "w": 1440,
+      "h": 1560,
+      "title": "Payroll · Summary, authorities, bank list",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PayrollFiles.dc.html": {
+      "x": 4560,
+      "y": 26500,
+      "w": 1440,
+      "h": 1720,
+      "title": "Payroll · Statutory files",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PayrollLeaver.dc.html": {
+      "x": 0,
+      "y": 30400,
+      "w": 1440,
+      "h": 2600,
+      "title": "Payroll · Leaver’s final pay",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PayrollParallel.dc.html": {
+      "x": 1520,
+      "y": 30400,
+      "w": 1440,
+      "h": 3300,
+      "title": "Payroll · Parallel run and switch-over",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PayrollOpeningYtd.dc.html": {
+      "x": 3040,
+      "y": 30400,
+      "w": 1440,
+      "h": 1700,
+      "title": "Payroll · Opening year to date",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PrintApprovalForm.dc.html": {
+      "x": 0,
+      "y": 71510,
+      "w": 1440,
+      "h": 3600,
+      "title": "Printed approval form",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PrintMonthReview.dc.html": {
+      "x": 1520,
+      "y": 71510,
+      "w": 1440,
+      "h": 3500,
+      "title": "Printed Month review sheet",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PrintBankRec.dc.html": {
+      "x": 7600,
+      "y": 71510,
+      "w": 1440,
+      "h": 3300,
+      "title": "Printed bank reconciliation statement",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PrintPayslip.dc.html": {
+      "x": 3040,
+      "y": 71510,
+      "w": 1440,
+      "h": 3000,
+      "title": "Payslip",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PrintPayrollOutputs.dc.html": {
+      "x": 4560,
+      "y": 71510,
+      "w": 1440,
+      "h": 2950,
+      "title": "Payroll printouts",
+      "is_interactive": true,
+      "expand": "fill"
+    },
+    "PrintHrLists.dc.html": {
+      "x": 6080,
+      "y": 71510,
+      "w": 1440,
+      "h": 5000,
+      "title": "Printed staff record, leave and claim lists",
+      "is_interactive": true,
+      "expand": "fill"
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-13T09:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t0": {
+      "kind": "title1",
+      "maxW": 4100,
+      "text": "Foundations & shared components",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 6240,
+      "text": "Overview",
+      "w": 240,
+      "x": 0,
+      "y": 13720
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 9120,
+      "text": "Payments",
+      "w": 240,
+      "x": 0,
+      "y": 34080
+    },
+    "t3": {
+      "kind": "title1",
+      "maxW": 10640,
+      "text": "Admin",
+      "w": 240,
+      "x": 0,
+      "y": 51110
+    },
+    "t4": {
+      "kind": "title1",
+      "maxW": 9120,
+      "text": "Admin › Setup, continued",
+      "w": 240,
+      "x": 0,
+      "y": 58750
+    },
+    "t5": {
+      "kind": "title1",
+      "maxW": 10640,
+      "text": "Admin › Setup",
+      "w": 240,
+      "x": 0,
+      "y": 54310
+    },
+    "t6": {
+      "kind": "title1",
+      "maxW": 6080,
+      "text": "Search, alerts & states",
+      "w": 240,
+      "x": 0,
+      "y": 62290
+    },
+    "t7": {
+      "kind": "title1",
+      "maxW": 3000,
+      "text": "Phone",
+      "w": 240,
+      "x": 0,
+      "y": 76890
+    },
+    "t8": {
+      "kind": "title1",
+      "maxW": 8120,
+      "text": "Dark mode",
+      "w": 240,
+      "x": 0,
+      "y": 78374
+    },
+    "n1": {
+      "x": 7600,
+      "y": 34340,
+      "text": "New work (Payments): Approvals with printed approval forms (code, keyed check and QR, up to 3 approvers), upload with the code read from text or QR or typed, and every mismatch case; To pay with select several and Pay; the Approval marker on every payment; Paid without approval on file; Month review sheet and the two new checklist items; the register split from the company month; Needs approval per payment type; plus the earlier extras (document viewer, Download, Bank account field, Undo on toasts, table search and bulk select).",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "t9": {
+      "x": 0,
+      "y": 19560,
+      "text": "Getting started & sign-in",
+      "kind": "title1",
+      "maxW": 4560
+    },
+    "n9": {
+      "x": 3040,
+      "y": 19820,
+      "text": "New work: the whole sign-in flow (sign in, wrong password, lockout, session timed out, user menu, real names in the audit trail) and the first-run welcome with setup-file preview.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "n2": {
+      "x": 10640,
+      "y": 42530,
+      "text": "New work: Budget print sheet and fund request, Undo on toasts, Budget history dialog; drag-and-drop on the SQL file box and the finer file-status chips; SQL sign-in guide; Bank review loading and no-statement states. Stage 1 app fixes drawn here: supplier invoice labels in the SQL preview, a Deleted in SQL pill under Ignored, check-table sections in words, the print month defaulting to the month being worked, formatted MyInvois times, per-document print notes by the PDF button (the check route has no screen yet), and the bank SQL check with Confirm again after book figures change. New scope: the month lock with a logged Reopen, one statement line matched to several payments, Book this line for a company kept here, e-Invoices as its own page with a Print column and All of the month, and the not-kept-in-SQL page.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "n3": {
+      "x": 9120,
+      "y": 51370,
+      "text": "New work: Audit pack build progress, result card and Check this pack extras; Audit trail filter chips, several entries open, needs-attention panel; Backup extras (recent backups, strength meter, Restoring card, am-I-backed-up banner); Recurring search, type chips and Undo. New scope: Users and access (drawn now, built with logins), the audit pack HR and approval pages (paid without approval, approver history, steps one name did alone, declared, not verified), and audit trail filters for HR records and approvals.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "n5": {
+      "x": 9120,
+      "y": 54570,
+      "text": "New work: Undo on the Stopped toast, per-record History link into the audit trail, Show deleted with Put back on every Setup list, search with count and Used by column, the Paste a list preview. Stage 1: Printed invoices and Printed company names hidden for a company not kept in SQL; the In use again note on statutory accounts.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "n4": {
+      "x": 7600,
+      "y": 59010,
+      "text": "New work: required-documents impact line and Earlier sets history, voucher tester and keyboard reordering on matching words, checklist reordering and copy from another company (the copy says sql-books is not copied to a company not in SQL), the November rollover banner, the Move setup export toast, and Everything naming statutory accounts, print settings and printed company names.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "n6": {
+      "x": 4560,
+      "y": 62550,
+      "text": "New work: global search (Ctrl K), the notifications bell with read state, toast Undo and progress toasts, the app-not-running page and connection-lost strip.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "n7": {
+      "x": 2350,
+      "y": 77150,
+      "text": "Phone scope: Overview, Payments, payment, Add payment, and (package I) a fifth screen to photograph a signed approval form. Every other screen opens Best done on a computer. New work: Take a photo, document viewer sheet, drag-to-dismiss, upload progress, Undo.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "n8": {
+      "x": 7600,
+      "y": 78634,
+      "text": "Dark twins of Overview, Company month, payment and Bank statements. Other screens follow DarkPalette. The Auto / Light / Dark theme switch is new work.",
+      "w": 520,
+      "size": "s",
+      "fill": "orange"
+    },
+    "tA": {
+      "x": 0,
+      "y": 42270,
+      "text": "Accounting",
+      "kind": "title1",
+      "maxW": 12160,
+      "w": 240
+    },
+    "nA": {
+      "x": 9120,
+      "y": 47730,
+      "w": 520,
+      "size": "s",
+      "fill": "orange",
+      "text": "Books follows SQL for a company kept in SQL: nothing here can be edited. Drawn the right way where the app differs today: a grey Can’t be totalled pill when an opening is missing (the app shows Doesn’t balance), no pill on an empty trial balance, an Excel failure shown in place instead of a raw JSON page, the Statutory tab not judging months the journal doesn’t cover, and one date style. Open question: one unpaid KWSP gives two Next up rows (the payment and the statutory check). New scope: Customers and suppliers and Statutory payables are pages of their own; Customers overdue means older than 30 days; Net salaries payable with the check that each run’s net pay is paid in full; Lindung 24 Jam, zakat and HRDF rows; Sales, Purchases, Journals and Period close placeholders for a company kept here."
+    },
+    "nS": {
+      "x": 3480,
+      "y": 1600,
+      "w": 520,
+      "size": "s",
+      "fill": "orange",
+      "text": "New work (shell): the company switcher in the top bar replaces one menu item per company; the menu follows the company kind (Kept in SQL Account, Kept here, Runs payroll in this app) and the person’s access rights; Approvals and To pay count badges; Users and access in Admin. Old board settings still work through aliases until package B updates each board."
+    },
+    "tH": {
+      "kind": "title1",
+      "text": "HR",
+      "w": 240,
+      "x": 0,
+      "y": 21300,
+      "maxW": 9120
+    },
+    "nH": {
+      "w": 520,
+      "size": "s",
+      "fill": "orange",
+      "x": 7600,
+      "y": 21560,
+      "text": "New work (HR, every company): staff records with paste and Excel import, the staff record tabs, Left with CP22A / CP21 and the tax-clearance hold, the staff Excel export with Sensitive columns, leave with balances and the team calendar (legal minimums, above them a warning only), calendar and reminders, claims and advances as requests that go to Approvals and To pay. Pay shows only with the Payroll figures right; IC masked to the last 4."
+    },
+    "tP": {
+      "kind": "title1",
+      "text": "Payroll",
+      "w": 240,
+      "x": 0,
+      "y": 26240,
+      "maxW": 7600
+    },
+    "nP": {
+      "w": 520,
+      "size": "s",
+      "fill": "orange",
+      "x": 6080,
+      "y": 26500,
+      "text": "New work (Payroll): the Workbook check is in the app today and shows for every company. The run, totals and bank list, statutory files, leaver’s final pay, parallel run with switch-over, and opening year to date show only where Runs payroll in this app is on (AISB). October is drawn as the example run; AISB switches over on 1 Dec 2026."
+    },
+    "t10": {
+      "kind": "title1",
+      "text": "Admin › Setup › HR",
+      "w": 240,
+      "x": 0,
+      "y": 56510,
+      "maxW": 9120
+    },
+    "nC": {
+      "w": 520,
+      "size": "s",
+      "fill": "orange",
+      "x": 4720,
+      "y": 13980,
+      "text": "New work (Overview): the four card rows (Needs attention; Payments; Accounting; HR) with each card’s empty, out-of-date and could-not-load states, All companies lines with company chips, HR and approval events in Recent activity, the HR row hidden without HR access (with logins), and the top-bar switcher as the Overview’s company filter."
+    },
+    "nHR": {
+      "w": 520,
+      "size": "s",
+      "fill": "orange",
+      "x": 7600,
+      "y": 56770,
+      "text": "New work (Setup › HR, per company): approvers with history and the form key, leave types with the legal minimums as the entitlement (above the law is a warning only), public holidays by state, claim types tied to expense accounts, and payroll settings (pay items, dated rates matching the Payroll check, due dates, minimum wage, employer numbers) shown only where Runs payroll in this app is on."
+    },
+    "tPr": {
+      "kind": "title1",
+      "text": "Printed",
+      "w": 240,
+      "x": 0,
+      "y": 71250,
+      "maxW": 9640
+    },
+    "nPr": {
+      "x": 9120,
+      "y": 71510,
+      "w": 520,
+      "size": "s",
+      "fill": "orange",
+      "text": "New work (printouts, English only, A4): the approval form with its code, keyed check and QR and up to 3 approver blocks (per-person pay only on page 2, for the Payroll figures right); the Month review sheet; the bank reconciliation statement per account and month (standard layout, No money moved pairs, totals check, Prepared by and Reviewed by, code and QR); the payslip (IC masked, emailed with a password by rule); the bank payment list, monthly summary, payroll journal summary and parallel-run comparison; the staff record PDF (full IC, confidential) and leave and claim lists."
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Icon.dc.html",
+    "Sidebar.dc.html",
+    "Topbar.dc.html",
+    "SetupNav.dc.html",
+    "Company.dc.html",
+    "Payment.dc.html",
+    "NewPayment.dc.html",
+    "Budget.dc.html",
+    "Bank.dc.html",
+    "BankReview.dc.html",
+    "Sql.dc.html",
+    "Recurring.dc.html",
+    "AuditPack.dc.html",
+    "AuditTrail.dc.html",
+    "Backup.dc.html",
+    "Setup.dc.html",
+    "SetupCompanies.dc.html",
+    "SetupChart.dc.html",
+    "SetupRequired.dc.html",
+    "SetupChecklist.dc.html",
+    "SetupMatching.dc.html",
+    "SetupGeneral.dc.html",
+    "CommandPalette.dc.html",
+    "Notifications.dc.html",
+    "States.dc.html",
+    "MobileOverview.dc.html",
+    "MobileCompany.dc.html",
+    "MobilePayment.dc.html",
+    "MobileNewPayment.dc.html",
+    "DarkOverview.dc.html",
+    "DarkCompany.dc.html",
+    "DarkPayment.dc.html",
+    "DarkBank.dc.html",
+    "DarkPalette.dc.html",
+    "Foundations.dc.html",
+    "FirstRun.dc.html",
+    "SignIn.dc.html",
+    "MobileDesktopOnly.dc.html",
+    "SetupMove.dc.html",
+    "SetupTypes.dc.html",
+    "SetupParties.dc.html",
+    "SqlBooks.dc.html",
+    "MyInvois.dc.html",
+    "InvoicePdf.dc.html",
+    "Books.dc.html",
+    "BooksLedger.dc.html",
+    "BooksStatements.dc.html",
+    "BooksParties.dc.html",
+    "BooksStatutory.dc.html",
+    "AuditPackBooks.dc.html",
+    "SetupStatutory.dc.html",
+    "ShellMenus.dc.html",
+    "CompanySwitcher.dc.html",
+    "OverviewCards.dc.html",
+    "PaymentsRegister.dc.html",
+    "MonthlyChecklist.dc.html",
+    "Approvals.dc.html",
+    "ApprovalUpload.dc.html",
+    "ToPay.dc.html",
+    "BankBookLine.dc.html",
+    "AccountingKeptHere.dc.html",
+    "SetupApprovers.dc.html",
+    "SetupLeave.dc.html",
+    "SetupHolidays.dc.html",
+    "SetupClaimTypes.dc.html",
+    "SetupPayroll.dc.html",
+    "UsersAccess.dc.html",
+    "AuditPackHR.dc.html",
+    "HrStaff.dc.html",
+    "HrStaffRecord.dc.html",
+    "HrStaffForm.dc.html",
+    "HrStaffExport.dc.html",
+    "HrCalendar.dc.html",
+    "HrLeave.dc.html",
+    "HrLeaveYear.dc.html",
+    "HrClaims.dc.html",
+    "HrClaim.dc.html",
+    "HrAdvances.dc.html",
+    "PayrollCheck.dc.html",
+    "PayrollRun.dc.html",
+    "PayrollTotals.dc.html",
+    "PayrollFiles.dc.html",
+    "PayrollLeaver.dc.html",
+    "PayrollParallel.dc.html",
+    "PayrollOpeningYtd.dc.html",
+    "PrintApprovalForm.dc.html",
+    "PrintMonthReview.dc.html",
+    "PrintBankRec.dc.html",
+    "PrintPayslip.dc.html",
+    "PrintPayrollOutputs.dc.html",
+    "PrintHrLists.dc.html"
+  ],
+  "pages": [],
+  "title": "HR Payments Redesign"
+}

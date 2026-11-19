@@ -1,0 +1,1246 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HR · Leave · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hd:hover:not(:disabled){background:#8F140C !important}
+.hr:hover{background:#F8FAFD}
+.mi:hover,.mi:focus{background:#F0F3F8}
+.cl:hover{box-shadow:inset 0 0 0 2px #2450B8}
+/* motion and focus base */
+.hb,.hs,.hd,.hr,.mi,.cl{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes menuIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.mn{transform-origin:top right;animation:menuIn .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .8s linear infinite;box-sizing:border-box}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* pills, as Foundations draws them */
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.sv{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:6px;background:#2B3A50;color:#FFFFFF;font:600 11px Inter,sans-serif;white-space:nowrap}
+/* tabs */
+.tbs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid #E3E7ED}
+.tb{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:#46546A;font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:border-color .12s ease-out,color .12s ease-out}
+.tb:hover{color:#0F1A2B}
+.tb[aria-selected="true"]{border-bottom-color:#2450B8;color:#0F1A2B}
+/* tables */
+.lt{width:100%;border-collapse:collapse;font-size:14px}
+.lt th{background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.lt td{padding:12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.lt .r{text-align:right;font-variant-numeric:tabular-nums}
+.ct{border-collapse:separate;border-spacing:0;font-size:12px}
+.ct th,.ct td{padding:0;border-bottom:1px solid #EEF1F5}
+.ct td{border-left:1px solid #EEF1F5}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.sk{animation:none}.spin{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="leave" company="{{shCo}}" kind="{{shKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Leave" company="{{shCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0; flex: 1 1 420px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Leave</h1>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 700px">{{intro}}</p>
+        </div>
+        <sc-if value="{{isReady}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+            <a href="HrLeaveYear.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="history" tone="muted" size="16" hint-size="16px,16px"></dc-import>Opening balances and year end</a>
+            <div style="position: relative">
+              <button type="button" id="lv-mb-xl" class="hs" aria-haspopup="menu" aria-expanded="{{menuExp}}" onClick="{{toggleMenu}}" onKeyDown="{{menuBtnKey}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="download" tone="muted" size="16" hint-size="16px,16px"></dc-import>Excel<dc-import name="Icon" glyph="chevronDown" tone="muted" size="14" hint-size="14px,14px"></dc-import></button>
+              <sc-if value="{{menuOn}}" hint-placeholder-val="{{ false }}">
+                <div aria-hidden="true" onClick="{{closeMenu}}" style="position: fixed; inset: 0; z-index: 29"></div>
+                <div role="menu" aria-labelledby="lv-mb-xl" class="mn" onKeyDown="{{menuKey}}" style="position: absolute; right: 0; top: 46px; z-index: 30; width: 300px; padding: 6px; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; box-shadow: 0 16px 40px rgba(13, 27, 46, .18); display: flex; flex-direction: column">
+                  <sc-for list="{{xlItems}}" as="m" hint-placeholder-count="3">
+                    <button type="button" role="menuitem" tabindex="-1" id="{{m.id}}" class="mi" onClick="{{m.pick}}" style="display: flex; gap: 10px; align-items: flex-start; width: 100%; min-height: 44px; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; text-align: left; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="sheet" tone="brand" size="16" hint-size="16px,16px"></dc-import><span style="display: flex; flex-direction: column; gap: 2px">{{m.label}}<span style="font-weight: 400; font-size: 12px; color: #5F6C80">{{m.sub}}</span></span></button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <button type="button" id="lv-add" class="hb" onClick="{{openNew}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add leave</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" aria-label="Loading leave" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 14px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 12px; align-items: center"><span role="status" style="font-size: 13px; color: #46546A">Loading…</span><div class="sk" style="height: 30px; width: 320px; border-radius: 8px"></div></div>
+          <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 16px">
+            <sc-for list="{{skRows}}" as="k" hint-placeholder-count="6">
+              <div style="display: flex; gap: 16px; align-items: center"><div class="sk" style="height: 14px; width: 16%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 22%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 6%; border-radius: 5px"></div><div class="sk" style="height: 22px; width: 90px; border-radius: 99px; margin-left: auto"></div></div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+          <span style="width: 52px; height: 52px; border-radius: 14px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="28" hint-size="28px,28px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+          <p style="margin: 0; color: #46546A; max-width: 460px; font-size: 13px">The leave records couldn't be read from the records folder. Check the drive is connected, then try again. Nothing was changed.</p>
+          <button type="button" id="lv-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isReady}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="leave" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b>The legal minimums are the entitlement</b> (Employment Act 1955, as at Nov 2026). Leave beyond a person's legal days, or clashing with leave already entered, is a warning only: it is never refused. Days per type are set on <a href="SetupLeave.dc.html">Leave types and policy</a>.</span></div>
+
+        <sc-if value="{{sabahOn}}" hint-placeholder-val="{{ false }}">
+          <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>AI's staff work in Sabah.</b> Staff in Sabah or Sarawak come under their state's Labour Ordinance, not the Employment Act's minimums: check these days. The work location on each staff record decides which law the check uses.</span></div>
+        </sc-if>
+
+        <div role="tablist" aria-label="Leave" class="tbs">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+            <button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="lv-panel" tabindex="{{t.ti}}" class="tb fr" onClick="{{t.pick}}" onKeyDown="{{t.key}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</button>
+          </sc-for>
+        </div>
+
+        <div role="tabpanel" id="lv-panel" aria-labelledby="{{panelBy}}" class="{{panelCls}}" style="display: flex; flex-direction: column; gap: 16px">
+
+          <!-- Taken and booked -->
+          <sc-if value="{{tabList}}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{listEmpty}}" hint-placeholder-val="{{ false }}">
+              <section class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+                <span style="width: 52px; height: 52px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="leave" tone="brand" size="28" hint-size="28px,28px"></dc-import></span>
+                <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No leave entered for {{coCode}} yet</h2>
+                <p style="margin: 0; color: #46546A; max-width: 480px; font-size: 13px">Add leave as it is booked or taken. To start the year with what was taken before, import the opening balances from your Excel list first.</p>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+                  <button type="button" class="hb" onClick="{{openNew}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add leave</button>
+                  <a href="HrLeaveYear.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box">Import opening balances</a>
+                </div>
+              </section>
+            </sc-if>
+            <sc-if value="{{listHas}}" hint-placeholder-val="{{ true }}">
+              <section aria-labelledby="lv-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+                <h2 id="lv-list-h" class="vh">Leave taken and booked, {{coCode}}</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+                  <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 200px; max-width: 280px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search people" aria-label="Search people" aria-describedby="lv-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+                  <div role="group" aria-label="Status" style="display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: #EEF1F5">
+                    <sc-for list="{{statusSeg}}" as="s" hint-placeholder-count="4">
+                      <button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}<span style="font-weight: 500; color: #5F6C80; font-variant-numeric: tabular-nums">{{s.n}}</span></button>
+                    </sc-for>
+                  </div>
+                  <label for="lv-ftype" class="vh">Leave type</label>
+                  <select id="lv-ftype" value="{{fType}}" onChange="{{onFType}}" style="height: 32px; padding: 0 8px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; font: 400 13px Inter, sans-serif; color: #0F1A2B">
+                    <sc-for list="{{typeFilterOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+                  </select>
+                  <label for="lv-pmonth" style="font-size: 13px; font-weight: 600; color: #46546A">Month</label>
+                  <select id="lv-pmonth" value="{{pMonth}}" onChange="{{onPMonth}}" style="height: 32px; padding: 0 8px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; font: 400 13px Inter, sans-serif; color: #0F1A2B">
+                    <sc-for list="{{pMonthOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+                  </select>
+                  <a href="{{printListHref}}" class="hs" aria-label="{{printListAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="printer" tone="muted" size="16" hint-size="16px,16px"></dc-import>Print</a>
+                  <span id="lv-count" role="status" aria-live="polite" style="margin-left: auto; color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{countTxt}}</span>
+                </div>
+                <div style="overflow-x: auto">
+                  <table class="lt" style="min-width: 940px">
+                    <caption class="vh">Leave entered for {{coCode}}, newest first. Click a person to open the leave.</caption>
+                    <thead>
+                      <tr>
+                        <th scope="col" style="padding-left: 18px">Person</th>
+                        <th scope="col">Leave type</th>
+                        <th scope="col">Dates</th>
+                        <th scope="col" class="r">Days</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Notes</th>
+                        <th scope="col" style="padding-right: 18px"><span class="vh">Actions</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+                        <tr class="{{r.cls}}">
+                          <td style="padding-left: 18px"><button type="button" id="{{r.btnId}}" onClick="{{r.open}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; min-height: 24px; font: 600 14px Inter, sans-serif; color: #2450B8; cursor: pointer; text-align: left">{{r.who}}</button><div style="color: #5F6C80; font-size: 12px">{{r.whoSub}}</div></td>
+                          <td><span style="display: inline-flex; align-items: center; gap: 8px"><span aria-hidden="true" style="{{r.sw}}">{{r.code}}</span>{{r.typeName}}</span></td>
+                          <td style="white-space: nowrap">{{r.dates}}<sc-if value="{{r.halfOn}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{r.half}}</div></sc-if></td>
+                          <td class="r">{{r.days}}</td>
+                          <td><span class="{{r.pillCls}}"><dc-import name="Icon" glyph="{{r.pillGlyph}}" tone="{{r.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.pill}}</span></td>
+                          <td style="max-width: 300px; font-size: 13px; color: #46546A">
+                            <div style="display: flex; flex-direction: column; gap: 4px">
+                              <sc-if value="{{r.certOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="document" tone="muted" size="14" hint-size="14px,14px"></dc-import>Certificate attached</span></sc-if>
+                              <sc-if value="{{r.warnOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: flex-start; gap: 6px; color: #934100"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{r.warn}}</span></sc-if>
+                              <sc-if value="{{r.noteOn}}" hint-placeholder-val="{{ false }}"><span>{{r.note}}</span></sc-if>
+                            </div>
+                          </td>
+                          <td style="padding-right: 18px; text-align: right"><sc-if value="{{r.canCancel}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" onClick="{{r.cancel}}" aria-label="{{r.cancelLabel}}" aria-haspopup="dialog" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel leave</button></sc-if></td>
+                        </tr>
+                      </sc-for>
+                      <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+                        <tr><td colspan="7" style="padding: 32px 18px; text-align: center; color: #46546A"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="search" tone="muted" size="28" hint-size="28px,28px"></dc-import><span>No leave matches these filters.</span><button type="button" class="hs" onClick="{{clearFilters}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear the filters</button></div></td></tr>
+                      </sc-if>
+                    </tbody>
+                  </table>
+                </div>
+                <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+                    <span role="status" aria-live="polite" style="font-size: 13px; color: #46546A">{{moreTxt}}</span>
+                    <button type="button" class="hs" onClick="{{showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreBtn}}</button>
+                  </div>
+                </sc-if>
+              </section>
+              <p style="margin: 0; color: #5F6C80; font-size: 12px">Days are working days: rest days, off days and {{holState}}'s public holidays are skipped. Maternity and paternity are counted in a row. Leave starting on or before today shows as Taken, later leave as Booked. Cancelled leave stays here with its reason, and its days go back to the balance.</p>
+            </sc-if>
+          </sc-if>
+
+          <!-- Balances -->
+          <sc-if value="{{tabBal}}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{notImportedOn}}" hint-placeholder-val="{{ false }}">
+              <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b>{{coCode}}'s opening balances aren't imported yet</b>, so what was taken before leave was entered here isn't known. The entitlement is shown; taken and balance appear once the opening balances are in. <a href="HrLeaveYear.dc.html">Import them</a>.</span></div>
+            </sc-if>
+            <section aria-labelledby="lv-bal-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+                <h2 id="lv-bal-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">{{balTitle}}</h2>
+                <div role="group" aria-label="Leave type" style="display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: #EEF1F5">
+                  <sc-for list="{{balSeg}}" as="s" hint-placeholder-count="2">
+                    <button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button>
+                  </sc-for>
+                </div>
+                <div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+                  <label for="lv-asat" style="font-size: 13px; font-weight: 600; color: #46546A">Balances at</label>
+                  <input id="lv-asat" type="date" min="2026-09-30" max="2026-12-31" value="{{asAt}}" onChange="{{onAsAt}}" aria-describedby="lv-asat-h" style="height: 32px; padding: 0 8px; border: 1px solid #8792A2; border-radius: 8px; font: 400 13px Inter, sans-serif; color: #0F1A2B">
+                  <a href="{{printBalHref}}" class="hs" aria-label="{{printBalAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="printer" tone="muted" size="16" hint-size="16px,16px"></dc-import>Print</a>
+                  <sc-if value="{{asAtMoved}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{asAtToday}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Today</button></sc-if>
+                </div>
+              </div>
+              <p id="lv-asat-h" style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #EEF1F5; color: #46546A; font-size: 13px">{{balNote}}</p>
+              <div style="overflow-x: auto">
+                <table class="lt" style="min-width: 860px">
+                  <caption class="vh">{{balTitle}} for {{coCode}}, {{asAtTxt}}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" style="padding-left: 18px">Person</th>
+                      <th scope="col">Service</th>
+                      <th scope="col" class="r">By law</th>
+                      <th scope="col" class="r">{{takenHead}}</th>
+                      <th scope="col" class="r">{{bookedHead}}</th>
+                      <th scope="col" class="r">{{balHead}}</th>
+                      <th scope="col" style="padding-right: 18px">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{balRows}}" as="b" hint-placeholder-count="9">
+                      <tr>
+                        <th scope="row" style="padding: 12px 12px 12px 18px; text-align: left; font-weight: 600; border-top: 1px solid #EEF1F5; background: transparent; color: #0F1A2B; font-size: 14px; white-space: normal">{{b.name}}<div style="font-weight: 400; color: #5F6C80; font-size: 12px">{{b.sub}}</div></th>
+                        <td>{{b.svc}}<sc-if value="{{b.svcSubOn}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{b.svcSub}}</div></sc-if></td>
+                        <td class="r">{{b.ent}}</td>
+                        <td class="r">{{b.taken}}</td>
+                        <td class="r">{{b.booked}}</td>
+                        <td class="r"><span style="{{b.balStyle}}"><sc-if value="{{b.neg}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import></sc-if>{{b.bal}}</span></td>
+                        <td style="padding-right: 18px; font-size: 13px; color: #46546A; max-width: 320px"><span style="{{b.noteStyle}}">{{b.note}}</span></td>
+                      </tr>
+                    </sc-for>
+                    <sc-if value="{{internOn}}" hint-placeholder-val="{{ false }}">
+                      <sc-for list="{{internRows}}" as="x" hint-placeholder-count="2">
+                        <tr class="ex" style="background: repeating-linear-gradient(135deg, #FFFFFF 0, #FFFFFF 8px, #F7F8FA 8px, #F7F8FA 16px)">
+                          <th scope="row" style="padding: 12px 12px 12px 18px; text-align: left; font-weight: 600; border-top: 1px solid #EEF1F5; background: transparent; color: #0F1A2B; font-size: 14px; white-space: normal"><span class="pl mute">Example</span><div style="font-weight: 400; color: #5F6C80; font-size: 12px; margin-top: 4px">{{x.sub}}</div></th>
+                          <td>{{x.svc}}</td>
+                          <td class="r" colspan="4" style="text-align: left; color: #46546A; font-size: 13px">{{x.what}}</td>
+                          <td style="padding-right: 18px; font-size: 13px; color: #46546A; max-width: 320px">{{x.note}}</td>
+                        </tr>
+                      </sc-for>
+                    </sc-if>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <sc-if value="{{inUseOn}}" hint-placeholder-val="{{ true }}">
+              <section aria-labelledby="lv-use-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 10px">
+                <h2 id="lv-use-h" style="margin: 0; font-size: 14px; font-weight: 600">Maternity and paternity in use</h2>
+                <sc-for list="{{inUse}}" as="u" hint-placeholder-count="1">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; font-size: 13px">
+                    <b>{{u.who}}</b><span>{{u.type}} · {{u.dates}}</span>
+                    <span style="flex: 1 1 160px; max-width: 220px; height: 8px; border-radius: 99px; background: #EEF1F5; overflow: hidden" aria-hidden="true"><span class="bar" style="{{u.barStyle}}"></span></span>
+                    <span style="color: #46546A">{{u.used}}</span><span class="{{u.pillCls}}">{{u.pill}}</span>
+                  </div>
+                </sc-for>
+              </section>
+            </sc-if>
+            <sc-if value="{{internOn}}" hint-placeholder-val="{{ false }}">
+              <div role="note" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="staff" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">No interns or part-time staff at {{coCode}} today.</b> The two example rows show how they appear. An intern is flagged on the staff record and gets only the company's policy leave: no legal minimum applies. Part-time staff (under 70% of normal hours) follow the Employment (Part-Time Employees) Regulations 2010, so their days are worked out from their hours, not from the table above.</span></div>
+            </sc-if>
+            <p style="margin: 0; color: #5F6C80; font-size: 12px">{{balFoot}}</p>
+          </sc-if>
+
+          <!-- Team calendar -->
+          <sc-if value="{{tabCal}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="lv-cal-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+                <button type="button" class="hs" onClick="{{calPrev}}" disabled="{{calPrevDis}}" aria-label="{{calPrevLabel}}" style="{{calPrevStyle}}"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+                <h2 id="lv-cal-h" aria-live="polite" style="margin: 0; min-width: 150px; text-align: center; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">{{calTitle}}</h2>
+                <button type="button" class="hs" onClick="{{calNext}}" disabled="{{calNextDis}}" aria-label="{{calNextLabel}}" style="{{calNextStyle}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+                <span style="display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; color: #46546A"><span class="pl info"><dc-import name="Icon" glyph="leave" tone="brand" size="14" hint-size="14px,14px"></dc-import>On leave today: {{todayTxt}}</span><span class="pl mute">This week: {{weekTxt}}</span></span>
+                <label for="lv-notype" style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; font-weight: 600; color: #46546A; cursor: pointer"><input id="lv-notype" type="checkbox" checked="{{noType}}" onChange="{{onNoType}}" aria-describedby="lv-notype-h" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Preview without leave types</label>
+              </div>
+              <sc-if value="{{noType}}" hint-placeholder-val="{{ false }}">
+                <div id="lv-notype-h" role="note" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 18px; border-bottom: 1px solid #EEF1F5; background: #F7F8FA; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">How the team calendar reads without HR access.</b> New work, with logins: someone without the HR right sees who is off and when, never the leave type, and can't open the leave. Until logins come, the app runs on this PC and only HR uses this page.</span></div>
+              </sc-if>
+              <sc-if value="{{typeHintOn}}" hint-placeholder-val="{{ true }}">
+                <p id="lv-notype-h" style="margin: 0; padding: 8px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 12px">Leave types show here only to people with the HR right. Click a day of leave to open it.</p>
+              </sc-if>
+              <div style="overflow-x: auto">
+                <table class="ct" style="min-width: 1040px; width: 100%">
+                  <caption class="vh">{{calCaption}}</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col" style="position: sticky; left: 0; z-index: 1; background: #FAFBFC; text-align: left; padding: 8px 12px 8px 18px; width: 150px; font-size: 12px; font-weight: 600; color: #5F6C80">Person</th>
+                      <sc-for list="{{calDays}}" as="d" hint-placeholder-count="30">
+                        <th scope="col" abbr="{{d.full}}" style="{{d.style}}"><span aria-hidden="true" style="display: block; font-size: 10px; font-weight: 600">{{d.wk}}</span><span style="{{d.numStyle}}">{{d.num}}</span><sc-if value="{{d.holOn}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="display: block; width: 6px; height: 6px; margin: 2px auto 0; border-radius: 99px; background: #B86E00"></span></sc-if></th>
+                      </sc-for>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{calRows}}" as="w" hint-placeholder-count="9">
+                      <tr>
+                        <th scope="row" style="position: sticky; left: 0; z-index: 1; background: #FFFFFF; text-align: left; padding: 6px 12px 6px 18px; font-size: 13px; font-weight: 600; color: #0F1A2B; white-space: nowrap">{{w.name}}<div style="font-weight: 400; color: #5F6C80; font-size: 11px">{{w.sub}}</div></th>
+                        <sc-for list="{{w.cells}}" as="c" hint-placeholder-count="30">
+                          <td style="{{c.td}}">
+                            <sc-if value="{{c.btn}}" hint-placeholder-val="{{ false }}"><button type="button" class="cl fr" onClick="{{c.open}}" aria-label="{{c.label}}" style="{{c.style}}"><span aria-hidden="true" style="{{c.chip}}">{{c.txt}}</span></button></sc-if>
+                            <sc-if value="{{c.mark}}" hint-placeholder-val="{{ false }}"><span style="{{c.style}}"><span aria-hidden="true">{{c.txt}}</span><span class="vh">{{c.label}}</span></span></sc-if>
+                          </td>
+                        </sc-for>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 12px 18px; border-top: 1px solid #EEF1F5; font-size: 12px; color: #46546A">
+                <sc-for list="{{legend}}" as="g" hint-placeholder-count="8">
+                  <span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="{{g.style}}">{{g.txt}}</span>{{g.label}}</span>
+                </sc-for>
+              </div>
+            </section>
+            <section aria-labelledby="lv-hol-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 8px">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><dc-import name="Icon" glyph="calendar" tone="brand" size="18" hint-size="18px,18px"></dc-import><h2 id="lv-hol-h" style="margin: 0; font-size: 14px; font-weight: 600">Public holidays in {{calMonthName}} · {{holState}}</h2><a href="SetupHolidays.dc.html" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none">Public holidays in Setup<dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></a></div>
+              <sc-if value="{{holNone}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">None in {{calMonthName}} for {{holState}}.</span></sc-if>
+              <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px">
+                <sc-for list="{{holList}}" as="h" hint-placeholder-count="2"><li><b>{{h.day}}</b> · {{h.name}}<span style="color: #5F6C80">{{h.note}}</span></li></sc-for>
+              </ul>
+            </section>
+          </sc-if>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 680px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <!-- the leave dialog: add or open -->
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 32px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="lv-d-title" aria-describedby="lv-d-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" aria-busy="{{savingAria}}" style="pointer-events: auto; width: 760px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="leave" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">HR › Leave · {{coCode}}</span>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h2 id="lv-d-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2><sc-if value="{{dPillOn}}" hint-placeholder-val="{{ false }}"><span class="{{dPillCls}}"><dc-import name="Icon" glyph="{{dPillGlyph}}" tone="{{dPillTone}}" size="14" hint-size="14px,14px"></dc-import>{{dPill}}</span></sc-if></div>
+          <span id="lv-d-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 18px">
+        <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+          <div id="lv-refuse" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A; font-size: 13px">{{refuseTxt}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{errSumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>Check the fields marked below.</b> {{errSum}}</span></div>
+        </sc-if>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="lv-f-p" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Person<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <select id="lv-f-p" value="{{fP}}" onChange="{{onP}}" disabled="{{lockWho}}" aria-required="true" aria-invalid="{{pInv}}" aria-describedby="{{pBy}}" style="{{pStyle}}">
+              <sc-for list="{{pOpts}}" as="o" hint-placeholder-count="9"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+            </select>
+            <sc-if value="{{pErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-p-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Choose who is on leave.</span></sc-if>
+            <span id="lv-f-p-hint" style="color: #5F6C80; font-size: 12px">{{pHint}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="lv-f-t" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Leave type<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <select id="lv-f-t" value="{{fT}}" onChange="{{onT}}" aria-required="true" aria-invalid="{{tInv}}" aria-describedby="{{tBy}}" style="{{tStyle}}">
+              <sc-for list="{{tOpts}}" as="o" hint-placeholder-count="10"><option value="{{o.v}}" disabled="{{o.dis}}">{{o.l}}</option></sc-for>
+            </select>
+            <sc-if value="{{tErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-t-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Choose the leave type.</span></sc-if>
+            <span id="lv-f-t-hint" style="color: #5F6C80; font-size: 12px">{{tHint}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="lv-f-from" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">First day<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="lv-f-from" type="date" value="{{fFrom}}" onChange="{{onFrom}}" aria-required="true" aria-invalid="{{fromInv}}" aria-describedby="{{fromBy}}" style="{{fromStyle}}">
+            <sc-if value="{{fromErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-from-err" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fromErr}}</span></sc-if>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="lv-f-to" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Last day<span style="font-weight: 500; font-size: 12px; color: #5F6C80">{{toTag}}</span></label>
+            <input id="lv-f-to" type="date" value="{{fTo}}" onChange="{{onTo}}" readOnly="{{toRO}}" aria-required="true" aria-invalid="{{toInv}}" aria-describedby="{{toBy}}" style="{{toStyle}}">
+            <sc-if value="{{toErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-to-err" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{toErr}}</span></sc-if>
+            <sc-if value="{{toHintOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-to-hint" style="color: #5F6C80; font-size: 12px">{{toHint}}</span></sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{halfOn}}" hint-placeholder-val="{{ false }}">
+          <fieldset class="ex" style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+            <legend style="padding: 0 0 8px; font-size: 13px; font-weight: 600; color: #46546A">Half day</legend>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <sc-for list="{{halfOpts}}" as="o" hint-placeholder-count="3">
+                <label for="{{o.id}}" style="{{o.style}}"><input id="{{o.id}}" type="radio" name="lv-half" checked="{{o.checked}}" onChange="{{o.pick}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">{{o.label}}</label>
+              </sc-for>
+            </div>
+          </fieldset>
+        </sc-if>
+        <sc-if value="{{halfNoOn}}" hint-placeholder-val="{{ false }}">
+          <span style="display: inline-flex; gap: 6px; align-items: center; color: #5F6C80; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>{{halfNo}}</span>
+        </sc-if>
+
+        <sc-if value="{{matOn}}" hint-placeholder-val="{{ false }}">
+          <fieldset class="ex" aria-describedby="lv-mat-h" style="border: 1px solid #D5DBE4; border-radius: 12px; margin: 0; padding: 14px 16px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+            <legend style="padding: 0 6px; font-size: 13px; font-weight: 700; color: #0F1A2B">Maternity pay: HR confirms both</legend>
+            <span id="lv-mat-h" style="color: #46546A; font-size: 13px">The law pays maternity leave only when both are true. The app can't check them, so HR confirms each one. The 98 days off apply either way.</span>
+            <sc-for list="{{matQs}}" as="m" hint-placeholder-count="2">
+              <div role="radiogroup" aria-labelledby="{{m.qid}}" aria-describedby="{{m.by}}" style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center">
+                <span id="{{m.qid}}" style="flex: 1 1 300px; font-size: 14px; font-weight: 600">{{m.q}}</span>
+                <sc-for list="{{m.opts}}" as="o" hint-placeholder-count="2">
+                  <label for="{{o.id}}" style="{{o.style}}"><input id="{{o.id}}" type="radio" name="{{o.name}}" checked="{{o.checked}}" onChange="{{o.pick}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">{{o.label}}</label>
+                </sc-for>
+                <sc-if value="{{m.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{m.errId}}" style="flex-basis: 100%; display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Answer this to record the leave.</span></sc-if>
+              </div>
+            </sc-for>
+            <sc-if value="{{matOutOn}}" hint-placeholder-val="{{ false }}">
+              <div role="status" class="{{matOutCls}}" style="{{matOutStyle}}"><dc-import name="Icon" glyph="{{matOutGlyph}}" tone="{{matOutTone}}" size="18" hint-size="18px,18px"></dc-import><span><b>{{matOutHead}}</b> {{matOut}}</span></div>
+            </sc-if>
+            <sc-if value="{{matConfOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{matConf}}</span></sc-if>
+          </fieldset>
+        </sc-if>
+
+        <sc-if value="{{certOn}}" hint-placeholder-val="{{ false }}">
+          <div class="ex" style="display: flex; flex-direction: column; gap: 6px">
+            <span id="lv-f-cert-l" style="font-size: 13px; font-weight: 600; color: #46546A">Medical certificate</span>
+            <sc-if value="{{certHas}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #D5DBE4; border-radius: 10px">
+                <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 13px">Certificate attached · 1 page, PDF</b><span style="color: #5F6C80; font-size: 12px">Stored under the code HRD-26-0418, not the person's name. Only HR can open it.</span></div>
+                <button type="button" class="hs" onClick="{{certRemove}}" aria-describedby="lv-f-cert-l" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Remove</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{certNone}}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="hs" onClick="{{certAdd}}" aria-describedby="lv-f-cert-l lv-f-cert-h" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px dashed #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="brand" size="18" hint-size="18px,18px"></dc-import>Attach the certificate</button>
+            </sc-if>
+            <span id="lv-f-cert-h" style="color: #5F6C80; font-size: 12px">{{certHint}}</span>
+          </div>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="lv-f-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Reason<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Optional</span></label>
+          <input id="lv-f-why" type="text" value="{{fWhy}}" onChange="{{onWhy}}" maxLength="120" aria-describedby="lv-f-why-h" autoComplete="off" style="height: 40px; width: 100%; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box">
+          <span id="lv-f-why-h" style="color: #5F6C80; font-size: 12px">{{whyHint}}</span>
+        </div>
+
+        <section aria-labelledby="lv-wo-h" style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; background: #F5F6F8">
+          <h3 id="lv-wo-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Worked out</h3>
+          <sc-for list="{{woLines}}" as="l" hint-placeholder-count="3">
+            <div style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #0F1A2B"><dc-import name="Icon" glyph="{{l.glyph}}" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>{{l.txt}}</span></div>
+          </sc-for>
+        </section>
+
+        <sc-for list="{{warns}}" as="w" hint-placeholder-count="1">
+          <div role="status" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>{{w.head}}</b> {{w.txt}}</span></div>
+        </sc-for>
+        <sc-for list="{{infos}}" as="w" hint-placeholder-count="1">
+          <div role="note" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="{{w.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b>{{w.head}}</b> {{w.txt}}</span></div>
+        </sc-for>
+
+        <sc-if value="{{enteredOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{entered}}</span></sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="lv-discard-q" aria-describedby="lv-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="lv-discard-q">Discard your changes?</b><div id="lv-discard-d" style="color: #5F6C80; font-size: 12px">{{discardTxt}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="lv-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="lv-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+              <sc-if value="{{canCancelLeave}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{cancelFromDlg}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer">Cancel this leave</button></sc-if>
+              <span id="lv-foot" role="status" style="display: inline-flex; align-items: center; gap: 8px; color: #5F6C80; font-size: 12px"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            </div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="lv-cancel" class="hs" onClick="{{askClose}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Close</button>
+              <button type="submit" id="lv-save" class="hb" aria-describedby="lv-foot" aria-disabled="{{savingAria}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; min-width: 128px; justify-content: center; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{saveLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+
+  <!-- cancel leave, with a reason -->
+  <sc-if value="{{cOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{cDimCls}}" onClick="{{cClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 96px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{cCls}}" role="dialog" aria-modal="true" aria-labelledby="lv-c-title" aria-describedby="lv-c-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{cConfirm}}" onKeyDown="{{cKey}}" onAnimationEnd="{{cAnim}}" style="pointer-events: auto; width: 520px; max-width: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 24px 16px; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 44px; height: 44px; border-radius: 12px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="close" tone="bad" size="22" hint-size="22px,22px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <h2 id="lv-c-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{cTitle}}</h2>
+          <span id="lv-c-sub" style="color: #46546A; font-size: 13px">{{cSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{cClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+      <div style="padding: 0 24px 18px; display: flex; flex-direction: column; gap: 6px">
+        <label for="lv-c-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Reason<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+        <input id="lv-c-why" type="text" value="{{cWhy}}" onChange="{{onCWhy}}" maxLength="120" aria-required="true" aria-invalid="{{cInv}}" aria-describedby="{{cBy}}" autoComplete="off" style="{{cStyle}}">
+        <sc-if value="{{cErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-c-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Give a reason. It stays with the cancelled leave.</span></sc-if>
+        <span id="lv-c-why-h" style="color: #5F6C80; font-size: 12px">For example "Work came up". The leave stays in the list as Cancelled, and the change is recorded in the audit trail.</span>
+      </div>
+      <div style="padding: 14px 24px; border-top: 1px solid #EEF1F5; background: #FAFBFC; display: flex; justify-content: flex-end; gap: 8px">
+        <button type="button" id="lv-c-keep" class="hs" onClick="{{cClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep the leave</button>
+        <button type="submit" class="hd" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Cancel the leave</button>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","add","half-day","certificate","over-balance","clash","errors","refused","saving","saved","discard","cancel","cancelled","maternity","not-eligible","balances","balances-date","intern","calendar","calendar-no-type","sabah","ai-unpaid","empty","many","loading","error"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the tab: HrLeave.dc.html#calendar (the Overview card On leave) or #balances (Leave year end).
+    // It applies on first load, over the default state.
+    let v = (p && p.view) || 'list', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'list' && ['calendar', 'balances'].includes(h)) v = h;
+    this.state = this.init(v, (p && p.company) || 'aisb');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); clearTimeout(this._ct); }
+
+  // ---------- the world on Wed 18 Nov 2026 (samples sections 2, 5 and 8) ----------
+  TODAY() { return '2026-11-18'; }
+  people(co) {
+    const P = (id, n, full, joined, svc, ent, open, sick, kind, entNote, note, g) => ({ id, n, full, joined, svc, ent, open, sick, kind, entNote: entNote || '', note: note || '', g: g || 'F' });
+    if (co === 'AI') return [
+      P('A001', 'Faizal', 'Mohd Faizal bin Yusof', '2020-04-01', '6 years', 16, null, 22, 'Permanent', '', '', 'M'),
+      P('A002', 'Pei Shan', 'Chong Pei Shan', '2021-10-01', '5 years', 12, null, 18, 'Permanent', '2 to 5 years at 1 Jan 2026'),
+      P('A003', 'Priya', 'Priya Subramaniam', '2022-08-16', '4 years', 12, null, 18, 'Permanent'),
+      P('A004', 'Jun Wei', 'Lee Jun Wei', '2023-03-01', '3 years', 12, null, 18, 'Permanent', '', '', 'M'),
+      P('A005', 'Rina', 'Rina Santoso', '2025-01-15', '1 year 10 months', 8, null, 14, 'Contract, foreign worker')];
+    return [
+      P('S001', 'Aisha', 'Aisha Rahman', '2019-05-02', '7 years', 16, 11, 22, 'Permanent'),
+      P('S002', 'Wei Ming', 'Ong Wei Ming', '2021-06-01', '5 years', 12, 8, 18, 'Permanent', '2 to 5 years at 1 Jan 2026', '', 'M'),
+      P('S003', 'Aina', 'Nurul Aina binti Hashim', '2016-10-03', '10 years', 16, 9, 22, 'Permanent'),
+      P('S004', 'Hafiz', 'Mohd Hafiz bin Rosli', '2019-03-04', '7 years', 16, 10, 22, 'Permanent', '', '', 'M'),
+      P('S005', 'Khadijah', 'Nor Khadijah binti Omar', '2020-02-01', '6 years', 16, 6, 22, 'Permanent', '', 'On maternity leave until Sun 10 Jan 2027'),
+      P('S006', 'Kah Seng', 'Wong Kah Seng', '2024-01-01', '2 years 10 months', 12, 7, 18, 'Contract to 31 Dec 2026', 'Leaving 31 Dec: 12 of 12 months', 'Leaving 31 Dec: untaken days are paid out in his final pay', 'M'),
+      P('S007', 'Jia Hui', 'Goh Jia Hui', '2026-09-01', 'Joined 1 Sep 2026', 3, 0, 14, 'On probation', '8 × 4/12 = 2.67, rounded to 3'),
+      P('S008', 'Izzati', 'Nur Izzati binti Kamal', '2025-01-15', '1 year 10 months', 8, 5, 14, 'Permanent'),
+      P('S009', 'Daniel', 'Daniel Lee Chee Keong', '2026-11-03', 'Joined 3 Nov 2026', 1, 0, 14, 'On probation', '8 × 2/12 = 1.33, rounded to 1', '', 'M')];
+  }
+  // the paid days off from Setup › HR › Public holidays (the day each holiday is given, after replacement)
+  hols(co) {
+    if (co === 'AI') return { '2026-10-03': 'Governor of Sabah’s birthday', '2026-12-24': 'Christmas Eve', '2026-12-25': 'Christmas', '2027-01-01': 'New Year', '2027-05-01': 'Workers’ Day', '2027-06-07': 'Agong’s birthday' };
+    return { '2026-11-08': 'Deepavali', '2026-11-09': 'Deepavali, replacement day', '2026-12-25': 'Christmas', '2027-01-01': 'New Year', '2027-02-01': 'Federal Territory Day', '2027-05-01': 'Workers’ Day', '2027-06-07': 'Agong’s birthday' };
+  }
+  holNote(iso) { return iso === '2026-11-09' ? ' (Deepavali fell on Sunday, the rest day, so Monday is given)' : iso === '2026-11-08' ? ' (on the rest day: given on Mon 9 Nov)' : ''; }
+  TYPES() {
+    const T = (id, name, code, o) => ({ id, name, code, half: false, cert: false, row: 0, set: true, ...(o || {}) });
+    return [T('annual', 'Annual leave', 'A', { half: true }), T('sick', 'Sick leave', 'S', { cert: true }), T('hosp', 'Hospitalisation', 'H', { cert: true }), T('mat', 'Maternity', 'M', { row: 98 }), T('pat', 'Paternity', 'P', { row: 7 }),
+      T('unpaid', 'Unpaid leave', 'U'), T('comp', 'Compassionate leave', 'C', { set: false }), T('marr', 'Marriage leave', 'W', { set: false }), T('study', 'Study leave', 'T', { set: false }), T('repl', 'Replacement leave', 'R', { set: false })];
+  }
+  typeOf(id) { return this.TYPES().find(t => t.id === id) || null; }
+  entriesOf(co) {
+    const E = e => ({ half: '', cert: false, reason: '', q1: '', q2: '', conf: '', cancel: null, ...e });
+    if (co === 'AI') return [E({ id: 'a1', p: 'A004', type: 'unpaid', from: '2026-11-09', to: '2026-11-10' })];
+    return [
+      E({ id: 'e1', p: 'S003', type: 'annual', from: '2026-11-16', to: '2026-11-20' }),
+      E({ id: 'e2', p: 'S005', type: 'mat', from: '2026-10-05', to: '2027-01-10', q1: 'yes', q2: 'yes', conf: 'Confirmed by Aisha Rahman on Thu 1 Oct 2026: employed over 90 days in the 9 months before; 2 surviving children.' }),
+      E({ id: 'e3', p: 'S004', type: 'annual', from: '2026-11-20', to: '2026-11-20' }),
+      E({ id: 'e4', p: 'S002', type: 'annual', from: '2026-10-14', to: '2026-10-14', half: 'am' }),
+      E({ id: 'e5', p: 'S007', type: 'annual', from: '2026-12-07', to: '2026-12-10' }),
+      E({ id: 'e6', p: 'S006', type: 'sick', from: '2026-11-02', to: '2026-11-02', cert: true }),
+      E({ id: 'e7', p: 'S008', type: 'annual', from: '2026-11-13', to: '2026-11-13', cancel: { reason: 'Work came up' } })
+    ];
+  }
+  // many rows: leave booked ahead for 2027 (February onwards), so 2026 balances don't move
+  manyEntries(co) {
+    const ids = co === 'AI' ? ['A001', 'A002', 'A003', 'A004', 'A005'] : ['S001', 'S002', 'S003', 'S004', 'S007', 'S008', 'S009', 'S005'];
+    const H = this.hols(co), out = [];
+    const work = d => { while (this.dow(d) === 0 || this.dow(d) === 6 || H[d]) d = this.add(d, 1); return d; };
+    let d = '2027-02-02';
+    for (let i = 0; i < 44; i++) {
+      d = work(d);
+      let to = d;
+      for (let k = 1; k < [1, 2, 1, 3, 1][i % 5]; k++) to = work(this.add(to, 1));
+      out.push({ id: 'm' + i, p: ids[i % ids.length], type: 'annual', from: d, to, half: '', cert: false, reason: '', q1: '', q2: '', conf: '', cancel: null });
+      d = this.add(to, 2);
+    }
+    return out;
+  }
+
+  // ---------- dates (UTC, so the weekday never shifts with the viewer's time zone) ----------
+  utc(iso) { const p = String(iso).split('-'); return new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]))); }
+  dow(iso) { return this.utc(iso).getUTCDay(); }
+  add(iso, n) { const d = this.utc(iso); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  okDate(iso) { return /^\d{4}-\d{2}-\d{2}$/.test(String(iso || '')); }
+  W() { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']; }
+  M() { return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; }
+  MF() { return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; }
+  short(iso) { const d = this.utc(iso); return this.W()[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + this.M()[d.getUTCMonth()]; }
+  long(iso) { return this.short(iso) + ' ' + String(iso).slice(0, 4); }
+  range(a, b) {
+    if (!this.okDate(a)) return '—';
+    if (!this.okDate(b) || a === b) return a.slice(0, 4) === '2026' ? this.short(a) : this.long(a);
+    const y = a.slice(0, 4) === b.slice(0, 4);
+    if (y && a.slice(0, 7) === b.slice(0, 7)) { const d = this.utc(a); return this.W()[d.getUTCDay()] + ' ' + d.getUTCDate() + ' to ' + this.short(b) + (a.slice(0, 4) === '2026' ? '' : ' ' + a.slice(0, 4)); }
+    if (y && a.slice(0, 4) === '2026') return this.short(a) + ' to ' + this.short(b);
+    return this.long(a) + ' to ' + this.long(b);
+  }
+  num(n) { const s = Math.abs(n) % 1 ? Math.abs(n).toFixed(1) : String(Math.abs(n)); return (n < 0 ? '−' : '') + s; }
+  dayWord(n) { return n === 0.5 ? 'half a day' : n === 1 ? '1 day' : this.num(n) + ' days'; }
+  dd(n) { return n === 1 ? '1 day' : this.num(n) + ' days'; }
+
+  // ---------- the rules ----------
+  stat(e, at) { if (e.cancel) return 'cancelled'; return e.from <= (at || this.TODAY()) ? 'taken' : 'booked'; }
+  days(co, e) {
+    if (!this.okDate(e.from) || !this.okDate(e.to) || e.to < e.from) return 0;
+    const t = this.typeOf(e.type);
+    if (t && t.row) return Math.round((this.utc(e.to) - this.utc(e.from)) / 86400000) + 1;
+    if (e.half && e.from === e.to) return 0.5;
+    const H = this.hols(co);
+    let n = 0, d = e.from, guard = 0;
+    while (d <= e.to && guard++ < 400) { if (this.dow(d) !== 0 && this.dow(d) !== 6 && !H[d]) n++; d = this.add(d, 1); }
+    return n;
+  }
+  skipped(co, e) {
+    const t = this.typeOf(e.type);
+    if (!this.okDate(e.from) || !this.okDate(e.to) || e.to < e.from || (t && t.row)) return [];
+    const H = this.hols(co), out = [];
+    let d = e.from, guard = 0;
+    while (d <= e.to && guard++ < 400) { if (H[d] && this.dow(d) !== 0 && this.dow(d) !== 6) out.push(this.short(d) + ', ' + H[d]); d = this.add(d, 1); }
+    return out;
+  }
+  // annual leave for 2026: opening balance to 30 Sep (imported) + leave entered here
+  annual(co, pid, at, list) {
+    const per = this.people(co).find(p => p.id === pid);
+    if (!per || per.open == null) return null;
+    let taken = per.open, booked = 0;
+    for (const e of list) {
+      if (e.p !== pid || e.type !== 'annual' || e.cancel || String(e.from).slice(0, 4) !== '2026') continue;
+      const d = this.days(co, e);
+      if (e.from <= at) taken += d; else booked += d;
+    }
+    return { ent: per.ent, taken, booked, bal: per.ent - taken - booked };
+  }
+  sickTaken(co, pid, at, list) { let n = 0; for (const e of list) if (e.p === pid && e.type === 'sick' && !e.cancel && e.from >= '2026-10-01' && e.from <= at) n += this.days(co, e); return n; }
+  clashes(list, f, exId) { return list.filter(e => e.id !== exId && !e.cancel && e.p === f.p && this.okDate(f.from) && this.okDate(f.to) && e.from <= f.to && e.to >= f.from); }
+
+  // ---------- states ----------
+  init(view, company) {
+    let co = String(company || 'aisb').toUpperCase() === 'AI' ? 'AI' : 'AISB';
+    if (view === 'sabah' || view === 'ai-unpaid') co = 'AI';
+    // these samples are AISB records (samples section 8), so they always show AISB
+    if (['half-day', 'certificate', 'over-balance', 'clash', 'refused', 'saving', 'saved', 'discard', 'cancel', 'cancelled', 'maternity', 'not-eligible'].indexOf(view) >= 0) co = 'AISB';
+    const ents = { AISB: this.entriesOf('AISB'), AI: this.entriesOf('AI') };
+    const base = { co, phase: 'ready', tab: 'list', tabN: 0, ents, q: '', fStatus: 'all', fType: 'all', pMonth: '2026-10', limit: 25, balType: 'annual', asAt: this.TODAY(), calMonth: '2026-11', noType: false, intern: false,
+      dlg: null, form: null, loaded: null, tried: false, refuse: '', confirm: false, saving: false, closing: false, footMsg: '',
+      cdlg: null, cWhy: '', cTried: false, cClosing: false, menu: false, toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0 };
+    const without = id => ({ ...ents, [co]: ents[co].filter(e => e.id !== id) });
+    const neu = (f, extra) => { const form = { ...this.blank(), ...(f || {}) }; return { ...base, dlg: { id: null }, form, loaded: this.blank(), ...(extra || {}) }; };
+    const edit = (id, f, extra, list) => { const e = (list || ents[co]).find(x => x.id === id); const form = this.formOf(e); return { ...base, dlg: { id }, form: { ...form, ...(f || {}) }, loaded: form, ...(extra || {}) }; };
+    const jia = { p: 'S007', type: 'annual', from: '2026-12-07', to: '2026-12-10' };
+    switch (view) {
+      case 'loading': return { ...base, phase: 'loading' };
+      case 'error': return { ...base, phase: 'error' };
+      case 'empty': return { ...base, ents: { AISB: [], AI: [] } };
+      case 'many': return { ...base, ents: { ...ents, [co]: [...ents[co], ...this.manyEntries(co)] } };
+      case 'add': return neu();
+      case 'errors': return neu(null, { tried: true });
+      case 'half-day': return neu({ p: 'S002', type: 'annual', from: '2026-10-14', to: '2026-10-14', half: 'am' }, { ents: without('e4') });
+      case 'certificate': return neu({ p: 'S006', type: 'sick', from: '2026-11-02', to: '2026-11-02', cert: true }, { ents: without('e6') });
+      case 'over-balance': return neu(jia, { ents: without('e5') });
+      case 'saving': return neu(jia, { ents: without('e5'), saving: true });
+      case 'discard': return neu(jia, { ents: without('e5'), confirm: true });
+      case 'clash': return neu({ p: 'S004', type: 'annual', from: '2026-11-20', to: '2026-11-20' });
+      case 'refused': { const f = { p: 'S009', type: 'annual', from: '2026-10-26', to: '2026-10-30' }; return neu(f, { tried: true, refuse: this.refusal(co, f) }); }
+      case 'saved': return { ...base, toast: { text: this.addedText(co, ents[co].find(e => e.id === 'e5'), ents[co]), undo: true }, undo: { co, addId: 'e5' }, flashId: 'e5', flashN: 1 };
+      case 'cancel': { const open = { ...ents, [co]: ents[co].map(e => (e.id === 'e7' ? { ...e, cancel: null } : e)) }; return { ...base, ents: open, cdlg: { id: 'e7' }, cWhy: 'Work came up' }; }
+      case 'cancelled': { const was = { ...ents[co].find(e => e.id === 'e7'), cancel: null }; return { ...base, toast: { text: this.cancelText(co, was, ents[co]), undo: true }, undo: { co, rec: was }, flashId: 'e7', flashN: 1 }; }
+      case 'maternity': return edit('e2');
+      case 'not-eligible': return edit('e2', { q1: 'no' });
+      case 'balances': return { ...base, tab: 'bal' };
+      case 'balances-date': return { ...base, tab: 'bal', asAt: '2026-12-31' };
+      case 'intern': return { ...base, tab: 'bal', intern: true };
+      case 'sabah': return { ...base, tab: 'cal', calMonth: '2026-10' };
+      case 'calendar': return { ...base, tab: 'cal' };
+      case 'calendar-no-type': return { ...base, tab: 'cal', noType: true };
+      case 'ai-unpaid': return edit('a1');
+      default: return base;
+    }
+  }
+  blank() { return { p: '', type: '', from: '', to: '', half: '', cert: false, reason: '', q1: '', q2: '' }; }
+  formOf(e) { return { p: e.p, type: e.type, from: e.from, to: e.to, half: e.half, cert: !!e.cert, reason: e.reason, q1: e.q1, q2: e.q2 }; }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); clearTimeout(this._ct);
+      const nx = this.init(this.props.view || 'list', this.props.company || 'aisb');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (st.dlg && !prev.dlg) { this.focusId('lv-d-title'); return; }
+    if (st.cdlg && !prev.cdlg) { this.focusId('lv-c-why'); return; }
+    if ((!st.dlg && prev.dlg && !st.cdlg) || (!st.cdlg && prev.cdlg && !st.dlg)) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('lv-add');
+      this._opener = null;
+      return;
+    }
+    if (st.menu && !prev.menu) { this.focusId('lv-mi-xl-0'); return; }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('lv-keep'); return; }
+    if (prev.confirm && !st.confirm && st.dlg && !st.closing) this.focusId('lv-cancel');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+
+  // ---------- form rules ----------
+  errors(f) {
+    const e = {};
+    if (!f.p) e.p = 1;
+    if (!f.type) e.type = 1;
+    if (!this.okDate(f.from)) e.from = 'Enter the first day.';
+    if (!this.okDate(f.to)) e.to = 'Enter the last day.';
+    else if (this.okDate(f.from) && f.to < f.from) e.to = 'The last day can’t be before the first day.';
+    if (f.type === 'mat') { if (!f.q1) e.q1 = 1; if (!f.q2) e.q2 = 1; }
+    return e;
+  }
+  refusal(co, f) {
+    const per = this.people(co).find(p => p.id === f.p);
+    if (per && this.okDate(f.from) && f.from < per.joined) return per.n + ' joined on ' + this.long(per.joined) + '. Leave can’t start before the day a person joins. What you typed is kept below.';
+    return '';
+  }
+  addedText(co, e, list) {
+    const per = this.people(co).find(p => p.id === e.p), t = this.typeOf(e.type), d = this.days(co, e);
+    const a = e.type === 'annual' ? this.annual(co, e.p, this.TODAY(), list) : null;
+    const beyond = a && a.bal < 0 ? ' ' + this.dayWord(-a.bal).replace(/^./, c => c.toUpperCase()) + ' beyond ' + (per.g === 'M' ? 'his' : 'her') + ' legal days: a warning only.' : '';
+    return 'Leave added: ' + per.n + ', ' + t.name.toLowerCase() + ', ' + this.range(e.from, e.to) + ' (' + this.dayWord(d) + ', ' + (this.stat(e) === 'taken' ? 'Taken' : 'Booked') + ').' + beyond;
+  }
+  cancelText(co, e, list) {
+    const per = this.people(co).find(p => p.id === e.p), t = this.typeOf(e.type), d = this.days(co, e);
+    return 'Cancelled. ' + (e.type === 'annual' ? this.dayWord(d).replace(/^./, c => c.toUpperCase()) + ' back to ' + per.n + '’s annual leave.' : per.n + '’s ' + t.name.toLowerCase() + ' is cancelled.');
+  }
+
+  // ---------- actions ----------
+  list(co) { return this.state.ents[co || this.state.co] || []; }
+  person(pid, co) { return this.people(co || this.state.co).find(p => p.id === pid) || null; }
+  openEntry(id) {
+    const st = this.state;
+    if (st.dlg || st.cdlg) return;
+    this._opener = document.activeElement;
+    const e = this.list().find(x => x.id === id);
+    if (!e) return;
+    const form = this.formOf(e);
+    this.setState({ dlg: { id }, form, loaded: form, tried: false, refuse: '', confirm: false, saving: false, closing: false, footMsg: '', menu: false });
+  }
+  openNew() {
+    const st = this.state;
+    if (st.dlg || st.cdlg) return;
+    this._opener = document.activeElement;
+    this.setState({ dlg: { id: null }, form: this.blank(), loaded: this.blank(), tried: false, refuse: '', confirm: false, saving: false, closing: false, footMsg: '', menu: false });
+  }
+  dirty() { const st = this.state; return !!st.dlg && JSON.stringify(st.form) !== JSON.stringify(st.loaded); }
+  askClose() {
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDlg();
+  }
+  closeDlg() {
+    const st = this.state;
+    if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.dlg) return;
+    const next = { dlg: null, closing: false, confirm: false, saving: false, refuse: '', tried: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = this.state.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  setForm(patch) {
+    const st = this.state, f = { ...st.form, ...patch }, t = this.typeOf(f.type);
+    if (t && t.row && this.okDate(f.from)) f.to = this.add(f.from, t.row - 1);
+    if (!t || !t.half || (this.okDate(f.to) && f.to !== f.from)) f.half = '';
+    if (!t || !t.cert) f.cert = false;
+    if (f.type !== 'mat') { f.q1 = ''; f.q2 = ''; }
+    this.setState({ form: f, footMsg: '', refuse: st.refuse && (patch.from !== undefined || patch.p !== undefined) ? '' : st.refuse });
+  }
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    const errs = this.errors(st.form);
+    const order = ['p', 'type', 'from', 'to', 'q1', 'q2'];
+    const first = order.find(k => errs[k]);
+    if (first) {
+      this._focusId = { p: 'lv-f-p', type: 'lv-f-t', from: 'lv-f-from', to: 'lv-f-to', q1: 'lv-q1-yes', q2: 'lv-q2-yes' }[first];
+      this.setState({ tried: true, refuse: '' });
+      return;
+    }
+    const why = this.refusal(this.state.co, st.form);
+    if (why) { this._focusId = 'lv-refuse'; this.setState({ tried: true, refuse: why }); return; }
+    if (st.dlg.id && !this.dirty()) { this.setState({ footMsg: 'Nothing has changed.' }); return; }
+    this.setState({ saving: true });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => this.finishSave(), 700);
+  }
+  finishSave() {
+    const st = this.state;
+    if (!st.dlg || !st.saving) return;
+    const co = st.co, f = st.form, list = this.list();
+    if (!st.dlg.id) {
+      const id = 'n' + (list.length + 1);
+      const e = { id, p: f.p, type: f.type, from: f.from, to: f.to, half: f.half, cert: !!f.cert, reason: f.reason, q1: f.q1, q2: f.q2, conf: f.type === 'mat' ? 'Confirmed by Aisha Rahman on Wed 18 Nov 2026.' : '', cancel: null };
+      const next = [...list, e];
+      this._changed = id;
+      this.setState({ ents: { ...st.ents, [co]: next }, undo: { co, addId: id } });
+      this.closeDlg();
+      this.toast(this.addedText(co, e, next), { undo: true });
+      return;
+    }
+    const prev = list.find(x => x.id === st.dlg.id);
+    const upd = { ...prev, ...f, conf: f.type === 'mat' && (f.q1 !== prev.q1 || f.q2 !== prev.q2) ? 'Changed by Aisha Rahman on Wed 18 Nov 2026.' : prev.conf };
+    this._changed = prev.id;
+    this.setState({ ents: { ...st.ents, [co]: list.map(x => (x.id === prev.id ? upd : x)) }, undo: { co, rec: prev } });
+    this.closeDlg();
+    const per = this.person(prev.p);
+    this.toast('Saved: ' + per.n + '’s ' + this.typeOf(upd.type).name.toLowerCase() + ', ' + this.range(upd.from, upd.to) + '.', { undo: true });
+  }
+  // cancel with a reason
+  openCancel(id, fromDlg) {
+    const st = this.state;
+    if (st.cdlg || (st.dlg && !fromDlg)) return;
+    if (!fromDlg) this._opener = document.activeElement;
+    this.setState({ cdlg: { id }, cWhy: '', cTried: false, cClosing: false, menu: false, dlg: fromDlg ? null : st.dlg, closing: false, confirm: false });
+  }
+  cClose() {
+    const st = this.state;
+    if (!st.cdlg || st.cClosing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.cFinish();
+    this.setState({ cClosing: true });
+    clearTimeout(this._ct);
+    this._ct = setTimeout(() => this.cFinish(), 400);
+  }
+  cFinish() {
+    clearTimeout(this._ct);
+    if (!this.state.cdlg) return;
+    const next = { cdlg: null, cClosing: false, cTried: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = this.state.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  cConfirm(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.cdlg || st.cClosing) return;
+    if (!String(st.cWhy || '').trim()) { this._focusId = 'lv-c-why'; this.setState({ cTried: true }); return; }
+    const co = st.co, list = this.list(), prev = list.find(x => x.id === st.cdlg.id);
+    if (!prev) return;
+    const next = list.map(x => (x.id === prev.id ? { ...x, cancel: { reason: String(st.cWhy).trim() } } : x));
+    this._changed = prev.id;
+    this.setState({ ents: { ...st.ents, [co]: next }, undo: { co, rec: prev } });
+    this.cClose();
+    this.toast(this.cancelText(co, prev, next), { undo: true });
+  }
+  undo() {
+    const st = this.state, u = st.undo;
+    if (!u) return;
+    const list = st.ents[u.co] || [];
+    const next = u.addId ? list.filter(e => e.id !== u.addId) : list.map(e => (e.id === u.rec.id ? u.rec : e));
+    this.setState({ ents: { ...st.ents, [u.co]: next }, undo: null, flashId: u.rec ? u.rec.id : null, flashN: st.flashN + 1 });
+    this.toast(u.addId ? 'Leave removed again.' : 'Undone. The leave is as it was.');
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  pickTab(k, focus) { if (focus) this._focusId = 'lv-t-' + k; this.setState({ tab: k, tabN: this.state.tabN + 1, menu: false }); }
+  trap(e, onEsc) {
+    if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); onEsc(); return; }
+    if (e.key !== 'Tab') return;
+    const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    if (!fs.length) { e.preventDefault(); return; }
+    const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+    if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+  }
+
+  // ---------- what the page shows ----------
+  renderVals() {
+    const st = this.state, co = st.co, isAI = co === 'AI', TODAY = this.TODAY();
+    const SH = isAI ? ['ai', 'here'] : ['aisb', 'sqlPayroll'];
+    const people = this.people(co), list = this.list(), pOf = id => people.find(p => p.id === id) || { n: '—', full: '', id: '', g: 'F', joined: '2000-01-01' };
+    const holState = isAI ? 'Sabah' : 'Wilayah Persekutuan Kuala Lumpur';
+    const SW = { annual: ['#DCE6FB', '#1D3A80'], sick: ['#FDE7D3', '#7A3300'], hosp: ['#FDE7D3', '#7A3300'], mat: ['#E8DEF8', '#4B2A8A'], pat: ['#E8DEF8', '#4B2A8A'], unpaid: ['#EEF1F5', '#2B3A50'] };
+    const sw = id => { const c = SW[id] || SW.unpaid; return 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font:700 11px Inter,sans-serif;background:' + c[0] + ';color:' + c[1] + (id === 'unpaid' ? ';border:1px dashed #5F6C80;box-sizing:border-box' : ''); };
+    const PILL = { booked: ['pl info', 'calendar', 'brand', 'Booked'], taken: ['pl ok', 'check', 'ok', 'Taken'], cancelled: ['pl mute', 'close', 'muted', 'Cancelled'] };
+    const his = per => (per.g === 'M' ? 'his' : 'her');
+    const payrollNote = (e, d) => (isAI ? 'AI doesn’t run payroll in this app. Deduct it from the salary payment by hand.' : 'Goes to the payroll run for ' + this.MF()[Number(e.from.slice(5, 7)) - 1] + ' ' + e.from.slice(0, 4) + ' as ' + this.dayWord(d) + ' to deduct.');
+
+    // ---- list
+    const q = String(st.q || '').trim().toLowerCase();
+    const counts = { all: 0, booked: 0, taken: 0, cancelled: 0 };
+    list.forEach(e => { counts.all++; counts[this.stat(e)]++; });
+    const match = list.filter(e => {
+      const per = pOf(e.p), t = this.typeOf(e.type);
+      if (q && !(per.n + ' ' + per.full + ' ' + per.id).toLowerCase().includes(q)) return false;
+      if (st.fStatus !== 'all' && this.stat(e) !== st.fStatus) return false;
+      if (st.fType !== 'all' && e.type !== st.fType) return false;
+      return !!t;
+    }).sort((a, b) => (a.from < b.from ? 1 : a.from > b.from ? -1 : 0));
+    const shown = match.slice(0, st.limit);
+    const rows = shown.map(e => {
+      const per = pOf(e.p), t = this.typeOf(e.type), s = this.stat(e), d = this.days(co, e), P = PILL[s];
+      const a = e.type === 'annual' && s !== 'cancelled' && e.from.slice(0, 4) === '2026' ? this.annual(co, e.p, TODAY, list) : null;
+      let note = '';
+      if (e.cancel) note = 'Cancelled: ' + e.cancel.reason + '. ' + (e.type === 'annual' ? this.dayWord(d).replace(/^./, c => c.toUpperCase()) + ' back to the balance.' : '');
+      else if (e.type === 'unpaid') note = payrollNote(e, d);
+      else if (e.type === 'mat') note = e.q1 === 'yes' && e.q2 === 'yes' ? 'Paid: eligibility confirmed. Back on ' + this.long(this.add(e.to, 1)) + '.' : 'Unpaid: not eligible for maternity pay.';
+      return { id: e.id, btnId: 'lv-r-' + e.id, cls: 'hr' + (st.flashId === e.id ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        who: per.n, whoSub: per.id + ' · ' + per.full, open: () => this.openEntry(e.id),
+        typeName: t.name, code: t.code, sw: sw(e.type), dates: this.range(e.from, e.to), halfOn: !!e.half, half: e.half === 'am' ? 'Half day, morning' : e.half === 'pm' ? 'Half day, afternoon' : '',
+        days: d === 0.5 ? '½' : this.num(d), pill: P[3], pillCls: P[0], pillGlyph: P[1], pillTone: P[2],
+        certOn: !!e.cert, warnOn: !!(a && a.bal < 0 && s === 'booked'), warn: a ? this.dayWord(-a.bal).replace(/^./, c => c.toUpperCase()) + ' beyond ' + his(per) + ' legal days (' + this.num(a.ent) + ' this year by law). A warning only.' : '',
+        noteOn: !!note, note, canCancel: s !== 'cancelled', cancelLabel: 'Cancel ' + per.n + '’s ' + t.name.toLowerCase() + ', ' + this.range(e.from, e.to),
+        cancel: () => this.openCancel(e.id) };
+    });
+    const segStyle = on => 'display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border:0;border-radius:8px;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(13,27,46,.16)' : 'background:transparent;color:#46546A');
+    const statusSeg = [['all', 'All'], ['booked', 'Booked'], ['taken', 'Taken'], ['cancelled', 'Cancelled']].map(([k, l]) => ({ label: l, n: counts[k], pressed: st.fStatus === k ? 'true' : 'false', style: segStyle(st.fStatus === k), pick: () => this.setState({ fStatus: k, limit: 25 }) }));
+    const usedTypes = this.TYPES().filter(t => list.some(e => e.type === t.id));
+    const typeFilterOpts = [{ v: 'all', l: 'All types' }, ...usedTypes.map(t => ({ v: t.id, l: t.name }))];
+    const filtered = !!q || st.fStatus !== 'all' || st.fType !== 'all';
+    const countTxt = (filtered ? match.length + ' of ' + list.length : list.length) + (list.length === 1 ? ' entry' : ' entries');
+
+    // ---- balances
+    const at = this.okDate(st.asAt) ? st.asAt : TODAY, atToday = at === TODAY;
+    const notImported = people.every(p => p.open == null);
+    let balRows;
+    if (st.balType === 'sick') {
+      balRows = people.map(per => {
+        const n = this.sickTaken(co, per.id, at, list);
+        return { name: per.n, sub: per.id + ' · ' + per.kind, svc: per.svc, svcSubOn: false, svcSub: '', ent: per.sick, taken: this.num(n), booked: '—', bal: '—', neg: false, balStyle: 'color:#5F6C80',
+          note: n ? 'Certificate attached for each day.' : '', noteStyle: '' };
+      });
+    } else {
+      balRows = people.map(per => {
+        const a = this.annual(co, per.id, at, list);
+        if (!a) return { name: per.n, sub: per.id + ' · ' + per.kind, svc: per.svc, svcSubOn: !!per.entNote, svcSub: per.entNote, ent: per.ent, taken: '—', booked: '—', bal: '—', neg: false, balStyle: 'color:#5F6C80', note: 'Opening balance not imported', noteStyle: 'color:#5F6C80' };
+        const neg = a.bal < 0;
+        const bookedEnt = list.find(e => e.p === per.id && e.type === 'annual' && !e.cancel && e.from > at && e.from.slice(0, 4) === '2026');
+        let note = per.note;
+        if (neg) note = (a.booked ? 'Booked ' + this.num(a.booked) + ' (' + this.range(bookedEnt.from, bookedEnt.to) + '): ' : 'Taken ' + this.num(a.taken) + ': ') + this.dayWord(-a.bal) + ' beyond ' + his(per) + ' legal days. A warning only.';
+        return { name: per.n, sub: per.id + ' · ' + per.kind, svc: per.svc, svcSubOn: !!per.entNote, svcSub: per.entNote, ent: a.ent, taken: this.num(a.taken), booked: this.num(a.booked), bal: this.num(a.bal), neg,
+          balStyle: 'display:inline-flex;align-items:center;gap:4px;font-weight:600;' + (neg ? 'color:#934100' : ''), note, noteStyle: neg ? 'color:#934100' : '' };
+      });
+    }
+    const asAtTxt = atToday ? 'today, ' + this.long(at) : 'at ' + this.long(at);
+    const balNote = st.balType === 'sick'
+      ? 'Sick leave 2026 · ' + asAtTxt + '. By law: 14, 18 or 22 days by years of service. Hospitalisation is up to 60 days a year and includes these days. Medical certificates are attached to the leave; no medical detail is kept. Left shows a dash: the opening import brings in annual leave only, so sick days taken from 1 Jan to 30 Sep aren’t known here.'
+      : 'Annual leave 2026 · ' + asAtTxt + '. By law: 8, 12 or 16 days by years of service at 1 Jan 2026, prorated for joiners and leavers. Balance = by law + carried forward − taken − booked.' + (atToday ? '' : ' Booked leave up to this date counts as taken.');
+    const inUse = list.filter(e => (e.type === 'mat' || e.type === 'pat') && !e.cancel && e.from <= at && e.to >= at).map(e => {
+      const per = pOf(e.p), t = this.typeOf(e.type), used = Math.round((this.utc(at) - this.utc(e.from)) / 86400000) + 1, paid = e.q1 === 'yes' && e.q2 === 'yes';
+      return { who: per.n, type: t.name, dates: this.range(e.from, e.to), used: used + ' of ' + t.row + ' days used · back ' + this.long(this.add(e.to, 1)), barStyle: 'display:block;height:100%;background:#7A5BC7;width:' + Math.round(used / t.row * 100) + '%', pill: paid ? 'Paid' : 'Unpaid', pillCls: paid ? 'pl ok' : 'pl mute' };
+    });
+    const balSeg = [['annual', 'Annual leave'], ['sick', 'Sick leave']].map(([k, l]) => ({ label: l, pressed: st.balType === k ? 'true' : 'false', style: segStyle(st.balType === k), pick: () => this.setState({ balType: k }) }));
+    const internRows = [
+      { sub: 'Intern, flagged on the staff record', svc: 'Any', what: 'Company policy leave only: the legal minimums don’t apply. Annual leave: company policy, not set.', note: 'Set the intern’s days on Leave types and policy.' },
+      { sub: 'Part-time, under 70% of normal hours', svc: 'Any', what: 'Worked out from the hours on the staff record (Employment (Part-Time Employees) Regulations 2010).', note: 'Their row shows the days worked out from their hours.' }];
+    const balFoot = notImported ? 'Leave entered here counts from the day it is entered.' : 'Opening balances: annual leave taken 1 Jan to 30 Sep 2026, from “Leave balances 2026.xlsx”, imported Wed 4 Nov 2026 by Aisha Rahman. Leave from 1 Oct is entered here, so sick leave counts from 1 Oct. Untaken annual leave can be taken until 12 months after the year ends; the year end is run on Opening balances and year end.';
+
+    // ---- team calendar
+    const [yy, mm] = st.calMonth.split('-').map(Number);
+    const nd = new Date(Date.UTC(yy, mm, 0)).getUTCDate();
+    const H = this.hols(co);
+    const dayIso = Array.from({ length: nd }, (_, i) => st.calMonth + '-' + String(i + 1).padStart(2, '0'));
+    const monthEnd = dayIso[nd - 1], monthStart = dayIso[0];
+    const nt = !!st.noType;
+    const calDays = dayIso.map(iso => {
+      const w = this.dow(iso), hol = H[iso], wk = w === 0 || w === 6, today = iso === TODAY;
+      return { num: Number(iso.slice(8)), wk: 'SMTWTFS'[w], full: this.short(iso) + (hol ? ', ' + hol : wk ? (w === 0 ? ', rest day' : ', off day') : ''), holOn: !!hol,
+        style: 'width:30px;min-width:30px;padding:6px 0;text-align:center;font-size:12px;font-weight:600;color:' + (hol ? '#7A4100' : wk ? '#5F6C80' : '#2B3A50') + ';background:' + (hol ? '#FFF1DB' : wk ? '#F2F4F7' : '#FAFBFC'),
+        numStyle: 'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:99px;font-variant-numeric:tabular-nums;' + (today ? 'background:#2450B8;color:#FFFFFF' : '') };
+    });
+    const calRows = people.filter(per => per.joined <= monthEnd).map(per => {
+      const mine = list.filter(e => e.p === per.id && !e.cancel && e.from <= monthEnd && e.to >= monthStart);
+      const cells = dayIso.map(iso => {
+        const w = this.dow(iso), hol = H[iso], wk = w === 0 || w === 6, before = iso < per.joined;
+        const bg = before ? 'repeating-linear-gradient(135deg,#F5F6F8 0,#F5F6F8 4px,#E3E7ED 4px,#E3E7ED 5px)' : hol ? '#FFF7EA' : wk ? '#F7F8FA' : '#FFFFFF';
+        const td = 'height:34px;width:30px;text-align:center;vertical-align:middle;background:' + bg;
+        const e = mine.find(x => x.from <= iso && x.to >= iso);
+        const t = e ? this.typeOf(e.type) : null;
+        const counts = e && (t.row || (!wk && !hol));
+        if (before) return { td, btn: false, mark: true, txt: '', label: per.n + ', ' + this.short(iso) + ': not yet joined', style: 'display:block', chip: '', open: () => {} };
+        if (!counts) return { td, btn: false, mark: false, txt: '', label: '', style: '', chip: '', open: () => {} };
+        const c = nt ? ['#C9D2DF', '#0F1A2B'] : (SW[e.type] || SW.unpaid);
+        const half = !!e.half;
+        const chip = 'display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:6px;font:700 11px Inter,sans-serif;color:' + c[1] + ';' + (half ? 'background:linear-gradient(135deg,' + c[0] + ' 50%,transparent 50%);box-shadow:inset 0 0 0 1px ' + c[0] : 'background:' + c[0]) + (!nt && e.type === 'unpaid' ? ';border:1px dashed #5F6C80;box-sizing:border-box' : '') + (nt ? ';cursor:default' : '');
+        // the whole 30 × 34 cell is the button; the coloured chip sits inside it
+        const style = nt ? chip : 'display:flex;align-items:center;justify-content:center;width:30px;height:34px;padding:0;margin:0;border:0;border-radius:0;background:transparent;cursor:pointer';
+        const label = per.n + ', ' + this.short(iso) + ': ' + (nt ? 'off' : t.name.toLowerCase()) + (half ? ', half day' : '') + (nt ? '' : ' (' + (this.stat(e) === 'taken' ? 'Taken' : 'Booked') + ')');
+        return { td, btn: !nt, mark: nt, txt: half ? '½' : nt ? '' : t.code, label, style, chip, open: () => this.openEntry(e.id) };
+      });
+      return { name: per.n, sub: per.joined > monthStart ? 'Joined ' + this.short(per.joined) : per.id, cells };
+    });
+    const onDay = iso => people.filter(per => list.some(e => e.p === per.id && !e.cancel && e.from <= iso && e.to >= iso && (this.typeOf(e.type).row || (this.dow(iso) !== 0 && this.dow(iso) !== 6 && !H[iso]))));
+    const today = onDay(TODAY).map(p => p.n);
+    const week = new Set();
+    for (let i = 0; i < 7; i++) onDay(this.add('2026-11-16', i)).forEach(p => week.add(p.id));
+    const lg = (style, txt, label) => ({ style: 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;font:700 11px Inter,sans-serif;box-sizing:border-box;' + style, txt, label });
+    const legend = nt
+      ? [lg('background:#C9D2DF;color:#0F1A2B', '', 'Off'), lg('background:linear-gradient(135deg,#C9D2DF 50%,transparent 50%);box-shadow:inset 0 0 0 1px #C9D2DF;color:#0F1A2B', '½', 'Half day off')]
+      : [lg('background:#DCE6FB;color:#1D3A80', 'A', 'Annual leave'), lg('background:#FDE7D3;color:#7A3300', 'S', 'Sick leave'), lg('background:#E8DEF8;color:#4B2A8A', 'M', 'Maternity'), lg('background:#EEF1F5;color:#2B3A50;border:1px dashed #5F6C80', 'U', 'Unpaid leave'), lg('background:linear-gradient(135deg,#DCE6FB 50%,transparent 50%);box-shadow:inset 0 0 0 1px #DCE6FB;color:#1D3A80', '½', 'Half day')];
+    legend.push(lg('background:#FFF1DB;border:1px solid #E8C48A', '', 'Public holiday'), lg('background:#F2F4F7;border:1px solid #D5DBE4', '', 'Rest day or off day'), lg('background:repeating-linear-gradient(135deg,#F5F6F8 0,#F5F6F8 4px,#E3E7ED 4px,#E3E7ED 5px);border:1px solid #D5DBE4', '', 'Not yet joined'));
+    const MONTHS = ['2026-10', '2026-11', '2026-12', '2027-01'];
+    const mi = MONTHS.indexOf(st.calMonth);
+    const mName = k => this.MF()[Number(k.slice(5, 7)) - 1] + ' ' + k.slice(0, 4);
+    const navStyle = dis => 'width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #8792A2;background:#FFFFFF;cursor:' + (dis ? 'default;opacity:.45' : 'pointer');
+    const holList = dayIso.filter(iso => H[iso]).map(iso => ({ day: this.short(iso), name: H[iso], note: this.holNote(iso) }));
+
+    // ---- the leave dialog
+    const dlg = st.dlg, f = st.form;
+    let v = {};
+    if (dlg && f) {
+      const errs = st.tried ? this.errors(f) : {};
+      const t = this.typeOf(f.type), per = f.p ? pOf(f.p) : null, isNew = !dlg.id, rec = dlg.id ? list.find(x => x.id === dlg.id) : null;
+      const valid = this.okDate(f.from) && this.okDate(f.to) && f.to >= f.from && !!t;
+      const draft = { ...f, id: dlg.id || '_new' };
+      const d = valid ? this.days(co, draft) : 0;
+      const others = list.filter(x => x.id !== dlg.id);
+      const field = bad => 'height:40px;width:100%;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;background:#FFFFFF;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2');
+      const status = valid ? (f.from <= TODAY ? 'taken' : 'booked') : null;
+      // worked out
+      const wo = [];
+      if (valid) {
+        wo.push({ glyph: 'calendar', txt: (t.row ? this.dayWord(d) + ' in a row: ' : d === 0.5 ? 'Half a day: ' : this.dayWord(d).replace(/^./, c => c.toUpperCase()) + ' (working days): ') + this.range(f.from, f.to) + '.' });
+        const sk = this.skipped(co, draft);
+        if (sk.length) wo.push({ glyph: 'sun', txt: 'Not counted: ' + sk.join('; ') + ' (' + holState + ' public holiday).' });
+        wo.push({ glyph: status === 'taken' ? 'check' : 'clock', txt: 'Shows as ' + (status === 'taken' ? 'Taken: it starts on or before today, ' + this.long(TODAY) + '.' : 'Booked: it starts after today.') });
+      } else wo.push({ glyph: 'help', txt: 'Choose the person, the leave type and the days to see the working days and the balance.' });
+      let after = null;
+      if (valid && per && f.type === 'annual' && f.from.slice(0, 4) === '2026') {
+        const a = this.annual(co, f.p, TODAY, others);
+        if (a) { after = a.bal - d; wo.push({ glyph: 'leave', txt: per.n + '’s annual leave 2026: ' + this.dd(a.ent) + ' by law' + (per.entNote ? ' (' + per.entNote + ')' : '') + '. Taken ' + this.num(a.taken) + ' · booked ' + this.num(a.booked) + ' · after this ' + this.num(after) + '.' }); }
+        else wo.push({ glyph: 'leave', txt: per.n + '’s annual leave 2026: ' + this.dd(per.ent) + ' by law. The balance isn’t known until the opening balances are imported.' });
+      }
+      if (valid && per && f.type === 'sick') { const n = this.sickTaken(co, f.p, '2026-12-31', others); wo.push({ glyph: 'leave', txt: per.n + '’s sick leave: ' + per.sick + ' days by law. Taken since 1 Oct ' + this.num(n) + ' · after this ' + this.num(per.sick - n - d) + ' left.' }); }
+      // warnings (never refused)
+      const warns = [];
+      if (after != null && after < 0) warns.push({ head: 'Beyond ' + per.n + '’s legal days.', txt: this.dayWord(-after).replace(/^./, c => c.toUpperCase()) + ' more than ' + his(per) + ' annual leave allows: ' + this.dd(per.ent) + ' this year by law. It can be saved: leave beyond the legal days is a warning only.' });
+      if (valid && per) {
+        const cl = this.clashes(others, draft, dlg.id);
+        if (cl.length) { const c0 = cl[0]; warns.push({ head: 'Clashes with leave already entered.', txt: per.n + ' already has ' + this.typeOf(c0.type).name.toLowerCase() + ' on ' + this.range(c0.from, c0.to) + ' (' + (this.stat(c0) === 'taken' ? 'Taken' : 'Booked') + '). It can be saved, but the day would be counted twice. Open the other entry to change it instead.' }); }
+      }
+      if (t && t.cert && !f.cert) warns.push({ head: 'No certificate attached yet.', txt: t.name + ' needs a medical certificate. It can be saved now and the certificate attached when you have it.' });
+      if (valid && per && f.type === 'pat') warns.push({ head: 'Check paternity leave.', txt: 'Paternity is for married male staff with 12 months’ service, given 30 days’ notice, up to 5 births. HR confirms it.' });
+      const infos = [];
+      if (valid && f.type === 'unpaid') infos.push({ glyph: isAI ? 'payment' : 'payroll', head: isAI ? 'Deduct it from the salary payment by hand.' : 'Unpaid.', txt: isAI ? 'AI doesn’t run payroll in this app, so nothing deducts it for you. ' + this.dayWord(d).replace(/^./, c => c.toUpperCase()) + ' unpaid.' : payrollNote(draft, d) });
+      if (per && per.kind.indexOf('Contract to') === 0 && valid && f.to > '2026-12-31') infos.push({ glyph: 'alert', head: 'After the last day.', txt: per.n + '’s contract ends on 31 Dec 2026.' });
+      // maternity
+      const matOn = f.type === 'mat';
+      const yn = (k, q) => ({ q, qid: 'lv-' + k + '-q', by: 'lv-mat-h', errOn: !!errs[k], errId: 'lv-' + k + '-err',
+        opts: [['yes', 'Yes'], ['no', 'No']].map(([val, label]) => ({ id: 'lv-' + k + '-' + val, name: 'lv-' + k, label, checked: f[k] === val, pick: () => this.setForm({ [k]: val }),
+          style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid ' + (errs[k] ? '#B0190F' : f[k] === val ? '#2450B8' : '#8792A2') + ';background:' + (f[k] === val ? '#F3F6FE' : '#FFFFFF') })) });
+      const matAns = matOn && f.q1 && f.q2, matPaid = f.q1 === 'yes' && f.q2 === 'yes';
+      const half = t && t.half && (!this.okDate(f.to) || f.to === f.from) && this.okDate(f.from);
+      const halfOpts = [['', 'Full day'], ['am', 'Morning'], ['pm', 'Afternoon']].map(([val, label]) => ({ id: 'lv-h-' + (val || 'full'), label, checked: f.half === val, pick: () => this.setForm({ half: val }),
+        style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:10px;font-size:14px;cursor:pointer;border:1px solid ' + (f.half === val ? '#2450B8' : '#8792A2') + ';background:' + (f.half === val ? '#F3F6FE' : '#FFFFFF') }));
+      const errList = [];
+      if (st.tried && !st.refuse) { if (errs.p) errList.push('Person'); if (errs.type) errList.push('Leave type'); if (errs.from) errList.push('First day'); if (errs.to) errList.push('Last day'); if (errs.q1 || errs.q2) errList.push('Maternity pay'); }
+      const recS = rec ? this.stat(rec) : null;
+      const pOpts = [{ v: '', l: 'Choose a person' }, ...people.map(p => ({ v: p.id, l: p.n + ' · ' + p.id + (p.joined > '2026-10-01' ? ' · joined ' + this.short(p.joined) : '') }))];
+      const tOpts = [{ v: '', l: 'Choose a type', dis: false }, ...this.TYPES().map(x => ({ v: x.id, l: x.name + (x.set ? (x.id === 'unpaid' ? ' (no days set)' : '') : ' (not set in Setup)'), dis: !x.set }))];
+      v = {
+        dTitle: isNew ? 'Add leave' : pOf(rec.p).n + '’s ' + this.typeOf(rec.type).name.toLowerCase(),
+        dSub: isNew ? 'Entered by HR as Booked (ahead) or Taken. Nothing above the legal days is refused.' : this.range(rec.from, rec.to) + ' · ' + this.dayWord(this.days(co, rec)),
+        dPillOn: !isNew, dPill: recS ? PILL[recS][3] : '', dPillCls: recS ? PILL[recS][0] : 'pl', dPillGlyph: recS ? PILL[recS][1] : 'check', dPillTone: recS ? PILL[recS][2] : 'muted',
+        refuseOn: !!st.refuse, refuseTxt: st.refuse, errSumOn: errList.length > 0, errSum: errList.join(', ') + '.',
+        fP: f.p, onP: e => this.setForm({ p: e.target.value }), lockWho: !isNew, pOpts, pInv: errs.p ? 'true' : 'false', pErrOn: !!errs.p, pBy: errs.p ? 'lv-f-p-err lv-f-p-hint' : 'lv-f-p-hint', pStyle: field(!!errs.p),
+        pHint: per ? per.full + ' · ' + per.kind + ' · joined ' + this.long(per.joined) : 'People in employment at ' + co + '.',
+        fT: f.type, onT: e => this.setForm({ type: e.target.value }), tOpts, tInv: errs.type ? 'true' : 'false', tErrOn: !!errs.type, tBy: errs.type ? 'lv-f-t-err lv-f-t-hint' : 'lv-f-t-hint', tStyle: field(!!errs.type),
+        tHint: t ? (t.row ? t.row + ' days in a row, counted from the first day.' : t.cert ? 'Needs a medical certificate.' : t.id === 'unpaid' ? 'No days set: it has no balance.' : t.half ? 'Half days allowed.' : '') || 'Types not set in Setup can’t be chosen.' : 'Types not set on Leave types and policy can’t be chosen.',
+        fFrom: f.from, onFrom: e => this.setForm({ from: e.target.value || '', to: this.state.form.to && this.state.form.to >= (e.target.value || '') ? this.state.form.to : (e.target.value || '') }),
+        fromInv: errs.from || st.refuse ? 'true' : 'false', fromErrOn: !!errs.from || !!st.refuse, fromErr: errs.from || 'Before ' + (per ? per.n : 'the person') + ' joined.', fromBy: errs.from || st.refuse ? 'lv-f-from-err' : '', fromStyle: field(!!errs.from || !!st.refuse),
+        fTo: f.to, onTo: e => this.setForm({ to: e.target.value || '' }), toRO: !!(t && t.row), toTag: t && t.row ? 'Worked out' : 'Required',
+        toInv: errs.to ? 'true' : 'false', toErrOn: !!errs.to, toErr: errs.to || '', toBy: errs.to ? 'lv-f-to-err' : t && t.row ? 'lv-f-to-hint' : '', toStyle: field(!!errs.to) + (t && t.row ? ';background:#F5F6F8;color:#46546A' : ''),
+        toHintOn: !!(t && t.row), toHint: t && t.row ? t.row + ' days in a row from the first day.' : '',
+        halfOn: !!half, halfOpts, halfNoOn: !!(t && !t.half && !t.row && this.okDate(f.from)), halfNo: t ? t.name + ': half days aren’t allowed (Leave types and policy).' : '',
+        matOn, matQs: matOn ? [yn('q1', 'Employed at least 90 days in the 9 months before the birth'), yn('q2', 'Fewer than 5 surviving children')] : [],
+        matOutOn: !!matAns, matOutHead: matPaid ? 'Paid maternity leave.' : 'Not eligible for maternity pay.',
+        matOut: matPaid ? '98 days in a row, paid.' : 'The 98 days off still apply, unpaid. ' + (isAI ? 'AI doesn’t run payroll in this app: deduct them from the salary payment by hand.' : 'They go to the payroll run as days to deduct.'),
+        matOutGlyph: matPaid ? 'check' : 'alert', matOutTone: matPaid ? 'ok' : 'warn', matOutCls: st.flashN % 2 ? 'swapA' : 'swapB',
+        matOutStyle: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;font-size:13px;' + (matPaid ? 'background:#F0FBF5;border:1px solid #BFE8D0;color:#0A4D2C' : 'background:#FFF8EC;border:1px solid #F0C98A;color:#5C2B00'),
+        matConfOn: !!(rec && rec.conf), matConf: rec ? rec.conf + (this.dirty() && (f.q1 !== rec.q1 || f.q2 !== rec.q2) ? ' Saving records the change, with your name, in the audit trail.' : '') : '',
+        certOn: !!(t && t.cert), certHas: !!f.cert, certNone: !f.cert, certAdd: () => this.setForm({ cert: true }), certRemove: () => this.setForm({ cert: false }),
+        certHint: 'A scan or photo. It holds health data: it is kept with the leave, never shown outside HR.',
+        fWhy: f.reason, onWhy: e => this.setForm({ reason: e.target.value }),
+        whyHint: t && t.cert ? 'Don’t write the illness or any medical detail: the certificate is enough.' : 'Shown to HR only. For example “Family trip”.',
+        woLines: wo, warns, infos,
+        enteredOn: !isNew, entered: 'Entered by Aisha Rahman. Changes are recorded in the audit trail.',
+        canCancelLeave: !isNew && recS !== 'cancelled', cancelFromDlg: () => { if (rec) this.openCancel(rec.id, true); },
+        confirmOn: !!st.confirm, footOn: !st.confirm,
+        discardTxt: isNew ? 'The leave isn’t added.' : 'Your changes aren’t saved. The leave stays as it was.',
+        footDirty: this.dirty() && !st.saving, footNote: st.saving ? 'Saving…' : st.footMsg ? st.footMsg : this.dirty() ? 'Not saved yet' : (isNew ? 'Recorded in the audit trail when added.' : 'No changes.'),
+        saveLabel: st.saving ? 'Saving…' : isNew ? 'Add leave' : 'Save changes', savingAria: st.saving ? 'true' : 'false'
+      };
+    }
+    const D = { dTitle: '', dSub: '', dPillOn: false, dPill: '', dPillCls: 'pl', dPillGlyph: 'check', dPillTone: 'muted', refuseOn: false, refuseTxt: '', errSumOn: false, errSum: '',
+      fP: '', onP: () => {}, lockWho: false, pOpts: [], pInv: 'false', pErrOn: false, pBy: '', pStyle: '', pHint: '', fT: '', onT: () => {}, tOpts: [], tInv: 'false', tErrOn: false, tBy: '', tStyle: '', tHint: '',
+      fFrom: '', onFrom: () => {}, fromInv: 'false', fromErrOn: false, fromErr: '', fromBy: '', fromStyle: '', fTo: '', onTo: () => {}, toRO: false, toTag: 'Required', toInv: 'false', toErrOn: false, toErr: '', toBy: '', toStyle: '', toHintOn: false, toHint: '',
+      halfOn: false, halfOpts: [], halfNoOn: false, halfNo: '', matOn: false, matQs: [], matOutOn: false, matOutHead: '', matOut: '', matOutGlyph: 'check', matOutTone: 'ok', matOutCls: '', matOutStyle: '', matConfOn: false, matConf: '',
+      certOn: false, certHas: false, certNone: true, certAdd: () => {}, certRemove: () => {}, certHint: '', fWhy: '', onWhy: () => {}, whyHint: '', woLines: [], warns: [], infos: [], enteredOn: false, entered: '',
+      canCancelLeave: false, cancelFromDlg: () => {}, confirmOn: false, footOn: true, discardTxt: '', footDirty: false, footNote: '', saveLabel: 'Add leave', savingAria: 'false' };
+
+    // ---- the cancel dialog
+    const cRec = st.cdlg ? list.find(x => x.id === st.cdlg.id) : null;
+    let c = { cTitle: '', cSub: '' };
+    if (cRec) {
+      const per = pOf(cRec.p), t = this.typeOf(cRec.type), d = this.days(co, cRec);
+      const a = cRec.type === 'annual' ? this.annual(co, cRec.p, TODAY, list) : null;
+      c = { cTitle: 'Cancel ' + per.n + '’s leave?', cSub: t.name + ', ' + this.range(cRec.from, cRec.to) + ', ' + this.dayWord(d) + '. It stays in the list as Cancelled, with your reason.' + (a ? ' ' + this.dayWord(d).replace(/^./, x => x.toUpperCase()) + (d === 1 || d === 0.5 ? ' goes back to ' : ' go back to ') + his(per) + ' annual leave: ' + this.num(a.bal) + ' left becomes ' + this.num(a.bal + d) + '.' : '') };
+    }
+    const cBad = st.cTried && !String(st.cWhy || '').trim();
+
+    const tabs = [['list', 'Taken and booked', 'leave'], ['bal', 'Balances', 'chart'], ['cal', 'Team calendar', 'calendar']];
+    const xl = [['Leave taken, by dates', 'Every entry of 2026, with its status', 'Leave taken ' + co + ' 2026.xlsx'], ['Balances at a date', 'At ' + this.long(at) + ', as the Balances tab', 'Leave balances ' + co + ' at ' + this.long(at).slice(4) + '.xlsx'], ['The year’s calendar', 'Who is off each day of 2026, with public holidays', 'Leave calendar ' + co + ' 2026.xlsx']];
+    const menuItems = n => Array.from({ length: n }, (_, i) => 'lv-mi-xl-' + i);
+
+    return {
+      ...D, ...v, ...c,
+      shCo: SH[0], shKind: SH[1],
+      onTopCo: code => { const u = String(code || '').toUpperCase(); if (u === 'AISB' || u === 'AI') this.setState({ co: u, q: '', fStatus: 'all', fType: 'all', limit: 25 }); },
+      anyDlg: !!(dlg || st.cdlg),
+      isReady: st.phase === 'ready', isLoading: st.phase === 'loading', isError: st.phase === 'error',
+      retry: () => this.setState({ phase: 'ready' }), skRows: [1, 2, 3, 4, 5, 6],
+      coCode: co, holState, sabahOn: isAI,
+      intro: 'Leave for ' + (isAI ? 'AI (Agrinexus International)' : 'AISB (AISB Sdn Bhd)') + ', entered by HR as Booked or Taken. Working days skip rest days, off days and ' + holState + '’s public holidays. Leave types show only to people with the HR right.',
+      // menu
+      menuOn: !!st.menu, menuExp: st.menu ? 'true' : 'false',
+      toggleMenu: () => this.setState({ menu: !this.state.menu }),
+      closeMenu: () => this.setState({ menu: false }),
+      menuBtnKey: e => { if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.setState({ menu: true }); } },
+      menuKey: e => {
+        const ids = menuItems(xl.length), at2 = ids.indexOf(document.activeElement && document.activeElement.id);
+        const go = i => this.focusId(ids[(i + ids.length) % ids.length]);
+        if (e.key === 'ArrowDown') { e.preventDefault(); go(at2 + 1); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); go(at2 - 1); }
+        else if (e.key === 'Home') { e.preventDefault(); go(0); }
+        else if (e.key === 'End') { e.preventDefault(); go(ids.length - 1); }
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this._focusId = 'lv-mb-xl'; this.setState({ menu: false }); }
+        else if (e.key === 'Tab') this.setState({ menu: false });
+      },
+      xlItems: xl.map(([label, sub, file], i) => ({ id: 'lv-mi-xl-' + i, label, sub, pick: () => { this._focusId = 'lv-mb-xl'; this.setState({ menu: false }); this.toast('Excel downloaded: ' + file + '. The download is recorded in the audit trail.'); } })),
+      openNew: () => this.openNew(),
+      // tabs
+      tabs: tabs.map(([k, label, glyph], i) => ({ id: 'lv-t-' + k, label, glyph, tone: st.tab === k ? 'brand' : 'muted', sel: st.tab === k ? 'true' : 'false', ti: st.tab === k ? 0 : -1, pick: () => this.pickTab(k),
+        key: e => { const n = tabs.length; let j = -1; if (e.key === 'ArrowRight') j = (i + 1) % n; else if (e.key === 'ArrowLeft') j = (i - 1 + n) % n; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = n - 1; if (j < 0) return; e.preventDefault(); this.pickTab(tabs[j][0], true); } })),
+      panelBy: 'lv-t-' + st.tab, panelCls: st.tabN % 2 ? 'swapA' : 'swapB',
+      tabList: st.tab === 'list', tabBal: st.tab === 'bal', tabCal: st.tab === 'cal',
+      // list
+      listEmpty: list.length === 0, listHas: list.length > 0,
+      q: st.q, onQ: e => this.setState({ q: e.target.value, limit: 25 }), statusSeg, fType: st.fType, onFType: e => this.setState({ fType: e.target.value || 'all', limit: 25 }), typeFilterOpts, countTxt,
+      rows, noMatch: rows.length === 0 && list.length > 0, clearFilters: () => this.setState({ q: '', fStatus: 'all', fType: 'all' }),
+      moreOn: match.length > 25, moreTxt: 'Showing ' + shown.length + ' of ' + match.length + ' entries', moreBtn: shown.length < match.length ? 'Show ' + Math.min(25, match.length - shown.length) + ' more' : 'Show fewer',
+      showMore: () => this.setState({ limit: this.state.limit < match.length ? this.state.limit + 25 : 25 }),
+      // balances
+      notImportedOn: notImported, balTitle: st.balType === 'sick' ? 'Sick leave 2026' : 'Annual leave 2026', balSeg, asAt: at, onAsAt: e => { const x = e.target.value; if (this.okDate(x) && x >= '2026-09-30' && x <= '2026-12-31') this.setState({ asAt: x }); },
+      asAtMoved: !atToday, asAtToday: () => this.setState({ asAt: TODAY }), asAtTxt, balNote, balRows,
+      // Print opens PrintHrLists: the leave list for the month chosen, and the balances at the Balances at date.
+      pMonth: st.pMonth, onPMonth: e => this.setState({ pMonth: e.target.value || '2026-10' }),
+      pMonthOpts: [['2026-09', 'September 2026'], ['2026-10', 'October 2026'], ['2026-11', 'November 2026'], ['2026-12', 'December 2026']].map(([v, l]) => ({ v, l })),
+      printListHref: co === 'AI' ? 'PrintHrLists.dc.html#empty-period' : 'PrintHrLists.dc.html#leave-october',
+      printListAria: 'Print the leave list, ' + ({ '2026-09': 'September', '2026-10': 'October', '2026-11': 'November', '2026-12': 'December' }[st.pMonth] || 'October') + ' 2026',
+      printBalHref: 'PrintHrLists.dc.html#balances-31-dec', printBalAria: 'Print the balances ' + asAtTxt,
+      takenHead: st.balType === 'sick' ? 'Taken since 1 Oct' : 'Taken', bookedHead: st.balType === 'sick' ? 'Booked' : 'Booked', balHead: st.balType === 'sick' ? 'Left' : 'Balance',
+      internOn: !!st.intern, internRows, inUseOn: inUse.length > 0 && st.balType === 'annual', inUse, balFoot,
+      // calendar
+      calTitle: mName(st.calMonth), calMonthName: mName(st.calMonth), calCaption: 'Team calendar for ' + mName(st.calMonth) + ', ' + co + '. One row per person, one column per day.' + (nt ? ' Leave types hidden.' : ''),
+      calPrev: () => { if (mi > 0) this.setState({ calMonth: MONTHS[mi - 1] }); }, calNext: () => { if (mi < MONTHS.length - 1) this.setState({ calMonth: MONTHS[mi + 1] }); },
+      calPrevDis: mi <= 0, calNextDis: mi >= MONTHS.length - 1, calPrevStyle: navStyle(mi <= 0), calNextStyle: navStyle(mi >= MONTHS.length - 1),
+      calPrevLabel: mi > 0 ? 'Previous month, ' + mName(MONTHS[mi - 1]) : 'Previous month', calNextLabel: mi < MONTHS.length - 1 ? 'Next month, ' + mName(MONTHS[mi + 1]) : 'Next month',
+      todayTxt: today.length ? today.join(', ') : 'no one', weekTxt: String(week.size), noType: nt, typeHintOn: !nt, onNoType: e => this.setState({ noType: !!e.target.checked }),
+      calDays, calRows, legend, holList, holNone: holList.length === 0,
+      // dialogs
+      dlgOn: !!dlg, dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      onPanelAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      askClose: () => this.askClose(), save: e => this.save(e), saving: !!st.saving,
+      keepEditing: () => this.setState({ confirm: false }), discard: () => { this.setState({ confirm: false }); this.closeDlg(); },
+      dlgKey: e => this.trap(e, () => { if (this.state.confirm) this.setState({ confirm: false }); else this.askClose(); }),
+      cOn: !!cRec, cDimCls: st.cClosing ? 'dim-out' : 'dim-in', cCls: st.cClosing ? 'dr-out' : 'dr-in',
+      cClose: () => this.cClose(), cConfirm: e => this.cConfirm(e), cKey: e => this.trap(e, () => this.cClose()),
+      cAnim: e => { if (this.state.cClosing && e && e.target === e.currentTarget) this.cFinish(); },
+      cWhy: st.cWhy, onCWhy: e => this.setState({ cWhy: e.target.value }), cInv: cBad ? 'true' : 'false', cErrOn: cBad, cBy: cBad ? 'lv-c-why-err lv-c-why-h' : 'lv-c-why-h',
+      cStyle: 'height:40px;width:100%;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;border:1px solid ' + (cBad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      // toast
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo), toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      toastUndo: () => this.undo(),
+      onToastAnim: () => { if (this.state.toastLeaving) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt), toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

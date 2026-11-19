@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Monthly checklist · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD !important}
+.pr{cursor:pointer}
+.mi:hover{background:#F1F3F7 !important}
+.dz:hover{border-color:#2450B8 !important;background:#F3F6FE !important}
+.nb:hover{color:#2450B8 !important;text-decoration:underline !important}
+.ha:hover{background:#EAF0FD !important}
+.hd:hover{background:#FDE6E3 !important}
+button:disabled{cursor:not-allowed !important;opacity:.55}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* motion and focus base */
+.hb,.hs,.hr,.mi,.dz,.nb,.pr,.ha,.hd{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,nav[aria-label="Main"] .nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes menuIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+/* a row a link landed on: tint and left bar, gone after about 3 s */
+@keyframes markFade{0%,70%{background-color:#EAF0FD;box-shadow:inset 3px 0 0 #2450B8}100%{background-color:transparent;box-shadow:inset 3px 0 0 transparent}}
+/* the list fades 100ms out, 140ms in when its filter changes */
+@keyframes lsIn{from{opacity:0}to{opacity:1}}
+/* a count ticks with a short vertical slide */
+@keyframes tickA{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+@keyframes tickB{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+/* changing month: crossfade with an 8px slide in the direction of travel */
+@keyframes mvL{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+@keyframes mvR{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.mn{transform-origin:top right;animation:menuIn .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.okA{animation:swapA .12s ease-out,pulse .4s ease-out}
+.okB{animation:swapB .12s ease-out,pulse .4s ease-out}
+.pop{animation:pop .18s cubic-bezier(.22,1,.36,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.mk>td,div.mk{animation:markFade 3s ease-out both}
+.lsOut{opacity:0;transition:opacity .1s ease-in}
+.lsIn{animation:lsIn .14s ease-out both}
+.tkA{display:inline-block;animation:tickA .15s cubic-bezier(.22,1,.36,1) both}
+.tkB{display:inline-block;animation:tickB .15s cubic-bezier(.22,1,.36,1) both}
+.mvL{animation:mvL .15s cubic-bezier(.22,1,.36,1) both}
+.mvR{animation:mvR .15s cubic-bezier(.22,1,.36,1) both}
+.dimd{opacity:.55;transition:opacity .12s ease-out;pointer-events:none}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite;border-radius:10px}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+/* a section heading stays under the top bar while its items scroll */
+.ml-sh{position:sticky;top:64px;z-index:2}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}
+.mk>td,div.mk{animation:none !important;background-color:#EAF0FD;box-shadow:inset 3px 0 0 #2450B8}
+.sk{animation:none !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="checklist" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Payments" page="Monthly checklist" company="{{sbCo}}" on-company="{{onTopCo}}" monthOffset="{{mon}}" onMonth="{{onMon}}" hint-size="100%,64px"></dc-import>
+    <main aria-busy="{{monBusy}}" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
+        <div style="display: flex; align-items: center; gap: 16px; min-width: 0">
+          <span style="width: 56px; height: 56px; border-radius: 16px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="checklist" tone="brand" size="30" hint-size="30px,30px"></dc-import></span>
+          <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px"><span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #2450B8">{{co.code}}</span><span style="color: #5F6C80; font-size: 12px">{{co.name}}</span><span style="{{head.kindChip}}"><dc-import name="Icon" glyph="{{head.kindGlyph}}" tone="{{head.kindTone}}" size="14" hint-size="14px,14px"></dc-import>{{head.kind}}</span><span style="{{head.pill}}"><span style="{{head.dot}}"></span>{{head.state}}</span></div>
+            <h1 id="ml-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600; letter-spacing: -.01em">Monthly checklist <span style="color: #5F6C80; font-weight: 500">· {{head.month}}</span></h1>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 13px">
+              <a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="sparkflag" tone="brand" size="14" hint-size="14px,14px"></dc-import>{{head.todo}}</a>
+              <a href="PaymentsRegister.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="payment" tone="brand" size="14" hint-size="14px,14px"></dc-import>Payments register for {{head.month}}</a>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-if value="{{head.canReview}}" hint-placeholder-val="{{ true }}"><a href="{{head.reviewHref}}" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="printer" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{head.reviewLabel}}</a></sc-if>
+          <sc-if value="{{head.canFile}}" hint-placeholder-val="{{ true }}"><button type="button" id="ml-file-b" class="hb" onClick="{{askFile}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="pack" tone="white" size="18" hint-size="18px,18px"></dc-import>Mark month as filed</button></sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{filedOn}}" hint-placeholder-val="{{ false }}">
+        <div role="status" class="rv" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 18px; border-radius: 14px; border: 1px solid #BFE8D0; background: #F3FBF6">
+          <dc-import name="Icon" glyph="verified" tone="ok" size="24" hint-size="24px,24px"></dc-import>
+          <div style="flex: 1 1 420px; min-width: 0"><b>{{filedTitle}}</b><div style="color: #46546A; font-size: 13px">This month is marked as filed, so nothing in it counts as to do on the Overview. Payments, documents and the checklist are read-only until you reopen it.</div></div>
+          <sc-if value="{{canReopen}}" hint-placeholder-val="{{ true }}"><button type="button" id="ml-reopen" class="hs" onClick="{{reopen}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Reopen</button></sc-if>
+        </div>
+      </sc-if>
+
+      <div class="{{monCls}}" style="display: flex; flex-direction: column; gap: 24px">
+        <sc-if value="{{skelOn}}" hint-placeholder-val="{{ false }}">
+          <div aria-hidden="true" style="display: flex; flex-direction: column; gap: 12px">
+            <div class="sk" style="height: 64px; border-radius: 16px"></div>
+            <div class="sk" style="height: 88px; border-radius: 14px"></div>
+            <div class="sk" style="height: 88px; border-radius: 14px"></div>
+            <div class="sk" style="height: 88px; border-radius: 14px"></div>
+            <div class="sk" style="height: 88px; border-radius: 14px"></div>
+          </div>
+          <span role="status" class="sr">Loading the checklist for {{head.month}}</span>
+        </sc-if>
+
+        <sc-if value="{{errOn}}" hint-placeholder-val="{{ false }}">
+          <section role="alert" aria-labelledby="ml-err-h" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 id="ml-err-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Couldn't load the checklist</h2>
+            <p style="margin: 0; color: #46546A; font-size: 14px; max-width: 60ch">The records folder C:\HR-Records can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+            <button type="button" id="ml-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{notSetUp}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="ml-ns-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="calendar" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 id="ml-ns-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{ns.title}}</h2>
+            <p style="margin: 0; color: #46546A; font-size: 14px; max-width: 60ch">{{ns.text}}</p>
+            <button type="button" id="ml-setup" class="hb" onClick="{{ns.go}}" aria-busy="{{ns.busy}}" disabled="{{ns.off}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 168px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{ns.spin}}" hint-placeholder-val="{{ false }}"><span class="sp"></span></sc-if>{{ns.label}}</button>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{outside}}" hint-placeholder-val="{{ false }}">
+          <section style="background: #FFFFFF; border: 1px dashed #C3CCD9; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+            <dc-import name="Icon" glyph="calendar" tone="muted" size="30" hint-size="30px,30px"></dc-import>
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">{{head.month}} isn't in this sample</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px">This design sample draws September to November 2026. Use the month switcher in the top bar to come back.</p>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{readyCl}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="ml-cl-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: clip">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #EEF1F5">
+              <div style="display: flex; align-items: center; gap: 12px; min-width: 260px; flex: 1 1 320px"><h2 id="ml-cl-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600; white-space: nowrap">Checklist</h2><div style="flex: 1; height: 8px; border-radius: 99px; background: #EEF1F5; overflow: hidden; min-width: 80px"><div class="bar" style="{{doneBar}}"></div></div><b class="{{doneTick}}" style="font-variant-numeric: tabular-nums; white-space: nowrap">{{doneLabel}}</b></div>
+              <div role="tablist" id="ml-tl" aria-label="Show items" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #F1F3F7; border-radius: 10px">
+                <sc-for list="{{ftabs}}" as="f" hint-placeholder-count="4">
+                  <button type="button" role="tab" id="{{f.id}}" aria-selected="{{f.sel}}" aria-controls="ml-panel" tabindex="{{f.ti}}" onKeyDown="{{f.key}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}} <span style="color: #5F6C80; font-weight: 500">{{f.n}}</span></button>
+                </sc-for>
+              </div>
+            </div>
+            <p style="margin: 0; padding: 8px 20px; border-bottom: 1px solid #EEF1F5; background: #FAFBFC; color: #46546A; font-size: 13px">{{clNote}}</p>
+            <div id="ml-panel" role="tabpanel" aria-labelledby="{{ftabBy}}" class="{{panelCls}}">
+              <sc-for list="{{tgroups}}" as="g" hint-placeholder-count="3">
+                <div role="group" aria-labelledby="{{g.hid}}">
+                  <div class="ml-sh" style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 20px; background: #F7F8FA; border-top: 1px solid #EEF1F5; border-bottom: 1px solid #EEF1F5">
+                    <h3 id="{{g.hid}}" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">{{g.label}}</h3><span style="color: #5F6C80; font-size: 12px">{{g.sub}}</span>
+                  </div>
+                  <sc-for list="{{g.tasks}}" as="t" hint-placeholder-count="4">
+                    <div id="{{t.rowId}}" class="{{t.rowCls}}" style="{{t.rowStyle}}">
+                      <span style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; margin: -6px -6px 0; flex: none"><input type="checkbox" id="{{t.boxId}}" checked="{{t.done}}" onChange="{{t.toggle}}" disabled="{{t.locked}}" aria-describedby="{{t.descId}}" style="width: 20px; height: 20px; margin: 0; accent-color: #2450B8; cursor: pointer"></span>
+                      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px"><label for="{{t.boxId}}" style="{{t.titleStyle}}">{{t.title}}</label><sc-if value="{{t.isNew}}" hint-placeholder-val="{{ false }}"><span title="A built-in item, in every company's checklist from October 2026, the first month approvals are kept" style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; background: #EAF0FD; color: #2450B8; font-size: 11px; font-weight: 600">New from October 2026</span></sc-if></div>
+                        <sc-if value="{{t.detail}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 13px; max-width: 80ch">{{t.detail}}</span></sc-if>
+                        <sc-if value="{{t.why}}" hint-placeholder-val="{{ true }}"><span id="{{t.descId}}" style="{{t.whyStyle}}"><dc-import name="Icon" glyph="{{t.whyGlyph}}" tone="{{t.whyTone}}" size="15" hint-size="15px,15px"></dc-import><span>{{t.why}}</span></span></sc-if>
+                        <sc-if value="{{t.lockNote}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; color: #5F6C80; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{t.lockNote}}</span></sc-if>
+                        <sc-if value="{{t.waits}}" hint-placeholder-val="{{ false }}"><span style="padding: 8px 10px; border-radius: 10px; background: #F7F8FA; color: #46546A; font-size: 13px; max-width: 75ch">{{t.waits}}</span></sc-if>
+                        <sc-if value="{{t.asking}}" hint-placeholder-val="{{ false }}">
+                          <div role="group" aria-labelledby="{{t.askQid}}" onKeyDown="{{t.askKey}}" class="ex" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid #F3D9A6; background: #FFFBF2">
+                            <span id="{{t.askQid}}" style="flex: 1 1 320px; min-width: 0; font-size: 13px"><b>Tick anyway?</b> {{t.lacking}}. It stays marked Ticked by hand until the records show it.</span>
+                            <button type="button" id="{{t.askNoId}}" class="hs" onClick="{{t.askNo}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                            <button type="button" class="hb" onClick="{{t.askYes}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer">Tick anyway</button>
+                          </div>
+                        </sc-if>
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+                          <sc-for list="{{t.chips}}" as="c" hint-placeholder-count="1"><span title="{{c.hint}}" style="{{c.style}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.tone}}" size="14" hint-size="14px,14px"></dc-import>{{c.label}}<span class="sr">{{c.sr}}</span></span></sc-for>
+                          <sc-for list="{{t.needs}}" as="c" hint-placeholder-count="1"><button type="button" id="{{c.id}}" class="ha" onClick="{{c.up}}" disabled="{{c.off}}" aria-label="Upload {{c.label}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px dashed #B26A00; background: #FFFFFF; color: #934100; font: 600 12px Inter, sans-serif; cursor: pointer; white-space: nowrap"><dc-import name="Icon" glyph="plus" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{c.label}}</button></sc-for>
+                          <sc-for list="{{t.files}}" as="c" hint-placeholder-count="1"><span class="{{c.cls}}" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 4px; min-height: 32px; padding: 0 4px 0 9px; border-radius: 8px; border: 1px solid #BFE8D0; background: #E3F7EC; color: #0A6B3D; font: 600 12px Inter, sans-serif"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import><span style="color: #0F1A2B; font-weight: 500">{{c.label}}: {{c.name}}</span><sc-if value="{{c.note}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-weight: 500">· {{c.note}}</span></sc-if><button type="button" id="{{c.viewId}}" class="ha" onClick="{{c.view}}" aria-label="View {{c.name}}" style="height: 28px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #2450B8; font: 600 12px Inter, sans-serif; cursor: pointer">View</button><sc-if value="{{c.canEdit}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{c.repId}}" class="ha" onClick="{{c.rep}}" disabled="{{c.off}}" aria-label="Replace {{c.name}}" style="height: 28px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #2450B8; font: 600 12px Inter, sans-serif; cursor: pointer">Replace</button><button type="button" class="hd" onClick="{{c.rem}}" disabled="{{c.off}}" aria-label="Remove {{c.name}}" style="height: 28px; padding: 0 6px; border: 0; border-radius: 6px; background: transparent; color: #B0190F; font: 600 12px Inter, sans-serif; cursor: pointer">Remove</button></sc-if></span></sc-for>
+                          <sc-for list="{{t.adds}}" as="c" hint-placeholder-count="1"><button type="button" id="{{c.id}}" class="ha" onClick="{{c.up}}" disabled="{{c.off}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: #2450B8; font: 600 12px Inter, sans-serif; cursor: pointer; white-space: nowrap"><dc-import name="Icon" glyph="plus" tone="brand" size="14" hint-size="14px,14px"></dc-import>{{c.label}}</button></sc-for>
+                          <sc-if value="{{t.canOther}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{t.otherId}}" class="ha" onClick="{{t.other}}" disabled="{{t.ro}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: #2450B8; font: 600 12px Inter, sans-serif; cursor: pointer; white-space: nowrap"><dc-import name="Icon" glyph="plus" tone="brand" size="14" hint-size="14px,14px"></dc-import>Other document</button></sc-if>
+                          <sc-for list="{{t.links}}" as="l" hint-placeholder-count="1"><a href="{{l.href}}" style="display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 4px; font-weight: 600; font-size: 12px; text-decoration: none">{{l.label}}<dc-import name="Icon" glyph="arrow" tone="brand" size="14" hint-size="14px,14px"></dc-import></a></sc-for>
+                        </div>
+                        <sc-if value="{{t.histOn}}" hint-placeholder-val="{{ false }}">
+                          <div style="display: flex; flex-direction: column; gap: 4px">
+                            <button type="button" id="{{t.histId}}" class="ha" onClick="{{t.histToggle}}" aria-expanded="{{t.histExp}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px 0 2px; border: 0; border-radius: 8px; background: transparent; color: #2450B8; font: 600 12px Inter, sans-serif; cursor: pointer"><span class="{{t.histChev}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{t.histLabel}}</button>
+                            <sc-if value="{{t.histOpen}}" hint-placeholder-val="{{ false }}">
+                              <ul class="ex" style="list-style: none; margin: 0; padding: 0 0 0 22px; display: flex; flex-direction: column; gap: 4px">
+                                <sc-for list="{{t.hist}}" as="h" hint-placeholder-count="1"><li style="display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: #46546A"><dc-import name="Icon" glyph="history" tone="muted" size="14" hint-size="14px,14px"></dc-import><span><span style="text-decoration: line-through; text-decoration-color: #B8C1CE; color: #0F1A2B">{{h.name}}</span> · {{h.text}}</span></li></sc-for>
+                              </ul>
+                            </sc-if>
+                          </div>
+                        </sc-if>
+                        <sc-if value="{{t.cfOn}}" hint-placeholder-val="{{ false }}">
+                          <div role="group" aria-labelledby="{{t.cfQid}}" onKeyDown="{{t.cfKey}}" class="ex" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid #F3D9A6; background: #FFFBF2">
+                            <span id="{{t.cfQid}}" style="flex: 1 1 320px; min-width: 0; font-size: 13px; overflow-wrap: anywhere">{{t.cfQ}}</span>
+                            <button type="button" id="{{t.cfNoId}}" class="hs" onClick="{{t.cfNo}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep it</button>
+                            <button type="button" class="hd" onClick="{{t.cfYes}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #F2B8B0; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #B0190F; cursor: pointer">{{t.cfYesLabel}}</button>
+                          </div>
+                        </sc-if>
+                      </div>
+                      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: none"><span title="{{t.dueTitle}}" style="color: #5F6C80; font-size: 13px; white-space: nowrap">{{t.dueText}}</span><span class="{{t.pillCls}}" title="{{t.dueTitle}}" style="{{t.pill}}">{{t.state}}</span></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-for>
+              <sc-if value="{{fEmpty.on}}" hint-placeholder-val="{{ false }}">
+                <div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 20px; text-align: center; border-top: 1px solid #EEF1F5">
+                  <dc-import name="Icon" glyph="{{fEmpty.glyph}}" tone="{{fEmpty.tone}}" size="30" hint-size="30px,30px"></dc-import>
+                  <b>{{fEmpty.title}}</b><span style="color: #46546A; font-size: 13px">{{fEmpty.text}}</span>
+                </div>
+              </sc-if>
+            </div>
+            <sc-if value="{{page.on}}" hint-placeholder-val="{{ true }}">
+              <div id="ml-page" class="{{page.cls}}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 20px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+                <span role="status" style="font-size: 13px; color: #46546A">{{page.say}}</span>
+                <sc-if value="{{page.more}}" hint-placeholder-val="{{ true }}"><button type="button" id="ml-more" class="hs" onClick="{{page.go}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{page.label}}</button></sc-if>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <sc-if value="{{vOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimClass}}" onClick="{{closeViewer}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 72px 16px 24px; box-sizing: border-box; pointer-events: none">
+      <section role="dialog" aria-modal="true" aria-labelledby="ml-v-title" tabindex="-1" class="{{vCls}}" onKeyDown="{{vKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 820px; max-width: 100%; height: calc(100vh - 96px); background: #F5F6F8; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 16px; border-bottom: 1px solid #E3E7ED; background: #FFFFFF">
+          <dc-import name="Icon" glyph="document" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+          <div style="flex: 1 1 200px; min-width: 0"><h2 id="ml-v-title" tabindex="-1" style="margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere">{{v.name}}</h2><span style="color: #5F6C80; font-size: 12px">{{v.meta}}</span></div>
+          <sc-if value="{{v.shows}}" hint-placeholder-val="{{ true }}">
+            <div role="group" aria-label="Pages" style="display: inline-flex; align-items: center; gap: 2px">
+              <button type="button" class="hs" onClick="{{v.prev}}" disabled="{{v.atFirst}}" aria-label="Previous page" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+              <span aria-live="polite" style="min-width: 76px; text-align: center; font-size: 13px; font-variant-numeric: tabular-nums">{{v.pageLabel}}</span>
+              <button type="button" class="hs" onClick="{{v.next}}" disabled="{{v.atLast}}" aria-label="Next page" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+            </div>
+          </sc-if>
+          <button type="button" class="hs" onClick="{{v.download}}" aria-label="Download {{v.name}}" title="Download" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="download" tone="brand" size="16" hint-size="16px,16px"></dc-import></button>
+          <button type="button" class="hs" onClick="{{closeViewer}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="16" hint-size="16px,16px"></dc-import>Close preview</button>
+        </div>
+        <div style="flex: 1; min-height: 0; overflow: auto; padding: 20px; background: #E8EBF0; display: flex; justify-content: center; align-items: flex-start">
+          <sc-if value="{{v.shows}}" hint-placeholder-val="{{ true }}">
+            <div role="img" aria-label="{{v.alt}}" class="{{v.pageCls}}" style="{{v.page}}">
+              <sc-if value="{{v.first}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start"><div style="display: flex; flex-direction: column; gap: 6px"><b style="font-size: 1.15em">{{v.docTitle}}</b><span style="color: #5F6C80">{{v.docSub}}</span></div><span style="width: 3.2em; height: 3.2em; border-radius: .6em; background: #EEF1F5"></span></div>
+                <div style="height: 1px; background: #E3E7ED; margin: 1.2em 0"></div>
+              </sc-if>
+              <sc-for list="{{v.lines}}" as="l" hint-placeholder-count="6"><div style="{{l.style}}"></div></sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{v.cant}}" hint-placeholder-val="{{ false }}">
+            <div role="status" style="max-width: 420px; margin-top: 40px; padding: 28px 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E7ED; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+              <span style="width: 56px; height: 56px; border-radius: 18px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="eyeOff" tone="warn" size="28" hint-size="28px,28px"></dc-import></span>
+              <b style="font-size: 16px">{{v.cantTitle}}</b>
+              <p style="margin: 0; color: #46546A; font-size: 13px">{{v.cantText}}</p>
+              <button type="button" class="hb" onClick="{{v.download}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="download" tone="white" size="16" hint-size="16px,16px"></dc-import>Download</button>
+            </div>
+          </sc-if>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{fileOn}}" hint-placeholder-val="{{ false }}">
+    <div class="dim-in" onClick="{{fileCancel}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 50; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 51; display: flex; justify-content: center; align-items: flex-start; padding: 120px 16px 24px; box-sizing: border-box; pointer-events: none">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="ml-fd-h" aria-describedby="ml-fd-d" tabindex="-1" class="dr-in" onKeyDown="{{fileKey}}" style="pointer-events: auto; width: 480px; max-width: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); padding: 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 12px"><span style="{{fd.tile}}"><dc-import name="Icon" glyph="{{fd.glyph}}" tone="{{fd.tone}}" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="ml-fd-h" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600">{{fd.title}}</h2><p id="ml-fd-d" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{fd.text}}</p></div></div>
+        <sc-if value="{{fd.listOn}}" hint-placeholder-val="{{ true }}">
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+            <sc-for list="{{fd.list}}" as="i" hint-placeholder-count="2"><li style="display: flex; gap: 8px; align-items: center"><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import>{{i.text}}</li></sc-for>
+          </ul>
+        </sc-if>
+        <sc-if value="{{fd.note}}" hint-placeholder-val="{{ false }}"><div style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">{{fd.note}}</div></sc-if>
+        <div style="display: flex; justify-content: flex-end; gap: 8px">
+          <button type="button" id="ml-fd-no" class="hs" onClick="{{fileCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{fd.noLabel}}</button>
+          <sc-if value="{{fd.isFile}}" hint-placeholder-val="{{ true }}"><button type="button" class="hb" onClick="{{fileGo}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">{{fd.yesLabel}}</button></sc-if>
+          <sc-if value="{{fd.isBackup}}" hint-placeholder-val="{{ false }}"><a href="Backup.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="vault" tone="white" size="16" hint-size="16px,16px"></dc-import>Make an encrypted backup</a></sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+    <sc-if value="{{toastOk}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" tabindex="0" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 560px; padding: 10px 10px 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); display: flex; align-items: center; gap: 12px"><span style="flex: 1; min-width: 0">{{toastMsg}}</span><sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{undo}}" style="flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .6); background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="14" hint-size="14px,14px"></dc-import>Undo</button></sc-if></div></sc-if>
+  </div>
+  <div role="alert" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+    <sc-if value="{{toastBad}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" tabindex="0" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 560px; padding: 12px 16px; border-radius: 12px; background: #B0190F; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)">{{toastMsg}}</div></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"open","options":["open","approvals-open","approvals-ticked","review-waiting","review-on-file","payroll-workbook","filed","ai","november","september","not-set-up","loading","error","many","missing-documents"],"section":"State to show"},"company":{"editor":"enum","default":"AISB","options":["AISB","AI"],"section":"State to show"},"$preview":{"width":1440,"height":3900}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the state: MonthlyChecklist.dc.html#missing-documents (the Overview counter Documents missing),
+    // #november, #september, #ai, #approvals-open and the other views. It applies on first load, over the default.
+    let view = (p && p.view) || 'open', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (view === 'open' && ['approvals-open', 'approvals-ticked', 'review-waiting', 'review-on-file', 'payroll-workbook', 'filed', 'ai', 'november', 'september', 'not-set-up', 'many', 'missing-documents'].includes(h)) view = h;
+    const aiView = view === 'ai' || view === 'not-set-up';
+    this.state = { co: aiView ? 'AI' : (p && p.company === 'AI' ? 'AI' : 'AISB'),
+      mon: view === 'september' ? -1 : view === 'november' || view === 'not-set-up' ? 1 : 0,
+      monState: view === 'loading' ? 'skel' : view === 'error' ? 'error' : 'ready', monHold: view === 'loading', monDir: 0, monN: 0,
+      done: {}, ticks: {}, byHand: {}, tickAsk: null, tRm: {}, tCf: null, tFresh: null,
+      tFiles: view === 'review-on-file' ? { 'AISB|0|review|review': [['MR-2610-AISB signed (paper scan).pdf', '820 KB', '18 Nov, 11:05']] } : {},
+      apClear: view === 'approvals-ticked', filed: view === 'filed' ? { 'AISB|0|': '18 Nov' } : {}, fileAsk: null, setting: false,
+      mark: view === 'approvals-open' || view === 'approvals-ticked' ? { tasks: ['approvals'], n: 1 } : view === 'review-waiting' || view === 'review-on-file' ? { tasks: ['review'], n: 1 }
+        : view === 'payroll-workbook' ? { tasks: ['payroll-calc'], n: 1 } : view === 'many' ? { tasks: [], page: true, n: 1 } : null,
+      hist: view === 'payroll-workbook' ? { 'AISB|0|payroll-calc': true } : {},
+      filter: view === 'missing-documents' ? 'missing' : 'all', filterN: 0, listOut: false, pageN: view === 'many' ? 25 : 1000, shown: view === 'many' ? 25 : 1000,
+      viewer: null, vPage: 1, vClosing: false, toast: null, cntV: {} };
+  }
+  slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  f2(n) { const s = Math.abs(n || 0).toFixed(2).split('.'); return s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + s[1]; }
+  money(n) { return 'RM ' + this.f2(n); }
+  dm(iso) { return iso ? +iso.slice(8, 10) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+iso.slice(5, 7) - 1] : ''; }
+  // Today on every board: Wednesday 18 November 2026.
+  days(iso) { const [y, m, d] = iso.split('-').map(Number); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2026, 10, 18)) / 86400000); }
+  longDate(iso) { const [y, m, d] = iso.split('-').map(Number); return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()] + ' ' + d + ' ' + ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][m - 1] + ' ' + y; }
+  dueWord(iso) {
+    const n = this.days(iso);
+    if (n < 0) return { text: -n <= 7 ? 'Overdue ' + (-n) + ' day' + (n === -1 ? '' : 's') : 'Overdue ' + this.dm(iso), tone: 'bad', title: 'Was due ' + this.longDate(iso) };
+    if (n === 0) return { text: 'Due today', tone: 'warn', title: 'Due ' + this.longDate(iso) };
+    if (n <= 7) return { text: n === 1 ? 'Due tomorrow' : 'Due in ' + n + ' days', tone: 'warn', title: 'Due ' + this.longDate(iso) };
+    return { text: 'Due ' + this.dm(iso), tone: 'grey', title: 'Due ' + this.longDate(iso) };
+  }
+  monthLabel(off) { const i = 2026 * 12 + 9 + off; return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][i % 12] + ' ' + Math.floor(i / 12); }
+  // An Icon tone as this board draws it.
+  tn(t) { return t; }
+  // The sample (samples sections 1 and 13). AISB October: 18 of 27 done, both new built-in items open. AI October: 15 of 22
+  // (its approvals item ticks itself; Month reviewed open). September: AISB 23 of 25, AI 20 of 20 and filed 5 Oct (the two
+  // new items start with October). AISB November was set up on 18 Nov 09:05: 1 of 30 (the 27 items and Daniel's three joiner tasks; his
+  // KWSP and PERKESO registration was done 10 Nov, before the month was set up, and came in ticked). AI November is not set up.
+  data() {
+    const co = this.state.co === 'AI' ? 'AI' : 'AISB', mon = this.state.mon, key = co + '|' + mon + '|';
+    if (this._dk === key) return this._d;
+    const inSql = co === 'AISB';
+    const iso = (m, d) => { const i = 2026 * 12 + 9 + mon + m, y = Math.floor(i / 12), mm = i % 12 + 1, last = new Date(Date.UTC(y, mm, 0)).getUTCDate(); return y + '-' + String(mm).padStart(2, '0') + '-' + String(Math.min(d, last)).padStart(2, '0'); };
+    const ev = (label, glyph) => ({ label, glyph: glyph || 'check', tone: 'ok', kind: 'have' });
+    const sqlc = (no, amt, ein, bad) => ({ label: 'SQL ' + no + ' · ' + this.money(amt) + (ein ? ' · ' + ein : ''), glyph: 'database', tone: bad ? 'warn' : 'ok', kind: bad ? 'warnc' : 'have', hint: bad ? "A refund or credit note cancelled this e-Invoice, so it doesn't count." : 'From SQL' });
+    const BOOKS_DETAIL = "Fetch SQL's GL Journal of Transaction and Trial Balance up to at least the month's last day. Done when every document of the month is in the journal and in SQL's listings, each one balances and agrees with its listing, and SQL's trial balance agrees with the books here.";
+    const BOOKS_SEP = "Fetch SQL's GL Journal of Transaction for the whole of September 2026 (from 1 Sep to 30 Sep 2026): no journal fetched covers the whole month.";
+    const MN = this.monthLabel(mon).split(' ')[0];
+    const T = (k, m, d, title, o) => ({ k, due: iso(m, d), title, ...(o || {}) });
+    const ok = why => ({ done0: true, why });
+    const slot = (s, label, files, more) => ({ s, label, files: files || [], ...(more || {}) });
+    const reviewDetail = "Print the Month review, have an approver sign the sheet, and upload it. The sheet shows the month's total, what was paid without approval, the approvals per approver and the bank reconciliation.";
+    const approvalsDetail = 'Ticks itself when no payment of the month is paid without approval on file, or paid more than approved.';
+    let tasks = [];
+    if (co === 'AISB') {
+      tasks = [
+        T('inputs', 0, 18, 'Collect payroll changes', { detail: 'Joiners, leavers, unpaid leave, allowance changes. Update the leave record for the month.', ...ok('Done 16 Oct.') }),
+        T('budget', 0, 20, 'Prepare budget and fund requisition', { detail: 'Payroll, consultant fees, claims, office rental, copier, electricity, internet. Send the requisition for approval.', done0: true, okWhy: 'Fund requisition signed and filed.',
+          slots: [slot('approval', 'Approval', [['Fund requisition October 2026 (signed).pdf', '180 KB', '19 Oct, 16:40']])] }),
+        T('payroll-calc', 0, 22, 'Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB', { detail: 'Net pay per employee and the employer contributions for the month.', done0: true, noOther: true,
+          okWhy: 'Filed by the workbook check on Thu 22 Oct: nothing to fix or check; 9 notes.',
+          slots: [slot('payroll', 'Payroll workbook', [['Example Payroll - OCT 2026 (corrected).xlsx', '212 KB', '22 Oct, 09:40']], { locked: true, note: 'Uploaded on HR › Payroll › Workbook check' })],
+          links: [{ label: 'Open the workbook check', href: 'PayrollCheck.dc.html' }],
+          hist: [{ name: 'Example Payroll - OCT 2026.xlsx', text: 'checked Wed 21 Oct 10:12: 3 things to fix before paying, 2 to check; 9 notes. Replaced Thu 22 Oct 09:40 by the corrected file.' }] }),
+        T('payroll-approve', 0, 24, 'Payroll approved', { detail: 'Approval of the payroll summary before the bank transfer.', done0: true,
+          okWhy: "Approved once on the recurring set-up form AF-2610-001 (Rajesh Kumar, 1 Oct). Once payroll runs in this app, this item ticks itself from the run's approval form.",
+          slots: [slot('approval', 'Approval', [['AF-2610-001 signed (paper scan).pdf', '1.1 MB', '2 Oct, 10:20']])] }),
+        T('leave', 0, 25, 'Leave balances reviewed', { detail: 'Check the leave balances against the payroll.', ...ok('Done 26 Oct.') }),
+        T('payslips', 0, 28, 'Payslips sent to staff', { detail: 'Each payslip PDF opens with the IC number without dashes, or a personal password set on the staff record.', ...ok('Sent 24 Oct.') }),
+        T('copier', 0, 28, 'Copier bill checked against the meter reading', ok('Done 29 Oct.')),
+        T('claims', 1, 2, 'Staff claims compiled and approved', { detail: 'Compiled and approved, then paid. Each claim becomes a payment once it is approved.', ...ok('Three October claims approved on AF-2611-003 (Tan Mei Ling, 12 Nov).'), links: [{ label: 'Open Claims and advances', href: 'HrClaims.dc.html' }] }),
+        T('kwsp', 1, 3, 'KWSP: submit contribution data', { detail: 'i-Akaun: contribution month = next month, wages month = payroll month. File the acknowledgement on the KWSP payment.', ...ok('Submitted 3 Nov.') }),
+        T('perkeso', 1, 3, 'PERKESO: submit SOCSO, EIS and SKBBK', { detail: 'ASSIST portal. SOCSO, EIS and SKBBK (Lindung 24 Jam) are separate lines. File the acknowledgement on each payment.', ...ok('Submitted 3 Nov.') }),
+        T('epcb', 1, 3, 'LHDN: submit PCB (e-PCB Plus)', { detail: 'Get the payment reference before paying. File the acknowledgement on the PCB payment.', ...ok('Submitted 3 Nov.') }),
+        T('stmt', 1, 5, 'Import bank statements for every account', { auto: true, done0: true, why: 'Both Maybank accounts imported for October.', chips: [ev('Maybank current statement', 'bank'), ev('Maybank savings statement', 'bank')] }),
+        T('petty', 1, 5, 'Petty cash counted and the count filed', { done0: true, okWhy: 'Count filed 5 Nov.', slots: [slot('petty', 'Petty cash count', [['Petty cash count October 2026.pdf', '90 KB', '5 Nov, 17:10']])] }),
+        T('utility', 1, 7, 'Utility bills filed (electricity, telephone and internet)', ok('Both bills are on their payments.')),
+        T('pv', 1, 7, 'PV in SQL for each salary', { auto: true, done0: true, why: 'SQL shows PV2610-014 for the staff salaries.', chips: [sqlc('PV2610-014', 48600)] }),
+        T('einv-selfbilled', 1, 7, 'Self-billed e-Invoices for overseas providers', { auto: true, done0: true, noOther: true, why: 'Done: no overseas claims this month.' }),
+        T('supplier', 1, 10, 'Supplier statements checked against the books', ok('Done 9 Nov.')),
+        T('stat', 1, 15, 'KWSP, PERKESO and PCB paid or acknowledgement filed', { detail: 'Each is due by the 15th of the next month.', bad: true, docMiss: true,
+          why: 'KWSP not paid by 15 Nov. PERKESO paid 17 Nov, after the deadline.', okWhy: 'Acknowledgements filed for all three. PERKESO was paid 17 Nov, after the deadline.', lacking: "The KWSP acknowledgement isn't filed",
+          slots: [slot('kwsp', 'KWSP acknowledgement'), slot('perkeso', 'PERKESO acknowledgement', [['PERKESO acknowledgement October.pdf', '92 KB', '17 Nov, 15:02']]), slot('cp39', 'CP39 receipt', [['CP39 receipt October 2026.pdf', '77 KB', '14 Nov, 10:40']])] }),
+        T('sqlbooks', 1, 15, 'SQL books agree with SQL Account', { detail: BOOKS_DETAIL, auto: true, done0: true, noOther: true,
+          why: "Done: SQL's journal covers October 2026, its documents agree with the listings and SQL's trial balance as at 31 Oct 2026 agrees with the books here" }),
+        T('einv', 1, 20, 'Fund receipts: OR and validated e-Invoices add up', { bad: true, docMiss: true, why: 'The e-Invoice on IV2610-031 was cancelled by CN2611-002.', okWhy: 'OR2611-001 and the valid e-Invoice add up.',
+          lacking: 'The e-Invoice on IV2610-031 was cancelled, and no valid one is filed', chips: [sqlc('OR2611-001', 2800, 'e-Invoice valid'), sqlc('IV2610-031', 2800, 'e-Invoice cancelled by CN2611-002', true)], slots: [slot('einvoice', 'e-Invoice')] }),
+        T('recon', 1, 20, 'Bank reconciliation balanced and filed', { bad: true, why: '5 lines on Maybank current still to explain.', lacking: "5 lines on Maybank current are still to explain, and the reconciliation isn't filed", slots: [slot('recon', 'Reconciliation')],
+          links: [{ label: 'Open Bank and reconciliation', href: 'BankReview.dc.html' }] }),
+        T('approvals', 1, 20, 'Approvals on file for every payment', { isNew: true, auto: true, bad: true, noOther: true, detail: approvalsDetail,
+          why: '2 paid without approval on file: Contractor — field works (RM 24,000.00, paid 6 Oct) and Stationery Mart (paid RM 120.00 more than approved). It ticks itself when that list is empty.',
+          okWhy: 'Done from the records: no October payment is paid without approval on file. Office rental stays listed as approved after payment.',
+          links: [{ label: 'Open Paid without approval on Approvals', href: 'Approvals.dc.html#paid-without' }, { label: 'Show them in the Payments register', href: 'PaymentsRegister.dc.html#without-approval' }] }),
+        T('customers', 1, 25, 'Customer balances older than 30 days followed up', { why: '1 balance of RM 8,500.00 is older than 30 days (as at 17 Nov).', lacking: 'The balance older than 30 days is not followed up yet', links: [{ label: 'Open Customers and suppliers', href: 'BooksParties.dc.html' }] }),
+        T('review', 1, 30, 'Month reviewed', { isNew: true, autoSlot: true, noOther: true, detail: reviewDetail,
+          why: 'MR-2610-AISB printed Tue 17 Nov; waiting for the signed sheet.', okWhy: 'MR-2610-AISB signed by Hassan Ismail; approver chosen by Aisha Rahman from a paper scan. It ticked itself when the sheet was uploaded and its code matched.',
+          slots: [slot('review', 'Month review (signed)')], links: [{ label: 'Print the Month review', href: 'PrintMonthReview.dc.html' }] }),
+        T('assets', 1, 30, 'Fixed asset register updated'),
+        T('insurance', 1, 30, 'Insurance and licence renewals checked'),
+        T('pack', 1, 30, 'Audit pack built since the last document was added', { why: 'Not built yet for October.', lacking: "The audit pack hasn't been built since the last document was added", pack: true, noOther: true }),
+        { k: 'joiner', title: 'e-CP22 for Daniel', due: '2026-12-03', why: 'Joiner reminder (Daniel joined 3 Nov): a reminder to check, not legal advice.', okWhy: 'e-CP22 filed.', waits: 'November', lacking: "The e-CP22 isn't filed", slots: [slot('ecp22', 'e-CP22')] },
+        { k: 'cp22a', title: 'CP22A for Kah Seng', due: '2026-12-01', why: 'Leaver reminder (Kah Seng retires 31 Dec): it starts the tax-clearance hold on the final pay. A reminder to check, not legal advice.', okWhy: 'CP22A filed.', waits: 'December', lacking: "The CP22A isn't filed", slots: [slot('cp22a', 'CP22A acknowledgement')] }
+      ];
+      if (mon === -1) {
+        // September: before approvals were kept, so the two new items are not in it. 23 of 25: the reconciliation and SQL's books are open.
+        const SEP = { stmt: { why: 'Both Maybank accounts imported for September.' }, pv: { why: 'SQL shows PV2609-012 for the staff salaries.', chips: [sqlc('PV2609-012', 48600)] },
+          'payroll-calc': { okWhy: 'Uploaded by hand on 22 Sep; the workbook check was first used in October.', slots: [slot('payroll', 'Payroll workbook', [['Payroll workbook September 2026.xlsx', '198 KB', '22 Sep, 15:02']])], links: [], hist: null },
+          'payroll-approve': { why: 'Ticked by hand on 24 Sep, before approval forms were kept.', okWhy: '', slots: [] },
+          claims: { why: 'Done 2 Oct.', links: [] },
+          stat: { why: 'All paid by 15 Oct; acknowledgements filed.', okWhy: 'All paid by 15 Oct; acknowledgements filed.', slots: [slot('kwsp', 'KWSP acknowledgement', [['KWSP acknowledgement September.pdf', '90 KB', '15 Oct, 10:12']]), slot('cp39', 'CP39 receipt', [['CP39 receipt September 2026.pdf', '75 KB', '30 Sep, 10:20']])] },
+          sqlbooks: { done0: false, bad: true, why: BOOKS_SEP, lacking: BOOKS_SEP },
+          einv: { why: 'OR and validated e-Invoices add up.', okWhy: '', chips: [], slots: [] },
+          recon: { done0: false, why: '2 lines on Maybank current still to explain.', lacking: "2 lines on Maybank current are still to explain, and the reconciliation isn't filed" },
+          pack: { done0: true, why: 'Built 14 Oct.' } };
+        tasks = tasks.filter(t => !t.isNew && !t.waits).map(t => {
+          const o = SEP[t.k] || {};
+          const files = (t.slots || []).map(s => ({ ...s, locked: false, note: '', files: s.files.length ? [[s.label + ' September 2026.pdf', '120 KB', 'Oct']] : [] }));
+          return { ...t, done0: true, why: t.auto ? t.why : 'Done.', okWhy: '', slots: files, hist: null, links: t.k === 'recon' ? t.links : [], ...o };
+        });
+      } else if (mon === 1) {
+        // November, set up 18 Nov 09:05: 1 of 30. The 27 items are open; Daniel's joiner tasks came in with the month, and
+        // Register Daniel with KWSP and PERKESO was already done on 10 Nov. The November workbook is filed and has things to fix.
+        tasks = tasks.filter(t => !t.waits).map(t => ({ ...t, done0: false, bad: false, docMiss: false, why: '', okWhy: '', chips: [], hist: null,
+          links: t.k === 'review' ? [] : t.k === 'approvals' ? [{ label: 'Open Approvals', href: 'Approvals.dc.html' }] : t.links || [],
+          slots: (t.slots || []).map(s => ({ ...s, files: [] })),
+          ...(t.k === 'payroll-calc' ? { bad: true, why: 'Filed by the workbook check on Wed 18 Nov 09:20: 3 things to fix before paying, 2 to check; 10 notes.', lacking: 'The payroll check found 3 things to fix before paying',
+            slots: [slot('payroll', 'Payroll workbook', [['Example Payroll - NOV 2026.xlsx', '231 KB', '18 Nov, 09:20']], { locked: true, note: 'Uploaded on HR › Payroll › Workbook check' })], links: [{ label: 'Open the workbook check', href: 'PayrollCheck.dc.html' }] } : {}),
+          ...(t.k === 'approvals' ? { why: 'Nothing paid in November yet. It ticks itself once every paid payment that needs approval has its form on file.' } : {}),
+          ...(t.k === 'review' ? { why: 'Print the sheet once November is done.' } : {}) }))
+          .concat([{ k: 'register', title: 'Register Daniel with KWSP and PERKESO', due: '2026-11-10', detail: 'Joiner task: register him with KWSP and PERKESO within 7 days of joining (3 Nov).', done0: true,
+              why: 'Done 10 Nov, before November was set up: it came in ticked with his joiner tasks.', okWhy: 'Done 10 Nov, before November was set up: it came in ticked with his joiner tasks.',
+              slots: [slot('register', 'Acknowledgement', [['KWSP and PERKESO registration Daniel.pdf', '88 KB', '10 Nov, 16:05']])] },
+            { k: 'joiner', title: 'e-CP22 for Daniel', due: '2026-12-03', why: 'Joiner reminder (Daniel joined 3 Nov): a reminder to check, not legal advice.', okWhy: 'e-CP22 filed.', lacking: "The e-CP22 isn't filed", slots: [slot('ecp22', 'e-CP22')] },
+            { k: 'stamp', title: 'Stamp the contract of Daniel', due: '2026-12-03', why: 'Joiner reminder: his basic pay is over the amount set for stamping, so the contract is stamped. A reminder to check, not legal advice.', okWhy: 'Contract stamped.' },
+            { k: 'cp22a', title: 'CP22A for Kah Seng', due: '2026-12-01', why: 'Leaver reminder (Kah Seng retires 31 Dec): it starts the tax-clearance hold on the final pay. A reminder to check, not legal advice.', okWhy: 'CP22A filed.', waits: 'December', lacking: "The CP22A isn't filed", slots: [slot('cp22a', 'CP22A acknowledgement')] }]);
+      } else if (mon !== 0) tasks = [];
+    } else if (mon === 0 || mon === -1) {
+      tasks = [
+        T('inputs', 0, 18, 'Collect payroll changes', { detail: 'Joiners, leavers, unpaid leave, allowance changes. Update the leave record for the month.', ...ok('Done 16 Oct.') }),
+        T('budget', 0, 20, "Prepare the month's budget", { detail: 'Payroll, consultant fees, claims, rental and bills. Send it for approval.', done0: true, okWhy: 'Budget signed and filed.', slots: [slot('approval', 'Approval', [['Budget October 2026 (signed).pdf', '150 KB', '19 Oct, 11:30']])] }),
+        T('payroll-approve', 0, 24, 'Payroll approved', { detail: 'Approval of the payroll summary before the bank transfer.', done0: true, okWhy: 'Approved once on the recurring set-up form AF-2610-002 (Hassan Ismail, 1 Oct).',
+          slots: [slot('approval', 'Approval', [['AF-2610-002 signed.pdf', '210 KB', '2 Oct, 09:15']])] }),
+        T('leave', 0, 25, 'Leave balances reviewed', { detail: 'Check the leave balances against the payroll.', ...ok('Done 26 Oct.') }),
+        T('invoices', 0, 26, 'Issue invoices to customers', { done0: true, okWhy: 'Export invoice E-1029 issued 27 Oct.', slots: [slot('invoice', 'Invoice', [['Export invoice E-1029.pdf', '156 KB', '27 Oct, 14:30']])] }),
+        T('payslips', 0, 28, 'Payslips sent to staff', ok('Sent 24 Oct.')),
+        T('claims', 1, 2, 'Staff claims compiled and approved', { detail: 'Compiled and approved, then paid. Each claim becomes a payment once it is approved.', ...ok('No claims this month.') }),
+        T('kwsp', 1, 3, 'KWSP: submit contribution data', ok('Submitted 3 Nov.')),
+        T('perkeso', 1, 3, 'PERKESO: submit SOCSO, EIS and SKBBK', ok('Submitted 3 Nov.')),
+        T('stmt', 1, 5, 'Import bank statements for every account', { auto: true, done0: true, why: 'Maybank FCA imported for October.', chips: [ev('Maybank FCA statement', 'bank')] }),
+        T('petty', 1, 5, 'Petty cash counted and the count filed', { done0: true, okWhy: 'Count filed 5 Nov.', slots: [slot('petty', 'Petty cash count', [['Petty cash count October 2026.pdf', '84 KB', '5 Nov, 16:20']])] }),
+        T('payroll', 1, 7, 'Payroll summary filed', { done0: true, okWhy: "Filed 24 Oct. AI's workbook hasn't been checked yet: it can be checked on HR › Payroll › Workbook check.", slots: [slot('payroll', 'Payroll summary', [['Payroll summary October 2026.xlsx', '48 KB', '24 Oct, 15:44']])], links: [{ label: 'Open the workbook check', href: 'PayrollCheck.dc.html' }] }),
+        T('einv-selfbilled', 1, 7, 'Self-billed e-Invoices for overseas providers', { auto: true, done0: true, noOther: true, why: 'Done: no overseas claims this month.' }),
+        T('records', 1, 8, 'Update MBB bank records', { detail: 'Record every payment and receipt for the month.', ...ok('Done 8 Nov.') }),
+        T('stat', 1, 15, 'KWSP and PERKESO paid or acknowledgement filed', { detail: 'Each is due by the 15th of the next month.', bad: true, why: 'KWSP not paid by 15 Nov.', okWhy: 'Acknowledgements filed for both.', lacking: "The KWSP acknowledgement isn't filed",
+          slots: [slot('kwsp', 'KWSP acknowledgement'), slot('perkeso', 'PERKESO acknowledgement', [['PERKESO acknowledgement October.pdf', '88 KB', '14 Nov, 11:02']])] }),
+        T('approvals', 1, 20, 'Approvals on file for every payment', { isNew: true, auto: true, done0: true, noOther: true, detail: approvalsDetail,
+          why: 'Done from the records: every paid payment that needs approval has its signed form on file (Hassan Ismail, the only approver).', links: [{ label: 'Open Approvals', href: 'Approvals.dc.html' }] }),
+        T('recon', 1, 20, 'Bank reconciliation balanced and filed', { why: 'Maybank FCA balances for October.', okWhy: 'Reconciliation filed.', lacking: "The reconciliation isn't filed", slots: [slot('recon', 'Reconciliation')] }),
+        T('export', 1, 20, 'Export receipts matched to invoices', { bad: true, why: 'Produce export: USD 3,400.00 of 8,400.00 is not on the statement yet.', lacking: 'USD 3,400.00 of the export receipt is not on the statement yet', links: [{ label: 'Show it in the Payments register', href: 'PaymentsRegister.dc.html' }] }),
+        T('supplier', 1, 25, 'Supplier statements checked against the books'),
+        T('review', 1, 30, 'Month reviewed', { isNew: true, autoSlot: true, noOther: true, detail: reviewDetail,
+          why: 'MR-2610-AI not printed yet. Print it, have Hassan Ismail sign it, then upload it here.', okWhy: 'MR-2610-AI signed and on file.',
+          slots: [slot('review', 'Month review (signed)')], links: [{ label: 'Print the Month review', href: 'PrintMonthReview.dc.html#ai' }] }),
+        T('insurance', 1, 30, 'Insurance and licence renewals checked'),
+        T('pack', 1, 30, 'Audit pack built since the last document was added', { why: 'Not built yet for October.', lacking: "The audit pack hasn't been built since the last document was added", pack: true, noOther: true })
+      ];
+      if (mon === -1) tasks = tasks.filter(t => !t.isNew).map(t => ({ ...t, done0: true, bad: false, why: t.auto ? t.why.replace('October', 'September') : 'Done.', okWhy: '', chips: t.chips || [], links: [],
+        slots: (t.slots || []).map(s => ({ ...s, files: [[s.label + ' September 2026.pdf', '110 KB', 'Oct']] })) }));
+    }
+    const setUp = tasks.length > 0;
+    this._dk = key;
+    this._d = { co, mon, key, ns: key, inSql, tasks, setUp, label: this.monthLabel(mon), name: co === 'AISB' ? 'AISB Sdn Bhd' : 'Agrinexus International',
+      notSetUp: co === 'AI' && mon === 1, filedAt: co === 'AI' && mon === -1 ? '5 Oct' : '', approvals: mon >= 0,
+      lastDay: iso(1, 31), fileEnd: iso(1, 15), payEnd: iso(0, 31),
+      todo: co === 'AISB' ? '11 to-dos for AISB on the Overview, 3 overdue' : '5 to-dos for AI on the Overview, 1 overdue' };
+    return this._d;
+  }
+  startToast() {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => {
+      if (!this.state.toast) return;
+      this.setState({ toast: { ...this.state.toast, out: true } });
+      this._to = setTimeout(() => this.setState({ toast: null }), 200);
+    }, this.state.toast && this.state.toast.undo ? 8000 : 6000);
+  }
+  toastPart(msg, bad, undo) {
+    this._undo = undo || null;
+    const t = { msg, bad: !!bad, undo: !!undo, n: ((this.state.toast && this.state.toast.n) || 0) + 1 };
+    setTimeout(() => this.startToast(), 0);
+    return { toast: t };
+  }
+  freeTask(tk, s, base, slots, others) {
+    const have = (s === 'other' ? others : (slots.find(x => x.s === s) || { files: [] }).files).map(f => f[0]);
+    let n = base, i = 2;
+    while (have.indexOf(n) >= 0) n = base.replace(/(\.[^.]+)$/, ' (' + (i++) + ')$1');
+    return n;
+  }
+  isFiled() { const D = this.data(); return !!(this.state.filed[D.ns] || D.filedAt); }
+  // Month change: the old page dims at once; the skeleton shows only if the answer takes longer than about 0.3 s.
+  goMonth(to) {
+    if (to === this.state.mon) return;
+    clearTimeout(this._mt1); clearTimeout(this._mt2);
+    const dir = to > this.state.mon ? 1 : -1;
+    this.setState({ monState: 'dim', monDir: dir, monHold: false, mark: null, tickAsk: null, tCf: null, shown: this.state.pageN });
+    this._mt1 = setTimeout(() => {
+      this.setState({ mon: to, monState: 'skel', filter: 'all' });
+      this._mt2 = setTimeout(() => this.setState({ monState: 'ready', monN: this.state.monN + 1 }), this.calm() ? 0 : 420);
+    }, this.calm() ? 0 : 300);
+  }
+  pickFilter(k, focus) {
+    if (focus) this.focusId('ml-f-' + k);
+    if (k === this.state.filter) return;
+    const go = () => this.setState({ filter: k, filterN: this.state.filterN + 1, listOut: false, shown: this.state.pageN });
+    if (this.calm()) return go();
+    clearTimeout(this._lt);
+    this.setState({ listOut: true });
+    this._lt = setTimeout(go, 100);
+  }
+  openViewer(f, label, opener, tk, s) {
+    this._vOpener = opener;
+    this.setState({ viewer: { name: f[0], size: f[1], when: f[2], label, opener, tk, s }, vPage: 1, vClosing: false });
+  }
+  closeViewer() {
+    if (!this.state.viewer || this.state.vClosing) return;
+    if (this.calm()) return this.finishViewer();
+    this.setState({ vClosing: true });
+    clearTimeout(this._vt);
+    this._vt = setTimeout(() => this.finishViewer(), 400);   // only a safety net if animationend never arrives
+  }
+  finishViewer() { clearTimeout(this._vt); if (!this.state.viewer) return; this._upFocus = [this.state.viewer.opener]; this.setState({ viewer: null, vClosing: false }); }
+  componentDidMount() {
+    if (this.state.mark) { this._scrollMark = true; this._mk = setTimeout(() => this.setState({ mark: null }), 3000); this.componentDidUpdate(this.props, { ...this.state, mark: null }); }
+  }
+  componentDidUpdate(prevProps, prev) {
+    const st = this.state;
+    if (prevProps && prevProps.company !== this.props.company) { const c = this.props.company === 'AI' ? 'AI' : 'AISB'; if (c !== st.co) { this._dk = null; this.setState({ co: c, filter: 'all', shown: st.pageN }); return; } }
+    if (this._scrollMark && st.mark) {
+      this._scrollMark = false;
+      const first = (this._markIds || [])[0];
+      const el = first && document.getElementById(first);
+      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center', behavior: this.calm() ? 'auto' : 'smooth' });
+    }
+    if (st.viewer && !prev.viewer) { this.focusId('ml-v-title'); return; }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+    if (st.fileAsk && st.fileAsk !== prev.fileAsk) this.focusId('ml-fd-h');
+  }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._lt); clearTimeout(this._mt1); clearTimeout(this._mt2); clearTimeout(this._mk); clearTimeout(this._vt); clearTimeout(this._st); }
+  renderVals() {
+    const D = this.data();
+    const st = this.state;
+    const dm = d => this.dm(d);
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', warn: 'background:#FEF1D6;color:#934100', bad: 'background:#FDE6E3;color:#B0190F', grey: 'background:#EEF1F5;color:#46546A', brand: 'background:#EAF0FD;color:#2450B8' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const chipBase = 'display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 8px;border-radius:7px;font:600 12px Inter,sans-serif;white-space:nowrap;';
+    const CH = { have: 'background:#E3F7EC;color:#0A6B3D;border:1px solid #BFE8D0', warnc: 'background:#FEF1D6;color:#934100;border:1px solid #E3A646' };
+    const ro = this.isFiled();
+    const ready = D.setUp && st.monState === 'ready';
+    const mk = st.mark;
+    const markIds = [];
+
+    // every item as the app works it out: ticked from the records, ticked by hand, or open
+    const all = D.tasks.map(t => {
+      const tk = D.ns + t.k;
+      const slots = (t.slots || []).map(s => ({ ...s, files: [...s.files, ...(st.tFiles[tk + '|' + s.s] || [])].filter(f => !st.tRm[tk + '|' + s.s + '|' + f[0]]) }));
+      const others = [...(st.tFiles[tk + '|other'] || [])].filter(f => !st.tRm[tk + '|other|' + f[0]]);
+      const filled = slots.length > 0 && slots.every(s => s.files.length) && !t.pack && t.k !== 'recon';
+      const auto = !!t.auto || !!t.autoSlot;
+      const done = t.autoSlot ? filled : t.k === 'approvals' && st.apClear ? true : st.done[tk] !== undefined ? st.done[tk] : !!t.done0;
+      const byHand = done && !auto && !!st.byHand[tk] && !filled;
+      const n = st.ticks[tk] || 0;
+      const due = this.dueWord(t.due);
+      const asking = st.tickAsk === tk;
+      const markT = !!mk && (mk.tasks || []).indexOf(t.k) >= 0;
+      const why = (done || filled) && t.okWhy ? t.okWhy : t.why;
+      const tone = done ? (byHand ? 'warn' : 'ok') : t.waits ? 'grey' : due.tone === 'bad' ? 'bad' : due.tone === 'warn' ? 'warn' : t.bad ? 'warn' : 'grey';
+      const state = done ? (byHand ? 'Ticked by hand' : auto ? 'Done · from records' : 'Done') : t.waits ? t.waits + ' checklist' : due.tone === 'bad' || due.tone === 'warn' ? due.text : t.bad ? 'Open' : 'To do';
+      const tUp = (s, label) => () => {
+        const name = this.freeTask(tk, s, (s === 'review' ? (D.co === 'AISB' ? 'MR-2610-AISB' : 'MR-2610-AI') + ' signed' : label + ' ' + D.label) + '.pdf', slots, others);
+        const before = { tFiles: this.state.tFiles, byHand: this.state.byHand, ticks: this.state.ticks };
+        const tf = { ...this.state.tFiles, [tk + '|' + s]: [...(this.state.tFiles[tk + '|' + s] || []), [name, '120 KB', 'just now']] };
+        const nowFilled = s !== 'other' && slots.every(x => x.files.length || x.s === s) && !t.pack && t.k !== 'recon';
+        this._upFocus = ['ml-tv-' + this.slug(tk + '|' + s + '|' + name)];
+        this.setState({ tFiles: tf, tFresh: tk + '|' + s + '|' + name, ticks: { ...this.state.ticks, [tk]: n + 1 }, ...(nowFilled && this.state.byHand[tk] ? { byHand: { ...this.state.byHand, [tk]: false } } : {}),
+          ...this.toastPart('Added ' + name + ' to ' + t.title + (t.autoSlot && nowFilled ? '. ' + t.title + ' is ticked.' : ''), false, () => this.setState({ ...before, toast: null })) });
+      };
+      const fileChips = [];
+      for (const s of slots.concat(others.length ? [{ s: 'other', label: 'Other', files: others }] : [])) for (const f of s.files) {
+        const fk = tk + '|' + s.s + '|' + f[0], id = this.slug(fk);
+        fileChips.push({ label: s.label, name: f[0], note: s.note || '', canEdit: !s.locked, cls: st.tFresh === fk ? 'pop' : '', off: ro, viewId: 'ml-tv-' + id, repId: 'ml-tr-' + id,
+          view: () => this.openViewer(f, s.label, 'ml-tv-' + id, tk, s.s),
+          rep: () => { this._upFocus = ['ml-tcf-no-' + this.slug(tk)]; this.setState({ tCf: { tk, s: s.s, name: f[0], kind: 'replace', back: 'ml-tr-' + id } }); },
+          rem: () => { this._upFocus = ['ml-tcf-no-' + this.slug(tk)]; this.setState({ tCf: { tk, s: s.s, name: f[0], kind: 'remove', back: 'ml-tv-' + id } }); } });
+      }
+      const cf = st.tCf && st.tCf.tk === tk ? st.tCf : null;
+      const newName = cf ? this.freeTask(tk, cf.s, (slots.find(x => x.s === cf.s) || { label: 'Other document' }).label + ' ' + D.label + '.pdf', slots, others) : '';
+      const histOpen = !!st.hist[tk];
+      return { k: t.k, sec: t.waits ? 'later' : t.due <= D.payEnd ? 'pay' : t.due <= D.fileEnd ? 'file' : t.due <= D.lastDay ? 'close' : 'after', counted: !t.waits, markT, miss: !!t.docMiss && slots.some(x => !x.files.length),
+        title: t.title, detail: t.detail || '', done, ro, isNew: !!t.isNew, rowId: 'ml-task-' + t.k, boxId: 'ml-tk-' + t.k, descId: 'ml-tkd-' + t.k,
+        rowCls: markT ? 'mk' : '', rowStyle: 'display:flex;gap:14px;padding:16px 20px;border-top:1px solid #EEF1F5;align-items:flex-start;scroll-margin-top:120px;' + (t.waits ? 'background:#FCFCFD' : ''),
+        locked: ro || auto,
+        lockNote: ro ? '' : t.autoSlot ? (done ? 'Ticked itself when the signed sheet was uploaded and matched.' : 'Ticks itself when the signed sheet is uploaded and its code matches.') : auto ? (done ? "Done from the records, so it can't be unticked." : 'Ticked from the records once they show it.') : '',
+        waits: t.waits ? 'On the ' + t.waits + ' checklist. Shown here as a reminder and not counted in ' + D.label.split(' ')[0] + '.' : '',
+        why: (byHand ? 'Ticked by hand. ' : '') + (why || ''),
+        whyStyle: 'display:inline-flex;align-items:flex-start;gap:6px;font-size:13px;' + (byHand ? 'color:#934100' : (auto && done) || filled || (done && t.okWhy) ? 'color:#0A6B3D' : t.bad ? 'color:#934100' : 'color:#5F6C80'),
+        whyGlyph: byHand ? 'alert' : (auto && done) || filled || (done && t.okWhy) ? 'check' : t.bad ? 'alert' : 'help', whyTone: this.tn(byHand ? 'warn' : (auto && done) || filled || (done && t.okWhy) ? 'ok' : t.bad ? 'warn' : 'muted'),
+        asking, askQid: 'ml-ta-q-' + t.k, askNoId: 'ml-ta-no-' + t.k, lacking: t.lacking || 'The records don’t show this yet',
+        askNo: () => { this._upFocus = ['ml-tk-' + t.k]; this.setState({ tickAsk: null }); },
+        askKey: e => { if (e.key === 'Escape') { e.stopPropagation(); this._upFocus = ['ml-tk-' + t.k]; this.setState({ tickAsk: null }); } },
+        cfKey: e => { if (e.key === 'Escape' && cf) { e.stopPropagation(); this._upFocus = [cf.back]; this.setState({ tCf: null }); } },
+        askYes: () => {
+          const before = { done: this.state.done, byHand: this.state.byHand };
+          this._upFocus = ['ml-tk-' + t.k];
+          this.setState({ tickAsk: null, done: { ...this.state.done, [tk]: true }, byHand: { ...this.state.byHand, [tk]: true }, ticks: { ...this.state.ticks, [tk]: n + 1 },
+            ...this.toastPart('Ticked by hand: ' + t.title, false, () => this.setState({ ...before, toast: null })) });
+        },
+        toggle: () => {
+          if (ro || auto) return;
+          if (!done && !filled && t.lacking) { this._upFocus = ['ml-ta-no-' + t.k]; return this.setState({ tickAsk: tk }); }
+          const before = { done: this.state.done, byHand: this.state.byHand };
+          this.setState({ tickAsk: null, done: { ...this.state.done, [tk]: !done }, byHand: { ...this.state.byHand, [tk]: false }, ticks: { ...this.state.ticks, [tk]: n + 1 },
+            ...this.toastPart((done ? 'Unticked: ' : 'Ticked: ') + t.title, false, () => this.setState({ ...before, toast: null })) });
+        },
+        chips: (t.chips || []).map(c => ({ ...c, tone: this.tn(c.tone), hint: c.hint || '', sr: c.kind === 'warnc' ? ' (does not count)' : ' (present)', style: chipBase + (CH[c.kind] || CH.have) })),
+        needs: slots.filter(s => !s.files.length).map(s => ({ label: s.label, id: 'ml-tn-' + this.slug(tk + '|' + s.s), off: ro, up: tUp(s.s, s.label) })),
+        files: fileChips,
+        adds: slots.filter(s => s.files.length && !s.locked).map(s => ({ label: 'Add another ' + s.label, id: 'ml-tad-' + this.slug(tk + '|' + s.s), off: ro, up: tUp(s.s, s.label) })),
+        canOther: !t.noOther && !t.waits, otherId: 'ml-tot-' + t.k, other: tUp('other', 'Other document'),
+        links: (t.pack ? [{ label: 'Build it on the Audit pack page', href: 'AuditPack.dc.html' }] : []).concat(t.links || []),
+        histOn: !!(t.hist && t.hist.length), hist: t.hist || [], histOpen, histExp: histOpen ? 'true' : 'false', histChev: histOpen ? 'chev on' : 'chev', histId: 'ml-th-' + t.k,
+        histLabel: (histOpen ? 'Hide' : 'Show') + ' the earlier workbook (' + ((t.hist || []).length) + ' replaced)',
+        histToggle: () => this.setState({ hist: { ...this.state.hist, [tk]: !histOpen } }),
+        cfOn: !!cf, cfQid: 'ml-tcf-q-' + t.k, cfNoId: 'ml-tcf-no-' + this.slug(tk),
+        cfQ: cf ? (cf.kind === 'replace' ? 'Replace "' + cf.name + '" with "' + newName + '"? The old file is taken out of the audit pack.' : 'Remove "' + cf.name + '"? It is taken off here and left out of the audit pack; the file itself is kept on this PC.') : '',
+        cfYesLabel: cf && cf.kind === 'replace' ? 'Replace' : 'Remove',
+        cfNo: () => { this._upFocus = [cf ? cf.back : 'ml-tk-' + t.k]; this.setState({ tCf: null }); },
+        cfYes: () => {
+          if (!cf) return;
+          const rmK = tk + '|' + cf.s + '|' + cf.name;
+          const back = { tRm: this.state.tRm, tFiles: this.state.tFiles, tFresh: null };
+          const next = { tRm: { ...this.state.tRm, [rmK]: true }, tCf: null };
+          if (cf.kind === 'replace') { next.tFiles = { ...this.state.tFiles, [tk + '|' + cf.s]: [...(this.state.tFiles[tk + '|' + cf.s] || []), [newName, '120 KB', 'just now']] }; next.tFresh = tk + '|' + cf.s + '|' + newName; this._upFocus = ['ml-tv-' + this.slug(next.tFresh)]; }
+          else this._upFocus = ['ml-tn-' + this.slug(tk + '|' + cf.s), 'ml-tad-' + this.slug(tk + '|' + cf.s), 'ml-tk-' + t.k];
+          this.setState({ ...next, ...this.toastPart(cf.kind === 'replace' ? 'Replaced with ' + newName : 'Removed ' + cf.name, false, () => this.setState({ ...back, toast: null })) });
+        },
+        dueText: dm(t.due), dueTitle: due.title,
+        pillCls: n ? (done && !byHand ? 'ok' : 'swap') + (n % 2 ? 'A' : 'B') : '', state, pill: pill(tone),
+        titleStyle: 'font-weight:600;text-decoration:line-through;transition:color .12s ease-out,text-decoration-color .12s ease-out;' + (auto || ro ? '' : 'cursor:pointer;') + (done ? 'color:#5F6C80;text-decoration-color:#B8C1CE' : 'color:#0F1A2B;text-decoration-color:transparent') };
+    });
+    const counted = all.filter(t => t.counted);
+    const doneN = counted.filter(t => t.done).length;
+
+    // filter, sections and the many-rows page (25 in view, Show more keeps the place)
+    // Missing documents: the items whose documents are missing (samples D13), the Overview's Documents missing counter.
+    const FT = [['all', 'All items'], ['open', 'Not done'], ['done', 'Done'], ['missing', 'Missing documents']];
+    const fk = FT.some(f => f[0] === st.filter) ? st.filter : 'all';
+    const inF = (t, k) => k === 'all' || (k === 'missing' ? t.miss : k === 'open' ? !t.done : t.done);
+    // the tab counts leave out the reminders from other months, as the header count does
+    const ftabs = FT.map(([k, label], i) => ({ label, n: counted.filter(t => inF(t, k)).length, id: 'ml-f-' + k, sel: k === fk ? 'true' : 'false', ti: k === fk ? '0' : '-1',
+      pick: () => this.pickFilter(k, false),
+      key: e => { const last = FT.length - 1; const to = e.key === 'ArrowRight' ? (i === last ? 0 : i + 1) : e.key === 'ArrowLeft' ? (i === 0 ? last : i - 1) : e.key === 'Home' ? 0 : e.key === 'End' ? last : -1; if (to < 0) return; e.preventDefault(); this.pickFilter(FT[to][0], true); },
+      style: 'height:32px;padding:0 10px;border-radius:7px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' + (k === fk ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') }));
+    const ORDER = ['pay', 'file', 'close', 'after', 'later'];
+    const rows = all.filter(t => inF(t, fk)).sort((a, b) => ORDER.indexOf(a.sec) - ORDER.indexOf(b.sec));
+    const total = rows.length, shownN = Math.min(total, st.shown);
+    const MN = D.label.split(' ')[0], NX = this.monthLabel(D.mon + 1).split(' ')[0].slice(0, 3);
+    const SEC = { pay: ['Before paying', 'due in ' + MN], file: ['Statutory and filing', '1 to 15 ' + NX], close: ['Books, bank and review', '16 to ' + +D.lastDay.slice(8) + ' ' + NX], after: ['Later', 'counted in ' + MN], later: ['Reminders from other months', 'not counted here'] };
+    const tgroups = [];
+    for (const t of rows.slice(0, shownN)) {
+      let g = tgroups.find(x => x.key === t.sec);
+      if (!g) { g = { key: t.sec, label: SEC[t.sec][0], sub: SEC[t.sec][1], hid: 'ml-sec-' + t.sec, tasks: [] }; tgroups.push(g); }
+      g.tasks.push(t);
+      if (t.markT) markIds.push(t.rowId);
+    }
+    // a section's count covers all of the month's counted items in it, before the filter and the page
+    for (const g of tgroups) { const c = all.filter(t => t.sec === g.key && t.counted); g.sub = g.sub + (c.length ? ' · ' + c.filter(t => t.done).length + ' of ' + c.length + ' done' : ''); }
+    const pageN = st.pageN;
+    const page = { on: total > pageN, say: 'Showing ' + rows.slice(0, shownN).filter(t => t.counted).length + ' of ' + rows.filter(t => t.counted).length + ' items' + ((n => n ? ' · ' + n + ' reminder' + (n > 1 ? 's' : '') + ' from other months, not counted' : '')(rows.filter(t => !t.counted).length)), more: shownN < total, label: 'Show ' + Math.min(pageN, total - shownN) + ' more', cls: mk && mk.page ? 'mk' : '',
+      go: () => { const first = rows[shownN]; this._upFocus = first ? ['ml-tk-' + first.k] : []; this.setState({ shown: shownN + pageN }); } };
+    if (mk && mk.page) markIds.push('ml-page');
+    this._markIds = markIds;
+    const fEmpty = !rows.length && D.tasks.length ? (fk === 'missing' ? { on: true, title: 'No documents missing', text: 'Every item of ' + D.label + ' that needs a document has it on file.', glyph: 'check', tone: this.tn('ok') } : fk === 'open' ? { on: true, title: 'Everything is done', text: 'Every item of ' + D.label + ' is ticked. Mark the month as filed when the audit pack is built.', glyph: 'check', tone: this.tn('ok') }
+      : { on: true, title: 'Nothing is done yet', text: 'Items tick themselves from the records, or you tick them by hand.', glyph: 'clock', tone: this.tn('muted') }) : { on: false, title: '', text: '', glyph: 'check', tone: 'ok' };
+
+    // marking the month as filed, then the offer of a backup
+    const fa = st.fileAsk;
+    const openList = [];
+    if (fa === 'confirm') {
+      const ap = all.find(t => t.k === 'approvals' && !t.done);
+      if (ap && D.co === 'AISB' && D.mon === 0) openList.push({ text: '2 payments paid without approval on file' });
+      const tOpen = counted.filter(t => !t.done && t.k !== 'pack').length;
+      if (tOpen) openList.push({ text: tOpen + ' checklist item' + (tOpen > 1 ? 's' : '') + ' not done' });
+      if (all.some(t => t.k === 'pack' && !t.done)) openList.push({ text: 'Audit pack not built since the last document was added' });
+    }
+    const fd = fa === 'backup'
+      ? { title: MN + ' marked as filed', text: 'Make an encrypted backup now? The password is typed each time, so the backup is offered, not made for you.', glyph: 'vault', tone: this.tn('ok'), tile: 'width:40px;height:40px;border-radius:12px;background:#E3F7EC;display:inline-flex;align-items:center;justify-content:center;flex:none',
+        listOn: false, list: [], note: '', noLabel: 'Not now', yesLabel: '', isFile: false, isBackup: true }
+      : { title: 'Mark ' + MN + ' as filed?', text: openList.length ? D.co + ' still has things open:' : 'Nothing is left open.', glyph: 'pack', tone: this.tn('brand'), tile: 'width:40px;height:40px;border-radius:12px;background:#EAF0FD;display:inline-flex;align-items:center;justify-content:center;flex:none',
+        listOn: openList.length > 0, list: openList, note: openList.length ? 'If this month was already filed outside the app, that is fine. Once filed, nothing in it counts as to do on the Overview, and it is read-only until reopened.' : 'Once filed, it is read-only until reopened.',
+        noLabel: 'Go back', yesLabel: openList.length ? 'File anyway' : 'Mark as filed', isFile: true, isBackup: false };
+
+    // the document viewer, for a checklist file
+    const vw = st.viewer;
+    let v = { name: '', meta: '', shows: false, cant: false, lines: [], prev: () => {}, next: () => {}, download: () => {} };
+    if (vw) {
+      const ext = (vw.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+      const kind = /\.(eml|msg)$/.test(ext) ? 'email' : /\.(xlsx?|ods|csv)$/.test(ext) ? 'sheet' : /\.docx?$/.test(ext) ? 'word' : 'show';
+      const CANT = { email: ["Emails can't be shown here", 'Download it and open it in your mail program.'], sheet: ["Spreadsheets can't be shown here", 'Download it and open it in Excel or a similar program. The workbook check on HR › Payroll shows what it found in a workbook.'], word: ["Word documents can't be shown here", 'Download it and open it in Word.'] };
+      const pages = /\.(png|jpe?g)$/.test(ext) ? 1 : 2, pg = Math.min(st.vPage, pages), w = 380;
+      const widths = pg === 1 ? [92, 64, 80, 48, 88, 70, 56, 84] : [90, 76, 88, 60, 94, 72, 82, 66, 90, 54];
+      v = { name: vw.name, meta: vw.label + ' · ' + vw.size + ' · uploaded ' + vw.when, shows: kind === 'show', cant: kind !== 'show',
+        pageLabel: 'Page ' + pg + ' of ' + pages, atFirst: pg <= 1, atLast: pg >= pages, first: pg === 1, pageCls: st.vPage ? (st.vPage % 2 ? 'swapA' : 'swapB') : '',
+        page: 'width:' + w + 'px;min-height:' + Math.round(w * 1.414) + 'px;flex:none;box-sizing:border-box;padding:30px;background:#FFFFFF;border-radius:4px;box-shadow:0 2px 10px rgba(13,27,46,.14);font-size:13px;color:#0F1A2B;display:flex;flex-direction:column;gap:10px',
+        alt: 'Page ' + pg + ' of ' + vw.name, docTitle: vw.name.replace(/\.[^.]+$/, ''), docSub: vw.label + ' · ' + D.name + ' · ' + D.label,
+        lines: widths.map(x => ({ style: 'height:8px;border-radius:99px;background:#E3E7ED;width:' + x + '%' })),
+        cantTitle: kind !== 'show' ? CANT[kind][0] : '', cantText: kind !== 'show' ? CANT[kind][1] : '',
+        prev: () => this.setState({ vPage: Math.max(1, pg - 1) }), next: () => this.setState({ vPage: Math.min(pages, pg + 1) }),
+        download: () => this.setState(this.toastPart('Downloading ' + vw.name)) };
+    }
+
+    const toast = st.toast;
+    const isErr = st.monState === 'error';
+    const filedAt = st.filed[D.ns] || D.filedAt;
+    const notSetUp = st.monState === 'ready' && D.notSetUp;
+    const outside = st.monState === 'ready' && !D.setUp && !D.notSetUp;
+    const kindSql = D.inSql;
+    const review = all.find(t => t.k === 'review');
+    return {
+      co: { code: D.co, name: D.name }, sbCo: D.co === 'AISB' ? 'aisb' : 'ai', sbKind: D.co === 'AISB' ? 'sqlPayroll' : 'here',
+      head: { month: D.label, state: filedAt ? 'Filed' : !D.setUp ? 'Not set up' : D.mon === 0 ? 'Current' : D.mon === -1 ? 'Still open' : 'Set up 18 Nov',
+        kind: kindSql ? 'Kept in SQL Account' : 'Kept here', kindGlyph: kindSql ? 'database' : 'books', kindTone: this.tn(kindSql ? 'brand' : 'muted'),
+        kindChip: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:8px;font:600 12px Inter,sans-serif;box-sizing:border-box;' + (kindSql ? 'background:#EAF0FD;color:#2450B8;border:1px solid #C9D7F7' : 'background:#EEF1F5;color:#46546A;border:1px solid #D5DBE4'),
+        pill: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;' + (filedAt ? P.ok : !D.setUp ? P.grey : P.brand),
+        dot: 'width:6px;height:6px;border-radius:99px;background:' + (filedAt ? '#0E8A50' : !D.setUp ? '#7C8799' : '#2450B8'),
+        todo: D.todo, canFile: D.setUp && !filedAt && ready, canReview: D.setUp && D.approvals && !filedAt && ready && !!review && !review.done,
+        reviewHref: 'PrintMonthReview.dc.html' + (D.co === 'AI' ? '#ai' : ''),
+        reviewLabel: review && D.co === 'AISB' && D.mon === 0 ? 'Print the Month review again' : 'Print the Month review' },
+      filedOn: !!filedAt && (ready || st.monState === 'dim'), filedTitle: D.label + ' was filed on ' + (filedAt || ''), canReopen: !D.filedAt,
+      reopen: () => { const was = st.filed[D.ns]; const f = { ...this.state.filed }; delete f[D.ns]; this._upFocus = ['ml-file-b']; this.setState({ filed: f, ...this.toastPart(D.label + ' reopened. The reopening is in the audit trail.', false, () => this.setState({ filed: { ...this.state.filed, [D.ns]: was }, toast: null })) }); },
+      monBusy: st.monState === 'ready' || isErr ? 'false' : 'true',
+      monCls: st.monState === 'dim' ? 'dimd' : st.monState === 'ready' && st.monN ? (st.monDir > 0 ? 'mvR' : 'mvL') : '',
+      skelOn: st.monState === 'skel', errOn: isErr, notSetUp, outside,
+      readyCl: ready || st.monState === 'dim' && D.setUp,
+      retry: () => { this._upFocus = ['ml-h1']; this.setState({ monState: 'skel' }); clearTimeout(this._mt2); this._mt2 = setTimeout(() => this.setState({ monState: 'ready', monN: this.state.monN + 1 }), this.calm() ? 0 : 600); },
+      ns: { title: D.label + " isn't set up yet", text: 'Setting it up adds ' + D.co + "'s checklist and recurring payments for the month, with the two built-in items Approvals on file for every payment and Month reviewed. Months set up: September and October.",
+        busy: st.setting ? 'true' : 'false', off: !!st.setting, spin: !!st.setting, label: st.setting ? 'Setting up' : 'Set up this month',
+        go: () => { if (this.state.setting) return; this.setState({ setting: true }); clearTimeout(this._st); this._st = setTimeout(() => this.setState({ setting: false, ...this.toastPart('Setting up ' + D.label + ' for ' + D.co + ' adds its checklist and recurring payments. This sample stops here.') }), this.calm() ? 0 : 700); } },
+      mon: st.mon, onMon: o => { if (!this.state.viewer) this.goMonth(o); },
+      onTopCo: code => { const c = String(code).toUpperCase(); if ((c === 'AISB' || c === 'AI') && c !== this.state.co) { this._dk = null; this.setState({ co: c, filter: 'all', mark: null, shown: this.state.pageN, monN: this.state.monN + 1 }); } },
+      doneLabel: doneN + ' of ' + counted.length + ' done', doneTick: st.ticks && Object.keys(st.ticks).length ? 'tkA' : '',
+      doneBar: 'height:100%;border-radius:99px;background:#0E8A50;width:' + (counted.length ? Math.round(doneN / counted.length * 100) : 0) + '%',
+      clNote: D.approvals ? 'Items with a lock tick themselves from the records. The rest you tick by hand; ticking one the records don’t show asks first. Two built-in items join every month from October 2026: Approvals on file for every payment, and Month reviewed.'
+        : 'Items with a lock tick themselves from the records. The rest you tick by hand; ticking one the records don’t show asks first. Approvals are kept from October 2026, so this month has no approval items.',
+      ftabs, ftabBy: 'ml-f-' + fk, panelCls: st.listOut ? 'lsOut' : st.filterN ? 'lsIn' : '', tgroups, fEmpty, page,
+      askFile: () => this.setState({ fileAsk: 'confirm' }),
+      fileOn: !!fa, fd,
+      fileCancel: () => { const was = this.state.fileAsk; this._upFocus = [was === 'backup' ? 'ml-reopen' : 'ml-file-b']; this.setState({ fileAsk: null }); },
+      fileGo: () => { const was = this.state.filed; this.setState({ fileAsk: 'backup', filed: { ...was, [D.ns]: '18 Nov' }, tickAsk: null, tCf: null, ...this.toastPart(D.label + ' marked as filed', false, () => { this._upFocus = ['ml-file-b']; this.setState({ filed: was, fileAsk: null, toast: null }); }) }); },
+      fileKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); const was = this.state.fileAsk; this._upFocus = [was === 'backup' ? 'ml-reopen' : 'ml-file-b']; this.setState({ fileAsk: null }); return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href]'));
+        if (!f.length) return;
+        const a = document.activeElement, i = f.indexOf(a);
+        if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); }
+      },
+      vOn: !!vw, v, vCls: st.vClosing ? 'dr-out' : 'dr-in', dimClass: st.vClosing ? 'dim-out' : 'dim-in',
+      closeViewer: () => this.closeViewer(),
+      onPanelAnim: e => { if (this.state.vClosing && e.target === e.currentTarget) this.finishViewer(); },
+      vKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); this.closeViewer(); return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],[tabindex]:not([tabindex="-1"])'));
+        if (!f.length) { e.preventDefault(); return; }
+        const first = f[0], last = f[f.length - 1], at = document.activeElement, inside = f.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      toastOk: !!toast && !toast.bad, toastBad: !!toast && toast.bad, toastMsg: toast ? toast.msg : '', toastCls: toast && toast.out ? 'tOut' : toast && toast.n % 2 ? 'tA' : 'tB', toastUndo: !!toast && !!toast.undo,
+      undo: () => { const f = this._undo; this._undo = null; clearTimeout(this._tt); if (f) f(); this.setState(this.toastPart('Undone. The undo is a new entry in the audit trail.')); },
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); if (this.state.toast && this.state.toast.out) this.setState({ toast: { ...this.state.toast, out: false } }); },
+      toastRelease: () => { if (this.state.toast) this.startToast(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

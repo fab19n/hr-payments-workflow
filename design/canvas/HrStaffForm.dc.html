@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HR · Add or edit a person · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hx:hover{background:#FDF3F2 !important}
+.hb,.hs,.hd,.hx{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;box-sizing:border-box}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic-mask{font:600 13px ui-monospace,Consolas,monospace;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.sv{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:8px;background:#0F1A2B;color:#FFFFFF;font:600 11px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.spin{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="staff" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Staff" sub="{{tbSub}}" company="{{sbCo}}" allow-all="no" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <form noValidate="{{ true }}" onSubmit="{{save}}" aria-busy="{{savingAria}}" aria-labelledby="sf-h1" style="width: 100%; max-width: 1040px; box-sizing: border-box; padding: 24px 40px 0; display: flex; flex-direction: column; gap: 18px">
+      <a href="HrStaff.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="16" hint-size="16px,16px"></dc-import>Staff</a>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR · {{coCode}}</span>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h1 id="sf-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{title}}</h1><sc-if value="{{pillOn}}" hint-placeholder-val="{{ true }}"><span class="{{pillCls}}" style="{{pillStyle}}"><dc-import name="Icon" glyph="{{pillGlyph}}" tone="{{pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{pill}}</span></sc-if></div>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 640px">{{intro}}</p>
+          <sc-if value="{{sampleOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{sampleTxt}}</span></sc-if>
+        </div>
+        <sc-if value="{{editActs}}" hint-placeholder-val="{{ false }}">
+          <div role="group" aria-label="More for this person" style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" id="sf-left" class="hs" onClick="{{openLeft}}" aria-haspopup="dialog" disabled="{{leftDis}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="logout" tone="brand" size="18" hint-size="18px,18px"></dc-import>Mark as left</button>
+            <button type="button" id="sf-move" class="hs" onClick="{{openMove}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="company" tone="brand" size="18" hint-size="18px,18px"></dc-import>Move to another company</button>
+            <button type="button" id="sf-del" class="hx" onClick="{{openDel}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #E0A49C; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer"><dc-import name="Icon" glyph="trash" tone="bad" size="18" hint-size="18px,18px"></dc-import>Delete</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{leavingOn}}" hint-placeholder-val="{{ false }}">
+        <div id="sf-leaving" role="note" tabindex="-1" class="{{leavingCls}}" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F3D9A6; background: #FFFBF2; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="logout" tone="warn" size="18" hint-size="18px,18px"></dc-import><span>{{leavingTxt}} <sc-if value="{{runOn}}" hint-placeholder-val="{{ true }}"><a href="PayrollLeaver.dc.html">Open the leaver's final pay</a> · </sc-if><a href="HrCalendar.dc.html">Calendar and reminders</a></span></div>
+      </sc-if>
+
+      <sc-if value="{{awayOn}}" hint-placeholder-val="{{ false }}">
+        <section role="status" class="rv" aria-labelledby="sf-away-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 36px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+          <span style="width: 52px; height: 52px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="company" tone="brand" size="28" hint-size="28px,28px"></dc-import></span>
+          <h2 id="sf-away-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{awayTitle}}</h2>
+          <p style="margin: 0; color: #46546A; max-width: 480px; font-size: 13px">{{awayTxt}}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+            <a href="HrStaff.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="staff" tone="white" size="18" hint-size="18px,18px"></dc-import>Open {{awayCo}}'s staff</a>
+            <button type="button" id="sf-away-back" class="hs" onClick="{{awayBack}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{awayBackLabel}}</button>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{deletedOn}}" hint-placeholder-val="{{ false }}">
+        <section role="status" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 36px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+          <span style="width: 52px; height: 52px; border-radius: 14px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="trash" tone="muted" size="28" hint-size="28px,28px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">S011 was deleted</h2>
+          <p style="margin: 0; color: #46546A; max-width: 480px; font-size: 13px">The second record for Daniel Lee Chee Keong is gone. His own record, S009, is unchanged. The deletion and its reason are kept in the audit trail.</p>
+          <a href="HrStaff.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="staff" tone="white" size="18" hint-size="18px,18px"></dc-import>Back to Staff</a>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{doneOn}}" hint-placeholder-val="{{ false }}">
+        <section role="status" class="rv" aria-labelledby="sf-done-h" style="background: #FFFFFF; border: 1px solid #BFE8D0; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; gap: 12px; align-items: center"><span style="width: 44px; height: 44px; border-radius: 12px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="check" tone="ok" size="24" hint-size="24px,24px"></dc-import></span><div><h2 id="sf-done-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{doneTitle}}</h2><span style="color: #46546A; font-size: 13px">{{doneSub}}</span></div></div>
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; font-size: 13px; color: #46546A">
+            <b id="sf-done-tasks" style="color: #0F1A2B">{{doneTasksH}}</b>
+            <ul aria-labelledby="sf-done-tasks" style="margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 4px">
+              <sc-for list="{{doneTasks}}" as="t" hint-placeholder-count="4"><li><b style="color: #25324A">{{t.what}}</b> by {{t.due}}, {{t.rule}}</li></sc-for>
+            </ul>
+            <span>They are on Calendar and reminders and the Monthly checklist. A reminder to check, not legal advice.</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <a href="HrStaffRecord.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="person" tone="white" size="18" hint-size="18px,18px"></dc-import>{{doneOpen}}</a>
+            <a href="HrCalendar.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="reminder" tone="brand" size="18" hint-size="18px,18px"></dc-import>Calendar and reminders</a>
+            <a href="HrStaff.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none">Back to Staff</a>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{formOn}}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+          <div id="sf-refuse" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A; font-size: 13px">{{refuseTxt}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{errSumOn}}" hint-placeholder-val="{{ false }}">
+          <div id="sf-errsum" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>Check the fields marked below.</b> {{errSum}}</span></div>
+        </sc-if>
+
+        <sc-for list="{{secs}}" as="sec" hint-placeholder-count="6">
+          <section aria-labelledby="{{sec.hid}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px 20px; display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+              <dc-import name="Icon" glyph="{{sec.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+              <h2 id="{{sec.hid}}" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{sec.title}}</h2>
+              <span style="color: #5F6C80; font-size: 12px">{{sec.sub}}</span>
+              <sc-if value="{{sec.linkOn}}" hint-placeholder-val="{{ false }}"><a href="HrStaffRecord.dc.html" style="margin-left: auto; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none">{{sec.link}}<dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></a></sc-if>
+            </div>
+            <sc-if value="{{sec.noteOn}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid {{sec.noteBorder}}; background: {{sec.noteBg}}; color: #25324A; font-size: 13px"><dc-import name="Icon" glyph="{{sec.noteGlyph}}" tone="{{sec.noteTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{sec.note}}</span></div>
+            </sc-if>
+            <sc-if value="{{sec.lockOn}}" hint-placeholder-val="{{ false }}">
+              <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: #F5F6F8; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>{{sec.lock}}</span></div>
+            </sc-if>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px">
+              <sc-for list="{{sec.fields}}" as="f" hint-placeholder-count="4">
+                <div style="{{f.wrap}}">
+                  <sc-if value="{{f.labelOn}}" hint-placeholder-val="{{ true }}">
+                    <label for="{{f.id}}" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}<span style="font-weight: 500; font-size: 12px; color: #5F6C80">{{f.req}}</span><sc-if value="{{f.sensOn}}" hint-placeholder-val="{{ false }}"><span class="sv"><dc-import name="Icon" glyph="lock" tone="white" size="12" hint-size="12px,12px"></dc-import>Sensitive</span></sc-if><sc-if value="{{f.editedOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #934100"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 99px; background: #C77700"></span>Changed</span></sc-if></label>
+                  </sc-if>
+                  <sc-if value="{{f.isText}}" hint-placeholder-val="{{ true }}">
+                    <input id="{{f.id}}" type="{{f.type}}" inputMode="{{f.im}}" value="{{f.val}}" onChange="{{f.change}}" list="{{f.list}}" placeholder="{{f.ph}}" aria-required="{{f.ariaReq}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" autoComplete="off" disabled="{{f.dis}}" style="{{f.style}}">
+                  </sc-if>
+                  <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}">
+                    <select id="{{f.id}}" value="{{f.val}}" onChange="{{f.change}}" aria-required="{{f.ariaReq}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" disabled="{{f.dis}}" style="{{f.style}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+                  </sc-if>
+                  <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}">
+                    <textarea id="{{f.id}}" rows="3" value="{{f.val}}" onChange="{{f.change}}" aria-describedby="{{f.by}}" style="{{f.style}}"></textarea>
+                  </sc-if>
+                  <sc-if value="{{f.isMasked}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 6px 0 12px; border: 1px solid #D5DBE4; border-radius: 10px; background: #F7F8FA; box-sizing: border-box"><dc-import name="Icon" glyph="lock" tone="muted" size="15" hint-size="15px,15px"></dc-import><span id="{{f.id}}" class="ic-mask" aria-label="{{f.maskAria}}" aria-describedby="{{f.by}}" style="flex: 1">{{f.val}}</span><button type="button" class="hs" onClick="{{f.retype}}" style="height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{f.maskBtn}}</button></div>
+                  </sc-if>
+                  <sc-if value="{{f.isRo}}" hint-placeholder-val="{{ false }}">
+                    <div id="{{f.id}}" aria-describedby="{{f.by}}" style="display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px; border-radius: 10px; background: #F5F6F8; color: #25324A; font-variant-numeric: tabular-nums; box-sizing: border-box">{{f.val}}</div>
+                  </sc-if>
+                  <sc-if value="{{f.isRadio}}" hint-placeholder-val="{{ false }}">
+                    <fieldset id="{{f.id}}" aria-describedby="{{f.by}}" style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+                      <legend style="padding: 0 0 8px; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}</legend>
+                      <sc-for list="{{f.radios}}" as="rd" hint-placeholder-count="2">
+                        <label for="{{rd.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid {{rd.border}}; background: {{rd.bg}}; font-size: 14px; cursor: pointer"><input id="{{rd.id}}" type="radio" name="{{rd.name}}" checked="{{rd.checked}}" onChange="{{rd.change}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none"><span style="display: flex; flex-direction: column"><span>{{rd.l}}</span><span style="color: #5F6C80; font-size: 12px">{{rd.sub}}</span></span></label>
+                      </sc-for>
+                    </fieldset>
+                  </sc-if>
+                  <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{f.err}}</span></sc-if>
+                  <sc-if value="{{f.hintOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.hintId}}" style="color: #5F6C80; font-size: 12px">{{f.hint}}</span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+        <datalist id="sf-dept-list"><sc-for list="{{deptList}}" as="d" hint-placeholder-count="5"><option value="{{d.v}}"></option></sc-for></datalist>
+
+        <div style="position: sticky; bottom: 0; z-index: 5; margin: 0 -40px; padding: 14px 40px; background: rgba(250, 251, 252, .96); border-top: 1px solid #E3E7ED; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)">
+          <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+            <div role="alertdialog" aria-labelledby="sf-discard-q" aria-describedby="sf-discard-d" onKeyDown="{{confirmKey}}" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+              <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="sf-discard-q">Discard your changes?</b><div id="sf-discard-d" style="color: #5F6C80; font-size: 12px">{{discardTxt}}</div></div></div>
+              <div style="display: flex; gap: 8px">
+                <button type="button" id="sf-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+                <a href="HrStaff.dc.html" class="hd" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; background: #B0190F; color: #FFFFFF; font-weight: 600; text-decoration: none; box-sizing: border-box">Discard</a>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+              <span id="sf-foot" role="status" style="display: inline-flex; align-items: center; gap: 8px; color: #5F6C80; font-size: 13px"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+              <div style="display: flex; gap: 8px">
+                <sc-if value="{{cancelLink}}" hint-placeholder-val="{{ true }}"><a href="HrStaff.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box">Cancel</a></sc-if>
+                <sc-if value="{{cancelBtn}}" hint-placeholder-val="{{ false }}"><button type="button" id="sf-cancel" class="hs" onClick="{{askCancel}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button></sc-if>
+                <button type="submit" id="sf-save" class="hb" aria-describedby="sf-foot" aria-disabled="{{savingAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 150px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{saveLabel}}</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+      <div style="height: 40px"></div>
+    </form>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 84px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 680px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{closeDlg}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <div class="{{dlgCls}}" role="{{dlgRole}}" aria-modal="true" aria-labelledby="sf-d-title" aria-describedby="sf-d-sub" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" aria-busy="{{dSavingAria}}" style="pointer-events: auto; width: 620px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 20px 22px 16px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 44px; height: 44px; border-radius: 12px; background: {{dPlate}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dGlyph}}" tone="{{dTone}}" size="24" hint-size="24px,24px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <h2 id="sf-d-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{dTitle}}</h2>
+          <span id="sf-d-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{closeDlg}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 18px 22px 20px; display: flex; flex-direction: column; gap: 14px">
+
+        <sc-if value="{{isLeft}}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="sf-l-last" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Last day<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+              <input id="sf-l-last" type="date" value="{{lLast}}" onChange="{{onLLast}}" aria-required="true" aria-invalid="{{lLastInv}}" aria-describedby="{{lLastBy}}" style="{{lLastStyle}}">
+              <sc-if value="{{lLastErrOn}}" hint-placeholder-val="{{ false }}"><span id="sf-l-last-err" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{lLastErr}}</span></sc-if>
+              <span id="sf-l-last-hint" style="color: #5F6C80; font-size: 12px">{{lLastHint}}</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="sf-l-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Reason<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+              <select id="sf-l-why" value="{{lWhy}}" onChange="{{onLWhy}}" aria-required="true" aria-invalid="{{lWhyInv}}" aria-describedby="{{lWhyBy}}" style="{{lWhyStyle}}"><sc-for list="{{lWhyOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+              <sc-if value="{{lWhyErrOn}}" hint-placeholder-val="{{ false }}"><span id="sf-l-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Choose why {{lHe}} is leaving.</span></sc-if>
+              <span id="sf-l-why-hint" style="color: #5F6C80; font-size: 12px">The reason decides the leaver tasks.</span>
+            </div>
+          </div>
+          <label for="sf-l-pcb" style="display: flex; gap: 10px; align-items: center; min-height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font-size: 14px; cursor: pointer"><input id="sf-l-pcb" type="checkbox" checked="{{lPcb}}" onChange="{{onLPcb}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">No PCB was deducted from {{lHis}} pay this year</label>
+
+          <sc-if value="{{lFormOn}}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="ex" style="display: flex; flex-direction: column; gap: 8px; padding: 14px 16px; border-radius: 12px; border: 1px solid #F3D9A6; background: #FFFBF2; color: #25324A; font-size: 13px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="statutory" tone="warn" size="20" hint-size="20px,20px"></dc-import><b style="font-size: 14px">{{lFormTitle}}</b></div>
+              <span>{{lFormTxt}}</span>
+              <span><b>It starts the tax-clearance hold.</b> {{lHoldTxt}}</span>
+              <span style="display: flex; flex-wrap: wrap; gap: 4px 14px"><sc-if value="{{lRunOn}}" hint-placeholder-val="{{ true }}"><a href="PayrollLeaver.dc.html" style="font-weight: 600">The leaver's final pay</a></sc-if><a href="ToPay.dc.html" style="font-weight: 600">To pay</a><a href="HrCalendar.dc.html" style="font-weight: 600">Calendar and reminders</a></span>
+              <span style="color: #5F6C80; font-size: 12px">A reminder to check, not legal advice.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{lNoFormOn}}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>{{lNoFormTxt}}</span></div>
+          </sc-if>
+          <sc-if value="{{lAdvOn}}" hint-placeholder-val="{{ false }}">
+            <div role="status" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F3D9A6; background: #FFFBF2; color: #25324A; font-size: 13px"><dc-import name="Icon" glyph="advance" tone="warn" size="20" hint-size="20px,20px"></dc-import><span><b>Hafiz has an advance to repay.</b> RM 1,500.00 is left today on SA-2611-001 (RM 500.00 a month, Nov 2026 to Jan 2027). After the November deduction RM 1,000.00 is left, and his December pay is his final pay: the rest is taken from it, within the 50% limit. Anything still left is kept as an amount to collect on his record and in the audit pack. <a href="HrAdvances.dc.html" style="font-weight: 600">Open the advance</a></span></div>
+          </sc-if>
+          <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="undo" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{lFoot}}</div>
+        </sc-if>
+
+        <sc-if value="{{isDelRef}}" hint-placeholder-val="{{ false }}">
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+            <li style="display: flex; gap: 8px; align-items: center"><dc-import name="Icon" glyph="payroll" tone="muted" size="16" hint-size="16px,16px"></dc-import>Pay: September and October 2026</li>
+            <li style="display: flex; gap: 8px; align-items: center"><dc-import name="Icon" glyph="leave" tone="muted" size="16" hint-size="16px,16px"></dc-import>Leave: annual leave booked Mon 7 to Thu 10 Dec</li>
+            <li style="display: flex; gap: 8px; align-items: center"><dc-import name="Icon" glyph="claim" tone="muted" size="16" hint-size="16px,16px"></dc-import>Claim: CL-2610-007, approved on AF-2611-003</li>
+          </ul>
+          <div style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">Mark her as left instead. Her record stays, with her last day, and drops off the current lists. Pay and tax records are kept at least 7 years after the year concerned.</div>
+        </sc-if>
+
+        <sc-if value="{{isDel}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">Added Wed 18 Nov 2026, 09:40, by Aisha Rahman: a second record for Daniel Lee Chee Keong, whose own record is S009. It has no pay, leave, claims, advances or documents, so it can be deleted.</div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="sf-del-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change?<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="sf-del-why" type="text" value="{{delWhy}}" onChange="{{onDelWhy}}" aria-required="true" aria-invalid="{{delInv}}" aria-describedby="{{delBy}}" autoComplete="off" placeholder="Added twice" style="{{delStyle}}">
+            <sc-if value="{{delErrOn}}" hint-placeholder-val="{{ false }}"><span id="sf-del-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you’re making this change.</span></sc-if>
+          </div>
+          <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="undo" tone="muted" size="16" hint-size="16px,16px"></dc-import>Undo stays on screen for a few seconds. The deletion and the reason are kept in the audit trail.</div>
+        </sc-if>
+
+        <sc-if value="{{isMove}}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 16px">
+            <div style="display: flex; flex-direction: column; gap: 6px; grid-column: span 2">
+              <label for="sf-m-to" style="font-size: 13px; font-weight: 600; color: #46546A">Move to</label>
+              <select id="sf-m-to" value="AI" style="height: 40px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 10px; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"><option value="AI">AI · Agrinexus International · Kept here</option></select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="sf-m-last" style="font-size: 13px; font-weight: 600; color: #46546A">Last day at AISB</label>
+              <input id="sf-m-last" type="date" value="2026-12-31" style="height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="sf-m-first" style="font-size: 13px; font-weight: 600; color: #46546A">First day at AI</label>
+              <input id="sf-m-first" type="date" value="2027-01-01" style="height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box">
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="sf-m-no" style="font-size: 13px; font-weight: 600; color: #46546A">Staff no. at AI</label>
+              <input id="sf-m-no" type="text" value="A006" aria-describedby="sf-m-no-hint" autoComplete="off" style="height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box">
+              <span id="sf-m-no-hint" style="color: #5F6C80; font-size: 12px">AI's next free number.</span>
+            </div>
+          </div>
+          <ul style="margin: 0; padding: 12px 14px 12px 32px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px; display: flex; flex-direction: column; gap: 6px">
+            <li><b style="color: #0F1A2B">At AISB:</b> Izzati is marked Left on Thu 31 Dec 2026, reason “Moved to AI”. A move isn't a reason for CP22A or CP21.</li>
+            <li><b style="color: #0F1A2B">At AI:</b> a new record from Fri 1 Jan 2027, with her personal details and statutory numbers copied. The two records are linked and each shows the other.</li>
+            <li><b style="color: #0F1A2B">Joiner tasks at AI:</b> the e-CP22 within 30 days of Fri 1 Jan 2027, registering her with KWSP and PERKESO within 7 days, and stamping her contract too if her AI salary is over RM 3,000. They go on AI's Calendar and reminders and Monthly checklist.</li>
+            <li><b style="color: #0F1A2B">Pay:</b> {{movePayTxt}}</li>
+            <li><b style="color: #0F1A2B">Work location:</b> AI's staff work in Sabah, so the Sabah Labour Ordinance applies to her leave there.</li>
+          </ul>
+          <sc-if value="{{moveRecurOn}}" hint-placeholder-val="{{ true }}"><a href="Recurring.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600">Open Recurring</a></sc-if>
+        </sc-if>
+      </div>
+      <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end">
+        <button type="button" id="sf-d-cancel" class="hs" onClick="{{closeDlg}}" disabled="{{dSaving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{dCancel}}</button>
+        <button type="button" id="sf-d-ok" class="{{dOkCls}}" onClick="{{dOk}}" aria-disabled="{{dSavingAria}}" style="{{dOkStyle}}"><sc-if value="{{dSaving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{dOkLabel}}</button>
+      </div>
+    </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"new","options":["new","filled","errors","refused","saving","saved","editing","discard","no-pay","foreign","left","left-errors","left-cp22a","left-cp21","left-advance","left-saving","left-saved","delete-refused","delete-allowed","deleted","move","other-company"],"section":"State"},"$preview":{"width":1440,"height":2600}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'new');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); }
+
+  // ---------- people on this board (scope/samples.md section 5; made up) ----------
+  blank(co) {
+    const c = this.company(co);
+    return { full: '', pref: '', cit: 'citizen', ic: '', country: '', nat: 'Malaysian', permit: '', dob: '', gender: '', marital: '', race: 'Not recorded', religion: 'Not recorded', phone: '', pemail: '', addr: '',
+      no: c.nextNo, pos: '', dept: '', type: 'Permanent', joined: '', prob: '', confirmed: '', contractEnd: '', days: '5', hours: '8', manual: 'No', loc: c.loc, wstate: c.offices[0], reports: '', wemail: '',
+      basic: '', from: '', allow: '', insur: '', bank: '', acct: '', paidBy: 'Bank transfer', epf: '', socso: '', tin: '', first: '', lindung: 'Covered',
+      pw: 'ic', pwVal: '', resident: 'Yes', cat: '', spDis: 'No', selfDis: 'No', kids: '', kids18: '', kidsDis: '', zakat: '', emName: '', emRel: '', emPhone: '', notes: '' };
+  }
+  // company settings (samples section 2), so nothing hangs on the company code: "Runs payroll in this app", kind, work location, offices
+  company(co) {
+    return co === 'AI' ? { code: 'AI', kind: 'here', runsPayroll: false, loc: 'Sabah', offices: ['Sabah'], nextNo: 'A006' }
+      : { code: 'AISB', kind: 'sqlPayroll', runsPayroll: true, loc: 'Peninsular Malaysia', offices: ['Wilayah Persekutuan Kuala Lumpur'], nextNo: 'S009' };
+  }
+  person(id) {
+    const B = this.blank('AISB');
+    const ro = (basic, allow, bank) => ({ payRo: [basic, allow, bank, 'Bank transfer'] });
+    const S = {
+      S009: { id: 'S009', co: 'AISB', he: 'he', his: 'his', him: 'him', status: 'prob', f: { ...B, full: 'Daniel Lee Chee Keong', pref: 'Daniel', ic: '••••••-••-9153', dob: '2001-05-14', gender: 'Male', marital: 'Single', no: 'S009', pos: 'Accounts assistant', dept: 'Finance and HR', joined: '2026-11-03', prob: '2027-02-02', reports: 'Aisha Rahman', wemail: 'daniel@aisb.example', basic: '3,500.00', from: '2026-11-03', bank: 'Maybank', acct: '····8073', cat: '1', kids: '0' } },
+      S002: { id: 'S002', co: 'AISB', he: 'he', his: 'his', him: 'him', status: 'in', joinedTxt: '1 Jun 2021', ...ro('7,800.00 a month, from 1 Jan 2026', 'Travelling 3,000.00 a month', 'CIMB ····8841'),
+        f: { ...B, full: 'Ong Wei Ming', pref: 'Wei Ming', ic: '••••••-••-5127', dob: '1993-03-09', gender: 'Male', marital: 'Single', no: 'S002', pos: 'Sales executive', dept: 'Sales', joined: '2021-06-01', reports: 'Tan Mei Ling', wemail: 'weiming@aisb.example', epf: 'On file', socso: 'On file', tin: 'On file', first: '2021-06', pw: 'own', cat: '1', kids: '0' } },
+      S004: { id: 'S004', co: 'AISB', he: 'he', his: 'his', him: 'him', status: 'in', ...ro('5,700.00 a month, from 1 Jan 2026', 'Travelling 2,600.00 a month', 'Public Bank ····0917'),
+        f: { ...B, full: 'Mohd Hafiz bin Rosli', pref: 'Hafiz', ic: '••••••-••-7391', dob: '1985-07-22', gender: 'Male', marital: 'Married', no: 'S004', pos: 'Operations executive', dept: 'Operations', joined: '2019-03-04', reports: 'Aisha Rahman', wemail: 'hafiz@aisb.example', epf: 'On file', socso: 'On file', tin: 'On file', first: '2019-03', cat: '2', kids: '3' } },
+      S006: { id: 'S006', co: 'AISB', he: 'he', his: 'his', him: 'him', status: 'in', sixty: true, ...ro('7,800.00 a month, from 1 Jan 2024', 'Travelling 600.00 a month', 'RHB ····3390'),
+        f: { ...B, full: 'Wong Kah Seng', pref: 'Kah Seng', ic: '••••••-••-1035', dob: '1966-10-12', gender: 'Male', marital: 'Married', no: 'S006', pos: 'IT support', dept: 'IT', type: 'Contract', contractEnd: '2026-12-31', joined: '2024-01-01', reports: 'Hassan Ismail', wemail: 'kahseng@aisb.example', epf: 'On file', socso: 'On file', tin: 'On file', first: '2024-01', cat: '3', kids: '0' } },
+      S007: { id: 'S007', co: 'AISB', he: 'she', his: 'her', him: 'her', status: 'prob', ...ro('3,400.00 a month, from 1 Sep 2026', 'Travelling 600.00 a month', 'Maybank ····6128'),
+        f: { ...B, full: 'Goh Jia Hui', pref: 'Jia Hui', ic: '••••••-••-4720', dob: '1999-12-30', gender: 'Female', marital: 'Single', no: 'S007', pos: 'Marketing executive', dept: 'Marketing', joined: '2026-09-01', prob: '2026-11-30', reports: 'Tan Mei Ling', wemail: 'jiahui@aisb.example', epf: 'On file', socso: 'On file', tin: 'On file', first: '2026-09', cat: '1', kids: '0' } },
+      S008: { id: 'S008', co: 'AISB', he: 'she', his: 'her', him: 'her', status: 'in', ...ro('2,800.00 a month, from 15 Jan 2025', 'Travelling 300.00 a month', 'Bank Islam ····4405'),
+        f: { ...B, full: 'Nur Izzati binti Kamal', pref: 'Izzati', ic: '••••••-••-8264', dob: '2000-10-21', gender: 'Female', marital: 'Single', no: 'S008', pos: 'Office assistant', dept: 'Administration', joined: '2025-01-15', reports: 'Aisha Rahman', wemail: 'izzati@aisb.example', epf: 'On file', socso: 'On file', tin: 'On file', first: '2025-01', cat: '1', kids: '0' } },
+      S011: { id: 'S011', co: 'AISB', he: 'he', his: 'his', him: 'him', status: 'prob', dup: true, payRo: ['Not set', 'None', 'Not set', '—'],
+        f: { ...B, full: 'Daniel Lee Chee Keong', pref: 'Daniel', ic: '', dob: '2001-05-14', gender: 'Male', marital: 'Single', no: 'S011', pos: 'Accounts assistant', dept: 'Finance and HR', joined: '2026-11-03', prob: '2027-02-02', reports: 'Aisha Rahman' } },
+      A005: { id: 'A005', co: 'AI', he: 'she', his: 'her', him: 'her', status: 'in', foreign: true, payRo: ['2,400.00 a month', 'None', 'Not set', 'Bank transfer'],
+        f: { ...this.blank('AI'), full: 'Rina Santoso', pref: 'Rina', cit: 'foreign', ic: '••••1307', country: 'Indonesia', nat: 'Indonesian', permit: '2027-01-10', dob: '1995-11-06', gender: 'Female', no: 'A005', pos: 'Farm supervisor', type: 'Contract', joined: '2025-01-15', loc: 'Sabah', reports: 'Hassan Ismail', epf: 'On file', socso: 'On file', tin: '', first: '2025-01', lindung: 'Always covered', pw: 'ic', resident: 'Yes' } }
+    };
+    return S[id];
+  }
+  others(co) { return co === 'AI' ? ['A001', 'A002', 'A003', 'A004', 'A005'] : ['S001', 'S002', 'S003', 'S004', 'S005', 'S006', 'S007', 'S008', 'S010']; }
+  ownerOf(no) { return { S001: 'Aisha Rahman', S002: 'Ong Wei Ming', S003: 'Nurul Aina binti Hashim', S004: 'Mohd Hafiz bin Rosli', S005: 'Nor Khadijah binti Omar', S006: 'Wong Kah Seng', S007: 'Goh Jia Hui', S008: 'Nur Izzati binti Kamal', S010: 'Kavitha Nair',
+    A001: 'Mohd Faizal bin Yusof', A002: 'Chong Pei Shan', A003: 'Priya Subramaniam', A004: 'Lee Jun Wei', A005: 'Rina Santoso' }[no] || ''; }
+
+  // ---------- states ----------
+  init(view) {
+    const base = { away: null, mode: 'edit', pid: null, co: 'AISB', user: 'aisha', form: null, loaded: null, tried: false, refuse: '', saving: false, confirm: false, done: false, deleted: false, leaving: null,
+      dlg: null, closing: false, toast: null, toastLeaving: false, undo: null, flashN: 0, footMsg: '', sample: '' };
+    const DAN = 'Sample: adding the joiner Daniel Lee Chee Keong on Mon 2 Nov 2026, the day before he started.';
+    const KS = 'Sample: how Kah Seng’s leaving was set up, before it was saved. Today he shows as leaving Thu 31 Dec 2026 (retiring) on Staff, with the CP22A on Calendar and reminders.';
+    const neu = (f, extra) => { const b = this.blank('AISB'); return { ...base, mode: 'new', pid: 'S009', form: { ...b, ...(f || {}) }, loaded: b, ...(extra || {}) }; };
+    const edit = (id, patch, extra) => { const p = this.person(id); return { ...base, mode: 'edit', pid: id, co: p.co, form: { ...p.f, ...(patch || {}) }, loaded: { ...p.f }, ...(extra || {}) }; };
+    const daniel = this.person('S009').f;
+    const left = (id, d, extra) => edit(id, null, { dlg: { kind: 'left', last: '', why: '', pcb: false, tried: false, saving: false, ...(d || {}) }, sample: id === 'S006' ? KS : '', ...(extra || {}) });
+    switch (view) {
+      case 'filled': return neu(daniel, { sample: DAN });
+      case 'errors': return neu({ pref: 'Daniel', dept: 'Finance and HR', wemail: 'daniel@aisb', joined: '' }, { tried: true, sample: DAN });
+      case 'refused': return neu({ ...daniel, no: 'S004' }, { tried: true, sample: DAN, refuse: this.refusal({ ...daniel, no: 'S004' }, 'S009', 'AISB') });
+      case 'saving': return neu(daniel, { saving: true, sample: DAN });
+      case 'saved': { const s = neu(daniel, { done: true, sample: DAN }); return { ...s, loaded: { ...daniel }, toast: { text: 'Daniel Lee Chee Keong added as S009.', undo: true }, undo: { kind: 'add' } }; }
+      case 'editing': return edit('S002', { reports: 'Hassan Ismail' });
+      case 'discard': return edit('S002', { reports: 'Hassan Ismail' }, { confirm: true });
+      case 'no-pay': return edit('S002', null, { user: 'aina' });
+      case 'foreign': return edit('A005');
+      case 'left': return left('S006');
+      case 'left-errors': return left('S006', { last: '2023-12-31', why: '', tried: true });
+      case 'left-cp22a': return left('S006', { last: '2026-12-31', why: 'Retiring' });
+      case 'left-cp21': return left('S006', { last: '2026-12-31', why: 'Leaving Malaysia for more than 3 months' });
+      case 'left-advance': return left('S004', { last: '2026-12-31', why: 'Resigned' });
+      case 'left-saving': return left('S006', { last: '2026-12-31', why: 'Retiring', saving: true });
+      case 'left-saved': { const s = edit('S006', null, { leaving: { last: '2026-12-31', why: 'Retiring', form: 'CP22A' }, flashN: 1 }); return { ...s, toast: { text: 'Kah Seng marked as leaving on Thu 31 Dec 2026. CP22A due Tue 1 Dec is on Calendar and reminders.', undo: true }, undo: { kind: 'left' } }; }
+      case 'delete-refused': return edit('S007', null, { dlg: { kind: 'delref' } });
+      case 'delete-allowed': return edit('S011', null, { dlg: { kind: 'del', why: 'Added twice', tried: false, saving: false } });
+      case 'deleted': { const s = edit('S011', null, { deleted: true }); return { ...s, toast: { text: 'S011 deleted.', undo: true }, undo: { kind: 'del' } }; }
+      case 'move': return edit('S008', null, { dlg: { kind: 'move', saving: false } });
+      case 'other-company': return edit('S006', null, { away: 'AI', leaving: { last: '2026-12-31', why: 'Retiring', form: 'CP22A' } });
+      default: return neu(null, { sample: DAN });
+    }
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st);
+      const nx = this.init(this.props.view || 'new');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (st.dlg && !prev.dlg) { this.focusId('sf-d-title'); return; }
+    if (!st.dlg && prev.dlg) {
+      const o = this._opener;
+      // the opener may be gone (deleted) or disabled (Mark as left, once marked): then the leaving note, else the title
+      if (o && o.isConnected && !o.disabled && o !== document.body && o.focus) o.focus({ preventScroll: true }); else if (!(st.leaving && this.focusId('sf-leaving'))) this.focusId('sf-h1');
+      this._opener = null;
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('sf-keep'); return; }
+    if (prev.confirm && !st.confirm) this.focusId('sf-cancel');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+
+  // ---------- rules ----------
+  fmt(iso, wd) {
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    if (!m) return '';
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    return (wd ? W[d.getUTCDay()] + ' ' : '') + d.getUTCDate() + ' ' + M[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  }
+  pron(f) { return f.gender === 'Male' ? { he: 'he', has: 'has', his: 'his' } : f.gender === 'Female' ? { he: 'she', has: 'has', his: 'her' } : { he: 'they', has: 'have', his: 'their' }; }
+  // joiner tasks as Setup › Joiner and leaver reminders' joiner templates (SetupChecklist): e-CP22 30 days, Register with KWSP and PERKESO 7 days,
+  // Stamp the contract 30 days only when the monthly salary is over RM 3,000; {name} is the preferred name
+  joinerTasks(f) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(f.joined || ''));
+    if (!m) return [];
+    const by = n => new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + n)).toISOString().slice(0, 10);
+    const pay = parseFloat(String(f.basic || '').replace(/,/g, '')) || 0, nm = String(f.pref || f.full || '').trim() || 'the new employee';
+    const t = [
+      { iso: by(30), what: 'e-CP22 for ' + nm, rule: 'within 30 days of joining (filed through MyTax).' },
+      { iso: by(7), what: 'Register ' + nm + ' with KWSP and PERKESO', rule: 'within 7 days of joining (' + (f.cit === 'foreign' ? 'SOCSO' : 'SOCSO and EIS') + ' on the ASSIST portal).' }
+    ];
+    if (pay > 3000) t.push({ iso: by(30), what: 'Stamp the contract of ' + nm, rule: 'within 30 days (LHDN e-Duti Setem), as the monthly salary is over RM 3,000.' });
+    return t.sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : 0)).map(x => ({ ...x, due: this.fmt(x.iso, true) }));
+  }
+  dueOf(d) { return d && d.why === 'Died' ? this.plus30(d.last) : this.minus30(d && d.last); }
+  plus30(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '')); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] + 30)).toISOString().slice(0, 10) : ''; }
+  minus30(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '')); return m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] - 30)).toISOString().slice(0, 10) : ''; }
+  errors(f) {
+    const e = {};
+    if (!String(f.full).trim()) e.full = 'Enter the full name as on the ' + (f.cit === 'foreign' ? 'passport.' : 'IC.');
+    if (!String(f.ic).trim()) e.ic = f.cit === 'foreign' ? 'Enter the passport number.' : 'Enter the IC number: 12 digits, with or without dashes.';
+    else if (f.cit !== 'foreign' && !/^•/.test(f.ic) && String(f.ic).replace(/\D/g, '').length !== 12) e.ic = 'An IC number has 12 digits.';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(f.dob))) e.dob = 'Enter the date of birth. It decides the EPF, SOCSO and EIS rates.';
+    if (!String(f.no).trim()) e.no = 'Enter a staff number.';
+    if (!String(f.pos).trim()) e.pos = 'Enter the position.';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(f.joined))) e.joined = 'Enter the date joined.';
+    if (String(f.wemail).trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(f.wemail).trim())) e.wemail = 'An email like name@company.example.';
+    if (f.type === 'Contract' && f.cit !== 'foreign' && !/^\d{4}-\d{2}-\d{2}$/.test(String(f.contractEnd))) e.contractEnd = 'Enter the date the contract ends.';
+    return e;
+  }
+  refusal(f, own, co) {
+    const no = String(f.no).trim().toUpperCase();
+    if (no !== own && this.others(co).includes(no)) return no + ' is already ' + this.ownerOf(no) + '’s staff number. Staff numbers are never reused, even after someone leaves: ' + own + ' is the next free one. What you typed is kept below.';
+    return '';
+  }
+  dirty() { const st = this.state; return !!st.form && !st.done && !st.deleted && JSON.stringify(st.form) !== JSON.stringify(st.loaded); }
+
+  // ---------- actions ----------
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.form || st.saving || st.dlg || st.done) return;
+    const errs = this.errors(st.form);
+    const order = ['full', 'ic', 'dob', 'no', 'pos', 'joined', 'contractEnd', 'wemail'];
+    const first = order.find(k => errs[k]);
+    if (first) { this._focusId = 'sf-errsum'; this.setState({ tried: true, refuse: '' }); return; }
+    const why = this.refusal(st.form, st.mode === 'new' ? this.company(st.co).nextNo : st.pid, st.co);
+    if (why) { this._focusId = 'sf-refuse'; this.setState({ tried: true, refuse: why }); return; }
+    if (st.mode === 'edit' && !this.dirty()) { this.setState({ footMsg: 'Nothing has changed.' }); return; }
+    this.setState({ saving: true, footMsg: '' });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => this.finishSave(), 700);
+  }
+  finishSave() {
+    const st = this.state;
+    if (!st.saving) return;
+    if (st.mode === 'new') {
+      this.setState({ saving: false, done: true, tried: false, refuse: '', loaded: { ...st.form }, undo: { kind: 'add', form: st.form } });
+      this._focusId = 'sf-done-h';
+      this.toast(String(st.form.full).trim() + ' added as ' + String(st.form.no).trim().toUpperCase() + '.', { undo: true });
+      return;
+    }
+    const before = st.loaded;
+    const p = this.person(st.pid);
+    this.setState({ saving: false, tried: false, refuse: '', loaded: { ...st.form }, undo: { kind: 'edit', form: before }, flashN: st.flashN + 1 });
+    const changed = Object.keys(st.form).filter(k => st.form[k] !== before[k]);
+    const words = { reports: 'reports to', pos: 'position', dept: 'department', wemail: 'work email', phone: 'phone', addr: 'address' };
+    this.toast('Saved. ' + p.f.pref + ': ' + (changed.map(k => (words[k] || 'details') + (k === 'reports' ? ' ' + st.form[k] : ' changed')).join(', ') || 'details changed') + '.', { undo: true });
+  }
+  undo() {
+    const st = this.state, u = st.undo;
+    if (!u) return;
+    if (u.kind === 'add') { const nm = String(st.form.pref || st.form.full || '').trim() || 'The person'; this.setState({ done: false, loaded: this.blank(st.co), undo: null }); this.toast('Undone. ' + nm + ' isn’t on the staff list; what you typed is still here.'); return; }
+    if (u.kind === 'edit') { this.setState({ form: { ...u.form }, loaded: { ...u.form }, undo: null, flashN: st.flashN + 1 }); this.toast('Undone. The record is as it was.'); return; }
+    if (u.kind === 'left') { const lp = this.person(st.pid); this.setState({ leaving: null, undo: null }); this.toast('Undone. ' + (lp ? lp.f.pref : 'The person') + ' is in employment again; any leaver reminder and hold are removed.'); return; }
+    if (u.kind === 'del') { this.setState({ deleted: false, undo: null }); this.toast('Undone. S011 is back.'); return; }
+    if (u.kind === 'move') { this.setState({ leaving: null, undo: null, flashN: st.flashN + 1 }); this.toast('Undone. Izzati stays at AISB; nothing was added to AI.'); }
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  openDlg(d) { if (this.state.dlg) return; this._opener = document.activeElement; this.setState({ dlg: d, closing: false }); }
+  setDlg(patch) { const d = this.state.dlg; if (d) this.setState({ dlg: { ...d, ...patch } }); }
+  closeDlg() {
+    const st = this.state;
+    if (!st.dlg || st.closing || st.dlg.saving) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false }); }
+  leftForm(d) {
+    if (!d) return '';
+    if (d.why === 'Leaving Malaysia for more than 3 months') return 'CP22A and CP21';
+    if (d.why === 'Retiring' || d.why === 'Died' || d.pcb) return 'CP22A';
+    return '';
+  }
+  leftErrors(d, p) {
+    const e = {};
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.last || ''))) e.last = 'Enter the last day, for example 31 Dec 2026.';
+    else if (d.last < p.f.joined) e.last = 'The last day can’t be before the date joined (' + this.fmt(p.f.joined, true) + ').';
+    if (!d.why) e.why = 'why';
+    return e;
+  }
+  dOk() {
+    const st = this.state, d = st.dlg, p = this.person(st.pid);
+    if (!d || st.closing || d.saving) return;
+    if (d.kind === 'delref') { this.setState({ dlg: { kind: 'left', last: '', why: '', pcb: false, tried: false, saving: false } }); this._focusId = 'sf-l-last'; return; }
+    if (d.kind === 'del') {
+      if (!String(d.why || '').trim()) { this._focusId = 'sf-del-why'; this.setDlg({ tried: true }); return; }
+      this.setState({ dlg: null, closing: false, deleted: true, undo: { kind: 'del' } });
+      this.toast('S011 deleted.', { undo: true });
+      return;
+    }
+    if (d.kind === 'move') {
+      this.setState({ dlg: null, closing: false, leaving: { last: '2026-12-31', why: 'Moved to AI', form: '', moveTo: 'AI', moveNo: 'A006', moveFirst: '2027-01-01' }, undo: { kind: 'move' }, flashN: st.flashN + 1 });
+      this.toast('Izzati moves to AI on Fri 1 Jan 2027 as A006. Her AISB record shows Left from Thu 31 Dec 2026; the two are linked. AI’s joiner tasks are on its Calendar and reminders.', { undo: true });
+      return;
+    }
+    const e = this.leftErrors(d, p);
+    if (e.last || e.why) { this._focusId = e.last ? 'sf-l-last' : 'sf-l-why'; this.setDlg({ tried: true }); return; }
+    this.setDlg({ saving: true });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => {
+      const s = this.state, dd = s.dlg;
+      if (!dd || !dd.saving) return;
+      const form = this.leftForm(dd);
+      this.setState({ dlg: null, closing: false, leaving: { last: dd.last, why: dd.why, form }, undo: { kind: 'left' }, flashN: s.flashN + 1 });
+      this.toast(p.f.pref + ' marked as leaving on ' + this.fmt(dd.last, true) + '.' + (form ? ' ' + form + ' due ' + this.fmt(this.dueOf(dd), true).replace(/ \d{4}$/, '') + (form.includes(' and ') ? ' are' : ' is') + ' on Calendar and reminders.' : ''), { undo: true });
+    }, 700);
+  }
+
+  // ---------- the form's fields ----------
+  sections(st) {
+    const f = st.form, p = st.pid ? this.person(st.pid) : null, isNew = st.mode === 'new', co = st.co;
+    const errs = st.tried ? this.errors(f) : {};
+    const refusedNo = !!st.refuse;
+    const canPay = st.user !== 'aina';
+    const foreign = f.cit === 'foreign';
+    const offices = this.company(co).offices;
+    const ld = st.loaded || {};
+    const ctl = bad => 'height:40px;width:100%;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2');
+    const F = (k, label, kind, o) => {
+      o = o || {};
+      const id = 'sf-f-' + k;
+      const err = o.err !== undefined ? o.err : (errs[k] || (k === 'no' && refusedNo ? 'Already used. ' + (isNew ? this.company(co).nextNo : st.pid) + ' is free.' : ''));
+      const hint = o.hint || '';
+      const by = [err ? id + '-err' : '', hint ? id + '-hint' : ''].filter(Boolean).join(' ');
+      const val = f[k] == null ? '' : f[k];
+      return { id, k, label, req: o.req ? 'Required' : o.opt ? 'Optional' : '', ariaReq: o.req ? 'true' : 'false', labelOn: kind !== 'radio',
+        isText: kind === 'text' || kind === 'date' || kind === 'month' || kind === 'password', isSelect: kind === 'select', isArea: kind === 'area', isMasked: kind === 'masked', isRo: kind === 'ro', isRadio: kind === 'radio',
+        type: kind === 'date' ? 'date' : kind === 'month' ? 'month' : kind === 'password' ? 'password' : o.type || 'text', im: o.im || 'text', list: o.list || '', ph: o.ph || '', dis: !!o.dis,
+        val: kind === 'ro' ? o.ro : val, opts: (o.opts || []).map(x => (typeof x === 'string' ? { v: x, l: x } : x)), radios: o.radios || [],
+        change: ev => this.setForm({ [k]: ev && ev.target ? ev.target.value : '' }),
+        retype: () => this.setForm({ [k]: '' }), maskBtn: o.maskBtn || 'Type it again', maskAria: o.maskAria || label + ', last 4 shown',
+        inv: err ? 'true' : 'false', errOn: !!err, err, errId: id + '-err', hintOn: !!hint, hint, hintId: id + '-hint', by,
+        sensOn: !!o.sens, editedOn: !isNew && !st.done && kind !== 'ro' && ld[k] !== undefined && ld[k] !== f[k],
+        wrap: 'display:flex;flex-direction:column;gap:6px;min-width:0;grid-column:span ' + (o.wide ? 2 : 1),
+        style: kind === 'area' ? ctl(false).replace('height:40px', 'min-height:80px;padding:10px 12px;resize:vertical') : ctl(!!err) + (o.narrow ? ';max-width:200px' : '') };
+    };
+    const masked = (k, label, o) => (/^[•·]/.test(String(f[k] || '')) || f[k] === 'On file' ? F(k, label, 'masked', o) : F(k, label, 'text', o));
+    const radio = (k, label, list, o) => F(k, label, 'radio', { ...(o || {}), radios: list.map(([v, l, sub]) => ({ id: 'sf-f-' + k + '-' + v, name: 'sf-' + k, l, sub: sub || '', checked: f[k] === v,
+      border: f[k] === v ? '#2450B8' : '#8792A2', bg: f[k] === v ? '#F3F6FE' : '#FFFFFF', change: () => this.setForm({ [k]: v }) })) });
+    const reportsOpts = co === 'AI' ? ['', 'Hassan Ismail'] : ['', 'Hassan Ismail', 'Tan Mei Ling', 'Aisha Rahman'];
+
+    const personal = [
+      F('full', 'Full name as on ' + (foreign ? 'passport' : 'IC'), 'text', { req: true, wide: false }),
+      F('pref', 'Preferred name', 'text', { opt: true, hint: 'What the app calls them on lists and cards.' }),
+      F('cit', 'Citizenship', 'select', { opts: [{ v: 'citizen', l: 'Malaysian citizen' }, { v: 'pr', l: 'Permanent resident' }, { v: 'foreign', l: 'Foreign' }] }),
+      F('nat', 'Nationality', 'text', { hint: foreign ? 'With the citizenship, it decides the EPF, SOCSO and EIS rates.' : '' }),
+      foreign ? masked('ic', 'Passport no.', { req: true, maskBtn: 'Type it again', hint: 'Shown with the last 4 only, everywhere but the staff record PDF.' })
+        : masked('ic', 'IC number', { req: true, im: 'numeric', hint: 'Shown with the last 4 only, everywhere but the staff record PDF.' })
+    ];
+    if (foreign) personal.push(F('country', 'Passport country', 'text', { req: true }), F('permit', 'Work permit expires', 'date', { req: true, hint: 'Warned 90, 60 and 30 days before, on Calendar and reminders and Next up.' }));
+    personal.push(
+      F('dob', 'Date of birth', 'date', { req: true, hint: 'Birthdays show the day and month only, never the year.' }),
+      F('gender', 'Gender', 'select', { opts: ['', 'Female', 'Male'].map(v => ({ v, l: v || 'Choose' })) }),
+      F('marital', 'Marital status', 'select', { opts: ['', 'Single', 'Married', 'Divorced', 'Widowed'].map(v => ({ v, l: v || 'Choose' })) }),
+      F('phone', 'Phone', 'text', { opt: true, type: 'tel', im: 'tel' }),
+      F('race', 'Race', 'select', { opt: true, sens: true, opts: ['Not recorded', 'Malay', 'Chinese', 'Indian', 'Bumiputera Sabah', 'Bumiputera Sarawak', 'Other'] }),
+      F('religion', 'Religion', 'select', { opt: true, sens: true, opts: ['Not recorded', 'Islam', 'Buddhism', 'Christianity', 'Hinduism', 'Other', 'None'], hint: 'Race and religion: only with the person’s written consent. Left out of exports by default.' }),
+      F('pemail', 'Personal email', 'text', { opt: true, type: 'email' }),
+      F('addr', 'Home address', 'area', { opt: true, wide: true })
+    );
+    const job = [
+      F('no', 'Staff no.', 'text', { req: true, hint: isNew ? 'The next free number. Numbers are never reused, even after someone leaves.' : '' }),
+      F('pos', 'Position', 'text', { req: true }),
+      F('dept', 'Department', 'text', { opt: true, list: 'sf-dept-list', hint: 'Free text; past departments are offered as you type.' }),
+      F('type', 'Employment type', 'select', { opts: ['Permanent', 'Contract', 'Part-time', 'Intern'] }),
+      F('joined', 'Date joined', 'date', { req: true, hint: isNew ? 'Makes the joiner tasks from Setup › Joiner and leaver reminders: the e-CP22 within 30 days, registering with KWSP and PERKESO within 7 days, and stamping the contract within 30 days when the monthly salary is over RM 3,000.' : '' }),
+      F('prob', 'Probation ends', 'date', { opt: true, hint: 'Reminded 30 and 7 days before.' }),
+      F('confirmed', 'Confirmed date', 'date', { opt: true, hint: 'The day the job was confirmed after probation.' })
+    ];
+    if (f.type === 'Contract') job.push(F('contractEnd', 'Contract ends', 'date', { req: !foreign, opt: foreign, hint: 'Reminded 60 and 30 days before.' }));
+    job.push(
+      F('days', 'Working days a week', 'select', { opts: ['5', '5.5', '6', '4', '3'] }),
+      F('hours', 'Normal hours a day', 'text', { im: 'decimal', narrow: true }),
+      F('manual', 'Does manual work', 'select', { opts: ['No', 'Yes'], hint: 'For the overtime rules.' }),
+      F('loc', 'Work location', 'select', { opts: ['Peninsular Malaysia', 'Labuan', 'Sabah', 'Sarawak'], hint: f.loc === 'Sabah' || f.loc === 'Sarawak' ? f.loc + ' follows its own Labour Ordinance.' : 'Decides which leave law applies.' }),
+      offices.length > 1 ? F('wstate', 'Work state', 'select', { opts: offices, hint: 'Decides the public holidays.' })
+        : F('wstate', 'Work state', 'ro', { ro: offices[0] + ' · the company’s only office', hint: 'Asked only when the company has more than one office (Setup › Companies). It decides the public holidays.' }),
+      F('reports', 'Reports to', 'select', { opts: reportsOpts.map(v => ({ v, l: v || 'No one' })) }),
+      F('wemail', 'Work email', 'text', { opt: true, type: 'email', hint: 'Payslips are emailed here.' })
+    );
+    const pay = !canPay ? [] : isNew ? [
+      F('basic', 'Basic salary a month (RM)', 'text', { req: false, im: 'decimal', hint: 'Kept as a history: a change always starts from a date.' }),
+      F('from', 'Applies from', 'date', {}),
+      F('allow', 'Fixed allowances', 'text', { opt: true, ph: 'For example Travelling 600.00', hint: 'Name and monthly amount.' }),
+      F('insur', 'Employer-paid insurance', 'text', { opt: true, ph: 'For example group medical 45.00', hint: 'What the company pays for this person, if anything: name and monthly amount.' }),
+      F('paidBy', 'Paid by', 'select', { opts: ['Bank transfer', 'Cheque'] }),
+      F('bank', 'Bank', 'select', { opts: ['', 'Maybank', 'CIMB', 'Public Bank', 'RHB', 'Bank Islam', 'Other'].map(v => ({ v, l: v || 'Choose' })) }),
+      masked('acct', 'Account number', { opt: true, im: 'numeric', hint: 'Shown with the last 4 only.' })
+    ] : [
+      F('payBasic', 'Basic salary', 'ro', { ro: p.payRo[0] }), F('payAllow', 'Fixed allowances', 'ro', { ro: p.payRo[1] }),
+      F('payIns', 'Employer-paid insurance', 'ro', { ro: p.payRo[4] || 'None' }),
+      F('payBank', 'Bank', 'ro', { ro: p.payRo[2] }), F('payBy', 'Paid by', 'ro', { ro: p.payRo[3] })
+    ];
+    const stat = [
+      masked('epf', 'EPF (KWSP) no.', { opt: true, maskBtn: 'Replace', maskAria: 'EPF number, on file', hint: isNew ? 'Leave it empty until registered: registering with KWSP and PERKESO is a joiner task.' : '' }),
+      masked('socso', 'SOCSO (PERKESO) no.', { opt: true, maskBtn: 'Replace', maskAria: 'SOCSO number, on file' }),
+      masked('tin', 'Income tax no. (TIN)', { opt: true, maskBtn: 'Replace', maskAria: 'Tax number, on file' }),
+      F('first', 'First contribution', 'month', { opt: true, hint: 'When EPF, SOCSO and EIS were first paid for this person, ever.' }),
+      foreign ? F('lindung', 'Lindung 24 Jam', 'ro', { ro: 'Always covered (foreign worker)' })
+        : F('lindung', 'Lindung 24 Jam', 'select', { opts: ['Covered', 'Opted out from a date'], hint: 'Malaysians may opt out from a date.' })
+    ];
+    const pcb = [
+      F('resident', 'Tax resident', 'select', { opts: ['Yes', 'No'] }),
+      F('cat', 'PCB category', 'select', { opts: [{ v: '', l: 'Choose' }, { v: '1', l: '1 · Single' }, { v: '2', l: '2 · Married, spouse not working' }, { v: '3', l: '3 · Married, spouse working, divorced or widowed' }] }),
+      F('spDis', 'Spouse disabled', 'select', { opts: ['No', 'Yes'], dis: f.marital !== 'Married', hint: f.marital !== 'Married' ? 'Only for a married person.' : '' }),
+      F('selfDis', 'The person is disabled', 'select', { opts: ['No', 'Yes'] }),
+      F('kids', 'Children under 18', 'text', { im: 'numeric', narrow: true }),
+      F('kids18', 'Children 18 and over, studying', 'text', { im: 'numeric', narrow: true }),
+      F('kidsDis', 'Disabled children', 'text', { im: 'numeric', narrow: true }),
+      canPay ? F('zakat', 'Zakat through payroll (RM a month)', 'text', { opt: true, im: 'decimal', narrow: true, hint: 'Taken from pay each month and set against the PCB.' })
+        : F('zakatRo', 'Zakat through payroll', 'ro', { ro: 'Hidden: needs the Payroll figures right' })
+    ];
+    const pwOpts = foreign ? [['ic', 'Passport number', 'The default for a foreign worker'], ['own', 'A personal password', 'Set here by HR']] : [['ic', 'IC number without dashes', 'The default'], ['own', 'A personal password', 'Set here by HR']];
+    const pw = [radio('pw', 'Opens with', pwOpts, { hint: 'The payslip email names the rule, never the password: “Open it with your ' + (foreign ? 'passport number' : 'IC number without dashes') + '.”' })];
+    if (f.pw === 'own') pw.push(st.pid === 'S002' && f.pwVal === '' ? F('pwSet', 'Personal password', 'ro', { ro: 'Set Mon 2 Nov 2026 · not shown', hint: 'To set a new one, use Reset on ' + p.f.pref + '’s staff record, Details tab. HR tells the person; it is never emailed.' }) : F('pwVal', 'Personal password', 'password', { hint: 'At least 8 characters. HR tells the person; it is never emailed.' }));
+    const em = [F('emName', 'Emergency contact', 'text', { opt: true }), F('emRel', 'Relationship', 'text', { opt: true }), F('emPhone', 'Their phone', 'text', { opt: true, type: 'tel', im: 'tel' }), F('notes', 'Notes', 'area', { opt: true, wide: true, hint: 'Visible only to HR. No medical details.' })];
+
+    const statNote = p && p.sixty ? 'Worked out: he turned 60 on 12 Oct 2026, so from November 2026 EPF is 0% for him and 4% for AISB, SOCSO is the second category (employer only) and EIS stops. Common payroll practice: check with KWSP and PERKESO. To override, use the record’s Details tab, with a reason.'
+      : foreign ? 'Worked out for a foreign worker: EPF 2% from ' + (p ? p.his : 'their') + ' pay and 2% from ' + co + ', from October 2025 wages. SOCSO first category (0.5% and 1.75%) while under 60 and first joined before 55. No EIS: it isn’t for foreign workers. Lindung 24 Jam is always covered, and HRDF doesn’t count foreign staff. To override one (for example a foreign worker who chose 11% EPF), use the record’s Details tab, with a reason.'
+      : 'EPF rate group, SOCSO category, EIS cover and HRDF are worked out from the date of birth, citizenship and first contribution, and change by themselves from the month after the person turns 60 (common payroll practice: check with KWSP and PERKESO). To override one, use the record’s Details tab, with a reason.';
+    const S = (key, title, glyph, fields, o) => ({ hid: 'sf-s-' + key, title, glyph, fields, sub: (o && o.sub) || '', linkOn: !!(o && o.link), link: (o && o.link) || '',
+      noteOn: !!(o && o.note), note: (o && o.note) || '', noteTone: (o && o.noteTone) || 'brand', noteGlyph: (o && o.noteGlyph) || 'help', noteBg: (o && o.noteBg) || '#F3F6FE', noteBorder: (o && o.noteBorder) || '#C9D7F6',
+      lockOn: !!(o && o.lock), lock: (o && o.lock) || '' });
+    return [
+      S('personal', 'Personal', 'person', personal, { sub: 'Personal data under the PDPA: only what employment, pay and the law need.' }),
+      S('job', 'Job', 'staff', job, { note: ['Sabah', 'Sarawak'].includes(this.company(co).loc) ? co + '’s staff work in ' + this.company(co).loc + ': the ' + this.company(co).loc + ' Labour Ordinance applies. Check the leave minimums on Setup › HR › Leave types and policy.' : '', noteTone: 'warn', noteGlyph: 'alert', noteBg: '#FFF8EC', noteBorder: '#F0C98A' }),
+      S('pay', 'Pay', 'payroll', pay, { sub: canPay ? 'Payroll figures right' : '', link: canPay && !isNew ? 'Change pay from a date on the Pay tab' : '',
+        lock: canPay ? '' : 'Pay figures need the Payroll figures right. Nurul Aina has HR only, so pay and bank details are hidden here and on the Pay tab; everything else on the record can be changed.' }),
+      S('stat', 'Statutory numbers', 'statutory', stat, { sub: 'Last 4 shown', note: statNote }),
+      S('pcb', 'PCB details', 'receipt', pcb, { sub: 'Forms TP1, TP2 and TP3 go on the Documents tab' }),
+      S('pw', 'Payslip password', 'key', pw, { sub: 'Payslips are PDFs with a password' }),
+      S('em', 'Emergency contact and notes', 'phone', em)
+    ];
+  }
+
+  // ---------- what the page shows ----------
+  renderVals() {
+    const st = this.state, f = st.form || this.blank(st.co);
+    const p = st.pid ? this.person(st.pid) : null;
+    const isNew = st.mode === 'new', co = st.co;
+    const errs = st.tried ? this.errors(f) : {};
+    const LBL = { full: 'Full name', ic: f.cit === 'foreign' ? 'Passport no.' : 'IC number', dob: 'Date of birth', no: 'Staff no.', pos: 'Position', joined: 'Date joined', contractEnd: 'Contract ends', wemail: 'Work email' };
+    const errList = Object.keys(LBL).filter(k => errs[k]).map(k => LBL[k]);
+    const PILL = { in: ['In employment', 'ok', 'person', '#E3F7EC', '#0A6B3D'], prob: ['On probation', 'warn', 'clock', '#FEF1D6', '#934100'], leaving: ['In employment · leaving', 'warn', 'logout', '#FEF1D6', '#934100'], dup: ['Added twice', 'bad', 'alert', '#FDE6E3', '#B0190F'] };
+    const pk = !p || isNew ? null : st.leaving ? 'leaving' : p.dup ? 'dup' : p.status;
+    const d = st.dlg;
+    const dv = this.dlgVals(d, p);
+    const lv = st.leaving;
+    const deptList = ['Finance and HR', 'Sales', 'Operations', 'Customer service', 'IT', 'Marketing', 'Administration'].map(v => ({ v }));
+    return {
+      ...dv,
+      sbCo: (st.away || co) === 'AI' ? 'ai' : 'aisb', sbKind: this.company(st.away || co).kind, sbAccess: st.user === 'aina' ? 'hrOnly' : 'full', tbUser: st.user === 'aina' ? 'aina' : 'aisha',
+      tbSub: isNew ? 'Add a person' : p.f.pref, coCode: co,
+      title: isNew ? (st.done ? String(f.full).trim() : 'Add a person') : p.f.full + (p.f.pref && p.f.pref !== p.f.full ? ' (' + p.f.pref + ')' : ''),
+      pillOn: !!pk, pill: pk ? PILL[pk][0] : '', pillTone: pk ? PILL[pk][1] : 'muted', pillGlyph: pk ? PILL[pk][2] : 'person', pillCls: st.flashN % 2 ? 'fa' : 'fb',
+      pillStyle: pk ? 'display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + PILL[pk][3] + ';color:' + PILL[pk][4] : '',
+      intro: isNew ? 'One person at a time. Only the marked fields are needed to save; payroll needs the rest before the first run. A changed salary or rate always starts from a date, and past months are never rewritten.'
+        : st.pid + ' · joined ' + this.fmt(p.f.joined) + '. Changes are recorded in the audit trail with who made them. Pay changes are made on the Pay tab, from a date.',
+      sampleOn: !!st.sample && !st.away, sampleTxt: st.sample,
+      editActs: !isNew && !st.deleted && !st.away, leftDis: !!st.leaving,
+      leavingOn: !!lv && !st.away, leavingCls: st.flashN % 2 ? 'ex' : 'rv', runOn: this.company(co).runsPayroll,
+      leavingTxt: lv && lv.moveTo ? 'Moving to ' + lv.moveTo + ': last day at ' + co + ' ' + this.fmt(lv.last, true) + ', then ' + lv.moveNo + ' at ' + lv.moveTo + ' from ' + this.fmt(lv.moveFirst, true) + '. A move isn’t a reason for CP22A or CP21. The two records are linked, and ' + lv.moveTo + '’s joiner tasks are on its Calendar and reminders.'
+        : lv ? 'Leaving: last day ' + this.fmt(lv.last, true) + ', ' + lv.why.toLowerCase() + '. ' + (lv.form ? lv.form + ' due by ' + this.fmt(this.dueOf(lv), true) + (lv.form.includes(' and ') ? ' are' : ' is') + ' on Calendar and reminders and the Monthly checklist; ' + (p ? p.his : 'the') + ' final pay shows Hold until tax clearance in To pay until LHDN’s letter is uploaded, or 90 days pass.' : 'No CP22A or CP21 for this reason.') : '',
+      doneTitle: String(f.full).trim() + ' added as ' + String(f.no).trim().toUpperCase(),
+      doneSub: (/^\d{4}-\d{2}-\d{2}$/.test(String(f.prob)) ? 'On probation until ' + this.fmt(f.prob, true) + '. ' : '') + 'Recorded in the audit trail.',
+      doneTasksH: 'Joiner tasks made from ' + this.pron(f).his + ' date joined', doneTasks: this.joinerTasks(f), doneOpen: 'Open ' + this.pron(f).his + ' record',
+      confirmKey: e => { if (e && e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); this.setState({ confirm: false }); } },
+      deletedOn: !!st.deleted && !st.away, doneOn: !!st.done && !st.away, formOn: !st.done && !st.deleted && !st.away,
+      awayOn: !!st.away, awayCo: st.away || '',
+      awayTitle: isNew ? 'What you typed is for ' + co : p.f.pref + ' works for ' + co + ', not ' + (st.away || ''),
+      awayTxt: isNew ? 'A person belongs to one company. Go back to finish adding them to ' + co + ', or open ' + (st.away || '') + '’s staff list; what you typed here is not saved.'
+        : 'A staff record belongs to one company. Go back to ' + p.f.pref + ' at ' + co + ', or open ' + (st.away || '') + '’s staff list.',
+      awayBackLabel: isNew ? 'Back to the form' : 'Back to ' + p.f.pref + ' at ' + co,
+      awayBack: () => { this._focusId = 'sf-h1'; this.setState({ away: null }); },
+      onTopCo: code => {
+        const c = String(code || '').toUpperCase(), s = this.state;
+        if ((c !== 'AISB' && c !== 'AI') || s.saving || s.dlg) return;
+        if (c === s.co) { this.setState({ away: null }); return; }
+        if (s.mode === 'new' && !s.done && !this.dirty()) { const b = this.blank(c); this.setState({ co: c, form: b, loaded: b, tried: false, refuse: '', away: null, sample: '' }); return; }
+        this._focusId = 'sf-away-h'; this.setState({ away: c, confirm: false });
+      },
+      refuseOn: !!st.refuse, refuseTxt: st.refuse,
+      errSumOn: errList.length > 0 && !st.refuse, errSum: (errList.length === 1 ? '1 field: ' : errList.length + ' fields: ') + errList.join(', ') + '.',
+      secs: this.sections({ ...st, form: f }), deptList,
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      discardTxt: isNew ? 'What you typed for the new person isn’t saved.' : 'Your changes to ' + p.f.pref + '’s record aren’t saved. It stays as it is.',
+      keepEditing: () => this.setState({ confirm: false }),
+      cancelLink: !this.dirty(), cancelBtn: this.dirty(),
+      askCancel: () => { if (!this.state.saving) this.setState({ confirm: true }); },
+      footDirty: this.dirty() && !st.saving,
+      footNote: st.saving ? 'Saving…' : st.footMsg ? st.footMsg : this.dirty() ? 'Not saved yet' : isNew ? 'Recorded in the audit trail when added.' : 'Changes are recorded in the audit trail.',
+      saveLabel: st.saving ? 'Saving…' : isNew ? 'Add person' : 'Save changes', saving: !!st.saving, savingAria: st.saving ? 'true' : 'false',
+      save: e => this.save(e),
+      anyDlg: !!d,
+      openLeft: () => this.openDlg({ kind: 'left', last: '', why: '', pcb: false, tried: false, saving: false }),
+      openMove: () => this.openDlg({ kind: 'move', saving: false }),
+      openDel: () => this.openDlg(p && p.dup ? { kind: 'del', why: '', tried: false, saving: false } : { kind: 'delref' }),
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo), toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      toastUndo: () => this.undo(),
+      onToastAnim: () => { if (this.state.toastLeaving) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt), toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+  setForm(patch) { const st = this.state; if (!st.form || st.saving) return; const refuse = st.refuse && patch.no !== undefined ? '' : st.refuse; this.setState({ form: { ...st.form, ...patch }, footMsg: '', refuse }); }
+  dlgVals(d, p) {
+    const st = this.state;
+    const D = { dlgOn: false, dlgRole: 'dialog', dTitle: '', dSub: '', dGlyph: 'logout', dTone: 'brand', dPlate: '#EAF0FD', isLeft: false, isDelRef: false, isDel: false, isMove: false,
+      lLast: '', onLLast: () => {}, lLastInv: 'false', lLastBy: 'sf-l-last-hint', lLastStyle: '', lLastErrOn: false, lLastErr: '', lLastHint: '', lWhy: '', onLWhy: () => {}, lWhyInv: 'false', lWhyBy: 'sf-l-why-hint', lWhyStyle: '', lWhyErrOn: false, lWhyOpts: [],
+      lHe: 'he', lHis: 'his', lPcb: false, onLPcb: () => {}, lFormOn: false, lRunOn: false, lFormTitle: '', lFormTxt: '', lHoldTxt: '', lNoFormOn: false, lNoFormTxt: '', lAdvOn: false, lFoot: '',
+      delWhy: '', onDelWhy: () => {}, delInv: 'false', delBy: '', delStyle: '', delErrOn: false, moveRecurOn: false, movePayTxt: '',
+      dCancel: 'Cancel', dOkLabel: 'Save', dOkCls: 'hb', dOkStyle: '', dSaving: false, dSavingAria: 'false', dOk: () => {}, closeDlg: () => this.closeDlg(),
+      dimCls: 'dim-in', dlgCls: 'dr-in', onPanelAnim: () => {}, dlgKey: () => {} };
+    if (!d || !p) return D;
+    const ctl = bad => 'height:40px;width:100%;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2');
+    const okStyle = kind => 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:140px;height:40px;padding:0 16px;border-radius:10px;border:0;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:pointer;background:' + (kind === 'bad' ? '#B0190F' : '#2450B8');
+    const common = {
+      dlgOn: true, closeDlg: () => this.closeDlg(), dOk: () => this.dOk(),
+      dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      onPanelAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      dSaving: !!d.saving, dSavingAria: d.saving ? 'true' : 'false',
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); this.closeDlg(); return; }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      }
+    };
+    if (d.kind === 'delref') return { ...D, ...common, dlgRole: 'alertdialog', isDelRef: true, dTitle: 'Goh Jia Hui can’t be deleted', dSub: 'She has pay, leave and a claim on record, and a record with any of these is kept.', dGlyph: 'lock', dTone: 'bad', dPlate: '#FDE6E3',
+      dCancel: 'Keep her', dOkLabel: 'Mark her as left instead', dOkCls: 'hb', dOkStyle: okStyle('brand') };
+    if (d.kind === 'del') {
+      const bad = d.tried && !String(d.why || '').trim();
+      return { ...D, ...common, dlgRole: 'alertdialog', isDel: true, dTitle: 'Delete S011?', dSub: 'Daniel Lee Chee Keong, added twice. This deletes the second record only.', dGlyph: 'trash', dTone: 'bad', dPlate: '#FDE6E3',
+        delWhy: d.why || '', onDelWhy: e => this.setDlg({ why: e && e.target ? e.target.value : '' }), delInv: bad ? 'true' : 'false', delBy: bad ? 'sf-del-err' : '', delStyle: ctl(bad), delErrOn: bad,
+        dCancel: 'Keep it', dOkLabel: 'Delete record', dOkCls: 'hd', dOkStyle: okStyle('bad') };
+    }
+    const toRuns = this.company('AI').runsPayroll;
+    if (d.kind === 'move') return { ...D, ...common, isMove: true, moveRecurOn: !toRuns,
+      movePayTxt: 'set on her AI record, from 1 Jan 2027. ' + (toRuns ? 'AI runs payroll in this app, so she is in its January run.' : 'AI doesn’t run payroll in this app, so add her to AI’s salary row on Recurring.'), dTitle: 'Move Izzati to another company', dSub: 'Nur Izzati binti Kamal (S008). She leaves AISB and joins AI; the two records are linked.', dGlyph: 'company', dTone: 'brand', dPlate: '#EAF0FD',
+      dCancel: 'Cancel', dOkLabel: 'Move to AI', dOkCls: 'hb', dOkStyle: okStyle('brand') };
+    // the Left dialog
+    const e = d.tried ? this.leftErrors(d, p) : {};
+    const form = this.leftForm(d);
+    const due = form && d.last ? this.fmt(this.dueOf(d), true) : '';
+    const whyOpts = ['', 'Resigned', 'Contract ended', 'Retiring', 'Dismissed', 'Died', 'Leaving Malaysia for more than 3 months', 'Moved to another group company', 'Other'].map(v => ({ v, l: v || 'Choose' }));
+    const lastOk = /^\d{4}-\d{2}-\d{2}$/.test(String(d.last || ''));
+    return { ...D, ...common, isLeft: true,
+      dTitle: 'Mark ' + p.f.pref + ' as left', dSub: p.f.full + ' (' + p.id + ') moves to Left after the last day. ' + (p.his === 'her' ? 'Her' : 'His') + ' record, leave, claims and pay history are kept.', dGlyph: 'logout', dTone: 'warn', dPlate: '#FEF1D6',
+      lLast: d.last || '', onLLast: ev => this.setDlg({ last: ev && ev.target ? ev.target.value : '' }), lLastInv: e.last ? 'true' : 'false', lLastBy: (e.last ? 'sf-l-last-err ' : '') + 'sf-l-last-hint', lLastStyle: ctl(!!e.last), lLastErrOn: !!e.last, lLastErr: e.last || '',
+      lLastHint: p.f.contractEnd ? 'His contract ends ' + this.fmt(p.f.contractEnd, true) + '.' : 'Joined ' + this.fmt(p.f.joined, true) + '.',
+      lWhy: d.why || '', onLWhy: ev => this.setDlg({ why: ev && ev.target ? ev.target.value : '' }), lWhyInv: e.why ? 'true' : 'false', lWhyBy: (e.why ? 'sf-l-why-err ' : '') + 'sf-l-why-hint', lWhyStyle: ctl(!!e.why), lWhyErrOn: !!e.why, lWhyOpts: whyOpts,
+      lHe: p.he, lHis: p.his, lPcb: !!d.pcb, onLPcb: ev => this.setDlg({ pcb: !!(ev && ev.target && ev.target.checked) }),
+      lFormOn: !!form && lastOk, lFormTitle: form === 'CP22A and CP21' ? 'This makes a CP22A and a CP21 for ' + p.f.pref : 'This makes a CP22A for ' + p.f.pref,
+      lFormTxt: form === 'CP22A and CP21' ? 'Leaving Malaysia for more than 3 months: CP22A and CP21 are both due by ' + due + ', at least 30 days before ' + p.he + ' leaves. They go on Calendar and reminders and the Monthly checklist.'
+        : d.why === 'Died' ? 'Died: CP22A is due by ' + due + ', within 30 days of the death being known (check with LHDN). It goes on Calendar and reminders and the Monthly checklist.'
+        : (d.why === 'Retiring' ? d.why : 'No PCB deducted') + ': CP22A is due by ' + due + ', at least 30 days before the last day. It goes on Calendar and reminders and the Monthly checklist.' + (p.f.contractEnd === d.last ? ' His contract ends on the same day.' : ''),
+      lHoldTxt: p.his.charAt(0).toUpperCase() + p.his.slice(1) + ' final pay shows Hold until tax clearance in Payments › To pay until LHDN’s clearance letter is uploaded on the leaver’s final pay, or 90 days pass. Paying in full before then makes ' + p.co + ' liable for ' + p.his + ' tax; paying anyway is allowed and recorded.', lRunOn: this.company(p.co).runsPayroll,
+      lNoFormOn: !form && !!d.why && lastOk, lNoFormTxt: d.why === 'Moved to another group company' ? 'To move to another group company, use Move to another company instead: it links the two records.' : d.why + ': no CP22A or CP21, unless no PCB was deducted this year. The final pay and the leaver checklist item are made from the last day.',
+      lAdvOn: p.id === 'S004' && lastOk,
+      lFoot: 'You can put ' + p.him + ' back to In employment. The last day and reason are kept in the audit trail.',
+      dCancel: 'Cancel', dOkLabel: d.saving ? 'Saving…' : 'Mark as left', dOkCls: 'hb', dOkStyle: okStyle('brand') };
+  }
+}
+</script>
+</body>
+</html>

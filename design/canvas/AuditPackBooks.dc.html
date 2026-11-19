@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audit pack books pages · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{filter:brightness(.92)}
+.hs:hover{background:#F0F3F8 !important}
+.hl:hover{background:#EAF0FD !important}
+/* motion and focus base */
+.hb,.hs,.hl{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.sheet{transition:border-color .12s ease-out,box-shadow .12s ease-out}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <main style="max-width: 1360px; margin: 0 auto; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 22px">
+
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Audit pack · October 2026</span>
+      <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Books pages in the PDF</h1>
+      <span style="color: #46546A; font-size: 14px; max-width: 880px">Three A4 pages come after the bank reconciliation and before the six HR and approval pages, each with its own PDF bookmark. They say what SQL Account's books and the statutory accounts look like for the month when the pack is built. Nothing on them can be edited. <a href="AuditPack.dc.html">Back to Audit pack</a> · <a href="AuditPackHR.dc.html">The HR and approval pages</a></span>
+    </div>
+
+    <div role="group" aria-labelledby="ab-state-label" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <span id="ab-state-label" style="font-size: 13px; font-weight: 600; color: #46546A; margin-right: 4px">State to show</span>
+      <sc-for list="{{states}}" as="st" hint-placeholder-count="5"><button type="button" class="{{st.cls}}" aria-pressed="{{st.pressed}}" onClick="{{st.pick}}" style="{{st.style}}">{{st.label}}</button></sc-for>
+    </div>
+
+    <section aria-live="polite" class="{{sayCls}}" style="{{sayBox}}">
+      <dc-import name="Icon" glyph="{{sayGlyph}}" tone="{{sayTone}}" size="20" hint-size="20px,20px"></dc-import>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="{{sayTitleStyle}}">{{sayTitle}}</b><span style="{{sayTextStyle}}">{{sayText}}</span></div>
+    </section>
+
+    <div class="sr" role="status">{{announce}}</div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+      <nav aria-labelledby="ab-bm-title" style="flex: 0 0 320px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="padding: 16px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 2px"><h2 id="ab-bm-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">PDF bookmarks</h2><span style="color: #5F6C80; font-size: 12px">{{packName}}</span></div>
+        <ol style="list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 2px">
+          <sc-for list="{{marks}}" as="m" hint-placeholder-count="14">
+            <li>
+              <sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}"><button type="button" class="hl fr" aria-current="{{m.current}}" onClick="{{m.go}}" style="{{m.style}}"><span style="font-weight: 600">{{m.label}}</span><span style="font-size: 12px; color: #5F6C80; flex: none">{{m.where}}</span></button></sc-if>
+              <sc-if value="{{m.isHref}}" hint-placeholder-val="{{ false }}"><a href="{{m.href}}" class="hl fr" style="{{m.style}}"><span style="font-weight: 600">{{m.label}}</span><span style="font-size: 12px; color: #5F6C80; flex: none">{{m.where}}</span></a></sc-if>
+              <sc-if value="{{m.isPlain}}" hint-placeholder-val="{{ false }}"><div style="{{m.style}}"><span style="{{m.labelStyle}}">{{m.label}}</span><span style="font-size: 12px; color: #5F6C80; flex: none">{{m.where}}</span></div></sc-if>
+            </li>
+          </sc-for>
+        </ol>
+        <div style="padding: 12px 18px 16px; border-top: 1px solid #EEF1F5; font-size: 12px; color: #5F6C80">The three books bookmarks sit at the top level, between Bank reconciliation and the six HR and approval pages that follow them (pages 7 to 12), then the documents. With Include payslips on, the payslips come after the HR pages and the documents start later. Page numbers are for this sample month.</div>
+      </nav>
+
+      <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+        <sc-for list="{{sheets}}" as="p" hint-placeholder-count="3">
+          <figure class="rv" style="margin: 0; display: flex; flex-direction: column; gap: 8px">
+            <section id="{{p.id}}" tabindex="-1" aria-labelledby="{{p.hid}}" class="{{p.cls}}" style="{{p.style}}">
+              <h3 id="{{p.hid}}" style="margin: 0 0 4px; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; line-height: 17.5px; color: #000000">{{p.title}}</h3>
+              <sc-for list="{{p.lines}}" as="l" hint-placeholder-count="4"><p style="margin: 0 0 3px; font-family: Helvetica, Arial, sans-serif; font-size: 7px; line-height: 11px; color: #000000">{{l.text}}</p></sc-for>
+            </section>
+            <figcaption style="font-size: 12px; color: #5F6C80">{{p.caption}}</figcaption>
+          </figure>
+        </sc-for>
+        <div style="flex: 1 1 300px; max-width: 460px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">How the three pages read</h2>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <li>The page head is the company name, the month and the page title. The body is plain text in the pack's usual small type, so a line wraps and nothing is a table. The pages here are drawn at print size (15 pt head, 9 pt body, 10 mm margins on A4), so zoom in to read them; lines wrap where the PDF wraps them.</li>
+            <li>SQL books check says Done, Not done or Not checked here, then the one sentence that explains it, then the standing paragraph that says SQL stays the books.</li>
+            <li>Statutory payables check starts with the summary, then one line for each statutory account for the payroll month, then any notes and mispostings.</li>
+            <li>Trial balance against SQL starts with one of four verdicts, then the file it was compared with and the result. Each account that differs gets its own line.</li>
+            <li>For a company that is Kept here the first and third pages say so and the second says nothing is set up. The pages are still printed, so the PDF has the same shape for every company.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1560},"view":{"editor":"enum","default":"aisb-done","options":["aisb-done","aisb-open","differs","stale","ai"],"section":"State to show"}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { view: (p && p.view) || 'aisb-done', cur: 0, flip: false, announce: '' }; }
+  componentDidUpdate(pp) {
+    if (pp.view !== this.props.view) this.setState({ view: this.props.view || 'aisb-done', cur: 0, announce: '' });
+  }
+  calm() { return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  // The text of the three pages for each state: what books_checks gives, with this month's sample figures.
+  content(view) {
+    const STAND = "Whether SQL Account's books for the month agree with the mirror kept here: SQL's journal covers the month, its documents agree with the listings, and SQL's trial balance agrees with the books here. SQL Account stays the books; nothing here changes them.";
+    const STAT = [
+      "1 statutory payable to look at: EPF (KWSP) for October 2026 wasn't paid by 15 Nov 2026.",
+      "- EPF (KWSP) (430-100): EPF (KWSP) for October 2026 wasn't paid by 15 Nov 2026.",
+      "- SOCSO (PERKESO) (430-200): SOCSO (PERKESO) for October 2026 paid in full, the last of it on 17 Nov 2026, after the due day 15 Nov 2026.",
+      "- EIS (SIP) (430-210): EIS (SIP) for October 2026 paid in full, the last of it on 17 Nov 2026, after the due day 15 Nov 2026.",
+      "- PCB (LHDN) (430-300): PCB (LHDN) for October 2026 paid in full."
+    ];
+    // With no opening kept at 01/10/2026, statutory.report adds a note to each account, and books_checks puts it straight after that account's own line.
+    const NOTE = code => "- No opening balance of " + code + " is kept at 01/10/2026, so what was owed before then is unknown and its balances can't be shown. Fetch SQL's trial balance for that day.";
+    const STAT_OPEN = [STAT[0], STAT[1], NOTE('430-100'), STAT[2], NOTE('430-200'), STAT[3], NOTE('430-210'), STAT[4], NOTE('430-300')];
+    const FILE = "Compared with SQL's trial balance Trial Balance Oct.xlsx, 1 Oct 2026 to 31 Oct 2026.";
+    // "Differs" (samples.md stage 1 section 21): SQL's trial balance, read after the journal, holds JV2610-012 (Dr 900-010 / Cr 310-000 48.00) and the books here do not.
+    const D1 = "- 310-000 Maybank current: its balance at 31/10/2026: SQL's trial balance has 33,570.35, the books here 33,618.35 (a difference of 48.00).";
+    const D2 = "- 310-000 Maybank current: the movements from 01/10/2026 to 31/10/2026: SQL's trial balance has -55,648.00, the books here -55,600.00 (a difference of 48.00).";
+    const D3 = "- 900-010 Bank charges: its lines from 01/10/2026 to 31/10/2026: SQL's trial balance has 58.00, the books here 10.00 (a difference of -48.00).";
+    // "Possibly out of date" (as on Books): the journal read again at 11:05 holds JV2610-012 and the trial balance read at 10:58 does not.
+    const S1 = "- 310-000 Maybank current: its balance at 31/10/2026: SQL's trial balance has 33,618.35, the books here 33,570.35 (a difference of -48.00).";
+    const S2 = "- 310-000 Maybank current: the movements from 01/10/2026 to 31/10/2026: SQL's trial balance has -55,600.00, the books here -55,648.00 (a difference of -48.00).";
+    const S3 = "- 900-010 Bank charges: its lines from 01/10/2026 to 31/10/2026: SQL's trial balance has 10.00, the books here 58.00 (a difference of 48.00).";
+    const DIFF = "2 accounts differ from SQL's trial balance as at 31/10/2026; 29 agree.";
+    const aisb = { co: 'AISB Sdn Bhd' };
+    if (view === 'ai') return { co: 'Agrinexus International', pages: [
+      ['Not checked here.', "This company's books are Kept here, not in SQL Account, so nothing here can show this done: tick it by hand.", STAND],
+      ["No statutory accounts are confirmed for this company yet, so nothing is checked."],
+      ['Not checked.', "This company's books are Kept here, not in SQL Account, so there is no SQL trial balance to check against."] ] };
+    if (view === 'aisb-open') return { ...aisb, pages: [
+      ['Not done.', "Fetch SQL's Trial Balance up to at least 31 Oct 2026.", STAND],
+      STAT_OPEN,
+      ['Not checked.', "No trial balance of SQL's as at 31 Oct 2026 or later is kept, so the books here can't be checked against SQL's. Fetch SQL's Trial Balance as at 31 Oct 2026."] ] };
+    if (view === 'differs') return { ...aisb, pages: [
+      ['Not done.', DIFF + " SQL's trial balance was read on 18/11/2026 at 10:58; the latest GL Journal of Transaction for these dates on 18/11/2026 at 10:42. See Accounting › Books › Trial balance, then fetch again what differs.", STAND],
+      STAT,
+      ["Differs from SQL's trial balance.", FILE, DIFF + " SQL's trial balance was read on 18/11/2026 at 10:58; the latest GL Journal of Transaction for these dates on 18/11/2026 at 10:42.", D1, D2, D3] ] };
+    if (view === 'stale') return { ...aisb, pages: [
+      ['Not done.', DIFF + " SQL's trial balance was read on 18/11/2026 at 10:58; the latest GL Journal of Transaction for these dates on 18/11/2026 at 11:05. The journal was read after the trial balance, so these differences may be out of date rather than errors: export SQL's Trial Balance again for the same dates (01/10/2026 to 31/10/2026) and Fetch it. See Accounting › Books › Trial balance, then fetch again what differs.", STAND],
+      STAT,
+      ["Possibly out of date: SQL's trial balance was read before a later GL Journal of Transaction.", FILE, DIFF + " SQL's trial balance was read on 18/11/2026 at 10:58; the latest GL Journal of Transaction for these dates on 18/11/2026 at 11:05. The journal was read after the trial balance, so these differences may be out of date rather than errors: export SQL's Trial Balance again for the same dates (01/10/2026 to 31/10/2026) and Fetch it.", S1, S2, S3] ] };
+    return { ...aisb, pages: [
+      ['Done.', "SQL's journal covers October 2026, its documents agree with the listings and SQL's trial balance as at 31 Oct 2026 agrees with the books here.", STAND],
+      STAT,
+      ["Agrees with SQL's trial balance.", FILE, "Agrees with SQL's trial balance as at 31/10/2026: all 31 accounts compared."] ] };
+  }
+  goTo(n) {
+    const TITLES = ['SQL books check', 'Statutory payables check', 'Trial balance against SQL'];
+    this.setState({ cur: n, flip: !this.state.flip, announce: 'Showing page ' + (n + 3) + ': ' + TITLES[n - 1] });
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById('ab-sheet-' + n);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: this.calm() ? 'auto' : 'smooth', block: 'nearest' });
+  }
+  renderVals() {
+    const S = this.state, view = S.view;
+    const C = this.content(view);
+    const TITLES = ['SQL books check', 'Statutory payables check', 'Trial balance against SQL'];
+    const ai = view === 'ai';
+    const head = C.co + ' - October 2026';
+    const stateList = [['aisb-done', 'AISB, books agree'], ['aisb-open', 'AISB, before the 18 Nov read'], ['differs', 'Trial balance differs'], ['stale', 'Possibly out of date'], ['ai', 'AI, Kept here']];
+    const states = stateList.map(([v, label]) => ({ label, pressed: S.view === v ? 'true' : 'false', cls: S.view === v ? '' : 'hs',
+      style: 'height: 36px; padding: 0 14px; border-radius: 10px; font: 600 13px Inter, sans-serif; cursor: pointer; ' + (S.view === v ? 'border: 1px solid #2450B8; background: #2450B8; color: #FFFFFF' : 'border: 1px solid #8792A4; background: #FFFFFF; color: #0F1A2B'),
+      pick: () => this.setState({ view: v, cur: 0, announce: '' }) }));
+    const SAY = {
+      'aisb-done': ['ok', 'verified', "SQL's books and trial balance agree", "October 2026 for AISB: SQL's books agree and SQL's trial balance agrees, so the checklist item is done and Before you print shows no SQL books row. The statutory page still names one payable to look at: EPF (KWSP) for October 2026, which wasn't paid by 15 Nov 2026."],
+      'aisb-open': ['warn', 'alert', "SQL's trial balance as at 31 Oct 2026 is not fetched yet", "The pack as it read before Trial Balance Oct.xlsx was fetched on 18 Nov. With no trial balance of SQL's kept, the first page says Not done and the third says Not checked. With no opening balance kept at 01/10/2026, the statutory page adds a note straight after each of the four accounts' lines. Before you print lists the SQL books item as not done."],
+      'differs': ['bad', 'alert', "SQL's trial balance and the books here differ", "Two accounts differ by 48.00: SQL's trial balance, read at 10:58, holds JV2610-012 (the 8 Oct service charge) and the journal read at 10:42 does not. The first page says Not done, the third says Differs. A state-only variant of the shared sample data."],
+      'stale': ['warn', 'alert', "The differences may only be an old trial balance", "A GL Journal of Transaction was read after the trial balance, so the third page leads with Possibly out of date rather than Differs. Fetch the trial balance again. A state-only variant of the shared sample data."],
+      'ai': ['muted', 'help', 'Agrinexus International is Kept here, not in SQL Account', "The pages are still in the PDF so every pack has the same shape. Each says why nothing is checked; the checklist item is ticked by hand."]
+    }[view];
+    const TONE = { ok: ['#F0FBF5', '#BFE8D0', '#0A6B3D', '#14532D'], warn: ['#FFFBF2', '#F3D9A6', '#7A4A00', '#5A3700'], bad: ['#FFF5F4', '#F5C2BB', '#B0190F', '#5C1810'], muted: ['#F7F8FA', '#E3E7ED', '#0F1A2B', '#46546A'] }[SAY[0]];
+    const sheets = C.pages.map((lines, i) => {
+      const n = i + 1;
+      return { id: 'ab-sheet-' + n, cls: 'sheet' + (S.cur === n ? (S.flip ? ' fa' : ' fb') : ''), hid: 'ab-sheet-h' + n, title: head + ' - ' + TITLES[i], lines: lines.map(text => ({ text })),
+        caption: 'Page ' + (n + 3) + ' · A4 at print size · bookmark ' + TITLES[i],
+        style: 'box-sizing: border-box; width: 460px; max-width: 100%; min-height: 650px; background: #FFFFFF; padding: 22px; border-radius: 2px; ' + (S.cur === n ? 'border: 2px solid #2450B8; box-shadow: 0 6px 22px rgba(15,26,43,.16)' : 'border: 2px solid #D5DBE4; box-shadow: 0 2px 10px rgba(15,26,43,.08)') };
+    });
+    const rowBase = 'display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 8px; font: 400 13px Inter, sans-serif; text-align: left; ';
+    const plain = (label, where, muted) => ({ isLink: false, isHref: false, isPlain: true, href: '', current: 'false', label, where, style: rowBase + 'color: #46546A', labelStyle: muted ? 'color: #5F6C80' : 'font-weight: 600' });
+    const hrPage = (label, where) => ({ isLink: false, isHref: true, isPlain: false, href: 'AuditPackHR.dc.html', current: 'false', label, where, labelStyle: '', style: rowBase + 'color: #0F1A2B; background: #FFFFFF; text-decoration: none' });
+    const HR = ['Approvals of the month', 'Paid without approval on file', 'Approver history', 'Steps one name did alone', 'HR summary', 'Month review on file'];
+    const link = (n) => ({ isLink: true, isHref: false, isPlain: false, href: '', label: TITLES[n - 1], where: 'page ' + (n + 3), current: S.cur === n ? 'true' : 'false', labelStyle: '', go: () => this.goTo(n),
+      style: rowBase + 'border: 0; cursor: pointer; color: #0F1A2B; ' + (S.cur === n ? 'background: #EAF0FD' : 'background: #FFFFFF') });
+    const docs = ai
+      ? [plain('Courier charges - Invoice / bill', 'page 13', true), plain('Fund receipt - Bank receipt / transfer slip', 'page 14', true)]
+      : [plain('Contractor — field works - Invoice', 'page 13', true), plain('Contractor — field works - Payment Voucher (SQL)', 'page 14', true)];
+    const marks = [plain('Index', 'page 1', false), plain('Bank reconciliation', 'page 3', false), link(1), link(2), link(3)].concat(HR.map((t, i) => hrPage(t, 'page ' + (i + 7)))).concat(docs)
+      .concat([plain(ai ? 'and one for each other document file (74 in all)' : 'and one for each other document file (91 in all)', '', true)]);
+    return { states, sheets, marks, announce: S.announce || '', packName: ai ? 'Audit pack AI 2026-10.pdf' : 'Audit pack AISB 2026-10.pdf',
+      sayCls: 'rv', sayGlyph: SAY[1], sayTone: SAY[0] === 'muted' ? 'muted' : SAY[0], sayTitle: SAY[2], sayText: SAY[3],
+      sayBox: 'display: flex; gap: 12px; padding: 12px 14px; border-radius: 12px; align-items: flex-start; background: ' + TONE[0] + '; border: 1px solid ' + TONE[1],
+      sayTitleStyle: 'font-size: 14px; color: ' + TONE[2], sayTextStyle: 'font-size: 13px; color: ' + TONE[3] };
+  }
+}
+</script>
+</body>
+</html>

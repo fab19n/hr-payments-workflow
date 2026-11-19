@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Company and month switcher</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+/* each frame is the containing block for the bar's fixed toast and click-away cover */
+.cs-fr{position:relative;transform:translateZ(0);overflow:hidden;border-radius:14px;border:1px solid #D5DBE3;background:#F5F6F8}
+.cs-fr.dk{border-color:#243044;background:#0B111C}
+.cs-pg{display:flex;flex-direction:column;gap:10px;padding:22px 40px}
+.cs-pg i{display:block;height:12px;border-radius:6px;background:#E3E7ED}
+.cs-fr.dk .cs-pg i{background:#1B2536}
+.cs-k{display:inline-block;min-width:22px;padding:1px 6px;border:1px solid #7C8799;border-radius:6px;background:#FFFFFF;font:600 11px Inter,sans-serif;color:#0F1A2B;text-align:center}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="width: 2520px; min-height: 3480px; box-sizing: border-box; padding: 44px 56px; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; gap: 32px">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+    <div><span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #2450B8">Top bar · shared</span><h1 style="margin: 4px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px; font-weight: 600">Company and month switcher</h1></div>
+    <p style="margin: 0; max-width: 760px; color: #46546A">The company is chosen in the top bar, left of the month. Every page works on the company chosen; only the Overview can show all companies, and HR › Staff can list them read only. Each frame below is the real top bar at its width beside the side menu, and it works: open the menus, use the keys, pick a company.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 40px; align-items: start">
+
+    <section aria-labelledby="cs-h1" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h1" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Closed · AISB on Payments › Payments register</h2>
+      <div class="cs-fr" style="height: 200px">
+        <dc-import name="Topbar" uid="cs1" section="Payments" page="Payments register" company="aisb" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">The button names the company by its code and how its books are kept: "AISB · Kept in SQL Account". The month reads "October 2026", without "payroll".</p>
+    </section>
+
+    <section aria-labelledby="cs-h2" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h2" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">No company yet</h2>
+      <div class="cs-fr" style="height: 200px">
+        <dc-import name="Topbar" uid="cs2" section="Overview" page="Overview" company="none" menu="company" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">Before the first company exists, the button reads "No company yet" and its menu holds one item, "Add your first company", which opens Admin › Setup › Companies. This replaces the box at the foot of the old side menu.</p>
+    </section>
+
+    <section aria-labelledby="cs-h3" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h3" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Open · no All companies (any page but the Overview)</h2>
+      <div class="cs-fr" style="height: 330px">
+        <dc-import name="Topbar" uid="cs3" section="Payments" page="Payments register" company="aisb" menu="company" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">Each company in use: code, full name, how its books are kept, and its Next up count (blue; red with the alert mark when one of its rows is overdue). The chosen one is ticked. AISB 11 (3 overdue), AI 5 (1 overdue).</p>
+    </section>
+
+    <section aria-labelledby="cs-h4" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h4" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Open on the Overview · All companies first</h2>
+      <div class="cs-fr" style="height: 330px">
+        <dc-import name="Topbar" uid="cs4" section="Overview" page="Overview" company="all" menu="company" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">All companies is offered on the Overview (and read only on HR › Staff). Its count, 15, counts the rows shared by both companies once (the bank balance for the budget, the backup): 12 + 5 − 2.</p>
+    </section>
+
+    <section aria-labelledby="cs-h5" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h5" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Long list · four companies in use</h2>
+      <div class="cs-fr" style="height: 390px">
+        <dc-import name="Topbar" uid="cs5" section="Payments" page="Payments register" company="aisb" companies="four" menu="company" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">The four-company variant: AIL (Kept in SQL Account) and AIP (Kept here) have 2 rows each, none overdue. Stopped companies are never listed: OLD · Former Trading Sdn Bhd (stopped 30 Jun 2025) and TEST · Training company (stopped 21 Jul 2026).</p>
+    </section>
+
+    <section aria-labelledby="cs-h6" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h6" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">HR › Staff · All companies (read only)</h2>
+      <div class="cs-fr" style="height: 390px">
+        <dc-import name="Topbar" uid="cs6" section="HR" page="Staff" company="aisb" menu="company" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">The staff list can show every company's staff at once, read only: 14 in employment. To add or change a record, pick its company.</p>
+    </section>
+
+    <section aria-labelledby="cs-h7" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h7" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Switch, step 1 · on Accounting › SQL import, pick AI</h2>
+      <div class="cs-fr" style="height: 300px">
+        <dc-import name="Topbar" uid="cs7" section="Accounting" page="SQL import" company="aisb" menu="company" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">AI is Kept here, so it has no SQL import page. Pick AI in this frame to see step 2 happen. Picking a company that has the page keeps you on it (Budget, Payments register, Books and every HR page exist for all).</p>
+    </section>
+
+    <section aria-labelledby="cs-h8" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h8" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Switch, step 2 · AI's Overview, with the toast</h2>
+      <div class="cs-fr" style="height: 300px">
+        <dc-import name="Topbar" uid="cs8" section="Overview" page="Overview" company="ai" toast="SQL import isn't used for AI (Kept here). Showing AI's Overview." toast-hold="{{ true }}" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">Never a blank or refused page: you land on AI's Overview and one polite toast says why. It stays 4 s (held here so it can be seen), pauses on hover or focus, and Esc or Dismiss closes it with focus back on the company button. Second example: "Payroll settings aren't used for AI. Showing AI's Overview."</p>
+    </section>
+
+    <section aria-labelledby="cs-h9" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h9" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Month menu · AISB</h2>
+      <div class="cs-fr" style="height: 290px">
+        <dc-import name="Topbar" uid="cs9" section="Payments" page="Payments register" company="aisb" menu="month" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">The months of the chosen company, newest first: November 2026 set up on 18 Nov, October Current, September Still open, August Before first month. The month runs until the 20th, so on 18 Nov the current month is October.</p>
+    </section>
+
+    <section aria-labelledby="cs-h10" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h10" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Month menu · AI</h2>
+      <div class="cs-fr" style="height: 290px">
+        <dc-import name="Topbar" uid="cs10" section="Payments" page="Payments register" company="ai" menu="month" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">AI: November 2026 Not set up, October Current, September Filed (5 Oct). Picking a month that isn't set up opens the page's "isn't set up yet" card.</p>
+    </section>
+
+    <section aria-labelledby="cs-h11" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h11" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Account menu · Aisha Rahman, with the Admin right</h2>
+      <div class="cs-fr" style="height: 310px">
+        <dc-import name="Topbar" uid="cs11" section="Overview" page="Overview" company="all" menu="user" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">The menu says what the person can see: "Access: HR, Payroll figures, Payments, Accounting, Admin". With the Admin right it links to Users and access. The theme moved to its own small button beside the bell, so the bar keeps one row at this width.</p>
+    </section>
+
+    <section aria-labelledby="cs-h12" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h12" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Account menu · Marcus Teoh, outside accountant</h2>
+      <div class="cs-fr" style="height: 310px">
+        <dc-import name="Topbar" uid="cs12" section="Payments" page="To pay" company="aisb" user="marcus" menu="user" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">"Access: Payments, Accounting": no Users and access, no audit trail link (Admin pages). His counts leave out HR and Admin rows: AISB 9. Nurul Aina (HR only) would see AISB 2.</p>
+    </section>
+
+    <section aria-labelledby="cs-h13" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h13" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Dark · company menu on the Overview</h2>
+      <div class="cs-fr dk" style="height: 340px">
+        <dc-import name="Topbar" uid="cs13" theme="dark" section="Overview" page="Overview" company="aisb" menu="company" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">Dark uses the same tokens as the rest of the bar. Control borders are 3:1 or more in both themes (light #7C8799, dark #7A89A3); every text is 4.5:1 or more.</p>
+    </section>
+
+    <section aria-labelledby="cs-h14" style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <h2 id="cs-h14" style="margin: 0; font-size: 13px; font-weight: 600; color: #46546A">Dark · month menu</h2>
+      <div class="cs-fr dk" style="height: 340px">
+        <dc-import name="Topbar" uid="cs14" theme="dark" section="Accounting" page="Bank and reconciliation" company="aisb" menu="month" hint-size="100%,64px"></dc-import>
+        <div class="cs-pg" aria-hidden="true"><i style="width: 22%; height: 22px"></i><i style="width: 68%"></i><i style="width: 54%"></i></div>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 13px">Current is the link colour; Set up is a stronger grey than the other statuses.</p>
+    </section>
+
+    <section aria-labelledby="cs-h15" style="display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 20px 22px; border-radius: 16px; border: 1px solid #E3E7ED; background: #F7F8FA">
+      <h2 id="cs-h15" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Keyboard</h2>
+      <div style="display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 10px 18px; font-size: 13px; color: #46546A">
+        <span><span class="cs-k">↓</span> <span class="cs-k">Enter</span> <span class="cs-k">Space</span></span><span>On the company or month button: opens the menu with focus on the chosen item. <span class="cs-k">↑</span> opens it on the last item.</span>
+        <span><span class="cs-k">↓</span> <span class="cs-k">↑</span></span><span>Move through the items; the ends wrap round.</span>
+        <span><span class="cs-k">Home</span> <span class="cs-k">End</span></span><span>First or last item.</span>
+        <span><span class="cs-k">A</span> … <span class="cs-k">Z</span></span><span>Type-ahead: letters typed within 0.6 s jump to the first item that starts with them ("ai" lands on AI, "ail" on AIL; "s" lands on September). Pressing the same letter again moves on to the next match.</span>
+        <span><span class="cs-k">Enter</span> <span class="cs-k">Space</span></span><span>Picks the item. The menu closes and focus goes back to its button.</span>
+        <span><span class="cs-k">Esc</span></span><span>Closes the menu; focus goes back to its button. On the toast, closes the toast and focus goes to the company button.</span>
+        <span><span class="cs-k">Tab</span></span><span>Closes the menu and moves on. A click outside also closes it.</span>
+      </div>
+      <p style="margin: 0; color: #5F6C80; font-size: 12px">Menus are role menu with menuitemradio items, so a screen reader hears which company and month are chosen. Each company item reads as, for example, "AISB, AISB Sdn Bhd, Kept in SQL Account, 11 to do, 3 overdue". Under reduced motion the menus and the toast appear and leave at once.</p>
+    </section>
+
+    <section aria-labelledby="cs-h16" style="display: flex; flex-direction: column; gap: 12px; min-width: 0; padding: 20px 22px; border-radius: 16px; border: 1px solid #E3E7ED; background: #F7F8FA">
+      <h2 id="cs-h16" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Rules</h2>
+      <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+        <li>One company switcher, in the top bar left of the month. It replaces the AISB / AI control that sat on 19 pages.</li>
+        <li>A company is <b style="color: #0F1A2B">Kept in SQL Account</b> or <b style="color: #0F1A2B">Kept here</b>, and runs payroll in this app or not. These are settings on Admin › Setup › Companies; no company is treated differently by its code.</li>
+        <li>Pages used by some companies only: SQL import and Matching words (Kept in SQL Account), Sales, Purchases, Journals and Period close (Kept here), Payroll settings (runs payroll in this app). HR › Payroll shows for every company, with the Workbook check tab for all.</li>
+        <li>The breadcrumb names the five areas: Overview, HR, Payments, Accounting, Admin.</li>
+        <li>The page address keeps company, month and page, so Back and Refresh keep your place (build plan, slice 0).</li>
+      </ul>
+      <p style="margin: 0; color: #5F6C80; font-size: 12px">New work: the switcher itself, the page address with company and month, and access rights in the account menu (shown now, built with logins).</p>
+    </section>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2520,"height":3480}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

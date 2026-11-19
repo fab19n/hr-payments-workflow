@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payroll · Opening year to date · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hd:hover:not(:disabled){background:#8E1A10 !important}
+.ht:hover{background:#F0F3F8}
+/* motion and focus base */
+.hb,.hs,.hd,.ht{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+#oy-file:focus-visible + label{outline:2px solid #2450B8;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;border:0;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box;white-space:nowrap}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#F0FBF5;border-color:#BFE8D0;color:#0F1A2B}.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}.rb.info{background:#F3F6FE;border-color:#C9D7F7;color:#1D2F5C}.rb.mute{background:#F7F8FA;border-color:#E3E7ED;color:#46546A}
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:20px 24px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.sub{color:#5F6C80;font-size:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;box-sizing:border-box;text-decoration:none;white-space:nowrap}
+.pri{border:0;background:#2450B8;color:#FFFFFF}a.pri,a.pri:hover{color:#FFFFFF}
+.sec{border:1px solid #778588;background:#FFFFFF;color:#0F1A2B}a.sec,a.sec:hover{color:#0F1A2B}
+.dng{border:0;background:#B0190F;color:#FFFFFF}
+.sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.tb{width:100%;border-collapse:collapse;font-size:14px}
+.tb th{background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap;vertical-align:bottom}
+.tb td{padding:10px 12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.tb .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tb tr.tot td{background:#FAFBFC;border-top:1px solid #D5DBE4;font-weight:700}
+.tb tr.err td{background:#FDF3F2}
+@media (max-width:760px){.oy-main{padding:24px 16px 48px !important}.card{padding:16px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" sub="Opening year to date" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="oy-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+        <h1 id="oy-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payroll</h1>
+        <p style="margin: 0; color: #46546A; max-width: 760px">{{intro}}</p>
+      </div>
+
+      <sc-if value="{{tabsOn}}" hint-placeholder-val="{{ true }}">
+        <div role="tablist" aria-label="Payroll pages" onKeyDown="{{tabKey}}" style="display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #D5DBE4">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+            <a href="{{t.href}}" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="{{t.ctl}}" tabindex="{{t.tabindex}}" class="ht" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</a>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div role="tabpanel" id="oy-panel" aria-labelledby="{{panelBy}}" style="display: flex; flex-direction: column; gap: 20px">
+
+        <sc-if value="{{notUsed}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="oy-nu-h" class="card rv" style="flex-direction: row; gap: 16px; align-items: flex-start">
+            <span style="flex: none; width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="history" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+              <h2 id="oy-nu-h" tabindex="-1" class="h2">Opening year to date isn't used for Agrinexus International</h2>
+              <p style="margin: 0; color: #46546A">It belongs to the payroll run, and “Runs payroll in this app” is off for AI, so its HR › Payroll holds only the Workbook check. If AI starts payroll here part way through a year, this tab appears and takes each person's figures for the earlier months once. The setting is in <a href="SetupCompanies.dc.html" style="font-weight: 600">Setup › Companies</a>.</p>
+              <div><a href="PayrollCheck.dc.html" class="btn pri hb"><dc-import name="Icon" glyph="verified" tone="white" size="16" hint-size="16px,16px"></dc-import>Open the Workbook check</a></div>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" class="card">
+            <span class="sr" role="status">Loading the opening year to date</span>
+            <span class="sk" style="height: 22px; width: 40%"></span><span class="sk" style="height: 14px; width: 70%"></span>
+            <div style="display: flex; gap: 10px"><span class="sk" style="height: 64px; flex: 1"></span><span class="sk" style="height: 64px; flex: 1"></span><span class="sk" style="height: 64px; flex: 1"></span><span class="sk" style="height: 64px; flex: 1"></span></div>
+            <span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 class="h2" style="font-size: 18px">Couldn't load the opening year to date</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 480px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was imported or changed.</p>
+            <button type="button" class="btn pri hb" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showPage}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="oy-h2" class="card">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; justify-content: space-between">
+              <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0; max-width: 820px">
+                <h2 id="oy-h2" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">Opening year to date · AISB · 2026</h2>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><span class="{{head.cls}}"><dc-import name="Icon" glyph="{{head.glyph}}" tone="{{head.tone}}" size="14" hint-size="14px,14px"></dc-import>{{head.pill}}</span><span style="color: #5F6C80; font-size: 13px">{{head.asOf}}</span><sc-if value="{{later}}" hint-placeholder-val="{{ false }}"><span class="pl info"><dc-import name="Icon" glyph="clock" tone="brand" size="14" hint-size="14px,14px"></dc-import>An example from later</span></sc-if><sc-if value="{{whatIf}}" hint-placeholder-val="{{ false }}"><span class="pl mute"><dc-import name="Icon" glyph="help" tone="muted" size="14" hint-size="14px,14px"></dc-import>What-if</span></sc-if></div>
+                <p style="margin: 0; color: #46546A; font-size: 13px">{{head.text}}</p>
+              </div>
+              <sc-if value="{{canReimport}}" hint-placeholder-val="{{ false }}"><button type="button" id="oy-again" class="btn sec hs" onClick="{{importAgain}}"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Import again</button></sc-if>
+            </div>
+
+            <sc-if value="{{refused.on}}" hint-placeholder-val="{{ false }}">
+              <div id="oy-refused" role="alert" tabindex="-1" class="ex rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="color: #8E1A10">{{refused.title}}</b><span style="color: #46546A">{{refused.text}}</span><span style="color: #46546A">Nothing was imported.</span></div></div>
+            </sc-if>
+
+            <!-- step 1: choose the workbook -->
+            <sc-if value="{{canChoose}}" hint-placeholder-val="{{ true }}">
+              <ol style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; color: #46546A; font-size: 13px">
+                <li>Choose the last workbook before payroll starts here: November 2026's, once November is paid. Each payslip sheet's Jan to Dec table holds the months so far.</li>
+                <li>Check the preview: each sheet matched to a staff record by name and the last 4 of the IC, with what is missing. Nothing is kept yet.</li>
+                <li>Import. It is all or nothing: a sheet that can't be read stops the import until the workbook is corrected.</li>
+              </ol>
+              <form id="oy-form" onSubmit="{{submit}}" noValidate="{{ true }}" aria-busy="{{busyAttr}}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+                <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                  <span id="oy-file-l" style="font-size: 13px; font-weight: 600; color: #46546A">Payroll workbook (.xlsx)</span>
+                  <div onDragOver="{{dragOver}}" onDrop="{{dropFile}}" style="{{boxStyle}}">
+                    <input id="oy-file" class="sr" type="file" accept=".xlsx" onChange="{{pickFile}}" disabled="{{busy}}" aria-labelledby="oy-file-l oy-file-name" aria-invalid="{{fileInv}}" aria-describedby="{{fileBy}}">
+                    <label for="oy-file" class="hs" style="flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #778588; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; box-sizing: border-box"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Choose file</label>
+                    <span id="oy-file-name" style="{{fileNameStyle}}">{{fileName}}</span>
+                  </div>
+                  <sc-if value="{{fileErr}}" hint-placeholder-val="{{ false }}"><span id="oy-file-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Choose November 2026's payroll workbook first.</span></sc-if>
+                </div>
+                <button type="submit" id="oy-read" class="btn pri hb" disabled="{{busy}}" aria-busy="{{busyAttr}}" style="min-width: 190px"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="eye" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{readLabel}}</button>
+              </form>
+              <sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><div role="status" class="ex rb info"><dc-import name="Icon" glyph="clock" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{busyText}}</span></div></sc-if>
+            </sc-if>
+
+            <sc-if value="{{noRight}}" hint-placeholder-val="{{ false }}">
+              <div role="note" class="rb mute"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Later, with logins: Nurul Aina has HR without Payroll figures.</b> She sees who was imported and for which months, with every amount hidden. The figures, and importing, need the Payroll figures right. Rights are set on <a href="UsersAccess.dc.html" style="font-weight: 600">Users and access</a>.</span></div>
+            </sc-if>
+          </section>
+
+          <!-- totals: only with the Payroll figures right -->
+          <sc-if value="{{showTiles}}" hint-placeholder-val="{{ true }}">
+            <div role="group" aria-label="{{tilesLabel}}" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+              <sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+                <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0"><span style="font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #5F6C80">{{t.label}}</span><b class="num" style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{t.value}}</b><span style="color: #5F6C80; font-size: 12px">{{t.sub}}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <!-- preview, errors, imported: one row per sheet -->
+          <sc-if value="{{showTable}}" hint-placeholder-val="{{ true }}">
+            <section aria-labelledby="oy-t-h" class="card">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between">
+                <div><h2 id="oy-t-h" tabindex="-1" class="h2">{{tableTitle}}</h2><span class="sub">{{tableSub}}</span></div>
+                <sc-if value="{{measureOn}}" hint-placeholder-val="{{ false }}">
+                  <div role="group" aria-label="Figure to show" style="display: inline-flex; flex-wrap: wrap; padding: 3px; gap: 2px; border-radius: 10px; background: #EEF1F5">
+                    <sc-for list="{{measures}}" as="m" hint-placeholder-count="4"><button type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button></sc-for>
+                  </div>
+                </sc-if>
+              </div>
+              <sc-if value="{{errBanner.on}}" hint-placeholder-val="{{ false }}">
+                <div id="oy-errs" role="alert" tabindex="-1" class="ex rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">{{errBanner.title}}</b><div style="color: #46546A">Correct the workbook, save it and choose it again. The import is all or nothing, so nothing is kept until every sheet reads.</div></div></div>
+              </sc-if>
+              <div role="region" aria-label="{{regionLabel}}" tabindex="0" class="fr {{swapCls}}" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                <table class="tb" style="min-width: 980px">
+                  <caption class="sr">{{caption}}</caption>
+                  <thead><tr><th scope="col">Person</th><th scope="col">IC</th><th scope="col">Months</th><sc-for list="{{cols}}" as="c" hint-placeholder-count="4"><th scope="col" class="r">{{c.label}}</th></sc-for><th scope="col">{{lastCol}}</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+                      <tr class="{{r.cls}}">
+                        <td><b>{{r.name}}</b><div style="color: #5F6C80; font-size: 12px">{{r.meta}}</div></td>
+                        <td class="mono" style="color: #46546A; white-space: nowrap"><span aria-hidden="true">{{r.ic}}</span><span class="sr">{{r.icLabel}}</span></td>
+                        <td style="white-space: nowrap; color: #46546A">{{r.months}}</td>
+                        <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><td class="r" style="{{c.style}}">{{c.v}}</td></sc-for>
+                        <td style="min-width: 220px"><span class="{{r.stCls}}" style="white-space: normal"><dc-import name="Icon" glyph="{{r.stGlyph}}" tone="{{r.stTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.status}}</span><sc-if value="{{r.fix}}" hint-placeholder-val="{{ false }}"><div style="color: #46546A; font-size: 12px; margin-top: 4px">{{r.fix}}</div></sc-if></td>
+                      </tr>
+                    </sc-for>
+                    <tr class="tot"><td>Total · {{totPeople}}</td><td></td><td></td><sc-for list="{{tot}}" as="c" hint-placeholder-count="4"><td class="r">{{c.v}}</td></sc-for><td></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap">
+                  <span role="status" aria-live="off" style="font-size: 13px; color: #46546A">{{many.text}}</span>
+                  <button type="button" class="btn sec hs" onClick="{{many.more}}" aria-disabled="{{many.done}}">{{many.btn}}</button>
+                </div>
+                <span class="sub">What-if: a company with 120 staff starting payroll mid-year. The board draws 10 of the first 25 rows to save room; the header row stays at the top while the rows scroll.</span>
+              </sc-if>
+              <sc-if value="{{tie}}" hint-placeholder-val="{{ false }}"><div class="rb ok"><dc-import name="Icon" glyph="books" tone="ok" size="18" hint-size="18px,18px"></dc-import><span>{{tie}}</span></div></sc-if>
+
+              <sc-if value="{{missOn}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <b style="font-size: 13px">What is missing or left out</b>
+                  <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: #46546A; font-size: 13px">
+                    <sc-for list="{{missing}}" as="m" hint-placeholder-count="3"><li>{{m.text}}</li></sc-for>
+                  </ul>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{previewActs}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; padding-top: 4px; border-top: 1px solid #EEF1F5">
+                  <span id="oy-imp-why" class="sub" style="margin-right: auto">{{impWhy}}</span>
+                  <button type="button" id="oy-cancel" class="btn sec hs" onClick="{{askDiscard}}" disabled="{{busy}}">Cancel</button>
+                  <button type="button" id="oy-import" class="btn pri hb" onClick="{{doImport}}" disabled="{{busy}}" aria-disabled="{{impDis}}" aria-describedby="oy-imp-why" aria-busy="{{busyAttr}}" style="min-width: 200px"><sc-if value="{{importing}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{notImporting}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="download" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{impLabel}}</button>
+                </div>
+              </sc-if>
+            </section>
+          </sc-if>
+          <sc-if value="{{tableHidden}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="oy-hid-h" class="card" style="flex-direction: row; gap: 12px; align-items: flex-start">
+              <dc-import name="Icon" glyph="eyeOff" tone="muted" size="22" hint-size="22px,22px"></dc-import>
+              <div style="min-width: 0"><h2 id="oy-hid-h" class="h2">Each person's year to date</h2><p style="margin: 4px 0 0; color: #46546A; font-size: 13px">Shown only to users with the Payroll figures right. Imported for 10 people: Aisha, Wei Ming, Aina, Hafiz, Khadijah, Kah Seng and Izzati (January to November), Jia Hui (September to November), Daniel (November) and Kavitha (January to August, left 31 Aug).</p></div>
+            </section>
+          </sc-if>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 980px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Year to date is always the opening year to date plus the months run here, never typed: it feeds PCB (this year's pay and PCB so far), the EA form by the end of February and Form E with CP8D. A joiner's pay from a previous employer goes on the staff record as TP3, not here. IC numbers are masked to the last 4. Importing and each change are recorded in the <a href="AuditTrail.dc.html">audit trail</a>.</span></div>
+        </sc-if>
+      </div>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 640px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="{{toastTone}}" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="oy-undo" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+  <sc-if value="{{dlg.show}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dlg.dimCls}}" onClick="{{dlg.cancel}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div>
+    <div style="position: fixed; inset: 0; z-index: 51; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none">
+      <div role="dialog" aria-modal="true" aria-labelledby="oy-dlg-title" aria-describedby="oy-dlg-desc" tabindex="-1" class="{{dlg.panelCls}}" onKeyDown="{{dlg.key}}" onAnimationEnd="{{dlg.onAnim}}" style="pointer-events: auto; position: relative; width: 100%; max-width: 480px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; box-shadow: 0 16px 40px rgba(13,27,46,.18); display: flex; flex-direction: column">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 20px 60px 16px 22px">
+          <span style="flex: none; width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: #FEF1D6"><dc-import name="Icon" glyph="edit" tone="warn" size="22" hint-size="22px,22px"></dc-import></span>
+          <div><h2 id="oy-dlg-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Discard this preview?</h2><p id="oy-dlg-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{dlg.desc}}</p></div>
+        </div>
+        <button type="button" class="hs" onClick="{{dlg.cancel}}" aria-label="Close" style="position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+        <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; border-radius: 0 0 16px 16px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end">
+          <button type="button" id="oy-dlg-keep" class="btn sec hs" onClick="{{dlg.cancel}}">Keep the preview</button>
+          <button type="button" id="oy-dlg-go" class="btn dng hd" onClick="{{dlg.discard}}">Discard</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"ytd","options":["ytd","start","reading","preview","errors","importing","imported","discard","refused","refused-pdf","locked","no-payroll-figures","many-rows","loading","load-error","ai"],"section":"State to show"},"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'ytd'); }
+  componentDidMount() {
+    const v = this.props.view || 'ytd';
+    if (this.state.busy) this.startBusy();
+    if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000);
+    const f = { refused: 'oy-refused', 'refused-pdf': 'oy-refused', locked: 'oy-refused', errors: 'oy-errs', preview: 'oy-t-h', discard: 'oy-dlg-title', ai: 'oy-nu-h' }[v];
+    if (f) this.focusId(f);
+  }
+  componentWillUnmount() { clearTimeout(this._busy); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._t); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._busy); this.setState(this.initial(this.props.view || 'ytd')); return; }
+    const st = this.state, was = prev || {};
+    if (st.dlg && !was.dlg) { this.focusId('oy-dlg-title'); return; }
+    if (was.dlg && !st.dlg) {
+      const o = this._opener; this._opener = null;
+      if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+      if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); else this.focusId('oy-h2');
+      return;
+    }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: false }); return true; } return false; }
+
+  // ---- AISB's opening year to date, January to November 2026, from November's workbook (each payslip sheet's Jan to Dec
+  // table): AISB switches over on Tue 1 Dec 2026 and December 2026 is its first run paid from this app. Money in sen.
+  // January to September as before (gross 522,384.60, SQL's 900-100 at 30 Sep, stage 1; employee EPF 47,912.00, with the
+  // 26.00 below October put on Aisha until samples.md has the Jan to Sep table). October is samples section 6. November is
+  // the November workbook as PayrollCheck reads it (Daniel from 3 Nov on 3,500.00; Kah Seng at the 60-and-over rates).
+  // Gross Jan to Nov 643,332.50 = 522,384.60 + 59,147.90 + 61,800.00. December is the example run from later: November's
+  // pay again, with Kah Seng's final pay as PayrollLeaver draws it (gross 9,900.00, EPF 0.00, PCB 890.00): 63,300.00.
+  // [no, name, preferred, IC last 4, months, gross, EPF employee, PCB, December gross, EPF, PCB]
+  people() {
+    if (this._ppl) return this._ppl;
+    const rows = [
+      ['S001', 'Aisha Rahman', 'Aisha', '3418', 'Jan to Nov', 10780000, 1038000, 1188000, 980000, 94600, 108000, ''],
+      ['S002', 'Ong Wei Ming', 'Wei Ming', '5127', 'Jan to Nov', 11880000, 943800, 1298000, 1080000, 85800, 118000, ''],
+      ['S003', 'Nurul Aina binti Hashim', 'Aina', '2046', 'Jan to Nov', 8580000, 847000, 770000, 780000, 77000, 70000, ''],
+      ['S004', 'Mohd Hafiz bin Rosli', 'Hafiz', '7391', 'Jan to Nov', 9130000, 689700, 616000, 830000, 62700, 56000, ''],
+      ['S005', 'Nor Khadijah binti Omar', 'Khadijah', '6582', 'Jan to Nov', 6710000, 665500, 374000, 610000, 60500, 34000, ''],
+      ['S006', 'Wong Kah Seng', 'Kah Seng', '1035', 'Jan to Nov', 9733250, 858000, 1100000, 990000, 0, 89000, 'Leaving 31 Dec 2026'],
+      ['S007', 'Goh Jia Hui', 'Jia Hui', '4720', 'Sep to Nov', 1200000, 112200, 16500, 400000, 37400, 5500, 'Joined 1 Sep 2026'],
+      ['S008', 'Nur Izzati binti Kamal', 'Izzati', '8264', 'Jan to Nov', 3410000, 338800, 0, 310000, 30800, 0, ''],
+      ['S009', 'Daniel Lee Chee Keong', 'Daniel', '9153', 'Nov', 350000, 38500, 0, 350000, 38500, 0, 'Joined 3 Nov 2026'],
+      ['S010', 'Kavitha Nair', 'Kavitha', '3306', 'Jan to Aug', 2560000, 281600, 12000, 0, 0, 0, 'Left 31 Aug 2026']
+    ];
+    this._ppl = rows.map(a => ({ no: a[0], name: a[1], pref: a[2], ic: a[3], months: a[4], gross: a[5], epf: a[6], pcb: a[7], zakat: 0, oGross: a[8], oEpf: a[9], oPcb: a[10], oZakat: 0, note: a[11] }));
+    return this._ppl;
+  }
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  initial(view) {
+    const FILE = { name: 'Example Payroll - NOV 2026.xlsx', size: '231 KB', bytes: 236544 };
+    const base = { view, co: 'AISB', phase: 'done', file: null, fileErr: false, refused: null, errs: false, busy: null, load: 'ok', aina: false, many: false, shown: 25,
+      measure: 'gross', swap: 0, locked: true, dlg: null, closing: false, toast: null, say: '' };
+    const set = {
+      ytd: {},
+      start: { phase: 'start', locked: false },
+      reading: { phase: 'start', locked: false, file: FILE, busy: 'read' },
+      preview: { phase: 'preview', locked: false, file: FILE },
+      errors: { phase: 'preview', locked: false, file: { ...FILE, name: 'Example Payroll - NOV 2026 (first copy).xlsx' }, errs: true },
+      importing: { phase: 'preview', locked: false, file: FILE, busy: 'import' },
+      imported: { phase: 'imported', locked: false, file: FILE,
+        toast: { msg: 'Imported the opening year to date for 10 people, January to November 2026: gross pay 643,332.50.', undo: { phase: 'preview' }, glyph: 'check', tone: 'dok', n: 1 } },
+      discard: { phase: 'preview', locked: false, file: FILE, dlg: { kind: 'discard' } },
+      refused: { phase: 'start', locked: false, file: { name: 'Example Payroll - NOV 2025.xlsx', size: '198 KB', bytes: 202752 }, refused: 'year' },
+      'refused-pdf': { phase: 'start', locked: false, file: { name: 'Example Payroll - NOV 2026.pdf', size: '388 KB', bytes: 397312 }, refused: 'pdf' },
+      locked: { refused: 'locked' },
+      'no-payroll-figures': { aina: true },
+      'many-rows': { phase: 'preview', locked: false, file: FILE, many: true },
+      loading: { load: 'loading' }, 'load-error': { load: 'error' },
+      ai: { co: 'AI' }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+  refusal(k) {
+    return {
+      year: ["This workbook is for 2025: its payslips say November 2025. The opening year to date is for 2026, the year AISB starts payroll in this app. Choose November 2026's workbook."],
+      pdf: ["Only an Excel workbook (.xlsx) can be read. Open the payroll in Excel, save it as an Excel Workbook (.xlsx) and choose that."],
+      locked: ['The December 2026 run is approved, so the opening year to date is locked: payslips, PCB and the year to date already use it. A correction goes in as an adjustment in the next run.']
+    }[k][0];
+  }
+
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo, glyph, tone) { this.startToast(undo ? 15000 : 6000); return { toast: { msg, undo: undo || null, glyph: glyph || 'check', tone: tone || 'dok', n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+  startBusy() { clearTimeout(this._busy); this._busy = setTimeout(() => this.finishBusy(), 1400); }
+  finishBusy() {
+    const st = this.state;
+    if (!st.busy) return;
+    if (st.busy === 'read') {
+      const errs = /first copy/i.test((st.file && st.file.name) || '');
+      this._upFocus = [errs ? 'oy-errs' : 'oy-t-h'];
+      return this.setState({ busy: null, phase: 'preview', errs, say: errs ? '2 sheets have errors. Nothing can be imported yet.' : '10 sheets read. Check the preview, then import.' });
+    }
+    this._upFocus = ['oy-h2'];
+    this.setState({ busy: null, phase: 'imported', say: 'Imported for 10 people',
+      ...this.toastPart('Imported the opening year to date for 10 people, January to November 2026: gross pay 643,332.50.', { phase: 'preview' }, 'check', 'dok') });
+  }
+  submit(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    const st = this.state;
+    if (st.busy) return;
+    if (!st.file) { this._upFocus = ['oy-file']; return this.setState({ fileErr: true, refused: null, say: "Choose November 2026's payroll workbook first." }); }
+    if (!/\.xlsx$/i.test(st.file.name)) { this._upFocus = ['oy-refused']; return this.setState({ refused: 'pdf', fileErr: false }); }
+    if (/2025/.test(st.file.name)) { this._upFocus = ['oy-refused']; return this.setState({ refused: 'year', fileErr: false }); }
+    this.setState({ busy: 'read', refused: null, fileErr: false, say: 'Reading ' + st.file.name });
+    this.startBusy();
+  }
+  takeFile(f) {
+    if (!f) return;
+    const kb = f.size / 1024, size = kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB';
+    this.setState({ file: { name: f.name, size, bytes: f.size }, fileErr: false, refused: null, say: 'Chosen: ' + f.name });
+  }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if (c !== 'AISB' && c !== 'AI') return;
+    if (c === this.state.co) return;
+    clearTimeout(this._busy);
+    if (c === 'AI') { this._upFocus = ['oy-nu-h']; return this.setState({ co: 'AI', busy: null, say: "Opening year to date isn't used for Agrinexus International" }); }
+    this._upFocus = ['oy-h2'];
+    this.setState(this.initial('ytd'));
+  }
+  closeDlg(patch) {
+    if (!this.state.dlg || this.state.closing) { if (patch) this.setState(patch); return; }
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.setState({ dlg: null, closing: false, ...(patch || {}) });
+    this.setState({ closing: true, ...(patch || {}) });
+    clearTimeout(this._t); this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false }); }
+
+  renderVals() {
+    const st = this.state, F = n => this.fmt(n), isAI = st.co === 'AI', aina = st.aina, ppl = this.people();
+    const TABS = [['Workbook check', 'PayrollCheck.dc.html', 'verified'], ['Run', 'PayrollRun.dc.html', 'payroll'], ['Totals', 'PayrollTotals.dc.html', 'sheet'],
+      ['Statutory files', 'PayrollFiles.dc.html', 'statutory'], ['Leaver', 'PayrollLeaver.dc.html', 'person'], ['Parallel run', 'PayrollParallel.dc.html', 'refresh'],
+      ['Opening year to date', 'PayrollOpeningYtd.dc.html', 'history']];
+    // the run tabs only where Runs payroll in this app is on (AISB in the samples); otherwise only the Workbook check
+    const SEL = isAI ? 0 : 6;
+    const tabs = (isAI ? TABS.slice(0, 1) : TABS).map((t, i) => ({ id: 'oy-tab-' + i, label: t[0], href: t[1], glyph: t[2], sel: i === SEL ? 'true' : 'false', ctl: i === SEL ? 'oy-panel' : null, tabindex: i === SEL ? '0' : '-1',
+      tone: i === SEL ? 'brand' : 'muted',
+      style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid ' + (i === SEL ? '#2450B8' : 'transparent') + ';border-radius:8px 8px 0 0;font:600 14px Inter,sans-serif;text-decoration:none;transition:border-color .12s ease-out,color .12s ease-out;color:' + (i === SEL ? '#1D419A' : '#46546A') + ';box-sizing:border-box' }));
+    const tabKey = ev => {
+      const ids = tabs.map(t => t.id), i = ids.indexOf(ev && ev.target && ev.target.id), n = ids.length;
+      if (i < 0) return;
+      const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i - 1 + n) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : null;
+      if (j === null) return;
+      if (ev.preventDefault) ev.preventDefault();
+      this.focusId(ids[j]);
+    };
+
+    const showLoading = !isAI && st.load === 'loading', showError = !isAI && st.load === 'error', showPage = !isAI && st.load === 'ok';
+    const ph = st.phase, done = ph === 'done', busy = !!st.busy;
+    const sum = k => ppl.reduce((s, p) => s + p[k], 0);
+
+    // head: what this year's opening stands at
+    const HEAD = {
+      start: { cls: 'pl mute', glyph: 'history', tone: 'muted', pill: 'Not imported yet', asOf: 'Today, Wed 18 Nov 2026', text: "AISB switches over on Tue 1 Dec 2026, so its first run paid from this app is December 2026. Once November is paid, each person's pay, EPF, PCB and zakat for January to November are imported once from November's workbook, so the year to date, PCB and the EA forms are right." },
+      preview: { cls: 'pl warn', glyph: 'eye', tone: 'warn', pill: st.errs ? '2 sheets with errors' : 'Preview · not imported yet', asOf: 'As on Tue 1 Dec 2026, 10:02', text: 'Read from ' + ((st.file && st.file.name) || '') + '. Nothing is kept until you import.' },
+      imported: { cls: 'pl ok', glyph: 'check', tone: 'ok', pill: 'Imported', asOf: 'Tue 1 Dec 2026, 10:05 · Aisha Rahman', text: "Imported from Example Payroll - NOV 2026.xlsx for 10 people. It can be imported again, replacing this, until December 2026's run is approved." },
+      done: { cls: 'pl info', glyph: 'lock', tone: 'brand', pill: "Locked since December 2026's run was approved", asOf: 'As on Thu 31 Dec 2026', text: "Imported Tue 1 Dec 2026, 10:05 by Aisha Rahman from Example Payroll - NOV 2026.xlsx, for 10 people. December's run uses it, so it no longer changes; the year to date below adds each month run here." }
+    };
+    const head = HEAD[ph];
+
+    // the file box
+    const fileName = st.file ? st.file.name + ' · ' + st.file.size : 'No file chosen';
+    const refused = st.refused ? { on: true, title: st.refused === 'locked' ? 'Not imported again' : ((st.file && st.file.name) || 'The file') + " wasn't read", text: this.refusal(st.refused) } : { on: false, title: '', text: '' };
+
+    // the table: preview (as read), imported (as kept) or year to date (opening + December)
+    const M = { gross: ['Gross pay', 'gross', 'oGross'], epf: ['EPF, employee', 'epf', 'oEpf'], pcb: ['PCB', 'pcb', 'oPcb'], zakat: ['Zakat', 'zakat', 'oZakat'] };
+    const m = M[st.measure];
+    const ytdView = done;
+    const cols = ytdView ? [{ label: 'Opening, Jan to Nov' }, { label: 'December run' }, { label: 'Year to date' }] : [{ label: 'Gross pay' }, { label: 'EPF, employee' }, { label: 'PCB' }, { label: 'Zakat' }];
+    const ERR = st.errs ? {
+      S006: ['JUL row: Gross pay is text (“8,4OO.00”, with letter Os), not a number.', 'Type 8,400.00 as a number in the JUL row of the sheet “Kah Seng”.'],
+      S004: ['The IC on the sheet ends 7319; S004’s staff record ends 7391.', 'Check the sheet is his, then correct whichever IC is wrong.']
+    } : {};
+    const rows = ppl.map(p => {
+      const e = ERR[p.no];
+      const cells = ytdView ? [{ v: F(p[m[1]]), style: '' }, { v: p.no === 'S010' ? '—' : F(p[m[2]]), style: '' }, { v: F(p[m[1]] + p[m[2]]), style: 'font-weight:600' }]
+        : [{ v: e && p.no === 'S006' ? '—' : F(p.gross), style: e && p.no === 'S006' ? 'color:#B0190F' : '' }, { v: F(p.epf), style: '' }, { v: F(p.pcb), style: '' }, { v: F(p.zakat), style: '' }];
+      const status = e ? e[0] : ytdView ? (p.no === 'S010' ? 'Left 31 Aug: kept for her 2026 EA form' : p.no === 'S007' ? 'Joined 1 Sep' : p.no === 'S009' ? 'Joined 3 Nov' : 'Opening plus December') : 'Matched to ' + p.no + ' by the sheet “' + p.pref + '” and the IC';
+      return { name: p.name + ' (' + p.pref + ')', meta: p.no + (p.note ? ' · ' + p.note : ''), ic: '••••••-••-' + p.ic, icLabel: 'IC ending ' + p.ic, months: p.months, cells, cls: e ? 'err' : '',
+        status, fix: e ? e[1] : '', stCls: 'cp ' + (e ? 'bad' : ytdView ? 'mute' : 'ok'), stGlyph: e ? 'alert' : ytdView ? 'history' : 'check', stTone: e ? 'bad' : ytdView ? 'muted' : 'ok' };
+    });
+    const tot = ytdView ? [{ v: F(sum(m[1])) }, { v: F(sum(m[2])) }, { v: F(sum(m[1]) + sum(m[2])) }]
+      : [{ v: st.errs ? '—' : F(sum('gross')) }, { v: F(sum('epf')) }, { v: F(sum('pcb')) }, { v: F(sum('zakat')) }];
+    const measures = Object.keys(M).map(k => ({ label: M[k][0], pressed: st.measure === k ? 'true' : 'false',
+      pick: () => { if (this.state.measure === k) return; this.setState({ measure: k, swap: this.state.swap + 1, say: 'Showing ' + M[k][0].toLowerCase() + ': opening, December and year to date' }); },
+      style: 'height:32px;padding:0 12px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (st.measure === k ? 'background:#FFFFFF;color:#1D419A;box-shadow:0 1px 2px rgba(13,27,46,.16)' : 'background:transparent;color:#46546A') }));
+    const tie = ytdView && st.measure === 'gross' ? "Gross pay to date, 706,632.50, agrees with 900-100 Salaries and wages in SQL's books to 31 Dec: 643,332.50 brought forward at 1 Dec plus December's payroll journal, 63,300.00."
+      : !ytdView && ph !== 'start' && !st.errs ? (ph === 'imported' ? "The gross pay imported" : "The gross pay read") + ", 643,332.50, agrees with 900-100 Salaries and wages in SQL's books at 30 Nov: 581,532.50 at 31 Oct plus November's payroll journal, 61,800.00." : '';
+    const missing = [
+      { text: 'No zakat column on the sheets\' Jan to Dec tables, so zakat is 0.00 for everyone. If anyone paid zakat through pay this year, add the column and read the workbook again.' },
+      { text: "Kavitha Nair (S010) left on 31 Aug: her sheet's September to November rows are all zero. January to August are kept for her 2026 EA form." },
+      { text: 'The hidden sheet “Template” has no name and no figures, so it is left out.' }
+    ];
+    const tableOn = (ph === 'preview' || ph === 'imported' || done) && !aina;
+    const many = st.many ? { on: true, text: 'Showing ' + Math.min(st.shown, 120) + ' of 120 people', btn: st.shown >= 120 ? 'All 120 shown' : 'Show 25 more', done: st.shown >= 120 ? 'true' : 'false',
+      more: () => { if (this.state.shown >= 120) return; const n = Math.min(this.state.shown + 25, 120); this.setState({ shown: n, say: 'Showing ' + n + ' of 120 people' }); } } : { on: false, text: '', btn: '', done: 'true', more: () => {} };
+
+    // totals tiles: amounts, so only with the Payroll figures right (as on the other payroll pages)
+    const tiles = done ? [['Gross pay', 'gross', 'oGross'], ['EPF, employee', 'epf', 'oEpf'], ['PCB', 'pcb', 'oPcb'], ['Zakat', 'zakat', 'oZakat']].map(([l, a, b]) => ({ label: l + ' to date', value: F(sum(a) + sum(b)), sub: 'Opening ' + F(sum(a)) + ' + December ' + F(sum(b)) }))
+      : [['Gross pay', 'gross'], ['EPF, employee', 'epf'], ['PCB', 'pcb'], ['Zakat', 'zakat']].map(([l, a]) => ({ label: l, value: st.errs && a === 'gross' ? '—' : F(sum(a)), sub: 'January to November 2026' }));
+    const showTiles = showPage && !aina && (ph === 'imported' || done || (ph === 'preview' && !st.errs));
+
+    // discard dialog
+    const d = st.dlg;
+    const dlg = { show: !!d, dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in',
+      desc: 'Nothing from ' + ((st.file && st.file.name) || 'the workbook') + ' has been imported. The workbook isn\'t kept, so you would choose it again to import.',
+      cancel: () => this.closeDlg(),
+      discard: () => { const back = { phase: 'preview', file: this.state.file, errs: this.state.errs }; this._upFocus = ['oy-file']; this.closeDlg({ phase: 'start', file: null, errs: false, say: 'Preview discarded', ...this.toastPart('Preview discarded: nothing was imported.', back, 'undo', 'dbrand') }); },
+      onAnim: ev => { if (this.state.closing && ev && ev.target === ev.currentTarget) this.finishClose(); },
+      key: ev => {
+        if (!ev) return;
+        if (ev.key === 'Escape') { if (ev.preventDefault) ev.preventDefault(); if (ev.stopPropagation) ev.stopPropagation(); this.closeDlg(); return; }
+        if (ev.key !== 'Tab' || !ev.currentTarget || !ev.currentTarget.querySelectorAll) return;
+        const fs = [...ev.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], ae = document.activeElement, inside = ev.currentTarget.contains(ae);
+        if (ev.shiftKey && (!inside || ae === first || ae === ev.currentTarget || (ae && ae.id === 'oy-dlg-title'))) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && (!inside || ae === last)) { ev.preventDefault(); first.focus(); }
+      } };
+
+    const t = st.toast, importing = st.busy === 'import';
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: aina ? 'hrOnly' : 'full', tbUser: aina ? 'aina' : 'aisha',
+      say: st.say, onTopCo: code => this.pickCo(code),
+      intro: isAI ? 'Agrinexus International uses only the Workbook check: “Runs payroll in this app” is off for it.'
+        : 'When payroll starts in this app part way through a year, the months before it come in once from the workbook, as each person\'s opening year to date.',
+      tabsOn: true, tabs, tabKey, notUsed: isAI, panelBy: isAI ? 'oy-tab-0' : 'oy-tab-6',
+      showLoading, showError, showPage,
+      retry: () => { this._upFocus = ['oy-h2']; this.setState({ load: 'ok', say: 'Opening year to date loaded' }); },
+      head, whatIf: !!st.many, later: ph !== 'start' || st.busy === 'read', refused,
+      canReimport: done && !aina, importAgain: () => { this._upFocus = ['oy-refused']; this.setState({ refused: 'locked', say: 'Not imported again: the opening year to date is locked' }); },
+      canChoose: ph === 'start' && !aina, noRight: aina,
+      submit: ev => this.submit(ev),
+      busy, idle: !busy, busyAttr: busy ? 'true' : 'false', readLabel: st.busy === 'read' ? 'Reading…' : 'Read the workbook',
+      busyText: st.busy === 'read' && st.file ? 'Reading ' + st.file.name + ': each payslip sheet\'s Jan to Dec table, matched to the staff records. Nothing is kept yet.' : '',
+      boxStyle: 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;min-height:52px;padding:7px 10px;border-radius:10px;box-sizing:border-box;border:1px ' + (st.fileErr ? 'solid #B0190F;background:#FFFFFF' : 'dashed #7C8799;background:#F7F8FA'),
+      fileName, fileNameStyle: 'min-width:0;overflow-wrap:anywhere;font-size:13px;color:' + (st.file ? '#0F1A2B;font-weight:600' : '#5F6C80'),
+      fileErr: !!st.fileErr, fileInv: st.fileErr ? 'true' : 'false', fileBy: st.fileErr ? 'oy-file-err' : null,
+      pickFile: ev => this.takeFile(ev && ev.target && ev.target.files && ev.target.files[0]),
+      dragOver: ev => { if (ev && ev.preventDefault) ev.preventDefault(); },
+      dropFile: ev => { if (ev && ev.preventDefault) ev.preventDefault(); this.takeFile(ev && ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]); },
+      showTiles, tiles, tilesLabel: done ? 'Year to date totals, all staff' : 'Opening year to date totals, all staff',
+      showTable: showPage && tableOn, tableHidden: showPage && aina && (ph === 'imported' || done),
+      tableTitle: done ? 'Year to date · January to December 2026' : ph === 'imported' ? 'Opening year to date · as imported' : st.errs ? 'Preview · 2 sheets with errors' : 'Preview · 10 sheets read',
+      tableSub: done ? 'Pick a figure. December comes from the approved run; nothing here is typed.' : ph === 'imported' ? 'January to November 2026, one row per person.' : 'Each payslip sheet\'s Jan to Dec table, January to November, totalled per person.',
+      measureOn: done, measures, swapCls: st.swap % 2 ? 'swapA' : st.swap ? 'swapB' : '',
+      regionLabel: done ? 'Year to date per person, scrolls sideways' : 'Opening year to date per person, scrolls sideways',
+      caption: done ? m[0] + ' per person: opening January to November, the December run, and the year to date' : 'Opening year to date per person, January to November 2026',
+      cols, rows, tot, totPeople: '10 people', lastCol: ph === 'preview' ? 'Read as' : 'Note',
+      errBanner: st.errs && ph === 'preview' ? { on: true, title: 'Nothing can be imported yet: 2 sheets have errors' } : { on: false, title: '' },
+      many, tie, missOn: ph === 'preview' && !aina, missing,
+      previewActs: ph === 'preview' && !aina,
+      impDis: st.errs ? 'true' : 'false', importing, notImporting: !importing,
+      impLabel: importing ? 'Importing…' : 'Import for 10 people',
+      impWhy: st.errs ? 'Correct the 2 sheets first. The import is all or nothing.' : importing ? 'Importing: nothing changes on the staff records.' : 'It can be imported again, replacing this, until December 2026\'s run is approved.',
+      askDiscard: ev => { if (busy) return; this._opener = (ev && ev.currentTarget) || document.activeElement; this.setState({ dlg: { kind: 'discard' }, closing: false }); },
+      doImport: () => {
+        if (busy) return;
+        if (this.state.errs) { this._upFocus = ['oy-errs']; return this.setState({ say: 'Nothing can be imported yet: 2 sheets have errors' }); }
+        this.setState({ busy: 'import', say: 'Importing for 10 people' }); this.startBusy();
+      },
+      dlg,
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastGlyph: t ? t.glyph || 'check' : 'check', toastTone: t ? t.tone || 'dok' : 'dok',
+      toastCls: t ? (t.out ? 'tOut' : t.n % 2 ? 'tA' : 'tB') : '',
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); },
+      toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); clearTimeout(this._to); this.setState({ toast: null }); },
+      undo: () => {
+        const u = this.state.toast && this.state.toast.undo;
+        if (!u) return;
+        clearTimeout(this._tt); clearTimeout(this._to);
+        this._upFocus = ['oy-h2'];
+        this.setState({ ...u, toast: null, refused: null, say: u.phase === 'preview' ? 'Import taken back: the preview is shown again, nothing is kept' : 'Undone' });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

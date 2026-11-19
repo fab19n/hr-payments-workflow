@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HR · Staff · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:hover{background:#F8FAFD !important}
+.hb,.hs,.hd,.hr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;box-sizing:border-box}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ic-mask{font:600 13px ui-monospace,Consolas,monospace;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.kbd{display:inline-block;padding:0 6px;border-radius:6px;border:1px solid #8792A2;background:#FFFFFF;font:600 12px ui-monospace,Consolas,monospace;color:#0F1A2B}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.sk{animation:none}.spin{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="staff" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Staff" company="{{sbCo}}" allow-all="read-only" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1320px; box-sizing: border-box; padding: 28px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Staff</h1>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 680px">{{intro}}</p>
+        </div>
+        <sc-if value="{{actionsOn}}" hint-placeholder-val="{{ true }}">
+          <div role="group" aria-label="Add or take out staff" style="display: flex; flex-wrap: wrap; gap: 8px">
+            <a href="HrStaffForm.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a person</a>
+            <button type="button" id="hs-paste" class="hs" onClick="{{openPaste}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="clipboard" tone="brand" size="18" hint-size="18px,18px"></dc-import>Paste a list</button>
+            <button type="button" id="hs-import" class="hs" onClick="{{openFile}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="brand" size="18" hint-size="18px,18px"></dc-import>Import Excel</button>
+            <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}">
+              <a href="HrStaffExport.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="sheet" tone="brand" size="18" hint-size="18px,18px"></dc-import>Excel</a>
+            </sc-if>
+          </div>
+        </sc-if>
+      </div>
+
+      <nav aria-label="Staff pages" style="display: flex; gap: 4px; border-bottom: 1px solid #E3E7ED">
+        <a href="HrStaff.dc.html" aria-current="page" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-bottom: 2px solid #2450B8; margin-bottom: -1px; color: #0F1A2B; font-weight: 600; text-decoration: none; transition: border-color .12s ease-out, color .12s ease-out"><dc-import name="Icon" glyph="staff" tone="brand" size="16" hint-size="16px,16px"></dc-import>Staff</a>
+        <a href="HrCalendar.dc.html" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-bottom: 2px solid transparent; margin-bottom: -1px; color: #46546A; font-weight: 600; text-decoration: none; transition: border-color .12s ease-out, color .12s ease-out"><dc-import name="Icon" glyph="reminder" tone="muted" size="16" hint-size="16px,16px"></dc-import>Calendar and reminders</a>
+      </nav>
+
+      <sc-if value="{{allOn}}" hint-placeholder-val="{{ false }}">
+        <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b>All companies is read only.</b> Each person belongs to one company. Choose AISB or AI in the top bar to add, paste, import or change staff, or to take an Excel file.</span></div>
+      </sc-if>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" aria-label="Loading the staff list" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 14px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 12px; align-items: center"><span role="status" style="font-size: 13px; color: #46546A">Loading the staff list…</span><div class="sk" style="height: 30px; width: 300px; border-radius: 8px"></div></div>
+          <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 16px">
+            <sc-for list="{{skRows}}" as="k" hint-placeholder-count="7">
+              <div style="display: flex; gap: 16px; align-items: center"><div class="sk" style="height: 14px; width: 20%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 8%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 18%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div><div class="sk" style="height: 22px; width: 110px; border-radius: 99px; margin-left: auto"></div></div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+          <span style="width: 52px; height: 52px; border-radius: 14px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="28" hint-size="28px,28px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+          <p style="margin: 0; color: #46546A; max-width: 460px; font-size: 13px">The staff records couldn't be read from the records folder. Check the drive is connected, then try again. Nothing was changed.</p>
+          <button type="button" id="hs-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{firstRun}}" hint-placeholder-val="{{ false }}">
+        <section class="rv" aria-labelledby="hs-first-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 44px 24px; display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center">
+          <span style="width: 56px; height: 56px; border-radius: 16px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="staff" tone="brand" size="30" hint-size="30px,30px"></dc-import></span>
+          <h2 id="hs-first-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Add your staff or paste the Excel list</h2>
+          <p style="margin: 0; color: #46546A; max-width: 520px; font-size: 13px">{{firstTxt}}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+            <button type="button" id="hs-first-paste" class="hb" onClick="{{openPaste}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="clipboard" tone="white" size="18" hint-size="18px,18px"></dc-import>Paste a list</button>
+            <button type="button" id="hs-first-file" class="hs" onClick="{{openFile}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="brand" size="18" hint-size="18px,18px"></dc-import>Import Excel</button>
+            <a href="HrStaffForm.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="plus" tone="brand" size="18" hint-size="18px,18px"></dc-import>Add a person</a>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isReady}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; color: #46546A; font-size: 13px">
+          <span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="calendar" tone="muted" size="16" hint-size="16px,16px"></dc-import>Today, Wed 18 Nov 2026:</span>
+          <sc-for list="{{heads}}" as="h" hint-placeholder-count="3"><span><b style="color: #0F1A2B; font-variant-numeric: tabular-nums">{{h.n}}</b> {{h.label}}</span></sc-for>
+        </div>
+
+        <section aria-labelledby="hs-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <h2 id="hs-list-h" class="vh" tabindex="-1">Staff of {{coName}}</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+            <div role="group" aria-label="Show" style="display: inline-flex; padding: 3px; border-radius: 10px; background: #F0F2F5; gap: 2px">
+              <sc-for list="{{seg}}" as="g" hint-placeholder-count="3">
+                <button type="button" onClick="{{g.pick}}" aria-pressed="{{g.pressed}}" style="{{g.style}}">{{g.label}}<span style="{{g.nStyle}}">{{g.n}}</span></button>
+              </sc-for>
+            </div>
+            <label for="hs-dept" class="vh">Department</label>
+            <select id="hs-dept" value="{{dept}}" onChange="{{onDept}}" style="height: 32px; padding: 0 8px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; font: 400 13px Inter, sans-serif; color: #0F1A2B">
+              <sc-for list="{{deptOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+            </select>
+            <label for="hs-type" class="vh">Employment type</label>
+            <select id="hs-type" value="{{etype}}" onChange="{{onType}}" style="height: 32px; padding: 0 8px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; font: 400 13px Inter, sans-serif; color: #0F1A2B">
+              <sc-for list="{{typeOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+            </select>
+            <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 200px; max-width: 300px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search name, staff no. or position" aria-label="Search staff" aria-describedby="hs-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+            <sc-if value="{{filtersOn}}" hint-placeholder-val="{{ false }}">
+              <button type="button" class="hs" onClick="{{clearAll}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear filters</button>
+            </sc-if>
+            <span id="hs-count" role="status" aria-live="polite" style="margin-left: auto; color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{countTxt}}</span>
+          </div>
+          <div role="region" aria-label="Staff list" tabindex="0" class="fr" style="{{scrollStyle}}">
+            <table style="width: 100%; min-width: 980px; border-collapse: collapse">
+              <caption class="vh">Staff: name, staff number, IC or passport (last 4 only), position, department, type, date joined and status. No pay is shown here.</caption>
+              <thead>
+                <tr style="text-align: left; color: #5F6C80; font-size: 12px">
+                  <sc-if value="{{allOn}}" hint-placeholder-val="{{ false }}"><th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px 10px 18px; font-weight: 600">Company</th></sc-if>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px 10px 18px; font-weight: 600">Name</th>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Staff no.</th>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px; font-weight: 600">IC or passport</th>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Position</th>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Department</th>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Type</th>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Joined</th>
+                  <th scope="col" style="position: sticky; top: 0; background: #FAFBFC; padding: 10px 18px 10px 12px; font-weight: 600">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="9">
+                  <tr class="{{r.cls}}" style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                    <sc-if value="{{r.allOn}}" hint-placeholder-val="{{ false }}"><td style="padding: 12px 12px 12px 18px"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 8px; border: 1px solid #C9D7F7; background: #EAF0FD; color: #2450B8; font-size: 12px; font-weight: 600">{{r.co}}</span></td></sc-if>
+                    <td style="padding: 12px 12px 12px 18px; min-width: 200px"><a href="{{r.recHref}}" aria-label="{{r.aria}}" style="font-weight: 600; text-decoration: none">{{r.pref}}</a><div style="color: #5F6C80; font-size: 12px">{{r.full}}</div></td>
+                    <td style="padding: 12px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: #46546A">{{r.no}}</td>
+                    <td style="padding: 12px"><span class="ic-mask" aria-label="{{r.idAria}}">{{r.id}}</span><div style="color: #5F6C80; font-size: 12px">{{r.idKind}}</div></td>
+                    <td style="padding: 12px; color: #25324A">{{r.pos}}</td>
+                    <td style="padding: 12px; color: #46546A">{{r.dept}}</td>
+                    <td style="padding: 12px; color: #46546A">{{r.type}}<div style="color: #5F6C80; font-size: 12px">{{r.typeSub}}</div></td>
+                    <td style="padding: 12px; color: #46546A; white-space: nowrap; font-variant-numeric: tabular-nums">{{r.joined}}</td>
+                    <td style="padding: 12px 18px 12px 12px"><span style="{{r.pill}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="14" hint-size="14px,14px"></dc-import>{{r.status}}</span><div style="margin-top: 4px; color: #5F6C80; font-size: 12px; max-width: 220px">{{r.sub}}</div></td>
+                  </tr>
+                </sc-for>
+                <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+                  <tr><td colspan="{{cols}}" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="{{emptyGlyph}}" tone="muted" size="28" hint-size="28px,28px"></dc-import><b style="color: #0F1A2B">{{emptyTitle}}</b><span style="max-width: 460px; font-size: 13px">{{emptyTxt}}</span><sc-if value="{{emptyLinkOn}}" hint-placeholder-val="{{ false }}"><a href="SetupApprovers.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600">Open Setup › HR › Approvers</a></sc-if><button type="button" class="hs" onClick="{{clearAll}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{emptyBtn}}</button></div></td></tr>
+                </sc-if>
+              </tbody>
+            </table>
+          </div>
+          <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+              <span role="status" aria-live="polite" style="font-size: 13px; color: #46546A">{{moreTxt}}</span>
+              <button type="button" class="hs" onClick="{{showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreBtn}}</button>
+            </div>
+          </sc-if>
+        </section>
+
+        <sc-if value="{{manyNote}}" hint-placeholder-val="{{ false }}">
+          <span style="color: #5F6C80; font-size: 12px">Many rows: a what-if of 140 staff for AISB. Rows after S010 are stand-ins named by their staff number, so no new names are made up. The header row stays at the top while the rows scroll; over 25 people the list shows 25 and Show 25 more, as States › Many rows. The Excel file always holds every row.</span>
+        </sc-if>
+
+        <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #E3E7ED; background: #FFFFFF; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">No pay on this list.</b> IC and passport numbers show the last 4 only. Pay is on each person's Pay tab, for users with the Payroll figures right. A person who leaves stays here under Left; their records are kept for 7 years after the year concerned.</span></div>
+      </sc-if>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 640px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{psOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 32px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <div class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="hs-ps-title" aria-describedby="hs-ps-sub" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" aria-busy="{{psBusy}}" style="pointer-events: auto; width: 900px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 16px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 14px; align-items: flex-start">
+          <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{psGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <span style="color: #5F6C80; font-size: 13px">HR › Staff · {{coCode}}</span>
+            <h2 id="hs-ps-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{psTitle}}</h2>
+            <span id="hs-ps-sub" style="color: #46546A; font-size: 13px">Nothing is saved until you check each row and press Save. It is all or nothing: if any row has a problem, no row is saved.</span>
+          </div>
+          <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+        </div>
+        <ol aria-label="Steps" style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-for list="{{psSteps}}" as="s" hint-placeholder-count="3"><li aria-current="{{s.current}}" style="{{s.style}}"><span style="{{s.dot}}">{{s.n}}</span>{{s.label}}<span class="vh">{{s.sr}}</span></li></sc-for>
+        </ol>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{psPasteMode}}" hint-placeholder-val="{{ true }}">
+          <p style="margin: 0; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px">In Excel, select the staff list with its header row, press <span class="kbd">Ctrl+C</span>, and paste below with <span class="kbd">Ctrl+V</span>. Columns separated by tabs, commas or | work too. One person per row.</p>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="hs-ps-text" style="font-size: 13px; font-weight: 600; color: #46546A">The list</label>
+            <textarea id="hs-ps-text" rows="8" value="{{psText}}" onChange="{{psTextChange}}" spellCheck="false" autoComplete="off" placeholder="Paste the rows here" aria-invalid="{{psTextInv}}" aria-describedby="{{psTextBy}}" style="{{psTextStyle}}"></textarea>
+            <sc-if value="{{psTextErr}}" hint-placeholder-val="{{ false }}"><span id="hs-ps-text-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Paste the list first.</span></sc-if>
+            <span id="hs-ps-text-hint" style="color: #5F6C80; font-size: 12px">Rows are matched by staff number: a new number is added, one already here is updated. Empty cells change nothing, and no one missing from the list is marked as left.</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{psFileMode}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 12px; border: 1px solid #E3E7ED; background: #FAFBFC">
+            <span style="width: 40px; height: 40px; border-radius: 10px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="sheet" tone="ok" size="22" hint-size="22px,22px"></dc-import></span>
+            <div style="flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column"><b style="font-size: 14px">Staff list {{coCode}}.xlsx</b><span style="color: #5F6C80; font-size: 12px">14 KB · chosen Wed 18 Nov 2026, 10:20 · read on this computer, not uploaded anywhere</span></div>
+            <label for="hs-ps-sheet" style="font-size: 13px; font-weight: 600; color: #46546A">Sheet</label>
+            <select id="hs-ps-sheet" value="Staff" style="height: 36px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 10px; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"><option value="Staff">Staff</option><option value="Leavers">Leavers</option></select>
+            <button type="button" class="hs" onClick="{{psChooseAgain}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="folder" tone="brand" size="16" hint-size="16px,16px"></dc-import>Choose another file</button>
+          </div>
+          <span style="color: #5F6C80; font-size: 12px">An .xlsx file with a header row. The first sheet with staff numbers is chosen; pick another if the list is elsewhere. The file itself isn't kept: only the rows saved, and the import, in the audit trail.</span>
+        </sc-if>
+        <div><button type="button" id="hs-ps-read" class="hs" onClick="{{psRead}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{psReadLabel}}</button></div>
+
+        <sc-if value="{{psPreviewOn}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="hs-ps-prev-h" class="{{psPrevCls}}" style="display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 14px; border: 1px solid #E3E7ED; background: #FAFBFC">
+            <h3 id="hs-ps-prev-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Preview: nothing is saved yet</h3>
+            <span style="color: #46546A; font-size: 13px">{{psReadAs}} If a column was read wrongly, choose the right one below.</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px">
+              <sc-for list="{{psMap}}" as="m" hint-placeholder-count="6">
+                <div style="display: flex; flex-direction: column; gap: 6px"><label for="{{m.id}}" style="font-size: 12px; font-weight: 600; color: #46546A">{{m.label}}</label><select id="{{m.id}}" value="{{m.val}}" onChange="{{m.change}}" aria-invalid="{{m.inv}}" style="{{m.style}}"><sc-for list="{{m.opts}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></div>
+              </sc-for>
+            </div>
+            <div style="display: flex; gap: 8px; align-items: flex-start; color: #46546A; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="15" hint-size="15px,15px"></dc-import><span>Pay and bank columns are never read from a list: they are set on each person's Pay tab, from a date, by someone with the Payroll figures right. An IC column can be read; the preview shows its last 4 only.</span></div>
+            <sc-if value="{{psMsgOn}}" hint-placeholder-val="{{ false }}">
+              <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><b>Staff no., Full name as on IC and Date joined are needed: choose the columns that hold them.</b></div>
+            </sc-if>
+            <sc-if value="{{psCountsOn}}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{psBadOn}}" hint-placeholder-val="{{ false }}">
+                <div id="hs-ps-bad" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">2 rows have a problem, so nothing will be saved</b><div style="color: #46546A; font-size: 13px">Nothing is saved unless every row passes. Fix rows {{psBadRows}} in Excel, paste the list again and read it again. The other rows wait; none is saved on its own.</div></div></div>
+              </sc-if>
+              <b role="status" style="font-size: 14px">{{psCounts}}</b>
+              <div style="overflow-x: auto; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 10px">
+                <table style="width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13px">
+                  <caption class="vh">What happens to each row of the list</caption>
+                  <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; background: #FAFBFC"><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Row</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Staff no.</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Name</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Position · joined</th><th scope="col" style="padding: 8px 12px; font-weight: 600">What happens</th><th scope="col" style="padding: 8px 12px; font-weight: 600">What is missing</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{psRows}}" as="x" hint-placeholder-count="5">
+                      <tr style="{{x.rowStyle}}"><td style="padding: 8px 12px; text-align: right; color: #5F6C80; font-variant-numeric: tabular-nums">{{x.row}}</td><td style="padding: 8px 12px; font-family: ui-monospace, Consolas, monospace">{{x.no}}</td><td style="padding: 8px 12px">{{x.name}}<div style="color: #5F6C80; font-size: 12px">{{x.pref}}</div></td><td style="padding: 8px 12px; color: #46546A">{{x.pos}}<div style="color: #5F6C80; font-size: 12px">{{x.joined}}</div></td><td style="padding: 8px 12px"><span style="{{x.pill}}">{{x.what}}</span><sc-if value="{{x.msgOn}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 4px; color: #8F140C; font-weight: 500">{{x.msg}}</div></sc-if></td><td style="padding: 8px 12px; color: #46546A">{{x.miss}}</td></tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <span style="color: #5F6C80; font-size: 12px">Every row: still to add on the record before payroll can use it: IC or passport number, pay, bank account, EPF, SOCSO and tax numbers, PCB details. The new records list what they lack on their Details tab.</span>
+            </sc-if>
+          </section>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="hs-ps-why" style="font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Optional</span></label>
+          <input id="hs-ps-why" type="text" value="{{psWhy}}" onChange="{{psWhyChange}}" maxLength="500" autoComplete="off" placeholder="Kept in the audit trail with the change" style="height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box; width: 100%">
+        </div>
+      </div>
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="hs-psd-q" aria-describedby="hs-psd-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="hs-psd-q">Discard your changes?</b><div id="hs-psd-d" style="color: #5F6C80; font-size: 12px">{{discardTxt}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="hs-ps-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="hs-ps-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="hs-ps-save-note" role="status" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #5F6C80">{{psSaveNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="hs-ps-cancel" class="hs" onClick="{{askClose}}" disabled="{{psSaving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+              <button type="button" id="hs-ps-save" class="{{psSaveCls}}" onClick="{{psSave}}" aria-disabled="{{psSaveAria}}" aria-describedby="hs-ps-save-note" style="{{psSaveStyle}}"><sc-if value="{{psSaving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{psSaveLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","left","filtered","all-companies","no-match","first-run","paste","paste-unread","paste-columns","paste-preview","paste-errors","file-chosen","pasting","pasted","loading","error","many"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State"},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'list', (p && p.company) || 'aisb');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); }
+
+  // ---------- the staff (scope/samples.md section 5; made up) ----------
+  people(co) {
+    const P = (no, full, pref, id, idKind, pos, dept, type, typeSub, joined, iso, status, sub) => ({ co, no, full, pref, id, idKind, pos, dept, type, typeSub, joined, iso, status, sub });
+    if (co === 'AI') return [
+      P('A001', 'Mohd Faizal bin Yusof', 'Faizal', '••••••-••-6611', 'IC', 'Farm manager', '—', 'Permanent', '', '1 Apr 2020', '2020-04-01', 'in', ''),
+      P('A002', 'Chong Pei Shan', 'Pei Shan', '••••••-••-2958', 'IC', 'Accounts assistant', '—', 'Permanent', '', '1 Oct 2021', '2021-10-01', 'in', '5 years in October'),
+      P('A003', 'Priya Subramaniam', 'Priya', '••••••-••-7744', 'IC', 'Quality officer', '—', 'Permanent', '', '16 Aug 2022', '2022-08-16', 'in', ''),
+      P('A004', 'Lee Jun Wei', 'Jun Wei', '••••••-••-4019', 'IC', 'Logistics coordinator', '—', 'Permanent', '', '1 Mar 2023', '2023-03-01', 'in', ''),
+      P('A005', 'Rina Santoso', 'Rina', '••••1307', 'Passport, Indonesia', 'Farm supervisor', '—', 'Contract', '', '15 Jan 2025', '2025-01-15', 'in', 'Foreign worker · work permit expires Sun 10 Jan 2027')
+    ];
+    return [
+      P('S001', 'Aisha Rahman', 'Aisha', '••••••-••-3418', 'IC', 'HR and finance executive', 'Finance and HR', 'Permanent', '', '2 May 2019', '2019-05-02', 'in', ''),
+      P('S002', 'Ong Wei Ming', 'Wei Ming', '••••••-••-5127', 'IC', 'Sales executive', 'Sales', 'Permanent', '', '1 Jun 2021', '2021-06-01', 'in', ''),
+      P('S003', 'Nurul Aina binti Hashim', 'Aina', '••••••-••-2046', 'IC', 'HR and admin executive', 'Finance and HR', 'Permanent', '', '3 Oct 2016', '2016-10-03', 'in', 'On leave today, back Mon 23 Nov'),
+      P('S004', 'Mohd Hafiz bin Rosli', 'Hafiz', '••••••-••-7391', 'IC', 'Operations executive', 'Operations', 'Permanent', '', '4 Mar 2019', '2019-03-04', 'in', ''),
+      P('S005', 'Nor Khadijah binti Omar', 'Khadijah', '••••••-••-6582', 'IC', 'Customer service executive', 'Customer service', 'Permanent', '', '1 Feb 2020', '2020-02-01', 'in', 'On leave today, back Mon 11 Jan 2027'),
+      P('S006', 'Wong Kah Seng', 'Kah Seng', '••••••-••-1035', 'IC', 'IT support', 'IT', 'Contract', 'To 31 Dec 2026', '1 Jan 2024', '2024-01-01', 'in', 'Leaving Thu 31 Dec 2026, retiring'),
+      P('S007', 'Goh Jia Hui', 'Jia Hui', '••••••-••-4720', 'IC', 'Marketing executive', 'Marketing', 'Permanent', '', '1 Sep 2026', '2026-09-01', 'prob', 'Probation ends Mon 30 Nov'),
+      P('S008', 'Nur Izzati binti Kamal', 'Izzati', '••••••-••-8264', 'IC', 'Office assistant', 'Administration', 'Permanent', '', '15 Jan 2025', '2025-01-15', 'in', ''),
+      P('S009', 'Daniel Lee Chee Keong', 'Daniel', '••••••-••-9153', 'IC', 'Accounts assistant', 'Finance and HR', 'Permanent', '', '3 Nov 2026', '2026-11-03', 'prob', 'Joined this month · probation ends Tue 2 Feb 2027'),
+      P('S010', 'Kavitha Nair', 'Kavitha', '••••••-••-3306', 'IC', 'Marketing executive', 'Marketing', 'Permanent', '', '1 Jul 2023', '2023-07-01', 'left', 'Last day Mon 31 Aug 2026, resigned · kept until 31 Dec 2033')
+    ];
+  }
+  approvers(co) { return co === 'AI' ? ['Hassan Ismail'] : ['Hassan Ismail', 'Tan Mei Ling', 'Rajesh Kumar']; }
+  // the many-rows what-if: stand-ins named by staff number, so no new names are made up
+  standIns() {
+    const POS = [['Operations executive', 'Operations'], ['Sales executive', 'Sales'], ['Customer service executive', 'Customer service'], ['Office assistant', 'Administration'], ['Accounts assistant', 'Finance and HR'], ['Marketing executive', 'Marketing'], ['IT support', 'IT']];
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const out = [];
+    for (let i = 11; i <= 140; i++) {
+      const no = 'S' + String(i).padStart(3, '0'), p = POS[i % POS.length], m = i % 12, y = 2018 + (i % 8);
+      out.push({ co: 'AISB', no, full: 'Stand-in row ' + no, pref: 'Stand-in ' + no.slice(1), id: '••••••-••-' + String(1000 + ((i * 37) % 9000)).slice(0, 4), idKind: 'IC', pos: p[0], dept: p[1], type: i % 9 === 0 ? 'Contract' : i % 13 === 0 ? 'Part-time' : 'Permanent', typeSub: '', joined: (1 + (i % 27)) + ' ' + M[m] + ' ' + y, iso: y + '-' + String(m + 1).padStart(2, '0') + '-01', status: i % 17 === 0 ? 'left' : 'in', sub: '' });
+    }
+    return out;
+  }
+
+  // ---------- the pasted list (made up; no IC or pay column, so the board never shows a full IC or a pay figure) ----------
+  // what the company's own Excel list holds beyond the staff list: date of birth, gender and last day (samples section 5).
+  // S004's date of birth is left empty on purpose, to draw "something missing".
+  extra(no) {
+    return { S001: ['27/11/1991', 'F'], S002: ['09/03/1993', 'M'], S003: ['15/06/1988', 'F'], S004: ['', 'M'], S005: ['03/02/1990', 'F'], S006: ['12/10/1966', 'M'], S007: ['30/12/1999', 'F'],
+      S008: ['21/10/2000', 'F'], S009: ['14/05/2001', 'M'], S010: ['08/08/1996', 'F', '31/08/2026', '31 Aug 2026'],
+      A001: ['04/04/1984', 'M'], A002: ['19/01/1994', 'F'], A003: ['02/09/1992', 'F'], A004: ['25/12/1997', 'M'], A005: ['06/11/1995', 'F'] }[no] || ['', ''];
+  }
+  dmy(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
+  // the problem rows when the list has errors: the 5th person's date joined isn't a date, and the 4th person is pasted twice at the end
+  badDate(p) { return '31/02/' + String(p.iso).slice(0, 4); }
+  sample(withErrors, co) {
+    const ppl = this.people(co || 'AISB');
+    const head = 'Staff no\tFull name as on IC\tPreferred name\tDate of birth\tGender\tPosition\tDepartment\tType\tDate joined\tLast day';
+    const line = (p, joined, dob) => { const x = this.extra(p.no); return [p.no, p.full, p.pref, dob !== undefined ? dob : x[0], x[1], p.pos, p.dept === '—' ? '' : p.dept, p.type, joined || this.dmy(p.iso), x[2] || ''].join('\t'); };
+    const rows = ppl.map((p, i) => line(p, withErrors && i === 4 ? this.badDate(p) : ''));
+    if (withErrors && ppl[3]) rows.push(line(ppl[3], '', this.extra(ppl[3].no)[0] || '22/07/1985'));
+    return [head, ...rows].join('\n');
+  }
+  hasErrors(text) {
+    const L = String(text || '').split('\n').slice(1).filter(l => l.trim());
+    const nos = L.map(l => l.split('\t')[0]);
+    return L.some(l => /\t31\/02\/\d{4}\t/.test(l)) || new Set(nos).size !== nos.length;
+  }
+  addedTxt(list, co) {
+    const n = list.length, nLeft = list.filter(p => p.status === 'left').length, nIn = n - nLeft;
+    return n + (n === 1 ? ' person' : ' people') + ' added to ' + co + (nLeft ? ': ' + nIn + ' in employment, ' + nLeft + ' left.' : n === 1 ? ', in employment.' : ', all in employment.');
+  }
+  goodMap() { return { no: '0', full: '1', pref: '2', dob: '3', gender: '4', pos: '5', dept: '6', type: '7', joined: '8', last: '9', ic: '', email: '' }; }
+  badMap() { return { ...this.goodMap(), no: '' }; }
+  pasteBlank(mode) { return { mode: mode || 'paste', text: '', why: '', read: false, readFor: null, map: this.goodMap(), err: false, n: 0 }; }
+  pasteOk(ps) {
+    if (!ps || !ps.read) return false;
+    if (ps.mode === 'paste' && ps.readFor !== ps.text) return false;
+    if (ps.map.no === '' || ps.map.full === '' || ps.map.joined === '') return false;
+    return ps.mode === 'file' || !this.hasErrors(ps.text);
+  }
+
+  // ---------- states ----------
+  init(view, company) {
+    const co = String(company || 'aisb').toUpperCase() === 'AI' ? 'AI' : 'AISB';
+    const base = { co, all: false, phase: 'ready', recs: { AISB: this.people('AISB'), AI: this.people('AI') }, filter: 'in', dept: '', etype: '', q: '', limit: 25,
+      paste: null, closing: false, confirm: false, saving: false, toast: null, toastLeaving: false, undo: null, flashNos: [], flashN: 0, many: false };
+    const empty = { ...base, recs: { ...base.recs, [co]: [] } };
+    const ps = (extra, file) => ({ ...empty, paste: { ...this.pasteBlank(file ? 'file' : 'paste'), ...extra } });
+    const s = this.sample(false, co);
+    switch (view) {
+      case 'left': return { ...base, filter: 'left' };
+      case 'filtered': return { ...base, dept: co === 'AI' ? '' : 'Finance and HR', etype: co === 'AI' ? 'Contract' : '' };
+      case 'all-companies': return { ...base, all: true };
+      case 'no-match': return { ...base, q: 'Mei Ling' };
+      case 'first-run': return empty;
+      case 'paste': return ps({});
+      case 'paste-unread': return ps({ text: s });
+      case 'paste-columns': return ps({ text: s, read: true, readFor: s, map: this.badMap(), n: 1 });
+      case 'paste-preview': return ps({ text: s, read: true, readFor: s, n: 1, why: 'Staff list from the Excel file HR kept until now.' });
+      case 'paste-errors': { const e = this.sample(true, co); return ps({ text: e, read: true, readFor: e, n: 1 }); }
+      case 'file-chosen': return ps({ read: true, readFor: 'file', n: 1 }, true);
+      case 'pasting': return { ...ps({ text: s, read: true, readFor: s, n: 1 }), saving: true };
+      case 'pasted': return { ...base, filter: 'all', toast: { text: this.addedTxt(this.people(co), co), undo: true }, undo: { co, recs: [] }, flashNos: this.people(co).map(p => p.no), flashN: 1 };
+      case 'loading': return { ...base, phase: 'loading' };
+      case 'error': return { ...base, phase: 'error' };
+      case 'many': return { ...base, co: 'AISB', recs: { ...base.recs, AISB: [...this.people('AISB'), ...this.standIns()] }, many: true };
+      default: return base;
+    }
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st);
+      const nx = this.init(this.props.view || 'list', this.props.company || 'aisb');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (st.paste && !prev.paste) { this.focusId('hs-ps-title'); return; }
+    if (!st.paste && prev.paste) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('hs-list-h');
+      this._opener = null;
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('hs-ps-keep'); return; }
+    if (prev.confirm && !st.confirm && st.paste && !st.closing) this.focusId('hs-ps-cancel');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+
+  // ---------- the paste dialog ----------
+  openPaste(mode) {
+    const st = this.state;
+    if (st.paste || st.all) return;
+    this._opener = document.activeElement;
+    clearTimeout(this._t);
+    this.setState({ paste: { ...this.pasteBlank(mode), read: mode === 'file', readFor: mode === 'file' ? 'file' : null, n: mode === 'file' ? 1 : 0 }, closing: false, confirm: false, saving: false });
+  }
+  setPaste(patch) { const ps = this.state.paste; if (ps) this.setState({ paste: { ...ps, ...patch } }); }
+  dirty() { const ps = this.state.paste; return !!ps && !!(String(ps.text).trim() || String(ps.why).trim() || ps.mode === 'file'); }
+  askClose() {
+    const st = this.state;
+    if (!st.paste || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDlg();
+  }
+  closeDlg() {
+    const st = this.state;
+    if (!st.paste || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.paste) return;
+    this.setState({ paste: null, closing: false, confirm: false, saving: false });
+  }
+  psSave() {
+    const st = this.state, ps = st.paste;
+    if (!ps || st.closing || st.confirm || st.saving) return;
+    if (!this.pasteOk(ps)) {
+      this._focusId = !ps.read || (ps.mode === 'paste' && ps.readFor !== ps.text) ? 'hs-ps-read' : ps.map.no === '' || ps.map.full === '' || ps.map.joined === '' ? 'hs-ps-map-no' : 'hs-ps-bad';
+      this.setState({ paste: { ...ps } });
+      return;
+    }
+    this.setState({ saving: true });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => this.finishSave(), 700);
+  }
+  finishSave() {
+    const st = this.state;
+    if (!st.paste || !st.saving) return;
+    const co = st.co, before = st.recs[co] || [], added = this.people(co);
+    this.setState({ recs: { ...st.recs, [co]: added }, filter: 'all', dept: '', etype: '', q: '', undo: { co, recs: before }, flashNos: added.map(p => p.no), flashN: st.flashN + 1 });
+    this.closeDlg();
+    this.toast(this.addedTxt(added, co), { undo: true });
+  }
+  undo() {
+    const st = this.state, u = st.undo;
+    if (!u) return;
+    this.setState({ recs: { ...st.recs, [u.co]: u.recs }, undo: null, flashNos: [], filter: 'in' });
+    this.toast(u.recs.length ? 'Undone. The list is as it was.' : 'Undone. No one was added; the list is empty again.');
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+
+  // ---------- what the page shows ----------
+  renderVals() {
+    const st = this.state;
+    const co = st.co, all = !!st.all;
+    const SB = all ? ['all', 'sqlPayroll'] : co === 'AI' ? ['ai', 'here'] : ['aisb', 'sqlPayroll'];
+    const src = all ? [...(st.recs.AISB || []), ...(st.recs.AI || [])] : (st.recs[co] || []);
+    const PILL = { in: ['In employment', 'ok', 'person', '#E3F7EC', '#0A6B3D'], prob: ['On probation', 'warn', 'clock', '#FEF1D6', '#934100'], left: ['Left', 'muted', 'logout', '#EEF1F5', '#46546A'] };
+    const pillStyle = k => 'display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + PILL[k][3] + ';color:' + PILL[k][4];
+    const nIn = src.filter(p => p.status !== 'left').length, nLeft = src.filter(p => p.status === 'left').length;
+    const q = String(st.q || '').trim().toLowerCase();
+    const byStatus = src.filter(p => (st.filter === 'all' ? true : st.filter === 'left' ? p.status === 'left' : p.status !== 'left'));
+    const match = byStatus.filter(p => (!st.dept || p.dept === st.dept) && (!st.etype || p.type === st.etype) && (!q || (p.full + ' ' + p.pref + ' ' + p.no + ' ' + p.pos).toLowerCase().includes(q)));
+    const shown = match.slice(0, st.limit);
+    const flash = new Set(st.flashNos || []);
+    const rows = shown.map(p => ({ co: p.co, allOn: all, no: p.no, recHref: 'HrStaffRecord.dc.html#' + p.no, pref: p.pref, full: p.full, aria: p.full + ' (' + p.pref + '), ' + p.no + ', open the staff record',
+      id: p.id, idKind: p.idKind, idAria: (p.idKind === 'IC' ? 'IC number' : 'Passport number') + ' ending ' + p.id.slice(-4),
+      pos: p.pos, dept: p.dept, type: p.type, typeSub: p.typeSub, joined: p.joined,
+      status: PILL[p.status][0], tone: PILL[p.status][1], glyph: PILL[p.status][2], pill: pillStyle(p.status), sub: p.sub,
+      cls: 'hr' + (flash.has(p.no) ? (st.flashN % 2 ? ' fa' : ' fb') : '') }));
+    const depts = [...new Set(src.map(p => p.dept).filter(d => d && d !== '—'))].sort();
+    const types = ['Permanent', 'Contract', 'Part-time', 'Intern'];
+    const segBtn = on => 'display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(13,27,46,.18)' : 'background:transparent;color:#46546A');
+    const seg = [['in', 'In employment', nIn], ['left', 'Left', nLeft], ['all', 'All', src.length]].map(([k, label, n]) => ({ label, n, pressed: st.filter === k ? 'true' : 'false', style: segBtn(st.filter === k),
+      nStyle: 'display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;font-size:11px;font-weight:700;box-sizing:border-box;' + (st.filter === k ? 'background:#EAF0FD;color:#2450B8' : 'background:#E3E7ED;color:#46546A'),
+      pick: () => this.setState({ filter: k, limit: 25 }) }));
+    const filtersOn = !!(st.dept || st.etype || q);
+    const fWord = { in: 'in employment', left: 'left', all: 'in all' }[st.filter];
+    const countTxt = (filtersOn ? match.length + ' of ' + byStatus.length + ' ' + fWord + ' match' : byStatus.length + (byStatus.length === 1 ? ' person ' : ' people ') + fWord).replace(' in all', '');
+    // the empty row: a search with no match, a filter with no one, or Left for a company where no one has left
+    let emptyTitle = '', emptyTxt = '', emptyBtn = 'Clear filters', emptyGlyph = 'search', emptyLinkOn = false;
+    if (!rows.length) {
+      if (q) {
+        // an approver who isn't on the staff list (Setup › HR › Approvers, per company: samples section 2)
+        const appr = (all ? [...this.approvers('AISB'), ...this.approvers('AI')] : this.approvers(co)).find(a => a.toLowerCase().includes(q));
+        emptyTitle = 'No one matches “' + st.q + '”.'; emptyTxt = 'The search looks at names, staff numbers and positions of the people shown.' + (appr ? ' Approvers who aren’t staff, like ' + appr + ', are on Setup › HR › Approvers.' : ''); emptyLinkOn = !!appr; emptyBtn = 'Clear the search';
+      }
+      else if (st.filter === 'left' && !filtersOn) { emptyTitle = 'No one has left ' + (all ? 'any company' : co) + '.'; emptyTxt = 'People marked as left stay here with their last day, and their records are kept.'; emptyBtn = 'Show everyone'; emptyGlyph = 'staff'; }
+      else { emptyTitle = 'No one fits these filters.'; emptyTxt = 'Try another department or type.'; }
+    }
+    const headsOf = c => {
+      const L = st.recs[c] || [];
+      return [L.filter(p => p.status !== 'left').length, L.filter(p => /^2026-11/.test(p.iso)).length, 0];
+    };
+    const hc = all ? [0, 1, 2].map(i => headsOf('AISB')[i] + headsOf('AI')[i]) : headsOf(co);
+    const ps = st.paste;
+    return {
+      ...this.pasteVals(ps),
+      sbCo: SB[0], sbKind: SB[1],
+      onTopCo: code => { const c = String(code || '').toLowerCase(); if (this.state.paste) return; if (c === 'all') this.setState({ all: true, filter: 'in', dept: '', etype: '', q: '', limit: 25, flashNos: [] }); else if (c === 'aisb' || c === 'ai') this.setState({ all: false, co: c.toUpperCase(), filter: 'in', dept: '', etype: '', q: '', limit: 25, flashNos: [] }); },
+      anyDlg: !!ps,
+      intro: all ? 'Everyone in AISB and AI, read only. Each person belongs to one company; choose it in the top bar to make changes.' : 'Everyone at ' + (co === 'AI' ? 'AI (Agrinexus International)' : 'AISB (AISB Sdn Bhd)') + ', with their job and status. Open a person for their details, pay, leave, claims and advances, documents and history.',
+      actionsOn: !all && st.phase === 'ready' && src.length > 0, excelOn: src.length > 0,
+      allOn: all, coCode: co, coName: all ? 'all companies' : co,
+      isLoading: st.phase === 'loading', isError: st.phase === 'error', firstRun: st.phase === 'ready' && !all && src.length === 0, isReady: st.phase === 'ready' && src.length > 0,
+      firstTxt: 'No one is on ' + co + '’s staff list yet. Paste the Excel list you keep today, import the file itself, or add people one at a time. A preview shows each row read and what is missing before anything is saved.',
+      retry: () => this.setState({ phase: 'ready' }),
+      skRows: [1, 2, 3, 4, 5, 6, 7],
+      heads: [{ n: hc[0], label: 'in employment' }, { n: hc[1], label: 'joined in November' }, { n: hc[2], label: 'left in November' }],
+      seg, dept: st.dept, etype: st.etype,
+      deptOpts: [{ v: '', l: 'All departments' }, ...depts.map(d => ({ v: d, l: d }))],
+      typeOpts: [{ v: '', l: 'All types' }, ...types.map(t => ({ v: t, l: t }))],
+      onDept: e => this.setState({ dept: e && e.target ? e.target.value : '', limit: 25 }),
+      onType: e => this.setState({ etype: e && e.target ? e.target.value : '', limit: 25 }),
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '', limit: 25 }),
+      filtersOn, clearAll: () => this.setState({ q: '', dept: '', etype: '', filter: rows.length || !(st.filter === 'left') ? this.state.filter : 'all', limit: 25 }),
+      countTxt, rows, cols: all ? 9 : 8,
+      emptyOn: rows.length === 0, emptyTitle, emptyTxt, emptyBtn, emptyGlyph, emptyLinkOn,
+      scrollStyle: st.many ? 'max-height: 620px; overflow: auto' : 'overflow-x: auto',
+      manyNote: !!st.many,
+      moreOn: match.length > 25, moreTxt: 'Showing ' + shown.length + ' of ' + match.length + ' people', moreBtn: shown.length < match.length ? 'Show ' + Math.min(25, match.length - shown.length) + ' more' : 'Show fewer',
+      showMore: () => this.setState({ limit: this.state.limit < match.length ? this.state.limit + 25 : 25 }),
+      openPaste: () => this.openPaste('paste'), openFile: () => this.openPaste('file'),
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo), toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      toastUndo: () => this.undo(),
+      onToastAnim: () => { if (this.state.toastLeaving) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt), toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+  pasteVals(ps) {
+    const st = this.state;
+    const isFile = !!ps && ps.mode === 'file';
+    const stale = !!ps && !isFile && ps.read && ps.readFor !== ps.text;
+    const badMap = !!ps && ps.read && !stale && (ps.map.no === '' || ps.map.full === '' || ps.map.joined === '');
+    const errs = !!ps && ps.read && !stale && !badMap && !isFile && this.hasErrors(ps.text);
+    const ok = this.pasteOk(ps);
+    const step = !ps || !ps.read || stale ? 1 : badMap || errs ? 2 : 3;
+    const ctl = 'height:36px;padding:0 10px;border-radius:10px;font:400 13px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;';
+    const PILL = { add: ['New', 'background:#E3F7EC;color:#0A6B3D'], addLeft: ['New · Left', 'background:#EEF1F5;color:#46546A'], error: ['Problem', 'background:#FDE6E3;color:#B0190F'] };
+    const headers = ['Staff no', 'Full name as on IC', 'Preferred name', 'Date of birth', 'Gender', 'Position', 'Department', 'Type', 'Date joined', 'Last day'];
+    const MAP = [['no', 'Staff no. (needed)'], ['full', 'Full name as on IC (needed)'], ['joined', 'Date joined (needed)'], ['pref', 'Preferred name'], ['dob', 'Date of birth'], ['gender', 'Gender'], ['pos', 'Position'], ['dept', 'Department'], ['type', 'Employment type'], ['last', 'Last day'], ['ic', 'IC or passport no.'], ['email', 'Work email']];
+    const ppl = this.people(st.co);
+    const R = (row, p, act, msg, miss) => ({ row, no: p.no, name: p.full, pref: 'Preferred: ' + p.pref, pos: p.pos, joined: 'Joined ' + p.joined, what: PILL[act][0], pill: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;' + PILL[act][1], msgOn: !!msg, msg: msg || '', miss: miss || '—', rowStyle: 'border-top:1px solid #EEF1F5;vertical-align:top;' + (act === 'error' ? 'background:#FFF6F5' : '') });
+    const n = ppl.length, nLeft = ppl.filter(p => p.status === 'left').length;
+    const missOf = p => (!this.extra(p.no)[0] ? 'Date of birth: add it on the record (it decides the EPF, SOCSO and EIS rates)' : p.status === 'left' ? 'Kept as Left from ' + (this.extra(p.no)[3] || 'the last day') : '');
+    const nMiss = ppl.filter(p => !this.extra(p.no)[0]).length;
+    let rows = ppl.map((p, i) => R(i + 2, p, p.status === 'left' ? 'addLeft' : 'add', '', missOf(p)));
+    const dupRow = n + 2, badP = ppl[4], dupP = ppl[3];
+    if (errs && badP && dupP) {
+      rows = rows.map(r => (r.no === badP.no ? { ...R(6, badP, 'error', 'Date joined “' + this.badDate(badP) + '” isn’t a date.', '') } : r));
+      rows.push(R(dupRow, dupP, 'error', dupP.no + ' is also on row 5. Each staff number once.', ''));
+    }
+    const nRead = errs ? n + 1 : n;
+    const counts = errs ? nRead + ' rows read: ' + (n - 1) + ' would be new, 2 have a problem. Nothing will be saved.'
+      : n + ' new: ' + (n - nLeft) + ' in employment, ' + nLeft + ' left · ' + nMiss + ' with something missing · 0 problems';
+    const nPeople = n + (n === 1 ? ' person' : ' people');
+    const coCode = st.co;
+    return {
+      psOn: !!ps, psPasteMode: !isFile, psFileMode: isFile,
+      psTitle: isFile ? 'Import Excel' : 'Paste a list', psGlyph: isFile ? 'upload' : 'clipboard',
+      psSteps: [['1', isFile ? 'Choose the file' : 'Paste the list'], ['2', 'Check each row'], ['3', 'Save']].map(([n, label], i) => {
+        const done = i + 1 < step, cur = i + 1 === step;
+        return { n, label, current: cur ? 'step' : 'false', sr: done ? ', done' : cur ? ', current step' : '',
+          style: 'display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 12px 0 4px;border-radius:99px;font-size:13px;font-weight:600;' + (cur ? 'background:#EAF0FD;color:#1D3A80' : done ? 'background:#E3F7EC;color:#0A6B3D' : 'background:#F5F6F8;color:#46546A'),
+          dot: 'width:24px;height:24px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;' + (cur ? 'background:#2450B8;color:#FFFFFF' : done ? 'background:#0A6B3D;color:#FFFFFF' : 'background:#FFFFFF;color:#46546A;border:1px solid #8792A2;box-sizing:border-box') };
+      }),
+      psText: ps ? ps.text : '', psTextErr: !!(ps && ps.err), psTextInv: ps && ps.err ? 'true' : 'false',
+      psTextBy: (ps && ps.err ? 'hs-ps-text-err ' : '') + 'hs-ps-text-hint',
+      psTextStyle: 'width:100%;min-height:170px;padding:10px 12px;border-radius:10px;box-sizing:border-box;font:400 12px ui-monospace,Consolas,monospace;color:#0F1A2B;background:#FFFFFF;resize:vertical;white-space:pre;border:1px solid ' + (ps && ps.err ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      psTextChange: e => this.setPaste({ text: e && e.target ? e.target.value : '', err: false }),
+      psChooseAgain: () => this.setPaste({ n: (ps ? ps.n : 0) + 1 }),
+      psReadLabel: isFile ? 'Read the file again' : stale ? 'Read the list again' : 'Read the list',
+      psRead: () => {
+        const s = this.state.paste;
+        if (!s) return;
+        if (s.mode === 'paste' && !String(s.text).trim()) { this._focusId = 'hs-ps-text'; this.setPaste({ err: true }); return; }
+        this.setPaste({ read: true, readFor: s.mode === 'file' ? 'file' : s.text, n: s.n + 1 });
+      },
+      psPreviewOn: !!(ps && ps.read && !stale), psPrevCls: ps && ps.n ? (ps.n % 2 ? 'swapA' : 'swapB') : 'ex',
+      psReadAs: isFile ? 'Read from Staff list ' + coCode + '.xlsx, sheet Staff: a header row and ' + nRead + ' rows.' : 'Read as: a list copied from Excel, tabs between columns, a header row and ' + nRead + ' rows.',
+      psMap: MAP.map(([k, label]) => {
+        const val = ps ? ps.map[k] : '', need = k === 'no' || k === 'full' || k === 'joined';
+        return { id: 'hs-ps-map-' + k, label, val, inv: need && val === '' ? 'true' : 'false',
+          opts: [{ v: '', l: '(none)' }, ...headers.map((h, i) => ({ v: String(i), l: h }))],
+          style: ctl + 'border:1px solid ' + (need && val === '' ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+          change: e => { const s = this.state.paste; if (s) this.setPaste({ map: { ...s.map, [k]: e && e.target ? e.target.value : '' }, n: s.n + 1 }); } };
+      }),
+      psMsgOn: badMap, psCountsOn: !badMap, psBadOn: errs, psBadRows: '6 and ' + dupRow, psCounts: counts, psRows: rows,
+      psWhy: ps ? ps.why : '', psWhyChange: e => this.setPaste({ why: e && e.target ? e.target.value : '' }),
+      psSaveNote: !ps ? '' : st.saving ? 'Saving ' + nPeople + '…' : !ps.read ? 'Read the list first.' : stale ? 'The list changed: read it again first.' : badMap ? 'Choose the needed columns above first.' : errs ? '2 rows have a problem: nothing is saved until every row passes.' : 'Saves ' + nPeople + ' to ' + coCode + '. Recorded in the audit trail.',
+      psSaveAria: ok && !st.saving ? 'false' : 'true', psSaveCls: ok && !st.saving ? 'hb' : '', psBusy: st.saving ? 'true' : 'false', psSaving: !!st.saving,
+      psSaveLabel: st.saving ? 'Saving…' : 'Save ' + nPeople,
+      psSaveStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:150px;height:40px;padding:0 18px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out;' + (ok ? 'background:#2450B8;color:#FFFFFF' : 'background:#E3E7ED;color:#46546A'),
+      psSave: () => this.psSave(),
+      dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      onPanelAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      askClose: () => this.askClose(),
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      discardTxt: isFile ? 'The file you chose is not read in. Nothing was saved.' : 'The list you pasted is not kept. Nothing was saved.',
+      keepEditing: () => this.setState({ confirm: false }), discard: () => { this.setState({ confirm: false }); this.closeDlg(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (this.state.confirm) this.setState({ confirm: false }); else this.askClose(); return; }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

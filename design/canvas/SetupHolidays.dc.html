@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · HR · Public holidays · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:not(.on):hover{background:#F8FAFD !important}
+.sn:hover{background:#F0F3F8 !important}
+.th:hover{color:#0F1A2B !important}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+input[readonly],select:disabled{background:#F5F6F8 !important;color:#46546A !important}
+/* motion and focus base */
+.hb,.hs,.hd,.hr,.sn,.nv,.nb,.th{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.sp{animation:spin .7s linear infinite}
+button[aria-busy="true"]{cursor:progress !important}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="{{shCo}}" kind="{{shKind}}" companies="{{shCos}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="HR · Public holidays" company="{{shCo}}" companies="{{tbCos}}" onCompany="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0">
+        <dc-import name="SetupNav" active="public_holidays" kind="{{navKind}}" payroll="{{navPayroll}}" hint-size="100%,900px"></dc-import>
+      </div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{pageTitle}}</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 680px">The paid public holidays for each year, set for each company. They follow the state where the staff work, not the address printed on invoices. Leave and the calendar skip these days, and a holiday on the rest day moves to the next working day.</p>
+          </div>
+          <sc-if value="{{hasCo}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button type="button" id="ho-state" class="hs" onClick="{{openState}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="company" tone="muted" size="18" hint-size="18px,18px"></dc-import>Change state</button>
+              <button type="button" id="ho-paste" class="hs" onClick="{{openPaste}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="clipboard" tone="muted" size="18" hint-size="18px,18px"></dc-import>Paste a list</button>
+              <button type="button" id="ho-add" class="hb" onClick="{{openNew}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a one-off day</button>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{noCo}}" hint-placeholder-val="{{ false }}">
+          <section class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+            <span style="width: 52px; height: 52px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="company" tone="brand" size="28" hint-size="28px,28px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Add a company first.</h2>
+            <p style="margin: 0; color: #46546A; max-width: 420px">Public holidays belong to a company. Once one is added, its holidays are set up here.</p>
+            <a href="SetupCompanies.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="company" tone="white" size="18" hint-size="18px,18px"></dc-import>Go to Companies</a>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{loadOn}}" hint-placeholder-val="{{ false }}">
+          <section aria-busy="true" aria-label="Loading public holidays" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; gap: 12px; padding: 14px 18px; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 32px; width: 160px; border-radius: 8px"></div><div style="flex: 1"></div><div class="sk" style="height: 14px; width: 24%; border-radius: 5px; align-self: center"></div></div>
+            <div style="display: flex; gap: 12px; padding: 12px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 10px; width: 20%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div></div>
+            <div style="display: flex; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="width: 18px; height: 18px; border-radius: 5px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 30%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 16%; border-radius: 5px"></div></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div></div>
+            <div style="display: flex; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="width: 18px; height: 18px; border-radius: 5px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 24%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div></div>
+            <div style="display: flex; gap: 12px; padding: 16px 18px; align-items: center"><div class="sk" style="width: 18px; height: 18px; border-radius: 5px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 34%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 18%; border-radius: 5px"></div></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div></div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{errOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" aria-live="off" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; box-sizing: border-box">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the public holidays</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The records folder C:\HR-Records can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+            <div style="display: flex; gap: 8px"><button type="button" id="ho-retry" class="hb" onClick="{{retry}}" aria-busy="{{retryAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 150px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{retrying}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Looking for it…</sc-if><sc-if value="{{notRetrying}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</sc-if></button><button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Copy details</button></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="ho-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <h2 id="ho-list-h" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0">{{listHeading}}</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+              <div role="tablist" aria-label="Year" onKeyDown="{{tabsKey}}" style="display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: #EEF1F5">
+                <sc-for list="{{tabs}}" as="t" hint-placeholder-count="2"><button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="ho-panel" tabindex="{{t.tab}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}<sc-if value="{{t.warn}}" hint-placeholder-val="{{ false }}"><span style="margin-left: 8px; font-size: 12px; font-weight: 600; color: #934100">Not confirmed</span></sc-if></button></sc-for>
+              </div>
+              <span id="ho-count" aria-live="polite" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-variant-numeric: tabular-nums; color: {{countColor}}; font-weight: 600"><dc-import name="Icon" glyph="{{countGlyph}}" tone="{{countTone}}" size="16" hint-size="16px,16px"></dc-import>{{countTxt}}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 24px; padding: 14px 18px; border-bottom: 1px solid #EEF1F5; background: #FAFBFC">
+              <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #5F6C80">State where the staff work</span><b id="ho-state-name">{{stateName}}</b><span style="color: #5F6C80; font-size: 12px">{{stateHint}}</span></div>
+              <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #5F6C80">Rest day</span><b>{{restName}}</b><span style="color: #5F6C80; font-size: 12px">A holiday on it moves to the next working day.</span></div>
+              <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: #5F6C80">Where the dates come from</span><b>{{sourceName}}</b><span style="color: #5F6C80; font-size: 12px">Check with the Labour Department (JTKSM) or <a href="https://www.kabinet.gov.my/hari-kelepasan-am/">kabinet.gov.my</a>.</span></div>
+            </div>
+            <sc-if value="{{pgRefOn}}" hint-placeholder-val="{{ false }}">
+              <div id="ho-refusal" role="alert" tabindex="-1" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px; background: #FDF3F2; border-bottom: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was changed</b><div style="color: #46546A; font-size: 13px">{{pgRefText}}</div></div><button type="button" class="hs" onClick="{{refuseDismiss}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="16" hint-size="16px,16px"></dc-import></button></div>
+            </sc-if>
+            <sc-if value="{{confOn}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px; background: #FFF8EC; border-bottom: 1px solid #F0C98A; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><span><b>{{confTitle}}</b> {{confText}}</span></div>
+            </sc-if>
+            <sc-if value="{{labourOn}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px; background: #F3F6FE; border-bottom: 1px solid #C9D7F6; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="20" hint-size="20px,20px"></dc-import><span><b>{{labourTitle}}</b> Check these minimums: the legal days of 11 and the five fixed days follow the Employment Act in Peninsular Malaysia.</span></div>
+            </sc-if>
+            <sc-if value="{{twoOn}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px; background: #F3F6FE; border-bottom: 1px solid #C9D7F6; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="calendar" tone="brand" size="20" hint-size="20px,20px"></dc-import><span>{{twoText}}</span></div>
+            </sc-if>
+            <div id="ho-panel" role="tabpanel" aria-labelledby="{{panelBy}}" tabindex="{{panelTab}}" style="{{panelScroll}}">
+              <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+                <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{listHeading}}. The tick says whether the day is a paid holiday.</caption>
+                <thead>
+                  <tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                    <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 8px 10px 18px; font-weight: 600; width: 56px">Paid</th>
+                    <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Holiday</th>
+                    <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Date</th>
+                    <th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 18px 10px 12px; font-weight: 600">Paid on</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+                    <tr class="{{r.cls}}" onClick="{{r.open}}" style="{{r.rowStyle}}">
+                      <td onClick="{{r.stop}}" style="padding: 6px 8px 6px 18px; vertical-align: top"><label style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; cursor: pointer"><input type="checkbox" id="{{r.onId}}" checked="{{r.on}}" disabled="{{r.fixed}}" aria-label="{{r.onLabel}}" onChange="{{r.toggle}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8"></label></td>
+                      <td style="padding: 10px 12px; vertical-align: top"><button type="button" id="{{r.id}}" onKeyDown="{{r.key}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; font: 600 14px Inter, sans-serif; color: inherit; cursor: pointer; text-align: left; min-height: 32px">{{r.name}}</button><div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px"><sc-for list="{{r.chips}}" as="c" hint-placeholder-count="1"><span style="{{c.style}}">{{c.txt}}</span></sc-for></div></td>
+                      <td style="padding: 10px 12px; vertical-align: top; white-space: nowrap; font-variant-numeric: tabular-nums">{{r.dateTxt}}</td>
+                      <td style="padding: 10px 18px 10px 12px; vertical-align: top; font-variant-numeric: tabular-nums"><span style="{{r.paidStyle}}">{{r.paidTxt}}</span><div style="color: #5F6C80; font-size: 12px; max-width: 280px">{{r.paidNote}}</div></td>
+                    </tr>
+                  </sc-for>
+                  <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+                    <tr><td colspan="4" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="calendar" tone="muted" size="28" hint-size="28px,28px"></dc-import><b style="color: #0F1A2B">{{emptyHead}}</b><span style="max-width: 480px">{{emptyTxt}}</span><div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center"><button type="button" class="hs" onClick="{{emptyPaste}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Paste a list</button><button type="button" class="hs" onClick="{{emptyAdd}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Add a one-off day</button></div></div></td></tr>
+                  </sc-if>
+                </tbody>
+              </table>
+            </div>
+            <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; border-top: 1px solid #E3E7ED; background: #FAFBFC">
+                <span role="status" aria-live="off" style="font-size: 13px; color: #46546A">{{many.text}}</span>
+                <button type="button" class="hs" onClick="{{many.more}}" disabled="{{many.off}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{many.label}}</button>
+                <span style="flex-basis: 100%; color: #5F6C80; font-size: 12px">{{many.note}}</span>
+              </div>
+            </sc-if>
+            <p style="margin: 0; padding: 10px 18px; border-top: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">Tick or untick a day to say whether it is paid; the five fixed by law can't be unticked, and the count can't go below 11. Click a day to change its name, date or paid day. Dates that may move are editable once the government announces them.</p>
+          </section>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 560px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ho-title" aria-describedby="ho-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 720px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dEyebrow}}</span>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h2 id="ho-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2><sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}"><span class="{{dPillCls}}" style="{{dPill}}">{{dPillTxt}}</span></sc-if><sc-if value="{{dSysOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; border: 1px solid #C9D7F6; background: #FFFFFF; color: #2450B8; font-size: 12px; font-weight: 600">{{dSysTxt}}</span></sc-if></div>
+          <span id="ho-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 20px">
+        <sc-if value="{{dNotesOn}}" hint-placeholder-val="{{ false }}">
+          <div class="{{dNotesCls}}" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 4px"><sc-for list="{{dNotes}}" as="n" hint-placeholder-count="1"><span>{{n.txt}}</span></sc-for></div></div>
+        </sc-if>
+        <sc-if value="{{fRefOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ho-refused" role="alert" tabindex="-1" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F5C2BB; background: #FDF3F2; color: #8E1A10; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div><b>Nothing was saved</b><div style="color: #46546A">{{fRefText}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{sumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{sumTitle}}</b> {{sumList}}</span></div>
+        </sc-if>
+
+        <sc-for list="{{dGroups}}" as="g" hint-placeholder-count="3">
+          <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+            <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{g.label}}</legend>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <sc-for list="{{g.fields}}" as="f" hint-placeholder-count="4">
+                <div style="{{f.wrap}}">
+                  <sc-if value="{{f.isBool}}" hint-placeholder-val="{{ false }}">
+                    <label for="{{f.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600; color: #46546A; cursor: pointer"><input id="{{f.id}}" type="checkbox" checked="{{f.checked}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-describedby="{{f.by}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">{{f.label}}<sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                  </sc-if>
+                  <sc-if value="{{f.notBool}}" hint-placeholder-val="{{ true }}">
+                    <label for="{{f.id}}" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}<sc-if value="{{f.req}}" hint-placeholder-val="{{ false }}"><span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></sc-if><sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                    <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><input id="{{f.id}}" type="{{f.type}}" value="{{f.val}}" onChange="{{f.change}}" readOnly="{{f.ro}}" maxLength="{{f.max}}" aria-required="{{f.reqAria}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" autoComplete="off" style="{{f.style}}"></sc-if>
+                    <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><select id="{{f.id}}" value="{{f.val}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" style="{{f.style}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></sc-if>
+                    <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}"><textarea id="{{f.id}}" rows="3" value="{{f.val}}" onChange="{{f.change}}" aria-describedby="{{f.by}}" style="{{f.style}}"></textarea></sc-if>
+                  </sc-if>
+                  <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{f.err}}</span></sc-if>
+                  <sc-if value="{{f.hintOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.hintId}}" style="color: #5F6C80; font-size: 12px">{{f.hint}}</span></sc-if>
+                  <sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.lockId}}" style="display: flex; gap: 6px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: #F5F6F8; color: #46546A; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import><span>{{f.lock}}</span></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </fieldset>
+        </sc-for>
+
+        <sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{actOn}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="ho-act-h" style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <h3 id="ho-act-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{actHeading}}</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <sc-if value="{{canStop}}" hint-placeholder-val="{{ true }}"><button type="button" id="ho-act-stop" class="hs" onClick="{{actStop}}" aria-expanded="{{stopExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import>{{stopLbl}}</button></sc-if>
+              <sc-if value="{{canUse}}" hint-placeholder-val="{{ false }}"><button type="button" id="ho-act-use" class="hs" onClick="{{actUse}}" aria-expanded="{{useExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{useLbl}}</button></sc-if>
+              <sc-if value="{{canDelete}}" hint-placeholder-val="{{ false }}"><button type="button" id="ho-act-delete" onClick="{{actDelete}}" aria-expanded="{{delExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer"><dc-import name="Icon" glyph="trash" tone="bad" size="18" hint-size="18px,18px"></dc-import>Delete</button></sc-if>
+              <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{extraId}}" class="hs" onClick="{{extraAct}}" aria-expanded="{{extraExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="{{extraGlyph}}" tone="muted" size="18" hint-size="18px,18px"></dc-import>{{extraLabel}}</button></sc-if>
+            </div>
+            <span style="color: #5F6C80; font-size: 12px">{{actNote}}</span>
+            <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{extraNote}}</span></sc-if>
+
+            <sc-if value="{{whyOn}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-labelledby="ho-why-l" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid {{whyBorder}}; background: {{whyBg}}">
+                <span style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #0F1A2B"><dc-import name="Icon" glyph="{{whyGlyph}}" tone="{{whyTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{whyNote}}</span></span>
+                <label id="ho-why-l" for="ho-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+                <input id="ho-why" type="text" value="{{whyText}}" onChange="{{onWhy}}" onKeyDown="{{whyKey}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{whyInv}}" aria-describedby="{{whyBy}}" placeholder="Kept in the audit trail with the change" style="{{whyStyle}}">
+                <sc-if value="{{whyErr}}" hint-placeholder-val="{{ false }}"><span id="ho-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+                <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}"><span id="ho-why-refused" role="alert" tabindex="-1" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import><span>{{refuseText}} Nothing was changed.</span></span></sc-if>
+                <div style="display: flex; gap: 8px; justify-content: flex-end">
+                  <button type="button" id="ho-why-cancel" class="hs" onClick="{{whyCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                  <button type="button" id="ho-why-go" class="{{whyGoCls}}" onClick="{{whyGo}}" style="{{whyGoStyle}}">{{whyLabel}}</button>
+                </div>
+              </div>
+            </sc-if>
+          </section>
+          </sc-if>
+
+          <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <button type="button" class="fr" onClick="{{histToggle}}" aria-expanded="{{histExp}}" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{histChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{histCount}}</span></button>
+            <sc-if value="{{histOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; gap: 12px">
+                <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+                  <sc-for list="{{hist}}" as="h" hint-placeholder-count="3">
+                    <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                      <span aria-hidden="true" style="{{h.dot}}"></span>
+                      <div style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="{{h.srcStyle}}">{{h.src}}</span><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                        <sc-if value="{{h.whyOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">Why: {{h.why}}</span></sc-if>
+                        <sc-if value="{{h.noteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{h.note}}</span></sc-if>
+                        <sc-if value="{{h.diffOn}}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{h.toggle}}" aria-expanded="{{h.exp}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 8px 0 4px; border: 0; border-radius: 8px; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{h.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{h.diffLabel}}</button>
+                          <sc-if value="{{h.open}}" hint-placeholder-val="{{ false }}">
+                            <table class="ex" style="border-collapse: collapse; font-size: 13px; width: 100%; max-width: 520px">
+                              <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px"><th scope="col" style="padding: 6px 10px 6px 0; font-weight: 600">Field</th><th scope="col" style="padding: 6px 10px; font-weight: 600">{{h.beforeLabel}}</th><th scope="col" style="padding: 6px 0 6px 10px; font-weight: 600">{{h.afterLabel}}</th></tr></thead>
+                              <tbody><sc-for list="{{h.rows}}" as="x" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><td style="padding: 6px 10px 6px 0; color: #46546A">{{x.f}}</td><td style="padding: 6px 10px; color: #8F140C; text-decoration: line-through; text-decoration-color: rgba(143,20,12,.4)">{{x.b}}</td><td style="padding: 6px 0 6px 10px; color: #0A6B3D; font-weight: 600">{{x.a}}</td></tr></sc-for></tbody>
+                            </table>
+                          </sc-if>
+                        </sc-if>
+                      </div>
+                    </li>
+                  </sc-for>
+                </ol>
+                <sc-if value="{{histEmpty}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Nothing recorded yet.</span></sc-if>
+                <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Open in the audit trail</a>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ho-discard-q" aria-describedby="ho-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ho-discard-q">Discard your changes?</b><div id="ho-discard-d" style="color: #5F6C80; font-size: 12px">{{discardDetail}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ho-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="ho-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="ho-foot" class="{{footCls}}" style="{{footStyle}}"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ho-cancel" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{closeLabel}}</button>
+              <button type="submit" id="ho-save" class="hb" disabled="{{saving}}" aria-busy="{{savingAria}}" aria-describedby="ho-foot" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 124px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Saving…</sc-if><sc-if value="{{dPlus}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="plus" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if><sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}">{{saveLabel}}</sc-if></button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{pbOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ho-pb-title" aria-describedby="ho-pb-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{shSubmit}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 680px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{shGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{shEyebrow}}</span>
+          <h2 id="ho-pb-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{shTitle}}</h2>
+          <span id="ho-pb-sub" style="color: #46546A; font-size: 13px">{{shSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{shRefOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ho-sh-refused" role="alert" tabindex="-1" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F5C2BB; background: #FDF3F2; color: #8E1A10; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div><b>Nothing was changed</b><div style="color: #46546A">{{shRefText}}</div></div></div>
+        </sc-if>
+
+        <sc-if value="{{shPaste}}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{shEdit}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ho-sh-text" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Days to add <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+              <textarea id="ho-sh-text" rows="7" value="{{shText}}" onChange="{{onShText}}" aria-required="true" aria-invalid="{{shTextInv}}" aria-describedby="{{shTextBy}}" placeholder="24 Dec 2026, Christmas Eve" style="{{shTextStyle}}"></textarea>
+              <sc-if value="{{shTextErr}}" hint-placeholder-val="{{ false }}"><span id="ho-sh-text-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Paste at least one line, with the date first.</span></sc-if>
+              <span id="ho-sh-text-hint" style="color: #5F6C80; font-size: 12px">One day on each line: the date, then the name, separated by a comma or a tab. A list copied from Excel works. For example: 24 Dec 2026, Christmas Eve. Days are added as one-off days, ticked as paid.</span>
+            </div>
+          </sc-if>
+          <sc-if value="{{shPreview}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="display: flex; flex-direction: column; gap: 10px">
+              <span role="status" style="font-size: 14px; font-weight: 600">{{shSummary}}</span>
+              <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                <sc-for list="{{shRows}}" as="p" hint-placeholder-count="3">
+                  <li style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 14px; border-top: 1px solid #EEF1F5; background: {{p.bg}}"><span style="min-width: 108px; font-variant-numeric: tabular-nums; font-weight: 600">{{p.dateTxt}}</span><span style="flex: 1; min-width: 160px">{{p.name}}</span><span style="{{p.pill}}">{{p.status}}</span><sc-if value="{{p.noteOn}}" hint-placeholder-val="{{ false }}"><span style="flex-basis: 100%; color: #5F6C80; font-size: 12px">{{p.note}}</span></sc-if></li>
+                </sc-for>
+              </ul>
+              <span style="color: #46546A; font-size: 13px">Nothing is added until you press the button below. Lines that can't be read are left out; fix them and read the list again.</span>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{shState}}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+            <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+              <label for="ho-sh-state" style="font-size: 13px; font-weight: 600; color: #46546A">State where the staff work</label>
+              <select id="ho-sh-state" value="{{shStateVal}}" onChange="{{onShState}}" aria-describedby="ho-sh-state-hint" style="height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid #8792A2; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; box-sizing: border-box; width: 100%"><sc-for list="{{shStates}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+              <span id="ho-sh-state-hint" style="color: #5F6C80; font-size: 12px">The state where the staff work, not the printed address.</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+              <label for="ho-sh-rest" style="font-size: 13px; font-weight: 600; color: #46546A">Rest day</label>
+              <select id="ho-sh-rest" value="{{shRestVal}}" onChange="{{onShRest}}" aria-describedby="ho-sh-rest-hint" style="height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid #8792A2; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; box-sizing: border-box; width: 100%"><sc-for list="{{shRests}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+              <span id="ho-sh-rest-hint" style="color: #5F6C80; font-size: 12px">Sunday unless the company's week is different.</span>
+            </div>
+          </div>
+          <div class="{{shEffectCls}}" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px"><sc-for list="{{shEffect}}" as="e" hint-placeholder-count="3"><span style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="{{e.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{e.txt}}</span></span></sc-for></div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="ho-sh-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you changing it? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="ho-sh-why" type="text" value="{{shWhy}}" onChange="{{onShWhy}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{shWhyInv}}" aria-describedby="{{shWhyBy}}" placeholder="Kept in the audit trail with the change" style="{{shWhyStyle}}">
+            <sc-if value="{{shWhyErr}}" hint-placeholder-val="{{ false }}"><span id="ho-sh-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ho-pbd-q" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ho-pbd-q">Discard your changes?</b><div style="color: #5F6C80; font-size: 12px">{{shDiscard}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ho-pb-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="ho-pb-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end">
+            <button type="button" id="ho-pb-cancel" class="hs" onClick="{{shBack}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{shCancel}}</button>
+            <button type="submit" id="ho-pb-go" class="hb" disabled="{{saving}}" aria-busy="{{savingAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 150px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Saving…</sc-if><sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}">{{shGo}}</sc-if></button>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","2027","untick-refused","locked","replacement","two-on-one","one-off","moving-date","new","new-errors","edit","dirty","saving","refused","discard","saved","nothing-changed","paste","paste-preview","change-state","sabah","none-yet","no-company","loading","error","many"],"section":"State"},"companies":{"editor":"enum","default":"2","options":["2","4","1"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai","ail","aip"],"section":"State"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'list');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv); clearTimeout(this._rt); }
+
+  // ---------- this section: Setup › HR › Public holidays (a list per year per state, kept for each company) ----------
+  STATES() { return [['johor', 'Johor'], ['kedah', 'Kedah'], ['kelantan', 'Kelantan'], ['melaka', 'Melaka'], ['negeri-sembilan', 'Negeri Sembilan'], ['pahang', 'Pahang'], ['perak', 'Perak'], ['perlis', 'Perlis'], ['pulau-pinang', 'Pulau Pinang'], ['sabah', 'Sabah'], ['sarawak', 'Sarawak'], ['selangor', 'Selangor'], ['terengganu', 'Terengganu'], ['wp-kl', 'Wilayah Persekutuan Kuala Lumpur'], ['wp-labuan', 'Wilayah Persekutuan Labuan'], ['wp-putrajaya', 'Wilayah Persekutuan Putrajaya']]; }
+  stateLabel(k) { const s = this.STATES().find(x => x[0] === k); return s ? s[1] : k; }
+  RESTS() { return [['0', 'Sunday'], ['5', 'Friday'], ['6', 'Saturday']]; }
+  restLabel(n) { const s = this.RESTS().find(x => x[0] === String(n)); return s ? s[1] : 'Sunday'; }
+  // the bundled lists: [date, name, flags] (L = fixed by the Employment Act s.60D, M = may move). 2026 is bundled; 2027 holds only the days that never move, as estimates
+  bundle(state) {
+    const L = 'L', M = 'M';
+    const KL = [['2026-01-01', 'New Year'], ['2026-02-01', 'Federal Territory Day', L], ['2026-02-01', 'Thaipusam'], ['2026-02-17', 'Chinese New Year'], ['2026-02-18', 'Chinese New Year (second day)'], ['2026-03-07', 'Nuzul Al-Quran', M], ['2026-03-21', 'Hari Raya Aidilfitri', M], ['2026-03-22', 'Hari Raya Aidilfitri (second day)', M], ['2026-05-01', 'Workers’ Day', L], ['2026-05-27', 'Hari Raya Aidiladha', M], ['2026-05-31', 'Wesak', M], ['2026-06-01', 'Agong’s birthday', L], ['2026-06-17', 'Awal Muharram', M], ['2026-08-25', 'Maulidur Rasul', M], ['2026-08-31', 'National Day', L], ['2026-09-16', 'Malaysia Day', L], ['2026-11-08', 'Deepavali'], ['2026-12-25', 'Christmas'],
+      ['2027-01-01', 'New Year'], ['2027-02-01', 'Federal Territory Day', L], ['2027-05-01', 'Workers’ Day', L], ['2027-06-07', 'Agong’s birthday', L], ['2027-08-31', 'National Day', L], ['2027-09-16', 'Malaysia Day', L], ['2027-12-25', 'Christmas']];
+    const SB = [['2026-01-01', 'New Year'], ['2026-02-17', 'Chinese New Year'], ['2026-02-18', 'Chinese New Year (second day)'], ['2026-03-07', 'Nuzul Al-Quran', M], ['2026-03-21', 'Hari Raya Aidilfitri', M], ['2026-03-22', 'Hari Raya Aidilfitri (second day)', M], ['2026-04-03', 'Good Friday'], ['2026-05-01', 'Workers’ Day', L], ['2026-05-27', 'Hari Raya Aidiladha', M], ['2026-05-30', 'Pesta Kaamatan'], ['2026-05-31', 'Pesta Kaamatan (second day)'], ['2026-06-01', 'Agong’s birthday', L], ['2026-06-17', 'Awal Muharram', M], ['2026-08-25', 'Maulidur Rasul', M], ['2026-08-31', 'National Day', L], ['2026-09-16', 'Malaysia Day', L], ['2026-10-03', 'Governor of Sabah’s birthday', L], ['2026-12-24', 'Christmas Eve'], ['2026-12-25', 'Christmas'],
+      ['2027-01-01', 'New Year'], ['2027-05-01', 'Workers’ Day', L], ['2027-06-07', 'Agong’s birthday', L], ['2027-08-31', 'National Day', L], ['2027-09-16', 'Malaysia Day', L], ['2027-10-02', 'Governor of Sabah’s birthday', L], ['2027-12-24', 'Christmas Eve'], ['2027-12-25', 'Christmas']];
+    return state === 'wp-kl' ? KL : state === 'sabah' ? SB : null;
+  }
+  // ---- dates (UTC, so the weekday never shifts with the viewer's time zone) ----
+  utc(iso) { const p = String(iso).split('-'); return new Date(Date.UTC(Number(p[0]), Number(p[1]) - 1, Number(p[2]))); }
+  dow(iso) { return this.utc(iso).getUTCDay(); }
+  addDays(iso, n) { const d = this.utc(iso); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+  short(iso) { const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], d = this.utc(iso); return W[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + M[d.getUTCMonth()]; }
+  long(iso) { return this.short(iso) + ' ' + String(iso).slice(0, 4); }
+  // the paid day of each ticked holiday: one on the rest day moves to the next working day, and two on one day each get their own
+  sched(rows, rest) {
+    const on = rows.filter(r => r.on && r.date);
+    const order = on.slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (b.lock ? 1 : 0) - (a.lock ? 1 : 0) || a.id - b.id));
+    const reserved = new Set(order.filter(r => this.dow(r.date) !== rest).map(r => r.date));
+    order.forEach(r => { if (r.paid) reserved.add(r.paid); });
+    const claimed = new Set(), out = {};
+    for (const r of order) {
+      if (r.paid) { out[r.id] = r.paid; claimed.add(r.paid); continue; }
+      if (this.dow(r.date) !== rest && !claimed.has(r.date)) { out[r.id] = r.date; claimed.add(r.date); continue; }
+      let d = this.addDays(r.date, 1);
+      while (this.dow(d) === rest || reserved.has(d) || claimed.has(d)) d = this.addDays(d, 1);
+      out[r.id] = d; claimed.add(d);
+    }
+    return out;
+  }
+  cfg() {
+    return {
+      pre: 'ho', section: 'Public holidays', label: 'Public holiday', lower: 'public holiday', plural: 'public holidays', defCo: 'AISB', min: 11,
+      delNote: 'A one-off day can be deleted. It goes from the list and stops counting as a paid day. Undo, in the message that follows, puts it back.',
+      groups: [
+        ['The day', [
+          { k: 'name', l: 'Name', req: true, wide: true, hint: 'As the government announces it, for example Hari Raya Aidiladha.' },
+          { k: 'date', l: 'Date', t: 'date', req: true, hint: 'The day it falls on. A moon-dependent holiday may move by a day once it is announced.' },
+          { k: 'paid', l: 'Paid on another day', t: 'date', hint: 'Optional. Leave empty to use the worked-out day. With the staff’s agreement another day may replace a holiday (Employment Act s.60D(1A)).' }]],
+        ['Counts as a paid holiday', [
+          { k: 'on', l: 'Paid holiday', t: 'bool', hint: 'Untick a day the company does not give. At least 11 paid days a year are needed, so the last ones can’t be unticked.' },
+          { k: 'may', l: 'May move', t: 'bool', hint: 'The date depends on the moon or on an announcement and may change.' }]]
+      ],
+      blank: { name: '', date: '', on: 1, may: 0, paid: '' }
+    };
+  }
+  formOf(r) { return { name: r.name, date: r.date, on: r.on ? 1 : 0, may: r.may ? 1 : 0, paid: r.paid || '' }; }
+  makeRows(co, state) {
+    const base = { AISB: 0, AI: 100, AIL: 200, AIP: 300 }[co] || 0, b = this.bundle(state) || [];
+    const src = 'Bundled list for ' + this.stateLabel(state);
+    return b.map(([date, name, fl], i) => ({ id: base + i + 1, date, name, lock: fl === 'L' ? 1 : 0, may: fl === 'M' ? 1 : 0, on: 1, one: 0, paid: '',
+      hist: [{ when: '2 Jan 2026, 09:00', op: 'As it stood', src: 'Starting data', who: '', note: src + (date.startsWith('2027') ? ', 2027: an estimate until the official list is checked.' : ', as checked on 2 January 2026.') }] }));
+  }
+  // the states the State tweak shows
+  viewState(view, base, recs) {
+    const K = base.co, rows = recs[K] || [];
+    const by = n => rows.find(r => r.name === n && r.date.startsWith('2026'));
+    const edit = (r, extra) => ({ ...base, dlg: { id: r.id, isNew: false }, form: this.formOf(r), loaded: this.formOf(r), ...extra });
+    const neu = extra => ({ ...base, dlg: { id: null, isNew: true, year: base.year }, form: { ...this.cfg().blank }, loaded: { ...this.cfg().blank }, ...extra });
+    switch (view) {
+      case '2027': return { ...base, year: '2027' };
+      case 'untick-refused': {
+        const keep = ['New Year', 'Chinese New Year', 'Chinese New Year (second day)', 'Hari Raya Aidilfitri', 'Deepavali', 'Christmas'];
+        const r2 = rows.map(r => (r.date.startsWith('2026') && !r.lock && !r.one && !keep.includes(r.name) ? { ...r, on: 0 } : r.date.startsWith('2026') && r.one ? { ...r, on: 0 } : r));
+        const t = r2.find(r => r.name === 'Christmas' && r.date.startsWith('2026'));
+        return { ...base, recs: { ...recs, [K]: r2 }, pgRef: { id: t.id, text: this.refuseText(t.name, 10, '2026') } };
+      }
+      case 'locked': return edit(by('Federal Territory Day'), {});
+      case 'replacement': return edit(by('Deepavali'), {});
+      case 'two-on-one': return edit(by('Thaipusam'), {});
+      case 'one-off': return edit(rows.find(r => r.one), {});
+      case 'moving-date': { const r = by('Hari Raya Aidiladha'), s = edit(r, {}); s.form = { ...s.form, date: '2026-05-28' }; return s; }
+      case 'new': return neu({});
+      case 'new-errors': return neu({ tried: true, form: { ...this.cfg().blank, name: '', date: '2027-03-01' } });
+      case 'edit': return edit(by('Awal Muharram'), {});
+      case 'dirty': { const r = by('Awal Muharram'), s = edit(r, {}); s.form = { ...s.form, date: '2026-06-18' }; return s; }
+      case 'saving': { const r = by('Awal Muharram'), s = edit(r, { saving: true }); s.form = { ...s.form, date: '2026-06-18' }; return s; }
+      case 'discard': { const r = by('Awal Muharram'), s = edit(r, { confirm: true }); s.form = { ...s.form, date: '2026-06-18' }; return s; }
+      case 'saved': { const r = by('Awal Muharram'); return edit(r, { toast: { text: 'Saved', undo: true }, notesN: 1, flashId: r.id, flashN: 1, undo: { recs, setg: base.setg } }); }
+      case 'nothing-changed': return edit(by('Awal Muharram'), { footMsg: 'Nothing has changed.', footN: 1 });
+      case 'refused': {
+        const keep = ['New Year', 'Chinese New Year', 'Chinese New Year (second day)', 'Hari Raya Aidilfitri', 'Deepavali', 'Awal Muharram'];
+        const r2 = rows.map(r => (r.date.startsWith('2026') && !r.lock && !keep.includes(r.name) ? { ...r, on: 0 } : r));
+        const r = r2.find(x => x.name === 'Awal Muharram' && x.date.startsWith('2026')), s = edit(r, { recs: { ...recs, [K]: r2 } });
+        s.form = { ...s.form, on: 0 };
+        s.fRef = this.refuseText(r.name, 10, '2026') + ' Keep it ticked, or add a one-off day first.';
+        return s;
+      }
+      case 'paste': return { ...base, put: { mode: 'paste' } };
+      case 'paste-preview': return { ...base, put: { mode: 'paste' }, shText: '24 Dec 2026, Christmas Eve\n25 Dec 2026, Christmas\n4 Dec 2026 Company anniversary\nFriday after Raya', shStage: 'preview' };
+      case 'change-state': return { ...base, put: { mode: 'state' }, shState: 'sabah' };
+      case 'none-yet': return { ...base, recs: { ...recs, [K]: [] } };
+      case 'no-company': return { ...base, noCo: true };
+      case 'loading': return { ...base, load: 'loading' };
+      case 'error': return { ...base, load: 'error' };
+      case 'many': return { ...base, many: true };
+      default: return base;
+    }
+  }
+  refuseText(name, left, year) { return 'Unticking ' + name + ' would leave ' + left + ' paid public holidays in ' + year + '. The Employment Act gives at least 11.'; }
+  errors(f) {
+    const e = {}, y = this.state.dlg && this.state.dlg.isNew ? (this.state.dlg.year || this.state.year) : this.state.year;
+    if (!String(f.name ?? '').trim()) e.name = 'This can’t be empty.';
+    if (!String(f.date ?? '').trim()) e.date = 'Enter the date, for example 20 Mar ' + y + '.';
+    else if (!String(f.date).startsWith(y)) e.date = 'This list is for ' + y + '. Pick a date in ' + y + ', or change the year tab first.';
+    if (f.paid && String(f.paid).trim()) { if (!String(f.paid).startsWith(y)) e.paid = 'Pick a date in ' + y + '.'; else if (this.dow(f.paid) === this.restOf()) e.paid = 'That is the rest day. Pick a working day.'; }
+    return e;
+  }
+  clean(f) { return { ...f, name: String(f.name || '').trim() }; }
+  restOf(co) { return Number((this.state.setg[co || this.state.co] || {}).rest || 0); }
+  startCo(view) {
+    const u = String(this.props.company || '').toUpperCase();
+    if (view === 'sabah') return 'AI';
+    if (/^(2027|untick-refused|locked|replacement|two-on-one|one-off|moving-date|new|new-errors|edit|dirty|saving|refused|discard|saved|nothing-changed|paste|paste-preview|change-state)$/.test(view || '')) return this.cfg().defCo;
+    return this.companyList().some(x => x[0] === u) ? u : this.cfg().defCo;
+  }
+  shell() {
+    const SH = { AISB: ['aisb', 'sqlPayroll', 'sql', 'true'], AI: ['ai', 'here', 'here', 'false'], AIL: ['ail', 'sql', 'sql', 'false'], AIP: ['aip', 'here', 'here', 'false'] };
+    const h = SH[String(this.state.co || '').toUpperCase()] || SH.AISB;
+    const nc = this.companyList().length, cosWord = nc === 1 ? 'one' : nc >= 4 ? 'four' : 'two';
+    return { shCo: h[0], shKind: h[1], navKind: h[2], navPayroll: h[3], shCos: cosWord, tbCos: cosWord, onTopCo: code => { const u = String(code).toUpperCase(); if (this.companyList().some(x => x[0] === u)) this.setState({ co: u, year: '2026', pgRef: null }); } };
+  }
+  companyList() {
+    const n = this.props.companies ?? '2';
+    const all = [['AISB', 'AISB Sdn Bhd'], ['AI', 'Agrinexus International'], ['AIL', 'Agrinexus Logistics'], ['AIP', 'Agrinexus Plantations']];
+    return n === '1' ? all.slice(0, 1) : n === '4' ? all : all.slice(0, 2);
+  }
+  records() {
+    const kl = this.makeRows('AISB', 'wp-kl');
+    kl.push({ id: 50, date: '2026-03-20', name: 'Extra holiday announced by the government', lock: 0, may: 0, on: 1, one: 1, paid: '',
+      hist: [{ when: '19 Mar 2026, 08:15', op: 'Added', src: 'In the app', who: 'Aisha Rahman', why: 'Announced by the government on 19 March.', added: true, rows: [['Name', '', 'Extra holiday announced by the government'], ['Date', '', '20 Mar 2026']] }] });
+    return { AISB: kl, AI: this.makeRows('AI', 'sabah'), AIL: this.makeRows('AIL', 'wp-kl'), AIP: this.makeRows('AIP', 'sabah') };
+  }
+
+  // ---------- the shared Setup record pattern (same on every Setup list board) ----------
+  fields() { return this.cfg().groups.flatMap(g => g[1]); }
+  init(view) {
+    const recs = this.records();
+    const base = { co: this.startCo(view), year: '2026', recs, setg: { AISB: { state: 'wp-kl', rest: 0 }, AI: { state: 'sabah', rest: 0 }, AIL: { state: 'wp-kl', rest: 0 }, AIP: { state: 'sabah', rest: 0 } },
+      noCo: false, load: null, retrying: false, pgRef: null,
+      dlg: null, put: null, closing: false, form: null, loaded: null, tried: false, saving: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '',
+      confirm: false, footMsg: '', footN: 0, histOpen: false, histExp: {}, notesN: 0, pillN: 0,
+      shText: '', shStage: 'edit', shTextErr: false, shState: '', shRest: '', shWhy: '', shWhyErr: false, shRef: '',
+      toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0, many: false, manyShown: 25 };
+    return this.viewState(view, base, recs);
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.companies !== this.props.companies || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv);
+      const nx = this.init(this.props.view || 'list');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state, p = this.cfg().pre;
+    const open = !!(st.dlg || st.put), was = !!(prev.dlg || prev.put);
+    if (open && !was) { this.focusId(st.dlg ? p + '-title' : p + '-pb-title'); return; }
+    if (!open && was) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId(p + '-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId(p + (st.put ? '-pb-keep' : '-keep')); return; }
+    if (prev.confirm && !st.confirm && open && !st.closing) this.focusId(p + (st.put ? '-pb-cancel' : '-cancel'));
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  list(co) { return (this.state.recs[co || this.state.co] || []); }
+  yearRows(year) { const y = year || this.state.year; return this.list().filter(r => r.date.startsWith(y)); }
+  rec(id) { return this.list().find(r => r.id === id) || null; }
+  setRec(id, fn) { const st = this.state; this.setState({ recs: { ...st.recs, [st.co]: this.list().map(r => (r.id === id ? fn(r) : r)) } }); }
+  snap() { const st = this.state; return { recs: st.recs, setg: st.setg }; }
+  dirty() {
+    const st = this.state;
+    if (st.put) {
+      if (st.put.mode === 'paste') return !!st.shText.trim();
+      const cur = st.setg[st.co];
+      return !!st.shWhy.trim() || (!!st.shState && st.shState !== cur.state) || (st.shRest !== '' && String(st.shRest) !== String(cur.rest));
+    }
+    if (!st.dlg) return false;
+    return JSON.stringify(st.form) !== JSON.stringify(st.loaded) || !!st.whyText.trim();
+  }
+  openRec(id) {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const r = this.rec(id);
+    if (!r) return;
+    clearTimeout(this._t);
+    this.setState({ dlg: { id, isNew: false }, put: null, closing: false, form: this.formOf(r), loaded: this.formOf(r), tried: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '', confirm: false, footMsg: '', histOpen: false, histExp: {}, notesN: 0 });
+  }
+  openNew() {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const b = { ...this.cfg().blank };
+    clearTimeout(this._t);
+    this.setState({ dlg: { id: null, isNew: true, year: this.state.year }, put: null, closing: false, form: b, loaded: { ...b }, tried: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '', confirm: false, footMsg: '', histOpen: false, histExp: {} });
+  }
+  openPaste() {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    clearTimeout(this._t);
+    this.setState({ put: { mode: 'paste' }, dlg: null, closing: false, shText: '', shStage: 'edit', shTextErr: false, shRef: '', confirm: false });
+  }
+  openState() {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const cur = this.state.setg[this.state.co];
+    clearTimeout(this._t);
+    this.setState({ put: { mode: 'state' }, dlg: null, closing: false, shState: cur.state, shRest: String(cur.rest), shWhy: '', shWhyErr: false, shRef: '', confirm: false });
+  }
+  askClose() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDrawer();
+  }
+  closeDrawer() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    const st = this.state;
+    if (!(st.dlg || st.put)) return;
+    const next = { dlg: null, put: null, closing: false, confirm: false, saving: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '', shRef: '', shWhyErr: false, shTextErr: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = st.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  // the page's tick: a day counts as a paid holiday or not; never below 11, and the five fixed by law never untick
+  toggleOn(id) {
+    const st = this.state, r = this.rec(id);
+    if (!r || r.lock || st.dlg || st.put) return;
+    const rows = this.yearRows(), n = rows.filter(x => x.on).length, want = !r.on;
+    if (!want && n - 1 < this.cfg().min) { this._focusId = 'ho-refusal'; this.setState({ pgRef: { id, text: this.refuseText(r.name, n - 1, st.year) } }); return; }
+    const snap = this.snap();
+    this.setState({ pgRef: null, flashId: id, flashN: st.flashN + 1, undo: snap });
+    this.setRec(id, x => ({ ...x, on: want ? 1 : 0, hist: [{ when: '18 Nov 2026, 10:12', op: want ? 'Ticked' : 'Unticked', src: 'In the app', who: 'Aisha Rahman', rows: [['Paid holiday', want ? 'No' : 'Yes', want ? 'Yes' : 'No']] }, ...x.hist] }));
+    this.toast(r.name + (want ? ' ticked as a paid holiday' : ' unticked: no longer a paid day'), { undo: true });
+  }
+  // Save: checks, then shows Saving… for a moment while the records are written
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state, c = this.cfg();
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    const errs = this.errors(st.form), first = this.fields().find(x => errs[x.k]);
+    if (first) { this._focusId = c.pre + '-f-' + first.k; this.setState({ tried: true, fRef: '' }); return; }
+    if (!st.dlg.isNew && JSON.stringify(st.form) === JSON.stringify(st.loaded)) { this.setState({ footMsg: 'Nothing has changed.', footN: st.footN + 1 }); return; }
+    this.setState({ saving: true, fRef: '' });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => this.commitSave(), 700);
+  }
+  commitSave() {
+    const st = this.state, c = this.cfg();
+    if (!st.dlg || !st.saving) return;
+    const vals = this.clean(st.form), snap = this.snap(), y = st.dlg.isNew ? (st.dlg.year || st.year) : st.year;
+    if (!st.dlg.isNew && st.loaded.on && !vals.on) {
+      const n = this.yearRows(y).filter(x => x.on).length;
+      if (n - 1 < c.min) { this._focusId = c.pre + '-refused'; this.setState({ saving: false, fRef: this.refuseText(st.loaded.name, n - 1, y) + ' Keep it ticked, or add a one-off day first.' }); return; }
+    }
+    if (st.dlg.isNew) {
+      const id = 400 + st.footN + this.list().length;
+      const r = { id, date: vals.date, name: vals.name, lock: 0, may: vals.may ? 1 : 0, on: vals.on ? 1 : 0, one: 1, paid: vals.paid || '', hist: [{ when: '18 Nov 2026, 10:15', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true, rows: [['Name', '', vals.name], ['Date', '', this.long(vals.date)]] }] };
+      this._changed = id;
+      this.setState({ recs: { ...st.recs, [st.co]: [...this.list(), r] }, dlg: { id, isNew: false }, form: this.formOf(r), loaded: this.formOf(r), tried: false, saving: false, footMsg: '', notesN: st.notesN + 1, undo: snap });
+      this.toast('One-off day added', { undo: true });
+      return;
+    }
+    this._changed = st.dlg.id;
+    this.setRec(st.dlg.id, r => ({ ...r, name: r.lock ? r.name : vals.name, date: r.lock ? r.date : vals.date, on: r.lock ? 1 : (vals.on ? 1 : 0), may: r.lock ? 0 : (vals.may ? 1 : 0), paid: vals.paid || '',
+      hist: [{ when: '18 Nov 2026, 10:15', op: 'Changed', src: 'In the app', who: 'Aisha Rahman',
+        rows: this.fields().filter(x => JSON.stringify(st.form[x.k]) !== JSON.stringify(st.loaded[x.k])).map(x => [x.l, this.shown(x, st.loaded[x.k]), this.shown(x, st.form[x.k])]) }, ...r.hist] }));
+    this.setState({ form: { ...vals }, loaded: { ...vals }, saving: false, footMsg: '', tried: false, notesN: st.notesN + 1, undo: snap });
+    this.toast('Saved', { undo: true });
+  }
+  shown(x, v) { if (x.t === 'bool') return v ? 'Yes' : 'No'; if (x.t === 'date') return v ? this.long(v) : '—'; return v === '' || v == null ? '—' : String(v); }
+  startWhy(act) {
+    const st = this.state;
+    if (st.why === act) return this.setState({ why: null, whyText: '', whyErr: false, refuse: '' });
+    this._focusId = this.cfg().pre + '-why';
+    this.setState({ why: act, whyText: '', whyErr: false, refuse: '' });
+  }
+  whyGo() {
+    const st = this.state, c = this.cfg(), act = st.why, reason = st.whyText.trim();
+    if (!act || !st.dlg || act !== 'delete') return;
+    if (!reason) { this._focusId = c.pre + '-why'; this.setState({ whyErr: true }); return; }
+    const id = st.dlg.id, r = this.rec(id);
+    if (!r) return;
+    const snap = this.snap();
+    this.setState({ recs: { ...st.recs, [st.co]: this.list().filter(x => x.id !== id) }, why: null, whyText: '', whyErr: false, undo: snap });
+    this._opener = document.getElementById(c.pre + '-add');
+    this.closeDrawer();
+    this.toast(r.name + ' deleted', { undo: true });
+  }
+  undoLast() {
+    const u = this.state.undo;
+    if (!u) return;
+    const st = this.state, next = { recs: u.recs, setg: u.setg, undo: null, pillN: st.pillN + 1, flashN: st.flashN + 1, pgRef: null };
+    if (st.dlg) {
+      const r = (u.recs[st.co] || []).find(x => x.id === st.dlg.id);
+      if (r) { next.form = this.formOf(r); next.loaded = this.formOf(r); next.flashId = r.id; } else { next.dlg = null; next.closing = false; }
+    }
+    this.setState(next);
+    this.toast('Undone');
+  }
+  // ---- the second dialog: paste a list, change state ----
+  parsePaste(text) {
+    const M = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+    const have = this.list();
+    return String(text || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean).map(line => {
+      let m = line.match(/^(\d{1,2})\s+([A-Za-z]{3,9})\.?\s+(\d{4})\s*[,;\t-]*\s*(.*)$/), iso = '', name = '';
+      if (m && M[m[2].slice(0, 3).toLowerCase()]) { iso = m[3] + '-' + String(M[m[2].slice(0, 3).toLowerCase()]).padStart(2, '0') + '-' + String(m[1]).padStart(2, '0'); name = m[4].trim(); }
+      else { m = line.match(/^(\d{4})-(\d{2})-(\d{2})\s*[,;\t-]*\s*(.*)$/); if (m) { iso = m[1] + '-' + m[2] + '-' + m[3]; name = m[4].trim(); } }
+      const real = iso && !isNaN(this.utc(iso).getTime()) && this.utc(iso).toISOString().slice(0, 10) === iso;
+      if (!real) return { line, status: 'bad', note: 'Can’t read the date. Start the line with a date such as 24 Dec 2026.' };
+      if (!name) return { line, iso, status: 'bad', note: 'There is no name after the date.' };
+      if (!/^202[67]/.test(iso)) return { line, iso, name, status: 'bad', note: 'Only 2026 and 2027 are kept here.' };
+      const same = have.find(r => r.date === iso && r.name.toLowerCase() === name.toLowerCase());
+      if (same) return { line, iso, name, status: 'dup', note: 'Already in the list.' };
+      const clash = have.find(r => r.date === iso && r.on);
+      return { line, iso, name, status: 'new', note: clash ? 'The same day as ' + clash.name + ': each gets its own paid day.' : '' };
+    });
+  }
+  effectOf(stateKey, rest) {
+    const st = this.state, cur = st.setg[st.co], out = [];
+    const b = this.bundle(stateKey), one = this.list().filter(r => r.one).length;
+    if (stateKey === cur.state && String(rest) === String(cur.rest)) return [{ glyph: 'help', txt: 'No change yet: pick another state or rest day.' }];
+    if (stateKey !== cur.state) {
+      if (b) { const n = b.filter(x => x[0].startsWith('2026')).length; out.push({ glyph: 'refresh', txt: 'The bundled 2026 list for ' + this.stateLabel(stateKey) + ' has ' + n + ' days. It replaces the days from the bundled list: unticked days are ticked again and moved dates go back to the listed ones.' }); }
+      else out.push({ glyph: 'alert', txt: 'There is no bundled list for ' + this.stateLabel(stateKey) + ' yet, so the days from the bundled list are cleared. Paste the official list or add the days one by one.' });
+      out.push({ glyph: 'check', txt: one ? 'Your own one-off days stay (' + one + ').' : 'You have no one-off days to keep.' });
+      if (stateKey === 'sabah' || stateKey === 'sarawak') out.push({ glyph: 'help', txt: this.stateLabel(stateKey) + ' follows its own Labour Ordinance: check the minimums.' });
+    }
+    if (String(rest) !== String(cur.rest)) out.push({ glyph: 'calendar', txt: 'The rest day changes from ' + this.restLabel(cur.rest) + ' to ' + this.restLabel(rest) + '. Paid days are worked out again from the new rest day.' });
+    return out;
+  }
+  shSubmit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.put || st.closing || st.confirm || st.saving) return;
+    if (st.put.mode === 'paste') {
+      if (st.shStage === 'edit') {
+        if (!st.shText.trim()) { this._focusId = 'ho-sh-text'; this.setState({ shTextErr: true }); return; }
+        this.setState({ shStage: 'preview', shTextErr: false });
+        return;
+      }
+      const n = this.parsePaste(st.shText).filter(p => p.status === 'new').length;
+      if (!n) { this._focusId = 'ho-sh-refused'; this.setState({ shRef: 'Every line is already in the list or can’t be read, so there is nothing to add. Go back to change the lines.' }); return; }
+      this.setState({ saving: true, shRef: '' });
+    } else {
+      const cur = st.setg[st.co];
+      if (!st.shWhy.trim()) { this._focusId = 'ho-sh-why'; this.setState({ shWhyErr: true }); return; }
+      if (st.shState === cur.state && String(st.shRest) === String(cur.rest)) { this._focusId = 'ho-sh-refused'; this.setState({ shRef: 'The state and the rest day are already these, so there is nothing to change.' }); return; }
+      this.setState({ saving: true, shRef: '' });
+    }
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => this.commitSheet(), 700);
+  }
+  commitSheet() {
+    const st = this.state;
+    if (!st.put || !st.saving) return;
+    const snap = this.snap();
+    this._opener = document.getElementById(st.put.mode === 'paste' ? 'ho-paste' : 'ho-state');
+    if (st.put.mode === 'paste') {
+      const add = this.parsePaste(st.shText).filter(p => p.status === 'new');
+      const start = 500 + this.list().length;
+      const rows = add.map((p, i) => ({ id: start + i, date: p.iso, name: p.name, lock: 0, may: 0, on: 1, one: 1, paid: '', hist: [{ when: '18 Nov 2026, 10:14', op: 'Added', src: 'Import', who: 'Aisha Rahman', added: true, note: 'Added from a pasted list.', rows: [['Name', '', p.name], ['Date', '', this.long(p.iso)]] }] }));
+      this.setState({ recs: { ...st.recs, [st.co]: [...this.list(), ...rows] }, saving: false, undo: snap, shText: '', shStage: 'edit' });
+      this.closeDrawer();
+      this.toast('Added ' + rows.length + (rows.length === 1 ? ' day' : ' days'), { undo: true });
+      return;
+    }
+    const cur = st.setg[st.co], keep = this.list().filter(r => r.one || (st.shState === cur.state && r)), fresh = st.shState === cur.state ? [] : this.makeRows(st.co, st.shState);
+    const recs = st.shState === cur.state ? this.list() : [...fresh, ...keep];
+    this.setState({ recs: { ...st.recs, [st.co]: recs }, setg: { ...st.setg, [st.co]: { state: st.shState, rest: Number(st.shRest) } }, saving: false, undo: snap, shWhy: '', year: '2026', pgRef: null });
+    this.closeDrawer();
+    this.toast(st.shState === cur.state ? 'Rest day changed to ' + this.restLabel(st.shRest) : 'State changed to ' + this.stateLabel(st.shState), { undo: true });
+  }
+  retry() {
+    if (this.state.retrying) return;
+    this.setState({ retrying: true });
+    clearTimeout(this._rt);
+    this._rt = setTimeout(() => this.setState({ retrying: false, load: null }), 900);
+  }
+  histItems(list, prefix, expanded, toggle) {
+    const SRC = { 'In the app': 'background:#EAF0FD;color:#2450B8', 'Starting data': 'background:#EEF1F5;color:#46546A', 'Import': 'background:#EEF1F5;color:#46546A' };
+    return (list || []).map((h, i) => {
+      const rows = (h.rows || []).map(([f, b, a]) => ({ f, b: b === '' ? '—' : b, a: a === '' ? '—' : a }));
+      const open = !!(expanded && expanded[i]);
+      return { op: h.op, src: h.src, who: h.who || '', when: h.when, why: h.why || '', whyOn: !!h.why, note: h.note || '', noteOn: !!h.note,
+        srcStyle: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;' + (SRC[h.src] || SRC['Starting data']),
+        dot: 'width:10px;height:10px;margin-top:5px;border-radius:99px;box-sizing:border-box;' + (h.op === 'Unticked' ? 'background:#FFFFFF;border:2px solid #B0190F' : h.op === 'As it stood' ? 'background:#FFFFFF;border:2px solid #8792A2' : 'background:#0A6B3D'),
+        diffOn: rows.length > 0, rows, open, exp: open ? 'true' : 'false', chev: open ? 'chev on' : 'chev',
+        diffLabel: open ? 'Hide what changed' : (h.removed ? 'Show what was removed' : h.added ? 'Show what was added' : 'Show what changed'),
+        beforeLabel: h.added ? '' : 'Before', afterLabel: h.removed ? '' : 'After',
+        toggle: () => toggle(i) };
+    });
+  }
+  renderVals() {
+    const st = this.state, c = this.cfg(), p = c.pre;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', grey: 'background:#EEF1F5;color:#46546A', warn: 'background:#FEF1D6;color:#934100', brand: 'background:#EAF0FD;color:#2450B8' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const chip = t => 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const cos = this.companyList();
+    const coName = (cos.find(x => x[0] === st.co) || cos[0])[0];
+    const setg = st.setg[st.co] || { state: 'wp-kl', rest: 0 }, rest = Number(setg.rest), year = st.year;
+    const all = this.yearRows().slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (b.lock ? 1 : 0) - (a.lock ? 1 : 0) || a.id - b.id));
+    const paid = this.sched(all, rest);
+    const n = all.filter(r => r.on).length;
+    const unconf = year === '2027';
+    const dayCount = {};
+    all.filter(r => r.on).forEach(r => { dayCount[r.date] = (dayCount[r.date] || 0) + 1; });
+    // many rows (States pattern): the first 25 are drawn, Show 25 more adds the next; 40 is a stress count, as on Recurring
+    const MANY = 40, drawn = st.many ? all.slice(0, st.manyShown) : all;
+    const rows = drawn.map((r, k) => {
+      const flash = st.flashId === r.id && st.flashN, pd = paid[r.id], moved = r.on && pd && pd !== r.date, rest1 = this.dow(r.date) === rest, two = r.on && dayCount[r.date] > 1;
+      const why = r.paid ? 'Another day agreed with the staff (s.60D(1A)).' : moved ? (rest1 && two ? 'Falls on the rest day, and another holiday shares the date: each gets its own paid day.' : rest1 ? 'Falls on the rest day: moves to the next working day (s.60D(1)(b)).' : 'Another holiday is on this day: it takes the next free working day.') : '';
+      const chips = [];
+      if (r.lock) chips.push({ txt: 'Fixed by law', style: chip('brand') });
+      if (r.may) chips.push({ txt: 'May move', style: chip('grey') });
+      if (r.one) chips.push({ txt: 'One-off day', style: chip('ok') });
+      if (two) chips.push({ txt: 'Two on one day', style: chip('warn') });
+      if (unconf) chips.push({ txt: 'Not confirmed', style: chip('warn') });
+      const bad = st.pgRef && st.pgRef.id === r.id;
+      return { id: p + '-row-' + r.id, onId: p + '-on-' + r.id, name: r.name, chips, dateTxt: this.short(r.date), on: !!r.on, fixed: !!r.lock,
+        onLabel: r.name + (r.lock ? ': a paid holiday, fixed by law' : ': a paid holiday'),
+        toggle: () => this.toggleOn(r.id), stop: e => { if (e && e.stopPropagation) e.stopPropagation(); },
+        paidTxt: !r.on ? 'Not a paid day' : moved ? this.short(pd) : 'The same day', paidNote: why,
+        paidStyle: r.on ? (moved ? 'font-weight:600;color:#0F1A2B' : 'color:#46546A') : 'color:#5F6C80',
+        cls: 'hr' + (flash ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        rowStyle: 'border-top:1px solid #EEF1F5;cursor:pointer;' + (bad ? 'background:#FDF3F2;box-shadow:inset 3px 0 0 #B0190F;' : '') + (!r.on ? 'color:#46546A' : ''),
+        open: () => this.openRec(r.id),
+        key: e => {
+          const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? k - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? drawn.length - 1 : null;
+          if (to === null || to < 0 || to >= drawn.length) return;
+          e.preventDefault();
+          this.focusId(p + '-row-' + drawn[to].id);
+        } };
+    });
+    const twoDates = Object.keys(dayCount).filter(d => dayCount[d] > 1);
+    const twoRows = twoDates.length ? all.filter(r => r.on && r.date === twoDates[0]) : [];
+    const twoText = twoRows.length ? this.long(twoDates[0]) + ' has two holidays: ' + twoRows.map(r => r.name).join(' and ') + '. Each gets its own paid day: ' + twoRows.map(r => r.name + ' ' + this.short(paid[r.id])).join(', ') + '.' : '';
+    const tabs = ['2026', '2027'].map(y => ({ id: p + '-tab-' + y, label: y, sel: y === year ? 'true' : 'false', tab: y === year ? '0' : '-1', warn: y === '2027',
+      style: 'display:inline-flex;align-items:center;min-height:32px;padding:0 14px;border:0;border-radius:8px;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (y === year ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A'),
+      pick: () => this.setState({ year: y, pgRef: null }) }));
+    const noBundle = !this.bundle(setg.state);
+    const addr = { AISB: 'Petaling Jaya', AIL: '', AI: 'Kota Kinabalu', AIP: '' }[st.co] || '';
+
+    // the record dialog
+    const dlg = st.dlg, r = dlg && !dlg.isNew ? this.rec(dlg.id) : null;
+    const errsAll = dlg ? this.errors(st.form) : {};
+    const errs = st.tried ? errsAll : {};
+    const ctl = 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;';
+    const LOCK = 'Fixed by the Employment Act s.60D: every employee gets it, so it stays a paid day with its gazetted name and date.';
+    const dGroups = !dlg ? [] : c.groups.map(([label, fs]) => ({ label, fields: fs.map(x => {
+      const t = x.t || 'text', err = errs[x.k] || '', lock = r && r.lock && ['name', 'date', 'on', 'may'].includes(x.k) ? LOCK : '';
+      const id = p + '-f-' + x.k, val = st.form[x.k];
+      const by = [err ? id + '-err' : '', x.hint ? id + '-hint' : '', lock ? id + '-lock' : ''].filter(Boolean).join(' ');
+      return { id, label: x.l, req: !!x.req && !lock, reqAria: x.req && !lock ? 'true' : 'false',
+        isBool: t === 'bool', notBool: t !== 'bool', isInput: t === 'text' || t === 'date', isSelect: false, isArea: false,
+        type: t === 'date' ? 'date' : 'text', max: 200,
+        val: val == null ? '' : String(val), checked: !!val, ro: !!lock, dis: !!lock, opts: [],
+        hintOn: !!x.hint, hint: x.hint || '', hintId: id + '-hint', lockOn: !!lock, lock, lockId: id + '-lock',
+        errOn: !!err, err, errId: id + '-err', inv: err ? 'true' : 'false', by,
+        wrap: 'display:flex;flex-direction:column;gap:6px;min-width:0;' + (x.wide || t === 'bool' ? 'grid-column:1 / -1' : ''),
+        style: ctl + 'border:1px solid ' + (err ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : lock ? '#D5DBE4' : '#8792A2'),
+        change: e => {
+          if (lock) return;
+          const tv = e && e.target ? (t === 'bool' ? (e.target.checked ? 1 : 0) : e.target.value) : '';
+          this.setState({ form: { ...this.state.form, [x.k]: tv }, footMsg: '', fRef: '' });
+        } };
+    }) }));
+    // what the dialog says about the day as typed: where its paid day falls
+    const dNotes = [];
+    if (dlg && st.form.date && String(st.form.date).startsWith(dlg.isNew ? (dlg.year || year) : year)) {
+      const ghost = { id: -1, date: st.form.date, name: st.form.name, lock: r ? r.lock : 0, on: st.form.on ? 1 : 0, paid: st.form.paid || '' };
+      const others = this.yearRows().filter(x => !r || x.id !== r.id);
+      const sc = this.sched([...others, ghost], rest), pd = sc[-1];
+      const sameDay = others.filter(x => x.on && x.date === st.form.date);
+      if (ghost.on && pd && pd !== ghost.date) {
+        const why = st.form.paid ? ' The paid day was set by hand (s.60D(1A)).' : this.dow(ghost.date) === rest ? ' ' + this.long(ghost.date) + ' is the rest day (' + this.restLabel(rest) + '), so a holiday on it moves to the next working day (Employment Act s.60D(1)(b)).' : '';
+        dNotes.push('Paid on ' + this.long(pd) + '.' + (sameDay.length ? ' ' + sameDay.map(x => x.name).join(' and ') + ' is also on ' + this.long(ghost.date) + ', so each holiday gets its own paid day.' : '') + why);
+      } else if (ghost.on && pd) dNotes.push('Paid on ' + this.long(pd) + ', the same day.');
+      if (sameDay.length && ghost.on && !(pd && pd !== ghost.date)) dNotes.push('Two holidays on one day: ' + sameDay.map(x => x.name).join(' and ') + ' is also on ' + this.long(ghost.date) + '.');
+    }
+    if (r && r.may) dNotes.push('Moon-dependent: the date may move by a day once the government announces it. Change the date here when it does; past years are not rewritten.');
+    if (r && r.one) dNotes.push('Announced during the year, so it is not in the bundled list.');
+    const badN = Object.keys(errs).length;
+    const dirty = this.dirty();
+    const delMeta = ['Delete it', c.delNote, 'trash', 'bad', '#F4C7C1', '#FFF6F5', true];
+
+    // the second dialog (paste a list, change state)
+    const put = st.put, paste = !!put && put.mode === 'paste', stateMode = !!put && put.mode === 'state';
+    const parsed = paste ? this.parsePaste(st.shText) : [];
+    const nNew = parsed.filter(x => x.status === 'new').length, nDup = parsed.filter(x => x.status === 'dup').length, nBad = parsed.filter(x => x.status === 'bad').length;
+    const preview = paste && st.shStage === 'preview';
+    const shStateVal = st.shState || setg.state, shRestVal = st.shRest === '' ? String(setg.rest) : String(st.shRest);
+    const stateEffect = stateMode ? this.effectOf(shStateVal, shRestVal) : [];
+    const sumParts = [];
+    if (nNew) sumParts.push(nNew + ' new'); if (nDup) sumParts.push(nDup + ' already in the list');
+    const goLabel = paste ? (preview ? 'Add ' + nNew + (nNew === 1 ? ' day' : ' days') : 'Read the list') : 'Change to ' + this.stateLabel(shStateVal);
+    const ctl2 = ctl + 'border:1px solid ';
+
+    return { ...this.shell(),
+      pageTitle: st.noCo ? c.section : c.section + ' · ' + coName,
+      listHeading: c.section + ' of ' + coName + ', ' + year, coName,
+      noCo: !!st.noCo, hasCo: !st.noCo,
+      loadOn: !st.noCo && st.load === 'loading', errOn: !st.noCo && st.load === 'error', listOn: !st.noCo && !st.load,
+      retry: () => this.retry(), retrying: !!st.retrying, notRetrying: !st.retrying, retryAria: st.retrying ? 'true' : 'false',
+      openNew: () => this.openNew(), openPaste: () => this.openPaste(), openState: () => this.openState(),
+      tabs, panelBy: p + '-tab-' + year,
+      tabsKey: e => {
+        const ys = ['2026', '2027'], i = ys.indexOf(this.state.year);
+        const to = e.key === 'ArrowRight' ? Math.min(i + 1, 1) : e.key === 'ArrowLeft' ? Math.max(i - 1, 0) : e.key === 'Home' ? 0 : e.key === 'End' ? 1 : null;
+        if (to === null) return;
+        e.preventDefault();
+        this._focusId = p + '-tab-' + ys[to];
+        this.setState({ year: ys[to], pgRef: null });
+      },
+      countTxt: n >= c.min ? n + ' paid public holidays in ' + year + '. The law needs at least ' + c.min + '.' : 'Only ' + n + ' paid public holidays so far in ' + year + ': the Employment Act gives at least ' + c.min + '.',
+      countColor: n >= c.min ? '#0A6B3D' : '#934100', countGlyph: n >= c.min ? 'check' : 'alert', countTone: n >= c.min ? 'ok' : 'warn',
+      stateName: this.stateLabel(setg.state), stateHint: 'Where the staff work, not the printed address' + (addr ? ' (' + addr + ')' : '') + '.',
+      restName: this.restLabel(rest),
+      sourceName: unconf ? 'Not yet confirmed' : noBundle ? 'Added by hand' : 'Bundled ' + year + ' list',
+      pgRefOn: !!st.pgRef, pgRefText: st.pgRef ? st.pgRef.text : '', refuseDismiss: () => this.setState({ pgRef: null }),
+      confOn: unconf && all.length > 0, confTitle: year + ' isn’t confirmed yet.', confText: 'The official ' + year + ' list hasn’t been checked, so only the days that never move are filled in, as estimates. Check with kabinet.gov.my or JTKSM, then add the rest or paste the list. A count under 11 here is a warning, not a refusal.',
+      labourOn: setg.state === 'sabah' || setg.state === 'sarawak', labourTitle: this.stateLabel(setg.state) + ' follows its own Labour Ordinance.',
+      twoOn: twoRows.length > 1, twoText,
+      rows,
+      panelScroll: st.many ? 'max-height:560px;overflow:auto' : 'overflow-x:auto', panelTab: st.many ? '0' : '-1',
+      many: { on: !!st.many && all.length > 0, off: st.manyShown >= MANY, text: 'Showing ' + Math.min(st.manyShown, MANY) + ' of ' + MANY + ' public holidays in ' + year, label: st.manyShown >= MANY ? 'All ' + MANY + ' shown' : 'Show 25 more',
+        more: () => this.setState({ manyShown: Math.min(MANY, this.state.manyShown + 25) }),
+        note: 'Many rows: ' + MANY + ' is an example count for a stress case, not a figure from the samples. The board draws ' + coName + '’s ' + all.length + (all.length === 1 ? ' day' : ' days') + ' for ' + year + ' of the first 25. Ticks, paid days and the count work on all rows, and the header row stays at the top while the list scrolls.' },
+      emptyOn: !all.length, emptyHead: 'No public holidays for ' + year + ' yet',
+      emptyTxt: noBundle ? 'There is no bundled list for ' + this.stateLabel(setg.state) + '. Paste the official list from kabinet.gov.my, or add the days one by one.' : 'Paste the official list from kabinet.gov.my, or add the days one by one. Leave and the calendar skip these days.',
+      emptyPaste: () => this.openPaste(), emptyAdd: () => this.openNew(),
+
+      anyDlg: !!(dlg || put),
+      dlgOn: !!dlg, pbOn: !!put, dGlyph: 'calendar',
+      dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      dEyebrow: c.label + ' · ' + coName + ' · ' + (dlg && dlg.isNew ? (dlg.year || year) : year),
+      dTitle: !dlg ? '' : dlg.isNew ? 'New one-off day' : (r ? r.name : ''),
+      dSub: !dlg ? '' : dlg.isNew ? 'A day the government announces during the year. It is added as a paid holiday. Nothing is kept until you add it.' : 'Changes are kept in the audit trail with your name.',
+      dIsNew: !!(dlg && dlg.isNew), dIsEdit: !!r, dPlus: !!(dlg && dlg.isNew) && !st.saving,
+      dPillTxt: r && r.on ? 'Paid day' : 'Not a paid day', dPill: pill(r && r.on ? 'ok' : 'grey'), dPillCls: st.pillN ? (st.pillN % 2 ? 'swapA' : 'swapB') : '',
+      dSysOn: !!(r && (r.lock || r.one || r.may)), dSysTxt: r ? (r.lock ? 'Fixed by law' : r.one ? 'One-off day' : r.may ? 'May move' : '') : '',
+      dNotesOn: dNotes.length > 0, dNotes: dNotes.map(txt => ({ txt })), dNotesCls: st.notesN ? (st.notesN % 2 ? 'swapA' : 'swapB') : '',
+      fRefOn: !!st.fRef, fRefText: st.fRef || '',
+      sumOn: badN > 0, sumTitle: badN === 1 ? '1 field needs a fix.' : badN + ' fields need a fix.',
+      sumList: this.fields().filter(x => errs[x.k]).map(x => x.l).join(', ') + '.',
+      dGroups,
+      actOn: !!r && !!r.one, actHeading: 'One-off day', stopLbl: '', useLbl: '',
+      canStop: false, canUse: false, canDelete: !!r && !!r.one,
+      stopExp: 'false', useExp: 'false', delExp: st.why === 'delete' ? 'true' : 'false',
+      actNote: !r ? '' : 'A one-off day can be deleted. The days from the bundled list can only be unticked, and the five fixed by law not even that.',
+      extraOn: false, extraId: '', extraLabel: '', extraGlyph: 'help', extraNote: '', extraExp: 'false', extraAct: () => {},
+      actStop: () => {}, actUse: () => {}, actDelete: () => this.startWhy('delete'),
+      whyOn: !!st.why, whyLabel: delMeta[0], whyNote: delMeta[1], whyGlyph: delMeta[2], whyTone: delMeta[3], whyBorder: delMeta[4], whyBg: delMeta[5],
+      whyGoCls: 'hd',
+      whyGoStyle: 'height:40px;padding:0 16px;border-radius:10px;border:0;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:pointer;background:#B0190F',
+      refuseOn: !!st.refuse, refuseText: st.refuse || '', whyText: st.whyText, whyErr: !!st.whyErr, whyInv: st.whyErr ? 'true' : 'false', whyBy: st.whyErr ? p + '-why-err' : '',
+      whyStyle: ctl + 'border:1px solid ' + (st.whyErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onWhy: e => this.setState({ whyText: e && e.target ? e.target.value : '', whyErr: false, refuse: '' }),
+      whyKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.whyGo(); } },
+      whyGo: () => this.whyGo(),
+      whyCancel: () => { const was = this.state.why; this._focusId = p + '-act-' + was; this.setState({ why: null, whyText: '', whyErr: false, refuse: '' }); },
+      histOpen: !!st.histOpen, histExp: st.histOpen ? 'true' : 'false', histChev: st.histOpen ? 'chev on' : 'chev',
+      histCount: r ? (r.hist.length === 1 ? '1 step' : r.hist.length + ' steps') : '',
+      histToggle: () => this.setState({ histOpen: !this.state.histOpen }),
+      hist: r && st.histOpen ? this.histItems(r.hist, p, st.histExp, i => this.setState({ histExp: { ...this.state.histExp, [i]: !this.state.histExp[i] } })) : [],
+      histEmpty: !!r && !r.hist.length,
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      saving: !!st.saving, notSaving: !st.saving, savingAria: st.saving ? 'true' : 'false',
+      discardDetail: 'What you changed here is not kept.',
+      footDirty: dirty && !st.footMsg && !st.saving,
+      footNote: st.saving ? 'Saving…' : st.footMsg ? st.footMsg : !dlg ? '' : dlg.isNew ? (badN ? 'Fix the fields above, then add it.' : 'It is added as a paid holiday.') : dirty ? 'Unsaved changes' : 'Saved changes are kept in the audit trail.',
+      footCls: st.footN ? (st.footN % 2 ? 'swapA' : 'swapB') : '',
+      footStyle: 'display:inline-flex;align-items:center;gap:8px;font-size:13px;' + (dirty && !st.footMsg && !st.saving ? 'color:#934100;font-weight:600' : 'color:#5F6C80'),
+      closeLabel: dlg && dlg.isNew ? 'Cancel' : 'Close',
+      saveLabel: dlg && dlg.isNew ? 'Add day' : 'Save',
+      save: e => this.save(e),
+      askClose: () => this.askClose(),
+      keepEditing: () => this.setState({ confirm: false }),
+      discard: () => { this.setState({ confirm: false, saving: false }); this.closeDrawer(); },
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); e.preventDefault();
+          const s = this.state;
+          if (s.saving) return;
+          if (s.confirm) this.setState({ confirm: false });
+          else if (s.why) { this._focusId = p + '-act-' + s.why; this.setState({ why: null, whyText: '', whyErr: false, refuse: '' }); }   // Escape in the reason box closes only that box
+          else this.askClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+
+      shGlyph: paste ? 'clipboard' : 'company',
+      shEyebrow: 'Public holidays · ' + coName, shTitle: paste ? (preview ? 'Check the list' : 'Paste a list of days') : 'Change state',
+      shSub: paste ? (preview ? 'Here is what was read. Nothing is added yet.' : 'Add the days from the official list, or from an Excel sheet.') : 'The list follows the state where the staff work. Changes are kept in the audit trail.',
+      shRefOn: !!st.shRef, shRefText: st.shRef || '',
+      shPaste: paste, shEdit: paste && !preview, shPreview: preview,
+      shText: st.shText, onShText: e => this.setState({ shText: e && e.target ? e.target.value : '', shTextErr: false, shRef: '' }),
+      shTextErr: !!st.shTextErr, shTextInv: st.shTextErr ? 'true' : 'false', shTextBy: (st.shTextErr ? 'ho-sh-text-err ' : '') + 'ho-sh-text-hint',
+      shTextStyle: 'padding:10px 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;resize:vertical;min-height:140px;border:1px solid ' + (st.shTextErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      shSummary: parsed.length ? 'Found ' + (nNew + nDup) + (nNew + nDup === 1 ? ' day' : ' days') + (sumParts.length ? ': ' + sumParts.join(', ') : '') + '.' + (nBad ? ' ' + nBad + (nBad === 1 ? ' line can’t be read.' : ' lines can’t be read.') : '') : 'Nothing to read.',
+      shRows: parsed.map(x => ({ dateTxt: x.iso ? this.short(x.iso) + ' ' + x.iso.slice(0, 4) : '—', name: x.name || x.line, status: x.status === 'new' ? 'New' : x.status === 'dup' ? 'Already there' : 'Can’t read',
+        pill: chip(x.status === 'new' ? 'ok' : x.status === 'dup' ? 'grey' : 'warn'), bg: x.status === 'bad' ? '#FFF8EC' : '#FFFFFF', noteOn: !!x.note, note: x.note })),
+      shState: stateMode, shStateVal, onShState: e => this.setState({ shState: e && e.target ? e.target.value : '', shRef: '' }),
+      shStates: this.STATES().map(([v, l]) => ({ v, l })),
+      shRestVal, onShRest: e => this.setState({ shRest: e && e.target ? e.target.value : '', shRef: '' }), shRests: this.RESTS().map(([v, l]) => ({ v, l })),
+      shEffect: stateEffect, shEffectCls: st.shState ? 'rv' : '',
+      shWhy: st.shWhy, onShWhy: e => this.setState({ shWhy: e && e.target ? e.target.value : '', shWhyErr: false, shRef: '' }),
+      shWhyErr: !!st.shWhyErr, shWhyInv: st.shWhyErr ? 'true' : 'false', shWhyBy: st.shWhyErr ? 'ho-sh-why-err' : '',
+      shWhyStyle: ctl2 + (st.shWhyErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      shDiscard: paste ? 'The list you pasted is not kept.' : 'What you changed here is not kept.',
+      shSubmit: e => this.shSubmit(e),
+      shBack: () => { if (this.state.put && this.state.put.mode === 'paste' && this.state.shStage === 'preview') this.setState({ shStage: 'edit', shRef: '' }); else this.askClose(); },
+      shCancel: preview ? 'Back' : 'Cancel', shGo: goLabel,
+
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo),
+      toastUndo: () => this.undoLast(),
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

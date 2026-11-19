@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile · Electricity bill · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+/* motion and focus base */
+.mp-row{transition:background-color .12s ease-out,color .12s ease-out}
+.mp-row:active{background-color:#F1F3F7 !important}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+/* sheets */
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sheetOut{from{transform:none}to{transform:translateY(100%)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.sh-in{animation:sheetIn .24s cubic-bezier(.22,1,.36,1) both}
+.sh-out{animation:sheetOut .18s cubic-bezier(.4,0,1,1) both}
+/* status change */
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.okA{animation:swapA .12s ease-out,pulse .4s ease-out}
+.okB{animation:swapB .12s ease-out,pulse .4s ease-out}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.pop{animation:pop .18s cubic-bezier(.22,1,.36,1) both}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes saveUp{from{opacity:0;transform:translateY(100%)}to{opacity:1;transform:none}}
+.spin{display:inline-block;width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.up{animation:saveUp .2s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <div aria-hidden="true" style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+    <div style="height: 92px; border-radius: 14px; background: #E8EBF0"></div>
+    <div style="height: 92px; border-radius: 14px; background: #FFFFFF"></div>
+    <div style="height: 92px; border-radius: 14px; background: #FFFFFF"></div>
+  </div>
+  <div class="{{dimCls}}" onClick="{{closeSheet}}" aria-hidden="true" style="position: absolute; inset: 0; background: rgba(13, 27, 46, .5)"></div>
+
+  <div style="{{wrapStyle}}">
+  <section id="mp-sheet" class="{{sheetCls}}" role="dialog" aria-modal="true" aria-labelledby="mp-title" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onSheetAnim}}" style="position: relative; height: 100%; background: #FFFFFF; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; overflow: hidden">
+    <div aria-hidden="true" onPointerDown="{{dragDown}}" onPointerMove="{{dragMove}}" onPointerUp="{{dragUp}}" onPointerCancel="{{dragUp}}" style="display: flex; justify-content: center; padding: 14px 0 8px; touch-action: none; cursor: grab"><span style="width: 40px; height: 5px; border-radius: 99px; background: #D5DBE4"></span></div>
+    <div style="display: flex; align-items: flex-start; gap: 12px; padding: 8px 16px 14px; border-bottom: 1px solid #EEF1F5">
+      <span style="width: 44px; height: 44px; border-radius: 13px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{sel.glyph}}" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+        <span style="color: #5F6C80; font-size: 12px">{{sel.eyebrow}}</span>
+        <h2 id="mp-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{sel.name}}</h2>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+          <span class="{{sel.pillCls}}" role="status" style="{{sel.pillStyle}}">{{sel.status}}</span>
+          <sc-if value="{{sel.est}}" hint-placeholder-val="{{ false }}"><span title="Planned figure. The SQL voucher or bank line replaces it." style="display: inline-flex; height: 22px; align-items: center; padding: 0 8px; border-radius: 6px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">estimate</span></sc-if>
+          <sc-if value="{{sel.late}}" hint-placeholder-val="{{ false }}"><span style="{{sel.latePill}}">{{sel.late}}</span></sc-if>
+        </div>
+        <sc-if value="{{sel.payTo}}" hint-placeholder-val="{{ true }}"><div style="color: #46546A; font-size: 13px">Pay to: <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #0F1A2B; overflow-wrap: anywhere">{{sel.payTo}}</span></div></sc-if>
+      </div>
+      <div style="display: flex; flex: none; align-items: center">
+        <button type="button" id="mp-mb-pay" onClick="{{payMenuToggle}}" onKeyDown="{{payMenuKey}}" aria-haspopup="menu" aria-expanded="{{payExpanded}}" aria-label="More actions for this payment" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="more" tone="muted" size="22" hint-size="22px,22px"></dc-import></button>
+        <a id="mp-close" href="MobileCompany.dc.html" onClick="{{closeLink}}" aria-label="Close" style="width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="22" hint-size="22px,22px"></dc-import></a>
+      </div>
+    </div>
+
+    <div style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+        <div style="padding: 12px; border-radius: 12px; background: #F7F8FA"><span style="color: #5F6C80; font-size: 12px">Amount</span><div style="font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums">{{sel.amount}}</div><span style="color: #5F6C80; font-size: 12px">{{sel.amountNote}}</span></div>
+        <div style="padding: 12px; border-radius: 12px; background: #F7F8FA"><span style="color: #5F6C80; font-size: 12px">{{sel.paidField}}</span><div style="font-weight: 700; font-size: 17px">{{sel.paidLabel}}</div><span style="color: #5F6C80; font-size: 12px">{{sel.paidNote}}</span></div>
+      </div>
+      <sc-if value="{{sel.hint}}" hint-placeholder-val="{{ false }}"><p style="margin: -6px 0 0; color: #46546A; font-size: 13px; max-width: 75ch">{{sel.hint}}</p></sc-if>
+
+      <sc-for list="{{sel.secs}}" as="s" hint-placeholder-count="2">
+        <section style="display: flex; flex-direction: column; gap: 10px">
+          <h3 style="margin: 0; font-size: 15px; font-weight: 600">{{s.title}}</h3>
+          <sc-if value="{{s.note}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6C80; font-size: 13px; max-width: 75ch">{{s.note}}</p></sc-if>
+          <sc-for list="{{s.docs}}" as="d" hint-placeholder-count="2">
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <sc-for list="{{d.rows}}" as="r" hint-placeholder-count="1">
+                <div onDragOver="{{r.over}}" onDragEnter="{{r.over}}" onDragLeave="{{r.leave}}" onDrop="{{r.drop}}" style="{{r.row}}">
+                  <span class="{{r.iconCls}}" style="display: inline-flex; flex: none"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="22" hint-size="22px,22px"></dc-import></span>
+                  <div style="flex: 1; min-width: 0"><b>{{r.label}}</b><div style="{{r.noteStyle}}">{{r.note}}</div><sc-if value="{{r.hint}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 2px; color: #46546A; font-size: 12px">{{r.hint}}</div></sc-if><sc-if value="{{r.asking}}" hint-placeholder-val="{{ false }}"><div role="group" aria-live="assertive" aria-labelledby="{{r.askQid}}" class="ex" style="margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><span id="{{r.askQid}}" style="width: 100%; font-weight: 600; font-size: 13px">{{r.askQ}}</span><button type="button" id="{{r.askId}}" onClick="{{r.askKeep}}" style="height: 44px; padding: 0 16px; border-radius: 11px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep it</button><button type="button" onClick="{{r.askGo}}" style="height: 44px; padding: 0 16px; border-radius: 11px; border: 1px solid #F2B8B0; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer">{{r.askGoLabel}}</button></div></sc-if></div>
+                  <sc-if value="{{r.uploading}}" hint-placeholder-val="{{ false }}">
+                    <div class="ex" style="flex: 1 1 100%; display: flex; flex-direction: column; gap: 8px">
+                      <div style="display: flex; align-items: center; gap: 8px"><span style="flex: 1; min-width: 0; font-size: 13px; overflow-wrap: anywhere">{{r.upName}}</span><b style="font-size: 13px; font-variant-numeric: tabular-nums">{{r.upPct}}</b></div>
+                      <div role="progressbar" aria-label="Uploading {{r.upName}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{r.upNow}}" style="height: 6px; border-radius: 99px; background: #F3D9A6; overflow: hidden"><div class="bar" style="{{r.upBar}}"></div></div>
+                      <button type="button" id="{{r.upCancelId}}" onClick="{{r.upCancel}}" style="min-height: 44px; border-radius: 11px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">Cancel upload</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{r.upFailed}}" hint-placeholder-val="{{ false }}">
+                    <div role="alert" class="ex" style="flex: 1 1 100%; display: flex; flex-direction: column; gap: 8px">
+                      <span style="font-size: 13px; color: #934100"><b>{{r.upName}} didn't upload.</b> The connection dropped at {{r.upPct}}. Nothing was added.</span>
+                      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+                        <button type="button" id="{{r.upRetryId}}" onClick="{{r.upRetry}}" style="min-height: 48px; border-radius: 12px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Retry</button>
+                        <button type="button" onClick="{{r.upCancel}}" style="min-height: 48px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">Cancel</button>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{r.need}}" hint-placeholder-val="{{ false }}">
+                    <div class="ex" style="flex: 1 1 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+                      <button type="button" id="{{r.upId}}" onClick="{{r.upload}}" aria-label="Take a photo for {{r.label}}" style="height: 52px; border-radius: 12px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><dc-import name="Icon" glyph="camera" tone="white" size="20" hint-size="20px,20px"></dc-import>Take a photo</button>
+                      <button type="button" onClick="{{r.upload}}" aria-label="Choose a file for {{r.label}}" style="height: 52px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>Choose a file</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{r.hasMenu}}" hint-placeholder-val="{{ false }}">
+                    <div class="ex" style="flex: 1 1 100%; display: flex; gap: 8px">
+                      <sc-if value="{{r.isFile}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{r.view}}" aria-label="View {{r.fileName}}" style="flex: 1; height: 44px; border-radius: 11px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>View</button><button type="button" onClick="{{r.download}}" aria-label="Download {{r.fileName}}" style="flex: 1; height: 44px; border-radius: 11px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer"><dc-import name="Icon" glyph="download" tone="brand" size="18" hint-size="18px,18px"></dc-import>Download</button></sc-if>
+                      <sc-if value="{{r.isLink}}" hint-placeholder-val="{{ false }}"><a href="{{r.href}}" style="flex: 1; height: 44px; box-sizing: border-box; border-radius: 11px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{r.linkLabel}}</a></sc-if>
+                      <button type="button" id="{{r.mbId}}" onClick="{{r.toggleMenu}}" onKeyDown="{{r.menuBtnKey}}" aria-label="More actions for {{r.menuName}}" aria-haspopup="menu" aria-expanded="{{r.expanded}}" style="width: 44px; height: 44px; border-radius: 11px; border: 1px solid #7C8799; background: #F1F3F7; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="more" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{d.canAdd}}" hint-placeholder-val="{{ false }}">
+                <div onDragOver="{{d.over}}" onDragEnter="{{d.over}}" onDragLeave="{{d.leave}}" onDrop="{{d.drop}}" style="{{d.addRow}}">
+                  <button type="button" id="{{d.addId}}" onClick="{{d.add}}" style="height: 44px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: #2450B8; font: 600 14px Inter, sans-serif; cursor: pointer; white-space: nowrap">{{d.addLabel}}</button>
+                  <span style="{{d.addNoteStyle}}">{{d.addNote}}</span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+          <sc-if value="{{s.empty}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6C80; font-size: 13px">No other documents on this payment yet.</p></sc-if>
+          <sc-if value="{{s.isOther}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Document type</span><select id="mp-xtype" value="{{s.xVal}}" onChange="{{s.pickX}}" style="height: 48px; padding: 0 10px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{s.xTypes}}" as="o" hint-placeholder-count="4"><option value="{{o.k}}">{{o.label}}</option></sc-for></select></label>
+              <button type="button" id="mp-xup" onClick="{{s.uploadX}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="brand" size="18" hint-size="18px,18px"></dc-import>Upload another document</button>
+            </div>
+          </sc-if>
+        </section>
+      </sc-for>
+
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <button type="button" id="mp-link-btn" onClick="{{linkToggle}}" aria-expanded="{{linkExpanded}}" aria-controls="mp-link" style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 14px; border-radius: 12px; border: 1px solid #7C8799; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer; text-align: left"><span>Linked records <span style="color: #5F6C80; font-weight: 500; font-size: 13px">· {{linkSummary}}</span></span><span class="{{linkChev}}" aria-hidden="true"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="20" hint-size="20px,20px"></dc-import></span></button>
+        <sc-if value="{{linkOn}}" hint-placeholder-val="{{ true }}"><div id="mp-link" class="ex" style="display: flex; flex-direction: column; gap: 10px">
+        <sc-if value="{{sel.sqlOn}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+          <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="database" tone="{{sel.sqlTone}}" size="22" hint-size="22px,22px"></dc-import><h4 id="mp-sql-h" tabindex="-1" style="margin: 0; flex: 1; font-size: 14px; font-weight: 600">SQL Account</h4></div>
+          <sc-for list="{{sel.sqlRows}}" as="q" hint-placeholder-count="1">
+            <div style="display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere">{{q.text}}</span><button type="button" onClick="{{q.unlink}}" aria-label="Unlink {{q.no}}" style="height: 44px; padding: 0 14px; border-radius: 11px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer; flex: none">Unlink</button></div>
+          </sc-for>
+          <div style="color: #5F6C80; font-size: 13px">{{sel.sqlNote}}</div>
+        </div></sc-if>
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+          <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="bank" tone="{{sel.lineTone}}" size="22" hint-size="22px,22px"></dc-import><h4 style="margin: 0; flex: 1; font-size: 14px; font-weight: 600">Bank statement</h4></div>
+          <sc-for list="{{sel.bankRows}}" as="l" hint-placeholder-count="1">
+            <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere">{{l.text}}</div>
+          </sc-for>
+          <sc-if value="{{sel.bankSumOn}}" hint-placeholder-val="{{ false }}"><div style="display: flex; justify-content: space-between; gap: 10px; padding-top: 8px; border-top: 1px solid #EEF1F5; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums"><span>{{sel.bankSumLabel}}</span><span>{{sel.bankSum}}</span></div></sc-if>
+          <sc-for list="{{sel.bankNotes}}" as="n" hint-placeholder-count="1">
+            <div style="{{n.style}}">{{n.text}}</div>
+          </sc-for>
+          <sc-if value="{{sel.bankLink}}" hint-placeholder-val="{{ false }}"><a href="MobileDesktopOnly.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border-radius: 11px; border: 1px solid #D5DBE4; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="laptop" tone="muted" size="18" hint-size="18px,18px"></dc-import>Match more lines on a computer</a></sc-if>
+        </div></div></sc-if>
+      </section>
+
+      <form id="mp-form" onSubmit="{{sel.submit}}" style="display: flex; flex-direction: column; gap: 12px">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 600">Details</h3>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">{{sel.amountLabel}}</span><input id="mp-f-amount" type="text" inputmode="decimal" value="{{sel.v.amount}}" onChange="{{sel.on.amount}}" aria-invalid="{{sel.amtInvalid}}" aria-describedby="{{sel.amtDesc}}" style="height: 48px; padding: 0 14px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B; text-align: right; font-variant-numeric: tabular-nums"></label>
+        <sc-if value="{{sel.amtErrOn}}" hint-placeholder-val="{{ false }}"><p id="mp-f-amount-err" style="margin: -6px 0 0; color: #B0190F; font-size: 13px">{{sel.amtErr}}</p></sc-if>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">{{sel.paidField}}</span><input id="mp-f-paid" type="date" value="{{sel.v.paid}}" onChange="{{sel.on.paid}}" style="height: 48px; padding: 0 14px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">{{sel.acctLabel}}</span><select id="mp-f-acct" value="{{sel.v.acct}}" onChange="{{sel.on.acct}}" aria-describedby="mp-f-acct-hint" style="height: 48px; padding: 0 10px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{sel.acctOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.k}}">{{o.label}}</option></sc-for></select><span id="mp-f-acct-hint" style="color: #5F6C80; font-size: 12px">{{sel.acctHint}}</span></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Bank reference</span><input id="mp-f-bank" type="text" value="{{sel.v.bank}}" onChange="{{sel.on.bank}}" placeholder="From the bank slip" style="height: 48px; padding: 0 14px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">{{sel.sqlLabel}}</span><input id="mp-f-sql" type="text" value="{{sel.v.sql}}" onChange="{{sel.on.sql}}" placeholder="{{sel.sqlPh}}" style="height: 48px; padding: 0 14px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">e-Invoice UIN</span><input id="mp-f-einv" type="text" value="{{sel.v.einv}}" onChange="{{sel.on.einv}}" style="height: 48px; padding: 0 14px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B"></label>
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Notes</span><textarea id="mp-f-notes" rows="2" value="{{sel.v.notes}}" onChange="{{sel.on.notes}}" placeholder="e.g. why it was paid late" style="padding: 12px 14px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B; resize: vertical"></textarea></label>
+        <sc-if value="{{sel.part}}" hint-placeholder-val="{{ false }}">
+          <div style="{{sel.partBox}}">
+            <b style="font-variant-numeric: tabular-nums">{{sel.partTitle}}</b>
+            <p id="mp-part-note" style="{{sel.partNoteStyle}}">{{sel.partNote}}</p>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Why the rest isn't on the bank statement</span><input id="mp-f-diff" type="text" value="{{sel.v.diff}}" onChange="{{sel.on.diff}}" aria-describedby="mp-part-note" placeholder="e.g. balance paid in October" style="height: 48px; padding: 0 14px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"></label>
+          </div>
+        </sc-if>
+        <sc-if value="{{sel.estOn}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; border: 1px solid #E3E7ED; background: #F7F8FA"><span id="mp-est-note" style="font-size: 13px; color: #46546A">This amount is an estimate. If it is the real figure, confirm it. The SQL voucher or bank line also replaces it.</span><button type="button" id="mp-f-confirm" onClick="{{sel.confirmAmount}}" aria-describedby="mp-est-note" style="min-height: 48px; border-radius: 12px; border: 1px solid #8593A8; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Confirm this amount</button></div>
+        </sc-if>
+      </form>
+
+      <section style="display: flex; flex-direction: column; gap: 10px">
+        <button type="button" id="mp-hist-btn" onClick="{{histToggle}}" aria-expanded="{{histExpanded}}" aria-controls="mp-hist" style="min-height: 44px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-radius: 12px; border: 1px solid #7C8799; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span>History</span><span class="{{histChev}}" aria-hidden="true"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="20" hint-size="20px,20px"></dc-import></span></button>
+        <sc-if value="{{histOn}}" hint-placeholder-val="{{ false }}">
+          <div id="mp-hist" class="ex" style="display: flex; flex-direction: column; gap: 6px; padding: 0 4px">
+            <sc-for list="{{histRows}}" as="h" hint-placeholder-count="2"><div style="color: #46546A; font-size: 13px">{{h.text}}</div></sc-for>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+
+    <sc-if value="{{footOn}}" hint-placeholder-val="{{ false }}">
+    <div class="up" style="padding: 12px 16px 20px; border-top: 1px solid #EEF1F5">
+      <sc-if value="{{rmAsking}}" hint-placeholder-val="{{ false }}">
+        <div role="group" aria-labelledby="mp-rm-q" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <span id="mp-rm-q" style="flex: 1 1 100%; font-weight: 600">Remove this payment?</span>
+          <button type="button" id="mp-rm-no" onClick="{{rmKeep}}" style="flex: 1; height: 52px; border-radius: 14px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep it</button>
+          <button type="button" onClick="{{rmGo}}" style="flex: 1; height: 52px; border-radius: 14px; border: 1px solid #F2B8B0; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #B0190F; cursor: pointer">Remove</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{asking}}" hint-placeholder-val="{{ false }}">
+        <div role="group" aria-labelledby="mp-ask-q" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <span id="mp-ask-q" style="flex: 1 1 100%; font-weight: 600">Discard your changes?</span>
+          <button type="button" id="mp-keep" onClick="{{keepEditing}}" style="flex: 1; height: 52px; border-radius: 14px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+          <button type="button" onClick="{{discard}}" style="flex: 1; height: 52px; border-radius: 14px; border: 1px solid #F2B8B0; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #B0190F; cursor: pointer">Discard</button>
+        </div>
+      </sc-if>
+      <sc-if value="{{saveOn}}" hint-placeholder-val="{{ true }}"><button type="submit" form="mp-form" id="mp-save" aria-busy="{{saveBusy}}" disabled="{{saving}}" style="width: 100%; height: 52px; border-radius: 14px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 15px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Saving…</sc-if><sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}">Save details</sc-if></button></sc-if>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{menuOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{menuDimCls}}" onClick="{{closeMenu}}" aria-hidden="true" style="position: absolute; inset: 0; background: rgba(13, 27, 46, .4)"></div>
+      <div role="menu" class="{{menuCls}}" aria-label="{{menuTitle}}" onKeyDown="{{menuKey}}" onAnimationEnd="{{onMenuAnim}}" style="position: absolute; left: 8px; right: 8px; bottom: 12px; display: flex; flex-direction: column; gap: 8px">
+        <div style="background: #FFFFFF; border-radius: 16px; overflow: hidden; display: flex; flex-direction: column">
+          <span aria-hidden="true" style="padding: 12px 16px; text-align: center; color: #5F6C80; font-size: 13px; border-bottom: 1px solid #EEF1F5">{{menuTitle}}</span>
+          <sc-for list="{{menuItems}}" as="m" hint-placeholder-count="2">
+            <button type="button" role="menuitem" tabindex="-1" id="{{m.id}}" class="mp-row fr" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button>
+          </sc-for>
+        </div>
+        <button type="button" role="menuitem" tabindex="-1" id="{{cancelId}}" class="mp-row" onClick="{{closeMenu}}" style="height: 56px; border-radius: 16px; border: 0; background: #FFFFFF; color: #2450B8; font: 600 16px Inter, sans-serif; cursor: pointer">Cancel</button>
+      </div>
+    </sc-if>
+  </section>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: absolute; left: 0; right: 0; bottom: 92px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+    <sc-if value="{{toastOk}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastRelease}}" onTouchStart="{{toastHold}}" onTouchEnd="{{toastRelease}}" style="pointer-events: auto; max-width: 358px; padding: 12px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); display: flex; align-items: center; gap: 8px"><span style="flex: 1; min-width: 0">{{toastMsg}}</span><sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{doUndo}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin: -12px -8px -12px 0; padding: 0 14px; border: 0; background: transparent; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: underline; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div></sc-if>
+  </div>
+  <div role="alert" style="position: absolute; left: 0; right: 0; bottom: 92px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+    <sc-if value="{{toastBad}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastRelease}}" onTouchStart="{{toastHold}}" onTouchEnd="{{toastRelease}}" style="pointer-events: auto; max-width: 358px; padding: 12px 16px; border-radius: 12px; background: #B0190F; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); display: flex; flex-direction: column; gap: 8px"><span>{{toastMsg}}</span><button type="button" onClick="{{toastDismiss}}" style="align-self: flex-end; min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #FFFFFF; background: transparent; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Dismiss</button></div></sc-if>
+  </div>
+
+  <sc-if value="{{viewOn}}" hint-placeholder-val="{{ false }}">
+    <section id="mp-viewer" class="{{viewCls}}" role="dialog" aria-modal="true" aria-labelledby="mp-view-title" tabindex="-1" onKeyDown="{{viewKey}}" onAnimationEnd="{{onViewAnim}}" style="position: absolute; inset: 0; z-index: 90; background: #1B2536; color: #FFFFFF; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; gap: 4px; padding: 8px 8px 8px 16px; background: #0D1B2E">
+        <h2 id="mp-view-title" tabindex="-1" style="flex: 1; min-width: 0; margin: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere">{{viewName}}</h2>
+        <button type="button" id="mp-view-close" onClick="{{viewClose}}" aria-label="Close preview" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="nav" size="22" hint-size="22px,22px"></dc-import></button>
+      </div>
+      <sc-if value="{{viewShow}}" hint-placeholder-val="{{ true }}">
+        <div style="flex: 1; min-height: 0; overflow: auto; padding: 16px; display: flex; justify-content: center; align-items: flex-start">
+          <div role="img" aria-label="{{viewAlt}}" style="{{viewPage}}">
+            <div style="height: 14px; width: 40%; background: #C9D1DD; border-radius: 3px"></div>
+            <div style="height: 8px; width: 90%; background: #E3E7ED; border-radius: 3px"></div>
+            <div style="height: 8px; width: 80%; background: #E3E7ED; border-radius: 3px"></div>
+            <div style="height: 8px; width: 85%; background: #E3E7ED; border-radius: 3px"></div>
+            <div style="height: 60px; width: 100%; background: #F1F3F7; border-radius: 4px; margin-top: 8px"></div>
+            <div style="height: 8px; width: 70%; background: #E3E7ED; border-radius: 3px"></div>
+            <div style="height: 8px; width: 55%; background: #E3E7ED; border-radius: 3px"></div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; padding: 8px 8px 20px; background: #0D1B2E">
+          <button type="button" onClick="{{viewPrev}}" aria-label="Previous page" disabled="{{viewPrevOff}}" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; opacity: {{viewPrevOp}}"><dc-import name="Icon" glyph="chevronLeft" tone="nav" size="22" hint-size="22px,22px"></dc-import></button>
+          <span aria-live="polite" style="font-size: 13px; font-weight: 600">{{viewPageLabel}}</span>
+          <button type="button" onClick="{{viewNext}}" aria-label="Next page" disabled="{{viewNextOff}}" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; opacity: {{viewNextOp}}"><dc-import name="Icon" glyph="chevronRight" tone="nav" size="22" hint-size="22px,22px"></dc-import></button>
+          <button type="button" onClick="{{viewZoom}}" aria-label="{{viewZoomAria}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 1px solid #8DB0FA; border-radius: 12px; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="search" tone="nav" size="16" hint-size="16px,16px"></dc-import>{{viewZoomLabel}}</button>
+          <button type="button" onClick="{{viewDownload}}" aria-label="Download {{viewName}}" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="download" tone="nav" size="22" hint-size="22px,22px"></dc-import></button>
+        </div>
+      </sc-if>
+      <sc-if value="{{viewNo}}" hint-placeholder-val="{{ false }}">
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center">
+          <dc-import name="Icon" glyph="eyeOff" tone="nav" size="36" hint-size="36px,36px"></dc-import>
+          <b style="font-size: 17px">This file can't be shown here</b>
+          <p style="margin: 0; color: #C9D1DD; font-size: 14px; max-width: 32ch">{{viewNoWhy}}</p>
+          <div style="width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+            <button type="button" id="mp-view-dl" onClick="{{viewDownload}}" style="min-height: 52px; border-radius: 14px; border: 0; background: #FFFFFF; color: #0F1A2B; font: 600 15px Inter, sans-serif; cursor: pointer">Download</button>
+            <button type="button" onClick="{{viewReplace}}" style="min-height: 52px; border-radius: 14px; border: 1px solid #FFFFFF; background: transparent; color: #FFFFFF; font: 600 15px Inter, sans-serif; cursor: pointer">Replace</button>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"payment":{"editor":"enum","default":"electricity","options":["electricity","water","telco","contractor","rental","kwsp","perkeso","claim"],"section":"State to show"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State to show"},"upload":{"editor":"enum","default":"normal","options":["normal","uploading","failed","fails-first-try"],"section":"State to show"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { menu: null, menuClosing: false, closing: false, pillN: 0, files: {}, rm: {}, saved: {}, edits: {}, unlinked: {}, ask: false, cf: null, histOpen: false, rmAsk: false,
+      drag: null, fresh: null, xType: null, xTried: false, toast: null, err: {},
+      up: null, upTried: false, saving: false, linkOpen: null, viewer: null, viewClosing: false, vpage: 1, vzoom: 100, sheetDrag: null };
+  }
+  componentDidMount() {
+    this._mounted = true;
+    this.presetUpload();
+    const t = document.getElementById('mp-title');
+    if (t) t.focus({ preventScroll: true });
+  }
+  componentWillUnmount() { this._mounted = false; clearTimeout(this._t); clearTimeout(this._mt); clearTimeout(this._rt); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._ut); clearTimeout(this._sv); clearTimeout(this._vt); }
+  inSql() { return !(this.props && this.props.company === 'ai'); }
+  // the "upload" tweak starts the page in the middle of an upload, or after one failed
+  presetUpload() {
+    const u = this.props && this.props.upload;
+    if (u !== 'uploading' && u !== 'failed') return;
+    const s = this.model(this.state), d = s.req.find(x => !x.files.length && !x.ev) || s.req[0];
+    if (!d) return;
+    const tk = s.name + '|' + d.k, short = this.data().DT[d.k][1];
+    this.setState({ up: { tk, k: d.k, name: short + ' - ' + s.name + '.jpg', pct: 60, failed: u === 'failed' } }, () => { if (u === 'uploading') this.stepUp(); });
+  }
+  startUp(s, k) {
+    const tk = s.name + '|' + k, short = this.data().DT[k][1];
+    clearTimeout(this._ut);
+    this.setState({ up: { tk, k, name: this.freeName(s, k, short + ' - ' + s.name + '.jpg'), pct: 0, failed: false }, menu: null }, () => this.stepUp());
+  }
+  // a fake upload: 20% every quarter second; the "fails-first-try" tweak drops the connection once at 60%
+  stepUp() {
+    clearTimeout(this._ut);
+    this._ut = setTimeout(() => {
+      const u = this.state.up;
+      if (!u || u.failed) return;
+      const pct = u.pct + 20;
+      if (this.props && this.props.upload === 'fails-first-try' && !this.state.upTried && pct >= 60) { this._upFocus = ['mp-upretry-' + this.slug(u.tk)]; return this.setState({ up: { ...u, pct: 60, failed: true }, upTried: true }); }
+      if (pct >= 100) { this.setState({ up: null }); return this.addFiles(this.model(this.state), u.k, [u.name], { focus: true }); }
+      this.setState({ up: { ...u, pct } }, () => this.stepUp());
+    }, 260);
+  }
+  cancelUp(tk) { clearTimeout(this._ut); this._upFocus = ['mp-up-' + this.slug(tk), 'mp-title']; this.setState({ up: null, ...this.toastPart('Upload cancelled') }); }
+  retryUp() { const u = this.state.up; if (!u) return; this.setState({ up: { ...u, pct: 20, failed: false } }, () => this.stepUp()); }
+  openViewer(key, name) { this._viewOpener = document.activeElement; this.setState({ viewer: { key, name }, viewClosing: false, vpage: 1, vzoom: 100, menu: null }); }
+  closeViewer(after) {
+    if (!this.state.viewer || this.state.viewClosing) return;
+    this._viewAfter = after || null;
+    if (this.calm()) return this.finishViewer();
+    this.setState({ viewClosing: true });
+    clearTimeout(this._vt);
+    this._vt = setTimeout(() => this.finishViewer(), 400);
+  }
+  finishViewer() { clearTimeout(this._vt); const a = this._viewAfter || {}; this._viewAfter = null; if (this.state.viewer) this.setState({ viewer: null, viewClosing: false, ...a }); }
+  componentDidUpdate(prevProps, prev) {
+    const s = this.state;
+    if (prevProps && (prevProps.payment !== this.props.payment || prevProps.company !== this.props.company || prevProps.upload !== this.props.upload) && !this._resetting) {
+      this._resetting = true; clearTimeout(this._ut);
+      this.setState({ menu: null, menuClosing: false, ask: false, cf: null, histOpen: false, rmAsk: false, edits: {}, err: {}, drag: null, fresh: null, pillN: 0, xType: null, up: null, upTried: false, linkOpen: null, viewer: null, saving: false });
+      this._resetting = false;
+      this.presetUpload();
+      return;
+    }
+    if (!prev.viewer && s.viewer) { this.focusId('mp-view-title'); return; }
+    if (prev.viewer && !s.viewer && !this._upFocus) { const o = this._viewOpener; if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); return; }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+    if (!prev.menu && s.menu) this.focusId('mp-mi-' + s.menu + '-0');
+    if (prev.menu && !s.menu) { if (!this.focusId('mp-mb-' + prev.menu)) this.focusId('mp-title'); }
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  f2(n) { const s = Math.abs(n || 0).toFixed(2).split('.'); return s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + s[1]; }
+  dm(iso) { return iso ? +iso.slice(8, 10) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+iso.slice(5, 7) - 1] : ''; }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  // The samples are the same payments as the Company board (AISB, kept in SQL Account, today 18 Nov 2026).
+  data() {
+    if (this._d) return this._d;
+    const DT = { pv: ['Payment Voucher (SQL)', 'PV'], jv: ['Journal Voucher (SQL)', 'JV'], or: ['Official Receipt (SQL)', 'OR'],
+      invoice: ['Invoice / bill', 'Invoice'], bank: ['Bank receipt / transfer slip', 'Bank slip'], einvoice: ['e-Invoice (MyInvois)', 'e-Invoice'],
+      portal: ['Acknowledgement / portal bill', 'Acknowledgement'], claim: ['Claim form & receipts', 'Claim form'],
+      approval: ['Approval (signed / email)', 'Approval'], payroll: ['Payroll summary', 'Payroll summary'], payslip: ['Payslip', 'Payslips'], other: ['Other', 'Other'] };
+    const TY = { utility: ['Utility / telco', 'receipt', ['invoice', 'pv', 'bank']], other: ['Other payment', 'payment', ['invoice', 'pv', 'bank']],
+      statutory: ['Statutory (KWSP / PERKESO / LHDN)', 'vault', ['portal', 'pv', 'bank']], claim: ['Staff claim', 'receipt', ['claim', 'approval', 'pv', 'bank']],
+      receipt: ['Money received', 'coins', ['invoice', 'or', 'einvoice']] };
+    const LEGAL = '2026-11-15';
+    const PAY = {
+      electricity: { name: 'Electricity bill', type: 'utility', due: '2026-11-05', amt: 1150, est: true, payTo: 'TNB account 220014589031',
+        files: { invoice: [['TNB bill October 2026.pdf', '184 KB', '6 Nov, 09:12']] },
+        flag: { text: 'Waiting for Nov statement', tone: 'warn', hint: "Probably paid: the Nov bank statement isn't imported yet. Import it on the Bank statements page to confirm this payment." } },
+      contractor: { name: 'Contractor — field works', type: 'other', due: '2026-10-06', paid: '2026-10-06', amt: 24000, ref: 'DUITNOW 0610771', sqlRef: 'PV-1002',
+        sql: [['PV-1002', '6 Oct', 24000]], bank: [['6 Oct', -10000, 'DUITNOW TRF CONTRACTOR | FIELD WORKS | 0610771'], ['13 Oct', -8000, 'DUITNOW TRF CONTRACTOR | FIELD WORKS | 1310442']],
+        files: { invoice: [['Field Works invoice FW-0931.pdf', '310 KB', '6 Oct, 10:22']] }, payTo: 'MBB 562100984410 Field Works Sdn Bhd FW-2026-03', paidNote: 'From the bank line' },
+      rental: { name: 'Rental received', type: 'receipt', inflow: true, due: '2026-11-05', paid: '2026-11-03', amt: 2800, ref: 'IBG CR 031126', sqlRef: 'OR 2610-07',
+        sql: [['OR 2610-07', '3 Nov', 2800], ['IV-2610-031', '31 Oct', 2800, 'invoice']], files: { or: [['OR 2610-07 Rental.pdf', '64 KB', '3 Nov, 12:10']] }, paidNote: 'Entered by hand', cancelBy: 'CN-2611-002',
+        cancel: "The e-Invoice on IV-2610-031 was cancelled by CN-2611-002 (a refund or credit note), so it doesn't count. Upload the valid e-Invoice, or enter its UIN in Details below if it is in SQL." },
+      water: { name: 'Water bill', type: 'utility', due: '2026-11-08', paid: '2026-11-07', amt: 1100, est: true, ref: 'IBG 7720318', bank: [['7 Nov', -900, 'IBG DR WATER BOARD | 7720318']], files: {}, paidNote: 'From the bank line' },
+      telco: { name: 'Telco bill', type: 'utility', due: '2026-11-10', amt: 380,
+        flag: { text: 'Not on Nov statement', tone: 'warn', hint: 'The Nov statement is imported but no line matches this payment. Link its bank line or SQL voucher if it was paid.' } },
+      kwsp: { name: 'KWSP (EPF)', type: 'statutory', due: '2026-11-15', legal: LEGAL, amt: 11240 },
+      perkeso: { name: 'PERKESO (SOCSO & EIS)', type: 'statutory', due: '2026-11-15', legal: LEGAL, paid: '2026-11-17', amt: 1086.4, ref: 'FPX 1711093',
+        files: { portal: [['PERKESO acknowledgement October.pdf', '92 KB', '17 Nov, 15:02']], bank: [['PERKESO FPX receipt 17 Nov.pdf', '58 KB', '17 Nov, 15:03']] }, paidNote: 'Entered by hand' },
+      claim: { name: 'Oct 2026 Claims - Wei Ming', type: 'claim', due: '2026-11-14', amt: 486.5,
+        files: { claim: [['Claims Wei Ming October 2026.pdf', '420 KB', '12 Nov, 17:30']], approval: [['Approval - claims October.eml', '36 KB', '12 Nov, 17:31']] },
+        flag: { text: 'Waiting for SQL record', tone: 'warn', hint: 'Probably paid: the SQL entries imported go up to 12 Nov. Paste the latest SQL listing to record it.' } }
+    };
+    return (this._d = { DT, TY, PAY });
+  }
+  reqOf(r) { return this.data().TY[r.type][2].filter(k => this.inSql() || ['pv', 'jv', 'or'].indexOf(k) < 0); }
+  which() { const { PAY } = this.data(); const k = this.props && this.props.payment; return PAY[k] ? k : 'electricity'; }
+  // The payment as the app works it out: status words, documents (uploaded files and what SQL or the bank shows).
+  model(st) {
+    const { DT, TY, PAY } = this.data();
+    const f2 = n => this.f2(n), dm = d => this.dm(d);
+    const r = PAY[this.which()];
+    const sv = st.saved[r.name] || {};
+    const pick = (k, d) => (sv[k] !== undefined ? sv[k] : d);
+    const pre = r.pre && (r.sql || []).some(e => st.unlinked[r.name + '|' + e[0]]) ? r.pre : null;
+    const A0 = pre ? pre.amt : r.amt, P0 = pre ? pre.paid : r.paid;
+    const at = String(pick('amount', A0 == null ? '' : A0.toFixed(2))).replace(/,/g, '').trim();
+    const amt = at === '' || isNaN(parseFloat(at)) ? null : parseFloat(at);
+    const p = { r, name: r.name, inflow: !!r.inflow, amt, paid: pick('paid', P0 || ''), ref: pick('bank', r.ref || ''), sqlRef: pick('sql', r.sqlRef || ''),
+      einv: pick('einv', ''), acct: pick('acct', 'cur'), notes: pick('notes', ''), diff: pick('diff', ''),
+      est: !!r.est && !sv.confirmed && sv.amount === undefined };
+    p.sqlList = this.inSql() ? (r.sql || []).filter(e => !st.unlinked[r.name + '|' + e[0]]) : [];
+    p.bank = r.bank || [];
+    p.bankTotal = p.bank.length ? p.bank.reduce((a, l) => a + Math.abs(l[1]), 0) : null;
+    const files = k => [...((r.files || {})[k] || []), ...(st.files[r.name + '|' + k] || [])].filter(f => !st.rm[r.name + '|' + k + '|' + f[0]]);
+    const ev = k => {
+      if (k === 'pv' || k === 'or' || k === 'jv') { const e = p.sqlList.find(x => !x[3] && x[0].toUpperCase().indexOf(k.toUpperCase()) === 0); return e ? [e[0] + ' (print from SQL)', e[0]] : ['', '']; }
+      if (k === 'invoice' && p.inflow) { const e = p.sqlList.filter(x => x[3] === 'invoice').map(x => x[0]); return e.length ? ['Invoice ' + e.join(', ') + ' (print from SQL)', e.join(', ')] : ['', '']; }
+      if (k === 'bank' && p.bank.length) return ['on the ' + p.bank[0][0].split(' ')[1] + ' bank statement', 'Bank line'];
+      return ['', ''];
+    };
+    const req = this.reqOf(r);
+    p.req = req.map(k => ({ k, files: files(k), ev: ev(k)[0], cancel: k === 'einvoice' && p.sqlList.some(x => x[3] === 'invoice') ? r.cancel || '' : '' }));
+    p.extra = Object.keys(DT).filter(k => req.indexOf(k) < 0 && files(k).length).map(k => ({ k, files: files(k), ev: '', cancel: '' }));
+    p.missing = p.req.filter(d => !d.files.length && !d.ev).length;
+    p.gap = p.amt != null && p.bankTotal != null ? p.amt - p.bankTotal : 0;
+    p.part = !!p.paid && p.gap > 0.01 && !p.diff;
+    p.late = r.legal && p.paid && p.paid > r.legal ? 'Paid after legal deadline (' + dm(r.legal) + ')' : '';
+    p.lateHint = p.late ? 'Paid ' + dm(p.paid) + ', after the legal deadline of ' + dm(r.legal) + '. Keep any late-payment notice with this payment.' : '';
+    p.hint = '';
+    if (!p.paid) {
+      const fl = r.flag || (r.legal && r.legal < '2026-11-18'
+        ? { text: 'Past legal deadline (' + dm(r.legal) + ')', tone: 'bad', hint: 'Not recorded as paid by the legal deadline of ' + dm(r.legal) + '. Pay it now, or link its bank line or SQL voucher if it was paid; a late-payment charge may follow.' }
+        : { text: p.inflow ? 'Not received' : 'Not paid', tone: 'grey', hint: '' });
+      p.status = fl.text; p.tone = fl.tone; p.hint = fl.hint;
+    } else {
+      const n = p.missing, docs = n + ' doc' + (n > 1 ? 's' : '') + ' missing', of = 'RM ' + f2(p.bankTotal) + ' of ' + f2(p.amt);
+      if (p.part) { p.status = (p.inflow ? 'Part received · ' : 'Part paid · ') + of; p.tone = 'warn'; }
+      else if (n) { p.status = p.inflow ? 'Received ' + dm(p.paid) + ' · ' + docs : 'Paid · ' + docs; p.tone = 'warn'; }
+      else { p.status = p.inflow ? 'Received ' + dm(p.paid) : 'Complete'; p.tone = 'ok'; }
+    }
+    return p;
+  }
+  baseVals(p) { return { amount: p.amt == null ? '' : p.amt.toFixed(2), paid: p.paid, bank: p.ref, sql: p.sqlRef, einv: p.einv, acct: p.acct, notes: p.notes, diff: p.diff, confirm: false }; }
+  changes(p) {
+    const b = this.baseVals(p), e = this.state.edits, ch = {};
+    for (const k in e) {
+      let v = e[k];
+      if (k === 'amount') { const t = String(v).replace(/,/g, '').trim(); v = t === '' || isNaN(parseFloat(t)) ? '' : parseFloat(t).toFixed(2); }
+      else if (typeof v === 'string') v = v.trim();
+      if (k === 'confirm' ? v === true : String(v) !== String(b[k])) ch[k] = v;
+    }
+    return ch;
+  }
+  unsaved() { return Object.keys(this.changes(this.model(this.state))).length > 0; }
+  pillNext(next) {
+    const a = this.model(this.state), b = this.model({ ...this.state, ...next });
+    return a.status !== b.status ? this.state.pillN + 1 : this.state.pillN;
+  }
+  dismissToast() {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    if (!this.state.toast) return;
+    this.setState({ toast: { ...this.state.toast, out: true } });
+    this._to = setTimeout(() => this.setState({ toast: null }), 200);
+  }
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => {
+      if (!this.state.toast) return;
+      this.setState({ toast: { ...this.state.toast, out: true } });
+      this._to = setTimeout(() => this.setState({ toast: null }), 200);
+    }, ms || 6000);
+  }
+  toastPart(msg, bad, undo) {
+    this._undo = undo || null;
+    if (bad) { clearTimeout(this._tt); clearTimeout(this._to); } else this.startToast(undo ? 8000 : 6000);
+    return { toast: { msg, bad: !!bad, undo: !!undo, n: ((this.state.toast && this.state.toast.n) || 0) + 1 } };
+  }
+  freeName(p, k, base) {
+    const have = [...p.req, ...p.extra].filter(d => d.k === k).flatMap(d => d.files.map(f => f[0]));
+    let n = base, i = 2;
+    while (have.indexOf(n) >= 0) n = base.replace(/(\.[^.]+)$/, ' (' + (i++) + ')$1');
+    return n;
+  }
+  // Files picked or dropped on a document's row are filed as that document type, each as its own document.
+  addFiles(p, k, names, opt) {
+    const o = opt || {};
+    const okRe = /\.(pdf|png|jpe?g|xlsx|xls|ods|csv|docx?|txt|xml|eml|msg)$/i;
+    const good = names.filter(n => okRe.test(n)), bad = names.filter(n => !okRe.test(n));
+    const key = p.name + '|' + k;
+    const next = { drag: null, menu: null, menuClosing: false, ...(o.extra || {}) };
+    if (good.length) {
+      const rm = { ...this.state.rm };
+      for (const n of good) delete rm[key + '|' + n];
+      next.rm = rm;
+      next.files = { ...this.state.files, [key]: [...(this.state.files[key] || []), ...good.map(n => [n, '180 KB', 'just now'])] };
+      next.fresh = key + '|' + good[0];
+      next.pillN = this.pillNext(next);
+      if (o.focus) this._upFocus = ['mp-mb-' + this.slug(key + '|' + good[0])];
+    }
+    const why = bad.map(n => { const m = n.match(/\.[^.]+$/); return n + " wasn't added: " + (m ? m[0].toLowerCase() : 'This file type') + " isn't accepted. Upload a PDF, image, Excel, Word or email file."; });
+    const msg = bad.length ? (good.length ? 'Added ' + good.length + ' of ' + names.length + ' files. ' : '') + why.join(' ')
+      : good.length === 1 ? 'Added ' + good[0] : 'Added ' + good.length + ' files';
+    this.setState({ ...next, ...this.toastPart(msg, bad.length > 0) });
+  }
+  save() {
+    const p = this.model(this.state);
+    const ea = this.state.edits.amount;
+    if (ea !== undefined) {
+      const t = String(ea).trim();
+      if (t !== '' && !(/\d/.test(t) && /^-?(\d{1,3}(,\d{3})+|\d*)(\.\d{1,2})?$/.test(t))) {
+        this._upFocus = ['mp-f-amount'];
+        return this.setState({ err: { amount: 'Enter the amount as a number, like 1,150.00.' }, ...this.toastPart('The amount is not a number, so nothing was saved.', true) });
+      }
+    }
+    const ch = this.changes(p);
+    if (!Object.keys(ch).length) return this.setState({ edits: {}, ...this.toastPart('Nothing has changed.') });
+    const sv = { ...(this.state.saved[p.name] || {}) };
+    for (const k in ch) { if (k === 'confirm') sv.confirmed = true; else sv[k] = ch[k]; }
+    // Saving… for a moment, then the changed details are kept and a toast says so
+    if (this.state.saving) return;
+    this.setState({ saving: true });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => {
+      const next = { saved: { ...this.state.saved, [p.name]: sv }, edits: {}, saving: false };
+      next.pillN = this.pillNext(next);
+      this.setState({ ...next, ...this.toastPart('Details saved') });
+    }, 700);
+  }
+  // an estimate can only be confirmed, never switched on: one way, and the status words follow
+  confirmAmount() {
+    const p = this.model(this.state), sv = { ...(this.state.saved[p.name] || {}), confirmed: true };
+    const next = { saved: { ...this.state.saved, [p.name]: sv } };
+    next.pillN = this.pillNext(next);
+    this._upFocus = ['mp-f-amount', 'mp-title'];
+    this.setState({ ...next, ...this.toastPart('Amount confirmed') });
+  }
+  // the whole sheet: slide out, then follow the Close link (as tapping Close does); unsaved details ask first
+  closeSheet(force) {
+    if (this.state.closing) return;
+    if (!force && this.unsaved()) { this._upFocus = ['mp-keep']; this.setState({ ask: true, menu: null, menuClosing: false, cf: null }); return; }
+    if (this.calm()) return this.leave();
+    this.setState({ closing: true, ask: false });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.leave(), 400);
+  }
+  leave() {
+    clearTimeout(this._t);
+    const a = document.getElementById('mp-close');
+    if (a && a.click) { this._leaving = true; a.click(); this._leaving = false; }
+    // where the link does not move (while editing), slide the sheet back in
+    clearTimeout(this._rt);
+    this._rt = setTimeout(() => { if (this._mounted !== false && this.state.closing) this.setState({ closing: false }); }, 600);
+  }
+  // the action sheet: slide out, then apply what was picked
+  closeMenu(after) {
+    if (!this.state.menu || this.state.menuClosing) return;
+    this._after = after || null;
+    if (this.calm()) return this.finishMenu();
+    this.setState({ menuClosing: true });
+    clearTimeout(this._mt);
+    this._mt = setTimeout(() => this.finishMenu(), 400);
+  }
+  finishMenu() {
+    clearTimeout(this._mt);
+    const after = this._after || {};
+    this._after = null;
+    if (this.state.menu) { if (after.cf) this._upFocus = ['mp-cs-' + this.slug(after.cf.key)]; if (after.rmAsk) this._upFocus = ['mp-rm-no']; this.setState({ menu: null, menuClosing: false, ...after }); }
+  }
+  openMenu(k) { if (!this.state.menu) this.setState({ menu: k, menuClosing: false }); }
+  focusables(root) {
+    return root && root.querySelectorAll ? [...root.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')] : [];
+  }
+  renderVals() {
+    const { DT, TY } = this.data();
+    const f2 = n => this.f2(n), dm = d => this.dm(d);
+    const st = this.state, menu = st.menu;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', warn: 'background:#FEF1D6;color:#934100', bad: 'background:#FDE6E3;color:#B0190F', grey: 'background:#EEF1F5;color:#46546A' };
+    const pill = t => 'display:inline-flex;align-items:center;min-height:22px;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;transition:background-color .2s ease-out,color .2s ease-out;' + P[t];
+    const s = this.model(st), r = s.r;
+    const menus = {};
+    const dragOn = key => st.drag === key;
+    const dropFns = (key, k) => ({
+      over: e => { if (e && e.preventDefault) e.preventDefault(); if (e && e.stopPropagation) e.stopPropagation(); if (this.state.drag !== key) this.setState({ drag: key }); },
+      leave: e => { const to = e && e.relatedTarget; if (to && e.currentTarget && e.currentTarget.contains && e.currentTarget.contains(to)) return; if (this.state.drag === key) this.setState({ drag: null }); },
+      drop: e => {
+        if (e && e.preventDefault) e.preventDefault(); if (e && e.stopPropagation) e.stopPropagation();
+        const fl = e && e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files).map(f => f.name) : [];
+        this.addFiles(s, k, fl.length ? fl.map(n => this.freeName(s, k, n)) : [this.freeName(s, k, DT[k][1] + ' - ' + s.name + '.pdf')]);
+      }
+    });
+    const mkDoc = d => {
+      const [label, short] = DT[d.k];
+      const tk = s.name + '|' + d.k;
+      const addName = d.k === 'other' ? 'document' : label.split(' (')[0];
+      const mkRow = (kind, key, f) => {
+        const mk = this.slug(key), drag = dragOn(key);
+        const upOn = kind === 'need' && !!(st.up && st.up.tk === tk), uj = upOn ? st.up : null;
+        const newName = f ? this.freeName(s, d.k, short + ' - ' + s.name + '.pdf') : '';
+        const askId = 'mp-cs-' + mk, askQid = 'mp-cq-' + mk;
+        const cfOn = !!(st.cf && st.cf.key === key), cfKind = cfOn ? st.cf.kind : '';
+        const askFor = kind2 => this.closeMenu({ cf: { kind: kind2, key } });
+        const replaceIt = () => {
+          const rm = { ...this.state.rm }; delete rm[tk + '|' + newName]; rm[tk + '|' + f[0]] = true;
+          const next = { rm, files: { ...this.state.files, [tk]: [...(this.state.files[tk] || []), [newName, '180 KB', 'just now']] }, cf: null, fresh: tk + '|' + newName };
+          next.pillN = this.pillNext(next);
+          this._upFocus = ['mp-mb-' + this.slug(tk + '|' + newName), 'mp-title'];
+          this.setState({ ...next, ...this.toastPart('Replaced with ' + newName) });
+        };
+        const removeIt = () => {
+          const next = { rm: { ...this.state.rm, [tk + '|' + f[0]]: true }, cf: null };
+          next.pillN = this.pillNext(next);
+          this._upFocus = ['mp-add-' + this.slug(tk), 'mp-up-' + this.slug(tk), 'mp-mb-' + this.slug(tk), 'mp-title'];
+          const rk = tk + '|' + f[0];
+          this.setState({ ...next, ...this.toastPart('Removed ' + f[0], false, () => { this._upFocus = ['mp-mb-' + this.slug(rk)]; this.setState({ rm: { ...this.state.rm, [rk]: false } }); }) });
+        };
+        const copyIt = () => this.addFiles(s, d.k, [this.freeName(s, d.k, short + ' - ' + s.name + '.pdf')], { focus: true });
+        const row = danger => 'height:56px;border:0;border-top:1px solid #EEF1F5;background:#FFFFFF;font:500 16px Inter,sans-serif;cursor:pointer;color:' + (danger ? '#B0190F' : '#0F1A2B');
+        menus[mk] = { title: f ? f[0] : label + (kind === 'line' ? ' · shown by the bank line' : ' · shown by SQL'),
+          items: kind === 'file' ? [{ label: 'Replace file', style: row(false), act: () => askFor('replace') }, { label: 'Remove from payment', style: row(true), act: () => askFor('remove') }]
+            : [{ label: 'Upload a copy anyway', style: row(false), act: () => this.closeMenu() }] };
+        menus[mk].copy = copyIt;
+        const note = drag ? 'Drop to add it as ' + label
+          : kind === 'file' ? f[0] + ' · ' + f[1] + ' · uploaded ' + f[2]
+          : kind === 'need' ? (d.cancel ? 'e-Invoice cancelled by ' + r.cancelBy : 'Not uploaded') : d.ev;
+        return { label, note, hint: kind === 'need' && !drag ? d.cancel : '',
+          noteStyle: 'font-size:13px;overflow-wrap:anywhere;color:' + (drag ? '#2450B8;font-weight:600' : kind === 'need' ? '#934100' : kind === 'file' ? '#46546A' : '#0A6B3D'),
+          need: kind === 'need' && !upOn, uploading: upOn && !uj.failed, upFailed: upOn && uj.failed, upName: uj ? uj.name : '', upPct: uj ? uj.pct + '%' : '', upNow: uj ? uj.pct : 0,
+          upBar: 'height:100%;border-radius:99px;background:' + (uj && uj.failed ? '#C67A12' : '#2450B8') + ';width:' + (uj ? uj.pct : 0) + '%', upCancelId: 'mp-upcancel-' + this.slug(tk), upRetryId: 'mp-upretry-' + this.slug(tk),
+          upCancel: () => this.cancelUp(tk), upRetry: () => this.retryUp(),
+          view: () => this.openViewer(key, f ? f[0] : ''), download: () => this.setState({ ...this.toastPart('Downloaded ' + (f ? f[0] : 'file')) }),
+          isFile: kind === 'file', isLink: kind === 'line' || kind === 'sql', hasMenu: kind !== 'need',
+          fileName: f ? f[0] : '', menuName: f ? f[0] : label,
+          href: 'MobileDesktopOnly.dc.html', linkLabel: kind === 'line' ? 'View bank line' : 'View in SQL',
+          upId: 'mp-up-' + this.slug(tk),
+          upload: () => this.startUp(s, d.k),
+          expanded: menu === mk ? 'true' : 'false', mbId: 'mp-mb-' + mk,
+          toggleMenu: () => (menu === mk ? this.closeMenu() : this.openMenu(mk)),
+          menuBtnKey: e => { if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.openMenu(mk); } },
+          asking: cfOn, askId, askQid,
+          askQ: cfKind === 'replace' ? 'Replace "' + (f ? f[0] : '') + '" with "' + newName + '"? The old file is taken out of the audit pack.'
+            : 'Remove "' + (f ? f[0] : '') + '"? It is taken off here and left out of the audit pack; the file itself is kept on this PC.',
+          askGoLabel: cfKind === 'replace' ? 'Replace' : 'Remove',
+          askGo: () => { if (!f) return; if (cfKind === 'replace') replaceIt(); else removeIt(); },
+          askKeep: () => { this._upFocus = ['mp-mb-' + mk]; this.setState({ cf: null }); },
+          iconCls: st.fresh === key ? 'pop' : '',
+          glyph: kind === 'need' ? 'document' : kind === 'file' ? 'check' : kind === 'line' ? 'bank' : 'database', tone: kind === 'need' ? 'warn' : 'ok',
+          row: 'display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;transition:background-color .24s cubic-bezier(.22,1,.36,1),border-color .24s cubic-bezier(.22,1,.36,1);' +
+            (drag ? 'border:1px solid #2450B8;background:#F3F6FE;box-shadow:inset 0 0 0 1px #2450B8' : kind === 'need' ? 'border:1px solid #F3D9A6;background:#FFFBF2' : 'border:1px solid #E3E7ED;background:#FFFFFF'),
+          ...dropFns(key, d.k) };
+      };
+      const rows = d.files.length ? d.files.map(f => mkRow('file', tk + '|' + f[0], f))
+        : [mkRow(d.ev ? (d.k === 'bank' ? 'line' : 'sql') : 'need', tk, null)];
+      const addKey = tk + '|+', addDrag = dragOn(addKey);
+      return { rows, canAdd: d.files.length > 0, addId: 'mp-add-' + this.slug(tk), addLabel: '+ Add another ' + addName,
+        add: () => this.addFiles(s, d.k, [this.freeName(s, d.k, short + ' - ' + s.name + '.pdf')], { focus: true }),
+        addNote: addDrag ? 'Drop to add it as ' + label : '',
+        addNoteStyle: 'font-size:12px;' + (addDrag ? 'color:#2450B8;font-weight:600' : 'color:#5F6C80'),
+        addRow: 'display:flex;flex-wrap:wrap;align-items:center;gap:2px 10px;padding:2px 10px;border-radius:12px;transition:background-color .12s ease-out,border-color .12s ease-out;' +
+          (addDrag ? 'border:1.5px dashed #2450B8;background:#F3F6FE' : 'border:1.5px dashed #C3CCD9;background:#FAFBFC'),
+        ...dropFns(addKey, d.k) };
+    };
+    const req = this.reqOf(r);
+    const xKeys = Object.keys(DT).filter(k => req.indexOf(k) < 0);   // the app's own types (statement, reconciliation, SQL export) are never offered
+    const xVal = st.xType && xKeys.indexOf(st.xType) >= 0 ? st.xType : xKeys.indexOf('approval') >= 0 ? 'approval' : xKeys.indexOf('other') >= 0 ? 'other' : xKeys[0];
+    const noop = () => {};
+    const secs = [
+      { title: 'Required documents', docs: s.req.map(mkDoc), isOther: false, empty: false, xTypes: [], xVal: '', pickX: noop, uploadX: noop,
+        note: 'Tap Take a photo or Choose a file. A file added to a box sits beside the ones already there; Replace swaps one and Remove takes one off. A box ticked from SQL or the bank statement needs no upload, but can still take a copy.' },
+      { title: 'Other documents', docs: s.extra.map(mkDoc), isOther: true, empty: !s.extra.length, note: '',
+        xTypes: xKeys.map(k => ({ k, label: DT[k][0] })), xVal,
+        pickX: e => this.setState({ xType: e && e.target ? e.target.value : null }),
+        uploadX: () => {
+          const short = DT[xVal][1];
+          const names = this.state.xTried ? [this.freeName(s, xVal, short + ' - ' + s.name + '.pdf')]
+            : [this.freeName(s, xVal, short + ' 1.pdf'), this.freeName(s, xVal, short + ' 2.pdf'), 'scan.zip'];
+          this.addFiles(s, xVal, names, { focus: true, extra: { xTried: true } });
+        } }
+    ];
+    menus.pay = { title: s.name, items: [{ label: 'Remove this payment', style: 'height:56px;border:0;border-top:1px solid #EEF1F5;background:#FFFFFF;font:500 16px Inter,sans-serif;cursor:pointer;color:#B0190F', act: () => this.closeMenu({ rmAsk: true }) }] };
+    // the action sheet
+    const mk = menu && menus[menu] ? menu : null;
+    const M = mk ? menus[mk] : { title: '', items: [] };
+    const menuItems = M.items.map((it, i) => ({ label: it.label, style: it.style, id: 'mp-mi-' + (mk || 'x') + '-' + i,
+      pick: () => (it.label === 'Upload a copy anyway' ? this.closeMenu({}) : it.act()) }));
+    const cancelId = 'mp-mi-' + (mk || 'x') + '-' + menuItems.length;
+    const close = () => this.closeMenu();
+    // Upload a copy anyway: slide the menu away, then file the copy
+    if (mk && menuItems.length === 1 && M.items[0].label === 'Upload a copy anyway') menuItems[0].pick = () => { this.closeMenu(); M.copy(); };
+    const menuKey = e => {
+      const items = e.currentTarget && e.currentTarget.querySelectorAll ? [...e.currentTarget.querySelectorAll('[role="menuitem"]')] : [];
+      const at = items.indexOf(document.activeElement);
+      const go = i => { e.preventDefault(); const el = items[(i + items.length) % items.length]; if (el) el.focus(); };
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+      else if (e.key === 'Tab') { e.preventDefault(); e.stopPropagation(); close(); }
+      else if (!items.length) return;
+      else if (e.key === 'ArrowDown') go(at + 1);
+      else if (e.key === 'ArrowUp') go(at < 0 ? items.length - 1 : at - 1);
+      else if (e.key === 'Home') go(0);
+      else if (e.key === 'End') go(items.length - 1);
+    };
+    const dlgKey = e => {
+      if (e.key === 'Escape') {
+        e.stopPropagation(); e.preventDefault();
+        if (this.state.viewer) this.closeViewer();
+        else if (this.state.rmAsk) { this._upFocus = ['mp-mb-pay']; this.setState({ rmAsk: false }); }
+        else if (this.state.menu) close();
+        else if (this.state.cf) { this._upFocus = ['mp-mb-' + this.slug(this.state.cf.key)]; this.setState({ cf: null }); }
+        else if (this.state.ask) { this._upFocus = ['mp-f-amount', 'mp-title']; this.setState({ ask: false }); }
+        else this.closeSheet();
+      } else if (e.key === 'Tab') {
+        const f = this.focusables(e.currentTarget);
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1], here = document.activeElement;
+        if (e.shiftKey && (here === first || here === e.currentTarget || !f.includes(here))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (here === last || !f.includes(here))) { e.preventDefault(); first.focus(); }
+      }
+    };
+    const vw = st.viewer, vShow = !!vw && /.(pdf|png|jpe?g)$/i.test(vw.name);
+    const vNoWhy = !vw ? '' : /.(eml|msg)$/i.test(vw.name) ? 'Emails open in their own program. Download it to read it, or replace it with a PDF.' : /.(xlsx?|ods|csv)$/i.test(vw.name) ? 'Spreadsheets open in their own program. Download it to read it, or replace it with a PDF.' : 'This kind of file opens in its own program. Download it to read it, or replace it.';
+    const viewKey = e => {
+      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); this.closeViewer(); }
+      else if (e.key === 'Tab') {
+        const fs = this.focusables(e.currentTarget);
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement;
+        if (e.shiftKey && (at === first || at === e.currentTarget || !fs.includes(at))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !fs.includes(at))) { e.preventDefault(); first.focus(); }
+      }
+    };
+    const dirty = this.unsaved();
+    // the details
+    const base = this.baseVals(s), ed = st.edits;
+    const val = k => (ed[k] !== undefined ? ed[k] : base[k]);
+    const set = k => e => { const t = e && e.target; const v = k === 'confirm' ? !!(t && t.checked) : t ? t.value : ''; this.setState({ edits: { ...this.state.edits, [k]: v }, err: k === 'amount' ? {} : this.state.err }); };
+    const v = {}, on = {};
+    for (const k of ['amount', 'paid', 'bank', 'sql', 'einv', 'acct', 'notes', 'diff', 'confirm']) { v[k] = val(k); on[k] = set(k); }
+    const gapOn = s.gap > 0.01;
+    const bankNotes = [];
+    const muted = 'color:#5F6C80;font-size:13px';
+    if (!s.bank.length) bankNotes.push({ text: s.inflow ? 'No bank credit matched to this yet.' : 'Not matched to a bank statement line yet.', style: muted });
+    if (s.bankTotal != null && s.amt != null && s.bankTotal - s.amt > 0.01) bankNotes.push({ text: 'The bank lines add up to RM ' + f2(s.bankTotal) + ', RM ' + f2(s.bankTotal - s.amt) + ' more than the amount.', style: 'color:#934100;font-size:13px' });
+    if (s.est && !s.sqlList.length && s.bankTotal != null && s.amt - s.bankTotal > 0.01) bankNotes.push({ text: 'Estimated at RM ' + f2(s.amt) + '; the bank lines linked so far add up to RM ' + f2(s.bankTotal) + '. If more was sent, link the rest on the Bank statements page. If not, confirm the amount in Details below; until then the budget counts the estimate.', style: 'color:#934100;font-size:13px' });
+    const IN_SQL = this.inSql();   // AISB is kept in SQL Account; a company that isn't (the "company" tweak: ai) gets "Record ref", no SQL card and no SQL documents
+    const coName = IN_SQL ? 'AISB' : 'Agrinexus International';
+    const ACCTS = IN_SQL ? [['cur', 'Maybank current'], ['sav', 'Maybank savings']] : [['cur', 'CIMB current']];
+    const acctName = (ACCTS.find(a => a[0] === s.acct) || ACCTS[0])[1];
+    const nLinks = s.sqlList.length + s.bank.length;
+    const linkOpen = st.linkOpen === null ? nLinks > 0 : st.linkOpen;
+    const amtErr = (st.err && st.err.amount) || '';
+    const sel = {
+      name: s.name, status: s.status, glyph: TY[r.type][1],
+      eyebrow: coName + ' · ' + TY[r.type][0] + ' · due ' + dm(r.due) + ' 2026 · ' + acctName,
+      pillStyle: pill(s.tone), pillCls: st.pillN ? (s.tone === 'ok' ? 'ok' : 'swap') + (st.pillN % 2 ? 'A' : 'B') : '',
+      est: s.est, late: s.late, latePill: pill('bad'), hint: s.late ? s.lateHint : s.hint, payTo: r.payTo || '',
+      amount: s.amt == null ? '—' : (s.inflow ? '+ RM ' : 'RM ') + f2(s.amt),
+      amountNote: s.est ? 'Estimate. Planned figure; the SQL voucher or bank line replaces it.' : gapOn ? 'RM ' + f2(s.bankTotal) + ' on the bank statement' : s.inflow ? 'Money in' : 'Money out',
+      paidField: s.inflow ? 'Received on' : 'Paid on',
+      paidLabel: s.paid ? dm(s.paid) + ' 2026' : s.inflow ? 'Not received yet' : 'Not paid yet',
+      paidNote: s.paid ? (s.paid === r.paid ? r.paidNote || 'Entered by hand' : 'Entered by hand') : 'Due ' + dm(r.due),
+      amountLabel: 'Amount (MYR)',
+      sqlLabel: IN_SQL ? (s.inflow ? 'SQL OR no.' : 'SQL PV / JV no.') : 'Record ref',
+      sqlPh: IN_SQL ? (s.inflow ? 'e.g. OR 2611-02' : 'e.g. PV2611-003') : '',
+      v, on, secs,
+      amtErrOn: !!amtErr, amtErr, amtInvalid: amtErr ? 'true' : 'false', amtDesc: amtErr ? 'mp-f-amount-err' : '',
+      submit: e => { if (e && e.preventDefault) e.preventDefault(); this.save(); },
+      part: gapOn,
+      partTitle: 'Part paid: RM ' + f2(s.bankTotal) + ' of ' + f2(s.amt),
+      partNote: s.diff ? 'The difference is noted, so this payment counts as paid.' : 'RM ' + f2(s.gap) + " isn't on the bank statement yet. Match the rest on the Bank statements page, or note why below.",
+      partNoteStyle: 'margin:0;font-size:13px;color:' + (s.diff ? '#0A6B3D' : '#934100'),
+      partBox: 'display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:12px;' + (s.diff ? 'border:1px solid #BFE8D0;background:#F3FBF6' : 'border:1px solid #F3D9A6;background:#FFFBF2'),
+      estOn: s.est, confirmAmount: () => this.confirmAmount(),
+      sqlOn: IN_SQL, acctLabel: s.inflow ? 'Bank account (paid into)' : 'Bank account (pay from)', acctOpts: ACCTS.map(a => ({ k: a[0], label: a[1] })),
+      acctHint: s.inflow ? 'The account the money comes into.' : 'The account the money goes out from.',
+      bankSumOn: s.bank.length > 1, bankSumLabel: s.bank.length + ' lines add up to', bankSum: s.bankTotal == null ? '' : 'RM ' + f2(s.bankTotal) + (gapOn ? ' of ' + f2(s.amt) : ''), bankLink: gapOn,
+      sqlTone: s.sqlList.length ? 'brand' : 'muted',
+      sqlRows: s.sqlList.map(e => ({ no: e[0], text: e[0] + (e[3] === 'invoice' ? ' (invoice)' : '') + ' · ' + e[1] + ' · RM ' + f2(e[2]),
+        unlink: () => {
+          const next = { unlinked: { ...this.state.unlinked, [s.name + '|' + e[0]]: true } };
+          next.pillN = this.pillNext(next);
+          this._upFocus = ['mp-sql-h'];
+          this.setState({ ...next, ...this.toastPart(e[0] + ' unlinked from ' + s.name + "; it's back under SQL entries not linked") });
+        } })),
+      sqlNote: s.sqlList.length ? 'Linked by mistake? Unlink puts the voucher back under SQL entries not linked, and the amount and paid date back to what they were.' : 'No SQL voucher linked yet.',
+      lineTone: s.bank.length ? 'brand' : 'muted',
+      bankRows: s.bank.map(l => ({ text: l[0] + ' · ' + ((l[1] > 0) === !s.inflow ? '−' : '') + 'RM ' + f2(Math.abs(l[1])) + ' · ' + l[2].split(' | ').slice(0, 2).join(' | ') })),
+      bankNotes
+    };
+    const hasDocs = [...s.req, ...s.extra].some(d => d.files.length > 0);
+    const toast = st.toast;
+    return {
+      sel,
+      menuOn: !!mk, menuItems, closeMenu: close, cancelId, menuKey, menuTitle: M.title,
+      menuCls: st.menuClosing ? 'sh-out' : 'sh-in',
+      menuDimCls: st.menuClosing ? 'dim-out' : 'dim-in',
+      onMenuAnim: e => { if (this.state.menuClosing && e.target === e.currentTarget) this.finishMenu(); },
+      sheetCls: st.closing ? 'sh-out' : 'sh-in',
+      dimCls: st.closing ? 'dim-out' : 'dim-in',
+      onSheetAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.leave(); },
+      closeSheet: () => (this.state.menu ? close() : this.closeSheet()),
+      closeLink: e => { if (!this._leaving && !this.state.closing) { if (e && e.preventDefault) e.preventDefault(); this.closeSheet(); } },
+      dlgKey,
+      histOn: st.histOpen, histExpanded: st.histOpen ? 'true' : 'false',
+      histChev: st.histOpen ? 'chev on' : 'chev',
+      linkOn: linkOpen, linkExpanded: linkOpen ? 'true' : 'false', linkChev: linkOpen ? 'chev on' : 'chev', linkToggle: () => this.setState({ linkOpen: !linkOpen }),
+      linkSummary: nLinks ? [s.sqlList.length ? s.sqlList.length + (s.sqlList.length === 1 ? ' voucher' : ' vouchers') : '', s.bank.length ? s.bank.length + (s.bank.length === 1 ? ' bank line' : ' bank lines') : ''].filter(Boolean).join(', ') : 'none yet',
+      histToggle: () => this.setState({ histOpen: !this.state.histOpen }),
+      histRows: [{ text: 'Payment created, due ' + dm(r.due) + ' 2026' }].concat(st.saved[s.name] ? [{ text: 'Details edited in this session' }] : []),
+      payMenuToggle: () => (menu === 'pay' ? close() : this.openMenu('pay')),
+      payMenuKey: e => { if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.openMenu('pay'); } },
+      payExpanded: menu === 'pay' ? 'true' : 'false',
+      rmAsking: st.rmAsk, rmKeep: () => { this._upFocus = ['mp-mb-pay']; this.setState({ rmAsk: false }); },
+      rmGo: () => {
+        if (hasDocs) return this.setState({ rmAsk: false, ...this.toastPart("This payment has documents attached, so it can't be removed. Remove its documents first.", true) });
+        this.setState({ rmAsk: false, ...this.toastPart('Payment removed') });
+        this.closeSheet(true);
+      },
+      asking: st.ask,
+      footOn: st.ask || st.rmAsk || dirty || st.saving, saveOn: !st.ask && !st.rmAsk, saving: st.saving, notSaving: !st.saving, saveBusy: st.saving ? 'true' : 'false',
+      wrapStyle: 'position:absolute;left:0;right:0;bottom:0;height:760px;transform:translateY(' + (st.sheetDrag ? st.sheetDrag.dy : 0) + 'px);' + (st.sheetDrag ? '' : 'transition:transform .22s cubic-bezier(.22,1,.36,1)'),
+      dragDown: e => { if (this.state.closing) return; const t = e && e.currentTarget; if (t && t.setPointerCapture) { try { t.setPointerCapture(e.pointerId); } catch (x) {} } this.setState({ sheetDrag: { y0: e ? e.clientY : 0, dy: 0 } }); },
+      dragMove: e => { const g = this.state.sheetDrag; if (g) this.setState({ sheetDrag: { ...g, dy: Math.max(0, (e ? e.clientY : 0) - g.y0) } }); },
+      dragUp: () => { const g = this.state.sheetDrag; if (!g) return; this.setState({ sheetDrag: null }); if (g.dy > 253) this.closeSheet(); },
+      toastUndo: !!toast && !!toast.undo, doUndo: () => { const u = this._undo; this._undo = null; clearTimeout(this._tt); clearTimeout(this._to); if (u) u(); this.setState({ toast: null }); },
+      viewOn: !!st.viewer, viewCls: st.viewClosing ? 'sh-out' : 'sh-in', onViewAnim: e => { if (this.state.viewClosing && e.target === e.currentTarget) this.finishViewer(); },
+      viewName: vw ? vw.name : '', viewShow: vShow, viewNo: !!vw && !vShow, viewNoWhy: vNoWhy, viewAlt: vw ? vw.name + ', page ' + st.vpage + ' of 2' : '',
+      viewPage: 'width:' + (st.vzoom === 150 ? 520 : 340) + 'px;flex:none;aspect-ratio:1 / 1.41;background:#FFFFFF;border-radius:4px;padding:28px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;transition:width .24s cubic-bezier(.22,1,.36,1)',
+      viewPageLabel: 'Page ' + st.vpage + ' of 2', viewPrevOff: st.vpage <= 1, viewNextOff: st.vpage >= 2, viewPrevOp: st.vpage <= 1 ? '.4' : '1', viewNextOp: st.vpage >= 2 ? '.4' : '1',
+      viewPrev: () => this.setState({ vpage: 1 }), viewNext: () => this.setState({ vpage: 2 }),
+      viewZoom: () => this.setState({ vzoom: st.vzoom === 150 ? 100 : 150 }), viewZoomLabel: st.vzoom === 150 ? '150%' : 'Fit width', viewZoomAria: st.vzoom === 150 ? 'Zoom out to fit the width' : 'Zoom in to 150%',
+      viewClose: () => this.closeViewer(), viewKey,
+      viewDownload: () => this.setState({ ...this.toastPart('Downloaded ' + (vw ? vw.name : 'file')) }),
+      viewReplace: () => { if (vw) { this._upFocus = ['mp-cs-' + this.slug(vw.key)]; this.closeViewer({ cf: { kind: 'replace', key: vw.key } }); } },
+      asking2: false,
+      keepEditing: () => { this._upFocus = ['mp-keep']; this.setState({ ask: false }); this.focusId('mp-f-amount'); },
+      discard: () => { this.setState({ edits: {}, err: {}, ask: false }); this.closeSheet(true); },
+      toastOk: !!toast && !toast.bad, toastBad: !!toast && toast.bad, toastMsg: toast ? toast.msg : '', toastCls: toast && toast.out ? 'tOut' : toast && toast.n % 2 ? 'tA' : 'tB',
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); if (this.state.toast && this.state.toast.out) this.setState({ toast: { ...this.state.toast, out: false } }); },
+      toastRelease: () => { if (this.state.toast && !this.state.toast.bad) this.startToast(); },
+      toastDismiss: () => this.dismissToast()
+    };
+  }
+}
+</script>
+</body>
+</html>

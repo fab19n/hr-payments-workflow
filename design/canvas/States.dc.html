@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>States · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{filter:brightness(.92)}
+.hs:hover{background:#F0F3F8 !important}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+@media (prefers-reduced-motion: reduce){.sk{animation:none}}
+/* motion and focus base */
+.hb,.hs{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.tb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.st-tout{animation:toastOut .18s cubic-bezier(.22,1,.36,1) both}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+/* dialog */
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.st-modal{position:fixed !important;inset:0;margin:auto;width:440px;height:fit-content;z-index:51}
+/* busy button */
+@keyframes spin{to{transform:rotate(360deg)}}
+.st-spin{animation:spin .7s linear infinite}
+button[aria-busy="true"]{cursor:progress !important}
+/* confirm cards */
+.plate{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.plate.brand{background:#EAF0FD}.plate.warn{background:#FEF1D6}.plate.bad{background:#FDE6E3}
+.okb.brand{background:#2450B8}.okb.bad{background:#B0190F}
+.okb.bad:hover{filter:none;background:#8E1A10}.okb.brand:hover{filter:none;background:#1D419A}
+.stage{background:rgba(13,27,46,.45);border-radius:18px;padding:16px;min-height:290px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center}
+.cfm{position:relative;background:#FFFFFF;border-radius:16px;box-shadow:0 16px 40px rgba(13,27,46,.18);padding:22px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box}
+.dz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:20px 16px;border-radius:12px;box-sizing:border-box;min-height:150px;transition:background-color .12s ease-out,border-color .12s ease-out}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 5400px; box-sizing: border-box; padding: 44px 56px; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; gap: 36px">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+    <div><span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #2450B8">Every page has these</span><h1 style="margin: 4px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px; font-weight: 600">Empty, error and confirm states</h1></div>
+    <p style="margin: 0; max-width: 560px; color: #46546A">Empty states say what to do next. Errors say what went wrong and offer a way out. A confirm names exactly what will change, and whether it can be undone. The ones with buttons, fields and timers here really work: try them. Copies that only show a state are not read out when the board opens; on the page they are.</p>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Empty and error pages</h2><span style="color: #5F6C80; font-size: 12px">A page with nothing to show says why, and gives one clear next step.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · month not set up</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="calendar" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">November 2026 isn't set up yet</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Setting it up adds the month's recurring payments and checklist. Months set up: September, October. The same card shows on Budget and Recurring.</p>
+          <button type="button" class="hb" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Set up this month</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · no payments yet</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="payment" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No payments this month yet</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Add one by hand, or set up recurring payments so each month fills itself.</p>
+          <div style="display: flex; gap: 8px"><button type="button" class="hb" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Add a payment</button><a href="Recurring.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box">Recurring</a></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Error · page couldn't load</span>
+        <div role="alert" aria-live="off" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">The records folder C:\HR-Records can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+          <div style="display: flex; gap: 8px"><button type="button" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button><button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Copy details</button></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · no statement yet (Bank statements)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="bank" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No statement for October yet</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Import the Maybank current statement for October to start matching its lines to payments.</p>
+          <button type="button" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="white" size="16" hint-size="16px,16px"></dc-import>Import a statement</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Page not used for this company · SQL import for AI</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="database" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">SQL import isn't used for AI</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Agrinexus International is Kept here, so there is nothing to import for it. Switch to a company that is Kept in SQL Account to import SQL listings.</p>
+          <a href="Sql.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box">Go to AISB</a>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · no recurring payments yet</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="recurring" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No recurring payments yet</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Add the payments that repeat every month, such as rent and salaries. Setting up a month then adds them for you.</p>
+          <button type="button" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="16" hint-size="16px,16px"></dc-import>Add a recurring payment</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · filtered to nothing (type to try)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box">
+          <label for="st-q" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Search payments</span>
+            <input id="st-q" type="search" value="{{q}}" onChange="{{onQ}}" autoComplete="off" style="height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box; width: 100%">
+          </label>
+          <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{qNote}}</div>
+          <sc-if value="{{qRows}}" hint-placeholder-val="{{ false }}">
+            <div style="border: 1px solid #E3E7ED; border-radius: 10px; overflow: hidden; font-size: 13px">
+              <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+                <div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #EEF1F5"><span>{{r.name}}</span><span style="font-variant-numeric: tabular-nums">{{r.amt}}</span></div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{qNone}}" hint-placeholder-val="{{ true }}">
+            <div class="rv" style="display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 22px 12px; border-radius: 12px; background: #F7F8FA">
+              <span style="width: 48px; height: 48px; border-radius: 14px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="search" tone="muted" size="26" hint-size="26px,26px"></dc-import></span>
+              <b style="font-size: 15px">{{qTitle}}</b>
+              <span style="color: #46546A; font-size: 13px">Check the spelling, or clear the filter to see all 3 payments this month.</span>
+              <button type="button" id="st-qclear" class="hs" onClick="{{clearQ}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear filter</button>
+            </div>
+          </sc-if>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">One block for every list and table: lines, SQL entries, recurring, Setup lists, the Audit trail. The filter stays visible above it.</span>
+      </div>
+
+      <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Error · HR Payments isn't running (the page is open, the app has stopped)</span>
+        <div role="alert" aria-live="off" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 28px; display: flex; gap: 28px; align-items: center; box-sizing: border-box">
+          <span style="width: 84px; height: 84px; border-radius: 24px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="laptop" tone="warn" size="44" hint-size="44px,44px"></dc-import></span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">HR Payments isn't running</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px">The black window that runs it was closed, so this page can't reach your records. Nothing you typed since then was sent or saved.</p>
+            <ol style="margin: 0; padding-left: 20px; color: #0F1A2B; font-size: 13px; display: flex; flex-direction: column; gap: 4px"><li>Double-click <b>Start HR Payments.bat</b>.</li><li>Keep the black window open while you work.</li><li>Come back here and press Try again.</li></ol>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+              <button type="button" id="st-retry" class="hb" onClick="{{runRetry}}" disabled="{{retry}}" aria-busy="{{retryAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 168px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">
+                <sc-if value="{{retry}}" hint-placeholder-val="{{ false }}"><span class="st-spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Looking for it…</sc-if>
+                <sc-if value="{{retryIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</sc-if>
+              </button>
+              <button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Copy details</button>
+              <span role="status" style="flex: 1 1 200px; font-size: 12px; color: #5F6C80">{{retryNote}}</span>
+            </div>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">Replaces the blank page and the browser's own "Failed to fetch". When the page itself can't be opened because the app is off, only the browser can answer; the README's "Start HR Payments.bat" line says what to do.</span>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="st-new-h" style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 id="st-new-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Company, access and approvals</h2><span style="color: #5F6C80; font-size: 12px">What a page says when it is not used for the company in the top bar, when the person lacks the right, or when a list has nothing yet.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Page not used for this company · Payroll run tabs (AIL)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; min-height: 260px">
+          <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="payroll" tone="brand" size="22" hint-size="22px,22px"></dc-import><b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px">HR › Payroll · Agrinexus Logistics</b></div>
+          <div role="tablist" aria-label="Payroll pages" style="display: flex; gap: 4px; border-bottom: 1px solid #E3E7ED">
+            <button type="button" role="tab" id="st-pt-check" aria-selected="true" aria-controls="st-pt-panel" tabindex="0" style="height: 40px; padding: 0 14px; border: 0; border-bottom: 2px solid #2450B8; background: transparent; font: 600 14px Inter, sans-serif; color: #1D419A; cursor: pointer; margin-bottom: -1px">Workbook check</button>
+          </div>
+          <div role="tabpanel" id="st-pt-panel" aria-labelledby="st-pt-check" tabindex="0" style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: #F7F8FA"><dc-import name="Icon" glyph="document" tone="muted" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px; color: #46546A"><b style="color: #0F1A2B">No check yet.</b> Check the payroll workbook before you pay. Every company can use this.</span></div>
+            <div><button type="button" class="hb" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Check a workbook</button></div>
+          </div>
+          <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C9D7F7"><dc-import name="Icon" glyph="sliders" tone="brand" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px; color: #1D2F5C">Run, Totals, Statutory files, Leaver, Parallel run and Opening year to date aren't used for Agrinexus Logistics, because “Runs payroll in this app” is off. <a href="SetupCompanies.dc.html" style="color: #1D419A; font-weight: 600">Setup › Companies</a> turns it on.</span></div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">The Workbook check is always offered. The run tabs appear only where the setting is on (for example AISB). Nothing here is fixed to one company.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">No access (later, with logins)</span>
+        <div role="alert" aria-live="off" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="lock" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">You don't have access to HR</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Marcus Teoh has Payments and Accounting. Someone with the Admin right can add HR on Users and access.</p>
+          <a href="Main.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box">Go to Overview</a>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">New work, with logins. Until then the app runs on this PC and shows every page to whoever is at the keyboard. Pages without the right are left out of the menu, so this only shows when someone opens an old link.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · Add your staff to see this (Overview HR card)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box; min-height: 260px">
+          <div style="display: flex; align-items: center; gap: 10px"><span style="width: 32px; height: 32px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="leave" tone="brand" size="18" hint-size="18px,18px"></dc-import></span><b style="font-size: 14px">On leave</b></div>
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 14px 10px; border-radius: 12px; background: #F7F8FA">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="staff" tone="muted" size="26" hint-size="26px,26px"></dc-import></span>
+            <b style="font-size: 15px">Add your staff to see this</b>
+            <span style="color: #46546A; font-size: 13px">On leave, Birthdays and Dates coming up fill in from the staff records.</span>
+            <button type="button" class="hb" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Add your staff</button>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">The same words on every HR card until the first person is added. HR › Staff adds “or paste the Excel list”.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · nothing waiting for approval (Approvals)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #F0FBF5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="approval" tone="ok" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Nothing waiting for approval</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Every form that was printed for AI has been signed. Print a form on To print when a request needs one.</p>
+          <button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Go to To print</button>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">AI has nothing waiting, as in the samples. To print is a tab of Approvals, so the button opens that tab. It becomes a link once the Approvals board is drawn.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Empty · nothing to pay (To pay, an example)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #F0FBF5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="toPay" tone="ok" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Nothing to pay</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Approved requests, and payments that need no approval, show here until they are paid.</p>
+          <button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Go to Approvals</button>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">An example: no company in the samples has an empty To pay (AISB 6, AI 2, AIL 2, AIP 2). When requests are waiting, the button names the count, for example “Waiting for approval: 3, on Approvals” for AISB. It becomes a link once the Approvals board is drawn.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Toast · the company switch lands on a page that isn't used</span>
+        <div class="stage" style="min-height: 0; gap: 10px; justify-content: flex-end">
+          <div role="status" aria-live="off" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22)"><span style="margin-top: 1px"><dc-import name="Icon" glyph="company" tone="dbrand" size="20" hint-size="20px,20px"></dc-import></span><div style="flex: 1; min-width: 0"><b style="font-size: 13px">Switched to AI</b><div style="font-size: 12px; color: #B8C4D6">SQL import isn't used for AI (Kept here). Showing AI's Overview.</div></div></div>
+          <div role="status" aria-live="off" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22)"><span style="margin-top: 1px"><dc-import name="Icon" glyph="company" tone="dbrand" size="20" hint-size="20px,20px"></dc-import></span><div style="flex: 1; min-width: 0"><b style="font-size: 13px">Switched to AI</b><div style="font-size: 12px; color: #B8C4D6">Payroll settings aren't used for AI. Showing AI's Overview.</div></div></div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">Picking a company never lands on a blank or refused page: it opens that company's Overview and says why. Press “Company switch” under Toasts to see one work.</span>
+      </div>
+
+      <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Form · refused with the reason (banner above the form)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div id="st-ref-banner" role="alert" aria-live="off" tabindex="-1" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; background: #FDF3F2; border-bottom: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A; font-size: 13px">Someone must keep the Admin right. Aisha Rahman is the only person who has it, so give it to someone else first.</div></div><a href="#st-ref-admin" class="hs" onClick="{{goAdmin}}" style="display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #F5C2BB; background: #FFFFFF; color: #8E1A10; font: 600 13px Inter, sans-serif; text-decoration: none; box-sizing: border-box; white-space: nowrap">Go to the Admin right</a></div>
+          <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+            <b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px">Users and access · Aisha Rahman</b>
+            <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px"><legend style="padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 600; color: #46546A">Rights</legend>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+                <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font-size: 14px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #2450B8">HR</label>
+                <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font-size: 14px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #2450B8">Payroll figures</label>
+                <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font-size: 14px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #2450B8">Payments</label>
+                <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font-size: 14px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #2450B8">Accounting</label>
+                <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font-size: 14px"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #2450B8">Approver</label>
+                <label style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 12px; border: 1px solid #B0190F; box-shadow: 0 0 0 1px #B0190F; border-radius: 10px; font-size: 14px"><input id="st-ref-admin" type="checkbox" aria-invalid="true" aria-describedby="st-ref-err" style="width: 18px; height: 18px; accent-color: #2450B8">Admin</label>
+              </div>
+              <span id="st-ref-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Someone must keep the Admin right.</span>
+            </fieldset>
+            <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" class="hb" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Save changes</button></div>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">Every form that can be refused works like this: the banner says that nothing was saved and why, the field that caused it is marked, and what the person typed is kept. A warning never blocks; only a refusal does.</span>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="st-many-h" style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 id="st-many-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Many rows</h2><span style="color: #5F6C80; font-size: 12px">Every list shows the first 25 rows (10 on a phone), says how many there are, and adds more on request. The filter stays in view and the Excel file always holds every row.</span></div>
+    <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 24px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Many rows · desktop (Audit trail)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid #EEF1F5">
+            <label for="st-many-q" style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 240px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Search the audit trail</span><input id="st-many-q" type="search" autoComplete="off" style="height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box; width: 100%"></label>
+            <button type="button" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="sheet" tone="muted" size="16" hint-size="16px,16px"></dc-import>Excel (all 312)</button>
+          </div>
+          <div role="region" aria-label="Audit trail entries, scrolls" tabindex="0" class="fr" style="max-height: 330px; overflow: auto">
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+              <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Audit trail, newest first</caption>
+              <thead><tr style="text-align: left">
+                <th scope="col" style="position: sticky; top: 0; background: #F7F8FA; padding: 10px 16px; font-size: 12px; font-weight: 600; color: #5F6C80; border-bottom: 1px solid #E3E7ED; white-space: nowrap">When</th>
+                <th scope="col" style="position: sticky; top: 0; background: #F7F8FA; padding: 10px 12px; font-size: 12px; font-weight: 600; color: #5F6C80; border-bottom: 1px solid #E3E7ED">Who</th>
+                <th scope="col" style="position: sticky; top: 0; background: #F7F8FA; padding: 10px 12px; font-size: 12px; font-weight: 600; color: #5F6C80; border-bottom: 1px solid #E3E7ED">What</th>
+              </tr></thead>
+              <tbody>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Wed 18 Nov 09:25</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Read · payroll check export (Excel report)</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Wed 18 Nov 09:20</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Payroll check for AISB November 2026: 3 things to fix before paying, 2 to check; 10 notes</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Wed 18 Nov 09:05</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Set up AISB November 2026</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Tue 17 Nov</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Printed approval form AF-2611-005 (CL-2611-001, SA-2611-002)</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Mon 16 Nov</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Printed approval form AF-2611-004 (Payroll Advisory PLT, PA-1010)</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Fri 13 Nov</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Uploaded the signed form AF-2611-003 (3 claims, RM 1,214.50)</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Wed 11 Nov</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Printed approval form AF-2611-003</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Tue 3 Nov</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Uploaded the signed form AF-2611-001 (SA-2611-001)</td></tr>
+                <tr style="border-bottom: 1px solid #EEF1F5"><td style="padding: 10px 16px; white-space: nowrap; color: #46546A">Mon 2 Nov</td><td style="padding: 10px 12px; white-space: nowrap">Aisha Rahman</td><td style="padding: 10px 12px">Printed approval form AF-2611-001</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+            <span role="status" aria-live="off" style="font-size: 13px; color: #46546A">Showing 25 of 312 entries</span>
+            <button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Show 25 more</button>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">The header row stays at the top while the rows scroll. The count is read out. Show more keeps the place and moves focus to the first new row. A filter counts against all rows, for example “Showing 3 of 3 matching”. The board draws 9 of the 25 rows to save room.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Many rows · phone</span>
+        <div style="width: 100%; max-width: 375px; margin: 0 auto; background: #F5F6F8; border: 1px solid #D5DBE4; border-radius: 24px; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+          <label for="st-manyp-q" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Search the audit trail</span><input id="st-manyp-q" type="search" autoComplete="off" style="height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box; width: 100%; background: #FFFFFF"></label>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px">
+            <li style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; padding: 10px 12px"><div style="font-size: 12px; color: #5F6C80">Wed 18 Nov 09:20 · Aisha Rahman</div><div style="font-size: 13px">Payroll check for AISB November 2026: 3 things to fix before paying, 2 to check; 10 notes</div></li>
+            <li style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; padding: 10px 12px"><div style="font-size: 12px; color: #5F6C80">Wed 18 Nov 09:05 · Aisha Rahman</div><div style="font-size: 13px">Set up AISB November 2026</div></li>
+            <li style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; padding: 10px 12px"><div style="font-size: 12px; color: #5F6C80">Tue 17 Nov · Aisha Rahman</div><div style="font-size: 13px">Printed approval form AF-2611-005</div></li>
+            <li style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; padding: 10px 12px"><div style="font-size: 12px; color: #5F6C80">Mon 16 Nov · Aisha Rahman</div><div style="font-size: 13px">Printed approval form AF-2611-004</div></li>
+          </ul>
+          <span role="status" aria-live="off" style="font-size: 13px; color: #46546A; text-align: center">Showing 10 of 312 entries</span>
+          <button type="button" class="hs" style="height: 44px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Show 10 more</button>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">On a phone rows become cards and the page scrolls as one. New work: 312 is an example count for a stress case, not a figure from the books. The board draws 4 of the 10 cards.</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Confirms</h2><span style="color: #5F6C80; font-size: 12px">Every confirm opens over a dim, names what will change, says whether it can be undone, and puts focus on the safe button. Nothing closes a dialog that holds edits without asking first.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+      <sc-for list="{{confirms}}" as="c" hint-placeholder-count="9">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 12px; font-weight: 600; color: #5F6C80">{{c.label}}</span>
+          <div class="stage">
+            <div role="alertdialog" aria-labelledby="{{c.tid}}" aria-describedby="{{c.did}}" class="cfm">
+              <div style="display: flex; gap: 12px"><span class="plate {{c.tone}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.tone}}" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="{{c.tid}}" style="margin: 0; font-size: 16px; font-weight: 600">{{c.title}}</h2><p id="{{c.did}}" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{c.body}}</p></div></div>
+              <sc-if value="{{c.hasList}}" hint-placeholder-val="{{ false }}">
+                <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+                  <sc-for list="{{c.items}}" as="it" hint-placeholder-count="2"><li style="display: flex; gap: 8px; align-items: center"><dc-import name="Icon" glyph="{{it.glyph}}" tone="{{it.tone}}" size="16" hint-size="16px,16px"></dc-import>{{it.text}}</li></sc-for>
+                </ul>
+              </sc-if>
+              <sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ false }}"><div style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">{{c.note}}</div></sc-if>
+              <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="{{c.cg}}" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{c.closing}}</div>
+              <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{c.cancel}}</button><button type="button" class="hb okb {{c.okTone}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">{{c.ok}}</button></div>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px"><span style="font-size: 12px; font-weight: 600; color: #5F6C80">Remove a payment (nothing attached)</span><button type="button" id="st-open-c3" class="hs" onClick="{{openDlg}}" aria-haspopup="dialog" style="height: 32px; margin: -7px 0; padding: 0 10px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Open as a dialog</button></div>
+        <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" class="{{dimCls}}" onClick="{{closeDlg}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div></sc-if>
+        <div class="stage">
+          <div role="alertdialog" aria-labelledby="c3" aria-describedby="st-c3-desc" aria-modal="{{c3Modal}}" tabindex="-1" class="cfm {{c3Cls}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onDlgAnim}}">
+            <div style="display: flex; gap: 12px"><span class="plate bad"><dc-import name="Icon" glyph="trash" tone="bad" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="c3" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600">Remove “Water bill”?</h2><p id="st-c3-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">Its SQL voucher PV2610-021 goes back under SQL entries not linked, and its 1 bank line goes back under lines to explain.</p></div></div>
+            <div style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">No documents are attached, so nothing leaves the audit pack. The removal is kept in the audit trail.</div>
+            <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="alert" tone="muted" size="16" hint-size="16px,16px"></dc-import>A removed payment can't be put back. You would add it again.</div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" id="st-c3-keep" class="hs" onClick="{{closeDlg}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep it</button><button type="button" class="hb okb bad" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Remove payment</button></div>
+            <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{closeDlg}}" aria-label="Close" style="position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button></sc-if>
+          </div>
+        </div>
+      </div>
+
+      <sc-for list="{{reasons}}" as="rc" hint-placeholder-count="5">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <span style="font-size: 12px; font-weight: 600; color: #5F6C80">{{rc.label}}</span>
+          <div class="stage">
+            <div role="alertdialog" aria-labelledby="{{rc.tid}}" aria-describedby="{{rc.did}}" class="cfm">
+              <div style="display: flex; gap: 12px"><span class="plate {{rc.tone}}"><dc-import name="Icon" glyph="{{rc.glyph}}" tone="{{rc.tone}}" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="{{rc.tid}}" style="margin: 0; font-size: 16px; font-weight: 600">{{rc.title}}</h2><p id="{{rc.did}}" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{rc.body}}</p></div></div>
+              <div style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">{{rc.note}}</div>
+              <sc-if value="{{rc.open}}" hint-placeholder-val="{{ true }}">
+                <label for="{{rc.rid}}" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; color: #5F6C80">Required</span></span>
+                  <input id="{{rc.rid}}" type="text" value="{{rc.val}}" onChange="{{rc.onVal}}" aria-invalid="{{rc.inv}}" aria-describedby="{{rc.by}}" aria-required="true" autoComplete="off" placeholder="{{rc.ph}}" style="{{rc.inputStyle}}">
+                </label>
+                <sc-if value="{{rc.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{rc.eid}}" role="alert" style="display: flex; gap: 6px; align-items: center; margin-top: -6px; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you’re making this change.</span></sc-if>
+                <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="{{rc.cg}}" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{rc.closing}}</div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" class="hs" onClick="{{rc.reset}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" id="{{rc.bid}}" class="hb okb {{rc.okTone}}" onClick="{{rc.submit}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">{{rc.ok}}</button></div>
+              </sc-if>
+              <sc-if value="{{rc.done}}" hint-placeholder-val="{{ false }}">
+                <div role="status" class="rv" style="display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 10px; background: #F0FBF5; border: 1px solid #BFE8D0"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1; font-size: 13px; color: #0A6B3D; font-weight: 600">{{rc.doneText}}</span><button type="button" id="{{rc.rbid}}" class="hs" onClick="{{rc.reset}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #BFE8D0; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Try again</button></div>
+              </sc-if>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Confirm · mark as left (last day required)</span>
+        <div class="stage">
+          <div role="alertdialog" aria-labelledby="st-lv-t" aria-describedby="st-lv-d" class="cfm" onKeyDown="{{lvKey}}">
+            <div style="display: flex; gap: 12px"><span class="plate warn"><dc-import name="Icon" glyph="staff" tone="warn" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="st-lv-t" style="margin: 0; font-size: 16px; font-weight: 600">Mark Kah Seng as left?</h2><p id="st-lv-d" style="margin: 4px 0 0; color: #46546A; font-size: 13px">Wong Kah Seng (S006) moves from In employment to Left after his last day. His record, leave and claims are kept.</p></div></div>
+            <sc-if value="{{lvOpen}}" hint-placeholder-val="{{ true }}">
+              <label for="st-lv" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">Last day <span style="font-weight: 500; color: #5F6C80">Required</span></span>
+                <input id="st-lv" type="date" value="{{lvD}}" onChange="{{lvOnD}}" aria-required="true" aria-invalid="{{lvInv}}" aria-describedby="{{lvBy}}" style="{{lvStyle}}">
+              </label>
+              <sc-if value="{{lvErr}}" hint-placeholder-val="{{ false }}"><span id="st-lv-err" role="alert" style="display: flex; gap: 6px; align-items: center; margin-top: -6px; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Enter the last day, for example 31 Dec 2026.</span></sc-if>
+              <label for="st-lv-r" style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">Reason <span style="font-weight: 500; color: #5F6C80">Optional</span></span>
+                <input id="st-lv-r" type="text" value="{{lvR}}" onChange="{{lvOnR}}" autoComplete="off" placeholder="Resigned" style="height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; box-sizing: border-box; width: 100%">
+              </label>
+              <sc-if value="{{lvNoteOn}}" hint-placeholder-val="{{ true }}"><div class="rv" style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">{{lvNote}}</div></sc-if>
+              <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="undo" tone="muted" size="16" hint-size="16px,16px"></dc-import>You can put him back to In employment. The last day and reason are kept in the audit trail.</div>
+              <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" class="hs" onClick="{{lvReset}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" id="st-lvb" class="hb okb brand" onClick="{{lvSubmit}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Mark as left</button></div>
+            </sc-if>
+            <sc-if value="{{lvDone}}" hint-placeholder-val="{{ false }}">
+              <div role="status" class="rv" style="display: flex; gap: 10px; align-items: center; padding: 12px; border-radius: 10px; background: #F0FBF5; border: 1px solid #BFE8D0"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1; font-size: 13px; color: #0A6B3D; font-weight: 600">{{lvDoneText}}</span><button type="button" id="st-lvr" class="hs" onClick="{{lvReset}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #BFE8D0; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Try again</button></div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="edit" tone="brand" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px; color: #46546A"><b style="color: #0F1A2B">Escape and a click on the backdrop go through the discard check.</b> A dialog or editor with unsaved input asks “Discard your changes?” on Escape, on a backdrop click, on Cancel and the close button, on changing page, month or company, on picking another Setup row or section, and on opening another payment. A dialog without edits closes at once. On this board the confirms are drawn in place, without the dim: “Remove a payment” opens as a real dialog, and Escape in “Mark Kah Seng as left?” cancels it as Cancel does. The reason-required cards show their fields only.</span></div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Saving, field errors and files</h2><span style="color: #5F6C80; font-size: 12px">Errors sit under the field they belong to, say how to fix it, and are tied to it for screen readers.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+      <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Inline field error, saving, unsaved marker and “Nothing has changed.”</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap"><div><b style="font-size: 16px">Electricity bill</b><div style="color: #5F6C80; font-size: 12px">AISB · October 2026</div></div>
+            <sc-if value="{{dirty}}" hint-placeholder-val="{{ false }}"><span class="rv" style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="edit" tone="warn" size="14" hint-size="14px,14px"></dc-import>Unsaved changes</span></sc-if>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px; max-width: 360px">
+            <label for="st-amt" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Amount (RM) <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="st-amt" type="text" inputMode="decimal" value="{{amt}}" onChange="{{onAmt}}" aria-required="true" aria-invalid="{{amtInv}}" aria-describedby="{{amtBy}}" disabled="{{saving}}" autoComplete="off" style="{{amtStyle}}">
+            <sc-if value="{{amtErr}}" hint-placeholder-val="{{ false }}"><span id="st-amt-err" role="alert" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{amtMsg}}</span></sc-if>
+            <sc-if value="{{amtOk}}" hint-placeholder-val="{{ false }}"><span role="status" class="rv" style="display: flex; gap: 6px; align-items: center; color: #0A6B3D; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="check" tone="ok" size="15" hint-size="15px,15px"></dc-import>Saved. The change is in the audit trail.</span></sc-if>
+            <sc-if value="{{amtSame}}" hint-placeholder-val="{{ false }}"><span role="status" class="rv" style="color: #46546A; font-size: 13px; font-weight: 500">Nothing has changed.</span></sc-if>
+            <span id="st-amt-hint" style="color: #5F6C80; font-size: 12px">Numbers only, for example 412.00. Try leaving it empty, typing letters, or pressing Save without a change.</span>
+          </div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid #EEF1F5; padding-top: 14px; align-items: center">
+            <span style="flex: 1; font-size: 12px; color: #5F6C80">Save stays in the same place whether or not the marker shows.</span>
+            <button type="button" class="hs" onClick="{{resetAmt}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Reset</button>
+            <button type="button" id="st-save" class="hb" onClick="{{saveAmt}}" disabled="{{saving}}" aria-busy="{{savingAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 128px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">
+              <sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="st-spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Saving…</sc-if>
+              <sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}">Save changes</sc-if>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Rules for errors and results</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; font-size: 13px; color: #46546A">
+          <div><b style="color: #0F1A2B">Check on Save, then as they type.</b> Nothing is red before the person has tried.</div>
+          <div><b style="color: #0F1A2B">Red border, icon and a sentence.</b> Never colour alone. Focus moves to the first field with an error.</div>
+          <div><b style="color: #0F1A2B">Saving takes the button.</b> Fields lock, the label says Saving…, the width holds.</div>
+          <div><b style="color: #0F1A2B">Nothing has changed.</b> Save with no edits answers in place and sends nothing.</div>
+          <div><b style="color: #0F1A2B">Unsaved changes</b> shows in the header while the form differs from what is saved.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 6px">
+      <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Drop zone · idle, drag over, uploading, refused (kept as new work: drag and drop on the SQL file box)</span>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; align-items: stretch">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; color: #5F6C80">Idle</span>
+          <div class="dz" style="border: 1.5px dashed #7B8798; background: #FAFBFC; flex: 1"><dc-import name="Icon" glyph="upload" tone="brand" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 14px"><b style="color: #2450B8">Choose an SQL export</b> or drop it here</span><span style="color: #5F6C80; font-size: 12px">.xlsx, .xls, .csv, .ods or .txt</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; color: #5F6C80">Drag over</span>
+          <div class="dz" style="border: 2px solid #2450B8; background: #EAF0FD; flex: 1"><dc-import name="Icon" glyph="download" tone="brand" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 14px; font-weight: 600; color: #1D419A">Drop the file to add it</span><span style="color: #46546A; font-size: 12px">Let go anywhere in this box</span></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; color: #5F6C80">Uploading</span>
+          <div class="dz" style="border: 1px solid #D5DBE4; background: #FFFFFF; flex: 1; align-items: stretch; text-align: left">
+            <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="document" tone="brand" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="font-size: 13px">Approval.pdf</b><div style="color: #5F6C80; font-size: 12px">1.2 of 1.9 MB</div></div><button type="button" class="hs" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button></div>
+            <div role="progressbar" aria-label="Uploading Approval.pdf" aria-valuenow="64" aria-valuemin="0" aria-valuemax="100" style="height: 6px; border-radius: 99px; background: #E3E7ED; overflow: hidden"><div class="bar" style="width: 64%; height: 100%; border-radius: 99px; background: #2450B8"></div></div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; color: #5F6C80">Refused</span>
+          <div role="alert" aria-live="off" class="dz" style="border: 1.5px dashed #B0190F; background: #FDF3F2; flex: 1"><dc-import name="Icon" glyph="alert" tone="bad" size="26" hint-size="26px,26px"></dc-import><span style="font-size: 13px; font-weight: 600; color: #8E1A10">Couldn't upload Approval.pdf</span><span style="color: #46546A; font-size: 12px">The PDF has a password. Save an unlocked copy and try again.</span><button type="button" class="hs" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Choose another file</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Waiting</h2><span style="color: #5F6C80; font-size: 12px">When to show a skeleton: the old page stays, slightly dimmed, for up to 0.3 s; only a slower answer shows grey shapes. A fast local answer never flashes.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Loading · list</span>
+        <div aria-busy="true" aria-label="Loading payments" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div class="sk" style="height: 18px; width: 40%; border-radius: 6px"></div>
+          <div style="display: flex; gap: 12px; align-items: center"><div class="sk" style="width: 36px; height: 36px; border-radius: 10px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 70%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 45%; border-radius: 5px"></div></div><div class="sk" style="width: 80px; height: 22px; border-radius: 99px"></div></div>
+          <div style="display: flex; gap: 12px; align-items: center"><div class="sk" style="width: 36px; height: 36px; border-radius: 10px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 60%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 35%; border-radius: 5px"></div></div><div class="sk" style="width: 80px; height: 22px; border-radius: 99px"></div></div>
+          <div style="display: flex; gap: 12px; align-items: center"><div class="sk" style="width: 36px; height: 36px; border-radius: 10px"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 75%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 40%; border-radius: 5px"></div></div><div class="sk" style="width: 80px; height: 22px; border-radius: 99px"></div></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Loading · stat strip</span>
+        <div aria-busy="true" aria-label="Loading figures" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px"><div class="sk" style="height: 10px; width: 50%; border-radius: 5px"></div><div class="sk" style="height: 24px; width: 70%; border-radius: 6px"></div><div class="sk" style="height: 10px; width: 40%; border-radius: 5px"></div></div>
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px"><div class="sk" style="height: 10px; width: 60%; border-radius: 5px"></div><div class="sk" style="height: 24px; width: 55%; border-radius: 6px"></div><div class="sk" style="height: 10px; width: 45%; border-radius: 5px"></div></div>
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px"><div class="sk" style="height: 10px; width: 45%; border-radius: 5px"></div><div class="sk" style="height: 24px; width: 65%; border-radius: 6px"></div><div class="sk" style="height: 10px; width: 50%; border-radius: 5px"></div></div>
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px"><div class="sk" style="height: 10px; width: 55%; border-radius: 5px"></div><div class="sk" style="height: 24px; width: 60%; border-radius: 6px"></div><div class="sk" style="height: 10px; width: 35%; border-radius: 5px"></div></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Loading · table rows</span>
+        <div aria-busy="true" aria-label="Loading rows" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; gap: 12px; padding: 12px 16px; background: #F7F8FA; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 10px; width: 20%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div></div>
+          <div style="display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 38%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 16%; border-radius: 5px"></div></div>
+          <div style="display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 30%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 18%; border-radius: 5px"></div></div>
+          <div style="display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 44%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 15%; border-radius: 5px"></div></div>
+          <div style="display: flex; gap: 12px; padding: 14px 16px; align-items: center"><div class="sk" style="height: 12px; width: 34%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 17%; border-radius: 5px"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="st-books-h" style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 id="st-books-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Books · loading and errors</h2><span style="color: #5F6C80; font-size: 12px">Books pages cannot be edited, so the only things that go wrong are the dates, the server and the Excel file.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size: 12px; font-weight: 600; color: #5F6C80">Books · loading (the Excel link is hidden)</span><div aria-busy="true" aria-label="Loading the trial balance" style="background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;overflow:hidden"><div style="display:flex;flex-direction:column;gap:10px;padding:14px 16px 0"><b style="font-family:'Space Grotesk',Inter,sans-serif;font-size:16px">Books · AISB</b><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"><label for="bk-l-from" style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:#46546A">From<input id="bk-l-from" value="2026-01-01" readonly style="height:32px;box-sizing:border-box;width:112px;padding:0 8px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;font:13px Inter,sans-serif;color:#0F1A2B;font-variant-numeric:tabular-nums"></label><label for="bk-l-to" style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:#46546A">To<input id="bk-l-to" value="2026-11-17" readonly style="height:32px;box-sizing:border-box;width:112px;padding:0 8px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;font:13px Inter,sans-serif;color:#0F1A2B;font-variant-numeric:tabular-nums"></label><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;background:#2450B8;color:#FFFFFF;font-weight:600;font-size:13px">Show</span><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;color:#0F1A2B;font-weight:600;font-size:13px">This financial year to date</span></div><div role="tablist" aria-label="Report" style="display:flex;gap:2px;border-bottom:1px solid #E3E7ED;overflow:hidden"><span role="tab" aria-selected="true" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#1D419A;border-bottom:2px solid #2450B8">Trial balance</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">General ledger</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">Profit and loss</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">Balance sheet</span></div></div><div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px"><span role="status" aria-live="off" style="font-size:13px;color:#46546A">Loading…</span><div class="sk" style="height:12px;width:45%;border-radius:5px"></div><div class="sk" style="height:12px;width:80%;border-radius:5px"></div><div class="sk" style="height:12px;width:70%;border-radius:5px"></div><div class="sk" style="height:12px;width:60%;border-radius:5px"></div></div></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size: 12px; font-weight: 600; color: #5F6C80">Books · error from the server (the Excel link stays hidden)</span><div style="background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;overflow:hidden"><div style="display:flex;flex-direction:column;gap:10px;padding:14px 16px 0"><b style="font-family:'Space Grotesk',Inter,sans-serif;font-size:16px">Books · AISB</b><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"><label for="bk-e-from" style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:#46546A">From<input id="bk-e-from" value="2026-11-20" readonly aria-invalid="true" aria-describedby="bk-err-msg" style="height:32px;box-sizing:border-box;width:112px;padding:0 8px;border-radius:8px;border:1px solid #C7372B;background:#FFFFFF;font:13px Inter,sans-serif;color:#0F1A2B;font-variant-numeric:tabular-nums"></label><label for="bk-e-to" style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:#46546A">To<input id="bk-e-to" value="2026-10-01" readonly style="height:32px;box-sizing:border-box;width:112px;padding:0 8px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;font:13px Inter,sans-serif;color:#0F1A2B;font-variant-numeric:tabular-nums"></label><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;background:#2450B8;color:#FFFFFF;font-weight:600;font-size:13px">Show</span><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;color:#0F1A2B;font-weight:600;font-size:13px">This financial year to date</span></div><div role="tablist" aria-label="Report" style="display:flex;gap:2px;border-bottom:1px solid #E3E7ED;overflow:hidden"><span role="tab" aria-selected="true" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#1D419A;border-bottom:2px solid #2450B8">Trial balance</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">General ledger</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">Profit and loss</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">Balance sheet</span></div></div><div style="padding:14px 16px 16px"><div id="bk-err-msg" role="alert" aria-live="off" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#FEF1D6;border:1px solid #F3D9A6;color:#934100;font-size:13px"><span style="flex:none;line-height:0"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import></span><span>The From date is after the To date.</span></div></div></div></div>
+      <div style="display:flex;flex-direction:column;gap:8px"><span style="font-size: 12px; font-weight: 600; color: #5F6C80">Books · Excel couldn’t be made</span><div style="background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;overflow:hidden"><div style="display:flex;flex-direction:column;gap:10px;padding:14px 16px 0"><b style="font-family:'Space Grotesk',Inter,sans-serif;font-size:16px">Books · AISB</b><div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap"><label for="bk-x-pl-from" style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:#46546A">From<input id="bk-x-pl-from" value="2024-01-01" readonly style="height:32px;box-sizing:border-box;width:112px;padding:0 8px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;font:13px Inter,sans-serif;color:#0F1A2B;font-variant-numeric:tabular-nums"></label><label for="bk-x-pl-to" style="display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:600;color:#46546A">To<input id="bk-x-pl-to" value="2026-11-17" readonly style="height:32px;box-sizing:border-box;width:112px;padding:0 8px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;font:13px Inter,sans-serif;color:#0F1A2B;font-variant-numeric:tabular-nums"></label><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;background:#2450B8;color:#FFFFFF;font-weight:600;font-size:13px">Show</span><span style="display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:8px;border:1px solid #8A97AA;background:#FFFFFF;color:#0F1A2B;font-weight:600;font-size:13px">This financial year to date</span><span style="display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:8px;border:1px solid #8A97AA;color:#0F1A2B;font-weight:600;font-size:13px"><dc-import name="Icon" glyph="sheet" tone="brand" size="16" hint-size="16px,16px"></dc-import>Excel</span><label style="display:inline-flex;gap:8px;align-items:center;min-height:32px;font-size:13px;color:#0F1A2B"><input type="checkbox" id="bk-x-pl-months" checked style="width:18px;height:18px;margin:0;accent-color:#2450B8"><span>Months</span></label></div><div role="tablist" aria-label="Report" style="display:flex;gap:2px;border-bottom:1px solid #E3E7ED;overflow:hidden"><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">Trial balance</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">General ledger</span><span role="tab" aria-selected="true" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#1D419A;border-bottom:2px solid #2450B8">Profit and loss</span><span role="tab" aria-selected="false" style="padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;color:#46546A;border-bottom:2px solid transparent">Balance sheet</span></div></div><div style="padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px"><div role="alert" aria-live="off" style="display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#FDE6E3;border:1px solid #F5BDB6;color:#B0190F;font-size:13px"><span style="flex:none;line-height:0"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import></span><span><b>Excel couldn’t be made.</b> Months are shown for up to 24 months at a time. Choose a shorter period.</span><button type="button" aria-label="Dismiss" style="margin-left:auto;margin-top:-7px;margin-right:-8px;width:32px;height:32px;flex:none;border:0;border-radius:8px;background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer"><dc-import name="Icon" glyph="close" tone="bad" size="16" hint-size="16px,16px"></dc-import></button></div><div style="font-size:12px;color:#5C3100;background:#FFFBF2;border:1px solid #F3D9A6;border-radius:12px;padding:10px 12px"><b>New work.</b> Today the Excel link is a plain link, so a failed export opens a page of raw JSON. The page should ask first, and on a failure keep the figures on screen and show the server’s sentence here. The message stays until the dates change or it is dismissed, and nothing is logged as an opened export.</div></div></div></div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Banners and a button that is working</h2><span style="color: #5F6C80; font-size: 12px">A banner sits at the top of the page content, under the top bar, and says what to do. It stays until the thing is fixed or dismissed.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Banner · filed month (shown on September)</span>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 16px 18px; border-radius: 14px; background: #F0FBF5; border: 1px solid #BFE8D0">
+          <dc-import name="Icon" glyph="verified" tone="ok" size="24" hint-size="24px,24px"></dc-import>
+          <div style="flex: 1 1 200px"><b style="color: #0A6B3D">Filed 14 Oct</b><div style="color: #46546A; font-size: 13px">Nothing in this month counts as to do on the Overview.</div></div>
+          <button type="button" class="hs" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #BFE8D0; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Reopen</button>
+        </div>
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80; margin-top: 10px">Banner · offline drive</span>
+        <div role="status" aria-live="off" style="display: flex; gap: 12px; align-items: center; padding: 14px 18px; border-radius: 14px; background: #FFFBF2; border: 1px solid #F3D9A6"><dc-import name="Icon" glyph="alert" tone="warn" size="22" hint-size="22px,22px"></dc-import><span style="font-size: 13px; color: #5C3100">The backup folder isn't reachable. Backups stay on this PC until it is.</span></div>
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80; margin-top: 10px">Banner · a new payroll month has started (shown once)</span>
+        <sc-if value="{{roll}}" hint-placeholder-val="{{ true }}">
+          <div role="status" class="rv" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 16px; border-radius: 14px; background: #EAF0FD; border: 1px solid #C9D7F7">
+            <dc-import name="Icon" glyph="calendar" tone="brand" size="24" hint-size="24px,24px"></dc-import>
+            <div style="flex: 1 1 180px"><b style="color: #1D419A">November payroll has started</b><div style="color: #46546A; font-size: 13px">October is still open: 3 things left.</div></div>
+            <div style="display: flex; gap: 8px"><a href="MonthlyChecklist.dc.html" class="hb" style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 8px; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; text-decoration: none; box-sizing: border-box">Go to October</a><button type="button" id="st-roll-x" class="hs" onClick="{{dismissRoll}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #C9D7F7; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Dismiss</button></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{rollGone}}" hint-placeholder-val="{{ false }}"><button type="button" id="st-roll-show" class="hs" onClick="{{showRoll}}" style="align-self: flex-start; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Show banner again</button></sc-if>
+        <span style="font-size: 12px; color: #5F6C80">It shows on the first page drawn on or after the rollover day (the 10th), and again after the rollover day is changed in General settings. It never moves the page by itself without saying so.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Strip · connection lost (below the top bar)</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 14px; background: #FFFFFF; border-bottom: 1px solid #E3E7ED"><b style="font-size: 13px">AISB · October 2026</b><span style="font-size: 12px; color: #5F6C80">Top bar</span></div>
+          <sc-if value="{{netStrip}}" hint-placeholder-val="{{ true }}">
+            <div role="{{netRole}}" class="rv" style="{{netStyle}}">
+              <dc-import name="Icon" glyph="{{netGlyph}}" tone="{{netTone}}" size="20" hint-size="20px,20px"></dc-import>
+              <span style="flex: 1 1 160px; font-size: 13px; color: {{netInk}}">{{netText}}</span>
+              <sc-if value="{{netCanTry}}" hint-placeholder-val="{{ true }}"><button type="button" id="st-net-try" class="hs" onClick="{{tryNet}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #F3D9A6; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Try now</button></sc-if>
+              <sc-if value="{{netTrying}}" hint-placeholder-val="{{ false }}"><span class="st-spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid #F3D9A6; border-top-color: #934100"></span></sc-if>
+            </div>
+          </sc-if>
+          <div style="padding: 14px; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 13px; font-weight: 600; color: #46546A">Payee</span>
+            <div style="height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; display: flex; align-items: center; font-size: 14px; box-sizing: border-box">TNB Electricity</div>
+            <span style="font-size: 12px; color: #5F6C80">What was typed stays exactly as it is.</span>
+          </div>
+        </div>
+        <sc-if value="{{netGone}}" hint-placeholder-val="{{ false }}"><button type="button" id="st-net-again" class="hs" onClick="{{lose}}" style="align-self: flex-start; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Lose the connection again</button></sc-if>
+        <span style="font-size: 12px; color: #5F6C80">The strip says nothing typed has been sent, keeps the form, and clears itself when the app answers. In the hosted version the same strip reads “You're offline.”</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">Button · working</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+          <button type="button" id="st-busy" class="hb" onClick="{{runBusy}}" disabled="{{busy}}" aria-busy="{{busyAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 232px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">
+            <sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="st-spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Reading the folder…</sc-if>
+            <sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="download" tone="white" size="16" hint-size="16px,16px"></dc-import>Fetch from SQL exports</sc-if>
+          </button>
+          <span style="font-size: 12px; color: #5F6C80">The label says what is happening, a spinner takes the icon's place, the width holds and it can't be pressed twice. After it, the result is a toast with a way on (see below), or an inline result that stays: see Foundations.</span>
+          <span role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{busyNote}}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Toasts</h2><span style="color: #5F6C80; font-size: 12px">Press the buttons: each toast follows the timing rules. Dismiss with its close button or Escape while it has focus.</span></div>
+    <div style="display: flex; gap: 24px; align-items: stretch">
+      <div style="flex: 1.25; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <button type="button" id="st-add-saved" class="hs" onClick="{{addSaved}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Saved, with Undo</button>
+          <button type="button" class="hs" onClick="{{addImport}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">SQL import done</button>
+          <button type="button" class="hs" onClick="{{addError}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Error</button>
+          <button type="button" class="hs" onClick="{{addLong}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Long result</button>
+          <button type="button" class="hs" onClick="{{addProg}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Progress</button>
+          <button type="button" class="hs" onClick="{{addSwitch}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Company switch</button>
+          <button type="button" id="st-clear" class="hs" onClick="{{clearToasts}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer">Clear all</button>
+        </div>
+        <div style="position: relative; height: 470px; border: 1px solid #D5DBE4; border-radius: 16px; background: #FFFFFF; overflow: hidden">
+          <div aria-hidden="true" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 12px"><div class="sk" style="height: 16px; width: 30%; border-radius: 6px"></div><div class="sk" style="height: 10px; width: 80%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 64%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 72%; border-radius: 5px"></div></div>
+          <div role="region" aria-label="Notifications" style="position: absolute; right: 16px; bottom: 16px; width: 380px; max-width: calc(100% - 32px); display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{toasts}}" as="t" hint-placeholder-count="3">
+              <div role="{{t.role}}" class="{{t.cls}}" onAnimationEnd="{{t.onAnim}}" onMouseEnter="{{t.hold}}" onMouseLeave="{{t.release}}" onFocus="{{t.hold}}" onBlur="{{t.release}}" onKeyDown="{{t.key}}" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22)">
+                <span style="margin-top: 1px"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                <div style="flex: 1; min-width: 0">
+                  <b style="font-size: 13px">{{t.title}}</b>
+                  <div style="font-size: 12px; color: #B8C4D6; white-space: pre-line; overflow-wrap: anywhere">{{t.body}}</div>
+                  <sc-if value="{{t.hasProg}}" hint-placeholder-val="{{ false }}"><div role="progressbar" aria-label="{{t.title}}" aria-valuenow="{{t.progNow}}" aria-valuemin="0" aria-valuemax="100" style="height: 4px; margin-top: 8px; border-radius: 99px; background: #22375A; overflow: hidden"><div class="bar" style="{{t.barStyle}}"></div></div></sc-if>
+                  <sc-if value="{{t.hasAction}}" hint-placeholder-val="{{ false }}"><a href="Sql.dc.html" class="tb" style="display: inline-flex; align-items: center; height: 32px; margin-top: 6px; padding: 0 10px; border-radius: 8px; background: #22375A; color: #D6E2FB; font: 600 12px Inter, sans-serif; text-decoration: none; box-sizing: border-box">{{t.actionText}}</a></sc-if>
+                </div>
+                <sc-if value="{{t.hasUndo}}" hint-placeholder-val="{{ false }}"><button type="button" class="tb" onClick="{{t.undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 12px Inter, sans-serif; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="undo" tone="navOn" size="14" hint-size="14px,14px"></dc-import>Undo</span></button></sc-if>
+                <button type="button" id="{{t.closeId}}" class="tb" onClick="{{t.close}}" aria-label="Dismiss" style="width: 32px; height: 32px; flex: none; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{noToasts}}" hint-placeholder-val="{{ false }}"><div style="position: absolute; left: 20px; right: 20px; bottom: 24px; color: #5F6C80; font-size: 13px">No toasts showing. Press one of the buttons above.</div></sc-if>
+        </div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80; margin-top: 3px">The rules</span>
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 11px; font-size: 13px; color: #46546A">
+          <div><b style="color: #0F1A2B">Position.</b> Desktop: bottom right, 16 px in from the edges. Phone: bottom centre, above the tab bar. Never over the dialog's Save row.</div>
+          <div><b style="color: #0F1A2B">Stack.</b> At most three, newest at the bottom. A fourth makes the oldest one that isn't an error leave.</div>
+          <div><b style="color: #0F1A2B">Stays.</b> 4 s. 8 s when it carries Undo or a way on. 10 s for a long result. The timer pauses while the toast is hovered or has focus, and starts again when it lets go.</div>
+          <div><b style="color: #0F1A2B">Errors stay</b> until dismissed, and are read out at once (<span style="font-family: ui-monospace, Consolas, monospace; font-size: 12px">role="alert"</span>). Everything else is polite (<span style="font-family: ui-monospace, Consolas, monospace; font-size: 12px">status</span>).</div>
+          <div><b style="color: #0F1A2B">Long result.</b> Several short lines, one fact each: what was done, what was left alone, where it went. If the person needs it later, it also goes in an inline result block.</div>
+          <div><b style="color: #0F1A2B">Progress</b> shows a thin bar and becomes the success toast in place. Only for work longer than 2 s. <span style="color: #5F6C80">New work: the app shows work on the button today.</span></div>
+          <div><b style="color: #0F1A2B">Undo</b> only on saves and stops, never on a removal or filing (they have a confirm). Undoing is kept as new work in the audit trail: the change and the undo are two entries, and the toast says so. <span style="color: #5F6C80">New work: needs a revert path in the app.</span></div>
+          <div><b style="color: #0F1A2B">Company switch.</b> Picking a company that doesn't use the page you are on opens that company's Overview and says why in one polite toast. 4 s.</div>
+          <div><b style="color: #0F1A2B">Motion.</b> Rises 8 px over 240 ms; leaves in 180 ms; the stack doesn't jump.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":8320}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this._tt = {}; this._pt = {}; this._rm = {}; this._nid = 0;
+    const first = [this.mk('saved', 1), this.mk('error', 2), { ...this.mk('prog', 3), prog: 64 }];
+    this._nid = 3;
+    this.state = {
+      dlg: false, closing: false, busy: false,
+      amt: '412.00', init: '412.00', tried: false, saving: false, saved: false, same: false,
+      q: 'Telephone', retry: false, retryNote: '',
+      roll: true, rollGone: false, net: 'down',
+      rs: { stop: { v: '', tried: false, done: false }, del: { v: '', tried: false, done: false }, chg: { v: '', tried: false, done: false }, nap: { v: '', tried: false, done: false }, wd: { v: '', tried: false, done: false } },
+      lv: { d: '2026-12-31', r: 'Retiring', tried: false, done: false },
+      toasts: first
+    };
+  }
+  componentDidUpdate(prevProps, prev) {
+    const focus = id => { const el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); };
+    if (!prev.dlg && this.state.dlg) focus('st-c3-keep');
+    if (prev.dlg && !this.state.dlg && this._opener) { const o = this._opener; this._opener = null; if (o.isConnected) o.focus({ preventScroll: true }); }
+    if (this._focusAfter) { const id = this._focusAfter; this._focusAfter = null; focus(id); }
+    if (prev.busy && !this.state.busy && this._busyFocus) { this._busyFocus = false; focus('st-busy'); }
+  }
+  componentWillUnmount() {
+    clearTimeout(this._t); clearTimeout(this._bt); clearTimeout(this._st); clearTimeout(this._rt); clearTimeout(this._nt);
+    Object.values(this._tt).forEach(clearTimeout); Object.values(this._pt).forEach(clearTimeout); Object.values(this._rm).forEach(clearTimeout);
+  }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+
+  // the remove confirm opens over a dim, focus goes to the safe button, Esc and the dim close it, focus returns
+  openDlg() { if (this.state.dlg) return; this._opener = document.activeElement; this.setState({ dlg: true, closing: false }); }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    if (this.calm()) return this.finishDlg();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishDlg(), 400);   // only a safety net if animationend never arrives
+  }
+  finishDlg() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: false, closing: false }); }
+  dlgKey(e) {
+    if (!this.state.dlg) return;
+    if (e.key === 'Escape') { e.stopPropagation(); this.closeDlg(); return; }
+    if (e.key !== 'Tab') return;
+    const box = e.currentTarget;
+    const f = Array.from(box.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    if (!f.length) return;
+    const a = document.activeElement, first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (a === first || f.indexOf(a) < 0)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (a === last || !box.contains(a))) { e.preventDefault(); first.focus(); }
+  }
+
+  // toasts: the rules in the panel beside them
+  mk(kind, id) {
+    const K = {
+      saved: { glyph: 'check', tone: 'dok', title: 'Details saved', body: 'Electricity bill · AISB', undo: true, ms: 8000, role: 'status' },
+      import: { glyph: 'check', tone: 'dok', title: 'Imported 12 entries', body: '9 linked to payments, 3 already imported; 5 bank lines matched.', action: "See what's not linked", ms: 8000, role: 'status' },
+      error: { glyph: 'alert', tone: 'dbad', title: "Couldn't upload Approval.pdf", body: 'The PDF has a password. Save an unlocked copy and try again.', ms: 0, role: 'alert' },
+      long: { glyph: 'check', tone: 'dok', title: 'Payment removed', body: 'PV2610-021 is back under SQL entries not linked.\n1 bank line is back under lines to explain.\nThe removal is in the audit trail.', ms: 10000, role: 'status' },
+      prog: { glyph: 'refresh', tone: 'dbrand', title: 'Matching 48 statement lines', body: 'Maybank current · October', ms: 0, role: 'status', prog: 8 },
+      switch: { glyph: 'company', tone: 'dbrand', title: 'Switched to AI', body: "SQL import isn't used for AI (Kept here). Showing AI's Overview.", ms: 4000, role: 'status' },
+      undone: { glyph: 'undo', tone: 'dbrand', title: 'Undone', body: 'Electricity bill is back as it was. The undo is a new entry in the audit trail.', ms: 4000, role: 'status' }
+    }[kind];
+    return { id, kind, leaving: false, ...K };
+  }
+  patch(id, p) { this.setState(s => ({ toasts: s.toasts.map(t => (t.id === id ? { ...t, ...p } : t)) })); }
+  arm(id, ms) { clearTimeout(this._tt[id]); if (ms > 0) this._tt[id] = setTimeout(() => this.dismiss(id), ms); }
+  addToast(kind) {
+    const t = this.mk(kind, ++this._nid);
+    this.setState(s => {
+      let list = [...s.toasts, t];
+      const live = () => list.filter(x => !x.leaving);
+      while (live().length > 3) {
+        const v = live(), victim = v.find(x => x.role !== 'alert') || v[0];
+        list = list.map(x => (x === victim ? { ...x, leaving: true } : x));
+        this.scheduleRemove(victim.id);
+      }
+      return { toasts: list };
+    });
+    this.arm(t.id, t.ms);
+    if (kind === 'prog') this.advance(t.id);
+  }
+  advance(id) {
+    clearTimeout(this._pt[id]);
+    this._pt[id] = setTimeout(() => {
+      const t = this.state.toasts.find(x => x.id === id);
+      if (!t || t.leaving || t.prog == null) return;
+      const p = t.prog + 18;
+      if (p >= 100) {
+        this.patch(id, { prog: null, glyph: 'check', tone: 'dok', title: 'Matched 41 of 48 statement lines', body: 'Maybank current · October. 7 lines left to explain.', ms: 4000 });
+        this.arm(id, 4000);
+      } else { this.patch(id, { prog: p }); this.advance(id); }
+    }, 420);
+  }
+  scheduleRemove(id) {
+    clearTimeout(this._rm[id]);
+    this._rm[id] = setTimeout(() => this.removeNow(id), this.calm() ? 0 : 400);   // otherwise the animation's end removes it first
+  }
+  removeNow(id) {
+    clearTimeout(this._tt[id]); clearTimeout(this._pt[id]); clearTimeout(this._rm[id]);
+    if (!this.state.toasts.some(t => t.id === id)) return;
+    this.setState(s => ({ toasts: s.toasts.filter(t => t.id !== id) }));
+  }
+  dismiss(id, e) {
+    const t = this.state.toasts.find(x => x.id === id);
+    if (!t || t.leaving) return;
+    if (e && e.currentTarget && document.activeElement === e.currentTarget) this._focusAfter = 'st-add-saved';
+    clearTimeout(this._tt[id]); clearTimeout(this._pt[id]);
+    this.patch(id, { leaving: true });
+    this.scheduleRemove(id);
+  }
+  undoToast(id) { this.dismiss(id); this._focusAfter = 'st-add-saved'; this.addToast('undone'); }
+
+  // field form: errors on Save, then live; Save with no change answers in place
+  amtError(v) {
+    const s = String(v || '').trim();
+    if (!s) return 'Enter the amount, for example 412.00.';
+    if (!/^\d{1,3}(,?\d{3})*(\.\d{1,2})?$/.test(s)) return 'Use numbers only, for example 412.00.';
+    if (parseFloat(s.replace(/,/g, '')) <= 0) return 'The amount must be more than zero.';
+    return '';
+  }
+  saveAmt() {
+    const st = this.state;
+    if (st.saving) return;
+    const err = this.amtError(st.amt);
+    if (err) { this.setState({ tried: true, saved: false, same: false }); this._focusAfter = 'st-amt'; return; }
+    if (st.amt.trim() === st.init) { this.setState({ tried: true, same: true, saved: false }); return; }
+    this.setState({ tried: true, saving: true, same: false, saved: false });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => { this.setState({ saving: false, saved: true, init: this.state.amt.trim() }); this._focusAfter = 'st-save'; }, 1200);
+  }
+  rsSet(k, p) { this.setState(s => ({ rs: { ...s.rs, [k]: { ...s.rs[k], ...p } } })); }
+  rsSubmit(k) {
+    const r = this.state.rs[k];
+    if (!r.v.trim()) { this.rsSet(k, { tried: true }); this._focusAfter = 'st-rs-' + k; return; }
+    this.rsSet(k, { tried: true, done: true }); this._focusAfter = 'st-rsr-' + k;
+  }
+  // mark as left: the last day is required, the reason is not
+  lvSet(p) { this.setState(s => ({ lv: { ...s.lv, ...p } })); }
+  lvFmt(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return '';
+    const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+    const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return W[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + M[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  }
+  // CP22A is due 30 days before the last day; the note shows only when the reason is Retiring
+  lvNote(l) {
+    if (!this.lvFmt(l.d) || l.r.trim().toLowerCase() !== 'retiring') return '';
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(l.d);
+    const due = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3] - 30)).toISOString().slice(0, 10);
+    return 'Retiring: CP22A is due by ' + this.lvFmt(due) + ', 30 days before the last day. '
+      + (l.d === '2026-12-31' ? 'His contract also ends on 31 Dec 2026.' : 'His contract runs to 31 Dec 2026.');
+  }
+  lvSubmit() {
+    const l = this.state.lv;
+    if (!this.lvFmt(l.d)) { this.lvSet({ tried: true }); this._focusAfter = 'st-lv'; return; }
+    this.lvSet({ tried: true, done: true }); this._focusAfter = 'st-lvr';
+  }
+  tryNet() {
+    if (this.state.net !== 'down') return;
+    this.setState({ net: 'trying' });
+    clearTimeout(this._nt);
+    this._nt = setTimeout(() => {
+      this.setState({ net: 'up' });
+      this._nt = setTimeout(() => this.setState({ net: 'gone' }), 2200);
+    }, 1400);
+  }
+
+  renderVals() {
+    const st = this.state;
+    // ---- confirms
+    const warnI = (text) => ({ glyph: 'alert', tone: 'warn', text });
+    const C = (label, tid, tone, glyph, title, body, extra) => ({
+      label, tid, did: tid + '-d', tone, glyph, title, body, hasList: false, items: [], hasNote: false, note: '',
+      cg: 'undo', closing: '', cancel: 'Cancel', ok: 'OK', okTone: tone === 'bad' ? 'bad' : 'brand', ...extra
+    });
+    const confirms = [
+      C('Confirm · ticking by hand', 'st-k1', 'warn', 'checklist', 'Tick anyway?', "The records don't show this yet: the KWSP acknowledgement isn't filed on the payment.",
+        { hasNote: true, note: 'It stays marked Ticked by hand until the acknowledgement is uploaded.', closing: 'You can untick it at any time.', ok: 'Tick anyway' }),
+      C('Confirm · filing with things open', 'st-k2', 'brand', 'pack', 'Mark October as filed?', 'AISB still has things open:',
+        { hasList: true, items: [warnI('3 payments not complete'), warnI('Audit pack out of date (2 documents added since)')], closing: 'A filed month can be reopened later.', cancel: 'Go back', ok: 'File anyway' }),
+      C('Confirm · remove blocked (documents attached)', 'st-k3', 'warn', 'document', "“Electricity bill” can't be removed yet",
+        "This payment has documents attached, so it can't be removed. If it was added by mistake, remove its documents first; the files are kept on this PC.",
+        { hasList: true, items: [{ glyph: 'document', tone: 'muted', text: 'bank-slip-oct.pdf' }, { glyph: 'document', tone: 'muted', text: 'invoice-oct.pdf' }], closing: 'Nothing was changed.', cancel: 'Close', ok: 'Open the payment', okTone: 'brand' }),
+      C('Confirm · discard your changes', 'st-k4', 'warn', 'edit', 'Discard your changes?', 'You have unsaved changes on “Electricity bill”. Closing now loses them.',
+        { hasNote: true, note: 'Escape, a click outside the dialog, Cancel, changing page or month, and opening another payment all ask this first.', cg: 'alert', closing: "Discarded changes can't be recovered.", cancel: 'Keep editing', ok: 'Discard', okTone: 'bad' }),
+      C('Confirm · replace a document', 'st-k5', 'brand', 'document', 'Replace “bank-slip-oct.pdf”?', 'Replace “bank-slip-oct.pdf” with “bank-slip-oct-v2.pdf”? The old file is taken out of the audit pack.',
+        { closing: 'You can replace it again at any time.', ok: 'Replace file' }),
+      C('Confirm · remove a document', 'st-k6', 'bad', 'trash', 'Remove “bank-slip-oct.pdf”?', 'It is left out of the audit pack; the file itself is kept on this PC.',
+        { closing: 'You can add the file to the payment again.', ok: 'Remove document' }),
+      C('Confirm · build the auditor package', 'st-k7', 'warn', 'pack', 'Build the auditor package?', 'The auditor package holds staff pay, bank and ID details. It stays on this PC until you send it. Build it now?',
+        { hasNote: true, note: 'It is saved in the exports folder on this PC. Nothing is sent from here.', closing: 'Delete the file from the exports folder to withdraw it.', ok: 'Build package' }),
+      C('Prompt · backup after filing', 'st-k8', 'brand', 'vault', 'October is filed. Make an encrypted backup now?', "A backup keeps the filed month safe if this PC fails. You'll be asked for the backup password next.",
+        { closing: 'Not now changes nothing; back up any time from Backup.', cancel: 'Not now', ok: 'Make a backup' }),
+      C('Confirm · put a deleted record back', 'st-k9', 'brand', 'history', 'Put back “Petty cash”?', 'Petty cash was deleted 12 Nov 2026 by Aisha Rahman, in entry 2418. Why: Added twice.',
+        { hasNote: true, note: 'It comes back as it was when it was deleted, with the same number. Nothing in the months already set up changes.', closing: 'It can be deleted again. Put it back asks why next.', cancel: 'History', ok: 'Put it back' })
+    ];
+    const RS = [
+      { k: 'stop', label: 'Confirm · stop using (reason required)', tone: 'warn', glyph: 'archive', ok: 'Stop using it', okTone: 'brand', ph: 'Account closed', eg: 'Account closed',
+        title: 'Stop using “Maybank savings”?', body: 'It is hidden from the account lists and nothing recorded against it is lost.',
+        note: 'Stopped: hidden from the account lists; a month with no statement for it no longer asks for one.', cg: 'undo', closing: 'You can use it again later. The reason is kept in the audit trail.', doneText: 'Stopped. Its history stays.' },
+      { k: 'del', label: 'Confirm · delete (only when never used)', tone: 'bad', glyph: 'trash', ok: 'Delete it', okTone: 'bad', ph: 'Added twice', eg: 'Added twice',
+        title: 'Delete “Petty cash”?', body: 'Only records that were never used can be deleted. Petty cash has no payments or lines.',
+        note: 'It leaves every list.', cg: 'history', closing: 'You can put it back from the Audit trail.', doneText: 'Deleted. Put it back from the Audit trail or Show deleted.' },
+      { k: 'chg', label: 'Confirm · change an approved request (reason required)', tone: 'warn', glyph: 'edit', ok: 'Change request', okTone: 'brand', ph: 'Amount corrected', eg: 'Amount corrected',
+        title: 'Change an approved request?', body: 'CL-2610-005 (Aina, RM 408.00) was approved on AF-2611-003 by Tan Mei Ling on 12 Nov. A change means that approval no longer covers it.',
+        note: 'It goes back to Waiting for approval and leaves To pay until a new form is signed. AF-2611-003 stays on file, and its other two claims stay approved.', cg: 'history', closing: 'A signed form is never edited. The change and the reason are kept in the audit trail.', doneText: 'Changed. CL-2610-005 is waiting for approval again.' },
+      { k: 'nap', label: 'Confirm · not approved (reason required)', tone: 'bad', glyph: 'approval', ok: 'Mark not approved', okTone: 'bad', ph: 'Fee not agreed', eg: 'Fee not agreed',
+        title: 'Mark this request as not approved?', body: 'Consultant fee, Payroll Advisory PLT, PA-1010, RM 3,200.00. It was printed on AF-2611-004 on 16 Nov and has not been signed.',
+        note: 'It leaves Waiting for approval and stays out of To pay. It is listed under Not approved, with your reason.', cg: 'undo', closing: 'You can put it back to Waiting for approval. Undo stays on the toast for a few seconds.', doneText: 'Marked as not approved.' },
+      { k: 'wd', label: 'Confirm · withdraw a request (reason required)', tone: 'warn', glyph: 'close', ok: 'Withdraw request', okTone: 'brand', ph: 'Entered by mistake', eg: 'Entered by mistake',
+        title: 'Withdraw claim CL-2611-001?', body: 'Kah Seng, Phone, RM 145.00. It is waiting for approval on AF-2611-005 and has not been paid.',
+        note: 'It stays in the list as Withdrawn, with your reason. AF-2611-005 still carries Daniel’s advance.', cg: 'alert', closing: "A withdrawn request can't be approved or paid. Enter a new one if it is still needed.", doneText: 'Withdrawn. It stays in the list as Withdrawn.' }
+    ];
+    const reasons = RS.map(r => {
+      const s = st.rs[r.k], bad = s.tried && !s.v.trim() && !s.done, eid = 'st-rs-' + r.k + '-err';
+      return {
+        ...r, tid: 'st-rc-' + r.k, did: 'st-rc-' + r.k + '-d', rid: 'st-rs-' + r.k, bid: 'st-rsb-' + r.k, rbid: 'st-rsr-' + r.k, eid,
+        val: s.v, inv: bad ? 'true' : 'false', errOn: bad, by: bad ? eid : '', open: !s.done, done: s.done,
+        inputStyle: 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#7B8798'),
+        onVal: e => this.rsSet(r.k, { v: e && e.target ? e.target.value : '' }),
+        submit: () => this.rsSubmit(r.k),
+        reset: () => { this.rsSet(r.k, { v: '', tried: false, done: false }); this._focusAfter = 'st-rs-' + r.k; }
+      };
+    });
+
+    // ---- filtered to nothing
+    const P = [['Electricity bill', 'RM 412.00'], ['Water bill', 'RM 96.00'], ['Internet', 'RM 188.00']];
+    const q = st.q.trim().toLowerCase();
+    const rows = P.filter(p => !q || p[0].toLowerCase().includes(q)).map(([name, amt]) => ({ name, amt }));
+    // ---- field form
+    const bad = st.tried && !st.saving ? this.amtError(st.amt) : '';
+    const dirty = st.amt.trim() !== st.init && !st.saving;
+    const ok = st.saved && !dirty && !bad;
+    const by = ['st-amt-hint', bad ? 'st-amt-err' : ''].filter(Boolean).join(' ');
+    // ---- connection strip
+    const net = st.net;
+    const down = net === 'down' || net === 'trying';
+    const netText = net === 'up' ? 'Connected again. You can carry on.' : net === 'trying' ? 'Trying to reach HR Payments…' : "Connection lost. Nothing you typed has been sent, and the form is as you left it. Trying again every few seconds.";
+    // ---- toasts
+    const toasts = st.toasts.map(t => {
+      const id = t.id;
+      return {
+        id, role: t.role, glyph: t.glyph, tone: t.tone, title: t.title, body: t.body,
+        cls: t.leaving ? 'st-tout' : 'rv', closeId: 'st-tc-' + id,
+        hasUndo: !!t.undo, hasAction: !!t.action, actionText: t.action || '',
+        hasProg: t.prog != null, progNow: t.prog == null ? 0 : t.prog, barStyle: 'height:100%;border-radius:99px;background:#8DB0FA;width:' + (t.prog == null ? 0 : t.prog) + '%',
+        close: e => this.dismiss(id, e), undo: () => this.undoToast(id),
+        onAnim: e => { const x = this.state.toasts.find(y => y.id === id); if (x && x.leaving && e.target === e.currentTarget) this.removeNow(id); },
+        hold: () => clearTimeout(this._tt[id]),
+        release: () => { const x = this.state.toasts.find(y => y.id === id); if (x && !x.leaving) this.arm(id, x.ms); },
+        key: e => { if (e.key === 'Escape') { e.stopPropagation(); this.dismiss(id); this._focusAfter = 'st-add-saved'; } }
+      };
+    });
+    const { dlg, closing, busy } = st;
+    const lv = st.lv, lvBad = lv.tried && !lv.done && !this.lvFmt(lv.d);
+    return {
+      lvOpen: !lv.done, lvDone: lv.done, lvD: lv.d, lvR: lv.r, lvErr: lvBad, lvInv: lvBad ? 'true' : 'false', lvBy: lvBad ? 'st-lv-err' : '',
+      lvStyle: 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;border:1px solid ' + (lvBad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#7B8798'),
+      lvOnD: e => this.lvSet({ d: e && e.target ? e.target.value : '' }),
+      lvOnR: e => this.lvSet({ r: e && e.target ? e.target.value : '' }),
+      lvSubmit: () => this.lvSubmit(),
+      lvReset: () => { this.lvSet({ d: '2026-12-31', r: 'Retiring', tried: false, done: false }); this._focusAfter = 'st-lv'; },
+      lvKey: e => { if (e && e.key === 'Escape' && !this.state.lv.done) { e.stopPropagation(); this.lvSet({ d: '2026-12-31', r: 'Retiring', tried: false, done: false }); this._focusAfter = 'st-lv'; } },
+      lvNoteOn: !!this.lvNote(lv), lvNote: this.lvNote(lv),
+      lvDoneText: 'Marked as left. Last day ' + this.lvFmt(lv.d) + '.' + (lv.r.trim() ? ' Reason: ' + lv.r.trim() + '.' : ''),
+      goAdmin: e => { const el = document.getElementById('st-ref-admin'); if (!el) return; if (e) e.preventDefault(); el.focus(); },
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '' }),
+      qRows: rows.length > 0, qNone: rows.length === 0, rows,
+      qTitle: 'No payments match “' + st.q.trim() + '”',
+      qNote: rows.length ? rows.length + ' of 3 payments shown' : 'No payments match',
+      clearQ: () => { this.setState({ q: '' }); this._focusAfter = 'st-q'; },
+      retry: st.retry, retryIdle: !st.retry, retryAria: st.retry ? 'true' : 'false', retryNote: st.retryNote,
+      runRetry: () => {
+        if (this.state.retry) return;
+        this.setState({ retry: true, retryNote: '' });
+        clearTimeout(this._rt);
+        this._rt = setTimeout(() => { this.setState({ retry: false, retryNote: 'Still not answering. Start it with the .bat file, then try again.' }); this._focusAfter = 'st-retry'; }, 1500);
+      },
+      confirms, reasons,
+      dlgOn: dlg, c3Modal: dlg ? 'true' : 'false', c3Cls: dlg ? (closing ? 'st-modal dr-out' : 'st-modal dr-in') : '',
+      dimCls: closing ? 'dim-out' : 'dim-in',
+      openDlg: () => this.openDlg(), closeDlg: () => this.closeDlg(), dlgKey: e => this.dlgKey(e),
+      onDlgAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishDlg(); },
+      amt: st.amt, onAmt: e => this.setState({ amt: e && e.target ? e.target.value : '', saved: false, same: false }),
+      amtInv: bad ? 'true' : 'false', amtBy: by, saving: st.saving, notSaving: !st.saving, savingAria: st.saving ? 'true' : 'false',
+      amtStyle: 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;text-align:right;font-variant-numeric:tabular-nums;transition:border-color .12s ease-out;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#7B8798'),
+      amtErr: !!bad, amtMsg: bad, amtOk: ok, amtSame: st.same && !dirty && !bad, dirty,
+      resetAmt: () => this.setState({ amt: this.state.init, tried: false, saved: false, same: false }),
+      saveAmt: () => this.saveAmt(),
+      roll: st.roll, rollGone: !st.roll,
+      dismissRoll: () => { this.setState({ roll: false }); this._focusAfter = 'st-roll-show'; },
+      showRoll: () => { this.setState({ roll: true }); this._focusAfter = 'st-roll-x'; },
+      netStrip: net !== 'gone', netGone: net === 'gone', netCanTry: net === 'down', netTrying: net === 'trying',
+      netRole: down ? 'alert' : 'status', netGlyph: net === 'up' ? 'check' : 'wifiOff', netTone: net === 'up' ? 'ok' : 'warn', netText,
+      netInk: net === 'up' ? '#0A6B3D' : '#5C3100',
+      netStyle: 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid ' + (net === 'up' ? '#BFE8D0;background:#F0FBF5' : '#F3D9A6;background:#FFFBF2'),
+      tryNet: () => this.tryNet(),
+      lose: () => { this.setState({ net: 'down' }); this._focusAfter = 'st-net-try'; },
+      busy, idle: !busy, busyAria: busy ? 'true' : 'false', busyNote: busy ? 'Reading the folder…' : '',
+      runBusy: e => {
+        if (this.state.busy) return;
+        this._busyFocus = !!(e && e.currentTarget && document.activeElement === e.currentTarget);
+        this.setState({ busy: true });
+        clearTimeout(this._bt);
+        this._bt = setTimeout(() => this.setState({ busy: false }), 2400);
+      },
+      toasts, noToasts: toasts.length === 0,
+      addSaved: () => this.addToast('saved'), addImport: () => this.addToast('import'), addError: () => this.addToast('error'),
+      addLong: () => this.addToast('long'), addProg: () => this.addToast('prog'), addSwitch: () => this.addToast('switch'),
+      clearToasts: () => { this.state.toasts.forEach(t => this.dismiss(t.id)); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,826 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audit pack · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hg:hover{background:#085C34 !important}
+.hs:hover{background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD !important}
+/* motion and focus base */
+.hb,.hg,.hs,.hr,.nv,.nb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.nt:empty{display:none}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.spd{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(36,80,184,.25);border-top-color:#2450B8;animation:spin .7s linear infinite;flex:none}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+button[aria-busy="true"]{cursor:progress !important}
+button:disabled{cursor:not-allowed}
+.sw{display:flex;align-items:center;gap:10px;width:100%;min-height:32px;padding:0;border:0;border-radius:8px;background:transparent;font:600 13px Inter,sans-serif;color:#0F1A2B;cursor:pointer;text-align:left}
+.sw:disabled{color:#5F6C80}
+.cp{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;border:1px solid #D5DBE4;background:#EEF1F5;color:#46546A;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+/* dialogs and the side panel */
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes panIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes panOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(16px)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.pn-in{animation:panIn .24s cubic-bezier(.22,1,.36,1) both}
+.pn-out{animation:panOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="pack" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Audit pack" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <sc-if value="{{setUp}}" hint-placeholder-val="{{ true }}"><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">One PDF per company and month</span></sc-if>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+            <h1 id="ap-title" tabindex="-1" class="{{headCls}}" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">{{heading}}</h1>
+            <sc-if value="{{filed}}" hint-placeholder-val="{{ false }}"><span class="rv" style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="verified" tone="ok" size="16" hint-size="16px,16px"></dc-import>Filed 18 Nov</span></sc-if>
+          </div>
+          <sc-if value="{{setUp}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; max-width: 760px; color: #46546A; font-size: 13px">One PDF with an index page, the bank reconciliation, three pages on SQL's books (<a href="AuditPackBooks.dc.html">what they say</a>) and six HR and approval pages (<a href="AuditPackHR.dc.html">what they hold</a>): approvals of the month, paid without approval on file, approver history, steps one name did alone, the HR summary and the Month review. Then every payment's documents in filing order (PV, approval, invoice, bank receipt, e-Invoice), then checklist documents and the bank statement. Print it once and file it.</p></sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{notSetUp}}" hint-placeholder-val="{{ false }}">
+        <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="calendar" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">October 2026 isn't set up yet</h2>
+          <p style="margin: 0; max-width: 460px; color: #46546A; font-size: 13px">Setting it up adds {{co}}'s checklist and recurring payments for the month.</p>
+          <button type="button" class="hb" onClick="{{setUpMonth}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Set up this month</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{setUp}}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{filed}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 16px 18px; border-radius: 14px; background: #F0FBF5; border: 1px solid #BFE8D0">
+            <dc-import name="Icon" glyph="verified" tone="ok" size="24" hint-size="24px,24px"></dc-import>
+            <div style="flex: 1 1 260px; min-width: 0"><h2 id="ap-filed-title" tabindex="-1" style="margin: 0; font-size: 15px; font-weight: 700; color: #0A6B3D">Filed 18 Nov</h2><div style="color: #46546A; font-size: 13px">This month is marked as filed, so nothing in it counts as to do on the Overview.</div></div>
+            <button type="button" class="hs" onClick="{{reopen}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Reopen</button>
+          </div>
+          <sc-if value="{{showNext}}" hint-placeholder-val="{{ true }}">
+            <section class="rv" aria-labelledby="ap-next-title" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 18px 20px; border-radius: 16px; background: #FFFFFF; border: 1px solid #C9D7F6">
+              <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="lock" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+              <div style="flex: 1 1 300px; min-width: 0"><span style="font-size: 12px; font-weight: 600; color: #2450B8">Next step</span><h2 id="ap-next-title" style="margin: 0; font-size: 16px; font-weight: 600">Make an encrypted backup</h2><div style="color: #46546A; font-size: 13px">October is filed. Back up its records and documents now; the backup password is typed each time.</div></div>
+              <a href="Backup.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="vault" tone="white" size="18" hint-size="18px,18px"></dc-import>Go to Backup</a>
+            </section>
+          </sc-if>
+        </sc-if>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+          <section aria-labelledby="ap-bp-title" style="flex: 3 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <sc-if value="{{notFiled}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; padding: 20px 22px; border-bottom: 1px solid #EEF1F5">
+                <h2 id="ap-bp-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Before you print</h2>
+                <span role="status" class="{{swapCls}}" style="color: #5F6C80; font-size: 13px">{{leftLabel}}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{filed}}" hint-placeholder-val="{{ false }}">
+              <h2 id="ap-bp-title" style="margin: 0"><button type="button" class="hr fr" aria-expanded="{{listExp}}" aria-controls="ap-list" onClick="{{toggleList}}" style="width: 100%; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 14px 22px; border: 0; background: #FFFFFF; text-align: left; cursor: pointer; font: inherit; color: inherit"><span class="{{listChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Before you print</span><span style="color: #5F6C80; font-size: 13px; font-weight: 400">{{filedLabel}}</span></span></button></h2>
+            </sc-if>
+            <div id="ap-list">
+              <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+                <div class="{{listCls}}">
+                  <sc-if value="{{isReady}}" hint-placeholder-val="{{ false }}">
+                    <div class="rv" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 22px; background: #F0FBF5; border-top: 1px solid #EEF1F5">
+                      <dc-import name="Icon" glyph="verified" tone="ok" size="24" hint-size="24px,24px"></dc-import>
+                      <div style="flex: 1 1 280px; min-width: 0"><b style="color: #0A6B3D">Ready to print</b><div style="color: #46546A; font-size: 13px">Every bank statement is imported and explained, every payment and checklist item is done with its documents, and every file will print.</div></div>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{hasOpen}}" hint-placeholder-val="{{ true }}">
+                    <div style="padding: 16px 22px 8px; display: flex; flex-direction: column; gap: 10px">
+                      <ul aria-label="Still open" style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px">
+                        <sc-for list="{{pills}}" as="p" hint-placeholder-count="5"><li class="{{p.cls}}" style="display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600">{{p.text}}</li></sc-for>
+                      </ul>
+                      <span style="color: #46546A; font-size: 13px">Click a line to fix it. You can still build the pack: what is missing is listed on its index page.</span>
+                    </div>
+                    <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+                      <div style="padding-top: 8px">
+                        <h3 id="{{g.id}}" style="margin: 0; padding: 8px 22px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #46546A">{{g.label}}<span style="display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">{{g.n}}</span></h3>
+                        <ul aria-labelledby="{{g.id}}" style="margin: 0; padding: 0; list-style: none">
+                          <sc-for list="{{g.rows}}" as="it" hint-placeholder-count="2">
+                            <li style="border-top: 1px solid #EEF1F5"><a href="{{it.href}}" class="hr fr" style="display: flex; align-items: center; gap: 14px; padding: 12px 22px; color: #0F1A2B; text-decoration: none"><span style="{{it.tile}}"><dc-import name="Icon" glyph="{{it.glyph}}" tone="{{it.tone}}" size="20" hint-size="20px,20px"></dc-import></span><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column"><b style="font-weight: 600; overflow-wrap: anywhere">{{it.title}}</b><span style="color: #5F6C80; font-size: 13px">{{it.detail}}</span></span><span style="display: inline-flex; align-items: center; gap: 2px; flex: none; color: #2450B8; font-size: 13px; font-weight: 600">{{it.action}}<dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></span></a></li>
+                          </sc-for>
+                        </ul>
+                      </div>
+                    </sc-for>
+                  </sc-if>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+
+          <div style="flex: 2 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+            <section aria-labelledby="ap-build-title" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: center; gap: 12px"><span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="pack" tone="brand" size="28" hint-size="28px,28px"></dc-import></span><div><h2 id="ap-build-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Build the pack</h2><span style="color: #5F6C80; font-size: 13px">Payments, approvals, documents, statements and the checklist, in filing order</span></div></div>
+
+              <div role="status" class="{{swapCls}}" style="display: flex; flex-direction: column; gap: 6px">
+                <sc-if value="{{stNone}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="clock" tone="muted" size="18" hint-size="18px,18px"></dc-import>No audit pack built yet</span></sc-if>
+                <sc-if value="{{stFresh}}" hint-placeholder-val="{{ false }}"><span class="rv" style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #0A6B3D; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="18" hint-size="18px,18px"></dc-import>{{freshText}}</span></sc-if>
+                <sc-if value="{{stStale}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 10px 12px; border-radius: 10px; background: #FFFBF2; border: 1px solid #F3D9A6"><span style="display: inline-flex; align-items: center; gap: 6px; min-height: 24px; padding: 2px 10px; box-sizing: border-box; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{staleText}}</span><span style="font-size: 13px; color: #5C3100">Build it again before you print.</span></div></sc-if>
+              </div>
+
+              <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid #E3E7ED">
+                <button type="button" id="ap-slips" role="switch" class="sw" aria-checked="{{slipsAttr}}" aria-describedby="ap-slips-note" disabled="{{slipsOff}}" onClick="{{toggleSlips}}"><span aria-hidden="true" style="{{swTrack}}"><span style="{{swKnob}}"></span></span><span style="flex: 1">Include payslips</span><span style="font-weight: 600; color: #46546A">{{slipsWord}}</span></button>
+                <span id="ap-slips-note" class="{{swapCls}}" style="font-size: 12px; color: #5F6C80">{{slipsNote}} <a href="AuditPackHR.dc.html">What the HR pages hold</a></span>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12px; color: #5F6C80"><span class="cp"><dc-import name="Icon" glyph="person" tone="muted" size="14" hint-size="14px,14px"></dc-import>Declared, not verified</span><span style="flex: 1 1 200px">Names on the approval pages are the ones declared on this computer, and every page says so until logins exist.</span></div>
+
+              <sc-if value="{{hasPrint}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 10px; padding: 10px 12px; border-radius: 10px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="printer" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Not in the PDF:</b> print {{toPrint}} from SQL.</span></div>
+              </sc-if>
+
+              <button type="button" id="ap-build" class="hb" onClick="{{build}}" disabled="{{busy}}" aria-busy="{{packBusyAttr}}" style="{{buildStyle}}"><sc-if value="{{packBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if><sc-if value="{{packIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="printer" tone="white" size="18" hint-size="18px,18px"></dc-import></sc-if>{{buildLabel}}</button>
+
+              <sc-if value="{{busy}}" hint-placeholder-val="{{ false }}">
+                <div id="ap-prog" tabindex="-1" style="display: flex; flex-direction: column; gap: 6px">
+                  <div role="progressbar" aria-label="{{progAria}}" aria-valuemin="0" aria-valuemax="{{progMax}}" aria-valuenow="{{progNow}}" style="height: 6px; border-radius: 99px; background: #E3E7ED; overflow: hidden"><div class="bar" style="{{progBar}}"></div></div>
+                  <span aria-live="polite" style="font-size: 12px; color: #46546A">{{progLabel}}</span>
+                </div>
+              </sc-if>
+
+              <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <button type="button" class="hs" onClick="{{excel}}" disabled="{{busy}}" aria-label="{{excelAria}}" style="{{excelStyle}}"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import>Excel report</button>
+                <button type="button" id="ap-aud" class="hs" onClick="{{openAud}}" disabled="{{busy}}" aria-busy="{{audBusyAttr}}" aria-haspopup="dialog" aria-describedby="ap-aud-note" style="{{audStyle}}"><sc-if value="{{audBusy}}" hint-placeholder-val="{{ false }}"><span class="spd" aria-hidden="true"></span></sc-if><sc-if value="{{audIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="archive" tone="muted" size="18" hint-size="18px,18px"></dc-import></sc-if>{{audLabel}}</button>
+              </div>
+              <span id="ap-aud-note" style="margin-top: -6px; color: #5F6C80; font-size: 12px">Auditor package: one zip with a fresh pack, the Excel month report, {{audBooksNote}}and the original files. It holds staff pay, bank and ID details.</span>
+
+              <div id="ap-out" style="display: contents">
+                <sc-if value="{{resPackOk}}" hint-placeholder-val="{{ false }}">
+                  <div class="rv" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; background: #F0FBF5; border: 1px solid #BFE8D0">
+                    <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import><h3 id="ap-res-ok" tabindex="-1" style="margin: 0; font-size: 15px; font-weight: 700; color: #0A6B3D">{{resTitle}}</h3></div>
+                    <span style="font-size: 13px; color: #46546A"><b style="color: #0F1A2B; overflow-wrap: anywhere">{{newName}}</b> is in the audit packs folder on this PC and at the top of Recent packs.</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="hb" onClick="{{openPdf}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="external" tone="white" size="16" hint-size="16px,16px"></dc-import>Open PDF</button><button type="button" class="hs" onClick="{{checkNew}}" aria-haspopup="dialog" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Check this pack</button></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{resPackFail}}" hint-placeholder-val="{{ false }}">
+                  <div role="alert" class="rv" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; background: #FFF5F4; border: 1px solid #F5C2BB">
+                    <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><h3 id="ap-res-fail" tabindex="-1" style="margin: 0; font-size: 15px; font-weight: 700; color: #B0190F">The pack wasn't built</h3></div>
+                    <span style="font-size: 13px; color: #46546A">{{failText}}</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px"><a href="Payment.dc.html" class="hb" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none">{{failOpen}}</a><button type="button" class="hs" onClick="{{build}}" disabled="{{busy}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</button></div>
+                    <span style="font-size: 12px; color: #5F6C80">This stays here until the next build.</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{resAudOk}}" hint-placeholder-val="{{ false }}">
+                  <div class="rv" style="{{audBox}}">
+                    <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="{{audGlyph}}" tone="{{audTone}}" size="20" hint-size="20px,20px"></dc-import><h3 id="ap-aud-ok" tabindex="-1" style="{{audHead}}">{{audTitle}}</h3></div>
+                    <span style="font-size: 13px; color: #46546A">{{audText}} <b style="color: #0F1A2B; overflow-wrap: anywhere">{{zipName}}</b>. It also built a fresh audit pack, and it is in the exports folder on this PC.</span>
+                    <sc-if value="{{audLeft}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #5C3100">Left out, and listed on the Files sheet of the month report: {{audLeftList}}.</span></sc-if>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="hb" onClick="{{dlPkg}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="download" tone="white" size="16" hint-size="16px,16px"></dc-import>Download the package</button></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{resAudFail}}" hint-placeholder-val="{{ false }}">
+                  <div role="alert" class="rv" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; background: #FFF5F4; border: 1px solid #F5C2BB">
+                    <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><h3 id="ap-aud-fail" tabindex="-1" style="margin: 0; font-size: 15px; font-weight: 700; color: #B0190F">The package wasn't built</h3></div>
+                    <span style="font-size: 13px; color: #46546A">{{failText}}</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px"><a href="Payment.dc.html" class="hb" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none">{{failOpen}}</a><button type="button" class="hs" onClick="{{openAud}}" disabled="{{busy}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</button></div>
+                    <span style="font-size: 12px; color: #5F6C80">This stays here until the next build.</span>
+                  </div>
+                </sc-if>
+              </div>
+
+              <span role="status" class="nt" style="font-size: 12px; font-weight: 600; color: #2450B8">{{note}}</span>
+
+              <span style="color: #5F6C80; font-size: 12px">You can build before everything is clear. What is missing, and a statement not imported, is listed on the pack's index page.</span>
+            </section>
+
+            <sc-if value="{{showAsk}}" hint-placeholder-val="{{ false }}">
+              <section class="rv" aria-labelledby="ap-ask-title" style="background: #F0FBF5; border: 1px solid #BFE8D0; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+                <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="check" tone="ok" size="22" hint-size="22px,22px"></dc-import><h2 id="ap-ask-title" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600">Printed and filed?</h2></div>
+                <span style="color: #46546A; font-size: 13px">The pack is up to date. Marking the month as filed stops its counts showing on the Overview. You can reopen it later.</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" id="ap-file" class="hg" onClick="{{askFile}}" aria-haspopup="dialog" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #0A6B3D; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Yes, mark month as filed</button><button type="button" class="hs" onClick="{{notYet}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Not yet</button></div>
+              </section>
+            </sc-if>
+            <sc-if value="{{showLater}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED">
+                <dc-import name="Icon" glyph="clock" tone="muted" size="18" hint-size="18px,18px"></dc-import>
+                <span style="flex: 1 1 180px; font-size: 13px; color: #46546A">Printed and filed? October isn't marked as filed yet.</span>
+                <button type="button" id="ap-later-btn" class="hs" onClick="{{askFile}}" aria-haspopup="dialog" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Mark as filed</button>
+              </div>
+            </sc-if>
+
+            <section id="ap-packs" aria-labelledby="ap-packs-title" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <div style="padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><h2 id="ap-packs-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Recent packs</h2><span style="color: #5F6C80; font-size: 13px">{{packsSub}}</span></div>
+              <sc-if value="{{noPacks}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; gap: 12px; padding: 20px 22px; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="document" tone="muted" size="22" hint-size="22px,22px"></dc-import>None built for October 2026 yet.</div>
+              </sc-if>
+              <ul style="margin: 0; padding: 0; list-style: none">
+                <sc-for list="{{packs}}" as="pk" hint-placeholder-count="3">
+                  <li class="{{pk.cls}}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px 22px; border-top: 1px solid #F1F3F7">
+                    <span style="{{pk.tile}}"><dc-import name="Icon" glyph="{{pk.glyph}}" tone="{{pk.tone}}" size="18" hint-size="18px,18px"></dc-import></span>
+                    <div style="flex: 1 1 200px; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                      <b style="font-size: 13px; overflow-wrap: anywhere">{{pk.name}}</b>
+                      <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: #5F6C80; font-size: 12px">{{pk.when}}<sc-if value="{{pk.via}}" hint-placeholder-val="{{ false }}"><span>· for the auditor package</span></sc-if><sc-if value="{{pk.missing}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 99px; background: #FDE6E3; color: #B0190F; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="alert" tone="bad" size="14" hint-size="14px,14px"></dc-import>File missing</span></sc-if></span>
+                    </div>
+                    <div style="display: flex; gap: 6px; flex: none">
+                      <sc-if value="{{pk.hasFile}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" onClick="{{pk.open}}" aria-label="{{pk.openLabel}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="external" tone="muted" size="14" hint-size="14px,14px"></dc-import>Open</button></sc-if>
+                      <button type="button" id="{{pk.checkId}}" class="hs" onClick="{{pk.check}}" aria-haspopup="dialog" aria-label="{{pk.checkLabel}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Check this pack</button>
+                    </div>
+                  </li>
+                </sc-for>
+              </ul>
+            </section>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dimCls}}" onClick="{{closeDlg}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div>
+    <div role="alertdialog" aria-modal="true" aria-labelledby="{{dlgTitle}}" aria-describedby="{{dlgDesc}}" tabindex="-1" class="{{dlgCls}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onDlgAnim}}" style="position: fixed; inset: 0; margin: auto; z-index: 51; width: 460px; max-width: calc(100% - 32px); height: fit-content; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; box-shadow: 0 16px 40px rgba(13,27,46,.18); padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+      <button type="button" class="hs" onClick="{{closeDlg}}" aria-label="Close" style="position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 1px solid #8792A4; border-radius: 9px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+      <sc-if value="{{dAud}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; gap: 12px; padding-right: 44px"><span style="width: 40px; height: 40px; border-radius: 12px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="lock" tone="warn" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="ap-dlg-aud" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600">Build the auditor package?</h2><p id="ap-dlg-aud-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">The auditor package holds staff pay, bank and ID details. It stays on this PC until you send it.</p></div></div>
+        <div style="padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A">In the zip: a fresh audit pack, the Excel month report with a Files sheet, {{audBooks}}and the original files. A file that changed or is missing is left out and listed.</div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" class="hs" onClick="{{closeDlg}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button><button type="button" class="hb" onClick="{{confirmAud}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Build it</button></div>
+      </sc-if>
+      <sc-if value="{{dFile}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; gap: 12px; padding-right: 44px"><span style="width: 40px; height: 40px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="pack" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="ap-dlg-file" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600">Mark October as filed?</h2><p id="ap-dlg-file-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{fileLead}}</p></div></div>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+          <sc-for list="{{fileList}}" as="s" hint-placeholder-count="3"><li style="display: flex; gap: 8px; align-items: center"><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import>{{s.text}}</li></sc-for>
+        </ul>
+        <span style="font-size: 13px; color: #46546A">Mark it as filed anyway? The list is kept with the filing in the activity log.</span>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" class="hs" onClick="{{closeDlg}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Go back</button><button type="button" class="hg" onClick="{{doFile}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #0A6B3D; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">File anyway</button></div>
+      </sc-if>
+      <sc-if value="{{dBackup}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; gap: 12px; padding-right: 44px"><span style="width: 40px; height: 40px; border-radius: 12px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="vault" tone="ok" size="22" hint-size="22px,22px"></dc-import></span><div><h2 id="ap-dlg-bk" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600">Make an encrypted backup now?</h2><p id="ap-dlg-bk-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{backupLead}}</p></div></div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px"><button type="button" class="hs" onClick="{{closeDlg}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Not now</button><a href="Backup.dc.html" class="hb" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none">Go to Backup</a></div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{panelOn}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{pDimCls}}" onClick="{{closePanel}}" style="position: fixed; inset: 0; z-index: 40; background: rgba(13,27,46,.42)"></div>
+    <aside role="dialog" aria-modal="true" aria-labelledby="ap-pc-title" tabindex="-1" class="{{panelCls}}" onKeyDown="{{panelKey}}" onAnimationEnd="{{onPanelAnim}}" style="position: fixed; top: 0; right: 0; bottom: 0; z-index: 41; width: 560px; max-width: 100%; background: #FFFFFF; box-shadow: -16px 0 48px rgba(13,27,46,.22); display: flex; flex-direction: column">
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 16px; border-bottom: 1px solid #EEF1F5">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 600; color: #2450B8">Check this pack</span><h2 id="ap-pc-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600; overflow-wrap: anywhere">{{pc.name}}</h2></div>
+        <button type="button" class="hs" onClick="{{closePanel}}" aria-label="Close" style="width: 36px; height: 36px; flex: none; border: 1px solid #8792A4; border-radius: 9px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 18px 22px 28px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{pcLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display: flex; flex-direction: column; gap: 14px">
+            <span role="status" style="font-size: 13px; color: #46546A">Checking the file against the trail…</span>
+            <div class="sk" style="height: 72px; border-radius: 12px"></div>
+            <div class="sk" style="height: 14px; width: 70%; border-radius: 6px"></div>
+            <div class="sk" style="height: 14px; width: 55%; border-radius: 6px"></div>
+            <div class="sk" style="height: 40px; border-radius: 10px"></div>
+            <div class="sk" style="height: 40px; border-radius: 10px"></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{pcFailed}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; background: #FFF5F4; border: 1px solid #F5C2BB">
+            <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><b style="color: #B0190F">No such audit pack.</b></div>
+            <span style="font-size: 13px; color: #46546A">The check couldn't find this pack in the audit trail or in the audit packs folder. Nothing was changed.</span>
+            <div><button type="button" class="hs" onClick="{{retryCheck}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</button></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{pcReady}}" hint-placeholder-val="{{ true }}">
+          <div class="rv" style="display: flex; flex-direction: column; gap: 16px">
+            <div style="{{pc.box}}">
+              <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="{{pc.glyph}}" tone="{{pc.tone}}" size="22" hint-size="22px,22px"></dc-import><span style="{{pc.pill}}">{{pc.word}}</span></div>
+              <span style="font-size: 13px; color: #2B374A">{{pc.text}}</span>
+            </div>
+
+            <dl style="margin: 0; display: grid; grid-template-columns: minmax(0, 120px) minmax(0, 1fr); gap: 8px 14px; font-size: 13px">
+              <dt style="color: #5F6C80">Company</dt><dd style="margin: 0">{{pc.meta}}</dd>
+              <dt style="color: #5F6C80">Built</dt><dd style="margin: 0">{{pc.built}}</dd>
+              <sc-if value="{{pcCover}}" hint-placeholder-val="{{ true }}"><dt style="color: #5F6C80">On its cover</dt><dd style="margin: 0">{{pc.cover}}</dd></sc-if>
+              <sc-if value="{{pcProg}}" hint-placeholder-val="{{ true }}"><dt style="color: #5F6C80">Program</dt><dd style="margin: 0">{{pc.prog}}</dd></sc-if>
+            </dl>
+
+            <sc-if value="{{pcEntry}}" hint-placeholder-val="{{ true }}">
+              <div style="border: 1px solid #E3E7ED; border-radius: 10px; overflow: hidden">
+                <button type="button" class="hr fr" aria-expanded="{{pc.entryExp}}" onClick="{{toggleOwn}}" style="width: 100%; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; background: #FFFFFF; text-align: left; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span class="{{pc.entryChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>{{pc.entryLabel}}</button>
+                <sc-if value="{{pcEntryOpen}}" hint-placeholder-val="{{ false }}"><div class="ex" style="padding: 10px 12px 12px 36px; border-top: 1px solid #EEF1F5; font-size: 13px; color: #46546A; display: flex; flex-direction: column; gap: 6px"><span>{{pc.entryDetail}}</span><a href="AuditTrail.dc.html" style="font-weight: 600">Open in the audit trail</a></div></sc-if>
+              </div>
+            </sc-if>
+
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700">Since it was built</h3>
+              <span style="font-size: 13px; color: #46546A">{{pc.summary}}</span>
+              <sc-for list="{{pcGroups}}" as="pg" hint-placeholder-count="2">
+                <div style="border: 1px solid #E3E7ED; border-radius: 10px; overflow: hidden">
+                  <h4 style="margin: 0"><button type="button" class="hr fr" aria-expanded="{{pg.exp}}" onClick="{{pg.toggle}}" style="width: 100%; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 12px; border: 0; background: #FFFFFF; text-align: left; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span class="{{pg.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><span style="flex: 1">{{pg.label}}</span><span style="display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; box-sizing: border-box; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px">{{pg.n}}</span></button></h4>
+                  <sc-if value="{{pg.open}}" hint-placeholder-val="{{ false }}">
+                    <ul class="ex" style="margin: 0; padding: 0; list-style: none; border-top: 1px solid #EEF1F5">
+                      <sc-for list="{{pg.rows}}" as="x" hint-placeholder-count="2">
+                        <li style="padding: 10px 12px; border-top: 1px solid #F1F3F7; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+                          <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; color: #46546A"><span style="font-family: ui-monospace, Consolas, monospace; font-size: 12px">{{x.when}}</span><span style="{{x.srcStyle}}">{{x.src}}</span><sc-if value="{{x.hasActor}}" hint-placeholder-val="{{ true }}"><span>{{x.actor}}</span></sc-if><sc-if value="{{x.late}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600">Sealed late</span></sc-if></span>
+                          <span style="color: #0F1A2B">{{x.change}}</span>
+                          <sc-if value="{{x.hasWhy}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A">Why: {{x.why}}</span></sc-if>
+                          <button type="button" class="hs" aria-expanded="{{x.exp}}" onClick="{{x.toggle}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px 0 6px; border: 0; border-radius: 8px; background: transparent; font: 600 12px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{x.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{x.entryLabel}}</button>
+                          <sc-if value="{{x.open}}" hint-placeholder-val="{{ false }}"><div class="ex" style="margin-left: 26px; padding: 8px 10px; border-radius: 8px; background: #F7F8FA; font-size: 12px; color: #46546A; display: flex; flex-direction: column; gap: 4px"><span>{{x.detail}}</span><a href="AuditTrail.dc.html" style="font-weight: 600">Open in the audit trail</a></div></sc-if>
+                        </li>
+                      </sc-for>
+                    </ul>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{pcDocsOk}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 8px; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="check" tone="ok" size="18" hint-size="18px,18px"></dc-import><span>{{pc.docsNote}}</span></div>
+            </sc-if>
+            <sc-if value="{{pcDocsBad}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <h3 style="margin: 0; font-size: 15px; font-weight: 700">{{pc.docsTitle}}</h3>
+                <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px">
+                  <sc-for list="{{pcProblems}}" as="d" hint-placeholder-count="1"><li style="display: flex; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #FFF5F4; border: 1px solid #F5C2BB; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import><span><b style="color: #0F1A2B">{{d.name}}</b> on {{d.owner}}: {{d.why}}</span></li></sc-for>
+                </ul>
+              </div>
+            </sc-if>
+
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <h3 style="margin: 0; font-size: 15px; font-weight: 700">What this check can't tell</h3>
+              <ul style="margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+                <sc-for list="{{pcCannot}}" as="c" hint-placeholder-count="3"><li>{{c.text}}</li></sc-for>
+              </ul>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </aside>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"company":{"editor":"enum","default":"auto","options":["auto","aisb","ai"],"section":"Company"},"view":{"editor":"enum","default":"open","options":["open","books-open","none","building","build-failed","ready","auditor-confirm","auditor-done","auditor-failed","file-confirm","filed","backup-offer","check","check-loading","check-failed","not-set-up","payslips-on","forms-differ"],"section":"State to show"},"$preview":{"width":1440,"height":1910}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); const v0 = (p && p.view) || 'open'; this.state = this.fresh(v0, this.coFor(v0, null), 0); }
+  // The top-bar switcher replaced the in-page control: the "Company" tweak picks the company (auto: AISB for books-open, else AI).
+  coFor(view, cur) { const c = (this.props && this.props.company) || 'auto'; if (c === 'aisb') return 'AISB'; if (c === 'ai') return 'AI'; return ['books-open', 'payslips-on', 'forms-differ'].includes(view) ? 'AISB' : (cur || 'AI'); }
+  // One state per value of the "State to show" tweak; switching company starts that state afresh for the other company.
+  fresh(view, co, swap) {
+    const s = { view, co, swap, booksOpen: view === 'books-open', slips: view === 'payslips-on' && co === 'AISB', staleWhy: null, formsDiffer: view === 'forms-differ', setUp: view !== 'not-set-up', clear: view === 'ready', packState: 'stale', extra: [],
+      busy: null, prog: 0, result: null, filed: false, next: false, listOpen: false, later: false,
+      dlg: null, closing: false, panel: null, pClosing: false, pState: 'ready', openG: {}, openE: {}, ownOpen: false, flash: -1, n: 0, note: '' };
+    if (view === 'none' || view === 'not-set-up') s.packState = 'none';
+    if (['ready', 'file-confirm', 'filed', 'backup-offer'].includes(view)) { s.packState = 'fresh'; s.extra = ['pack']; }
+    if (view === 'building') { s.busy = 'pack'; s.prog = 31; }
+    if (view === 'build-failed') s.result = 'pack-fail';
+    if (view === 'auditor-confirm') s.dlg = 'auditor';
+    if (view === 'auditor-done') { s.packState = 'fresh'; s.extra = ['auditor']; s.result = 'aud-ok'; }
+    if (view === 'auditor-failed') s.result = 'aud-fail';
+    if (view === 'file-confirm') s.dlg = 'file';
+    if (view === 'filed' || view === 'backup-offer') { s.filed = true; s.next = true; }
+    if (view === 'backup-offer') s.dlg = 'backup';
+    if (view === 'check' || view === 'check-loading' || view === 'check-failed') {
+      s.panel = co === 'AI' ? 'a' : 'e';
+      s.pState = view === 'check-loading' ? 'loading' : view === 'check-failed' ? 'failed' : 'ready';
+    }
+    return s;
+  }
+  componentDidMount() { if (this.state.view === 'building') this.tick(); }
+  componentDidUpdate(pp, prev) {
+    if (pp && this.props && pp.company !== this.props.company) {
+      clearTimeout(this._t); clearTimeout(this._pt);
+      const nv = this.props.view || 'open'; this.setState(this.fresh(nv, this.coFor(nv, this.state.co), this.state.swap + 1));
+      if (nv === 'building') this.tick();
+      return;
+    }
+    if (pp && this.props && pp.view !== this.props.view) {
+      clearTimeout(this._t); clearTimeout(this._pt);
+      { const nv = this.props.view || 'open'; this.setState(this.fresh(nv, this.coFor(nv, this.state.co), this.state.swap)); }
+      if ((this.props.view || 'open') === 'building') this.tick();
+      return;
+    }
+    if (!prev) return;
+    const s = this.state;
+    const focus = id => { const el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); return !!el; };
+    const ids = { auditor: 'ap-dlg-aud', file: 'ap-dlg-file', backup: 'ap-dlg-bk' };
+    if (s.dlg && s.dlg !== prev.dlg) focus(ids[s.dlg]);
+    if (!s.dlg && prev.dlg) {
+      const o = this._opener, fb = this._fallback || 'ap-title';
+      this._opener = null; this._fallback = null;
+      if (o && o.isConnected && !o.disabled) o.focus({ preventScroll: true }); else focus(fb);
+    }
+    if (s.panel && !prev.panel) focus('ap-pc-title');
+    if (!s.panel && prev.panel) { const o = this._pOpener; this._pOpener = null; if (o && o.isConnected) o.focus({ preventScroll: true }); }
+    if (prev.busy && !s.busy && this._focusId) { const id = this._focusId; this._focusId = null; focus(id); }
+    if (this._focusAfter) { const id = this._focusAfter; this._focusAfter = null; focus(id); }
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._pt); clearTimeout(this._dt); clearTimeout(this._ct); }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  trap(e) {
+    if (e.key !== 'Tab') return;
+    const box = e.currentTarget;
+    const f = Array.from(box.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+    if (!f.length) return;
+    const a = document.activeElement, first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && (a === first || f.indexOf(a) < 0)) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (a === last || !box.contains(a))) { e.preventDefault(); first.focus(); }
+  }
+
+  // The month's sample, per company (today 18 Nov 2026; October is the month being worked). AI is not kept in SQL; AISB is.
+  data(co) {
+    if (co === 'AISB') return {
+      docs: 91, lastWhen: '14 Nov 16:40', toPrint: 'PV2610-003, PV2610-014 and PV2610-021', files: 124, leftOut: [],
+      failFile: "'TNB bill October 2026.pdf' (Invoice) could not be added to the audit pack. Open it, save it again as PDF, replace it and build the pack again.", failOpen: 'Open Electricity bill',
+      items: [
+        { kind: 'lines', title: 'Maybank current', detail: '5 lines to explain on the October 2026 statement' },
+        { kind: 'payment', title: 'Consultant fee', detail: 'Not on Oct statement', tone: 'bad', glyph: 'alert' },
+        { kind: 'payment', title: 'Electricity bill', detail: 'Paid 4 Nov (date typed in): not on a statement until November is imported' },
+        { kind: 'unapproved', title: 'Contractor — field works', detail: 'Paid without approval on file: RM 24,000.00, paid 6 Oct' },
+        { kind: 'unapproved', title: 'Stationery Mart', detail: 'Paid more than approved (RM 120.00): RM 1,120.00 paid 30 Oct, RM 1,000.00 approved on AF-2610-004' },
+        ...(this.state.formsDiffer ? [{ kind: 'formdiff', title: 'AF-2611-003, claims for October', detail: 'CL-2610-005 changed after printing: RM 408.00 on the form, RM 428.00 now, so this form does not approve it' }] : []),
+        { kind: 'review', title: 'Month review, October 2026 (MR-2610-AISB)', detail: 'Printed 17 Nov, waiting for a signature and upload' },
+        { kind: 'task', title: 'KWSP, PERKESO and PCB paid or acknowledgement filed', detail: 'Missing KWSP acknowledgement' },
+        { kind: 'task', title: 'Fund receipts: OR and validated e-Invoices add up', detail: 'Missing e-Invoice' },
+        { kind: 'task_open', title: 'Bank reconciliation balanced and filed', detail: '5 lines on Maybank current still to explain, due 20 Nov' },
+        { kind: 'task_open', title: 'Approvals on file for every payment', detail: '2 paid without approval on file, due 20 Nov' },
+        { kind: 'task_open', title: 'Customer balances older than 30 days followed up', detail: '1 balance of RM 8,500.00 older than 30 days, due 25 Nov' },
+        { kind: 'task_open', title: 'Month reviewed', detail: 'MR-2610-AISB waiting for the signed sheet, due 30 Nov' },
+        { kind: 'task_open', title: 'Fixed asset register updated', detail: 'Not ticked yet, due 30 Nov' },
+        { kind: 'task_open', title: 'Insurance and licence renewals checked', detail: 'Not ticked yet, due 30 Nov' },
+        { kind: 'task_open', title: 'Audit pack built since the last document was added', detail: 'Not built yet for October, due 30 Nov' },
+        ...(this.state.booksOpen ? [{ kind: 'task_open', title: 'SQL books agree with SQL Account', detail: "Fetch SQL's Trial Balance up to at least 31 Oct 2026, due 15 Nov" }] : []),
+        { kind: 'not_in_sql', title: 'Director fee', detail: 'Paid 24 Oct, not recorded in SQL yet' },
+        { kind: 'not_in_sql', title: 'Telephone & internet', detail: 'Paid 28 Oct, not recorded in SQL yet' },
+        { kind: 'not_in_sql', title: 'PERKESO', detail: 'Paid 17 Nov, not recorded in SQL yet' },
+        { kind: 'not_in_sql', title: 'PCB', detail: 'Paid 14 Nov, not recorded in SQL yet' }
+      ],
+      summary: ['5 bank lines to explain', '2 payments not complete', '2 paid without approval on file', ...(this.state.formsDiffer ? ['1 approval form not matching'] : []), 'Month review not on file', '2 checklist items missing documents', this.state.booksOpen ? '8 checklist items not done' : '7 checklist items not done', '4 paid payments not recorded in SQL'],
+      packs: ['e']
+    };
+    return {
+      docs: 74, lastWhen: '16 Nov 15:20', toPrint: '', files: 95, leftOut: ['Payslips October.pdf (Salaries — staff)'],
+      failFile: "'Courier quote.pdf' (Invoice) could not be added to the audit pack. Open it, save it again as PDF, replace it and build the pack again.", failOpen: 'Open Courier charges',
+      items: [
+        { kind: 'payment', title: 'KWSP for October', detail: 'Past legal deadline (15 Nov)', tone: 'bad', glyph: 'vault' },
+        { kind: 'payment', title: 'Courier charges', detail: 'Missing bank receipt' },
+        { kind: 'payment', title: 'Fund receipt', detail: 'Missing e-Invoice', glyph: 'coins' },
+        { kind: 'review', title: 'Month review, October 2026 (MR-2610-AI)', detail: 'Not printed yet' },
+        { kind: 'task_open', title: 'KWSP and PERKESO paid or acknowledgement filed', detail: 'KWSP not paid by 15 Nov; its acknowledgement is not filed' },
+        { kind: 'task_open', title: 'Bank reconciliation balanced and filed', detail: 'Not ticked yet, due 20 Nov' },
+        { kind: 'task_open', title: 'Export receipts matched to invoices', detail: 'USD 3,400.00 of 8,400.00 not on the statement yet, due 20 Nov' },
+        { kind: 'task_open', title: 'Supplier statements checked against the books', detail: 'Not ticked yet, due 25 Nov' },
+        { kind: 'task_open', title: 'Month reviewed', detail: 'MR-2610-AI not printed yet, due 30 Nov' },
+        { kind: 'task_open', title: 'Insurance and licence renewals checked', detail: 'Not ticked yet, due 30 Nov' },
+        { kind: 'task_open', title: 'Audit pack built since the last document was added', detail: 'Not built yet for October, due 30 Nov' },
+        { kind: 'unprintable', title: 'Approval email.msg', detail: 'On Courier charges: not a PDF or image - print it separately, or save it as PDF and replace it' },
+        { kind: 'unprintable', title: 'Payslips October.pdf', detail: 'On Salaries — staff: file changed since upload' }
+      ],
+      summary: ['2 payments not complete', '1 receipt not complete', 'Month review not on file', '7 checklist items not done', "2 files that won't print"],
+      packs: ['a', 'b', 'c', 'd']
+    };
+  }
+
+  // The packs built for October, as Recent packs lists them (newest first), and what Check this pack finds for each.
+  packBase() {
+    return {
+      a: { name: 'Audit pack AI 2026-10 (20261116-1520).pdf', when: '16 Nov 2026 15:20', state: 'unchanged' },
+      b: { name: 'Audit pack AI 2026-10 (20261112-0905).pdf', when: '12 Nov 2026 09:05', state: 'changed', via: true },
+      c: { name: 'Audit pack AI 2026-10 (20261105-1630).pdf', when: '5 Nov 2026 16:30', state: 'missing', missing: true },
+      d: { name: 'Audit pack AI 2026-10 (20261102-1012).pdf', when: '2 Nov 2026 10:12', state: 'not_recorded' },
+      e: { name: 'Audit pack AISB 2026-10 (20261114-1640).pdf', when: '14 Nov 2026 16:40', state: 'unchanged' }
+    };
+  }
+  stamp(k) { const t = 10 * 60 + 42 + 4 * k, h = Math.floor(t / 60), m = t % 60; return { hm: h + ':' + String(m).padStart(2, '0'), code: String(h).padStart(2, '0') + String(m).padStart(2, '0') }; }
+  packList(co) {
+    const B = this.packBase(), extra = this.state.extra, L = extra.length;
+    const fresh = extra.map((kind, i) => {
+      const k = L - 1 - i, st = this.stamp(k);
+      return { id: 'n' + k, name: 'Audit pack ' + co + ' 2026-10 (20261118-' + st.code + ').pdf', when: '18 Nov 2026 ' + st.hm, state: 'unchanged', via: kind === 'auditor', fresh: true, k };
+    });
+    const base = this.state.packState === 'none' ? [] : this.data(co).packs.map(id => ({ id, ...B[id] }));
+    return fresh.concat(base);
+  }
+  check(pk, co) {
+    const who = 'Aisha Rahman';
+    const row = (key, when, src, change, entry, head, why, late) => ({ key, when, src, change, entry, head, why: why || '', late: !!late, actor: src === 'outside' ? '' : who });
+    const R = {
+      r4809: row('r4809', '14 Nov 2026 22:15', 'outside', 'Changed document file Payslips October.pdf on Salaries — staff', 4809, 'Accepted after the trail check found it'),
+      r4812: row('r4812', '16 Nov 2026 11:02', 'user', 'Removed document Old approval.pdf from Fund receipt', 4812, 'Removed a document', 'Uploaded to the wrong month'),
+      r4821: row('r4821', '17 Nov 2026 09:14', 'user', 'Changed Courier charges: Amount 186.50 → 192.40', 4821, 'Changed a payment', 'Invoice total includes SST'),
+      r4822: row('r4822', '17 Nov 2026 09:20', 'user', 'Added document Courier invoice CI-2210.pdf to Courier charges', 4822, 'Uploaded Courier invoice CI-2210.pdf'),
+      r4826: row('r4826', '17 Nov 2026 14:05', 'user', 'Added document OR scan.pdf to Fund receipt', 4826, 'Uploaded OR scan.pdf', '', true),
+      r4744: row('r4744', '5 Nov 2026 16:30', 'user', 'Built Audit pack AI 2026-10 (20261105-1630).pdf', 4744, 'Built the audit pack'),
+      r4789: row('r4789', '12 Nov 2026 09:05', 'user', 'Built Audit pack AI 2026-10 (20261112-0905).pdf', 4789, 'Built the auditor package'),
+      r4817: row('r4817', '16 Nov 2026 15:20', 'user', 'Built Audit pack AI 2026-10 (20261116-1520).pdf', 4817, 'Built the audit pack'),
+      r4810: row('r4810', '15 Nov 2026 10:12', 'user', 'Added document TNB bill October 2026 (revised).pdf to Electricity bill', 4810, 'Uploaded TNB bill October 2026 (revised).pdf'),
+      b1: row('b1', '18 Nov 2026 10:42', 'user', 'Added · Ledger read · GL Journal Oct-Nov.xlsx', 4841, 'Fetched SQL exports'),
+      b2: row('b2', '18 Nov 2026 10:42', 'user', 'Added · Ledger read · Trial Balance Oct.xlsx', 4841, 'Fetched SQL exports'),
+      b3: row('b3', '18 Nov 2026 10:42', 'user', 'Added · Ledger read · GL Ledger.xlsx', 4841, 'Fetched SQL exports'),
+      b4: row('b4', '18 Nov 2026 10:42', 'user', 'Added · Ledger document · PV2610-003', 4841, 'Fetched SQL exports'),
+      b5: row('b5', '18 Nov 2026 10:42', 'user', 'Added · Ledger document · PV2610-005', 4841, 'Fetched SQL exports'),
+      b6: row('b6', '18 Nov 2026 10:42', 'user', 'Added · Ledger document · OR2610-006', 4841, 'Fetched SQL exports'),
+      b7: row('b7', '18 Nov 2026 10:42', 'user', 'Changed · Ledger document · PV2611-003', 4841, 'Fetched SQL exports'),
+      b8: row('b8', '18 Nov 2026 10:42', 'user', 'Changed · Ledger document · PV2611-008', 4841, 'Fetched SQL exports'),
+      b9: row('b9', '18 Nov 2026 10:50', 'user', 'Added · Statutory account · EPF (KWSP)', 4846, 'Confirmed the statutory accounts'),
+      b10: row('b10', '18 Nov 2026 10:50', 'user', 'Added · Statutory account · SOCSO (PERKESO)', 4846, 'Confirmed the statutory accounts'),
+      b11: row('b11', '18 Nov 2026 10:50', 'user', 'Added · Statutory account · EIS (SIP)', 4846, 'Confirmed the statutory accounts'),
+      b12: row('b12', '18 Nov 2026 10:50', 'user', 'Added · Statutory account · PCB (LHDN)', 4846, 'Confirmed the statutory accounts'),
+      b13: row('b13', '18 Nov 2026 10:42', 'user', '62 more from the same fetch: 19 Added · Ledger document and 43 Added · Opening balance', 4841, 'Fetched SQL exports'),
+      r4811: row('r4811', '16 Nov 2026 09:30', 'user', 'Removed document Field Works invoice FW-0931 copy.pdf from Contractor — field works', 4811, 'Removed a document', 'Duplicate upload')
+    };
+    const LABEL = { payments: 'Payments', documents: 'Documents', packs: 'Packs built since for this month', books: "SQL's books and the statutory accounts (its books pages)" };
+    const G = (key, keys, n) => ({ key, label: LABEL[key], n: n || keys.length, rows: keys.map(k => R[k]) });
+    const C1 = 'Whether the PDF would come out differently if built again: this lists changes to what the pack reads, not the PDF itself. A change listed may not show in it (a note, say), and a change undone still counts.';
+    const day = d => 'Statuses such as Past legal deadline were worked out on ' + d + '; built today, some could read differently.';
+    const C3 = 'Changes that reach the pack only indirectly are not listed, such as a recurring payment, SQL entries not linked to its payments or checklist items, or book openings.';
+    const OUT = '1 of the changes was made outside this app. One found by the trail check is dated when it was found, which may be after it was made.';
+    const UPD = 'The program has been updated since it was built, so a pack built now could differ in wording or layout even with nothing listed here.';
+    const OLD = 'It was built before packs recorded which version of the program built them, so a pack built now could differ in wording or layout even with nothing listed here.';
+    const SAME = 'Built by the version of the program running now.';
+    const payDocs = [G('payments', ['r4821']), G('documents', ['r4809', 'r4812', 'r4822', 'r4826'])];
+    const prob = [{ name: 'Payslips October.pdf', owner: 'Salaries — staff', why: 'file changed since upload' }];
+    const id = pk ? pk.id : 'a';
+    const C = {
+      a: { built: 'Built 16 Nov 2026 15:20 by ' + who + '.', cover: 'Generated 16 Nov 2026 15:20 · audit trail entry 4816 · check code 7f3a91c2', prog: SAME, entry: 4817,
+        groups: [G('payments', ['r4821']), G('documents', ['r4822', 'r4826'])], summary: '3 changes since it was built: 1 to payments and 2 to documents.',
+        problems: prob, cannot: [C1, day('16 Nov 2026'), C3] },
+      b: { built: 'Built 12 Nov 2026 09:05 by ' + who + ' for the auditor package.', cover: 'Generated 12 Nov 2026 09:05 · audit trail entry 4788 · check code 2c81d0e4', prog: 'Built by another version of the program.', entry: 4789,
+        groups: payDocs.concat([G('packs', ['r4817'])]), summary: '5 changes since it was built: 1 to payments and 4 to documents. A pack for this month has been built 1 more time since.',
+        problems: prob, cannot: [C1, UPD, day('12 Nov 2026'), C3, OUT] },
+      c: { built: 'Built 5 Nov 2026 16:30 by ' + who + '.', cover: 'Generated 5 Nov 2026 16:30 · audit trail entry 4743 · check code b05e7d19 (worked out from the trail)', prog: '', entry: 4744,
+        groups: payDocs.concat([G('packs', ['r4789', 'r4817'])]), summary: '5 changes since it was built: 1 to payments and 4 to documents. A pack for this month has been built 2 more times since.',
+        problems: prob, cannot: [C1, OLD, day('5 Nov 2026'), C3, OUT] },
+      d: { built: 'Not recorded in the trail. Its file was saved 2 Nov 2026 10:12.', cover: '', prog: '', entry: 0,
+        groups: payDocs.concat([G('packs', ['r4744', 'r4789', 'r4817'])]), summary: '5 changes since it was built: 1 to payments and 4 to documents. A pack for this month has been built 3 more times since.',
+        problems: prob, cannot: [C1, "It was built before the audit trail recorded packs, so what changed is counted from its file's time on disk (2 Nov 2026 10:12), which is only as good as that time.", OLD, day('2 Nov 2026'), C3, OUT] },
+      e: { built: 'Built 14 Nov 2026 16:40 by ' + who + '.', cover: 'Generated 14 Nov 2026 16:40 · audit trail entry 4807 · check code 5d02b81e', prog: SAME, entry: 4808,
+        groups: [G('documents', ['r4810', 'r4811']), G('books', ['b1', 'b2', 'b3', 'b4', 'b5', 'b6', 'b7', 'b8', 'b9', 'b10', 'b11', 'b12', 'b13'], 74)],
+        summary: "76 changes since it was built: 2 to documents and 74 to SQL's books or the statutory accounts.", problems: [], checked: 91, cannot: [C1, day('14 Nov 2026'), C3] }
+    };
+    let c = C[id];
+    if (!c) {
+      const k = pk && pk.k ? pk.k : 0, ent = 4831 + 2 * k, when = pk ? pk.when : '';
+      c = { built: 'Built ' + when + ' by ' + who + (pk && pk.via ? ' for the auditor package.' : '.'), cover: 'Generated ' + when + ' · audit trail entry ' + (ent - 1) + ' · check code ' + ['9b2e41f0', '41c7aa93', 'e03d5b6c'][k % 3], prog: SAME, entry: ent,
+        groups: [], summary: 'Nothing the pack reads has changed since it was built.', problems: co === 'AI' ? prob : [], checked: co === 'AI' ? 74 : 91, cannot: [C1, C3] };
+    }
+    const C4 = "For its books pages, SQL's documents, openings and reports dated after the month that follows it are not listed: they reach those pages only when no trial balance of SQL's as at the month's end was kept.";
+    c = { ...c, cannot: c.cannot.reduce((a, t) => a.concat(t === C3 ? [t, C4] : [t]), []) };
+    const V = {
+      unchanged: ['ok', 'File unchanged', 'verified', 'The file is the one built: its fingerprint matches the one recorded when it was built.'],
+      changed: ['bad', 'File changed', 'alert', "The file has changed since it was built: its fingerprint no longer matches the one recorded then. Don't give this copy to the auditor. Build the pack again."],
+      missing: ['bad', 'File missing', 'alert', 'The file is no longer in the audit packs folder. The trail still records that it was built, with its fingerprint.'],
+      not_recorded: ['warn', 'Not recorded in the trail', 'help', 'Built before the audit trail recorded packs, so there is no fingerprint to check the file against.']
+    };
+    const v = V[(pk && pk.state) || 'unchanged'];
+    const BOX = { ok: 'background:#F0FBF5;border:1px solid #BFE8D0', bad: 'background:#FFF5F4;border:1px solid #F5C2BB', warn: 'background:#FFFBF2;border:1px solid #F3D9A6' };
+    const PILL = { ok: 'background:#E3F7EC;color:#0A6B3D', bad: 'background:#FDE6E3;color:#B0190F', warn: 'background:#FEF1D6;color:#934100' };
+    return { ...c, name: pk ? pk.name : '', tone: v[0], word: v[1], glyph: v[2], text: v[3],
+      box: 'display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:12px;' + BOX[v[0]],
+      pill: 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:700;' + PILL[v[0]],
+      meta: co + ' · October 2026', entryLabel: c.entry ? 'Entry ' + c.entry + ': the pack built' : '',
+      entryDetail: c.entry ? 'Sealed ' + c.built.replace(/^Built /, '').replace(/ by .*$/, '') + ' by ' + who + ', with the file’s fingerprint and what built it.' : '',
+      docsNote: 'The ' + (c.checked || this.data(co).docs) + ' document files it would hold now still match the fingerprint taken at upload.',
+      docsTitle: "Its documents' files now · " + c.problems.length };
+  }
+
+  openDlg(kind) { this._opener = document.activeElement; this._after = null; this.setState({ dlg: kind, closing: false, note: '' }); }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    if (this.calm()) return this.finishDlg();
+    this.setState({ closing: true });
+    clearTimeout(this._dt);
+    this._dt = setTimeout(() => this.finishDlg(), 400);   // only a safety net if animationend never arrives
+  }
+  finishDlg() {
+    clearTimeout(this._dt);
+    const a = this._after; this._after = null;
+    if (this.state.dlg) this.setState({ dlg: null, closing: false });
+    if (a === 'aud') this.start('auditor');
+  }
+  openCheck(id) {
+    this._pOpener = document.activeElement;
+    this.setState({ note: '', panel: id, pClosing: false, pState: 'loading', openG: {}, openE: {}, ownOpen: false });
+    this.load();
+  }
+  load() { clearTimeout(this._pt); this._pt = setTimeout(() => { if (this.state.panel && this.state.pState === 'loading') this.setState({ pState: 'ready' }); }, 650); }
+  closePanel() {
+    if (!this.state.panel || this.state.pClosing) return;
+    if (this.calm()) return this.finishPanel();
+    this.setState({ pClosing: true });
+    clearTimeout(this._ct);
+    this._ct = setTimeout(() => this.finishPanel(), 400);
+  }
+  finishPanel() { clearTimeout(this._ct); clearTimeout(this._pt); if (this.state.panel) this.setState({ panel: null, pClosing: false }); }
+  // Building counts the documents as they go into the PDF; the result stays under the buttons until the next build.
+  start(kind) {
+    if (this.state.busy) return;
+    this._focusAfter = 'ap-prog';
+    this.setState({ busy: kind, prog: 0, result: null, flash: -1, note: '' });
+    this.tick();
+  }
+  tick() {
+    clearTimeout(this._t);
+    this._t = setTimeout(() => {
+      const s = this.state;
+      if (!s.busy) return;
+      const total = this.data(s.co).docs, p = Math.min(total, s.prog + 12);
+      if (p < total) { this.setState({ prog: p }); this.tick(); return; }
+      const kind = s.busy;
+      this._focusId = kind === 'pack' ? 'ap-res-ok' : 'ap-aud-ok';
+      this.setState({ busy: null, prog: 0, packState: 'fresh', staleWhy: null, extra: [kind].concat(s.extra), result: kind === 'pack' ? 'pack-ok' : 'aud-ok', flash: 0, n: s.n + 1, later: false });
+    }, 180);
+  }
+
+  renderVals() {
+    const s = this.state, co = s.co, D = this.data(co);
+    const KIND = {
+      statement: ['Bank statements', 'bank', 'warn', 'Bank.dc.html', 'Import'],
+      lines: ['Bank statements', 'inbox', 'warn', 'BankReview.dc.html', 'Explain lines'],
+      payment: ['Payments not complete', 'payment', 'warn', 'Payment.dc.html', 'Open payment'],
+      unapproved: ['Paid without approval on file', 'approval', 'bad', 'Approvals.dc.html', 'Open Approvals'],
+      formdiff: ['Approval forms not matching', 'approval', 'warn', 'Approvals.dc.html', 'Print a new form'],
+      review: ['Month review not on file', 'approval', 'warn', 'Approvals.dc.html', 'Open Approvals'],
+      task: ['Checklist documents missing', 'checklist', 'warn', 'MonthlyChecklist.dc.html', 'Open checklist'],
+      task_open: ['Checklist items not done', 'checklist', 'muted', 'MonthlyChecklist.dc.html', 'Open checklist'],
+      not_in_sql: ['Paid, not recorded in SQL', 'database', 'warn', 'Sql.dc.html', 'Open SQL import'],
+      unprintable: ["Files that won't print", 'printer', 'bad', 'Payment.dc.html', 'Replace file']
+    };
+    const TILE = { warn: '#FEF1D6', bad: '#FDE6E3', ok: '#E3F7EC', muted: '#EEF1F5', brand: '#EAF0FD' };
+    const tile = (t, px) => 'width:' + px + 'px;height:' + px + 'px;border-radius:' + (px > 36 ? 12 : 10) + 'px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + TILE[t];
+    const items = s.clear ? [] : D.items;
+    const groups = [];
+    items.forEach((it, i) => {
+      const K = KIND[it.kind], tone = it.tone || K[2];
+      let g = groups.find(x => x.label === K[0]);
+      if (!g) { g = { label: K[0], id: 'ap-g-' + groups.length, rows: [] }; groups.push(g); }
+      g.rows.push({ title: it.title, detail: it.detail, href: K[3], action: K[4], glyph: it.glyph || K[1], tone, tile: tile(tone, 40), key: i });
+    });
+    groups.forEach(g => { g.n = g.rows.length; });
+    const open = items.length > 0;
+    const pills = (s.clear ? [] : D.summary).map(t => ({ text: t, cls: s.swap % 2 ? 'swapA' : 'swapB' }));
+    const lines = items.length;
+
+    const list = this.packList(co);
+    const packs = list.map((pk, i) => ({
+      name: pk.name, when: pk.when, via: !!pk.via, missing: !!pk.missing, hasFile: !pk.missing,
+      glyph: pk.missing ? 'alert' : 'document', tone: pk.missing ? 'bad' : 'brand', tile: tile(pk.missing ? 'bad' : 'brand', 32),
+      cls: 'hr' + (s.flash === i ? (s.n % 2 ? ' fa' : ' fb') : ''),
+      checkId: 'ap-ck-' + pk.id, checkLabel: 'Check this pack: ' + pk.name, openLabel: 'Open ' + pk.name,
+      check: () => this.openCheck(pk.id),
+      open: () => this.setState({ note: 'Sample: the PDF opens in a new tab.' })
+    }));
+    const newest = list.find(p => p.fresh);
+    const stamp = newest ? this.stamp(newest.k) : this.stamp(0);
+    const st = s.packState;
+    const busy = !!s.busy, total = D.docs;
+
+    const stillOpen = D.summary.slice();
+    if (s.clear) stillOpen.length = 0;
+    if (st === 'none') stillOpen.push('No audit pack built yet');
+    const staleText = s.staleWhy === 'slips' ? 'Pack out of date: Include payslips was switched ' + (s.slips ? 'on' : 'off') + ' since it was built' : 'Pack out of date: 2 documents added or removed since ' + D.lastWhen;
+    if (st === 'stale') stillOpen.push(staleText);
+
+    const pk = s.panel ? list.find(p => p.id === s.panel) || list[0] : list[0];
+    const pc = this.check(pk, co);
+    const pcGroups = (s.panel ? pc.groups : []).map(g => {
+      const on = !!s.openG[g.key];
+      return { label: g.label, n: g.n || g.rows.length, open: on, exp: on ? 'true' : 'false', chev: on ? 'chev on' : 'chev',
+        toggle: () => this.setState({ openG: { ...this.state.openG, [g.key]: !on } }),
+        rows: g.rows.map(x => {
+          const k = g.key + x.key, xo = !!s.openE[k];
+          return { when: x.when, src: x.src === 'outside' ? 'Outside this app' : 'You', srcStyle: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;' + (x.src === 'outside' ? 'background:#FDE6E3;color:#B0190F' : 'background:#EAF0FD;color:#1D419A'),
+            actor: x.actor, hasActor: !!x.actor, late: x.late, change: x.change, why: x.why, hasWhy: !!x.why,
+            entryLabel: 'Entry ' + x.entry + ': ' + x.head, open: xo, exp: xo ? 'true' : 'false', chev: xo ? 'chev on' : 'chev',
+            detail: 'Sealed ' + x.when + (x.actor ? ' by ' + x.actor : '') + (x.late ? ', later than the change itself' : '') + '.',
+            toggle: () => this.setState({ openE: { ...this.state.openE, [k]: !xo } }) };
+        })
+      };
+    });
+    const ready = s.pState === 'ready';
+
+    const leftOut = D.leftOut.length;
+    const audBox = 'display:flex;flex-direction:column;gap:10px;padding:14px 16px;border-radius:12px;' + (leftOut ? 'background:#FFFBF2;border:1px solid #F3D9A6' : 'background:#F0FBF5;border:1px solid #BFE8D0');
+
+    return {
+      heading: 'Audit pack · ' + co + ' · October 2026', headCls: s.swap % 2 ? 'swapA' : 'swapB', swapCls: s.swap % 2 ? 'swapA' : 'swapB',
+      sbCo: co === 'AISB' ? 'aisb' : 'ai', sbKind: co === 'AISB' ? 'sqlPayroll' : 'here',
+      onTopCo: code => { const c = code === 'aisb' ? 'AISB' : code === 'ai' ? 'AI' : null; if (!c || this.state.co === c) return; clearTimeout(this._t); clearTimeout(this._pt); this.setState(this.fresh(this.state.view, c, this.state.swap + 1)); if (this.state.view === 'building') this.tick(); },
+      notSetUp: !s.setUp, setUp: s.setUp,
+      setUpMonth: () => { this._focusAfter = 'ap-title'; this.setState({ ...this.fresh('none', this.state.co, this.state.swap), view: this.state.view }); },
+
+      filed: s.filed, notFiled: !s.filed, showNext: s.filed && s.next,
+      reopen: () => { this._focusAfter = 'ap-title'; this.setState({ filed: false, next: false, listOpen: false, later: false }); },
+      listExp: s.listOpen ? 'true' : 'false', listChev: s.listOpen ? 'chev on' : 'chev',
+      toggleList: () => this.setState({ listOpen: !this.state.listOpen }),
+      showList: !s.filed || s.listOpen, listCls: s.filed ? 'ex' : '',
+      filedLabel: lines ? 'Closed with the month. ' + lines + ' lines were still open when it was filed.' : 'Closed with the month. Nothing was open when it was filed.',
+      leftLabel: lines ? lines + ' lines still open' : 'Everything is clear',
+      isReady: !open, hasOpen: open, pills, groups,
+
+      stNone: st === 'none', stFresh: st === 'fresh', stStale: st === 'stale',
+      freshText: 'The pack built 18 Nov ' + stamp.hm + ' is up to date.',
+      staleText,
+      slipsAttr: s.slips ? 'true' : 'false', slipsOff: co !== 'AISB', slipsWord: co !== 'AISB' ? 'Not used' : s.slips ? 'On' : 'Off',
+      slipsNote: co !== 'AISB' ? "Payroll isn't run in the app for " + co + ', so there are no payslips to add. Payslips uploaded as documents of a payment still file under that payment, such as Payslips October.pdf on Salaries — staff.' : s.slips ? "On: October's 8 payslips follow the HR pages, IC numbers and bank accounts masked to the last 4. The PDF has no password, so keep it as you keep payslips." : "Off: the HR pages hold headcount, totals per authority, leave and advances only. On: October's 8 payslips are added after them.",
+      toggleSlips: () => { const t = this.state; if (t.co !== 'AISB' || t.busy) return; this.setState({ slips: !t.slips, note: '', ...(t.packState === 'fresh' ? { packState: 'stale', staleWhy: 'slips' } : {}) }); },
+      swTrack: 'position:relative;display:inline-block;width:36px;height:20px;border-radius:99px;flex:none;transition:background-color .12s ease-out;background:' + (co !== 'AISB' ? '#C9D0DA' : s.slips ? '#2450B8' : '#7D8CA3'),
+      swKnob: 'position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:99px;background:#FFFFFF;transition:transform .18s cubic-bezier(.22,1,.36,1);transform:translateX(' + (s.slips ? 16 : 0) + 'px)',
+      hasPrint: !!D.toPrint, toPrint: D.toPrint,
+
+      busy, packBusy: s.busy === 'pack', packIdle: s.busy !== 'pack', packBusyAttr: s.busy === 'pack' ? 'true' : 'false',
+      buildLabel: s.busy === 'pack' ? 'Building…' : 'Build audit pack PDF',
+      buildStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;border-radius:10px;border:0;color:#FFFFFF;font:600 14px Inter,sans-serif;' + (busy ? 'background:#4A6BBF;cursor:progress' : 'background:#2450B8;cursor:pointer'),
+      build: () => this.start('pack'),
+      audBusy: s.busy === 'auditor', audIdle: s.busy !== 'auditor', audBusyAttr: s.busy === 'auditor' ? 'true' : 'false',
+      audLabel: s.busy === 'auditor' ? 'Building…' : 'Auditor package',
+      audStyle: 'flex:1 1 160px;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #8792A4;background:#FFFFFF;font:600 14px Inter,sans-serif;color:' + (busy && s.busy !== 'auditor' ? '#5F6C80' : '#0F1A2B') + ';cursor:' + (busy ? 'progress' : 'pointer'),
+      openAud: () => { if (!this.state.busy) this.openDlg('auditor'); },
+      audBooks: co === 'AISB' ? "a Books folder of Excel files (trial balance, general ledger, profit and loss, balance sheet, customers and suppliers, statutory payables check), " : '',
+      audBooksNote: co === 'AISB' ? 'the Books Excel files, ' : '',
+      note: s.note, co,
+      excel: () => { if (!this.state.busy) this.setState({ note: 'Sample: the Excel file downloads.' }); },
+      openPdf: () => this.setState({ note: 'Sample: the PDF opens in a new tab.' }),
+      dlPkg: () => this.setState({ note: 'Sample: the package downloads.' }),
+      excelStyle: 'flex:1 1 140px;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #8792A4;background:#FFFFFF;font:600 14px Inter,sans-serif;color:' + (busy ? '#5F6C80' : '#0F1A2B') + ';cursor:' + (busy ? 'progress' : 'pointer'),
+      excelAria: 'Excel report: download ' + co + ' 2026-10 month report.xlsx',
+      progMax: String(total), progNow: String(s.prog), progAria: s.busy === 'auditor' ? 'Building the auditor package' : 'Building the audit pack',
+      progBar: 'height:100%;border-radius:99px;background:#2450B8;width:' + Math.round(s.prog / total * 100) + '%',
+      progLabel: s.prog + ' of ' + total + ' documents added' + (s.busy === 'auditor' ? ', then the zip' : ''),
+
+      resPackOk: s.result === 'pack-ok', resPackFail: s.result === 'pack-fail', resAudOk: s.result === 'aud-ok', resAudFail: s.result === 'aud-fail',
+      resTitle: 'Audit pack built 18 Nov ' + stamp.hm, newName: newest ? newest.name : '',
+      checkNew: () => { const nw = this.packList(this.state.co).find(p => p.fresh); if (nw) this.openCheck(nw.id); },
+      failText: D.failFile, failOpen: D.failOpen,
+      audBox, audGlyph: leftOut ? 'alert' : 'check', audTone: leftOut ? 'warn' : 'ok',
+      audHead: 'margin:0;font-size:15px;font-weight:700;color:' + (leftOut ? '#934100' : '#0A6B3D'),
+      audTitle: leftOut ? 'Auditor package built, ' + leftOut + ' file left out' : 'Auditor package built',
+      audText: 'Auditor package built (' + D.files + ' files' + (leftOut ? ', ' + leftOut + ' left out because they changed or are missing' : '') + '):',
+      zipName: 'Auditor package ' + co + ' 2026-10 (20261118-' + stamp.code + ').zip',
+      audLeft: leftOut > 0, audLeftList: D.leftOut.join(', '),
+
+      showAsk: st === 'fresh' && !s.filed && s.setUp && !s.later && !busy, showLater: st === 'fresh' && !s.filed && s.later,
+      askFile: () => { this._opener = document.activeElement; if (stillOpen.length) this.setState({ dlg: 'file', closing: false }); else this.doFile(); },
+      notYet: () => { this._focusAfter = 'ap-later-btn'; this.setState({ later: true }); },
+      doFile: () => this.doFile(),
+
+      packsSub: 'Built for ' + co + ' · October 2026, newest first', noPacks: packs.length === 0, packs,
+
+      dlgOn: !!s.dlg, dAud: s.dlg === 'auditor', dFile: s.dlg === 'file', dBackup: s.dlg === 'backup',
+      dlgTitle: { auditor: 'ap-dlg-aud', file: 'ap-dlg-file', backup: 'ap-dlg-bk' }[s.dlg] || 'ap-dlg-aud',
+      dlgDesc: { auditor: 'ap-dlg-aud-desc', file: 'ap-dlg-file-desc', backup: 'ap-dlg-bk-desc' }[s.dlg] || 'ap-dlg-aud-desc',
+      dlgCls: s.closing ? 'dr-out' : 'dr-in', dimCls: s.closing ? 'dim-out' : 'dim-in',
+      closeDlg: () => this.closeDlg(),
+      dlgKey: e => { if (!this.state.dlg) return; if (e.key === 'Escape') { e.stopPropagation(); this.closeDlg(); return; } this.trap(e); },
+      onDlgAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishDlg(); },
+      confirmAud: () => { this._opener = null; this._fallback = null; this._after = 'aud'; this.closeDlg(); },
+      fileLead: 'Still open in ' + co + ' October 2026:', fileList: stillOpen.map(t => ({ text: t })),
+      backupLead: 'October 2026 is marked as filed. The backup password is typed each time, so the Backup page opens with its password box ready.',
+
+      panelOn: !!s.panel, panelCls: s.pClosing ? 'pn-out' : 'pn-in', pDimCls: s.pClosing ? 'dim-out' : 'dim-in',
+      closePanel: () => this.closePanel(),
+      panelKey: e => { if (!this.state.panel) return; if (e.key === 'Escape') { e.stopPropagation(); this.closePanel(); return; } this.trap(e); },
+      onPanelAnim: e => { if (this.state.pClosing && e.target === e.currentTarget) this.finishPanel(); },
+      retryCheck: () => { this.setState({ pState: 'loading' }); this.load(); const h = document.getElementById('ap-pc-title'); if (h) h.focus({ preventScroll: true }); },
+      pcLoading: s.pState === 'loading', pcFailed: s.pState === 'failed', pcReady: ready,
+      pc: { ...pc, entryExp: s.ownOpen ? 'true' : 'false', entryChev: s.ownOpen ? 'chev on' : 'chev' },
+      pcCover: !!pc.cover, pcProg: !!pc.prog, pcEntry: !!pc.entry, pcEntryOpen: s.ownOpen,
+      toggleOwn: () => this.setState({ ownOpen: !this.state.ownOpen }),
+      pcGroups, pcProblems: pc.problems, pcDocsOk: pc.problems.length === 0, pcDocsBad: pc.problems.length > 0,
+      pcCannot: pc.cannot.map(t => ({ text: t }))
+    };
+  }
+  doFile() {
+    this._fallback = 'ap-filed-title';
+    if (!this.state.dlg) this._opener = null;
+    this.setState({ filed: true, next: true, later: false, listOpen: false, dlg: 'backup', closing: false });
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,839 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Statutory payables · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg,.sg,.lk{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+.sg:hover:not([aria-pressed="true"]){background:#F4F6F9 !important;color:#0F1A2B !important}
+.lk{color:#2450B8;text-decoration:underline;text-underline-offset:3px;border-radius:4px}
+.lk:hover{color:#1D419A}
+.tb{transition:background-color .12s ease-out}
+.tb:hover{background:#2B4470 !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.tb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+h2[tabindex="-1"]:focus{outline:none}
+::placeholder{color:#5F6C80;opacity:1}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .18s cubic-bezier(.22,1,.36,1)}
+.swapB{animation:swapB .18s cubic-bezier(.22,1,.36,1)}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.spd{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(36,80,184,.25);border-top-color:#2450B8;animation:spin .7s linear infinite;flex:none}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="statutory" kind="{{sbKind}}" company="{{sbCompany}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="Statutory payables" company="{{sbCompany}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <sc-if value="{{fromPayroll}}" hint-placeholder-val="{{ false }}">
+        <nav aria-label="Where this page was opened from" class="rv" style="display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 14px; border-radius: 12px; background: #F3F6FE; border: 1px solid #C9D7F6">
+          <a href="PayrollTotals.dc.html" id="bsx-back" class="lk" style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="16" hint-size="16px,16px"></dc-import>Back to HR › Payroll</a>
+          <span style="color: #46546A; font-size: 13px">{{arriveText}}</span>
+        </nav>
+      </sc-if>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 420px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Accounting</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Statutory payables</h1>
+          <p style="margin: 0; color: #46546A; max-width: 820px">{{intro}}</p>
+        </div>
+      </div>
+
+      <section aria-label="Period" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 22px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end">
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">From</span><input type="date" id="bk-from" value="{{fromVal}}" onChange="{{setFrom}}" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">To</span><input type="date" id="bk-to" value="{{toVal}}" onChange="{{setTo}}" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+          <button type="button" id="bk-show" class="hb" onClick="{{show}}" disabled="{{busy}}" aria-busy="{{showBusyAttr}}" style="min-width: 132px; height: 40px; padding: 0 18px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{showBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{showLabel}}</button>
+          <button type="button" id="bk-fy" class="hs" onClick="{{fyToDate}}" disabled="{{busy}}" aria-busy="{{fyBusyAttr}}" style="min-width: 232px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{fyBusy}}" hint-placeholder-val="{{ false }}"><span class="spd" aria-hidden="true"></span></sc-if>{{fyLabel}}</button>
+          <span style="flex: 1 1 0"></span>
+          <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}"><a href="#" id="bk-excel" class="hg" onClick="{{excel}}" title="This check as an Excel file, for the months shown" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 10px; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="sheet" tone="brand" size="18" hint-size="18px,18px"></dc-import>Excel</a></sc-if>
+        </div>
+        <sc-if value="{{xlErr}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FEF3F1; border: 1px solid #F4C2BC">
+            <dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="color: #8E1A10">The Excel file couldn't be made</b><div style="color: #46546A; font-size: 13px">The server stopped with an error, so nothing was downloaded. The check on the page is as it was. Try again; if it keeps happening, restart the app.</div><div style="color: #5F6C80; font-size: 12px; margin-top: 4px">New work: today the Excel link opens the server's error as a raw JSON page.</div></div>
+            <button type="button" class="hg" aria-label="Dismiss this message" onClick="{{xlClose}}" style="width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+          </div>
+        </sc-if>
+      </section>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" aria-label="Loading the check" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+          <span style="color: #46546A">Loading…</span>
+          <span class="sk" style="height: 22px; width: 340px; max-width: 100%"></span>
+          <span class="sk" style="height: 14px; width: 560px; max-width: 100%"></span>
+          <span class="sk" style="height: 160px; width: 100%"></span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">{{errText}}</p>
+          <button type="button" id="bsx-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isReport}}" hint-placeholder-val="{{ true }}">
+        <section id="bk-panel" aria-labelledby="bsx-h2" class="{{swapCls}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 20px 22px 16px; display: flex; flex-direction: column; gap: 14px">
+
+            <sc-if value="{{hasBanner}}" hint-placeholder-val="{{ true }}">
+              <div style="{{bnStyle}}">
+                <dc-import name="Icon" glyph="{{bnGlyph}}" tone="{{bnTone}}" size="22" hint-size="22px,22px"></dc-import>
+                <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <b style="{{bnTitleStyle}}">{{bnTitle}}</b>
+                  <span style="color: #46546A; font-size: 13px; max-width: 980px">{{bnText}}</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{hasMis}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-label="Employer's share on another account" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FFFBF2; border: 1px solid #F3D9A6">
+                <dc-import name="Icon" glyph="alert" tone="warn" size="22" hint-size="22px,22px"></dc-import>
+                <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+                  <b style="color: #934100">Employer's share on another account</b>
+                  <span style="color: #46546A; font-size: 13px; max-width: 980px"><button type="button" id="bsx-mp" class="lk" aria-expanded="{{mpExp}}" title="Show the lines of PV2610-005" onClick="{{mpToggle}}" style="border: 0; background: transparent; padding: 2px; font: 600 13px ui-monospace, Consolas, monospace; cursor: pointer">PV2610-005</button> {{mpText}}</span>
+                  <span style="color: #46546A; font-size: 13px; max-width: 980px">{{mpFix}}</span>
+                  <sc-if value="{{mpOpen}}" hint-placeholder-val="{{ false }}">
+                    <div class="ex" role="region" aria-labelledby="bsx-mp" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; background: #FFFFFF; border: 1px solid #F3D9A6; border-radius: 10px">
+                      <span style="color: #5F6C80; font-size: 12px">{{mp.src}}</span>
+                      <div style="overflow-x: auto">
+                        <table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px">
+                          <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">The account lines of PV2610-005</caption>
+                          <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                            <th scope="col" style="padding: 6px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 6px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 6px 12px; font-weight: 600; text-align: right">Credit</th><th scope="col" style="padding: 6px 12px; font-weight: 600">Note</th>
+                          </tr></thead>
+                          <tbody>
+                            <sc-for list="{{mp.lines}}" as="ml" hint-placeholder-count="3">
+                              <tr style="{{ml.trStyle}}">
+                                <td style="padding: 6px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{ml.code}}</span> {{ml.name}}</td>
+                                <td style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ml.dr}}</td>
+                                <td style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ml.cr}}</td>
+                                <td style="padding: 6px 12px; color: #934100; font-weight: 600">{{ml.note}}</td>
+                              </tr>
+                            </sc-for>
+                          </tbody>
+                        </table>
+                      </div>
+                      <span style="color: #5F6C80; font-size: 12px">New work: today this link raises a script error instead of showing the document's lines, because it looks for a table row that a banner doesn't have.</span>
+                    </div>
+                  </sc-if>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center">
+              <h2 id="bsx-h2" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{h2}}</h2>
+              <span style="flex: 1 1 0"></span>
+              <sc-if value="{{isCfg}}" hint-placeholder-val="{{ true }}"><a href="SetupStatutory.dc.html" class="hs" title="Admin › Setup › Statutory accounts: which account each kind is checked on, and its due day" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="sliders" tone="muted" size="16" hint-size="16px,16px"></dc-import>Go to Setup</a></sc-if>
+            </div>
+
+            <sc-if value="{{isCfg}}" hint-placeholder-val="{{ true }}">
+              <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{explain}}</p>
+              <details style="display: flex; flex-direction: column; gap: 8px">
+                <summary style="color: #46546A; font-size: 13px; font-weight: 600; padding: 4px 0; width: fit-content">What the statuses mean</summary>
+                <ul style="margin: 6px 0 0; padding-left: 20px; color: #46546A; font-size: 13px; display: flex; flex-direction: column; gap: 4px">
+                  <sc-for list="{{legend}}" as="lg" hint-placeholder-count="8"><li><b style="color: #0F1A2B">{{lg.name}}</b>: {{lg.text}}</li></sc-for>
+                </ul>
+              </details>
+            </sc-if>
+
+            <sc-if value="{{isNc}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 12px">
+                <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{ncNote}}</p>
+                <sc-if value="{{hasSugg}}" hint-placeholder-val="{{ false }}">
+                  <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px">
+                    <table style="width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 13px">
+                      <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Statutory accounts suggested from the chart of accounts</caption>
+                      <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                        <th scope="col" style="padding: 9px 12px; font-weight: 600">Kind</th><th scope="col" style="padding: 9px 12px; font-weight: 600">Payable account</th><th scope="col" style="padding: 9px 12px; font-weight: 600">Employer's share account</th><th scope="col" style="padding: 9px 12px; font-weight: 600; text-align: right">Due day</th><th scope="col" style="padding: 9px 12px; font-weight: 600">Why it is suggested</th><th scope="col" style="padding: 9px 12px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Action</span></th>
+                      </tr></thead>
+                      <tbody>
+                        <sc-for list="{{sugg}}" as="sg" hint-placeholder-count="5">
+                          <tr class="{{sg.cls}}" style="border-top: 1px solid #F1F3F7">
+                            <td style="padding: 9px 12px; font-weight: 600; white-space: nowrap">{{sg.kind}}</td>
+                            <td style="padding: 9px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{sg.pay}}</span> {{sg.payName}}</td>
+                            <td style="padding: 9px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{sg.emp}}</span> {{sg.empName}}</td>
+                            <td style="padding: 9px 12px; text-align: right; font-variant-numeric: tabular-nums">{{sg.due}}</td>
+                            <td style="padding: 9px 12px; color: #46546A; max-width: 320px">{{sg.why}}</td>
+                            <td style="padding: 6px 12px; white-space: nowrap">
+                              <sc-if value="{{sg.canUse}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{sg.id}}" class="hs" onClick="{{sg.use}}" disabled="{{sg.busy}}" aria-busy="{{sg.busyAttr}}" aria-label="{{sg.aria}}" style="min-width: 150px; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{sg.isBusy}}" hint-placeholder-val="{{ false }}"><span class="spd" aria-hidden="true"></span></sc-if>{{sg.useLabel}}</button></sc-if>
+                              <sc-if value="{{sg.isUsed}}" hint-placeholder-val="{{ false }}"><span class="rv" style="display: inline-flex; align-items: center; gap: 6px; color: #0A6B3D; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>Added</span></sc-if>
+                            </td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{suggAfter}}</p>
+                </sc-if>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px">
+                  <sc-if value="{{hasSugg}}" hint-placeholder-val="{{ false }}">
+                    <button type="button" id="bsx-use" class="hb" onClick="{{useThem}}" disabled="{{busy}}" aria-busy="{{useBusyAttr}}" style="min-width: 190px; height: 40px; padding: 0 18px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{useBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{useLabel}}</button>
+                    <a href="SetupStatutory.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">Go to Setup</a>
+                  </sc-if>
+                  <sc-if value="{{noSugg}}" hint-placeholder-val="{{ false }}"><a href="SetupStatutory.dc.html" class="hb" style="display: inline-flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: none">Go to Setup</a></sc-if>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{isCfg}}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 0 22px 8px; display: flex; flex-direction: column; gap: 18px">
+              <sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+                <sc-if value="{{c.isFull}}" hint-placeholder-val="{{ true }}">
+                  <div class="rv" style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; padding: 14px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5">
+                      <h3 id="{{c.hid}}" style="margin: 0; font-size: 16px; font-weight: 600">{{c.label}} <span style="color: #5F6C80; font-weight: 500">· <span style="font-family: ui-monospace, Consolas, monospace">{{c.payCode}}</span> {{c.payName}}</span></h3>
+                      <span style="flex: 1 1 0"></span>
+                      <span style="color: #46546A; font-size: 13px">{{c.empText}}</span>
+                    </div>
+                    <p style="margin: 0; padding: 10px 18px 0; color: #46546A; font-size: 13px">{{c.owedText}}</p>
+                    <div style="overflow-x: auto">
+                      <table style="width: 100%; min-width: 1180px; border-collapse: collapse">
+                        <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{c.caption}}</caption>
+                        <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                          <th scope="col" style="padding: 10px 12px 10px 18px; font-weight: 600">{{c.monthHead}}</th>
+                          <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">{{c.wHead}}</th>
+                          <sc-if value="{{c.hasEmp}}" hint-placeholder-val="{{ true }}"><th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Employer share</th></sc-if>
+                          <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Paid</th>
+                          <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Difference</th>
+                          <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Balance at due date</th>
+                          <th scope="col" style="padding: 10px 12px; font-weight: 600">Status</th>
+                          <th scope="col" style="padding: 10px 12px; font-weight: 600">Payment voucher</th>
+                          <th scope="col" style="padding: 10px 18px 10px 12px; font-weight: 600">Tracker payment</th>
+                        </tr></thead>
+                        <tbody>
+                          <sc-for list="{{c.rows}}" as="r" hint-placeholder-count="3">
+                            <sc-if value="{{r.isFold}}" hint-placeholder-val="{{ false }}">
+                              <tr style="border-top: 1px solid #F1F3F7; background: #FAFBFC">
+                                <td colspan="{{r.span}}" style="padding: 6px 18px; color: #5F6C80; font-size: 13px">
+                                  <button type="button" id="{{r.foldId}}" class="lk" aria-expanded="{{r.foldExp}}" onClick="{{r.foldToggle}}" style="min-height: 32px; border: 0; background: transparent; padding: 2px 4px; font: 600 13px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px"><span class="{{r.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{r.foldLabel}}</button>
+                                  <span>{{r.foldText}}</span>
+                                </td>
+                              </tr>
+                            </sc-if>
+                            <sc-if value="{{r.isRow}}" hint-placeholder-val="{{ true }}">
+                              <tr id="{{r.rowId}}" tabindex="-1" class="{{r.cls}}" style="{{r.trStyle}}">
+                                <td style="padding: 10px 12px 10px 18px; vertical-align: top; white-space: nowrap"><span style="{{r.monthStyle}}">{{r.month}}</span><div style="color: #5F6C80; font-size: 12px">{{r.due}}</div></td>
+                                <td style="padding: 10px 12px; text-align: right; vertical-align: top; font-variant-numeric: tabular-nums; white-space: nowrap">
+                                  <div>{{r.withheld}}</div>
+                                  <sc-for list="{{r.wdocs}}" as="wd" hint-placeholder-count="1"><div><button type="button" id="{{wd.id}}" class="lk" aria-expanded="{{wd.exp}}" title="{{wd.title}}" onClick="{{wd.toggle}}" style="border: 0; background: transparent; padding: 2px; font: 600 12px ui-monospace, Consolas, monospace; cursor: pointer">{{wd.no}}</button></div></sc-for>
+                                </td>
+                                <sc-if value="{{r.hasEmp}}" hint-placeholder-val="{{ true }}"><td style="padding: 10px 12px; text-align: right; vertical-align: top; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.emp}}</td></sc-if>
+                                <td style="padding: 10px 12px; text-align: right; vertical-align: top; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.paid}}</td>
+                                <td style="padding: 10px 12px; text-align: right; vertical-align: top; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.diff}}</td>
+                                <td style="padding: 10px 12px; text-align: right; vertical-align: top; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.bal}}</td>
+                                <td style="padding: 10px 12px; vertical-align: top; min-width: 260px">
+                                  <span style="display: inline-flex; flex-wrap: wrap; gap: 6px"><span title="{{r.pillTitle}}" style="{{r.pillStyle}}">{{r.pillText}}</span><sc-if value="{{r.late}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600; white-space: nowrap">Paid late</span></sc-if></span>
+                                  <div style="color: #46546A; font-size: 13px; margin-top: 4px; max-width: 320px">{{r.text}}</div>
+                                </td>
+                                <td style="padding: 10px 12px; vertical-align: top; white-space: nowrap">
+                                  <sc-for list="{{r.vouchers}}" as="vc" hint-placeholder-count="1"><div><button type="button" id="{{vc.id}}" class="lk" aria-expanded="{{vc.exp}}" title="{{vc.title}}" onClick="{{vc.toggle}}" style="border: 0; background: transparent; padding: 2px; font: 600 13px ui-monospace, Consolas, monospace; cursor: pointer">{{vc.no}}</button> <span style="color: #5F6C80; font-size: 12px">{{vc.date}}</span></div></sc-for>
+                                  <sc-if value="{{r.noVoucher}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80">—</span></sc-if>
+                                  <sc-if value="{{r.hasVNote}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px; max-width: 220px; white-space: normal; margin-top: 2px">{{r.vNote}}</div></sc-if>
+                                </td>
+                                <td style="padding: 10px 18px 10px 12px; vertical-align: top; min-width: 190px">
+                                  <sc-if value="{{r.trkNone}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80">—</span></sc-if>
+                                  <sc-if value="{{r.trkOn}}" hint-placeholder-val="{{ true }}">
+                                    <div><span style="font-weight: 600; white-space: nowrap">{{r.trkAmt}}</span> <span style="color: #5F6C80; font-size: 12px; white-space: nowrap">{{r.trkPaid}}</span></div>
+                                    <span title="{{r.trkPillTitle}}" style="{{r.trkPillStyle}}">{{r.trkPill}}</span>
+                                    <div style="display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 2px">
+                                      <a href="Payment.dc.html" class="lk" aria-label="{{r.trkAria}}" style="display: inline-flex; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600; white-space: nowrap">Open the payment</a>
+                                      <sc-if value="{{r.trkToPay}}" hint-placeholder-val="{{ false }}"><a href="ToPay.dc.html" class="lk" aria-label="{{r.trkPayAria}}" style="display: inline-flex; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600; white-space: nowrap">Pay it in To pay</a></sc-if>
+                                    </div>
+                                  </sc-if>
+                                </td>
+                              </tr>
+                            </sc-if>
+                            <sc-if value="{{r.isOpen}}" hint-placeholder-val="{{ false }}">
+                              <tr>
+                                <td colspan="{{r.span}}" style="padding: 0">
+                                  <div class="ex" role="region" aria-label="{{r.doc.caption}}" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 18px 16px; background: #F7F8FA; border-top: 1px solid #E3E7ED; box-shadow: inset 3px 0 0 #2450B8">
+                                    <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; justify-content: space-between">
+                                      <b style="display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center"><span style="font-family: ui-monospace, Consolas, monospace">{{r.doc.no}}</span><span style="color: #5F6C80; font-weight: 500">· {{r.doc.label}}</span></b>
+                                      <span style="color: #5F6C80; font-size: 12px">{{r.doc.src}}</span>
+                                    </div>
+                                    <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px; background: #FFFFFF">
+                                      <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                        <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{r.doc.caption}}</caption>
+                                        <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                                          <th scope="col" style="padding: 8px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th>
+                                          <th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Credit</th>
+                                        </tr></thead>
+                                        <tbody>
+                                          <sc-for list="{{r.doc.lines}}" as="l" hint-placeholder-count="3">
+                                            <tr style="{{l.trStyle}}">
+                                              <td style="padding: 8px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{l.code}}</span> {{l.name}}<sc-if value="{{l.bank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">Bank</span></sc-if></td>
+                                              <td style="padding: 8px 12px; color: #46546A">{{l.desc}}</td>
+                                              <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{l.dr}}</td>
+                                              <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{l.cr}}</td>
+                                            </tr>
+                                          </sc-for>
+                                          <tr style="border-top: 2px solid #E3E7ED; font-weight: 700"><td colspan="2" style="padding: 8px 12px">Total</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.doc.totDr}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.doc.totCr}}</td></tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                    <span style="display: inline-flex; gap: 6px; align-items: center; color: #0A6B3D; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>{{r.doc.check}}</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            </sc-if>
+                          </sc-for>
+                          <sc-if value="{{c.noRows}}" hint-placeholder-val="{{ false }}"><tr style="border-top: 1px solid #F1F3F7"><td colspan="{{c.span}}" style="padding: 18px; color: #5F6C80; text-align: center">No months in this period.</td></tr></sc-if>
+                        </tbody>
+                      </table>
+                    </div>
+                    <sc-for list="{{c.notes}}" as="cn" hint-placeholder-count="1"><p style="margin: 0; padding: 10px 18px 12px; color: #46546A; font-size: 13px; border-top: 1px solid #EEF1F5">{{cn.text}}</p></sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{c.isOff}}" hint-placeholder-val="{{ false }}">
+                  <div class="rv" style="border: 1px dashed #C9D2DF; border-radius: 12px; padding: 14px 18px; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; background: #FAFBFC">
+                    <dc-import name="Icon" glyph="statutory" tone="muted" size="22" hint-size="22px,22px"></dc-import>
+                    <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                      <h3 id="{{c.hid}}" style="margin: 0; font-size: 16px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center">{{c.label}} <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 9px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">{{c.offPill}}</span></h3>
+                      <span style="color: #46546A; font-size: 13px">{{c.offText}}</span>
+                    </div>
+                    <a href="{{c.offHref}}" class="hs" aria-label="{{c.offAria}}" style="display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; text-decoration: none">Go to Setup</a>
+                  </div>
+                </sc-if>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <div style="padding: 14px 22px 22px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #EEF1F5">
+            <sc-for list="{{newNotes}}" as="nn" hint-placeholder-count="3"><p style="margin: 0; color: #5F6C80; font-size: 12px; max-width: 1000px">New work: {{nn.text}}</p></sc-for>
+            <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}">
+              <aside aria-label="What the Excel link gives" class="{{xlCls}}" style="margin-top: 4px; border: 1px dashed #C9D2DF; border-radius: 12px; padding: 12px 14px; background: #FAFBFC; display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import><b style="font-size: 13px; overflow-wrap: anywhere">{{xlName}}</b><span style="color: #5F6C80; font-size: 12px">· the file the Excel link gives for this view, sheet "Statutory payables"</span></div>
+                <sc-for list="{{xlRows}}" as="x" hint-placeholder-count="3">
+                  <div style="display: flex; gap: 10px; font-size: 13px"><span style="flex: none; width: 48px; color: #5F6C80">Row {{x.n}}</span><span style="color: #46546A; overflow-wrap: anywhere">{{x.text}}</span></div>
+                </sc-for>
+                <span style="color: #5F6C80; font-size: 12px">{{xlAfter}}</span>
+              </aside>
+            </sc-if>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+        <div role="status" class="rv" style="position: fixed; right: 24px; bottom: 24px; z-index: 5; width: 400px; max-width: calc(100% - 48px); box-sizing: border-box; display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22)">
+          <span style="margin-top: 1px"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="navOn" size="20" hint-size="20px,20px"></dc-import></span>
+          <div style="flex: 1; min-width: 0"><b style="font-size: 13px">{{toastTitle}}</b><div style="font-size: 12px; color: #B8C4D6; overflow-wrap: anywhere">{{toastBody}}</div></div>
+          <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="bsx-undo" class="tb" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 12px Inter, sans-serif; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="undo" tone="navOn" size="14" hint-size="14px,14px"></dc-import>Undo</span></button></sc-if>
+          <button type="button" class="tb" aria-label="Dismiss" onClick="{{toastClose}}" style="width: 32px; height: 32px; flex: none; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"next-up","options":["next-up","from-payroll","fy","many-rows","fy-as-built","misposting","net-short","all-clear","not-configured","use-one","all-stopped","company-ai","loading","error","could-not-load","excel-error"],"section":"State to show"},"$preview":{"width":1440,"height":3000}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.initial((p && p.view) || 'next-up');
+    this.timer = null; this.ttimer = null;
+  }
+  componentWillUnmount() { clearTimeout(this.timer); clearTimeout(this.ttimer); }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      // The "State to show" tweak changed: start that state afresh.
+      clearTimeout(this.timer); clearTimeout(this.ttimer);
+      this.setState(this.initial(this.props.view || 'next-up'));
+      return;
+    }
+    if (this._focus) {
+      const id = this._focus; this._focus = null;
+      const el = document.getElementById(id);
+      if (el && el.focus) el.focus({ preventScroll: true });
+    }
+  }
+
+  // ---------- The shared sample: stage1/samples.md sections 4, 5 and 14, and scope/samples.md sections 2 and 6. Today is 18 Nov 2026; the journal kept covers 1 Oct to 17 Nov; the first month tracked is September 2026. ----------
+  data() {
+    if (this._d) return this._d;
+    const S = x => Math.round(x * 100);
+    const NEW = { file: 'GL Journal Oct-Nov.xlsx', read: '2026-11-18 10:42' }, LATE = { file: 'GL Journal Oct-Nov 18.xlsx', read: '2026-11-18 16:30' };   // fetched again to 18 Nov (the all-clear state only)
+    const L = ls => ls.map(([code, dr, cr, note]) => ({ code, dr: S(dr || 0), cr: S(cr || 0), note: note || '' }));
+    const doc = (no, iso, desc, lines, src) => ({ no, iso, desc, src: src || NEW, lines: L(lines) });
+    const DOCS = {};
+    [
+      doc('JV2610-007', '2026-10-31', 'Payroll journal October', [['900-100', 59147.90], ['420-000', 0, 48600], ['430-100', 0, 5346], ['430-200', 0, 205], ['430-210', 0, 81.90], ['430-300', 0, 4915]]),
+      doc('PV2610-005', '2026-10-15', 'KWSP September', [['430-100', 5320], ['900-110', 5860], ['310-000', 0, 11180]]),
+      doc('PV2610-014', '2026-10-24', 'Salaries October', [['420-000', 48600], ['310-000', 0, 48600]]),
+      doc('PV2611-012', '2026-11-14', 'PCB October', [['430-300', 4915], ['310-000', 0, 4915]]),
+      doc('PV2611-015', '2026-11-17', 'PERKESO October', [['430-200', 205], ['900-120', 717.60], ['430-210', 81.90], ['900-130', 81.90], ['310-000', 0, 1086.40]]),
+      doc('PV2611-018', '2026-11-18', 'KWSP October', [['430-100', 5346], ['900-110', 5894], ['310-000', 0, 11240]], LATE)
+    ].forEach(d => { DOCS[d.no] = d; });
+    const NAMES = { '310-000': 'Maybank current', '420-000': 'Accruals', '430-100': 'KWSP payable', '430-200': 'PERKESO payable', '430-210': 'EIS (SIP) payable', '430-300': 'PCB payable',
+      '900-100': 'Salaries and wages', '900-110': 'KWSP - employer', '900-120': 'PERKESO - employer', '900-130': 'EIS - employer' };
+    // Setup › Statutory accounts, AISB (added 18 Nov 10:50 with Use these accounts), in the order the authorities are named.
+    // Net salaries payable is the company's own account (owner, 17 Nov: AISB 420-000 Accruals); pay is due by the 7th of the next month (s.19).
+    // A kind with no account is shown, not checked: Lindung 24 Jam (SKBBK) and zakat are not set up; HRDF registered is off in Setup › Companies.
+    const ACCTS = [
+      { k: 'net', label: 'Net salaries payable', pay: '420-000', emp: null, due: 7 },
+      { k: 'epf', label: 'EPF (KWSP)', pay: '430-100', emp: '900-110', due: 15 },
+      { k: 'socso', label: 'SOCSO (PERKESO)', pay: '430-200', emp: '900-120', due: 15 },
+      { k: 'eis', label: 'EIS (SIP)', pay: '430-210', emp: '900-130', due: 15 },
+      { k: 'skbbk', label: 'Lindung 24 Jam (SKBBK)', off: 'Not set up', href: 'SetupStatutory.dc.html', where: 'Setup › Statutory accounts',
+        text: "No payable account is chosen for it in Setup › Statutory accounts, so it isn't checked. October's payroll journal (JV2610-007) credits nothing for it." },
+      { k: 'pcb', label: 'PCB (LHDN)', pay: '430-300', emp: null, due: 15 },
+      { k: 'zakat', label: 'Zakat', off: 'Not set up', href: 'SetupStatutory.dc.html', where: 'Setup › Statutory accounts',
+        text: "No payable account is chosen for it in Setup › Statutory accounts, so it isn't checked. Nothing was taken off October's salaries for zakat." },
+      { k: 'hrdf', label: 'HRDF', off: 'Not registered', href: 'SetupCompanies.dc.html', where: 'Setup › Companies',
+        text: 'HRDF registered is off for AISB in Setup › Companies, so no levy is owed and nothing is checked.' }
+    ];
+    // Per payroll month (sen). w what the month's documents credit to the payable (taken off the salaries, or the net pay), emp employer's share paid with it, paid, docs that credit it,
+    // vouchers that pay it, trk the tracker payment (Payments register), balDue what is owed at the end of the due day.
+    const V = (no, iso) => ({ no, iso });
+    const MD = {
+      net: { '2026-10': { w: S(48600), emp: 0, paid: S(48600), wdocs: ['JV2610-007'], pdocs: [V('PV2610-014', '2026-10-24')], trk: { what: 'Salaries — staff, October', amt: S(48600), iso: '2026-10-24', st: 'agrees' }, balDue: 0 } },
+      epf: { '2026-09': { w: 0, emp: S(5860), paid: S(5320), wdocs: [], pdocs: [V('PV2610-005', '2026-10-15')], trk: { what: 'KWSP, September', amt: S(11180), iso: '2026-10-15', st: 'agrees' }, balDue: 0 },
+        '2026-10': { w: S(5346), emp: 0, paid: 0, wdocs: ['JV2610-007'], pdocs: [], trk: { what: 'KWSP, October', amt: S(11240), iso: null, st: 'unpaid' }, balDue: S(5346) } },
+      socso: { '2026-10': { w: S(205), emp: S(717.60), paid: S(205), wdocs: ['JV2610-007'], pdocs: [V('PV2611-015', '2026-11-17')], trk: { what: 'PERKESO, October', amt: S(1086.40), iso: '2026-11-17', st: 'nl' }, balDue: S(205), late: true } },
+      eis: { '2026-10': { w: S(81.90), emp: S(81.90), paid: S(81.90), wdocs: ['JV2610-007'], pdocs: [V('PV2611-015', '2026-11-17')], trk: { what: 'PERKESO, October', amt: S(1086.40), iso: '2026-11-17', st: 'nl' }, balDue: S(81.90), late: true } },
+      pcb: { '2026-10': { w: S(4915), emp: 0, paid: S(4915), wdocs: ['JV2610-007'], pdocs: [V('PV2611-012', '2026-11-14')], trk: { what: 'PCB, October', amt: S(4915), iso: '2026-11-14', st: 'nl' }, balDue: 0 } }
+    };
+    // Not configured: what the chart's names suggest (statutory.suggest). Net salaries payable (420-000 Accruals) was confirmed for AISB on 13 Nov 2026, so it is not suggested.
+    const SUGG = [
+      { k: 'epf', kind: 'EPF (KWSP)', pay: '430-100', payName: 'KWSP payable', emp: '900-110', empName: 'KWSP - employer', due: '15', why: 'Its name says KWSP.' },
+      { k: 'socso', kind: 'SOCSO (PERKESO)', pay: '430-200', payName: 'PERKESO payable', emp: '900-120', empName: 'PERKESO - employer', due: '15', why: 'Its name says PERKESO.' },
+      { k: 'eis', kind: 'EIS (SIP)', pay: '430-210', payName: 'EIS (SIP) payable', emp: '900-130', empName: 'EIS - employer', due: '15', why: 'Its name says EIS (SIP).' },
+      { k: 'pcb', kind: 'PCB (LHDN)', pay: '430-300', payName: 'PCB payable', emp: '—', empName: '', due: '15', why: 'Its name says PCB.' }
+    ];
+    this._d = { DOCS, NAMES, ACCTS, MD, SUGG, TODAY: '2026-11-18', TRACKED: '2026-09', COVER0: '2026-10', OPENING: '2026-10-01',
+      OWED_AT_OPEN: { net: 0, epf: S(5320), socso: 0, eis: 0, pcb: 0 },
+      CO: { AISB: { code: 'AISB', name: 'AISB Sdn Bhd', sql: true }, AI: { code: 'AI', name: 'Agrinexus International', sql: false } } };
+    return this._d;
+  }
+
+  // Formats, as the app writes them: money 1,234.56 (sen in), dates 1 Oct 2026, 01/10/2026 and 1 Oct.
+  fmt(sen) {
+    const neg = sen < 0, v = Math.abs(sen);
+    return (neg ? '-' : '') + String(Math.floor(v / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + String(v % 100).padStart(2, '0');
+  }
+  rmPlain(n) { return n === null || n === undefined ? '—' : this.fmt(n); }
+  rmCell(n) { return n ? this.fmt(n) : ''; }
+  fmtDate(iso) { const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const [y, m, d] = iso.split('-'); return Number(d) + ' ' + M[Number(m) - 1] + ' ' + y; }
+  longDate(iso) { const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const [y, m, d] = iso.split('-'); return Number(d) + ' ' + M[Number(m) - 1] + ' ' + y; }
+  shortDate(iso) { return this.fmtDate(iso).split(' ').slice(0, 2).join(' '); }
+  dmy(iso) { const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; }
+  fileDate(iso) { const [y, m, d] = iso.split('-'); return d + '-' + m + '-' + y; }
+  monthName(ym) { const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const [y, m] = ym.split('-'); return M[Number(m) - 1] + ' ' + y; }
+  ord(n) { const t = n % 100; return n + (t >= 11 && t <= 13 ? 'th' : n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th'); }
+  dueOf(ym, day) { let [y, m] = ym.split('-').map(Number); m += 1; if (m > 12) { m = 1; y += 1; } return y + '-' + String(m).padStart(2, '0') + '-' + String(day || 15).padStart(2, '0'); }
+  lastDay(ym) { const [y, m] = ym.split('-').map(Number); return ym + '-' + String(new Date(Date.UTC(y, m, 0)).getUTCDate()).padStart(2, '0'); }
+  months(a, b) { const out = []; let [y, m] = a.split('-').map(Number); const [y2, m2] = b.split('-').map(Number); while ((y < y2 || (y === y2 && m <= m2)) && out.length < 24) { out.push(y + '-' + String(m).padStart(2, '0')); m += 1; if (m > 12) { m = 1; y += 1; } } return out; }
+
+  // The months shown: the dates given are cut to their months; with none, From is the financial year start and To is today.
+  period(from, to) {
+    const D = this.data();
+    const t = to || D.TODAY;
+    const f = from || (t.slice(0, 4) + '-01-01');
+    return { from: f, to: t };
+  }
+
+  // mis: PV2610-005's employer share on the SOCSO account (state only). short: PV2610-014 pays 45,052.40 of the 48,600.00 (state only).
+  docView(no, V) {
+    const D = this.data(), d = D.DOCS[no], o = V || {};
+    if (!d) return null;
+    const rm = n => (n ? 'RM ' + this.fmt(n) : '');
+    let ls = d.lines.map(l => (o.mis && no === 'PV2610-005' && l.code === '900-110' ? Object.assign({}, l, { code: '900-120', note: "SOCSO (PERKESO)'s employer account" }) : l));
+    if (o.short && no === 'PV2610-014') ls = ls.map(l => Object.assign({}, l, { dr: l.dr ? 4505240 : 0, cr: l.cr ? 4505240 : 0 }));
+    const sum = k => 'RM ' + this.fmt(ls.reduce((s, l) => s + l[k], 0));
+    const src = 'Version 1, ' + this.longDate(d.iso) + ", from SQL's GL Journal of Transaction (" + d.src.file + '), read ' + d.src.read;
+    return { no: d.no, label: no.startsWith('JV') ? 'the General Journal' : 'the Bank Journal', src, caption: 'The account lines of ' + d.no,
+      lines: ls.map(l => { const bank = l.code === '310-000'; return { code: l.code, name: D.NAMES[l.code] || '', bank, note: l.note, desc: d.desc, dr: rm(l.dr), cr: rm(l.cr),
+        trStyle: 'border-top: 1px solid #F1F3F7;' + (bank ? ' background: #F3F6FE' : l.note ? ' background: #FFFBF2' : '') }; }),
+      totDr: sum('dr'), totCr: sum('cr'), check: 'The lines balance and agree with the listing.' };
+  }
+
+  initial(view) {
+    const s = { co: 'AISB', from: '2026-10-01', to: '2026-11-18', cfg: 'on', used: {}, variant: null, open: null, mpOpen: false, unfold: {}, arrive: null,
+      busy: false, busyBy: null, err: '', xlErr: false, xlN: 0, swapN: 0, say: '', toast: null };
+    if (view === 'from-payroll') { s.arrive = { k: 'epf', ym: '2026-10' }; s.say = 'Statutory payables, opened from HR › Payroll at EPF (KWSP), October 2026.'; }
+    if (view === 'fy' || view === 'many-rows') { s.from = null; s.to = null; }
+    if (view === 'many-rows') s.unfold = { epf: true };
+    if (view === 'fy-as-built') { s.from = null; s.to = null; s.variant = 'asbuilt'; }
+    if (view === 'misposting') { s.variant = 'mis'; s.mpOpen = true; }
+    if (view === 'net-short') { s.variant = 'short'; s.open = 'net|2026-10|PV2610-014'; }
+    if (view === 'all-clear') { s.to = '2026-10-31'; s.variant = 'clear'; }
+    if (view === 'not-configured') { s.cfg = 'new'; s.from = null; s.to = null; }
+    if (view === 'use-one') { s.cfg = 'new'; s.from = null; s.to = null; s.used = { epf: true }; s.toast = { title: 'EPF (KWSP) added', body: '430-100 KWSP payable is now checked as EPF (KWSP), due by the 15th.', undo: ['epf'], glyph: 'check' }; }
+    if (view === 'all-stopped') { s.cfg = 'stopped'; s.from = null; s.to = null; }
+    if (view === 'company-ai') { s.co = 'AI'; s.from = null; s.to = null; }
+    if (view === 'loading') { s.busy = true; s.busyBy = 'show'; }   // a static preview: it holds Loading…
+    if (view === 'excel-error') s.xlErr = true;
+    const per = this.period(s.from, s.to);
+    s.fromVal = per.from; s.toVal = per.to;
+    if (view === 'error') s.err = 'The records need update 29 for the statutory check. Restart the app, then try again.';
+    if (view === 'could-not-load') s.err = "The statutory payables couldn't be worked out: the server stopped with an error. Nothing was changed. Try again; if it keeps happening, restart the app.";
+    return s;
+  }
+
+  // Show (or a company switch, or This financial year to date): Loading…, then the check for those months. The dates are written back into the inputs.
+  run(next, by) {
+    clearTimeout(this.timer);
+    this.setState({ busy: true, busyBy: by || null, err: '', xlErr: false, say: 'Loading…' });
+    this.timer = setTimeout(() => {
+      const s = Object.assign({}, this.state, next);
+      const per = this.period(s.from, s.to);
+      if (by) this._focus = by === 'fy' ? 'bk-fy' : 'bk-show';
+      this.setState(Object.assign({}, next, { busy: false, busyBy: null, fromVal: per.from, toVal: per.to, open: null, swapN: (this.state.swapN || 0) + 1,
+        say: 'Statutory payables, ' + this.monthName(per.from.slice(0, 7)) + ' to ' + this.monthName(per.to.slice(0, 7)) + ' shown.' }));
+    }, 450);
+  }
+
+  // A toast that confirms a change carries Undo and stays 8 s (States: toasts).
+  toastTimer(toast) {
+    clearTimeout(this.ttimer);
+    this.ttimer = setTimeout(() => this.setState({ toast: null }), toast && toast.undo ? 8000 : 4000);
+  }
+
+  // Use this account (one suggestion) or Use these accounts (all that are left): added as Setup would add them. When none is left the check is drawn.
+  use(k) {
+    clearTimeout(this.timer);
+    const D = this.data();
+    this.setState({ busy: true, busyBy: k ? 'use-' + k : 'use', err: '', say: 'Adding…' });
+    this.timer = setTimeout(() => {
+      const used = Object.assign({}, this.state.used);
+      const left = D.SUGG.filter(x => !used[x.k]);
+      const adding = k ? left.filter(x => x.k === k) : left;
+      if (!adding.length) return this.setState({ busy: false, busyBy: null, say: 'Already added.' });
+      adding.forEach(x => { used[x.k] = true; });
+      const done = D.SUGG.every(x => used[x.k]);
+      const one = adding.length === 1 ? adding[0] : null;
+      const toast = one
+        ? { title: one.kind + ' added', body: one.pay + ' ' + one.payName + ' is now checked as ' + one.kind + ', due by the ' + this.ord(Number(one.due)) + '.', undo: [one.k], glyph: 'check' }
+        : { title: adding.length + ' statutory accounts added', body: adding.slice(0, -1).map(x => x.kind).join(', ') + ' and ' + adding[adding.length - 1].kind + ' are now checked.', undo: adding.map(x => x.k), glyph: 'check' };
+      const per = this.period(null, null);
+      this._focus = done ? 'bsx-h2' : (left.filter(x => !used[x.k])[0] ? 'bsx-use-' + left.filter(x => !used[x.k])[0].k : 'bsx-use');
+      this.setState({ busy: false, busyBy: null, used, cfg: done ? 'on' : 'new', from: null, to: null, fromVal: per.from, toVal: per.to, open: null, swapN: (this.state.swapN || 0) + 1,
+        toast, say: toast.title + '.' });
+      this.toastTimer(toast);
+    }, 600);
+  }
+  undo() {
+    const t = this.state.toast;
+    if (!t || !t.undo) return;
+    clearTimeout(this.ttimer);
+    const used = Object.assign({}, this.state.used);
+    t.undo.forEach(k => { delete used[k]; });
+    const many = t.undo.length > 1;
+    const toast = { title: 'Undone', body: (many ? 'The ' + t.undo.length + ' statutory accounts are' : t.title.replace(/ added$/, '') + ' is') + ' out of Setup again. The undo is a new entry in the audit trail.', undo: null, glyph: 'undo' };
+    this._focus = many ? 'bsx-use' : 'bsx-use-' + t.undo[0];
+    this.setState({ used, cfg: 'new', toast, say: toast.title + '. ' + toast.body, swapN: (this.state.swapN || 0) + 1 });
+    this.toastTimer(toast);
+  }
+
+  // The rows of one account over the months shown. V: { asBuilt: what the app does today, clear: KWSP October paid 18 Nov, short: net pay short (states only) }.
+  rowsOf(A, yms, V) {
+    const D = this.data(), out = [];
+    const isNet = A.k === 'net';
+    yms.forEach(ym => {
+      let m = (D.MD[A.k] || {})[ym] || null;
+      if (V.clear && A.k === 'epf' && ym === '2026-10') m = { w: 534600, emp: 589400, paid: 534600, wdocs: ['JV2610-007'], pdocs: [{ no: 'PV2611-018', iso: '2026-11-18' }], trk: { what: 'KWSP, October', amt: 1124000, iso: '2026-11-18', st: 'nl' }, balDue: 534600, late: true };
+      if (V.short && isNet && ym === '2026-10') m = Object.assign({}, m, { paid: 4505240, balDue: 354760, trk: { what: 'Salaries — staff, October', amt: 4860000, iso: '2026-10-24', st: 'pays', pays: 4505240 } });
+      const tracked = ym >= D.TRACKED, covered = ym >= D.COVER0, due = this.dueOf(ym, A.due);
+      const w = m ? m.w : 0, paid = m ? m.paid : 0, emp = m ? m.emp : 0;
+      const L = A.label, M = this.monthName(ym);
+      let st = 'nothing';
+      if (w === 0 && paid === 0) st = 'nothing';
+      else if (paid > w) st = 'over';
+      else if (paid === w) st = 'cleared';
+      else if (D.TODAY <= due) st = 'due';
+      else if (paid === 0) st = 'late';
+      else st = 'short';
+      const unc = !covered && !V.asBuilt;
+      const lastPaid = m && m.pdocs.length ? this.fmtDate(m.pdocs[m.pdocs.length - 1].iso) : '';
+      const TEXT = isNet ? {
+        cleared: 'Net pay for ' + M + ' paid in full' + (lastPaid ? ', on ' + lastPaid : '') + '.',
+        due: 'Net pay for ' + M + ' is due by ' + this.fmtDate(due) + '.', late: 'Net pay for ' + M + " wasn't paid by " + this.fmtDate(due) + '.',
+        short: 'Net pay for ' + M + ': RM ' + this.fmt(w - paid) + ' of it is still unpaid.', over: 'Net pay for ' + M + ': RM ' + this.fmt(paid - w) + ' more was paid than the payroll journal owes.',
+        nothing: 'No net pay was booked for ' + M + '.'
+      } : {
+        cleared: m && m.late ? L + ' for ' + M + ' paid in full, the last of it on ' + lastPaid + ', after the due day ' + this.fmtDate(due) + '.' : L + ' for ' + M + ' paid in full.',
+        due: L + ' for ' + M + ' is due by ' + this.fmtDate(due) + '.', late: L + ' for ' + M + " wasn't paid by " + this.fmtDate(due) + '.',
+        short: L + ' for ' + M + ': RM ' + this.fmt(w - paid) + ' less was paid than was taken off the salaries.', over: L + ' for ' + M + ': RM ' + this.fmt(paid - w) + ' more was paid than was taken off the salaries.',
+        nothing: 'Nothing was taken off the salaries for ' + L + ' in ' + M + '.'
+      };
+      const CAP = { cleared: 'Cleared', due: 'Due', late: 'Late', short: isNet ? 'Not paid in full' : 'Short', over: 'Over', nothing: 'Nothing' };
+      let pill = CAP[st], text = TEXT[st], tone = { cleared: 'ok', due: 'warn', late: 'bad', short: 'bad', over: 'bad', nothing: 'grey' }[st], title = '';
+      if (unc) { pill = tracked ? 'Not covered' : 'Before tracking'; tone = 'grey'; text = 'Not covered by the journal kept (from ' + this.fmtDate(D.OPENING) + ').'; }
+      else if (!tracked) { pill = 'Before tracking · ' + CAP[st]; tone = 'grey'; title = 'Before the first month tracked: shown, never asked for'; }
+      const diff = unc ? 0 : paid - w;
+      const baldue = unc ? null : (D.TODAY <= due ? null : (m ? m.balDue : 0));
+      out.push({ ym, m, st, unc, tracked, pill, tone, title, text, w: unc ? null : w, emp, paid: unc && !m ? null : unc ? null : paid, diff, baldue,
+        problem: tracked && !unc && (st === 'late' || st === 'short' || st === 'over'), probText: TEXT[st], due,
+        muted: !tracked || st === 'nothing' || unc, late: !!(m && m.late && st === 'cleared') });
+    });
+    return out;
+  }
+
+  renderVals() {
+    const s = this.state, D = this.data(), set = x => this.setState(x);
+    const co = s.co, C = D.CO[co], isSql = C.sql;
+    const per = this.period(s.from, s.to);
+    const V = { asBuilt: s.variant === 'asbuilt', clear: s.variant === 'clear', mis: s.variant === 'mis', short: s.variant === 'short' };
+    const cfg = co === 'AI' ? 'none' : s.cfg;
+
+    // ---- shell: its own page in the Accounting menu (no Books tab strip) ----
+    const sbCompany = co === 'AISB' ? 'aisb' : 'ai', sbKind = co === 'AISB' ? 'sqlPayroll' : 'here';
+    // the top-bar switcher replaced the in-page AISB / AI control and picks the company the same way
+    const onTopCo = code => { const k = code === 'aisb' ? 'AISB' : code === 'ai' ? 'AI' : null; if (k && k !== this.state.co) this.run({ co: k, from: null, to: null, variant: null, mpOpen: false, arrive: null }); };
+    const intro = "What each payroll month took off the salaries, against what was paid to each authority by its due day, and whether each run's net pay was paid in full. "
+      + (isSql ? "Worked out from SQL's books (the openings it printed and its GL Journal of Transaction); nothing on this page can be changed." : 'Worked out from what is posted here; nothing on this page can be changed.');
+    const showing = !s.busy && !s.err;
+    const vis = !s.err && (!s.busy || /^use/.test(s.busyBy || ''));
+    const busyBy = s.busy ? s.busyBy : null;
+    const PILL = { ok: 'background:#E3F7EC;color:#0A6B3D', bad: 'background:#FDE6E3;color:#B0190F', grey: 'background:#EEF1F5;color:#46546A', warn: 'background:#FEF1D6;color:#934100' };
+    const pillBase = 'display:inline-flex;align-items:center;min-height:24px;padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;';
+    const BN = {
+      ok: ['background:#F0FBF5;border:1px solid #BFE8D0', 'verified', 'ok', '#0A6B3D'],
+      warn: ['background:#FFFBF2;border:1px solid #F3D9A6', 'alert', 'warn', '#934100'],
+      grey: ['background:#F7F8FA;border:1px solid #E3E7ED', 'help', 'muted', '#0F1A2B']
+    };
+
+    // ---- not configured ----
+    const isNc = vis && cfg !== 'on';
+    const hasSugg = cfg === 'new';
+    const APPEND = " Confirm which accounts the salary vouchers credit with what is taken off the salaries and with the net pay, and which take the employer's share.";
+    let bn = null, ncNote = '', h2 = 'Statutory payables';
+    const nUsed = D.SUGG.filter(x => s.used[x.k]).length;
+    if (cfg === 'new') { bn = { t: 'grey', title: 'Not all checked yet', text: (nUsed ? nUsed + ' of the ' + D.SUGG.length + ' suggested accounts ' + (nUsed === 1 ? 'is' : 'are') + ' added; the rest are not checked yet.' : 'Only Net salaries payable (420-000 Accruals) is confirmed for this company so far, so the other statutory payables are not checked yet.') + APPEND }; ncNote = 'Suggested from the chart of accounts by their names. Add them one at a time, or all together:'; }
+    else if (cfg === 'none') { bn = { t: 'grey', title: 'Nothing is checked yet', text: 'No statutory accounts are confirmed for this company yet, so nothing is checked.' + APPEND }; ncNote = C.name + ' is kept here and has no chart of accounts yet, so no account looks like a net salaries, EPF, SOCSO, EIS, Lindung 24 Jam (SKBBK), PCB or zakat payable. Add them in Setup once the chart exists.'; }
+    else if (cfg === 'stopped') { bn = { t: 'grey', title: 'Nothing is checked yet', text: 'All the statutory accounts confirmed for this company are stopped, so nothing is checked.' }; ncNote = 'The statutory accounts confirmed for this company are all stopped in Setup. Use one again there to have it checked.'; }
+    const sugg = D.SUGG.map(x => {
+      const used = !!s.used[x.k], isBusy = busyBy === 'use-' + x.k;
+      return Object.assign({}, x, { id: 'bsx-use-' + x.k, canUse: !used, isUsed: used, isBusy, busyAttr: isBusy ? 'true' : 'false', useLabel: isBusy ? 'Adding…' : 'Use this account',
+        aria: 'Use ' + x.pay + ' ' + x.payName + ' for ' + x.kind, cls: used ? 'fa' : '', busy: !!s.busy, use: () => this.use(x.k) });
+    });
+    const suggAfter = 'Not suggested: no account in the chart looks like a Lindung 24 Jam (SKBBK) or zakat payable, and HRDF registered is off in Setup › Companies. They stay "Not set up" until an account is chosen in Setup.';
+
+    // ---- configured ----
+    const yms = this.months(per.from.slice(0, 7), per.to.slice(0, 7));
+    // app.py cuts From to its month; statutory._one takes the opening at the first of that month through B.balance (the latest opening on or before it).
+    const openDay = yms[0] + '-01', endDay = this.lastDay(yms[yms.length - 1]);
+    const unknownOpen = openDay < D.OPENING;
+    const fromText = this.fmtDate(openDay);
+    const counts = d => d.src.file === D.DOCS['PV2610-005'].src.file || V.clear;   // PV2611-018 is only in the journal fetched again (all-clear)
+    const amt = (d, l, k) => (V.short && d.no === 'PV2610-014' ? (l[k] ? 4505240 : 0) : l[k]);
+    const owedAt = (A, day) => D.OWED_AT_OPEN[A.k] + Object.keys(D.DOCS).map(no => D.DOCS[no]).filter(d => counts(d) && d.iso < day).reduce((a, d) => a + d.lines.filter(l => l.code === A.pay).reduce((b, l) => b + amt(d, l, 'cr') - amt(d, l, 'dr'), 0), 0);
+    const paidSince = (A, day) => Object.keys(D.DOCS).map(no => D.DOCS[no]).filter(d => counts(d) && /^PV/.test(d.no) && d.iso >= day && d.iso <= endDay).reduce((a, d) => a + d.lines.filter(l => l.code === A.pay).reduce((b, l) => b + amt(d, l, 'dr'), 0), 0);
+    const ACT = D.ACCTS.filter(A => !A.off);
+    const all = cfg === 'on' ? ACT.map(A => ({ A, rows: this.rowsOf(A, yms, V) })) : [];
+    const problems = []; all.forEach(x => x.rows.forEach(r => { if (r.problem) problems.push(r.probText); }));
+    const allRows = []; all.forEach(x => x.rows.forEach(r => allRows.push(r)));
+    let summary = '';
+    if (problems.length) summary = problems.length + ' statutory payable' + (problems.length === 1 ? '' : 's') + ' to look at: ' + (V.asBuilt
+      ? problems.slice(0, 4).join('; ') + (problems.length > 4 ? '; and ' + (problems.length - 4) + ' more.' : '')   // as built: statutory._summary joins texts that already end in "."
+      : problems.slice(0, 4).map(t => t.replace(/.$/, '')).join('; ') + (problems.length > 4 ? '; and ' + (problems.length - 4) + ' more.' : '.'));
+    else if (allRows.length && allRows.every(r => r.st === 'nothing' || r.unc)) summary = 'No statutory payables were taken off or paid in these months, so there was nothing to check.';
+    else {
+      let upto = null; for (const ym of yms) { const bad = allRows.some(r => r.ym === ym && !r.unc && !(r.st === 'cleared' || r.st === 'nothing')); if (bad) break; if (allRows.some(r => r.ym === ym && !r.unc && r.tracked)) upto = ym; }
+      summary = upto ? 'All statutory payables cleared up to ' + this.monthName(upto) + '.' : 'Nothing is cleared yet in these months.';
+    }
+    if (cfg === 'on') {
+      const empty = !problems.length && allRows.every(r => r.st === 'nothing' || r.unc);
+      const t = problems.length ? 'warn' : empty ? 'grey' : 'ok';
+      bn = { t, title: problems.length ? 'Statutory payables to look at' : 'Statutory payables', text: summary };
+      h2 = 'Statutory payables, ' + this.monthName(yms[0]) + (yms.length > 1 ? ' to ' + this.monthName(yms[yms.length - 1]) : '');
+    }
+    const bnx = bn ? BN[bn.t] : BN.grey;
+
+    // the tracker payment (Payments register) of a row, with Open the payment; an unpaid one also links to To pay
+    const TRK = { agrees: ['Agrees', 'ok', 'The voucher pays the same amount to the statutory accounts'], pays: ['Voucher pays less', 'bad', ''], nl: ['Not linked', 'grey', 'Entered by hand; no SQL entry is linked yet, as the listings stop at 12 Nov'], unpaid: ['Not paid · overdue', 'bad', 'In To pay since its due day passed'] };
+    const trkOf = (r, k) => {
+      const t = r.unc || !r.m ? null : r.m.trk;
+      if (!t) return { trkNone: true, trkOn: false, trkAmt: '', trkPaid: '', trkPill: '', trkPillStyle: '', trkPillTitle: '', trkAria: '', trkToPay: false, trkPayAria: '' };
+      const P = TRK[t.st];
+      return { trkNone: false, trkOn: true, trkAmt: 'RM ' + this.fmt(t.amt), trkPaid: t.iso ? 'paid ' + this.shortDate(t.iso) : 'not paid',
+        trkPill: P[0], trkPillStyle: 'display:inline-flex;align-items:center;height:22px;padding:0 9px;margin-top:4px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + PILL[P[1]],
+        trkPillTitle: t.st === 'pays' ? 'The voucher pays ' + this.fmt(t.pays) + ' of the ' + this.fmt(t.amt) : t.st === 'agrees' && k === 'net' ? 'The voucher pays the same amount as the net pay' : P[2],
+        trkAria: 'Open the payment: ' + t.what + ', RM ' + this.fmt(t.amt), trkToPay: t.st === 'unpaid', trkPayAria: 'Pay ' + t.what + ' in To pay' };
+    };
+    const ar = s.arrive;
+    const cards = cfg !== 'on' ? [] : D.ACCTS.map((A, ai) => {
+      if (A.off) return { isFull: false, isOff: true, hid: 'bsx-c-' + A.k, label: A.label, offPill: A.off, offText: A.text, offHref: A.href, offAria: 'Go to ' + A.where + ' for ' + A.label,
+        rows: [], notes: [], noRows: false, span: '9' };
+      const rows = all.find(x => x.A.k === A.k).rows;
+      const hasEmp = !!A.emp || A.k !== 'net';
+      const span = hasEmp ? '9' : '8';
+      const pcode = A.pay;
+      const owedText = unknownOpen ? 'Owed at ' + fromText + ': unknown.' : (() => {
+        const o = owedAt(A, openDay), p = Math.min(o, paidSince(A, openDay));
+        return 'Owed at ' + fromText + ': ' + (o ? this.fmt(o) + (p ? '; ' + this.fmt(p) + ' of it paid since.' : '.') : 'nil.');
+      })();
+      // many rows: the months before the first month tracked fold into one line (shown, never asked for)
+      const pre = rows.filter(r => !r.tracked);
+      const fold = pre.length >= 3, unf = !!(s.unfold || {})[A.k];
+      const items = [];
+      const rowItem = r => {
+        const key = A.k + '|' + r.ym + '|';
+        const openNo = s.open && s.open.indexOf(key) === 0 ? s.open.slice(key.length) : null;
+        const mk = (no, kind) => ({ no, id: 'bsx-' + kind + '-' + A.k + '-' + r.ym + '-' + no, exp: openNo === no ? 'true' : 'false', title: 'Show the lines of ' + no,
+          toggle: () => set({ open: this.state.open === key + no ? null : key + no, say: this.state.open === key + no ? 'Lines of ' + no + ' closed.' : 'Lines of ' + no + ' shown below the ' + this.monthName(r.ym) + ' row.' }) });
+        const m = r.m;
+        const vouchers = m ? m.pdocs.map(p => Object.assign(mk(p.no, 'p'), { date: this.shortDate(p.iso) })) : [];
+        const here = !!(ar && ar.k === A.k && ar.ym === r.ym);
+        return Object.assign({
+          isFold: false, isRow: true, span, hasEmp, rowId: 'bsx-r-' + A.k + '-' + r.ym, cls: here ? 'hr fa' : 'hr',
+          trStyle: 'border-top: 1px solid #F1F3F7;' + (r.muted ? ' color: #5F6C80;' : '') + (here ? ' background: #F3F6FE; box-shadow: inset 3px 0 0 #2450B8;' : ''),
+          monthStyle: r.muted ? 'color:#5F6C80' : 'font-weight:600', month: this.monthName(r.ym), due: 'Due ' + this.fmtDate(r.due),
+          withheld: this.rmPlain(r.w), wdocs: m && !r.unc ? m.wdocs.map(no => mk(no, 'w')) : [], emp: r.unc ? '—' : this.rmCell(r.emp), paid: this.rmPlain(r.paid),
+          diff: r.diff ? (r.diff > 0 ? '+' : '−') + this.fmt(Math.abs(r.diff)) : '',
+          bal: r.baldue === null || (unknownOpen && !r.m && !V.asBuilt) ? '—' : r.baldue === 0 ? 'nil' : this.fmt(r.baldue) + ' owed',
+          pillText: r.pill, pillTitle: r.title, pillStyle: pillBase + PILL[r.tone], late: r.late, text: r.text,
+          vouchers, noVoucher: !vouchers.length,
+          hasVNote: r.unc && vouchers.length > 0, vNote: r.unc && vouchers.length ? 'Pays what was owed at ' + this.fmtDate(D.OPENING) + ' (' + this.fmt(D.OWED_AT_OPEN[A.k]) + '), before the journal kept.' : '',
+          isOpen: !!openNo && !!D.DOCS[openNo],
+          doc: openNo && D.DOCS[openNo] ? this.docView(openNo, V) : { no: '', label: '', src: '', caption: '', lines: [], totDr: '', totCr: '', check: '' },
+          foldId: '', foldExp: 'false', foldToggle: () => {}, chevCls: 'chev', foldLabel: '', foldText: ''
+        }, trkOf(r, A.k));
+      };
+      if (fold) {
+        const first = this.monthName(pre[0].ym).split(' ')[0], last = this.monthName(pre[pre.length - 1].ym);
+        items.push({ isFold: true, isRow: false, isOpen: false, span, foldId: 'bsx-fold-' + A.k, foldExp: unf ? 'true' : 'false', chevCls: unf ? 'chev on' : 'chev',
+          foldLabel: (unf ? 'Hide ' : 'Show ') + first + ' to ' + last + ' (' + pre.length + ' months)', foldText: '· before the first month tracked (September 2026): shown, never asked for.',
+          foldToggle: () => { this._focus = 'bsx-fold-' + A.k; const u = Object.assign({}, this.state.unfold); u[A.k] = !u[A.k]; set({ unfold: u, say: (u[A.k] ? 'Shown: ' : 'Hidden: ') + first + ' to ' + last + ' for ' + A.label + '.' }); } });
+        if (unf) pre.forEach(r => items.push(rowItem(r)));
+        rows.filter(r => r.tracked).forEach(r => items.push(rowItem(r)));
+      } else rows.forEach(r => items.push(rowItem(r)));
+      return { isFull: true, isOff: false, hid: 'bsx-c-' + A.k, label: A.label, payCode: A.pay, payName: D.NAMES[A.pay], hasEmp, span,
+        caption: A.label + ', ' + this.monthName(yms[0]) + (yms.length > 1 ? ' to ' + this.monthName(yms[yms.length - 1]) : ''),
+        monthHead: A.k === 'net' ? 'Payroll month' : 'Month', wHead: A.k === 'net' ? 'Net pay' : 'Withheld',
+        empText: (A.k === 'net' ? 'The net pay the payroll journal owes the staff' : A.emp ? "Employer's share: " + A.emp + ' ' + D.NAMES[A.emp] : "No employer's share account") + ' · due by the ' + this.ord(A.due) + ' of the next month' + (A.k === 'net' ? ' (s.19)' : ''),
+        owedText, noRows: !rows.length, offPill: '', offText: '', offHref: '', offAria: '',
+        notes: unknownOpen ? [{ text: 'No opening balance of ' + pcode + ' is kept at ' + this.dmy(openDay) + ", so what was owed before then is unknown and its balances can't be shown. Fetch SQL's trial balance for that day." }] : [],
+        rows: items };
+    });
+
+    // ---- the misposting banner ----
+    const mpDoc = V.mis ? this.docView('PV2610-005', V) : { src: '', lines: [] };
+    const hasMis = cfg === 'on' && V.mis && showing;
+    const mpText = '(' + this.fmtDate('2026-10-15') + ") pays EPF (KWSP), but puts RM 5,860.00 of employer's share on 900-120 PERKESO - employer, the SOCSO (PERKESO) employer account, though it pays no SOCSO (PERKESO). EPF (KWSP)'s employer share account is 900-110 KWSP - employer. The totals are right; each expense account is off by RM 5,860.00.";
+    const mpFix = 'Correct it in SQL Account with a journal moving the amount to the right account, then fetch again.';
+
+    // ---- what changes in the draw, said once ----
+    const newNotes = [];
+    if (cfg === 'on') {
+      newNotes.push({ text: 'Net salaries payable and Zakat are new kinds, and SKBBK reads "Lindung 24 Jam (SKBBK)" (statutory.KIND_WORDS has "SKBBK (Lindung 24 Jam)" and no net or zakat kind). Net salaries payable compares what the payroll journal credits with the salary payments, due by the 7th of the next month (s.19).' });
+      newNotes.push({ text: 'a kind with no account shows as "Not set up" (HRDF: "Not registered") with Go to Setup, so the page says what it does not check. Today such kinds are left off.' });
+      newNotes.push({ text: 'each row\'s tracker payment opens the payment ("Open the payment"), and an unpaid one also links to To pay. Today the column only reads "Not linked" or the linked amount, and nothing opens.' });
+      newNotes.push({ text: 'no "owed" twice. The app writes "Owed at 1 Oct 2026: 5,320.00 owed"; the account line here drops the second word.' });
+      newNotes.push({ text: 'dates in the status text are written 5 Nov 2026, as the rest of the app does, not 05 Nov 2026.' });
+      if (!unknownOpen && per.from === D.OPENING) newNotes.push({ text: 'the From and To dates are filled in with the months shown. Today they stay empty while the heading names the months.' });
+      if (unknownOpen) newNotes.push({ text: V.asBuilt ? "this is what the app draws today: it takes the journal's start (1 Oct) as if September had nothing withheld, so the KWSP paid on 15 Oct reads as an overpayment of September and a false alarm joins the summary. The other state of this board shows the right behaviour." : "months before the journal kept starts (1 Oct 2026) are not judged. They are muted and read \"Not covered by the journal kept (from 1 Oct 2026)\", so September's KWSP payment is not called an overpayment. Today the app judges them and raises a false alarm (see the \"fy-as-built\" state)." });
+      if (unknownOpen) newNotes.push({ text: 'the months before the first month tracked fold into one line per account, opened with Show (the many-rows pattern for this page). Today every month is a row.' });
+      newNotes.push({ text: "say in the banner how far the journal kept reaches (neither the page nor the Excel file says it today), so a Late flag past the journal's end can be read as possibly a false alarm." + (V.clear ? ' In this state the journal was fetched again to 18 Nov, so PV2611-018 is in it.' : '') });
+      if (unknownOpen) newNotes.push({ text: "the account note says its balances can't be shown, yet the balance at the due day is shown from October on. It should say \"balances are shown from " + this.fmtDate(D.OPENING) + ', the first opening kept".' });
+      if (unknownOpen && !V.asBuilt) newNotes.push({ text: "a month the journal kept doesn't cover reads \"—\" for its balance at the due day. Today the app prints \"nil\" there for each account in September, read from the 1 Oct opening." });
+      if (problems.length > 1) newNotes.push({ text: "the summary drops the full stop before each \";\" (today it reads \"salaries.; EPF\")." });
+      if (V.short) newNotes.push({ text: 'a state only: PV2610-014 is drawn paying 45,052.40, so the check shows a run whose net pay is not paid in full. In the books it pays 48,600.00.' });
+      if (ar) newNotes.push({ text: "HR › Payroll · Summary, authorities, bank list links each authority's total here, opening this page at that authority and payroll month; the back link returns there. Only for someone with the Accounting right." });
+      newNotes.push({ text: 'Next up rule 14 reads "…Check it on Statutory payables." and opens this page (nextup.py:462 says "Check it on the Statutory tab." and opens Books, tab statutory).' });
+    } else {
+      if (cfg === 'new') newNotes.push({ text: '"Use this account" adds one suggestion; today only "Use these accounts" adds them all. Net salaries payable is not suggested here: 420-000 Accruals was confirmed for AISB on 13 Nov 2026, so only the four kinds suggested by the chart of accounts are left to add.' });
+      if (co === 'AI') newNotes.push({ text: 'for a company kept here (AI), the fix and opening-balance lines should not name SQL Account.' });
+      if (cfg === 'stopped') newNotes.push({ text: 'the stopped note says "Use one again there", as the Setup button does. Today it says "Start one again there".' });
+    }
+    if (V.mis) newNotes.push({ text: "the document number in the banner opens the document's lines under the banner. Today it raises a script error." });
+    const lastMonth = this.lastDay(yms[yms.length - 1]);
+    const xlRows = [
+      { n: 1, text: C.name + ' (' + C.code + ')' },
+      { n: 2, text: 'Statutory payables check, ' + this.monthName(yms[0]) + (yms.length > 1 ? ' to ' + this.monthName(yms[yms.length - 1]) : '') + ' (payroll months)' },
+      { n: 3, text: (isSql ? 'Mirrored from SQL Account, read 18/11/2026' : "Kept here: this company's books are entered in this app") + '. Exported 18/11/2026 ' + (V.clear ? '16:35' : '11:05') + '.' }
+    ];
+    const xlAfter = 'Columns: Month, Due, Withheld (Net pay for Net salaries payable), Paid, Employer\'s share paid, Difference, Balance at month end, Balance at the due date, Status, What it says. A bold row for each account, for example "EPF (KWSP) (430-100, employer 900-110)", then one line each for the kinds not set up. '
+      + 'Status reads "Cleared, paid late", and " (before the first month tracked)" is added for those months. Payment voucher and Tracker payment are not in the file. After the rows: the account notes, the summary in bold, the document texts above, then "Balances are signed: a payable still owed shows in brackets. Amounts are in ringgit."';
+    const xlName = C.code + ' Statutory payables check to ' + this.fileDate(lastMonth) + '.xlsx';
+    const excelOn = showing && cfg === 'on';
+    const t = s.toast;
+
+    return {
+      say: s.say, intro, sbCompany, sbKind, onTopCo,
+      fromPayroll: !!ar && showing, arriveText: ar ? 'Opened from the authorities\' totals for EPF (KWSP), October 2026 (RM 11,240.00 to pay, overdue since 15 Nov). Its row is marked below.' : '',
+      fromVal: s.fromVal || '', toVal: s.toVal || '',
+      setFrom: e => set({ fromVal: (e && e.target && e.target.value) || '' }),
+      setTo: e => set({ toVal: (e && e.target && e.target.value) || '' }),
+      show: () => this.run({ from: this.state.fromVal || null, to: this.state.toVal || null, arrive: null }, 'show'),
+      fyToDate: () => this.run({ from: null, to: null, arrive: null }, 'fy'),
+      retry: () => this.run({}, 'show'),
+      busy: !!s.busy, showBusy: busyBy === 'show', showBusyAttr: busyBy === 'show' ? 'true' : 'false', showLabel: busyBy === 'show' ? 'Showing…' : 'Show',
+      fyBusy: busyBy === 'fy', fyBusyAttr: busyBy === 'fy' ? 'true' : 'false', fyLabel: busyBy === 'fy' ? 'Showing…' : 'This financial year to date',
+      excelOn,
+      excel: e => { if (e && e.preventDefault) e.preventDefault(); set({ xlN: (this.state.xlN || 0) + 1, say: 'Excel file: ' + xlName }); },
+      xlErr: !!s.xlErr && showing, xlClose: () => { this._focus = 'bk-excel'; set({ xlErr: false }); },
+      isLoading: !!s.busy && !/^use/.test(s.busyBy || ''), isError: !s.busy && !!s.err, errText: s.err, isReport: vis,
+      swapCls: (s.swapN || 0) % 2 ? 'swapA' : (s.swapN ? 'swapB' : ''),
+      hasBanner: !!bn, bnStyle: 'display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;' + bnx[0], bnGlyph: bnx[1], bnTone: bnx[2], bnTitleStyle: 'color:' + bnx[3] + ';font-weight:700',
+      bnTitle: bn ? bn.title : '', bnText: bn ? bn.text : '',
+      hasMis, mpExp: s.mpOpen ? 'true' : 'false', mpToggle: () => set({ mpOpen: !this.state.mpOpen, say: this.state.mpOpen ? 'Lines of PV2610-005 closed.' : 'Lines of PV2610-005 shown below the message.' }),
+      mpOpen: hasMis && !!s.mpOpen, mpText, mpFix,
+      mp: { src: mpDoc.src, lines: mpDoc.lines.map(l => ({ code: l.code, name: l.name, dr: l.dr, cr: l.cr, note: l.note, trStyle: l.trStyle })) },
+      h2, isCfg: cfg === 'on' && vis, isNc, ncNote, hasSugg, noSugg: isNc && !hasSugg, sugg, suggAfter,
+      useThem: () => this.use(null), useBusyAttr: busyBy === 'use' ? 'true' : 'false', useBusy: busyBy === 'use', useLabel: busyBy === 'use' ? 'Adding…' : (nUsed ? 'Use the rest' : 'Use these accounts'),
+      explain: "Withheld is what the month's documents credit to the payable, with the corrections to it (a journal against the salary, shown as a correction, belongs to the month whose withholding it corrects). Paid is what the payments to the authority debit to it for that month (the month before their own first, else up to their own month), less any refund, with the employer's share they debit to its own account. For Net salaries payable, Net pay is what the payroll journal credits and Paid is what the salary payments debit. The balance is the payable's, from the books, at the end of the due day.",
+      legend: [
+        { name: 'Cleared', text: 'paid in full. "Paid late" is added when part of it came after the due day.' },
+        { name: 'Due', text: 'taken off the salaries (or owed as net pay) and not yet due: today is on or before the due day.' },
+        { name: 'Late', text: 'the due day has passed and nothing was paid. It also goes to Next up.' },
+        { name: 'Short', text: 'the due day has passed and less was paid than was taken off the salaries. It also goes to Next up. For net pay it reads "Not paid in full".' },
+        { name: 'Over', text: 'more was paid than was taken off the salaries (or than the payroll journal owes).' },
+        { name: 'Nothing', text: 'nothing was taken off the salaries and nothing was paid.' },
+        { name: 'Before tracking', text: 'before the first month tracked (September 2026): shown, never asked for.' },
+        { name: 'Not covered', text: "the journal kept doesn't reach that month, so it isn't judged." },
+        { name: 'Not set up', text: 'no account is chosen for that kind in Setup › Statutory accounts, so it is not checked. HRDF reads "Not registered" while HRDF registered is off in Setup › Companies.' }
+      ],
+      cards, newNotes,
+      xlName, xlRows, xlAfter, xlCls: (s.xlN || 0) === 0 ? '' : (s.xlN % 2 ? 'fa' : 'fb'),
+      toastOn: !!t, toastTitle: t ? t.title : '', toastBody: t ? t.body : '', toastGlyph: t ? t.glyph : 'check', toastUndo: !!(t && t.undo),
+      undo: () => this.undo(),
+      toastClose: () => { clearTimeout(this.ttimer); set({ toast: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

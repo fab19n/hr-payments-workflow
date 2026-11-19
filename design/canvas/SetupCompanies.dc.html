@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · Companies · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:not(.on):hover{background:#F8FAFD !important}
+.sn:hover{background:#F0F3F8 !important}
+.th:hover{color:#0F1A2B !important}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+input[readonly],select:disabled{background:#F5F6F8 !important;color:#46546A !important}
+/* motion and focus base */
+.hb,.hs,.hd,.hr,.sn,.nv,.nb,.th{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="aisb" kind="sqlPayroll" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="Companies" company="aisb" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0">
+        <dc-import name="SetupNav" active="entities" kind="sql" payroll="true" hint-size="100%,900px"></dc-import>
+      </div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Companies and banks</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{pageTitle}}</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 640px">A stopped company leaves the company switcher and Next up. Everything recorded for it stays. Whether a company is Kept in SQL Account or Kept here, and whether it runs payroll in this app, are settings here: nothing is fixed to one company.</p>
+          </div>
+          <sc-if value="{{hasCo}}" hint-placeholder-val="{{ true }}">
+            <button type="button" id="cm-add" class="hb" onClick="{{openNew}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>{{addLabel}}</button>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{hasCo}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="cm-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <h2 id="cm-list-h" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0">{{listHeading}}</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+              <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 220px; max-width: 320px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search companies" aria-label="Search companies" aria-describedby="cm-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+              <span id="cm-count" aria-live="polite" style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{countTxt}}</span>
+              <div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+                <label style="display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{showStopped}}" onChange="{{toggleStopped}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Show stopped ({{nStopped}})</label>
+                <label style="display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{showDeleted}}" onChange="{{toggleDeleted}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Show deleted</label>
+              </div>
+            </div>
+            <p style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</p>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 900px; border-collapse: collapse">
+                <thead>
+                  <tr style="background: #FAFBFC; text-align: left">
+                    <sc-for list="{{heads}}" as="h" hint-placeholder-count="6"><th scope="col" aria-sort="{{h.sort}}" style="{{h.thStyle}}"><button type="button" class="th" onClick="{{h.click}}" style="{{h.btnStyle}}">{{h.label}}<dc-import name="Icon" glyph="{{h.glyph}}" tone="{{h.tone}}" size="14" hint-size="14px,14px"></dc-import></button></th></sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+                    <tr class="{{r.cls}}" onClick="{{r.open}}" style="{{r.rowStyle}}">
+                      <td style="padding: 12px 18px"><button type="button" id="{{r.id}}" onKeyDown="{{r.key}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; font: 600 14px Inter, sans-serif; color: inherit; cursor: pointer; text-align: left">{{r.name}}</button><div style="color: #5F6C80; font-size: 12px">{{r.sub}}</div></td>
+                      <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="3"><td style="{{c.style}}">{{c.txt}}</td></sc-for>
+                      <td style="padding: 12px; text-align: right"><b style="font-variant-numeric: tabular-nums">{{r.usedN}}</b><div style="color: #5F6C80; font-size: 12px; max-width: 200px; margin-left: auto">{{r.usedTxt}}</div></td>
+                      <td style="padding: 12px 18px"><div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span class="{{r.pillCls}}" style="{{r.pill}}">{{r.statusTxt}}</span><sc-if value="{{r.sysOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; border: 1px solid #C9D7F6; background: #FFFFFF; color: #2450B8; font-size: 12px; font-weight: 600; white-space: nowrap">Used by the app</span></sc-if></div></td>
+                    </tr>
+                  </sc-for>
+                  <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+                    <tr><td colspan="7" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="{{emptyGlyph}}" tone="muted" size="28" hint-size="28px,28px"></dc-import><span>{{emptyTxt}}</span><sc-if value="{{emptyLinkOn}}" hint-placeholder-val="{{ false }}"><a href="{{emptyLinkHref}}" style="font-size: 13px; font-weight: 600">{{emptyLinkTxt}}</a></sc-if><sc-if value="{{emptyBtnOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{emptyAct}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{emptyBtn}}</button></sc-if></div></td></tr>
+                  </sc-if>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <sc-if value="{{showDeleted}}" hint-placeholder-val="{{ false }}">
+            <section id="cm-del" aria-labelledby="cm-del-h" class="ex" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <div style="padding: 16px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 4px">
+                <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="trash" tone="muted" size="20" hint-size="20px,20px"></dc-import><h2 id="cm-del-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{delHeading}}</h2></div>
+                <p style="margin: 0; color: #5F6C80; font-size: 13px">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</p>
+              </div>
+              <div style="overflow-x: auto">
+                <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 18px; font-weight: 600">Name</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Deleted</th><th scope="col" style="padding: 10px 12px; font-weight: 600">By</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Why</th><th scope="col" style="padding: 10px 18px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Actions</span></th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{delRows}}" as="d" hint-placeholder-count="2">
+                      <tr class="{{d.cls}}" style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                        <td style="padding: 12px 18px; font-weight: 600">{{d.name}}</td>
+                        <td style="padding: 12px; white-space: nowrap">{{d.at}}<div style="color: #5F6C80; font-size: 12px">Entry {{d.entry}}</div></td>
+                        <td style="padding: 12px">{{d.by}}</td>
+                        <td style="padding: 12px; color: #46546A; max-width: 260px">{{d.why}}</td>
+                        <td style="padding: 12px 18px"><div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end"><sc-if value="{{d.can}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{d.putId}}" class="hs" onClick="{{d.put}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="brand" size="16" hint-size="16px,16px"></dc-import>Put it back</button></sc-if><button type="button" id="{{d.histId}}" class="hs" onClick="{{d.hist}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="history" tone="muted" size="16" hint-size="16px,16px"></dc-import>History</button></div><sc-if value="{{d.problemOn}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; max-width: 320px; margin-left: auto; color: #934100; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="warn" size="14" hint-size="14px,14px"></dc-import><span>Can't be put back: {{d.problem}}</span></div></sc-if></td>
+                      </tr>
+                    </sc-for>
+                    <sc-if value="{{delEmpty}}" hint-placeholder-val="{{ false }}"><tr><td colspan="5" style="padding: 24px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5">None deleted.</td></tr></sc-if>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </sc-if>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <div style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <!-- two live regions that are always there: a done note is polite, an error is announced at once -->
+    <div role="status" aria-live="polite">
+      <sc-if value="{{toastOkOn}}" hint-placeholder-val="{{ false }}">
+        <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="{{toastStyle}}"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+      </sc-if>
+    </div>
+    <div role="alert" aria-live="assertive">
+      <sc-if value="{{toastErrOn}}" hint-placeholder-val="{{ false }}">
+        <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="{{toastStyle}}"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="cm-title" aria-describedby="cm-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 720px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dEyebrow}}</span>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h2 id="cm-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2><sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}"><span class="{{dPillCls}}" style="{{dPill}}">{{dPillTxt}}</span></sc-if><sc-if value="{{dSysOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; border: 1px solid #C9D7F6; background: #FFFFFF; color: #2450B8; font-size: 12px; font-weight: 600">Used by the app</span></sc-if></div>
+          <span id="cm-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 20px">
+        <sc-if value="{{dNotesOn}}" hint-placeholder-val="{{ false }}">
+          <div class="{{dNotesCls}}" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 4px"><sc-for list="{{dNotes}}" as="n" hint-placeholder-count="1"><span>{{n.txt}}</span></sc-for></div></div>
+        </sc-if>
+        <sc-if value="{{sumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{sumTitle}}</b> {{sumList}}</span></div>
+        </sc-if>
+
+        <sc-for list="{{dGroups}}" as="g" hint-placeholder-count="3">
+          <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+            <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{g.label}}</legend>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <sc-for list="{{g.fields}}" as="f" hint-placeholder-count="4">
+                <div style="{{f.wrap}}">
+                  <sc-if value="{{f.isBool}}" hint-placeholder-val="{{ false }}">
+                    <label for="{{f.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600; color: #46546A; cursor: pointer"><input id="{{f.id}}" type="checkbox" checked="{{f.checked}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-describedby="{{f.by}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">{{f.label}}<sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                  </sc-if>
+                  <sc-if value="{{f.notBool}}" hint-placeholder-val="{{ true }}">
+                    <label for="{{f.id}}" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}<sc-if value="{{f.req}}" hint-placeholder-val="{{ false }}"><span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></sc-if><sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                    <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><input id="{{f.id}}" type="{{f.type}}" value="{{f.val}}" onChange="{{f.change}}" readOnly="{{f.ro}}" maxLength="{{f.max}}" aria-required="{{f.reqAria}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" autoComplete="off" style="{{f.style}}"></sc-if>
+                    <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><select id="{{f.id}}" value="{{f.val}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" style="{{f.style}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></sc-if>
+                    <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}"><textarea id="{{f.id}}" rows="3" value="{{f.val}}" onChange="{{f.change}}" aria-describedby="{{f.by}}" style="{{f.style}}"></textarea></sc-if>
+                  </sc-if>
+                  <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{f.err}}</span></sc-if>
+                  <sc-if value="{{f.hintOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.hintId}}" style="color: #5F6C80; font-size: 12px">{{f.hint}}</span></sc-if>
+                  <sc-if value="{{f.warnOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.warnId}}" role="status" class="ex" style="display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 12px"><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import><span>{{f.warn}}</span></span></sc-if>
+                  <sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.lockId}}" style="display: flex; gap: 6px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: #F5F6F8; color: #46546A; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import><span>{{f.lock}}</span></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </fieldset>
+        </sc-for>
+
+        <sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="cm-used-h" style="display: flex; flex-direction: column; gap: 8px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <h3 id="cm-used-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Where used</h3>
+            <sc-if value="{{dUsedAny}}" hint-placeholder-val="{{ true }}"><ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{dUsed}}" as="u" hint-placeholder-count="3"><li style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; background: #F5F6F8; color: #0F1A2B; font-size: 13px"><b style="font-variant-numeric: tabular-nums">{{u.n}}</b>{{u.what}}</li></sc-for></ul></sc-if>
+            <sc-if value="{{dUsedNone}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Not used anywhere yet.</span></sc-if>
+          </section>
+
+          <section aria-labelledby="cm-act-h" style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <h3 id="cm-act-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">In use</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <sc-if value="{{canStop}}" hint-placeholder-val="{{ true }}"><button type="button" id="cm-act-stop" class="hs" onClick="{{actStop}}" aria-expanded="{{stopExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import>Stop using</button></sc-if>
+              <sc-if value="{{canUse}}" hint-placeholder-val="{{ false }}"><button type="button" id="cm-act-use" class="hs" onClick="{{actUse}}" aria-expanded="{{useExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>Use again</button></sc-if>
+              <sc-if value="{{canDelete}}" hint-placeholder-val="{{ false }}"><button type="button" id="cm-act-delete" onClick="{{actDelete}}" aria-expanded="{{delExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer"><dc-import name="Icon" glyph="trash" tone="bad" size="18" hint-size="18px,18px"></dc-import>Delete</button></sc-if>
+              <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{extraId}}" class="hs" onClick="{{extraAct}}" aria-expanded="{{extraExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="{{extraGlyph}}" tone="muted" size="18" hint-size="18px,18px"></dc-import>{{extraLabel}}</button></sc-if>
+            </div>
+            <span style="color: #5F6C80; font-size: 12px">{{actNote}}</span>
+            <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{extraNote}}</span></sc-if>
+
+            <sc-if value="{{whyOn}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-labelledby="cm-why-l" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid {{whyBorder}}; background: {{whyBg}}">
+                <span style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #0F1A2B"><dc-import name="Icon" glyph="{{whyGlyph}}" tone="{{whyTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{whyNote}}</span></span>
+                <label id="cm-why-l" for="cm-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+                <input id="cm-why" type="text" value="{{whyText}}" onChange="{{onWhy}}" onKeyDown="{{whyKey}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{whyInv}}" aria-describedby="{{whyBy}}" placeholder="Kept in the audit trail with the change" style="{{whyStyle}}">
+                <sc-if value="{{whyErr}}" hint-placeholder-val="{{ false }}"><span id="cm-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+                <div style="display: flex; gap: 8px; justify-content: flex-end">
+                  <button type="button" id="cm-why-cancel" class="hs" onClick="{{whyCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                  <button type="button" id="cm-why-go" class="{{whyGoCls}}" onClick="{{whyGo}}" style="{{whyGoStyle}}">{{whyLabel}}</button>
+                </div>
+              </div>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{printOn}}" hint-placeholder-val="{{ true }}">
+            <section id="cm-pi" aria-labelledby="cm-pi-h" style="display: flex; flex-direction: column; gap: 12px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+              <h3 id="cm-pi-h" tabindex="-1" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Printed invoices</h3>
+              <p style="margin: 0; color: #46546A; font-size: 13px">Customer invoices and self-billed e-Invoices are printed from SQL’s documents with this header and footer: the name, registration no., TIN, address, phone, email and website above, the bank account on invoices, and the logo and signature here (PNG or JPEG, at most 2 MB). Used by <a href="MyInvois.dc.html" style="font-weight: 600">Accounting › e-Invoices</a>.</p>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px">
+                <sc-for list="{{pImgs}}" as="im" hint-placeholder-count="2">
+                  <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+                    <span id="{{im.labId}}" style="font-size: 13px; font-weight: 600; color: #46546A">{{im.label}}</span>
+                    <div style="display: flex; align-items: center; justify-content: center; width: 220px; max-width: 100%; height: 70px; box-sizing: border-box; border: 1px solid #D5DBE4; border-radius: 8px; background: #FFFFFF; overflow: hidden">
+                      <sc-if value="{{im.none}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 13px">None uploaded</span></sc-if>
+                      <sc-if value="{{im.has}}" hint-placeholder-val="{{ true }}">
+                        <sc-if value="{{im.isLogo}}" hint-placeholder-val="{{ true }}"><span role="img" aria-label="{{im.file}}" style="display: inline-flex; align-items: center; gap: 8px"><span aria-hidden="true" style="width: 40px; height: 40px; border-radius: 10px; background: #2450B8; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font: 700 20px 'Space Grotesk', Inter, sans-serif">{{im.markLetter}}</span><span aria-hidden="true" style="font: 700 20px 'Space Grotesk', Inter, sans-serif; color: #0D1B2E; letter-spacing: .04em">{{im.mark}}</span></span></sc-if>
+                        <sc-if value="{{im.sigDrawn}}" hint-placeholder-val="{{ false }}"><span role="img" aria-label="{{im.file}}" style="font: italic 600 26px 'Segoe Script', 'Brush Script MT', cursive; color: #1D3A80; transform: rotate(-4deg)">A. Rahman</span></sc-if><sc-if value="{{im.sigFile}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 0 10px; color: #46546A; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{im.file}}</span></sc-if>
+                      </sc-if>
+                    </div>
+                    <span id="{{im.by}}" style="color: #5F6C80; font-size: 12px; min-height: 16px">{{im.pickTxt}}</span>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                      <input type="file" id="{{im.fileId}}" accept=".png,.jpg,.jpeg" onChange="{{im.pick}}" aria-labelledby="{{im.labId}}" aria-describedby="{{im.by}}" style="flex: 1 1 200px; min-width: 0; font: 400 13px Inter, sans-serif; color: #46546A">
+                      <button type="button" id="{{im.upId}}" class="hs" onClick="{{im.upload}}" aria-label="{{im.upAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="brand" size="16" hint-size="16px,16px"></dc-import>Upload</button>
+                      <sc-if value="{{im.has}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{im.rmId}}" class="hs" onClick="{{im.remove}}" aria-label="{{im.rmAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #B0190F; cursor: pointer">Remove</button></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{pMissOn}}" hint-placeholder-val="{{ true }}">
+                <div role="group" aria-labelledby="cm-pi-miss-h" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import>
+                  <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+                    <span id="cm-pi-miss-h"><b>Print settings still missing</b> (invoices print without them):</span>
+                    <ul style="margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 4px"><sc-for list="{{pMiss}}" as="m" hint-placeholder-count="2"><li>{{m.txt}}</li></sc-for></ul>
+                    <sc-if value="{{pBankLink}}" hint-placeholder-val="{{ false }}"><a href="Setup.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 32px; font-weight: 600">Open Setup › Bank accounts</a></sc-if>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{pAllOk}}" hint-placeholder-val="{{ false }}"><span style="display: flex; gap: 8px; align-items: center; color: #0A6B3D; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="18" hint-size="18px,18px"></dc-import>Every print setting is filled in.</span></sc-if>
+              <sc-if value="{{pFontsOn}}" hint-placeholder-val="{{ false }}">
+                <div role="group" aria-labelledby="cm-pi-fonts-h" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px">
+                  <b id="cm-pi-fonts-h" style="color: #0F1A2B">Fonts:</b>
+                  <ul style="margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 4px"><sc-for list="{{pFonts}}" as="f" hint-placeholder-count="2"><li>{{f.txt}}</li></sc-for></ul>
+                </div>
+              </sc-if>
+              <sc-if value="{{pLongOn}}" hint-placeholder-val="{{ false }}">
+                <div role="group" aria-labelledby="cm-pi-long-h" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px">
+                  <b id="cm-pi-long-h" style="color: #0F1A2B">Too long to print in full:</b>
+                  <ul style="margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 4px"><sc-for list="{{pLong}}" as="l" hint-placeholder-count="1"><li>{{l.txt}}</li></sc-for></ul>
+                </div>
+              </sc-if>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{namesOn}}" hint-placeholder-val="{{ true }}">
+            <section id="cm-pn" aria-labelledby="cm-pn-h" style="display: flex; flex-direction: column; gap: 12px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+              <h3 id="cm-pn-h" tabindex="-1" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Printed company names</h3>
+              <p style="margin: 0; color: #46546A; font-size: 13px">Names SQL Account prints on its exports that match no company in Setup, confirmed as {{dCode}}’s with <b>Take it for {{dCode}}</b> on <a href="Sql.dc.html" style="font-weight: 600">Accounting › SQL import</a>. Fetch takes files printing them for this company.</p>
+              <sc-if value="{{pnRowsOn}}" hint-placeholder-val="{{ true }}">
+                <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px">
+                  <table style="width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px">
+                    <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; background: #FAFBFC"><th scope="col" style="padding: 8px 12px; font-weight: 600">Name as printed</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Confirmed</th><th scope="col" style="padding: 8px 12px; font-weight: 600">By</th><th scope="col" style="padding: 8px 12px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Actions</span></th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{pnRows}}" as="n" hint-placeholder-count="1">
+                        <tr style="border-top: 1px solid #EEF1F5; vertical-align: middle">
+                          <td style="padding: 8px 12px; font-weight: 600">{{n.name}}</td>
+                          <td style="padding: 8px 12px; white-space: nowrap; font-variant-numeric: tabular-nums">{{n.at}}</td>
+                          <td style="padding: 8px 12px">{{n.by}}</td>
+                          <td style="padding: 8px 12px; text-align: right"><button type="button" id="{{n.rmId}}" class="{{n.cls}}" onClick="{{n.click}}" onBlur="{{n.blur}}" aria-label="{{n.aria}}" style="{{n.style}}">{{n.label}}</button></td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+              </sc-if>
+              <div role="status" aria-live="polite" style="{{pnArmWrap}}"><sc-if value="{{pnArmOn}}" hint-placeholder-val="{{ false }}"><span class="ex" style="display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span>{{pnArmNote}}</span></span></sc-if></div>
+              <sc-if value="{{pnEmpty}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">None confirmed.</span></sc-if>
+              <sc-if value="{{pnNot}}" hint-placeholder-val="{{ false }}"><span role="alert" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>The records need an update for this. Restart the app.</span></sc-if>
+            </section>
+          </sc-if>
+
+          <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <button type="button" class="fr" onClick="{{histToggle}}" aria-expanded="{{histExp}}" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{histChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{histCount}}</span></button>
+            <sc-if value="{{histOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; gap: 12px">
+                <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+                  <sc-for list="{{hist}}" as="h" hint-placeholder-count="3">
+                    <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                      <span aria-hidden="true" style="{{h.dot}}"></span>
+                      <div style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="{{h.srcStyle}}">{{h.src}}</span><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                        <sc-if value="{{h.whyOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">Why: {{h.why}}</span></sc-if>
+                        <sc-if value="{{h.noteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{h.note}}</span></sc-if>
+                        <sc-if value="{{h.diffOn}}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{h.toggle}}" aria-expanded="{{h.exp}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 8px 0 4px; border: 0; border-radius: 8px; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{h.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{h.diffLabel}}</button>
+                          <sc-if value="{{h.open}}" hint-placeholder-val="{{ false }}">
+                            <table class="ex" style="border-collapse: collapse; font-size: 13px; width: 100%; max-width: 520px">
+                              <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px"><th scope="col" style="padding: 6px 10px 6px 0; font-weight: 600">Field</th><th scope="col" style="padding: 6px 10px; font-weight: 600">{{h.beforeLabel}}</th><th scope="col" style="padding: 6px 0 6px 10px; font-weight: 600">{{h.afterLabel}}</th></tr></thead>
+                              <tbody><sc-for list="{{h.rows}}" as="x" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><td style="padding: 6px 10px 6px 0; color: #46546A">{{x.f}}</td><td style="padding: 6px 10px; color: #8F140C; text-decoration: line-through; text-decoration-color: rgba(143,20,12,.4)">{{x.b}}</td><td style="padding: 6px 0 6px 10px; color: #0A6B3D; font-weight: 600">{{x.a}}</td></tr></sc-for></tbody>
+                            </table>
+                          </sc-if>
+                        </sc-if>
+                      </div>
+                    </li>
+                  </sc-for>
+                </ol>
+                <sc-if value="{{histEmpty}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Nothing recorded yet.</span></sc-if>
+                <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Open in the audit trail</a>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="cm-discard-q" aria-describedby="cm-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="cm-discard-q">Discard your changes?</b><div id="cm-discard-d" style="color: #5F6C80; font-size: 12px">{{discardDetail}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="cm-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="cm-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="cm-foot" class="{{footCls}}" style="{{footStyle}}"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="cm-cancel" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{closeLabel}}</button>
+              <button type="submit" id="cm-save" class="hb" aria-describedby="cm-foot" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{dIsNew}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="plus" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{saveLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{pbOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 64px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <div class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="cm-pb-title" aria-describedby="cm-pb-sub" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 600px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: {{pbTile}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{pbGlyph}}" tone="{{pbTone}}" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{pbEyebrow}}</span>
+          <h2 id="cm-pb-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{pbTitle}}</h2>
+          <span id="cm-pb-sub" style="color: #46546A; font-size: 13px">{{pbSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{pbRefused}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>This can't be put back.</b> {{pbRefusal}} Nothing was changed.</span></div>
+        </sc-if>
+        <sc-if value="{{pbPreview}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+            <span>{{pbDeletedLine}}</span>
+            <span style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="undo" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{pbBackLine}}</span></span>
+            <sc-for list="{{pbNotes}}" as="n" hint-placeholder-count="1"><span style="display: flex; gap: 8px; align-items: flex-start; color: #46546A"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{n.txt}}</span></span></sc-for>
+          </div>
+          <div style="padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px">{{pbEffect}}</div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="cm-pb-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you putting it back? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="cm-pb-why" type="text" value="{{pbText}}" onChange="{{onPbWhy}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{pbInv}}" aria-describedby="{{pbBy}}" placeholder="Kept in the audit trail with the change" style="{{pbStyle}}">
+            <sc-if value="{{pbErr}}" hint-placeholder-val="{{ false }}"><span id="cm-pb-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+          </div>
+        </sc-if>
+        <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid #EEF1F5">
+          <button type="button" class="fr" onClick="{{pbHistToggle}}" aria-expanded="{{pbHistExp}}" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{pbHistChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{pbHistCount}}</span></button>
+          <sc-if value="{{pbHistOpen}}" hint-placeholder-val="{{ false }}">
+            <ol class="ex" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+              <sc-for list="{{pbHist}}" as="h" hint-placeholder-count="2">
+                <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                  <span aria-hidden="true" style="{{h.dot}}"></span>
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="{{h.srcStyle}}">{{h.src}}</span><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                    <sc-if value="{{h.whyOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">Why: {{h.why}}</span></sc-if>
+                    <sc-if value="{{h.noteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{h.note}}</span></sc-if>
+                  </div>
+                </li>
+              </sc-for>
+            </ol>
+          </sc-if>
+        </section>
+      </div>
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="cm-pbd-q" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><b id="cm-pbd-q">Discard your changes?</b></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="cm-pb-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="cm-pb-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end">
+            <button type="button" id="cm-pb-cancel" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{pbCloseLabel}}</button>
+            <sc-if value="{{pbPreview}}" hint-placeholder-val="{{ true }}"><button type="button" id="cm-pb-go" class="hb" onClick="{{pbGo}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Put it back</button></sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","search","no-match","none-yet","new","new-errors","edit","dirty","discard","saved","nothing-changed","stop","stop-error","stopped","use-again","delete","tidy","tidied","history","payroll-hrdf","payroll-ai","hrdf-warning","hrdf-on","hrdf-errors","print","print-no-logo","print-ready","print-bank","print-notes","image-error","names","names-remove","names-removed","names-empty","names-not-ready","bank-refused","bank-refused-other","bank-refused-new","deleted","put-back","put-back-error","put-back-refused","put-back-done"],"section":"State"},"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'list');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); if (this.state.scrollTo) this.scrollSoon(this.state.scrollTo); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._ts); }
+  // a state that is about a block far down the drawer opens with that block in view
+  // a field is scrolled to by its wrapper, so its label sits at the top with the control and hint below it
+  scrollSoon(id) { clearTimeout(this._ts); this._ts = setTimeout(() => { const el = document.getElementById(id); if (!el) return; const t = /^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName) && el.closest ? (el.closest('div') || el) : el; if (t.scrollIntoView) t.scrollIntoView({ block: 'start' }); }, 80); }
+
+  // ---------- this section: Setup › Companies (hrp/masters.py KINDS.entities) ----------
+  cfg() {
+    const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return {
+      pre: 'cm', section: 'Companies', defCo: 'ALL', label: 'Company', lower: 'company', plural: 'companies', nameKey: 'code', perEntity: false, glyph: 'company',
+      emptyLink: ['SetupMove.dc.html', 'Or start from a setup file'],
+      delName: v => v.code + ' · ' + v.name,
+      stopNote: 'Stopped: hidden from the company switcher and Next up, and its months aren’t set up any more. Everything recorded stays.',
+      useNote: 'In use again: back in the company switcher and Next up, and its months are set up again.',
+      delNote: 'It goes from the list. Show deleted keeps it for you, and it can be put back from there with its history.',
+      groups: [
+        ['The company', [
+          { k: 'code', l: 'Code', t: 'code', req: true, max: 16, hint: 'Short, capitals: AISB. Shown in the company switcher; folders and audit packs are named by it.' },
+          { k: 'short_name', l: 'Short name', hint: 'Shown in the company switcher’s list beside the code. Empty: the name without Sdn Bhd or Ltd.' },
+          { k: 'name', l: 'Name', req: true, wide: true },
+          { k: 'first_month', l: 'First month tracked', t: 'month', hint: 'Months before it are never set up on their own and nothing in them counts as overdue. Empty: no limit.' },
+          { k: 'fy_start', l: 'Financial year starts in', t: 'select', opts: [['', '—'], ...M.map((m, i) => [String(i + 1), m])], wide: true, hint: 'Keep it the same as the company’s setting in SQL Account: SQL’s reports can’t tell it. The trial balance check uses it, and later reports will too. Empty: January.' }]],
+        ['Registration and employer numbers', [
+          { k: 'reg_no', l: 'Registration no.', hint: 'As printed on invoices, e.g. 202401012345.' },
+          { k: 'old_reg_no', l: 'Old registration no.', hint: 'Printed in brackets after the registration no., e.g. 1234567-X. Empty: none.' },
+          { k: 'tin', l: 'Tax ID (TIN)' },
+          { k: 'sst_no', l: 'SST no.' },
+          { k: 'employer_kwsp', l: 'KWSP employer no.' },
+          { k: 'employer_perkeso', l: 'PERKESO employer no.' },
+          { k: 'employer_lhdn', l: 'LHDN employer no. (E)' },
+          { k: 'employer_hrdf', l: 'HRD Corp employer no.', hint: 'Empty until HRD Corp has registered the company. Setup › HR › Payroll settings shows these numbers read only.' }]],
+        ['Books', [
+          { k: 'uses_sql', l: 'Kept in SQL Account', t: 'bool', wide: true, hint: 'On: Kept in SQL Account, and payments need their PV, JV or OR from SQL. Off: Kept here, with no SQL import.' },
+          { k: 'sql_database', l: 'SQL Account database', hint: 'Which SQL Account company database holds its books.' }]],
+        ['Payroll and HRDF', [
+          { k: 'runs_payroll', l: 'Runs payroll in this app', t: 'bool', wide: true, hint: 'On: HR › Payroll adds the payroll run, totals, statutory files, leaver’s final pay, the parallel run and opening year to date, and Setup › HR › Payroll settings shows. Off: HR › Payroll has the Workbook check only, which every company has.' },
+          { k: 'hrdf', l: 'HRDF registered', t: 'bool', wide: true, hint: 'Off unless HRD Corp has registered the company: check on HRD Corp’s portal (e-TRiS). When on, the payroll run works out the levy.' },
+          { k: 'hrdf_rate', l: 'HRDF levy rate', t: 'select', when: f => !!f.hrdf, opts: [['1', '1% (10 or more Malaysian staff)'], ['0.5', '0.5% (5 to 9 Malaysian staff, registered by choice)']], wide: true, hint: 'Of each Malaysian employee’s basic pay and fixed allowances. Foreign staff are left out.' }]],
+        ['On printed invoices', [
+          { k: 'address', l: 'Address', t: 'area', wide: true, hint: 'Printed in the invoice header, as one line. Several lines are joined with commas.' },
+          { k: 'phone', l: 'Phone', hint: 'Printed in the invoice header.' },
+          { k: 'email', l: 'Email', hint: 'Printed in the invoice header.' },
+          { k: 'website', l: 'Website', hint: 'Printed in the invoice header, e.g. www.example.com.' },
+          { k: 'invoice_account_id', l: 'Bank account on invoices', t: 'select', wide: true, hint: 'Printed under All payments to be made to. Its bank, account number, bank address and transfer code come from Setup › Bank accounts.' },
+          { k: 'sign_label', l: 'Under the signature', wide: true, hint: 'Empty: For and the company’s name, as SQL Account prints it.' }]],
+        ['Notes', [{ k: 'notes', l: 'Notes', t: 'area', wide: true }]]
+      ],
+      heads: [['name', 'Code'], ['full', 'Name'], ['first', 'First month tracked'], ['sql', 'Books'], ['payroll', 'Payroll'], ['used', 'Used by', true], ['status', 'Status']],
+      blank: { code: '', short_name: '', name: '', first_month: '', fy_start: '', reg_no: '', old_reg_no: '', tin: '', sst_no: '', employer_kwsp: '', employer_perkeso: '', employer_lhdn: '', employer_hrdf: '', uses_sql: 1, sql_database: '', runs_payroll: 0, hrdf: 0, hrdf_rate: '1', address: '', phone: '', email: '', website: '', sign_label: '', invoice_account_id: '', notes: '' }
+    };
+  }
+  // this app's bank accounts per company (Setup › Bank accounts), as far as the invoice header and footer need them
+  banks() {
+    return {
+      AISB: [
+        { id: 'mc', label: 'Maybank current', bank: 'Maybank', no: '5141 2345 4417', addr: 'Maybank Kota Damansara, 47810 Petaling Jaya, Selangor', swift: 'MBBEMYKL', stopped: false },
+        { id: 'ms', label: 'Maybank savings', bank: 'Maybank', no: '5141 2300 0932', addr: '', swift: '', stopped: false },
+        { id: 'usd', label: 'USD collections', bank: 'Maybank', no: '5141 2300 7710', addr: '', swift: '', stopped: true },
+        { id: 'pb', label: 'Public Bank current', bank: 'Public Bank', no: '', addr: '', swift: '', stopped: false }],
+      AI: [{ id: 'fca', label: 'Maybank FCA', bank: 'Maybank', no: '5141 2399 1186', addr: '', swift: '', stopped: false }]
+    };
+  }
+  bankById(id) { return Object.values(this.banks()).flat().find(b => b.id === id) || null; }
+  // an account as the select and the audit trail name it; an empty bank or number is left out, as app.js does
+  acctTxt(b) { return [b.label, b.bank, b.no].filter(Boolean).join(' · '); }
+  // the options of Bank account on invoices: this company's accounts in use (plus the one the form holds, so a refusal can show it)
+  invOpts(r, cur) {
+    const mine = r ? (this.banks()[r.vals.code] || []) : [], o = [['', '—']];
+    mine.filter(b => !b.stopped).forEach(b => o.push([b.id, this.acctTxt(b)]));
+    if (cur && !o.some(x => x[0] === cur)) { const b = this.bankById(cur); if (b) o.push([cur, this.acctTxt(b) + (b.stopped ? ' (stopped)' : '')]); }
+    return o;
+  }
+  // the missing, font and too-long notes of Printed invoices (hrp/invoicepdf.py print notes), from what is saved
+  printNotes(r) {
+    const v = r.vals, c = v.code, p = r.print || {}, at = ' in Setup › Companies › ' + c + '.', up = ' under Printed invoices' + at, miss = [];
+    let bankGap = false;
+    if (!String(v.address || '').trim()) miss.push('No address: add it as Address' + at);
+    if (!String(v.phone || '').trim() && !String(v.email || '').trim() && !String(v.website || '').trim()) miss.push('No phone, email or website: add them' + at);
+    if (!String(v.reg_no || '').trim()) miss.push('No registration no.: add it' + at);
+    if (!String(v.tin || '').trim()) miss.push('No tax ID (TIN): add it' + at);
+    if (!p.logo) miss.push('No logo: upload it' + up);
+    if (!p.signature) miss.push('No signature: upload it' + up);
+    if (!v.invoice_account_id) miss.push('No bank account chosen for All payments to be made to: choose one as Bank account on invoices' + at);
+    else {
+      const b = this.bankById(v.invoice_account_id);
+      if (!b) miss.push('The bank account chosen for invoices is gone: choose another as Bank account on invoices' + at);
+      else {
+        // the stopped and gap sentences are independent, and the gap names only what is missing (hrp/invoicepdf.py)
+        if (b.stopped) miss.push('The bank account chosen for invoices (' + b.label + ') is stopped.');
+        const gaps = [['bank', b.bank], ['account number', b.no], ['bank address', b.addr], ['bank transfer (SWIFT) code', b.swift]].filter(g => !String(g[1] || '').trim()).map(g => g[0]);
+        if (gaps.length) { bankGap = true; miss.push('The bank account ' + b.label + ' has no ' + (gaps.length > 1 ? gaps.slice(0, -1).join(', ') + ' or ' + gaps[gaps.length - 1] : gaps[0]) + ': add it in Setup › Bank accounts.'); }
+      }
+    }
+    return { miss, bankGap, fonts: p.fonts || [], long: p.long || [] };
+  }
+  monthName(v) {
+    const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const m = /^(\d{4})-(\d{2})$/.exec(String(v || ''));
+    return m ? M[+m[2] - 1] + ' ' + m[1] : '';
+  }
+  rowOf(r) {
+    const v = r.vals;
+    return { name: v.code || '(no code)', sub: v.short_name ? 'Switcher: ' + v.short_name : '',
+      cells: [v.name, this.monthName(v.first_month) || 'No limit', v.uses_sql ? 'Kept in SQL Account' : 'Kept here', v.runs_payroll ? 'Runs in this app' : 'Workbook check only'],
+      sort: { name: v.code, full: v.name, first: v.first_month || '0000', sql: v.uses_sql ? 'a' : 'b', payroll: v.runs_payroll ? 'a' : 'b' },
+      text: [v.code, v.name, v.short_name, this.monthName(v.first_month), v.reg_no, v.old_reg_no, v.tin, v.uses_sql ? 'kept in sql account' : 'kept here', v.runs_payroll ? 'runs payroll in this app' : 'workbook check'].join(' ') };
+  }
+  // what Undo does on the toast a state opens with: it puts the records back as they were before the change it confirms
+  viewUndo(view, recs, del) {
+    const back = msg => () => { const s2 = this.state; this.setState({ recs, del, flashId: 1, flashN: s2.flashN + 1 }); this.toast(msg); };
+    if (view === 'saved') return () => { const s2 = this.state; this.setState({ flashId: 1, flashN: s2.flashN + 1 }); this.toast('Change undone'); };
+    if (view === 'tidied') return back('Tidy up undone: the 3 payments and 8 checklist items are back');
+    if (view === 'print-no-logo') return back('Logo back on the invoices');
+    if (view === 'print-ready') return back('Signature taken off again');
+    if (view === 'names-removed') return back('"AISB (M) SDN BHD (1331234-K)" is back');
+    if (view === 'put-back-done') return () => { this.setState({ recs, del }); this.toast('AIX · Agrinexus Exports deleted again'); };
+    return null;
+  }
+  // the states the State tweak shows
+  viewState(view, base, recs, del) {
+    const K = base.co;
+    const edit = (id, extra) => { const r = recs[K].find(x => x.id === id); return { ...base, dlg: { id, isNew: false }, form: { ...r.vals }, loaded: { ...r.vals }, ...extra }; };
+    const neu = extra => ({ ...base, dlg: { id: null, isNew: true }, form: { ...this.cfg().blank }, loaded: { ...this.cfg().blank }, ...extra });
+    const putOn = (rid, extra) => ({ ...base, deleted: true, put: { rid, mode: 'put' }, ...extra });
+    const mod = (id, fn) => ({ ...recs, [K]: recs[K].map(r => (r.id === id ? fn(r) : r)) });
+    switch (view) {
+      case 'search': return { ...base, q: 'agri' };
+      case 'no-match': return { ...base, q: 'zeta' };
+      case 'none-yet': return { ...base, recs: { ...recs, [K]: [] } };
+      case 'new': return neu({});
+      case 'new-errors': return neu({ tried: true, form: { ...this.cfg().blank, code: 'AI', first_month: '2026-11' } });
+      case 'edit': return edit(1, {});
+      case 'dirty': { const s = edit(1, {}); s.form = { ...s.form, employer_lhdn: 'E 9876543211', sql_database: 'AISB 2026' }; return s; }
+      case 'discard': { const s = edit(1, { confirm: true }); s.form = { ...s.form, employer_lhdn: 'E 9876543211' }; return s; }
+      case 'saved': return edit(1, { toast: { text: 'Saved', undo: true }, notesN: 1 });
+      case 'nothing-changed': return edit(1, { footMsg: 'Nothing has changed.', footN: 1 });
+      case 'stop': return edit(2, { why: 'stop' });
+      case 'stop-error': return edit(2, { why: 'stop', whyErr: true });
+      case 'stopped': {
+        const s = edit(2, { pillN: 1, toast: { text: 'Stopped. Its history stays.', undo: true }, undo: { id: 2, co: K } });
+        s.recs = { ...recs, [K]: recs[K].map(r => (r.id === 2 ? { ...r, status: 'stopped' } : r)) };
+        return s;
+      }
+      case 'use-again': return edit(3, { stopped: true, why: 'use', whyText: 'Its last statements arrived late and need filing.' });
+      case 'delete': return edit(4, { stopped: true, why: 'delete' });
+      case 'tidy': return edit(1, { why: 'tidy' });
+      case 'tidied': {
+        const s = edit(1, { toast: { text: 'Removed 3 payments and 8 checklist items from AISB', undo: true } });
+        s.recs = { ...recs, [K]: recs[K].map(r => (r.id === 1 ? { ...r, tidy: { payments: 0, tasks: 0 }, used: r.used.map(([w, n]) => [w, w === 'payments' ? n - 3 : w === 'checklist items' ? n - 8 : n]) } : r)) };
+        return s;
+      }
+      case 'history': return edit(1, { histOpen: true, histExp: { 0: true } });
+      // Payroll and HRDF (new work): Runs payroll in this app is on for AISB only, HRDF registered off for both
+      case 'payroll-hrdf': return edit(1, { scrollTo: 'cm-f-runs_payroll' });
+      case 'payroll-ai': return edit(2, { scrollTo: 'cm-f-runs_payroll' });
+      case 'hrdf-warning': return { ...edit(1, { scrollTo: 'cm-f-runs_payroll' }), recs: mod(1, r => ({ ...r, myStaff: 10 })) };
+      case 'hrdf-on': { const s = edit(1, { scrollTo: 'cm-f-runs_payroll' }); return { ...s, recs: mod(1, r => ({ ...r, myStaff: 10 })), form: { ...s.form, hrdf: 1, hrdf_rate: '0.5' } }; }
+      case 'hrdf-errors': { const s = edit(1, { scrollTo: 'cm-f-employer_hrdf', tried: true }); return { ...s, form: { ...s.form, hrdf: 1, hrdf_rate: '1' } }; }
+      // Printed invoices (logo and signature, the notes of what is missing) and Printed company names
+      case 'print': return edit(1, { scrollTo: 'cm-pi' });
+      case 'print-no-logo': return edit(1, { scrollTo: 'cm-pi', recs: mod(1, r => ({ ...r, print: { ...r.print, logo: '' } })), toast: { text: 'Logo taken off the invoices', undo: true } });
+      case 'print-ready': return edit(1, { scrollTo: 'cm-pi', recs: mod(1, r => ({ ...r, print: { ...r.print, signature: 'aisb-signature.png' } })), toast: { text: 'Signature uploaded', undo: true } });
+      case 'print-bank': return edit(1, { scrollTo: 'cm-pi', recs: mod(1, r => ({ ...r, vals: { ...r.vals, invoice_account_id: 'ms' } })), form: { ...recs[K].find(x => x.id === 1).vals, invoice_account_id: 'ms' }, loaded: { ...recs[K].find(x => x.id === 1).vals, invoice_account_id: 'ms' } });
+      case 'print-notes': return edit(1, { scrollTo: 'cm-pi', recs: mod(1, r => ({ ...r, print: { ...r.print, fonts: this.fontNotes(), long: this.longNotes() } })) });
+      case 'image-error': return edit(1, { scrollTo: 'cm-pi', pick: { logo: { name: 'aisb-logo-large.png', size: 3400000 } }, toast: { text: 'Logo: the image is larger than 2 MB. Save it smaller and upload it again.', err: true } });
+      case 'names': return edit(1, { scrollTo: 'cm-pn' });
+      case 'names-remove': return edit(1, { scrollTo: 'cm-pn', nameArm: 0 });
+      case 'names-removed': return edit(1, { scrollTo: 'cm-pn', recs: mod(1, r => ({ ...r, names: [] })), toast: { text: '"AISB (M) SDN BHD (1331234-K)" removed. Files printing it are held again on the next Fetch, until Take it for is clicked again.', undo: true } });
+      case 'names-empty': return edit(2, { scrollTo: 'cm-pn' });
+      case 'names-not-ready': return edit(1, { scrollTo: 'cm-pn', notReady: true });
+      case 'bank-refused': return edit(1, { scrollTo: 'cm-f-invoice_account_id', tried: true, form: { ...recs[K].find(x => x.id === 1).vals, invoice_account_id: 'usd' } });
+      case 'bank-refused-other': return edit(2, { scrollTo: 'cm-f-invoice_account_id', tried: true, form: { ...recs[K].find(x => x.id === 2).vals, invoice_account_id: 'mc' } });
+      case 'bank-refused-new': return neu({ scrollTo: 'cm-f-invoice_account_id', tried: true, form: { ...this.cfg().blank, code: 'AIX', name: 'Agrinexus Exports', invoice_account_id: 'mc' } });
+      case 'deleted': return { ...base, deleted: true };
+      case 'put-back': return putOn('d1', {});
+      case 'put-back-error': return putOn('d1', { pbErr: true });
+      case 'put-back-refused': return putOn('d2', {});
+      case 'put-back-done': {
+        const d = del[K][0];
+        return { ...base, deleted: true, del: { ...del, [K]: del[K].slice(1) },
+          recs: { ...recs, [K]: [...recs[K], { id: d.id, status: 'live', vals: { ...d.vals }, used: [], locked: {}, notes: d.notes, hist: [{ when: '18 Nov 2026, 10:20', op: 'Put back', src: 'In the app', who: 'Aisha Rahman', why: 'The exports company is being formed after all.', note: 'From entry 1061, with the same number.' }, ...d.hist] }] },
+          toast: { text: 'AIX · Agrinexus Exports put back', undo: true }, flashId: d.id, flashN: 1 };
+      }
+      default: return base;
+    }
+  }
+  // the HRDF headcount warning: a warning only, never a refusal (scope section 6; samples D14). AISB has 9 Malaysian staff,
+  // so it shows only in the what-if states (hrdf-warning, hrdf-on), which count 10.
+  warnFor(k, f, r) {
+    const n = r && r.myStaff ? r.myStaff : 0, code = r ? r.vals.code : '';
+    if (k === 'hrdf' && !f.hrdf && n >= 10) return code + ' has ' + n + ' Malaysian staff in employment (HR › Staff). From 10, registering with HRD Corp is required and the levy is 1% of wages. Check on HRD Corp’s portal; once it is registered, tick HRDF registered.';
+    if (k === 'hrdf_rate' && f.hrdf && String(f.hrdf_rate) === '0.5' && n >= 10) return 'With ' + n + ' Malaysian staff the levy is 1%, not 0.5%. Check the rate on HRD Corp’s portal.';
+    return '';
+  }
+  errors(f) {
+    const e = {};
+    for (const x of this.fields()) if (x.req && !String(f[x.k] ?? '').trim()) e[x.k] = 'This can’t be empty.';
+    const code = String(f.code || '').trim().toUpperCase(), me = this.state && this.state.dlg ? this.state.dlg.id : null;
+    if (!e.code && !/^[A-Z0-9][A-Z0-9_-]*$/.test(code)) e.code = 'Capitals and digits only, like AISB.';
+    else if (!e.code && this.list().some(r => r.id !== me && String(r.vals.code).toUpperCase() === code)) e.code = 'Another company already has the code ' + code + '.';
+    // HRDF registered needs its HRD Corp employer no. (new work)
+    if (f.hrdf && !String(f.employer_hrdf || '').trim()) e.employer_hrdf = 'HRDF registered is on: add the HRD Corp employer no., or turn HRDF registered off.';
+    // Bank account on invoices: its refusals (hrp/masters.py)
+    const acct = f.invoice_account_id;
+    if (acct) {
+      const mine = me ? this.rec(me) : null, own = mine ? (this.banks()[mine.vals.code] || []).find(b => b.id === acct) : null;
+      if (!mine) e.invoice_account_id = 'Bank account on invoices: add the company first, then its bank accounts, then choose one.';
+      else if (!own) e.invoice_account_id = 'Bank account on invoices: choose one of this company’s bank accounts.';
+      else if (own.stopped) e.invoice_account_id = 'Bank account on invoices: that account is stopped. Choose one in use, or use it again first.';
+    }
+    return e;
+  }
+  fontNotes() {
+    return ['SQL’s font Tahoma (most of the invoice’s words) isn’t on this computer (or its file is damaged), so invoices print it in DejaVu Sans, a free look-alike on this computer, never larger than SQL’s size.',
+      'SQL’s font Tahoma Bold (the title, the document number and Total) isn’t on this computer (or its file is damaged), so invoices print it in DejaVu Sans, a free look-alike on this computer, never larger than SQL’s size.',
+      'To print exactly as SQL does, install tahoma.ttf, tahomabd.ttf on this computer from a Windows computer’s Fonts folder, or put licensed copies of them in a folder outside the records folder and name that folder in HRP_FONT_DIR.'];
+  }
+  longNotes() {
+    return ['The company’s address in the header is too long for its place on the invoice, even at half SQL’s size, so its end is cut off (it prints up to "...47810 Petaling Jaya, Selangor"): shorten it in Setup › Companies › AISB.'];
+  }
+  // values of this board's own that the template reads (none here)
+  more() { return {}; }
+  clean(f) { return { ...f, code: String(f.code || '').trim().toUpperCase() }; }
+  // Tidy up months before the first month tracked: it counts first, then asks why (hrp/app.py tidy).
+  extra(r) {
+    if (r.status === 'stopped' || !r.vals.first_month) return null;
+    const t = r.tidy || { payments: 0, tasks: 0 }, month = this.monthName(r.vals.first_month);
+    const note = 'Tidy up removes, from the months before the first month tracked, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.';
+    const base = { act: 'tidy', label: 'Tidy up months before this', glyph: 'archive', note };
+    if (!t.payments && !t.tasks) return { ...base, click: () => this.toast('Nothing to tidy up before ' + month + '.') };
+    return { ...base,
+      why: ['Remove them', 'Tidy up would remove ' + t.payments + ' payments and ' + t.tasks + ' checklist items before ' + month + '. Nothing from ' + month + ' on changes.', 'archive', 'warn', '#F0C98A', '#FFF8EC', true],
+      go: reason => {
+        this.setRec(r.id, x => ({ ...x, tidy: { payments: 0, tasks: 0 },
+          used: x.used.map(([w, n]) => [w, w === 'payments' ? n - t.payments : w === 'checklist items' ? n - t.tasks : n]),
+          hist: [{ when: '18 Nov 2026, 10:18', op: 'Tidied up', src: 'In the app', who: 'Aisha Rahman', why: reason, note: 'Removed ' + t.payments + ' payments and ' + t.tasks + ' checklist items before ' + month + '.' }, ...x.hist] }));
+        this._focusId = this.cfg().pre + '-act-tidy';
+        this.setState({ why: null, whyText: '', whyErr: false });
+        this.toast('Removed ' + t.payments + ' payments and ' + t.tasks + ' checklist items from ' + r.vals.code, { undo: true }, () => {
+          const s2 = this.state;
+          this.setState({ recs: { ...s2.recs, [s2.co]: (s2.recs[s2.co] || []).map(x => (x.id === r.id ? r : x)) }, flashId: r.id, flashN: s2.flashN + 1 });
+          this.toast('Tidy up undone: the ' + t.payments + ' payments and ' + t.tasks + ' checklist items are back');
+        });
+      } };
+  }
+  companyList() { return [['AISB', 'AISB'], ['AI', 'Agrinexus International']]; }
+  records() {
+    const CODE = 'Folders, uploaded documents and audit packs are named by this code, so it can’t change once the company has records.';
+    const SQL = 'Months already filed were checked with this setting, so it can’t change once a month is filed. Reopen the filed months first if it really must.';
+    const NOCHK = 'This company has no monthly checklist yet: its months are set up with its recurring payments only. Add its items in Setup › Monthly checklist, or copy another company’s.';
+    const seed = { when: '6 Jan 2025, 08:02', op: 'As it stood', src: 'Starting data', who: '', note: 'As it stood when the audit trail started.' };
+    const blank = this.cfg().blank;
+    return { ALL: [
+      { id: 1, status: 'live', tidy: { payments: 3, tasks: 8 },
+        vals: { ...blank, code: 'AISB', name: 'AISB Sdn Bhd', first_month: '2026-09', fy_start: '1', reg_no: '201901023456', old_reg_no: '1331234-K', tin: 'C 2345678901', sst_no: 'W10-1808-32000123', employer_kwsp: '012345678', employer_perkeso: 'E1234567891A', employer_lhdn: 'E 9876543210', employer_hrdf: '', uses_sql: 1, sql_database: 'AISB 2025', runs_payroll: 1, hrdf: 0, hrdf_rate: '1',
+          address: 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor', phone: '03-6150 2200', email: 'accounts@aisb.example', website: 'www.aisb.example', invoice_account_id: 'mc', sign_label: '' },
+        print: { logo: 'aisb-logo.png', signature: '', fonts: [], long: [] },
+        names: [{ name: 'AISB (M) SDN BHD (1331234-K)', at: '18/11/2026 at 10:44', by: 'Aisha Rahman' }],
+        used: [['bank accounts', 4], ['recurring payments', 11], ['months set up', 4], ['payments', 96], ['checklist items', 90], ['documents', 214], ['SQL imports', 9], ['budgets', 1], ['budget lines', 32], ['customers and suppliers', 9], ['GL accounts', 40], ['statutory accounts', 5], ['staff records', 10], ['approvers', 3], ['claim types', 6]], myStaff: 9,
+        locked: { code: CODE, uses_sql: SQL }, notes: [],
+        hist: [{ when: '18 Nov 2026, 09:15', op: 'Changed', src: 'In the app', who: 'Aisha Rahman', rows: [['Logo', '—', 'aisb-logo.png']] },
+          { when: '14 Nov 2026, 10:30', op: 'Changed', src: 'In the app', who: 'Aisha Rahman', why: 'Its invoices now print the header and where to pay.', rows: [['Address', '—', 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor'], ['Phone', '—', '03-6150 2200'], ['Bank account on invoices', '—', 'Maybank current · Maybank · 5141 2345 4417']] },
+          { when: '5 Nov 2026, 11:02', op: 'Changed', src: 'In the app', who: 'Aisha Rahman', rows: [['Registration no.', '—', '201901023456'], ['Old registration no.', '—', '1331234-K'], ['Tax ID (TIN)', '—', 'C 2345678901']] },
+          { when: '14 Feb 2026, 09:40', op: 'Changed', src: 'In the app', who: 'Aisha Rahman', why: 'The SQL Account database was renamed for 2025.', rows: [['SQL Account database', 'AISB', 'AISB 2025']] }, seed] },
+      { id: 2, status: 'live',
+        vals: { ...blank, code: 'AI', name: 'Agrinexus International', short_name: 'Agrinexus Intl.', first_month: '2026-09', fy_start: '1', reg_no: '202001045678', old_reg_no: '1378901-W', tin: 'C 3456789012', employer_kwsp: '023456789', employer_perkeso: 'E2345678912B', employer_lhdn: 'E 8765432109', uses_sql: 0, runs_payroll: 0, hrdf: 0 },
+        used: [['bank accounts', 1], ['recurring payments', 4], ['months set up', 2], ['payments', 64], ['checklist items', 42], ['documents', 140], ['budgets', 1], ['budget lines', 22], ['staff records', 5], ['approvers', 1]], myStaff: 4,
+        locked: { code: CODE, uses_sql: SQL }, notes: [], names: [], print: { logo: '', signature: '', fonts: [], long: [] }, hist: [seed] },
+      { id: 3, status: 'stopped',
+        vals: { ...blank, code: 'OLD', name: 'Former Trading Sdn Bhd', short_name: 'Former', first_month: '2025-01', uses_sql: 0 },
+        used: [['bank accounts', 1], ['months set up', 6], ['payments', 41], ['documents', 96]], locked: { code: CODE }, notes: [],
+        hist: [{ when: '30 Jun 2025, 17:05', op: 'Stopped', src: 'In the app', who: 'Aisha Rahman', why: 'Trading moved to AISB from July 2025.', rows: [['In use', 'Yes', 'No']] }, seed] },
+      { id: 4, status: 'stopped',
+        vals: { ...blank, code: 'TEST', name: 'Training company', uses_sql: 0 },
+        used: [], locked: {}, notes: [NOCHK],
+        hist: [{ when: '21 Jul 2026, 09:12', op: 'Stopped', src: 'In the app', who: 'Aisha Rahman', why: 'Training finished.', rows: [['In use', 'Yes', 'No']] },
+          { when: '20 Jul 2026, 15:30', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true, rows: [['Code', '', 'TEST'], ['Name', '', 'Training company']] }] }
+    ] };
+  }
+  deletedRows() {
+    const NOCHK = 'This company has no monthly checklist yet: its months are set up with its recurring payments only. Add its items in Setup › Monthly checklist, or copy another company’s.';
+    const blank = this.cfg().blank;
+    return { ALL: [
+      { rid: 'd1', id: 6, co: 'ALL', name: 'AIX · Agrinexus Exports', at: '2 Sep 2026, 14:20', entry: 1061, by: 'Aisha Rahman', why: 'Set up too early: the company was not formed this year.', same: true, notes: [NOCHK],
+        vals: { ...blank, code: 'AIX', name: 'Agrinexus Exports', first_month: '2026-09', uses_sql: 1 },
+        hist: [{ when: '2 Sep 2026, 14:20', op: 'Removed', src: 'In the app', who: 'Aisha Rahman', why: 'Set up too early: the company was not formed this year.', removed: true }, { when: '28 Aug 2026, 10:05', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }] },
+      { rid: 'd2', id: 5, co: 'ALL', name: 'TEST · Test company', at: '19 Jul 2026, 11:48', entry: 1003, by: 'Aisha Rahman', why: 'Replaced by the training company.', same: true, notes: [],
+        problem: 'Another company already has the code TEST.',
+        vals: { ...blank, code: 'TEST', name: 'Test company', uses_sql: 0 },
+        hist: [{ when: '19 Jul 2026, 11:48', op: 'Removed', src: 'In the app', who: 'Aisha Rahman', why: 'Replaced by the training company.', removed: true }, { when: '18 Jul 2026, 16:02', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }] }
+    ] };
+  }
+
+  // ---------- the shared Setup record pattern (same on every Setup list board) ----------
+  fields() { return this.cfg().groups.flatMap(g => g[1]); }
+  init(view) {
+    const recs = this.records(), del = this.deletedRows();
+    const base = { co: this.cfg().defCo, q: '', sort: null, stopped: false, deleted: false, noCo: false, recs, del,
+      dlg: null, put: null, closing: false, form: null, loaded: null, tried: false, why: null, whyText: '', whyErr: false,
+      confirm: false, footMsg: '', footN: 0, histOpen: false, histExp: {}, notesN: 0, pillN: 0,
+      pbText: '', pbErr: false, pbHist: false, pick: {}, nameArm: null, notReady: false, scrollTo: null, toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0 };
+    const s = this.viewState(view, base, recs, del);
+    this._undoFn = this.viewUndo(view, recs, del);
+    return s;
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.companies !== this.props.companies)) {
+      clearTimeout(this._t); clearTimeout(this._tt);
+      const nx = this.init(this.props.view || 'list');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      if (nx.scrollTo) this.scrollSoon(nx.scrollTo);
+      return;
+    }
+    const st = this.state, p = this.cfg().pre;
+    const open = !!(st.dlg || st.put), was = !!(prev.dlg || prev.put);
+    if (open && !was) { this.focusId(st.dlg ? p + '-title' : p + '-pb-title'); return; }
+    if (!open && was) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId(p + '-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId(p + (st.put ? '-pb-keep' : '-keep')); return; }
+    if (prev.confirm && !st.confirm && open && !st.closing) this.focusId(p + (st.put ? '-pb-cancel' : '-cancel'));
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  list(co) { return (this.state.recs[co || this.state.co] || []); }
+  rec(id) { return this.list().find(r => r.id === id) || null; }
+  setRec(id, fn) { const st = this.state; this.setState({ recs: { ...st.recs, [st.co]: this.list().map(r => (r.id === id ? fn(r) : r)) } }); }
+  dirty() {
+    const st = this.state;
+    if (st.put) return !!st.pbText.trim();
+    if (!st.dlg) return false;
+    return JSON.stringify(st.form) !== JSON.stringify(st.loaded) || !!st.whyText.trim();
+  }
+  openRec(id) {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const r = this.rec(id);
+    if (!r) return;
+    clearTimeout(this._t);
+    this.setState({ dlg: { id, isNew: false }, put: null, closing: false, form: { ...r.vals }, loaded: { ...r.vals }, tried: false, why: null, whyText: '', whyErr: false, confirm: false, footMsg: '', histOpen: false, histExp: {}, notesN: 0 });
+  }
+  openNew() {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const b = { ...this.cfg().blank };
+    clearTimeout(this._t);
+    this.setState({ dlg: { id: null, isNew: true }, put: null, closing: false, form: b, loaded: { ...b }, tried: false, why: null, whyText: '', whyErr: false, confirm: false, footMsg: '', histOpen: false, histExp: {} });
+  }
+  openPut(rid, mode) {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    clearTimeout(this._t);
+    this.setState({ put: { rid, mode }, dlg: null, closing: false, pbText: '', pbErr: false, pbHist: mode === 'hist', confirm: false });
+  }
+  askClose() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing || st.confirm) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDrawer();
+  }
+  closeDrawer() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    const st = this.state;
+    if (!(st.dlg || st.put)) return;
+    const next = { dlg: null, put: null, closing: false, confirm: false, why: null, whyText: '', whyErr: false, pbText: '', pbErr: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = st.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  toast(text, extra, undoFn) { clearTimeout(this._tt); this._undoFn = undoFn || null; this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state, c = this.cfg();
+    if (!st.dlg || st.closing || st.confirm) return;
+    const errs = this.errors(st.form), first = this.fields().find(x => errs[x.k]);
+    if (first) { this._focusId = c.pre + '-f-' + first.k; this.setState({ tried: true }); return; }
+    if (!st.dlg.isNew && JSON.stringify(st.form) === JSON.stringify(st.loaded)) { this.setState({ footMsg: 'Nothing has changed.', footN: st.footN + 1 }); return; }
+    const vals = this.clean(st.form);
+    if (st.dlg.isNew) {
+      const id = 100 + st.footN + Object.values(st.recs).flat().length;
+      const r = { id, status: 'live', vals, used: [], locked: {}, notes: [], hist: [{ when: '18 Nov 2026, 10:15', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }] };
+      this._changed = id;
+      this.setState({ recs: { ...st.recs, [st.co]: [...this.list(), r] }, dlg: { id, isNew: false }, form: { ...vals }, loaded: { ...vals }, tried: false, footMsg: '', notesN: st.notesN + 1 });
+      this.toast(c.label + ' added', { undo: true }, () => {
+        const s2 = this.state;
+        this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).filter(x => x.id !== id) }, dlg: null, closing: false, confirm: false, why: null });
+        this.toast(c.label + ' removed again');
+      });
+      return;
+    }
+    const id = st.dlg.id, before = this.rec(id);
+    this._changed = id;
+    this.setRec(id, r => ({ ...r, vals, hist: [{ when: '18 Nov 2026, 10:15', op: 'Changed', src: 'In the app', who: 'Aisha Rahman',
+      rows: this.fields().filter(x => JSON.stringify(st.form[x.k]) !== JSON.stringify(st.loaded[x.k])).map(x => [x.l, this.shown(x, st.loaded[x.k]), this.shown(x, st.form[x.k])]) }, ...r.hist] }));
+    this.setState({ form: { ...vals }, loaded: { ...vals }, footMsg: '', tried: false, notesN: st.notesN + 1 });
+    this.toast('Saved', { undo: true }, () => {
+      const s2 = this.state;
+      this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).map(r => (r.id === id ? before : r)) }, form: s2.dlg && s2.dlg.id === id ? { ...before.vals } : s2.form, loaded: s2.dlg && s2.dlg.id === id ? { ...before.vals } : s2.loaded, flashId: id, flashN: s2.flashN + 1 });
+      this.toast('Change undone');
+    });
+  }
+  shown(x, v) { if (x.k === 'invoice_account_id') { const b = this.bankById(v); return b ? this.acctTxt(b) : '—'; } if (x.t === 'bool') return v ? 'Yes' : 'No'; if (x.opts) { const o = x.opts.find(p => String(p[0]) === String(v)); return o ? o[1] : '—'; } return v === '' || v == null ? '—' : String(v); }
+  startWhy(act) {
+    const st = this.state;
+    if (st.why === act) return this.setState({ why: null, whyText: '', whyErr: false });
+    this._focusId = this.cfg().pre + '-why';
+    this.setState({ why: act, whyText: '', whyErr: false });
+  }
+  whyGo() {
+    const st = this.state, c = this.cfg(), act = st.why, reason = st.whyText.trim();
+    if (!act || !st.dlg) return;
+    if (!reason) { this._focusId = c.pre + '-why'; this.setState({ whyErr: true }); return; }
+    const id = st.dlg.id, r = this.rec(id);
+    if (!r) return;
+    if (!['stop', 'use', 'delete'].includes(act)) { const x = this.extra(r); if (x && x.go) x.go(reason); return; }
+    const step = { when: '18 Nov 2026, 10:16', src: 'In the app', who: 'Aisha Rahman', why: reason };
+    if (act === 'delete') {
+      const d = { rid: 'n' + id, id, co: st.co, name: c.delName ? c.delName(r.vals) : r.vals[c.nameKey], at: '18 Nov 2026, 10:16', entry: 1231, by: 'Aisha Rahman', why: reason, same: true, notes: [], vals: { ...r.vals },
+        hist: [{ ...step, op: 'Removed', removed: true }, ...r.hist] };
+      this.setState({ dlg: { ...st.dlg, title: r.vals[c.nameKey] }, recs: { ...st.recs, [st.co]: this.list().filter(x => x.id !== id) }, del: { ...st.del, [st.co]: [d, ...(st.del[st.co] || [])] }, why: null, whyText: '', whyErr: false });
+      this._opener = document.getElementById(c.pre + '-add');
+      this.closeDrawer();
+      this.toast(c.label + ' deleted', { undo: true }, () => {
+        const s2 = this.state;
+        this.setState({ recs: { ...s2.recs, [st.co]: [...(s2.recs[st.co] || []), r] }, del: { ...s2.del, [st.co]: (s2.del[st.co] || []).filter(x => x.rid !== d.rid) }, flashId: id, flashN: s2.flashN + 1 });
+        this.toast(c.label + ' back as it was');
+      });
+      return;
+    }
+    const stop = act === 'stop';
+    this._changed = id;
+    this._focusId = c.pre + (stop ? '-act-use' : '-act-stop');
+    this.setRec(id, x => ({ ...x, status: stop ? 'stopped' : 'live', hist: [{ ...step, op: stop ? 'Stopped' : 'In use again', rows: [['In use', stop ? 'Yes' : 'No', stop ? 'No' : 'Yes']] }, ...x.hist] }));
+    this.setState({ why: null, whyText: '', whyErr: false, pillN: st.pillN + 1, undo: stop ? { id, co: st.co } : null });
+    this.toast(stop ? 'Stopped. Its history stays.' : 'In use again', { undo: true }, stop ? null : () => {
+      const s2 = this.state;
+      this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).map(x => (x.id === id ? r : x)) }, undo: null, pillN: s2.pillN + 1, flashId: id, flashN: s2.flashN + 1 });
+      this.toast('Stopped again. Its history stays.');
+    });
+  }
+  undoStop() {
+    const u = this.state.undo;
+    if (!u) return;
+    const st = this.state;
+    this.setState({ recs: { ...st.recs, [u.co]: (st.recs[u.co] || []).map(r => (r.id === u.id ? { ...r, status: 'live', hist: r.hist.slice(1) } : r)) }, undo: null, pillN: st.pillN + 1, flashId: u.id, flashN: st.flashN + 1 });
+    this.toast('In use again');
+  }
+  pbGo() {
+    const st = this.state, c = this.cfg();
+    if (!st.put || st.put.refused) return;
+    const d = (st.del[st.co] || []).find(x => x.rid === st.put.rid);
+    if (!d) return;
+    if (!st.pbText.trim()) { this._focusId = c.pre + '-pb-why'; this.setState({ pbErr: true }); return; }
+    const id = d.same ? d.id : d.newId;
+    const r = { id, status: 'live', vals: { ...d.vals }, used: [], locked: {}, notes: [], hist: [{ when: '18 Nov 2026, 10:20', op: 'Put back', src: 'In the app', who: 'Aisha Rahman', why: st.pbText.trim(), note: 'From entry ' + d.entry + (d.same ? ', with the same number.' : ', as #' + id + '.') }, ...d.hist] };
+    this._changed = id;
+    this.setState({ recs: { ...st.recs, [st.co]: [...this.list(), r] }, del: { ...st.del, [st.co]: st.del[st.co].filter(x => x.rid !== d.rid) }, pbText: '', pbErr: false });
+    this._opener = document.getElementById(c.pre + '-add');
+    this.closeDrawer();
+    this.toast(d.name + ' put back' + (d.same ? '' : ' as #' + id), { undo: true }, () => {
+      const s2 = this.state;
+      this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).filter(x => x.id !== id) }, del: { ...s2.del, [st.co]: [d, ...(s2.del[st.co] || [])] } });
+      this.toast(d.name + ' deleted again');
+    });
+  }
+  // Printed invoices: pick, upload and remove the logo or the signature (hrp/app.py; no reason is asked, nothing to confirm)
+  pickFile(kind, e) {
+    const f = e && e.target && e.target.files && e.target.files[0];
+    this.setState({ pick: { ...this.state.pick, [kind]: f ? { name: f.name, size: f.size } : null } });
+  }
+  upload(kind) {
+    const st = this.state, L = kind === 'logo' ? 'Logo' : 'Signature', f = st.pick[kind];
+    if (!st.dlg || !f) { this.toast('Choose an image first.', { err: true }); return; }
+    let msg = '';
+    if (!/[.](png|jpe?g)$/i.test(f.name)) msg = L + ': upload a PNG or JPEG image.';
+    else if (!f.size) msg = L + ': the file is empty.';
+    else if (f.size > 2 * 1024 * 1024) msg = L + ': the image is larger than 2 MB. Save it smaller and upload it again.';
+    if (msg) { this.toast(msg, { err: true }); return; }
+    const id = st.dlg.id, was = ((this.rec(id) || {}).print || {})[kind] || '';
+    this.setRec(id, r => ({ ...r, print: { ...(r.print || {}), [kind]: f.name } }));
+    this.clearPick(kind);
+    this.toast(L + ' uploaded', { undo: true }, () => { this.setRec(id, r => ({ ...r, print: { ...(r.print || {}), [kind]: was } })); this.toast(was ? L + ' back as it was' : L + ' taken off again'); });
+  }
+  removeImg(kind) {
+    const st = this.state, L = kind === 'logo' ? 'Logo' : 'Signature';
+    if (!st.dlg) return;
+    this._focusId = 'cm-pi-up-' + kind;
+    const id = st.dlg.id, was = ((this.rec(id) || {}).print || {})[kind] || '';
+    this.setRec(id, r => ({ ...r, print: { ...(r.print || {}), [kind]: '' } }));
+    this.clearPick(kind);
+    this.toast(L + ' taken off the invoices', { undo: true }, () => { this.setRec(id, r => ({ ...r, print: { ...(r.print || {}), [kind]: was } })); this.toast(L + ' back on the invoices'); });
+  }
+  // after an upload or a remove the block starts clean, as the app's redraw does: no chosen file, the file input emptied
+  clearPick(kind) {
+    this.setState({ pick: { ...this.state.pick, [kind]: null } });
+    const el = typeof document !== 'undefined' ? document.getElementById(this.cfg().pre + '-pi-file-' + kind) : null;
+    if (el) el.value = '';
+  }
+  // Printed company names: the first click arms Remove, the second removes
+  armName(i) {
+    const st = this.state, r = st.dlg && !st.dlg.isNew ? this.rec(st.dlg.id) : null;
+    if (!r) return;
+    if (st.nameArm !== i) { this.setState({ nameArm: i }); return; }
+    const n = (r.names || [])[i];
+    if (!n) return;
+    this._focusId = 'cm-pn-h';
+    const names0 = r.names || [];
+    this.setRec(r.id, x => ({ ...x, names: x.names.filter((_, k) => k !== i) }));
+    this.setState({ nameArm: null });
+    this.toast('"' + n.name + '" removed. Files printing it are held again on the next Fetch, until Take it for is clicked again.', { undo: true }, () => { this.setRec(r.id, x => ({ ...x, names: names0 })); this.toast('"' + n.name + '" is back'); });
+  }
+  histItems(list, prefix, expanded, toggle) {
+    const SRC = { 'In the app': 'background:#EAF0FD;color:#2450B8', 'Starting data': 'background:#EEF1F5;color:#46546A', 'Import': 'background:#EEF1F5;color:#46546A' };
+    return (list || []).map((h, i) => {
+      const rows = (h.rows || []).map(([f, b, a]) => ({ f, b: b === '' ? '—' : b, a: a === '' ? '—' : a }));
+      const open = !!(expanded && expanded[i]);
+      return { op: h.op, src: h.src, who: h.who || '', when: h.when, why: h.why || '', whyOn: !!h.why, note: h.note || '', noteOn: !!h.note,
+        srcStyle: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;' + (SRC[h.src] || SRC['Starting data']),
+        dot: 'width:10px;height:10px;margin-top:5px;border-radius:99px;box-sizing:border-box;' + (h.op === 'Put back' ? 'background:#2450B8' : h.removed ? 'background:#FFFFFF;border:2px solid #B0190F' : h.op === 'As it stood' ? 'background:#FFFFFF;border:2px solid #8792A2' : 'background:#0A6B3D'),
+        diffOn: rows.length > 0, rows, open, exp: open ? 'true' : 'false', chev: open ? 'chev on' : 'chev',
+        diffLabel: open ? 'Hide what changed' : (h.removed ? 'Show what was removed' : h.added ? 'Show what was added' : 'Show what changed'),
+        beforeLabel: h.added ? '' : 'Before', afterLabel: h.removed ? '' : 'After',
+        toggle: () => toggle(i) };
+    });
+  }
+  renderVals() {
+    const st = this.state, c = this.cfg(), p = c.pre;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', grey: 'background:#EEF1F5;color:#46546A' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const cos = this.companyList();
+    const coName = c.perEntity ? (cos.find(x => x[0] === st.co) || cos[0])[0] : '';
+    const all = this.list();
+    const used = r => r.used.reduce((n, u) => n + u[1], 0);
+    const usedTxt = r => r.used.map(u => u[1] + ' ' + u[0]).join(', ');
+    const nStopped = all.filter(r => r.status === 'stopped').length;
+    const visible = all.filter(r => st.stopped || r.status !== 'stopped');
+    const q = st.q.trim().toLowerCase();
+    let shown = visible.filter(r => !q || (this.rowOf(r).text + ' ' + usedTxt(r) + ' ' + (r.status === 'stopped' ? 'stopped' : 'in use')).toLowerCase().includes(q));
+    if (st.sort) {
+      const { col, dir } = st.sort;
+      const key = r => col === 'used' ? used(r) : col === 'status' ? r.status : String(this.rowOf(r).sort[col] || '').toLowerCase();
+      shown = shown.slice().sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * dir; });
+    }
+    const heads = c.heads.map(([k, label, num], i) => {
+      const on = st.sort && st.sort.col === k, dir = on ? st.sort.dir : 0;
+      return { label, sort: on ? (dir > 0 ? 'ascending' : 'descending') : 'none',
+        glyph: on ? (dir > 0 ? 'arrowUp' : 'arrowDown') : 'sort', tone: on ? 'brand' : 'muted',
+        thStyle: 'padding:4px ' + (i === 0 ? '12px 4px 12px' : i === c.heads.length - 1 ? '12px 4px 6px' : '6px') + ';font-weight:600;' + (num ? 'text-align:right' : ''),
+        btnStyle: 'display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 6px;border:0;border-radius:6px;background:transparent;font:600 12px Inter,sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;' + (on ? 'color:#0F1A2B' : 'color:#5F6C80') + (num ? ';flex-direction:row-reverse' : ''),
+        click: () => { const s = this.state.sort; this.setState({ sort: !s || s.col !== k ? { col: k, dir: 1 } : s.dir > 0 ? { col: k, dir: -1 } : null }); } };
+    });
+    const rows = shown.map((r, k) => {
+      const v = this.rowOf(r), stopped = r.status === 'stopped', flash = st.flashId === r.id && st.flashN;
+      return { id: p + '-row-' + r.id, name: v.name, sub: v.sub,
+        cells: v.cells.map(t => ({ txt: t, style: 'padding:12px 12px;' + (stopped ? 'color:#5F6C80' : '') })),
+        usedN: used(r), usedTxt: used(r) ? usedTxt(r) : 'Not used yet',
+        statusTxt: stopped ? 'Stopped' : 'In use', pill: pill(stopped ? 'grey' : 'ok'), sysOn: !!r.system,
+        pillCls: st.flashId === r.id && st.pillN ? (st.pillN % 2 ? 'swapA' : 'swapB') : '',
+        cls: 'hr' + (flash ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        rowStyle: 'border-top:1px solid #EEF1F5;cursor:pointer;' + (stopped ? 'color:#46546A' : ''),
+        open: () => this.openRec(r.id),
+        key: e => {
+          const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? k - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? shown.length - 1 : null;
+          if (to === null || to < 0 || to >= shown.length) return;
+          e.preventDefault();
+          this.focusId(p + '-row-' + shown[to].id);
+        } };
+    });
+    const emptyKind = shown.length ? '' : !all.length ? 'none' : !visible.length ? 'stopped' : 'match';
+    const delList = st.del[st.co] || [];
+    const delRows = delList.map(d => ({ name: d.name, at: d.at, entry: d.entry, by: d.by, why: d.why, can: !d.problem, problemOn: !!d.problem, problem: d.problem || '',
+      putId: p + '-put-' + d.rid, histId: p + '-dh-' + d.rid, cls: 'hr',
+      put: () => this.openPut(d.rid, 'put'), hist: () => this.openPut(d.rid, 'hist') }));
+
+    // the record dialog
+    const dlg = st.dlg, r = dlg && !dlg.isNew ? this.rec(dlg.id) : null;
+    const errsAll = dlg ? this.errors(st.form) : {};
+    const errs = st.tried ? errsAll : {};
+    const ctl = 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;';
+    const dGroups = !dlg ? [] : c.groups.map(([label, fs], gi) => ({ label, fields: fs.filter(x => !x.when || x.when(st.form)).map(x => {
+      const t = x.t || 'text', lock = r && r.locked[x.k] ? r.locked[x.k] : '', err = errs[x.k] || '';
+      const id = p + '-f-' + x.k, val = st.form[x.k], warn = this.warnFor(x.k, st.form, r);
+      const by = [err ? id + '-err' : '', x.hint ? id + '-hint' : '', warn ? id + '-warn' : '', lock ? id + '-lock' : ''].filter(Boolean).join(' ');
+      return { id, label: x.l, req: !!x.req && !lock, reqAria: x.req && !lock ? 'true' : 'false',
+        isBool: t === 'bool', notBool: t !== 'bool', isInput: ['text', 'code', 'month', 'number'].includes(t), isSelect: t === 'select', isArea: t === 'area',
+        type: t === 'month' ? 'month' : t === 'number' ? 'number' : 'text', max: x.max || 200,
+        val: val == null ? '' : String(val), checked: !!val, ro: !!lock, dis: !!lock,
+        opts: (x.k === 'invoice_account_id' ? this.invOpts(r, val) : (x.opts || [])).map(([v, l]) => ({ v: String(v), l })),
+        hintOn: !!x.hint, hint: x.hint || '', hintId: id + '-hint', lockOn: !!lock, lock, lockId: id + '-lock',
+        errOn: !!err, err, errId: id + '-err', inv: err ? 'true' : 'false', by, warnOn: !!warn, warn, warnId: id + '-warn',
+        wrap: 'display:flex;flex-direction:column;gap:6px;min-width:0;' + (x.wide || t === 'area' ? 'grid-column:1 / -1' : ''),
+        style: ctl + (t === 'code' ? 'font-family:ui-monospace,Consolas,monospace;' : '') + (t === 'area' ? 'height:auto;min-height:76px;padding:10px 12px;resize:vertical;' : '') + (t === 'select' ? 'padding:0 10px;' : '') +
+          'border:1px solid ' + (err ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : lock ? '#D5DBE4' : '#8792A2'),
+        change: e => {
+          if (lock) return;
+          const tv = e && e.target ? (t === 'bool' ? (e.target.checked ? 1 : 0) : e.target.value) : '';
+          this.setState({ form: { ...this.state.form, [x.k]: tv }, footMsg: '' });
+        } };
+    }) }));
+    const stopped = r && r.status === 'stopped';
+    const nUsed = r ? used(r) : 0;
+    const badN = Object.keys(errs).length;
+    const ex = r ? this.extra(r) : null;
+    const whyMeta = { stop: ['Stop using it', c.stopNote, 'eyeOff', 'muted', '#D5DBE4', '#FAFBFC', false], use: ['Use it again', c.useNote, 'eye', 'brand', '#C9D7F6', '#F3F6FE', false], delete: ['Delete it', c.delNote, 'trash', 'bad', '#F4C7C1', '#FFF6F5', true] }[st.why] || (ex && st.why === ex.act ? ex.why : null) || ['', '', 'help', 'muted', '#D5DBE4', '#FFFFFF', false];
+    const notes = r ? [...(stopped ? [c.stopNote] : []), ...r.notes] : [];
+    const dirty = this.dirty();
+
+    // Printed invoices and Printed company names (shown for a company that is already there)
+    const pr = r ? (r.print || { logo: '', signature: '', fonts: [], long: [] }) : null, pn = r ? this.printNotes(r) : null;
+    const pImgs = !r ? [] : [['logo', 'Logo'], ['signature', 'Signature']].map(([k, L]) => {
+      const file = pr[k], pick = st.pick[k];
+      return { label: L, labId: p + '-pi-lab-' + k, fileId: p + '-pi-file-' + k, upId: p + '-pi-up-' + k, rmId: p + '-pi-rm-' + k, byId: p + '-pi-by-' + k,
+        has: !!file, none: !file, isLogo: k === 'logo', isSig: k === 'signature', file: file || '',
+        // the drawn mark shows the open company's code; the drawn signature is only the AISB sample's, any other file shows its name
+        mark: r.vals.code || '', markLetter: String(r.vals.code || '?').charAt(0), sigDrawn: k === 'signature' && file === 'aisb-signature.png', sigFile: k === 'signature' && !!file && file !== 'aisb-signature.png', pickOn: !!pick, pickTxt: pick ? 'Chosen: ' + pick.name : '',
+        by: p + '-pi-by-' + k, upAria: 'Upload ' + L.toLowerCase(), rmAria: 'Remove ' + L.toLowerCase() + ' (' + file + ')',
+        pick: e => this.pickFile(k, e), upload: () => this.upload(k), remove: () => this.removeImg(k) };
+    });
+    const names = r ? (r.names || []) : [];
+    const pnRows = names.map((n, i) => { const armed = st.nameArm === i;
+      return { name: n.name, at: n.at, by: n.by || 'Not recorded', rmId: p + '-pn-rm-' + i, label: armed ? 'Click again to remove' : 'Remove', aria: 'Remove "' + n.name + '"', pressed: armed ? 'true' : 'false', cls: armed ? 'hd' : 'hs',
+        style: 'display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap;' + (armed ? 'border:0;background:#B0190F;color:#FFFFFF' : 'border:1px solid #D0645A;background:#FFFFFF;color:#B0190F'),
+        click: () => this.armName(i), blur: () => { if (this.state.nameArm === i) this.setState({ nameArm: null }); } }; });
+    const armedName = st.nameArm != null && names[st.nameArm] ? names[st.nameArm].name : '';
+
+    // the put back dialog
+    const put = st.put, d = put ? delList.find(x => x.rid === put.rid) : null;
+    const refused = put && put.refused ? put.refused : (d && d.problem ? d.problem : '');
+    const pbPreview = !!(put && put.mode === 'put' && !refused);
+
+    return { ...this.more(),
+      pageTitle: st.noCo || !c.perEntity ? c.section : c.section + ' · ' + coName,
+      listHeading: c.perEntity ? c.section + ' of ' + coName : 'All ' + c.plural,
+      noCo: !!st.noCo, hasCo: !st.noCo,
+      coSeg: c.perEntity && cos.length > 1 && cos.length < 4, coSelect: c.perEntity && cos.length >= 4, coOne: c.perEntity && cos.length === 1, co: st.co,
+      cos: cos.map(([code, name]) => ({ code, optLabel: code + ' · ' + name, pressed: code === st.co ? 'true' : 'false',
+        pick: () => this.setState({ co: code }),
+        style: 'height:32px;padding:0 12px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' + (code === st.co ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') })),
+      coChange: e => { const v = e && e.target ? e.target.value : ''; if (v) this.setState({ co: v }); },
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '' }),
+      countTxt: shown.length + ' of ' + all.length + ' shown',
+      showStopped: !!st.stopped, nStopped, toggleStopped: () => this.setState({ stopped: !this.state.stopped }),
+      showDeleted: !!st.deleted, toggleDeleted: () => this.setState({ deleted: !this.state.deleted }),
+      heads, rows,
+      emptyOn: !!emptyKind, emptyGlyph: emptyKind === 'match' ? 'search' : emptyKind === 'stopped' ? 'eyeOff' : c.glyph,
+      emptyTxt: emptyKind === 'none' ? 'None yet.' : emptyKind === 'stopped' ? 'Only stopped ' + c.plural + ': tick Show stopped to see them.' : 'No ' + c.plural + ' match.',
+      emptyBtnOn: emptyKind === 'match' || emptyKind === 'stopped' || emptyKind === 'none',
+      emptyBtn: emptyKind === 'match' ? 'Clear the search' : emptyKind === 'stopped' ? 'Show stopped' : 'Add ' + c.lower,
+      emptyAct: () => { if (emptyKind === 'match') this.setState({ q: '' }); else if (emptyKind === 'stopped') this.setState({ stopped: true }); else this.openNew(); },
+      delHeading: 'Deleted ' + c.plural, delRows, delEmpty: !delList.length,
+      openNew: () => this.openNew(),
+      addLabel: 'Add ' + c.lower, dGlyph: c.glyph,
+      emptyLinkOn: emptyKind === 'none' && !!c.emptyLink, emptyLinkHref: c.emptyLink ? c.emptyLink[0] : '', emptyLinkTxt: c.emptyLink ? c.emptyLink[1] : '',
+
+      anyDlg: !!(dlg || put),
+      dlgOn: !!dlg, pbOn: !!put,
+      dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      dEyebrow: c.perEntity ? c.label + ' · ' + coName : c.label,
+      dTitle: !dlg ? '' : dlg.isNew ? 'New ' + c.lower : (r ? r.vals[c.nameKey] || '(no name)' : dlg.title || ''),
+      dSub: !dlg ? '' : dlg.isNew ? 'Fill in what you know; the rest can be added later. Nothing is kept until you add it.' : 'Changes are kept in the audit trail with your name.',
+      dIsNew: !!(dlg && dlg.isNew), dIsEdit: !!r,
+      dPillTxt: stopped ? 'Stopped' : 'In use', dPill: pill(stopped ? 'grey' : 'ok'), dPillCls: st.pillN ? (st.pillN % 2 ? 'swapA' : 'swapB') : '',
+      dNotesOn: notes.length > 0, dNotes: notes.map(txt => ({ txt })), dNotesCls: st.notesN ? (st.notesN % 2 ? 'swapA' : 'swapB') : '',
+      sumOn: badN > 0, sumTitle: badN === 1 ? '1 field needs a fix.' : badN + ' fields need a fix.',
+      sumList: this.fields().filter(x => errs[x.k]).map(x => x.l).join(', ').replace(/\.?$/, '.'),
+      dGroups,
+      printOn: !!r && !!r.vals.uses_sql, namesOn: !!r, dCode: r ? r.vals.code : '',
+      pImgs, pMissOn: !!pn && pn.miss.length > 0, pAllOk: !!pn && !pn.miss.length, pMiss: pn ? pn.miss.map(txt => ({ txt })) : [],
+      pBankLink: !!pn && pn.bankGap,
+      pFontsOn: !!pn && pn.fonts.length > 0, pFonts: pn ? pn.fonts.map(txt => ({ txt })) : [],
+      pLongOn: !!pn && pn.long.length > 0, pLong: pn ? pn.long.map(txt => ({ txt })) : [],
+      pnRows, pnRowsOn: names.length > 0 && !st.notReady, pnEmpty: !names.length && !st.notReady, pnNot: !!st.notReady,
+      pnArmOn: !!armedName, pnArmWrap: armedName ? 'display:flex;flex-direction:column' : 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap', pnArmNote: 'Removing "' + armedName + '": files printing it are held again on the next Fetch, until Take it for is clicked again.',
+      dUsedAny: nUsed > 0, dUsedNone: !!r && !nUsed, dUsed: r ? r.used.map(([what, n]) => ({ n, what })) : [],
+      canStop: !!r && !stopped && r.canStop !== false, canUse: !!r && stopped, canDelete: !!r && !nUsed && !r.system, dSysOn: !!(r && r.system),
+      stopExp: st.why === 'stop' ? 'true' : 'false', useExp: st.why === 'use' ? 'true' : 'false', delExp: st.why === 'delete' ? 'true' : 'false',
+      actNote: !r ? '' : r.system ? (r.canStop === false ? 'The app relies on this ' + c.lower + ', so it can’t be stopped or deleted.' : 'The app’s own rules rely on this ' + c.lower + ', so it can’t be deleted. It can be stopped.') : nUsed ? 'Delete is offered only for a ' + c.lower + ' not used anywhere yet. Stop using it instead: its history stays.' : 'Not used anywhere yet, so it can still be deleted.',
+      extraOn: !!ex, extraId: ex ? p + '-act-' + ex.act : '', extraLabel: ex ? ex.label : '', extraGlyph: ex ? ex.glyph : 'help', extraNote: ex ? ex.note : '',
+      extraExp: ex && st.why === ex.act ? 'true' : 'false', extraAct: () => { if (ex) { if (ex.click) ex.click(); else this.startWhy(ex.act); } },
+      actStop: () => this.startWhy('stop'), actUse: () => this.startWhy('use'), actDelete: () => this.startWhy('delete'),
+      whyOn: !!st.why, whyLabel: whyMeta[0], whyNote: whyMeta[1], whyGlyph: whyMeta[2], whyTone: whyMeta[3], whyBorder: whyMeta[4], whyBg: whyMeta[5],
+      whyGoCls: whyMeta[6] ? 'hd' : 'hb',
+      whyGoStyle: 'height:40px;padding:0 16px;border-radius:10px;border:0;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:pointer;' + (whyMeta[6] ? 'background:#B0190F' : 'background:#2450B8'),
+      whyText: st.whyText, whyErr: !!st.whyErr, whyInv: st.whyErr ? 'true' : 'false', whyBy: st.whyErr ? p + '-why-err' : '',
+      whyStyle: ctl + 'border:1px solid ' + (st.whyErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onWhy: e => this.setState({ whyText: e && e.target ? e.target.value : '', whyErr: false }),
+      whyKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.whyGo(); } },
+      whyGo: () => this.whyGo(),
+      whyCancel: () => { const was = this.state.why; this._focusId = p + '-act-' + was; this.setState({ why: null, whyText: '', whyErr: false }); },
+      histOpen: !!st.histOpen, histExp: st.histOpen ? 'true' : 'false', histChev: st.histOpen ? 'chev on' : 'chev',
+      histCount: r ? (r.hist.length === 1 ? '1 step' : r.hist.length + ' steps') : '',
+      histToggle: () => this.setState({ histOpen: !this.state.histOpen }),
+      hist: r && st.histOpen ? this.histItems(r.hist, p, st.histExp, i => this.setState({ histExp: { ...this.state.histExp, [i]: !this.state.histExp[i] } })) : [],
+      histEmpty: !!r && !r.hist.length,
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      discardDetail: st.put ? 'The reason you typed is not kept.' : 'What you changed here is not kept.',
+      footDirty: dirty && !st.footMsg,
+      footNote: st.footMsg ? st.footMsg : !dlg ? '' : dlg.isNew ? (badN ? 'Fix the fields above, then add it.' : 'It is added as in use.') : dirty ? 'Unsaved changes' : 'Saved changes are kept in the audit trail.',
+      footCls: st.footN ? (st.footN % 2 ? 'swapA' : 'swapB') : '',
+      footStyle: 'display:inline-flex;align-items:center;gap:8px;font-size:13px;' + (dirty && !st.footMsg ? 'color:#934100;font-weight:600' : 'color:#5F6C80'),
+      closeLabel: dlg && dlg.isNew ? 'Cancel' : 'Close',
+      saveLabel: dlg && dlg.isNew ? 'Add ' + c.lower : 'Save',
+      save: e => this.save(e),
+      askClose: () => this.askClose(),
+      keepEditing: () => this.setState({ confirm: false }),
+      discard: () => { this.setState({ confirm: false }); this.closeDrawer(); },
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); e.preventDefault();
+          const s = this.state;
+          if (s.confirm) this.setState({ confirm: false });
+          else if (s.nameArm != null) this.setState({ nameArm: null });   // Escape on an armed Remove only disarms it
+          else if (s.why) { this._focusId = p + '-act-' + s.why; this.setState({ why: null, whyText: '', whyErr: false }); }   // Escape in the reason box closes only that box
+          else this.askClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+
+      pbEyebrow: put && put.mode === 'hist' ? 'History · deleted ' + c.lower : 'Put back · ' + c.label,
+      pbTitle: d ? d.name : '', pbTile: refused && put && put.mode === 'put' ? '#FEF1D6' : '#EAF0FD',
+      pbGlyph: put && put.mode === 'hist' ? 'history' : refused ? 'lock' : 'undo', pbTone: refused && put && put.mode === 'put' ? 'warn' : 'brand',
+      pbSub: !d ? '' : 'Deleted ' + d.at + ' by ' + d.by + ', in entry ' + d.entry + '.',
+      pbRefused: !!(put && put.mode === 'put' && refused), pbRefusal: refused, pbPreview,
+      pbDeletedLine: d ? d.name + ' was deleted ' + d.at + ' by ' + d.by + ', in entry ' + d.entry + '. Why: ' + d.why : '',
+      pbBackLine: !d ? '' : 'It comes back as it was when it was deleted, ' + (d.same ? 'with the same number.' : 'as #' + d.newId + '.'),
+      pbNotes: d && pbPreview ? (d.notes || []).map(txt => ({ txt })) : [],
+      pbEffect: 'Nothing in the months already set up changes.',
+      pbText: st.pbText, pbErr: !!st.pbErr, pbInv: st.pbErr ? 'true' : 'false', pbBy: st.pbErr ? p + '-pb-err' : '',
+      pbStyle: ctl + 'border:1px solid ' + (st.pbErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onPbWhy: e => this.setState({ pbText: e && e.target ? e.target.value : '', pbErr: false }),
+      pbGo: () => this.pbGo(),
+      pbCloseLabel: pbPreview ? 'Cancel' : 'Close',
+      pbHistOpen: !!st.pbHist, pbHistExp: st.pbHist ? 'true' : 'false', pbHistChev: st.pbHist ? 'chev on' : 'chev',
+      pbHistCount: d ? (d.hist.length === 1 ? '1 step' : d.hist.length + ' steps') : '',
+      pbHistToggle: () => this.setState({ pbHist: !this.state.pbHist }),
+      pbHist: d && st.pbHist ? this.histItems(d.hist, p + '-pb', {}, () => {}) : [],
+
+      toastOn: !!st.toast, toastOkOn: !!st.toast && !st.toast.err, toastErrOn: !!st.toast && !!st.toast.err, toastText: st.toast ? st.toast.text : '', toastGlyph: st.toast && st.toast.err ? 'alert' : 'check',
+      toastStyle: 'pointer-events:auto;display:inline-flex;align-items:center;gap:12px;min-height:44px;max-width:560px;padding:8px 10px 8px 16px;box-sizing:border-box;border-radius:12px;color:#FFFFFF;font-weight:600;box-shadow:0 12px 32px rgba(13,27,46,.28);background:' + (st.toast && st.toast.err ? '#8F140C' : '#0F1A2B'), toastUndoOn: !!(st.toast && st.toast.undo),
+      toastUndo: () => { const f = this._undoFn; this._undoFn = null; if (f) f(); else this.undoStop(); },
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

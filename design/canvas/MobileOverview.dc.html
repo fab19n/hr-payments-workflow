@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile · Overview · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+/* motion and focus base */
+.mo-row{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.mo-row:active{background-color:#F7F8FA !important;border-color:#D5DBE4 !important}
+.mo-ic{transition:background-color .12s ease-out}
+.mo-ic:active{background-color:rgba(255,255,255,.1) !important}
+.mo-nb{transition:color .12s ease-out,background-color .12s ease-out}
+.mo-nb:active{background-color:#F1F3F7}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.mo-hd :where(a,button):focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+/* a 44px tall touch area around a smaller control, without changing how it looks */
+.hit{position:relative}
+.hit::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swNA{from{opacity:0;transform:translateX(8px)}}
+@keyframes swNB{from{opacity:0;transform:translateX(8px)}}
+@keyframes swPA{from{opacity:0;transform:translateX(-8px)}}
+@keyframes swPB{from{opacity:0;transform:translateX(-8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sheetOut{from{transform:none}to{transform:translateY(100%)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swNA{animation:swNA .15s cubic-bezier(.22,1,.36,1) both}
+.swNB{animation:swNB .15s cubic-bezier(.22,1,.36,1) both}
+.swPA{animation:swPA .15s cubic-bezier(.22,1,.36,1) both}
+.swPB{animation:swPB .15s cubic-bezier(.22,1,.36,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.sh-in{animation:sheetIn .24s cubic-bezier(.22,1,.36,1) both}
+.sh-out{animation:sheetOut .18s cubic-bezier(.4,0,1,1) both}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.spin{display:inline-block;width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(15,26,43,.25);border-top-color:#0F1A2B;animation:spin .7s linear infinite;flex:none}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+ <div inert="{{sheetOn}}" style="flex: 1; min-height: 0; display: flex; flex-direction: column">
+  <header class="mo-hd" style="background: #0D1B2E; color: #FFFFFF; padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: center; gap: 10px">
+      <svg viewBox="0 0 36 36" width="32" height="32" aria-hidden="true"><rect width="36" height="36" rx="10" fill="#2450B8"></rect><rect x="9" y="9" width="18" height="18" rx="4" fill="#5C83E0"></rect><path d="M13 15h10M13 19h6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path><circle cx="24" cy="23" r="3" fill="#FFFFFF"></circle></svg>
+      <span style="flex: 1; font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 600; font-size: 17px">HR Payments</span>
+      <a href="MobileDesktopOnly.dc.html" class="mo-ic" aria-label="Search" style="width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="search" tone="nav" size="22" hint-size="22px,22px"></dc-import></a>
+      <a href="MobileDesktopOnly.dc.html" class="mo-ic" aria-label="{{bellLabel}}" style="position: relative; width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="bell" tone="nav" size="22" hint-size="22px,22px"></dc-import><span aria-hidden="true" style="position: absolute; top: 10px; right: 11px; width: 8px; height: 8px; border-radius: 99px; background: #E0483B; box-shadow: 0 0 0 2px #0D1B2E"></span></a>
+    </div>
+    <div style="display: flex; align-items: center; gap: 2px; background: #16263F; border-radius: 12px; padding: 4px">
+      <button type="button" class="mo-ic" onClick="{{prevMonth}}" disabled="{{prevOff}}" aria-label="Previous month" style="width: 44px; height: 44px; border: 0; border-radius: 9px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; opacity: {{prevOp}}"><dc-import name="Icon" glyph="chevronLeft" tone="nav" size="20" hint-size="20px,20px"></dc-import></button>
+      <button type="button" id="mo-month" class="mo-ic" onClick="{{openMonth}}" aria-haspopup="dialog" aria-label="{{monthAria}}" style="flex: 1; min-width: 0; min-height: 44px; border: 0; border-radius: 9px; background: transparent; color: #FFFFFF; font: 600 15px Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer">{{monthLabel}}<dc-import name="Icon" glyph="chevronDown" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+      <sc-if value="{{notCurrent}}" hint-placeholder-val="{{ false }}"><button type="button" class="mo-ic rv" onClick="{{goCurrent}}" style="min-height: 44px; padding: 0 12px; border: 1px solid #8DB0FA; border-radius: 9px; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer; flex: none">Current</button></sc-if>
+      <button type="button" class="mo-ic" onClick="{{nextMonth}}" disabled="{{nextOff}}" aria-label="Next month" style="width: 44px; height: 44px; border: 0; border-radius: 9px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; opacity: {{nextOp}}"><dc-import name="Icon" glyph="chevronRight" tone="nav" size="20" hint-size="20px,20px"></dc-import></button>
+    </div>
+  </header>
+
+  <main style="flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+    <sc-if value="{{auditAlert}}" hint-placeholder-val="{{ false }}">
+      <div role="alert" class="rv" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C">
+        <div style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><span><b>The audit trail needs attention.</b> 2 changes were made to the records outside this app, so the trail no longer matches records.db.</span></div>
+        <a href="MobileDesktopOnly.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border-radius: 11px; background: #B0190F; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="white" size="18" hint-size="18px,18px"></dc-import>Open the audit trail</a>
+      </div>
+    </sc-if>
+
+    <div class="{{contentCls}}" style="display: flex; flex-direction: column; gap: 16px">
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{tiles}}" as="t" hint-placeholder-count="4">
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 12px 14px"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="20" hint-size="20px,20px"></dc-import><div style="font-size: 20px; font-weight: 700; margin-top: 6px; font-variant-numeric: tabular-nums">{{t.value}}</div><span style="color: #5F6C80; font-size: 12px">{{t.label}}</span><sc-if value="{{t.note}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 11px">{{t.note}}</div></sc-if></div>
+      </sc-for>
+    </div>
+
+    <section aria-labelledby="mo-co" style="display: flex; flex-direction: column; gap: 10px">
+      <h2 id="mo-co" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{companiesHeading}}</h2>
+      <sc-for list="{{cards}}" as="c" hint-placeholder-count="2">
+        <article aria-label="{{c.aria}}" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px"><span><b style="font-size: 12px; letter-spacing: .06em; color: #2450B8">{{c.code}}</b> <span style="font-weight: 600">{{c.name}}</span></span><sc-if value="{{c.hasBudget}}" hint-placeholder-val="{{ true }}"><span style="text-align: right"><b style="font-variant-numeric: tabular-nums">{{c.budget}}</b><span style="display: block; color: #5F6C80; font-size: 11px">{{c.budgetNote}}</span></span></sc-if></div>
+          <sc-if value="{{c.hasBar}}" hint-placeholder-val="{{ true }}"><div><div style="height: 6px; border-radius: 99px; background: #EEF1F5; overflow: hidden"><div class="bar" style="{{c.barStyle}}"></div></div><span style="display: block; margin-top: 4px; color: #5F6C80; font-size: 12px">{{c.barLabel}}</span></div></sc-if>
+          <sc-if value="{{c.rec}}" hint-placeholder-val="{{ false }}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px"><div style="padding: 8px 10px; border-radius: 10px; background: #F7F8FA"><b>{{c.recDocs}}</b><span style="display: block; color: #5F6C80; font-size: 11px">receipts fully documented</span></div><div style="padding: 8px 10px; border-radius: 10px; background: #F7F8FA"><b style="font-variant-numeric: tabular-nums">{{c.recWait}}</b><span style="display: block; color: #5F6C80; font-size: 11px">not received yet</span></div></div></sc-if>
+          <sc-if value="{{c.text}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #46546A; font-size: 13px">{{c.text}}</p></sc-if>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{c.pills}}" as="p" hint-placeholder-count="2">
+              <sc-if value="{{p.link}}" hint-placeholder-val="{{ true }}"><a href="{{p.href}}" class="hit" style="{{p.style}}">{{p.text}}</a></sc-if>
+              <sc-if value="{{p.plain}}" hint-placeholder-val="{{ false }}"><span style="{{p.style}}">{{p.text}}</span></sc-if>
+            </sc-for>
+          </div>
+          <sc-if value="{{c.setup}}" hint-placeholder-val="{{ false }}"><a href="MobileDesktopOnly.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 12px; background: #2450B8; color: #FFFFFF; font-weight: 600; font-size: 15px; text-decoration: none"><dc-import name="Icon" glyph="calendar" tone="white" size="18" hint-size="18px,18px"></dc-import>Set up this month</a></sc-if>
+          <sc-if value="{{c.open}}" hint-placeholder-val="{{ true }}"><a href="MobileCompany.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; border-radius: 11px; border: 1px solid #D5DBE4; color: #0F1A2B; font-weight: 600; font-size: 14px; text-decoration: none">Open {{c.code}} {{c.monthShort}}<dc-import name="Icon" glyph="arrow" tone="muted" size="16" hint-size="16px,16px"></dc-import></a></sc-if>
+        </article>
+      </sc-for>
+    </section>
+    </div>
+
+    <section aria-labelledby="mo-next" style="display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; justify-content: space-between"><h2 id="mo-next" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Next up</h2><span style="color: #5F6C80; font-size: 13px">{{nextCount}}</span></div>
+      <sc-if value="{{filterSeg}}" hint-placeholder-val="{{ true }}">
+        <div role="group" aria-label="Show tasks for" style="display: flex; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 12px">
+          <sc-for list="{{whoSeg}}" as="w" hint-placeholder-count="3"><button type="button" aria-pressed="{{w.pressed}}" onClick="{{w.pick}}" style="{{w.style}}">{{w.label}}</button></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{filterSel}}" hint-placeholder-val="{{ false }}">
+        <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Show tasks for</span><select value="{{who}}" onChange="{{pickWho}}" style="height: 48px; padding: 0 12px; border: 1px solid #7C8799; border-radius: 12px; font: 400 16px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{whoOpts}}" as="o" hint-placeholder-count="5"><option value="{{o.k}}">{{o.label}}</option></sc-for></select></label>
+      </sc-if>
+
+      <sc-if value="{{errOn}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 14px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C">
+          <div style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><span><b>Couldn't work out what to do next:</b> the records file is busy. The rest of the page still works.</span></div>
+          <button type="button" id="mo-retry" onClick="{{retry}}" aria-busy="{{retryBusy}}" disabled="{{retrying}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border-radius: 11px; border: 1px solid #B0190F; background: #FFFFFF; color: #B0190F; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{retrying}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Trying again…</sc-if><sc-if value="{{notRetrying}}" hint-placeholder-val="{{ true }}">Try again</sc-if></button>
+        </div>
+      </sc-if>
+      <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+        <div class="ex" style="display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED">
+          <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="check" tone="ok" size="22" hint-size="22px,22px"></dc-import><b>{{emptyTitle}}</b></div>
+          <span style="color: #5F6C80; font-size: 13px">{{emptyNext}}</span>
+        </div>
+      </sc-if>
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+        <div class="mo-row" style="display: flex; flex-direction: column; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED">
+          <div style="display: flex; align-items: center">
+            <sc-if value="{{r.isLink}}" hint-placeholder-val="{{ true }}">
+              <a href="{{r.href}}" class="mo-row" style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 4px 12px 14px; border-radius: 14px 0 0 14px; text-decoration: none; color: #0F1A2B">
+                <span style="{{r.tile}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                <span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600; font-size: 14px">{{r.title}}</span><span style="{{r.due}}">{{r.dueText}}</span></span>
+                <dc-import name="Icon" glyph="{{r.endGlyph}}" tone="muted" size="18" hint-size="18px,18px"></dc-import>
+              </a>
+              <button type="button" id="{{r.whyId}}" onClick="{{r.toggleWhy}}" onKeyDown="{{r.whyKey}}" aria-expanded="{{r.whyOpen}}" aria-controls="{{r.noteId}}" aria-label="Why: {{r.title}}" style="width: 44px; height: 44px; margin: 0 4px 0 0; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="help" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+            </sc-if>
+            <sc-if value="{{r.isBackup}}" hint-placeholder-val="{{ false }}">
+              <div style="flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 14px">
+                <span style="{{r.tile}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                <span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600; font-size: 14px">{{r.title}}</span><span style="{{r.due}}">{{r.dueText}}</span></span>
+                <a href="MobileDesktopOnly.dc.html" style="display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border-radius: 11px; border: 1px solid #D5DBE4; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none; flex: none">Open backup</a>
+              </div>
+            </sc-if>
+          </div>
+          <sc-if value="{{r.whyOn}}" hint-placeholder-val="{{ false }}"><p id="{{r.noteId}}" class="ex" style="margin: 0; padding: 10px 14px 12px; border-top: 1px solid #EEF1F5; color: #46546A; font-size: 13px; background: #FAFBFC; border-radius: 0 0 14px 14px">{{r.why}}</p></sc-if>
+        </div>
+      </sc-for>
+      <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}"><button type="button" id="mo-all" onClick="{{toggleAll}}" aria-expanded="{{allExpanded}}" style="min-height: 44px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">{{allLabel}}</button></sc-if>
+      <sc-if value="{{olderOn}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0 4px; color: #5F6C80; font-size: 13px">Older months still open:
+          <sc-for list="{{older}}" as="o" hint-placeholder-count="1"><button type="button" onClick="{{o.go}}" style="min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: #2450B8; font: 600 13px Inter, sans-serif; cursor: pointer; text-decoration: underline">{{o.label}}</button></sc-for>
+        </div>
+      </sc-if>
+    </section>
+  </main>
+
+  <nav aria-label="Main" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); background: #FFFFFF; border-top: 1px solid #E3E7ED; padding: 6px 4px 14px">
+    <a href="MobileOverview.dc.html" aria-current="page" class="mo-nb fr" style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 48px; border-radius: 12px; justify-content: center; text-decoration: none; color: #2450B8; font-size: 11px; font-weight: 600"><dc-import name="Icon" glyph="overview" tone="brand" size="22" hint-size="22px,22px"></dc-import>Overview</a>
+    <a href="MobileCompany.dc.html" class="mo-nb fr" style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 48px; border-radius: 12px; justify-content: center; text-decoration: none; color: #5F6C80; font-size: 11px; font-weight: 500"><dc-import name="Icon" glyph="company" tone="muted" size="22" hint-size="22px,22px"></dc-import>Payments</a>
+    <a href="MobileDesktopOnly.dc.html" class="mo-nb fr" style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 48px; border-radius: 12px; justify-content: center; text-decoration: none; color: #5F6C80; font-size: 11px; font-weight: 500"><dc-import name="Icon" glyph="bank" tone="muted" size="22" hint-size="22px,22px"></dc-import>Bank</a>
+    <a href="MobileDesktopOnly.dc.html" class="mo-nb fr" style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 48px; border-radius: 12px; justify-content: center; text-decoration: none; color: #5F6C80; font-size: 11px; font-weight: 500"><dc-import name="Icon" glyph="pack" tone="muted" size="22" hint-size="22px,22px"></dc-import>Filing</a>
+    <button type="button" id="mo-more" onClick="{{openMore}}" aria-haspopup="dialog" class="mo-nb fr" style="display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 48px; border: 0; background: transparent; border-radius: 12px; justify-content: center; color: #5F6C80; font: 500 11px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="more" tone="muted" size="22" hint-size="22px,22px"></dc-import>More</button>
+  </nav>
+ </div>
+
+ <sc-if value="{{sheetOn}}" hint-placeholder-val="{{ false }}">
+  <div class="{{dimCls}}" onClick="{{closeSheet}}" aria-hidden="true" style="position: absolute; inset: 0; z-index: 70; background: rgba(13, 27, 46, .5)"></div>
+  <section id="mo-sheet" class="{{sheetCls}}" role="dialog" aria-modal="true" aria-labelledby="mo-sheet-title" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onSheetAnim}}" style="position: absolute; z-index: 71; left: 0; right: 0; bottom: 0; max-height: 680px; background: #FFFFFF; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; overflow: hidden">
+    <div aria-hidden="true" style="display: flex; justify-content: center; padding: 10px 0 4px"><span style="width: 40px; height: 5px; border-radius: 99px; background: #D5DBE4"></span></div>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px 8px 16px">
+      <h2 id="mo-sheet-title" tabindex="-1" style="flex: 1; margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{sheetTitle}}</h2>
+      <button type="button" onClick="{{closeSheet}}" aria-label="Close" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="22" hint-size="22px,22px"></dc-import></button>
+    </div>
+    <div style="overflow-y: auto; padding: 4px 16px 22px; display: flex; flex-direction: column; gap: 14px">
+      <sc-if value="{{monthSheet}}" hint-placeholder-val="{{ false }}">
+        <div role="group" aria-label="Month" style="display: flex; flex-direction: column; gap: 8px">
+          <sc-for list="{{monthOpts}}" as="m" hint-placeholder-count="5"><button type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}"><span style="flex: 1; text-align: left">{{m.label}}</span><span style="font-size: 12px; font-weight: 600; color: #5F6C80">{{m.note}}</span></button></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{moreSheet}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{moreLinks}}" as="l" hint-placeholder-count="6">
+            <a href="MobileDesktopOnly.dc.html" class="mo-row" style="display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; border-radius: 12px; border: 1px solid #E3E7ED; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 15px; text-decoration: none"><dc-import name="Icon" glyph="{{l.glyph}}" tone="brand" size="22" hint-size="22px,22px"></dc-import><span style="flex: 1">{{l.label}}</span><dc-import name="Icon" glyph="laptop" tone="muted" size="18" hint-size="18px,18px"></dc-import></a>
+          </sc-for>
+          <span style="color: #5F6C80; font-size: 12px">These are best done on a computer.</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span id="mo-th-l" style="font-size: 13px; font-weight: 600; color: #46546A">Appearance</span>
+          <div role="group" aria-labelledby="mo-th-l" style="display: flex; gap: 4px; padding: 4px; background: #F1F3F7; border-radius: 12px">
+            <sc-for list="{{themes}}" as="h" hint-placeholder-count="3"><button type="button" aria-pressed="{{h.pressed}}" onClick="{{h.pick}}" style="{{h.style}}"><dc-import name="Icon" glyph="{{h.glyph}}" tone="{{h.tone}}" size="16" hint-size="16px,16px"></dc-import>{{h.label}}</button></sc-for>
+          </div>
+          <span style="color: #5F6C80; font-size: 12px">{{themeNote}}</span></div>
+        <div style="display: flex; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid #EEF1F5"><dc-import name="Icon" glyph="{{auditGlyph}}" tone="{{auditTone}}" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="display: block; font-size: 13px">{{auditStatus}}</b><span style="color: #5F6C80; font-size: 12px">Signed in as Aisha Rahman</span></div></div>
+      </sc-if>
+    </div>
+  </section>
+ </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"normal","options":["normal","all-caught-up","nothing-recent","error","audit-alert","one-company","four-companies"],"section":"State to show"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.init(p); }
+  init(p) { return { mi: 3, who: 'all', all: false, why: null, sheet: null, closing: false, theme: 'auto', mn: 0, dir: 1, retrying: false, fixed: false }; }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._r); }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.view !== this.props.view && !this._resetting) { this._resetting = true; clearTimeout(this._r); this.setState(this.init(this.props)); this._resetting = false; return; }
+    const s = this.state;
+    if (!prev.sheet && s.sheet) { this.focusId('mo-sheet-title'); return; }
+    if (prev.sheet && !s.sheet) { const o = this._opener; if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); }
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  // the months a person can step through, as offsets from October 2026 (the month being worked); today is Wed 18 Nov 2026
+  months() { return [[-20, 'February 2025', 'Before tracking'], [-2, 'August 2026', 'Before tracking'], [-1, 'September 2026', 'Open'], [0, 'October 2026', 'Current'], [1, 'November 2026', 'Not set up']]; }
+  companies(view) {
+    // every company starts tracking in September 2026 (offset -1), as on the desktop Overview
+    const A = { code: 'AISB', name: 'AISB', first: -1 }, B = { code: 'AI', name: 'Agrinexus International', first: -1 };
+    if (view === 'one-company') return [A];
+    if (view === 'four-companies') return [A, B, { code: 'AT', name: 'Agrinexus Trading', first: -1 }, { code: 'AF', name: 'Agrinexus Farms', first: -1 }];
+    return [A, B];
+  }
+  switchTo(i) {
+    if (i === this.state.mi || i < 0 || i > this.months().length - 1) return;
+    this.setState({ mi: i, mn: this.state.mn + 1, dir: i > this.state.mi ? 1 : -1 });
+  }
+  openSheet(kind) { this._opener = document.activeElement; this.setState({ sheet: kind, closing: false }); }
+  closeSheet(after) {
+    if (!this.state.sheet || this.state.closing) return;
+    this._after = after || null;
+    if (this.calm()) return this.finishSheet();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishSheet(), 400);
+  }
+  finishSheet() { clearTimeout(this._t); const a = this._after || {}; this._after = null; if (this.state.sheet) this.setState({ sheet: null, closing: false, ...a }); }
+  renderVals() {
+    const st = this.state, view = (this.props && this.props.view) || 'normal';
+    const M = this.months(), mo = M[st.mi][0], mlabel = M[st.mi][1], cos = this.companies(view);
+    const many = cos.length > 1, four = cos.length > 3, one = cos.length === 1;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', warn: 'background:#FEF1D6;color:#934100', bad: 'background:#FDE6E3;color:#B0190F', muted: 'background:#EEF1F5;color:#46546A' };
+    const pillCss = (t, link) => 'display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:2px 11px;border-radius:99px;font:600 12px Inter,sans-serif;text-decoration:none;' + P[t] + (link ? ';cursor:pointer' : '');
+    // ---- the company cards: active, filed, month not set up, before the first month tracked ----
+    const FILED = { AISB: {}, AI: { '-1': '5 Oct' }, AT: { '-1': '6 Oct' }, AF: {} };
+    const FIG = { AISB: { '0': ['RM 31,400', 7, 9, 'overdue'], '-1': ['RM 29,800', 9, 9, 'sep'] }, AI: { '0': ['RM 16,850', 3, 4, 'ai'] }, AT: { '0': ['RM 8,200', 3, 3, 'ok'] }, AF: { '0': ['RM 4,500', 1, 2, 'soon'] } };
+    const firstName = { AISB: 'September 2026', AI: 'September 2026', AT: 'September 2026', AF: 'September 2026' };
+    const cards = cos.map(c => {
+      const base = { code: c.code, name: c.name, aria: c.name + ', ' + mlabel, hasBudget: false, budget: '', budgetNote: '', hasBar: false, barStyle: '', barLabel: '', rec: false, recDocs: '', recWait: '', text: '', pills: [], setup: false, open: false, monthShort: mlabel.split(' ')[0] };
+      const mk = (text, tone, href) => ({ text, style: pillCss(tone, !!href), href: href || '', link: !!href, plain: !href });
+      if (mo > 0) return { ...base, text: mlabel + " isn't set up yet. Setting up copies the recurring payments and the checklist into it.", pills: [mk('Month not set up', 'muted')], setup: true };
+      if (mo < c.first) return { ...base, text: c.name + ' starts tracking in ' + (firstName[c.code] || 'September 2026') + '. There is nothing to show for ' + mlabel + '.', pills: [mk('Before tracking', 'muted')] };
+      const fo = (FILED[c.code] || {})[String(mo)];
+      const fig = (FIG[c.code] || {})[String(mo)];
+      const bar = (n, t, col) => ({ hasBar: true, barStyle: 'width:' + Math.round(n / t * 100) + '%;height:100%;border-radius:99px;background:' + col, barLabel: n + ' of ' + t + ' payments paid' });
+      if (fo) return { ...base, open: true, ...bar(1, 1, '#0E8A50'), barLabel: 'All payments paid and documented', pills: [mk('Filed ' + fo, 'ok')] };
+      if (!fig) return { ...base, open: true, text: 'Nothing recorded yet for ' + mlabel + '.', pills: [mk('Nothing overdue', 'ok')] };
+      const k = fig[3], pills = [];
+      if (k === 'overdue') pills.push(mk('2 payments overdue', 'bad', 'MobileCompany.dc.html'), mk('1 part paid', 'warn', 'MobileCompany.dc.html'), mk('5 bank lines not explained', 'warn', 'MobileDesktopOnly.dc.html'));
+      else if (k === 'sep') pills.push(mk('1 checklist overdue', 'bad', 'MobileCompany.dc.html'), mk('2 bank lines not explained', 'warn', 'MobileDesktopOnly.dc.html'));
+      else if (k === 'ai') pills.push(mk('1 past legal deadline (15 Nov)', 'bad', 'MobileCompany.dc.html'));
+      else if (k === 'soon') pills.push(mk('1 due in 2 days', 'warn', 'MobileCompany.dc.html'));
+      else pills.push(mk('Nothing overdue', 'ok'));
+      const out = { ...base, open: true, hasBudget: true, budget: fig[0], budgetNote: 'budget as at 10 Nov', ...bar(fig[1], fig[2], '#2450B8'), pills };
+      if (c.code === 'AISB' && mo === 0) Object.assign(out, { rec: true, recDocs: '1 of 2', recWait: 'RM 2,800.00' });
+      return out;
+    });
+    const funds = cards.filter(c => c.hasBudget).reduce((a, c) => a + parseInt(c.budget.replace(/\D/g, ''), 10), 0);
+    const nf = n => n.toLocaleString('en-US');
+    const T = { '0': ['31/44', '52/67', '9'], '-1': ['18/20', '30/32', '0'], '-2': ['—', '—', '—'], '-20': ['—', '—', '—'], '1': ['—', '—', '—'] }[String(mo)];
+    const tiles = [
+      { glyph: 'checklist', tone: 'brand', value: T[0], label: 'Checklist done', note: '' },
+      { glyph: 'document', tone: 'ok', value: T[1], label: 'Fully documented', note: '' },
+      { glyph: 'clock', tone: 'warn', value: T[2], label: 'Not paid yet', note: '' },
+      { glyph: 'coins', tone: 'brand', value: funds ? nf(funds) : '—', label: 'Budget as at 10 Nov (RM)', note: funds && many ? 'all companies' : '' }
+    ];
+    // ---- Next up: the to-do list (worked out from the records, never dismissed). Events that happened are in the bell, not here. ----
+    const tileCss = t => 'width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + { bad: '#FDE6E3', warn: '#FEF1D6', muted: '#EEF1F5' }[t];
+    const dueCss = t => 'display:block;font-size:12px;font-weight:600;color:' + { bad: '#B0190F', warn: '#934100', muted: '#46546A' }[t];
+    const ALL = [
+      ['aisb', 'bad', 'alert', 'Consultant fee not on Oct statement', 'Overdue 31 Oct', 'MobilePayment.dc.html', 'Due Sat 31 Oct 2026, 18 days ago. The October bank statement is imported but no line is linked to this payment.'],
+      ['aisb', 'bad', 'books', 'AISB: EPF (KWSP) for October 2026 wasn\x27t paid by 15 Nov 2026. Check it on Statutory payables.', 'Overdue 15 Nov', 'MobileDesktopOnly.dc.html', 'Legal deadline Sun 15 Nov 2026. Accounting › Statutory payables is on the desktop version.'],
+      ['aisb', 'bad', 'vault', 'Pay KWSP for October', 'Overdue 15 Nov', 'MobileCompany.dc.html', 'The legal deadline was Sun 15 Nov 2026. RM 11,240.00.'],
+      ['ai', 'bad', 'vault', 'Pay KWSP', 'Past legal deadline (15 Nov)', 'MobileCompany.dc.html', 'The legal deadline was Sun 15 Nov 2026. A late-payment charge may follow.'],
+      ['aisb', 'bad', 'checklist', 'Sep AISB: SQL books agree with SQL Account', 'Overdue 15 Oct', 'MobileDesktopOnly.dc.html', 'Due Thu 15 Oct 2026. Open it on the desktop version.'],
+      ['aisb', 'warn', 'inbox', 'Explain 5 bank lines', 'Due today', 'MobileDesktopOnly.dc.html', 'Due today, Wed 18 Nov 2026. Five lines on the Maybank current statement are not yet matched or explained.'],
+      ['aisb', 'warn', 'database', 'Fetch SQL\x27s Oct and Nov Payment Voucher listings on the SQL import page: 4 payments not recorded; 1 SQL entry not linked yet; 1 voucher changed in SQL (move the link on the SQL page)', 'Due in 3 days', 'MobileDesktopOnly.dc.html', 'Due Sat 21 Nov 2026. Four paid payments have no SQL voucher yet.'],
+      ['all', 'muted', 'budget', 'Enter the November bank balance', 'Due in 2 days', 'MobileDesktopOnly.dc.html', 'Due Fri 20 Nov 2026. The November budget needs each company’s bank balance.'],
+      ['ai', 'muted', 'pack', 'Build and file the October audit pack', 'Due 30 Nov', 'MobileDesktopOnly.dc.html', 'Due Mon 30 Nov 2026, 12 days from today.'],
+      ['aisb', 'muted', 'users', 'e-CP22 for the joiner', 'Due 3 Dec', 'MobileCompany.dc.html', 'Due Thu 3 Dec 2026. A new joiner started on 3 Nov.'],
+      ['all', 'muted', 'vault', 'Back up the records', 'Last backup 9 Nov', '', 'The last backup was Mon 9 Nov 2026, 9 days ago.', 'backup']
+    ];
+    const who = one ? 'all' : st.who;
+    let list = view === 'all-caught-up' || view === 'nothing-recent' || view === 'error' ? [] : ALL.filter(r => who === 'all' || r[0] === 'all' || r[0] === who);
+    const okWho = !many || cos.some(c => c.code.toLowerCase() === who) || who === 'all';
+    if (!okWho) list = [];
+    const total = list.length, shownList = st.all ? list : list.slice(0, 5);
+    const rows = shownList.map((r, i) => {
+      const id = 'mo-why-' + i, open = st.why === i, bk = r[7] === 'backup';
+      return { isLink: !bk, isBackup: bk, tile: tileCss(r[1]), glyph: r[2], tone: r[1], title: r[3], dueText: r[4], due: dueCss(r[1]), href: r[5] || 'MobileDesktopOnly.dc.html',
+        endGlyph: /Desktop/.test(r[5]) ? 'laptop' : 'chevronRight', why: r[6], whyId: id, noteId: id + '-note', whyOpen: open ? 'true' : 'false', whyOn: open,
+        toggleWhy: () => this.setState({ why: this.state.why === i ? null : i }),
+        whyKey: e => { if (e.key === 'Escape' && this.state.why === i) { e.preventDefault(); e.stopPropagation(); this.setState({ why: null }); } } };
+    });
+    const whoLabel = c => (c === 'all' ? (many ? 'All companies' : '') : c);
+    const whoOpts = [{ k: 'all', label: 'All companies' }, ...cos.map(c => ({ k: c.code.toLowerCase(), label: c.code + ' · ' + c.name }))];
+    const segCss = on => 'flex:1;min-width:0;min-height:44px;border:0;border-radius:9px;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const whoSeg = whoOpts.map(o => ({ label: o.k === 'all' ? 'All companies' : o.k.toUpperCase(), pressed: who === o.k ? 'true' : 'false', pick: () => this.setState({ who: o.k, all: false, why: null }), style: segCss(who === o.k) }));
+    const err = view === 'error' && !st.fixed;
+    const older = [{ label: 'AISB September', go: () => this.switchTo(2) }];
+    const empty = !err && !total && (view === 'all-caught-up' || view === 'nothing-recent' || !okWho);
+    // ---- sheets ----
+    const sh = st.sheet;
+    const monthOpts = [...M].reverse().map(([m, label, note]) => { const i = M.findIndex(x => x[0] === m);
+      return { label, note, pressed: i === st.mi ? 'true' : 'false', pick: () => { this.closeSheet(); this.switchTo(i); },
+        style: 'display:flex;align-items:center;gap:8px;min-height:48px;padding:0 14px;border-radius:12px;font:600 15px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out;color:#0F1A2B;' + (i === st.mi ? 'border:2px solid #2450B8;background:#EAF0FD' : 'border:1px solid #D5DBE4;background:#FFFFFF') }; });
+    const themeNotes = { auto: "Auto follows your phone's setting.", light: 'Always light.', dark: 'Always dark.' };
+    const themes = [['auto', 'Auto', 'auto'], ['light', 'Light', 'sun'], ['dark', 'Dark', 'moon']].map(([k, label, glyph]) => ({ label, glyph, tone: st.theme === k ? 'brand' : 'muted', pressed: st.theme === k ? 'true' : 'false',
+      pick: () => this.setState({ theme: k }),
+      style: 'flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:0;border-radius:9px;font:600 14px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (st.theme === k ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') }));
+    const alertOn = view === 'audit-alert';
+    const dlgKey = e => {
+      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); this.closeSheet(); }
+      else if (e.key === 'Tab') {
+        const fs = e.currentTarget && e.currentTarget.querySelectorAll ? [...e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')] : [];
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement;
+        if (e.shiftKey && (at === first || at === e.currentTarget || !fs.includes(at))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !fs.includes(at))) { e.preventDefault(); first.focus(); }
+      }
+    };
+    const monthWord = mlabel;
+    const emptyNextText = 'Next due 1 Dec · Import the November bank statement';
+    return {
+      sheetOn: !!sh, monthSheet: sh === 'month', moreSheet: sh === 'more', sheetTitle: sh === 'month' ? 'Choose a month' : 'More',
+      bellLabel: 'Notifications, ' + (alertOn ? 4 : 3) + ' new',
+      monthLabel: monthWord, monthAria: 'Choose a month. Showing ' + monthWord,
+      prevMonth: () => this.switchTo(st.mi - 1), nextMonth: () => this.switchTo(st.mi + 1), openMonth: () => this.openSheet('month'),
+      prevOff: st.mi <= 0, nextOff: st.mi >= M.length - 1, prevOp: st.mi <= 0 ? '.4' : '1', nextOp: st.mi >= M.length - 1 ? '.4' : '1',
+      notCurrent: mo !== 0, goCurrent: () => this.switchTo(3),
+      auditAlert: alertOn, contentCls: st.mn ? 'sw' + (st.dir > 0 ? 'N' : 'P') + (st.mn % 2 ? 'A' : 'B') : '',
+      tiles, cards, companiesHeading: one ? 'Company' : 'Companies',
+      nextCount: total ? (total > 5 && !st.all ? '5 of ' + total : total + (total === 1 ? ' thing' : ' things')) : '',
+      filterSeg: many && !four, filterSel: four, who, whoSeg, whoOpts, pickWho: e => this.setState({ who: e && e.target ? e.target.value : 'all', all: false, why: null }),
+      errOn: err, retrying: st.retrying, notRetrying: !st.retrying, retryBusy: st.retrying ? 'true' : 'false',
+      retry: () => { if (this.state.retrying) return; this.setState({ retrying: true }); clearTimeout(this._r); this._r = setTimeout(() => this.setState({ retrying: false, fixed: true }), 900); },
+      emptyOn: empty, emptyTitle: view === 'nothing-recent' ? 'Nothing due in the recent months' : !okWho ? 'Nothing for ' + whoLabel(who) : 'All caught up',
+      emptyNext: emptyNextText, rows,
+      moreOn: total > 5, allExpanded: st.all ? 'true' : 'false', allLabel: st.all ? 'Show fewer' : 'Show all ' + total, toggleAll: () => this.setState({ all: !this.state.all }),
+      olderOn: view === 'nothing-recent' || view === 'normal', older,
+      openMore: () => this.openSheet('more'),
+      moreLinks: [['Budget', 'budget'], ['SQL import', 'database'], ['Recurring', 'recurring'], ['Audit trail', 'trail'], ['Backup', 'vault'], ['Setup', 'sliders']].map(([label, glyph]) => ({ label, glyph })),
+      themes, themeNote: themeNotes[st.theme], monthOpts,
+      auditStatus: alertOn ? 'Audit trail needs attention' : 'Audit trail intact', auditGlyph: alertOn ? 'alert' : 'verified', auditTone: alertOn ? 'bad' : 'ok',
+      dimCls: st.closing ? 'dim-out' : 'dim-in', sheetCls: st.closing ? 'sh-out' : 'sh-in',
+      closeSheet: () => this.closeSheet(), dlgKey, onSheetAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishSheet(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

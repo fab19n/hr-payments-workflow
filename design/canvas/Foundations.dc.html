@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Foundations · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+/* motion and focus base */
+button,.hs{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hs:hover{background:#F0F3F8 !important}
+.hg:hover{background:#085C34 !important}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fx:focus-visible{outline-offset:-2px}
+@keyframes menuIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes mvRA{from{opacity:0;transform:translateX(8px)}}
+@keyframes mvRB{from{opacity:0;transform:translateX(8px)}}
+@keyframes mvLA{from{opacity:0;transform:translateX(-8px)}}
+@keyframes mvLB{from{opacity:0;transform:translateX(-8px)}}
+.fo-spin{animation:spin .7s linear infinite}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.mn{transform-origin:top left;animation:menuIn .18s cubic-bezier(.22,1,.36,1) both}
+.mv-ra{animation:mvRA .15s ease-out both}
+.mv-rb{animation:mvRB .15s ease-out both}
+.mv-la{animation:mvLA .15s ease-out both}
+.mv-lb{animation:mvLB .15s ease-out both}
+/* status pills and chips: one system (a glyph and words, five tones) */
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;border:0;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.pl.dn{height:22px}
+.cp{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.cp.miss{background:#FFFFFF;color:#934100;border:1px dashed #E3A646}
+.tg{cursor:pointer}
+.tg:hover{filter:brightness(.95)}
+.dbtn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 10px;border-radius:8px;border:1px solid #D5DBE4;background:#F7F8FA;color:#5F6C80;font:600 13px Inter,sans-serif;cursor:pointer;box-sizing:border-box}
+/* shell: company button, switcher menu rows, count badges, Overview cards, markers */
+.sh{margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F6C80}
+.sub{color:#5F6C80;font-size:12px}
+.cd{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.cb{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:20px;height:20px;padding:0 7px;border-radius:99px;box-sizing:border-box;font:700 11px Inter,sans-serif;background:#EAF0FD;color:#2450B8}
+.cb.red{background:#C7372B;color:#FFFFFF}
+.cb.grey{background:#EEF1F5;color:#46546A}
+.sw{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 10px 0 12px;border-radius:10px;border:1px solid #7B8798;background:#FFFFFF;color:#0F1A2B;font:600 14px Inter,sans-serif;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.sw:hover{background:#F0F3F8}
+.mi{display:flex;align-items:center;gap:10px;width:100%;min-height:48px;padding:8px 12px;border:0;border-radius:8px;background:transparent;font:400 13px Inter,sans-serif;color:#0F1A2B;text-align:left;cursor:pointer;box-sizing:border-box}
+.mi:hover{background:#F0F3F8}
+.mi[aria-current="true"]{background:#EAF0FD}
+.mi:focus-visible{outline-offset:-2px}
+.ovc{display:flex;flex-direction:column;gap:10px;width:100%;text-align:left;background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:14px 16px;font:inherit;color:inherit;cursor:pointer;box-sizing:border-box}
+.ovc:hover{background:#F7F8FA;border-color:#C9D2E0}
+.ovc:focus-visible{outline-offset:-2px}
+/* calm cards (Payments, Accounting, HR): title, one headline, one note, a line per company, one link and an info tip */
+.ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:16px;align-items:stretch}
+.ovc.cm{gap:12px;height:100%}
+.ovt{display:flex;align-items:center;gap:8px;min-width:0}
+.ovtt{margin:0;flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tday{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:99px;background:#EEF1F5;color:#46546A;font:500 12px Inter,sans-serif}
+.ovb{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ovh{font-size:20px;font-weight:500;line-height:28px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ove{font-size:14px;line-height:20px;color:#46546A}
+.ovw{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#934100;white-space:nowrap}
+.ovk{display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid #EEF1F5}
+.ovr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;white-space:nowrap}
+.ovco{font-size:12px;font-weight:600;color:#46546A}
+.ovf{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
+.ovo{display:inline-flex;align-items:center;gap:4px;min-height:32px;font-size:13px;font-weight:600;color:#2450B8;text-decoration:none}
+.ovo:hover{color:#1D419A;text-decoration:underline}
+.ovo::after{content:"";position:absolute;inset:0;border-radius:16px}
+.ovo:focus-visible{outline:none}
+.ovo:focus-visible::after{outline:2px solid #2450B8;outline-offset:-2px}
+.tip{position:relative;z-index:1;flex:none;margin-right:-6px}
+.tipb{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:8px;background:transparent;cursor:pointer;transition:background-color .12s ease-out}
+.tipb:hover{background:#EEF1F5}
+.tt{position:absolute;right:0;bottom:calc(100% + 4px);z-index:6;width:240px;box-sizing:border-box;padding:10px 12px;border-radius:10px;background:#0F1A2B;color:#FFFFFF;font:400 12px/1.45 Inter,sans-serif;white-space:normal;text-align:left;box-shadow:0 10px 28px rgba(13,27,46,.22);opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .18s cubic-bezier(.22,1,.36,1),transform .18s cubic-bezier(.22,1,.36,1),visibility 0s linear .18s}
+.tip:hover .tt,.tipb:focus+.tt,.tt.on{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.tt.off{opacity:0 !important;visibility:hidden !important}
+.ovc.cm{position:relative;cursor:default}
+.sv{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;background:#0F1A2B;color:#FFFFFF;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ic-mask{font:600 13px ui-monospace,Consolas,monospace;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.tb3{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;height:64px;border:0;background:transparent;font:600 12px Inter,sans-serif;color:#46546A;cursor:pointer;position:relative}
+.tb3[aria-current="page"]{color:#2450B8}
+.tb3[aria-current="page"]::before{content:"";position:absolute;left:24px;right:24px;top:0;height:3px;border-radius:0 0 3px 3px;background:#2450B8}
+.tb3:focus-visible{outline-offset:-2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* inline result blocks */
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#F0FBF5;border-color:#BFE8D0;color:#0F1A2B}.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}
+/* scroll examples */
+.scr{overflow:auto;border:1px solid #D5DBE4;border-radius:12px;background:#FFFFFF;height:320px;box-sizing:border-box}
+.fo-d{position:absolute;display:flex;align-items:center;justify-content:center;box-sizing:border-box;font:600 12px Inter,sans-serif;color:#0F1A2B}
+/* live motion demos: each Play mounts a fresh element, so the animation runs again */
+@keyframes fo-fast{from{background-color:#FFFFFF;border-color:#D5DBE4;color:#0F1A2B}}
+@keyframes fo-prog{from{background-size:20% 100%}}
+.fo-fast{left:50%;top:50%;width:76px;height:32px;margin:-16px 0 0 -38px;border-radius:9px;border:1px solid #2450B8;background:#EAF0FD;color:#2450B8;animation:fo-fast .12s ease-out both}
+.fo-base{right:10px;top:8px;width:84px;height:46px;border-radius:9px;background:#FFFFFF;border:1px solid #E3E7ED;box-shadow:0 6px 16px rgba(13,27,46,.12);transform-origin:top right;animation:menuIn .18s cubic-bezier(.22,1,.36,1) both}
+.fo-enter,.fo-exit{left:50%;top:50%;width:96px;height:44px;margin:-22px 0 0 -48px;border-radius:10px;background:#FFFFFF;box-shadow:0 10px 24px rgba(13,27,46,.16)}
+.fo-enter{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.fo-exit{animation:popOut .18s cubic-bezier(.4,0,1,1) .6s both}
+.fo-dim{inset:0;background:rgba(13,27,46,.45);animation:dimIn .2s ease-out both,dimOut .15s ease-in 1s forwards}
+.fo-prog{left:14px;right:14px;top:28px;height:8px;border-radius:99px;background:linear-gradient(#2450B8,#2450B8) left/72% 100% no-repeat,#E3E7ED;animation:fo-prog .32s cubic-bezier(.2,0,0,1) both}
+.fo-flash{left:10px;right:10px;top:12px;height:40px;padding:0 10px;justify-content:flex-start;border-radius:8px;background:#FFFFFF;border:1px solid #E3E7ED;animation:flashA .9s ease-out}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="width: 1440px; min-height: 12900px; box-sizing: border-box; padding: 48px 56px; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; display: flex; flex-direction: column; gap: 40px">
+  <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #2450B8">HR Payments · design language</span>
+      <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 40px; font-weight: 600; letter-spacing: -.01em">Foundations</h1>
+    </div>
+    <p style="margin: 0; max-width: 560px; color: #46546A">Quiet surfaces, one cobalt accent, and status colours that always pair a tint with a darker ink. Icons are drawn for this product: a light fill plate under a 1.7 px outline, so every glyph reads in two tones. Today on every board is Wednesday 18 November 2026; the month being worked is October 2026.</p>
+  </div>
+
+  <div style="display: flex; gap: 32px">
+    <section style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Colour</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{swatches}}" as="s" hint-placeholder-count="18">
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden"><div style="{{s.chip}}"></div><div style="padding: 8px 10px"><b style="font-size: 12px">{{s.name}}</b><div style="color: #5F6C80; font-size: 11px; font-family: ui-monospace, Consolas, monospace">{{s.hex}}</div></div></div>
+        </sc-for>
+      </div>
+    </section>
+    <section style="width: 420px; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Type</h2>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 32px; font-weight: 600">October 2026 cycle</span><span style="color: #5F6C80; font-size: 11px">Display 32</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Audit pack</span><span style="color: #5F6C80; font-size: 11px">Page title 30 · every page</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Next up</span><span style="color: #5F6C80; font-size: 11px">Heading 18</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 14px">Upload the bill for October.</span><span style="color: #5F6C80; font-size: 11px">Body 14</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">RM 48,600.00</span><span style="color: #5F6C80; font-size: 11px">Figures · tabular</span></div>
+        <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Payroll month</span><span style="color: #5F6C80; font-size: 11px">Eyebrow 12</span></div>
+      </div>
+    </section>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Size scale</h2><span style="color: #5F6C80; font-size: 12px">One size for each job. A board that needs another size is wrong, not special.</span></div>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div style="flex: 1.5; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 6px 18px; display: flex; flex-direction: column">
+        <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid #EEF1F5">
+          <div><b style="font-size: 14px">Compact · 32 px · radius 8</b><div style="color: #5F6C80; font-size: 12px">Small buttons, segmented control, icon buttons in dense rows, menu items.</div></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <button type="button" class="hs" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Reopen</button>
+            <button type="button" class="hs" aria-label="More actions" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="more" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid #EEF1F5">
+          <div><b style="font-size: 14px">Default · 40 px · radius 10</b><div style="color: #5F6C80; font-size: 12px">Buttons, fields, selects, tabs, Setup menu rows. The page's one primary action.</div></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <button type="button" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif">Add a payment</button>
+            <button type="button" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif">Recurring</button>
+            <button type="button" aria-label="Close" style="width: 40px; height: 40px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid #EEF1F5">
+          <div><b style="font-size: 14px">Touch · 44 px</b><div style="color: #5F6C80; font-size: 12px">Every control on a phone. On a computer, only the single month-end action. Its hover is a darker green, never blue.</div></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <button type="button" class="hg" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: #0A6B3D; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="verified" tone="white" size="18" hint-size="18px,18px"></dc-import>Yes, mark month as filed</button>
+            <span style="font-size: 12px; color: #5F6C80">Hover me: #0A6B3D to #085C34</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid #EEF1F5">
+          <div><b style="font-size: 14px">Status pill and chip · 24 px</b><div style="color: #5F6C80; font-size: 12px">22 px inside dense table rows. Pills are fully round; chips are radius 8.</div></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <span class="pl ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Complete</span>
+            <span class="pl dn warn"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>Due in 2 days</span>
+            <span class="cp ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Bank slip</span>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid #EEF1F5">
+          <div><b style="font-size: 14px">Radii · 8, 10, 16 (and round)</b><div style="color: #5F6C80; font-size: 12px">8 compact controls and chips. 10 default controls and fields. 16 cards, dialogs, popovers. Round for pills. A 20 px tick box uses 6.</div></div>
+          <div style="display: flex; gap: 10px; align-items: center"><span style="width: 56px; height: 40px; border-radius: 8px; background: #EAF0FD; border: 1px solid #C9D7F7"></span><span style="width: 56px; height: 40px; border-radius: 10px; background: #EAF0FD; border: 1px solid #C9D7F7"></span><span style="width: 56px; height: 40px; border-radius: 16px; background: #EAF0FD; border: 1px solid #C9D7F7"></span><span style="width: 56px; height: 24px; border-radius: 99px; background: #EAF0FD; border: 1px solid #C9D7F7"></span></div>
+        </div>
+        <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; align-items: center; padding: 14px 0">
+          <div><b style="font-size: 14px">Minimums</b><div style="color: #5F6C80; font-size: 12px">32 px on a computer, 44 px on a phone, for every tap or click target, including tabs, chips that act, month arrows and tick boxes. A smaller picture gets a larger hit area.</div></div>
+          <div style="display: flex; gap: 14px; align-items: center"><span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; border: 1px dashed #7B8798"><span style="width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #7B8798; background: #FFFFFF"></span></span><span style="font-size: 12px; color: #5F6C80">A 20 px tick box sits in a 44 px target. Dashed line = the tappable area.</span></div>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><b style="font-size: 13px">Segmented control · 32 px, radius 8</b><span style="color: #5F6C80; font-size: 11px; font-family: ui-monospace, Consolas, monospace">thumb 180 ms</span></div>
+          <sc-for list="{{segs}}" as="g" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 12px; font-weight: 600; color: #46546A">{{g.label}}</span>
+              <div role="group" aria-label="{{g.aria}}" style="position: relative; display: inline-flex; align-self: flex-start; height: 32px; padding: 2px; border-radius: 8px; background: #E9ECF1; box-sizing: border-box">
+                <span aria-hidden="true" style="{{g.thumb}}"></span>
+                <sc-for list="{{g.opts}}" as="o" hint-placeholder-count="3">
+                  <button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}"><sc-if value="{{o.hasGlyph}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="{{o.glyph}}" tone="muted" size="16" hint-size="16px,16px"></dc-import></sc-if>{{o.text}}</button>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="{{themeCard}}">
+            <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="{{themeGlyph}}" tone="{{themeTone}}" size="20" hint-size="20px,20px"></dc-import><b style="font-size: 13px">{{themeTitle}}</b></div>
+            <div style="{{themeSub}}">Colours cross-fade over 200 ms. Auto follows Windows; this preview shows light.</div>
+          </div>
+          <span style="font-size: 12px; color: #5F6C80">The chosen option is always visible, as words as well as position. Under reduced motion the thumb jumps. The theme control lives in a small menu from the user row in the sidebar and shows the current choice there.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Form controls · every state</h2><span style="color: #5F6C80; font-size: 12px">Drawn once here; every board uses these. Control borders are #7B8798 (3.6:1 on white); text-only buttons keep the lighter line.</span></div>
+    <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; overflow: hidden">
+      <div style="display: grid; grid-template-columns: 140px repeat(6, minmax(0, 1fr)); gap: 14px; align-items: center; padding: 4px 0 8px; border-bottom: 1px solid #EEF1F5">
+        <span></span>
+        <sc-for list="{{cols}}" as="h" hint-placeholder-count="6"><b style="font-size: 12px; color: #5F6C80; text-transform: uppercase; letter-spacing: .06em">{{h.name}}</b></sc-for>
+      </div>
+      <sc-for list="{{matrix}}" as="r" hint-placeholder-count="10">
+        <div style="display: grid; grid-template-columns: 140px repeat(6, minmax(0, 1fr)); gap: 14px; align-items: center; padding: 8px 0; border-bottom: 1px solid #F3F5F8">
+          <b style="font-size: 13px">{{r.name}}</b>
+          <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="6">
+            <div style="min-width: 0; min-height: 40px; display: flex; align-items: center">
+              <sc-if value="{{c.na}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #8793A6">Not used</span></sc-if>
+              <sc-if value="{{c.on}}" hint-placeholder-val="{{ true }}">
+                <div style="{{c.wrap}}"><div style="{{c.style}}">
+                  <sc-if value="{{c.hasBox}}" hint-placeholder-val="{{ false }}"><span style="{{c.boxStyle}}"><sc-if value="{{c.hasTick}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="check" tone="white" size="14" hint-size="14px,14px"></dc-import></sc-if></span></sc-if>
+                  <sc-if value="{{c.hasLead}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="{{c.lead}}" tone="{{c.leadTone}}" size="16" hint-size="16px,16px"></dc-import></sc-if>
+                  <sc-if value="{{c.hasSpin}}" hint-placeholder-val="{{ false }}"><span class="fo-spin" aria-hidden="true" style="{{c.spin}}"></span></sc-if>
+                  <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{c.text}}</span>
+                  <sc-if value="{{c.hasTrail}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; display: inline-flex"><dc-import name="Icon" glyph="chevronDown" tone="muted" size="16" hint-size="16px,16px"></dc-import></span></sc-if>
+                </div></div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; padding-top: 10px; font-size: 12px; color: #5F6C80">
+        <span>Hover never moves or resizes anything.</span><span>Focus is the ring, on keyboard use only.</span><span>Disabled is paler and not clickable; when it matters, a line beside it says why.</span><span>Busy keeps the size, shows a spinner and a verb, and can't be pressed twice.</span><span>A selected tab or option is cobalt text with a 2 px underline or a white thumb.</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Two-tone icons · 80 glyphs</h2><span style="color: #5F6C80; font-size: 12px">One component: glyph, tone, size. Text characters never stand in for an icon.</span></div>
+    <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px; display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 4px">
+      <sc-for list="{{icons}}" as="ic" hint-placeholder-count="80">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px"><dc-import name="Icon" glyph="{{ic}}" tone="brand" size="26" hint-size="26px,26px"></dc-import><span style="font-size: 10px; color: #5F6C80; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{ic}}</span></div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div style="flex: 1.4; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+        <b style="font-size: 13px">Glyphs added, and where they go (the first 12 are new for HR, Payments and Accounting)</b>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 20px">
+          <sc-for list="{{newGlyphs}}" as="n" hint-placeholder-count="36">
+            <div style="display: flex; gap: 10px; align-items: center"><span style="width: 36px; height: 36px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{n.glyph}}" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><div style="min-width: 0"><b style="font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{n.glyph}}</b><div style="font-size: 12px; color: #46546A">{{n.use}}</div></div></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+          <b style="font-size: 13px">Text characters replaced</b>
+          <sc-for list="{{swaps}}" as="w" hint-placeholder-count="6">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #46546A"><span style="width: 56px; font-family: ui-monospace, Consolas, monospace; color: #8793A6; text-decoration: line-through">{{w.was}}</span><dc-import name="Icon" glyph="arrow" tone="muted" size="16" hint-size="16px,16px"></dc-import><dc-import name="Icon" glyph="{{w.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{w.where}}</span></div>
+          </sc-for>
+          <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: #46546A"><span class="fo-spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid #D6E2FB; border-top-color: #2450B8; margin: 0 20px 0 4px"></span><span>Spinner: drawn in CSS, 16 px, 700 ms, for busy buttons and fields.</span></div>
+        </div>
+        <div style="background: #FFFBF2; border: 1px solid #F3D9A6; border-radius: 14px; padding: 12px 16px; font-size: 12px; color: #5C3100"><b>Still to draw in Icon.dc.html:</b> <span style="font-family: ui-monospace, Consolas, monospace">minus</span> (number steppers), <span style="font-family: ui-monospace, Consolas, monospace">info</span> (neutral notes), and a separate glyph for statutory payments, so <span style="font-family: ui-monospace, Consolas, monospace">vault</span> means Backup only.</div>
+      </div>
+    </div>
+  </section>
+
+  <div style="display: flex; gap: 32px">
+    <section style="flex: 1; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Icon tones</h2>
+      <div style="display: flex; gap: 10px">
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="bank" tone="brand" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 11px; color: #5F6C80">brand</span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="check" tone="ok" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 11px; color: #5F6C80">ok</span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="clock" tone="warn" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 11px; color: #5F6C80">warn</span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="alert" tone="bad" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 11px; color: #5F6C80">bad</span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="document" tone="muted" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 11px; color: #5F6C80">muted</span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: #0D1B2E"><dc-import name="Icon" glyph="trail" tone="nav" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 11px; color: #A7B6CD">nav</span></div>
+        <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; border-radius: 12px; background: #1E3256"><dc-import name="Icon" glyph="trail" tone="navOn" size="28" hint-size="28px,28px"></dc-import><span style="font-size: 11px; color: #D6E2FB">navOn</span></div>
+      </div>
+    </section>
+    <section style="flex: 1.3; display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Components</h2>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+          <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Primary</button>
+          <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif"><dc-import name="Icon" glyph="refresh" tone="brand" size="18" hint-size="18px,18px"></dc-import>Secondary</button>
+          <button type="button" style="height: 40px; padding: 0 12px; border-radius: 10px; border: 0; background: transparent; color: #B0190F; font: 600 14px Inter, sans-serif">Danger</button>
+          <button type="button" class="hg" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #0A6B3D; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>Confirm</button>
+          <button type="button" disabled style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #9AAAC6; color: #FFFFFF; font: 600 14px Inter, sans-serif">Disabled</button>
+          <button type="button" disabled aria-busy="true" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 128px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: progress"><span class="fo-spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Saving…</button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <span class="pl ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Complete</span>
+          <span class="pl warn"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>Paid, documents missing</span>
+          <span class="pl bad"><dc-import name="Icon" glyph="alert" tone="bad" size="14" hint-size="14px,14px"></dc-import>Not on Oct statement</span>
+          <span class="pl mute"><dc-import name="Icon" glyph="clock" tone="muted" size="14" hint-size="14px,14px"></dc-import>Not paid</span>
+          <span class="pl info"><dc-import name="Icon" glyph="payment" tone="brand" size="14" hint-size="14px,14px"></dc-import>Open</span>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px">
+          <span class="cp ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Bank slip</span>
+          <span class="cp miss"><dc-import name="Icon" glyph="plus" tone="warn" size="14" hint-size="14px,14px"></dc-import>Invoice</span>
+          <span class="cp mute"><dc-import name="Icon" glyph="link" tone="muted" size="14" hint-size="14px,14px"></dc-import>PV2610-014</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Status chips · one system</h2><span style="color: #5F6C80; font-size: 12px">A status is always a glyph and words in one of five tones, so colour is never the only signal. The same chips serve payments, documents and SQL files.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div style="width: 400px; flex: none; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: grid; grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr); gap: 10px 8px; align-items: center; font-size: 12px; color: #5F6C80"><span></span><b>Pill (a state)</b><b>Chip (a thing)</b></div>
+        <sc-for list="{{tones}}" as="t" hint-placeholder-count="5">
+          <div style="display: grid; grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr); gap: 10px 8px; align-items: center">
+            <span style="font-size: 12px; font-weight: 600; color: #46546A">{{t.name}}</span>
+            <span><span class="{{t.pill}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.gt}}" size="14" hint-size="14px,14px"></dc-import>{{t.pillText}}</span></span>
+            <span><span class="{{t.chip}}"><dc-import name="Icon" glyph="{{t.cglyph}}" tone="{{t.gt}}" size="14" hint-size="14px,14px"></dc-import>{{t.chipText}}</span></span>
+          </div>
+        </sc-for>
+        <div style="font-size: 12px; color: #5F6C80">Green means done and bears itself out. Amber means something is still needed, or needs a look. Red means something is wrong. Cobalt means open or in progress. Grey means nothing to do, or not applicable.</div>
+      </div>
+      <div style="flex: 1; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px 18px; display: flex; flex-direction: column; gap: 4px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 6px"><b style="font-size: 13px">What a fetched SQL file can be</b><span style="font-size: 12px; color: #5F6C80">Status, the reason the app gives, and what to do</span></div>
+        <sc-for list="{{files}}" as="f" hint-placeholder-count="9">
+          <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 190px; gap: 14px; align-items: start; padding: 9px 0; border-top: 1px solid #EEF1F5">
+            <span><span class="{{f.chip}}"><dc-import name="Icon" glyph="{{f.glyph}}" tone="{{f.gt}}" size="14" hint-size="14px,14px"></dc-import>{{f.label}}</span></span>
+            <span style="font-size: 12px; color: #46546A">{{f.reason}}</span>
+            <span style="font-size: 12px; font-weight: 600; color: #0F1A2B">{{f.action}}</span>
+          </div>
+        </sc-for>
+        <div style="display: flex; gap: 10px; align-items: flex-start; margin-top: 8px; padding: 10px 12px; border-radius: 10px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 12px; color: #5C3100"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>Note for the build.</b> The app's “unreadable” covers three different cases: the file is locked, it is a listing type not read yet, or the listing doesn't add up. They need different advice, so the server should send a finer status (or the chip keys off the reason text). One “Couldn't read” chip would mislabel a perfectly readable Journal or Cash Book listing.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <section style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Why note · a status you can ask about</h2></div>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+        <p style="margin: 0; font-size: 13px; color: #46546A">Meaning that used to hide in a mouse-over tooltip is a real button. Tap, or press Enter or Space, and a short note opens; Escape or a tap elsewhere closes it. Where there is room, as in the payment dialog header, the reason is printed under the status instead.</p>
+        <sc-if value="{{whyOpen}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" onClick="{{closeWhy}}" style="position: fixed; inset: 0; z-index: 4"></div></sc-if>
+        <sc-for list="{{whys}}" as="w" hint-placeholder-count="4">
+          <div onKeyDown="{{w.key}}" style="position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; z-index: 5">
+            <span style="width: 150px; font-size: 12px; color: #5F6C80">{{w.where}}</span>
+            <button type="button" id="{{w.btnId}}" class="{{w.cls}}" aria-expanded="{{w.open}}" aria-describedby="{{w.noteId}}" aria-disabled="{{w.dis}}" onClick="{{w.toggle}}"><dc-import name="Icon" glyph="{{w.glyph}}" tone="{{w.gt}}" size="14" hint-size="14px,14px"></dc-import>{{w.label}}<dc-import name="Icon" glyph="help" tone="{{w.gt}}" size="14" hint-size="14px,14px"></dc-import></button>
+            <sc-if value="{{w.isOpen}}" hint-placeholder-val="{{ false }}"><div id="{{w.noteId}}" role="note" class="mn" style="position: absolute; left: 162px; top: 100%; margin-top: 6px; width: 340px; max-width: calc(100vw - 80px); padding: 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22); font-size: 13px; z-index: 6"><b style="display: block; font-size: 12px; color: #B8C4D6; margin-bottom: 2px">Why?</b>{{w.note}}</div></sc-if>
+            <sc-if value="{{w.notOpen}}" hint-placeholder-val="{{ true }}"><span id="{{w.noteId}}" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{w.note}}</span></sc-if>
+          </div>
+        </sc-for>
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; margin-top: 6px">
+          <span class="pl warn" style="flex: none"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>Waiting for SQL record</span>
+          <span style="font-size: 13px; color: #46546A">Where the room exists, the reason is a line under the status: SQL Account has no voucher for this payment yet.</span>
+        </div>
+      </div>
+    </section>
+
+    <section style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">A button that is working, and a result that stays</h2></div>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+        <p style="margin: 0; font-size: 13px; color: #46546A">A long action takes its button: a spinner and a verb, same width, not clickable. Its outcome is a result block under the action in one of three tones. It stays until the next run replaces it, so what needs reading is never lost to a toast.</p>
+        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+          <button type="button" id="fo-chk" class="hs" onClick="{{runChk}}" disabled="{{chkBusy}}" aria-busy="{{chkAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 176px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">
+            <sc-if value="{{chkBusy}}" hint-placeholder-val="{{ false }}"><span class="fo-spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid #D6E2FB; border-top-color: #2450B8"></span>Checking…</sc-if>
+            <sc-if value="{{chkIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Check the audit trail</sc-if>
+          </button>
+          <span style="font-size: 12px; color: #5F6C80">Run it twice: the demo alternates done and failed.</span>
+        </div>
+        <div aria-live="polite" style="display: flex; flex-direction: column; gap: 8px; min-height: 8px">
+          <sc-if value="{{chkDone}}" hint-placeholder-val="{{ false }}"><div class="rb ok rv"><dc-import name="Icon" glyph="verified" tone="ok" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #0A6B3D">Audit trail intact</b><div style="color: #46546A">All 1,284 entries check out, and all 312 records match the trail. Check code 7F3A-92C1.</div></div></div></sc-if>
+          <sc-if value="{{chkBad}}" hint-placeholder-val="{{ false }}"><div role="alert" class="rb bad rv"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #B0190F">Problems found.</b><div style="color: #46546A">Records that differ are listed under Changes made outside this app.</div></div></div></sc-if>
+        </div>
+        <div class="rb bad" role="alert"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #B0190F">Audit pack · failed</b><div style="color: #46546A">The pack wasn't built: invoice-oct.pdf is missing from the records folder.</div></div></div>
+        <div class="rb warn"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #934100">Auditor package · built with a warning</b><div style="color: #46546A">Auditor package built (212 files, 3 left out because they changed or are missing): AISB-auditor-2026-10.zip. It also built a fresh audit pack, and it is in the exports folder on this PC.</div></div></div>
+        <div class="rb warn"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #934100">Backup · made, not copied</b><div style="color: #46546A">The backup was made on this PC, but the backup folder isn't reachable, so there is no second copy yet.</div></div></div>
+        <div class="rb ok"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #0A6B3D">SQL fetch · done</b><div style="color: #46546A">1 listing read from D:\SQL exports: 14 documents, 9 new, 5 already imported.</div></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <section style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Dates and money</h2><span style="color: #5F6C80; font-size: 12px">One rule each, used everywhere: boards, toasts, the trail, the search.</span></div>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+        <p style="margin: 0; font-size: 13px; color: #46546A"><b style="color: #0F1A2B">Count days only inside one week either side of today.</b> Further out, show the date. Always give the exact date on hover, or on tap (it opens a why note). Shown here as on Wednesday 18 November 2026.</p>
+        <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1.4fr); gap: 6px 12px; align-items: center; font-size: 12px; color: #5F6C80"><b>Due date</b><b>Shown as</b><b>Exact date, on hover</b></div>
+        <sc-for list="{{dates}}" as="d" hint-placeholder-count="8">
+          <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr) minmax(0, 1.4fr); gap: 6px 12px; align-items: center; padding-top: 6px; border-top: 1px solid #EEF1F5"><span style="font-size: 13px; font-variant-numeric: tabular-nums">{{d.due}}</span><span><span class="{{d.cls}}" title="{{d.exact}}">{{d.text}}</span></span><span style="font-size: 12px; color: #46546A">{{d.exact}}</span></div>
+        </sc-for>
+        <div style="font-size: 12px; color: #5F6C80">Other dates: 15 Nov in the current year, 15 Nov 2025 in any other. Page date line: Wednesday 18 November 2026. Months: October 2026. Time: 3:42 pm. A period: 1 to 31 Oct.</div>
+      </div>
+    </section>
+    <section style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+      <div style="height: 22px"></div>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+        <p style="margin: 0; font-size: 13px; color: #46546A"><b style="color: #0F1A2B">Full figures, with cents, in tables, dialogs and statements.</b> Rounded figures only on Overview tiles. Never abbreviated (no k or m), always RM first (except Books report tables, see Accounting figures), thousands with a comma, right-aligned in tabular figures.</p>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px">
+          <div style="border: 1px solid #E3E7ED; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Overview tile</span><span style="font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums">RM 48,600</span><span style="font-size: 12px; color: #5F6C80">Whole ringgit, one decimal never</span></div>
+          <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden; font-size: 13px"><div style="display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #EEF1F5"><span>Water bill</span><span style="font-variant-numeric: tabular-nums">RM 96.00</span></div><div style="display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #EEF1F5"><span>Electricity bill</span><span style="font-variant-numeric: tabular-nums">RM 412.00</span></div><div style="display: flex; justify-content: space-between; padding: 10px 12px; background: #F7F8FA; font-weight: 700"><span>Total</span><span style="font-variant-numeric: tabular-nums">RM 508.00</span></div></div>
+        </div>
+        <div style="font-size: 12px; color: #5F6C80">A table never mixes rounded and exact figures, and a total is exact. Money out and money in sit in their own columns instead of a minus sign.</div>
+      </div>
+    </section>
+  </div>
+
+  <section aria-labelledby="fo-acct-h" style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 id="fo-acct-h" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Accounting figures</h2><span style="color: #5F6C80; font-size: 12px">Books pages only: trial balance, ledger, statements, customers and suppliers, statutory. They follow the app, not the payment tables.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap">
+      <div style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+        <div><b style="color:#0F1A2B">No RM in report tables.</b> The heading or the page says the currency; a figure is just 1,234.56. Payment tables and the Overview keep RM first.</div>
+        <div><b style="color:#0F1A2B">A balance reads x Dr or x Cr.</b> In a statement, a figure the other way round from its group goes in brackets: (103,852.70).</div>
+        <div><b style="color:#0F1A2B">— means not known.</b> For example SQL’s figure when its trial balance has not been fetched. It never means zero.</div>
+        <div><b style="color:#0F1A2B">Blank for zero in a movement column.</b> A nil closing balance is also blank in the trial balance’s Debit and Credit cells. Where one Balance column is shown, as in the ledger and this example, a nil balance is written 0.00, so a blank there is never read as nil.</div>
+        <div style="font-size:12px;color:#5C3100;background:#FFFBF2;border:1px solid #F3D9A6;border-radius:12px;padding:10px 12px"><b>New work.</b> Proposed: one date style in report headings, sentences and ledger rows, 31 Oct, with the year (31 Oct 2025) when it is not the current one. Until that is built the Books boards keep what the app does today: the long form in report headings (Trial balance, 1 October 2026 to 31 October 2026), dd/mm/yyyy in report notes and Excel (as at 31/10/2026), and 31 Oct in some sentences.</div>
+      </div>
+      <div style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden" role="table" aria-label="Example of accounting figures with one Balance column, AISB October 2026">
+        <div role="row" style="display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:8px;padding:10px 12px;background:#F7F8FA;font-size:12px;font-weight:600;color:#46546A"><span role="columnheader">Account</span><span role="columnheader" style="text-align:right">Debit</span><span role="columnheader" style="text-align:right">Credit</span><span role="columnheader" style="text-align:right">Balance</span></div>
+        <div role="row" style="display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:8px;padding:8px 12px;border-top:1px solid #EEF1F5;font-size:13px"><span role="rowheader">310-000 Maybank current</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">47,848.00</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">103,448.00</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">33,618.35 Dr</span></div>
+        <div role="row" style="display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:8px;padding:8px 12px;border-top:1px solid #EEF1F5;font-size:13px"><span role="rowheader">400-000 Trade creditors</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">6,500.00</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">10,836.20</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">5,186.20 Cr</span></div>
+        <div role="row" style="display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:8px;padding:8px 12px;border-top:1px solid #EEF1F5;font-size:13px"><span role="rowheader">420-000 Accruals</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">48,600.00</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">48,600.00</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">0.00</span></div>
+        <div role="row" style="display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:8px;padding:8px 12px;border-top:1px solid #EEF1F5;font-size:13px"><span role="rowheader">430-200 PERKESO payable</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums"></span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">205.00</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">205.00 Cr</span></div>
+        <div role="row" style="display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:8px;padding:8px 12px;border-top:1px solid #EEF1F5;font-size:13px"><span role="rowheader">SQL’s trial balance, not fetched</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">—</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">—</span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums">—</span></div>
+        <div role="row" style="display:grid;grid-template-columns:minmax(0,1.5fr) repeat(3,minmax(0,1fr));gap:8px;padding:8px 12px;border-top:1px solid #EEF1F5;font-size:13px"><span role="rowheader"><b>Net profit or loss</b></span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums"></span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums"></span><span role="cell" style="text-align:right;font-variant-numeric:tabular-nums"><b>(103,852.70)</b></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Waiting and feedback · three rules</h2><span style="color: #5F6C80; font-size: 12px">Between a click and the answer.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: stretch">
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 10px"><span style="width: 36px; height: 36px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="clock" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><b style="font-size: 14px">1 · Changing page: keep, then show</b></div>
+        <div aria-hidden="true" style="position: relative; height: 54px; border-radius: 10px; background: #F5F6F8; overflow: hidden; padding: 10px 12px; box-sizing: border-box">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #5F6C80; font-family: ui-monospace, Consolas, monospace"><span>0</span><span>0.3 s</span><span>answer</span></div>
+          <div style="margin-top: 8px; height: 10px; border-radius: 99px; background: linear-gradient(90deg, #C9D7F7 0 33%, #EEF1F5 33% 100%); border: 1px solid #D5DBE4"></div>
+        </div>
+        <span style="font-size: 13px; color: #46546A">The old page stays, slightly dimmed, for up to about 0.3 s. Only if the answer is later does the grey skeleton appear, so a fast local answer never flashes.</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 10px"><span style="width: 36px; height: 36px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="check" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><b style="font-size: 14px">2 · Ticks show at once</b></div>
+        <div aria-hidden="true" style="display: flex; align-items: center; gap: 8px; height: 54px; padding: 0 12px; border-radius: 10px; background: #F5F6F8; font-size: 12px; color: #46546A"><span class="pl ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Ticked</span><dc-import name="Icon" glyph="arrow" tone="muted" size="16" hint-size="16px,16px"></dc-import><span class="pl bad"><dc-import name="Icon" glyph="alert" tone="bad" size="14" hint-size="14px,14px"></dc-import>Not saved</span></div>
+        <span style="font-size: 13px; color: #46546A">Ticks, links and matches show the new state at once and quietly roll back with a red toast if the save fails. Anything with a confirm waits for the answer.</span>
+      </div>
+      <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: center; gap: 10px"><span style="width: 36px; height: 36px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="edit" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><b style="font-size: 14px">3 · After a save, only that row</b></div>
+        <div style="border: 1px solid #E3E7ED; border-radius: 10px; overflow: hidden; font-size: 13px"><div style="display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #EEF1F5"><span>Water bill</span><span style="font-variant-numeric: tabular-nums">RM 96.00</span></div><div class="{{flashCls}}" style="display: flex; justify-content: space-between; padding: 8px 12px; background: #FFFFFF"><span>Electricity bill</span><span style="font-variant-numeric: tabular-nums">RM {{flashAmt}}</span></div></div>
+        <div style="display: flex; gap: 10px; align-items: center"><button type="button" class="hs" onClick="{{doFlash}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Save a change</button><span style="font-size: 12px; color: #5F6C80">The row flashes for 0.9 s.</span></div>
+        <span style="font-size: 13px; color: #46546A">The page doesn't redraw. The changed row updates and flashes briefly, so the eye keeps its place.</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">What stays pinned when a page scrolls</h2><span style="color: #5F6C80; font-size: 12px">Scroll each box.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">A long page</span>
+        <div style="display: flex; height: 320px; border: 1px solid #D5DBE4; border-radius: 12px; overflow: hidden; background: #FFFFFF">
+          <div style="width: 52px; flex: none; background: #0D1B2E; display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 14px"><dc-import name="Icon" glyph="overview" tone="navOn" size="20" hint-size="20px,20px"></dc-import><dc-import name="Icon" glyph="company" tone="nav" size="20" hint-size="20px,20px"></dc-import><dc-import name="Icon" glyph="bank" tone="nav" size="20" hint-size="20px,20px"></dc-import></div>
+          <div class="scr fx" tabindex="0" role="region" aria-label="Long page example. Scroll to see the top bar, table headings and bulk bar stay in place." style="flex: 1; min-width: 0; border: 0; border-radius: 0; height: auto; position: relative">
+            <div style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 12px; background: #FFFFFF; border-bottom: 1px solid #E3E7ED; font-size: 12px"><b>AISB · October 2026</b><span style="color: #5F6C80">Top bar</span></div>
+            <div style="position: sticky; top: 40px; z-index: 2; display: flex; justify-content: space-between; padding: 8px 12px; background: #F7F8FA; border-bottom: 1px solid #E3E7ED; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80"><span>Payment</span><span>Amount</span></div>
+            <sc-for list="{{longRows}}" as="p" hint-placeholder-count="24">
+              <div style="{{p.style}}"><span>{{p.name}}</span><span style="font-variant-numeric: tabular-nums">{{p.amt}}</span></div>
+            </sc-for>
+            <div style="position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; height: 44px; padding: 0 12px; background: #0F1A2B; color: #FFFFFF; font-size: 12px"><b>3 selected</b><span style="color: #D6E2FB; font-weight: 600">Link to payments · Clear</span></div>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">Top bar with the month, and the sidebar, stay. Table headings and the due-date group headings stay while their rows scroll. With lines selected, a bar with the count and the bulk actions stays at the bottom.</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">A dialog taller than the window</span>
+        <div class="scr fx" tabindex="0" role="region" aria-label="Dialog example. Scroll to see the title and the Save row stay in place." style="position: relative">
+          <div style="position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #FFFFFF; border-bottom: 1px solid #E3E7ED"><b style="font-size: 15px">Electricity bill</b><span style="width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></span></div>
+          <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px">
+            <sc-for list="{{dlgRows}}" as="q" hint-placeholder-count="10">
+              <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 600; color: #46546A">{{q.label}}</span><div style="height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; display: flex; align-items: center; font-size: 13px; box-sizing: border-box">{{q.value}}</div></div>
+            </sc-for>
+          </div>
+          <div style="position: sticky; bottom: 0; z-index: 3; display: flex; justify-content: flex-end; gap: 8px; padding: 10px 16px; background: #FFFFFF; border-top: 1px solid #E3E7ED"><span style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #D5DBE4; font-size: 13px; font-weight: 600">Cancel</span><span style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 8px; background: #2450B8; color: #FFFFFF; font-size: 13px; font-weight: 600">Save changes</span></div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">The dialog's title with its close button, and its Save row, stay while only the middle scrolls. Save never moves off screen.</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; font-weight: 600; color: #5F6C80">A long Setup list</span>
+        <div class="scr fx" tabindex="0" role="region" aria-label="Setup list example. Scroll to see the Setup menu stay beside the list." style="display: flex; align-items: flex-start; position: relative">
+          <div style="position: sticky; top: 0; width: 112px; flex: none; display: flex; flex-direction: column; gap: 2px; padding: 10px 8px"><span style="height: 36px; display: flex; align-items: center; padding: 0 8px; border-radius: 8px; background: #EAF0FD; color: #2450B8; font-size: 12px; font-weight: 600">Accounts</span><span style="height: 36px; display: flex; align-items: center; padding: 0 8px; font-size: 12px; color: #46546A">Companies</span><span style="height: 36px; display: flex; align-items: center; padding: 0 8px; font-size: 12px; color: #46546A">Checklist</span><span style="height: 36px; display: flex; align-items: center; padding: 0 8px; font-size: 12px; color: #46546A">General</span></div>
+          <div style="flex: 1; min-width: 0; border-left: 1px solid #E3E7ED">
+            <sc-for list="{{longRows}}" as="p" hint-placeholder-count="24">
+              <div style="{{p.style}}"><span>{{p.name}}</span><span style="font-variant-numeric: tabular-nums">{{p.amt}}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: #5F6C80">The Setup menu stays beside a long list, so changing section never needs a scroll back up. A row jumped to is not hidden under the top bar.</span>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Addresses and Back · switching month, company and theme</h2><span style="color: #5F6C80; font-size: 12px">Kept as new work: today the page lives only in memory, so Refresh goes back to the Overview and Back leaves the app.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div style="flex: 1; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+        <b style="font-size: 13px">Every page, with its company and month, and every open payment has its own address</b>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{addrs}}" as="a" hint-placeholder-count="7">
+            <div style="display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px; align-items: center; font-size: 12px"><span style="color: #46546A">{{a.what}}</span><span style="font-family: ui-monospace, Consolas, monospace; padding: 6px 10px; border-radius: 8px; background: #F5F6F8; border: 1px solid #E3E7ED; overflow-wrap: anywhere">{{a.url}}</span></div>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+          <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="arrowUp" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Back</b> closes an open dialog first, then returns to the previous page. A dialog with unsaved input asks “Discard your changes?” first.</span></div>
+          <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="refresh" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Refresh</b> keeps you where you were: page, company, month and open payment.</span></div>
+          <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="link" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">A link to a payment</b> opens its month with the dialog showing. The bell, the search and any later reminder email rely on this to land in the right place.</span></div>
+        </div>
+      </div>
+      <div style="flex: 1; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap"><b style="font-size: 13px">Changing month: one worked example</b><span style="font-size: 12px; color: #5F6C80">Content cross-fades 150 ms with an 8 px slide in the direction of travel. Figures swap without counting.</span></div>
+        <div style="display: flex; align-items: center; gap: 4px; align-self: flex-start">
+          <button type="button" class="hs" onClick="{{prevMonth}}" disabled="{{noPrev}}" aria-label="Previous month" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+          <span style="min-width: 150px; text-align: center; font-weight: 600; font-size: 14px" aria-live="polite">{{monthLabel}}</span>
+          <button type="button" class="hs" onClick="{{nextMonth}}" disabled="{{noNext}}" aria-label="Next month" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+        </div>
+        <div style="min-height: 150px; overflow: hidden">
+          <div class="{{monthCls}}" style="display: flex; flex-direction: column; gap: 10px">
+            <sc-if value="{{moFiled}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #F0FBF5; border: 1px solid #BFE8D0"><dc-import name="Icon" glyph="verified" tone="ok" size="22" hint-size="22px,22px"></dc-import><div><b style="color: #0A6B3D">Filed 14 Oct</b><div style="font-size: 12px; color: #46546A">Read-only until reopened.</div></div></div></sc-if>
+            <sc-if value="{{moEmpty}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="calendar" tone="brand" size="22" hint-size="22px,22px"></dc-import><div><b>November 2026 isn't set up yet</b><div style="font-size: 12px; color: #46546A">Setting it up adds the month's recurring payments and checklist.</div></div></div></sc-if>
+            <sc-if value="{{moHas}}" hint-placeholder-val="{{ true }}"><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px"><div style="border: 1px solid #E3E7ED; border-radius: 12px; padding: 10px 12px"><span style="font-size: 12px; color: #5F6C80">Paid</span><div style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">{{moPaid}}</div></div><div style="border: 1px solid #E3E7ED; border-radius: 12px; padding: 10px 12px"><span style="font-size: 12px; color: #5F6C80">Still to pay</span><div style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">{{moLeft}}</div></div></div></sc-if>
+          </div>
+        </div>
+        <div style="font-size: 12px; color: #5F6C80">The month label is a button that opens a list of months (set up, filed, not set up) so year end needs no stepping. On a phone the title opens a company and month sheet with 44 px arrows. A filed or not-set-up month shows its banner or empty state in the page.</div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 12px; color: #46546A"><dc-import name="Icon" glyph="company" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Company switch, one place everywhere:</b> the company button in the top bar, left of the month button (drawn below). It replaces the in-page AISB / AI control, so no page carries its own company control. Pages that belong to no company (Users and access, Setup › Companies) hide it; the address then has no company part.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="sh">Top bar · company switcher, month and the company-kind chip</h2><span class="sub">One company button replaces a menu item per company. It sits left of the month button on every page.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="cd" style="flex: 1.5; min-width: 0">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap"><b style="font-size: 13px">The switcher, live</b><span class="sub">Open it, then use ↓ ↑ Home End and Esc. Change the page or the companies in use to see what is offered.</span></div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 20px">
+          <sc-for list="{{swSegs}}" as="g" hint-placeholder-count="2">
+            <div style="display: flex; align-items: center; gap: 8px"><span class="sub" style="font-weight: 600">{{g.label}}</span>
+              <div role="group" aria-label="{{g.aria}}" style="display: inline-flex; padding: 2px; gap: 2px; border-radius: 10px; background: #EEF1F5">
+                <sc-for list="{{g.opts}}" as="o" hint-placeholder-count="3"><button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.text}}</button></sc-for>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="position: relative; border: 1px solid #E3E7ED; border-radius: 12px; background: #F5F6F8; min-height: 372px">
+          <div style="height: 64px; box-sizing: border-box; padding: 0 14px; display: flex; align-items: center; gap: 10px; background: #FFFFFF; border-bottom: 1px solid #E3E7ED; border-radius: 12px 12px 0 0">
+            <nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; font-size: 13px"><span style="color: #5F6C80">{{swCrumb}}</span><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import><b aria-current="page" style="white-space: nowrap">{{swPage}}</b></nav>
+            <div style="position: relative">
+              <button type="button" id="fo-sw-mb" class="sw" aria-haspopup="menu" aria-expanded="{{swExpanded}}" aria-label="{{swAria}}" onClick="{{swToggle}}" onKeyDown="{{swBtnKey}}"><dc-import name="Icon" glyph="company" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{swText}}</span><dc-import name="Icon" glyph="chevronDown" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+              <sc-if value="{{swOpen}}" hint-placeholder-val="{{ false }}">
+                <div aria-hidden="true" onClick="{{swClose}}" style="position: fixed; inset: 0; z-index: 4"></div>
+                <div id="fo-sw-menu" role="menu" aria-label="Company" class="mn" onKeyDown="{{swKey}}" style="position: absolute; left: 0; top: 46px; z-index: 5; width: 372px; box-sizing: border-box; padding: 6px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E7ED; box-shadow: 0 12px 32px rgba(13,27,46,.16)">
+                  <sc-for list="{{swItems}}" as="it" hint-placeholder-count="5">
+                    <sc-if value="{{it.rule}}" hint-placeholder-val="{{ false }}"><div role="separator" style="height: 1px; background: #EEF1F5; margin: 4px 8px"></div></sc-if>
+                    <button type="button" role="menuitem" tabindex="-1" id="{{it.id}}" class="mi" aria-current="{{it.cur}}" aria-label="{{it.sr}}" onClick="{{it.pick}}">
+                      <sc-if value="{{it.isAdd}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="plus" tone="brand" size="18" hint-size="18px,18px"></dc-import></sc-if>
+                      <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; font-weight: 600">{{it.code}} <span style="font-weight: 400; color: #46546A">{{it.full}}</span></span><sc-if value="{{it.hasKind}}" hint-placeholder-val="{{ true }}"><span style="font-size: 12px; color: #46546A">{{it.kind}}</span></sc-if></span>
+                      <sc-if value="{{it.hasN}}" hint-placeholder-val="{{ true }}"><span class="{{it.cb}}" aria-hidden="true">{{it.next}}</span></sc-if>
+                    </button>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <button type="button" class="sw" aria-haspopup="menu" aria-expanded="false" aria-label="Month, October 2026"><dc-import name="Icon" glyph="calendar" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>October 2026</span><dc-import name="Icon" glyph="chevronDown" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+          </div>
+          <div aria-live="polite" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <span>{{swNote}}</span>
+            <span class="sub">Each row shows the company's code, full name, how its books are kept and its Next up count (blue, or red when one is overdue). Stopped companies (OLD, TEST) are not offered.</span>
+          </div>
+        </div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div class="cd">
+          <b style="font-size: 13px">The company-kind chip</b>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+            <span class="cp info"><dc-import name="Icon" glyph="database" tone="brand" size="14" hint-size="14px,14px"></dc-import>Kept in SQL Account</span>
+            <span class="cp mute"><dc-import name="Icon" glyph="books" tone="muted" size="14" hint-size="14px,14px"></dc-import>Kept here</span>
+          </div>
+          <div style="font-size: 12px; color: #46546A">Only these two labels, on every board, for how a company's books are kept. Differences between companies are settings (Kept in SQL Account or Kept here; Runs payroll in this app), never a fixed code. The chip sits beside a company's code wherever several companies share a page, such as All companies cards and lists.</div>
+        </div>
+        <div class="cd">
+          <b style="font-size: 13px">Rules for the button</b>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="company" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>Reads <b style="color: #0F1A2B">AISB · Kept in SQL Account</b>. 40 px tall, 1 px control border, opens a menu.</span></div>
+            <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="users" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">All companies</b> is first on the Overview, and "All companies (read only)" on HR › Staff. Nowhere else.</span></div>
+            <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="link" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>Switching keeps you on the same page if the company has it. Otherwise you land on that company's Overview with a toast.</span></div>
+            <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="plus" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>With no company yet the button reads <b style="color: #0F1A2B">No company yet</b> and the menu holds "Add your first company".</span></div>
+            <div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="calendar" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>The month button reads <b style="color: #0F1A2B">October 2026</b>, never "October 2026 payroll": payroll is an HR page and only some companies run it here.</span></div>
+          </div>
+          <div role="status" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 12px 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.28)">
+            <dc-import name="Icon" glyph="alert" tone="white" size="20" hint-size="20px,20px"></dc-import>
+            <div style="flex: 1; min-width: 0"><b style="font-size: 13px">SQL import isn't used for AI (Kept here). Showing AI's Overview.</b><div style="font-size: 12px; color: #D6DEEA">The toast after a switch to a company that lacks the page. Also: "Payroll settings aren't used for AI. Showing AI's Overview."</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="sh">Overview cards · anatomy and four states</h2><span class="sub">The Payments, Accounting and HR rows: four cards a row, drawn here at the Overview's width. Shown with Bank. Every card opens its page for the same company and month; one failing card never hides the others.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div style="width: 266px; flex: none; display: flex; flex-direction: column; gap: 6px"><span class="sub" style="font-weight: 600">All companies</span>
+        <div class="ovc cm lk">
+          <div class="ovt"><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: #EAF0FD"><dc-import name="Icon" glyph="bank" tone="brand" size="16" hint-size="16px,16px"></dc-import></span><b class="ovtt">Bank</b></div>
+          <div class="ovb"><b class="ovh">RM 92,326</b><span class="sub ovn">AISB · in RM 55,984 · out RM 106,077</span></div>
+          <div class="ovk"><span class="ovr"><span class="ovco">AISB</span><b style="font-variant-numeric: tabular-nums">RM 92,325.55</b></span><span class="ovr"><span class="ovco">AI</span><b style="font-variant-numeric: tabular-nums">USD 17,480.00</b></span></div>
+          <div class="ovf"><a href="Bank.dc.html" class="ovo">Open bank<span class="vh">, Accounting, Bank and reconciliation</span><span aria-hidden="true">›</span></a><span class="tip" onMouseLeave="{{fcTip.all.reset}}"><button type="button" class="tipb" aria-label="Where the figures come from: Bank" aria-describedby="fo-tip-all" onClick="{{fcTip.all.toggle}}" onKeyDown="{{fcTip.all.key}}" onBlur="{{fcTip.all.reset}}"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import></button><span role="tooltip" id="fo-tip-all" class="{{fcTip.all.cls}}">Balances at the latest statement line; in and out are the month’s bank lines. AISB: Maybank current RM 34,314.15 and Maybank savings RM 58,011.40, statements to 31 Oct. AI: Maybank FCA USD 17,480.00, statement to 30 Oct.</span></span></div>
+        </div>
+      </div>
+      <div class="cd" style="flex: 1; min-width: 0; gap: 8px; padding: 14px 16px">
+        <b style="font-size: 13px">Anatomy, top to bottom</b>
+        <sc-for list="{{anat}}" as="a" hint-placeholder-count="5">
+          <div style="display: flex; gap: 8px; font-size: 12px; color: #46546A"><b style="color: #0F1A2B; flex: none; min-width: 112px">{{a.name}}</b><span>{{a.text}}</span></div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(4, 266px); gap: 14px; align-items: stretch">
+      <div style="display: flex; flex-direction: column; gap: 6px"><span class="sub" style="font-weight: 600">Normal</span>
+        <div class="ovc cm lk" style="height: auto; flex: 1">
+          <div class="ovt"><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: #EAF0FD"><dc-import name="Icon" glyph="bank" tone="brand" size="16" hint-size="16px,16px"></dc-import></span><b class="ovtt">Bank</b></div>
+          <div class="ovb"><b class="ovh">RM 92,326</b><span class="sub ovn">in RM 55,984 · out RM 106,077</span></div>
+          <div class="ovf"><a href="Bank.dc.html" class="ovo">Open bank<span class="vh">, Accounting, Bank and reconciliation</span><span aria-hidden="true">›</span></a><span class="tip" onMouseLeave="{{fcTip.one.reset}}"><button type="button" class="tipb" aria-label="Where the figures come from: Bank" aria-describedby="fo-tip-one" onClick="{{fcTip.one.toggle}}" onKeyDown="{{fcTip.one.key}}" onBlur="{{fcTip.one.reset}}"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import></button><span role="tooltip" id="fo-tip-one" class="{{fcTip.one.cls}}">Balances at the latest statement line; in and out are the month’s bank lines. AISB: Maybank current RM 34,314.15 and Maybank savings RM 58,011.40, statements to 31 Oct.</span></span></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span class="sub" style="font-weight: 600">Empty</span>
+        <div class="ovc cm lk" style="height: auto; flex: 1">
+          <div class="ovt"><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: #EEF1F5"><dc-import name="Icon" glyph="bank" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><b class="ovtt">Bank</b></div>
+          <div class="ovb"><span class="ove">No statement imported for November 2026</span></div>
+          <div class="ovf"><a href="Bank.dc.html" class="ovo">Open bank<span class="vh">, Accounting, Bank and reconciliation</span><span aria-hidden="true">›</span></a><span class="tip" onMouseLeave="{{fcTip.empty.reset}}"><button type="button" class="tipb" aria-label="Where the figures come from: Bank" aria-describedby="fo-tip-empty" onClick="{{fcTip.empty.toggle}}" onKeyDown="{{fcTip.empty.key}}" onBlur="{{fcTip.empty.reset}}"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import></button><span role="tooltip" id="fo-tip-empty" class="{{fcTip.empty.cls}}">Balances at the latest statement line; in and out are the month’s bank lines. Import a statement on Bank and reconciliation.</span></span></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span class="sub" style="font-weight: 600">Out of date</span>
+        <div class="ovc cm lk" style="height: auto; flex: 1">
+          <div class="ovt"><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: #EAF0FD"><dc-import name="Icon" glyph="bank" tone="brand" size="16" hint-size="16px,16px"></dc-import></span><b class="ovtt">Bank</b></div>
+          <div class="ovb"><b class="ovh">RM 92,326</b><span class="sub ovn">in RM 55,984 · out RM 106,077</span></div>
+          <span class="ovw"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>Statement runs to 12 Nov</span>
+          <div class="ovf"><a href="Bank.dc.html" class="ovo">Open bank<span class="vh">, Accounting, Bank and reconciliation</span><span aria-hidden="true">›</span></a><span class="tip" onMouseLeave="{{fcTip.stale.reset}}"><button type="button" class="tipb" aria-label="Where the figures come from: Bank" aria-describedby="fo-tip-stale" onClick="{{fcTip.stale.toggle}}" onKeyDown="{{fcTip.stale.key}}" onBlur="{{fcTip.stale.reset}}"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import></button><span role="tooltip" id="fo-tip-stale" class="{{fcTip.stale.cls}}">Balances at the latest statement line; in and out are the month’s bank lines. AISB: Maybank current RM 34,314.15 and Maybank savings RM 58,011.40. Import the rest of the month on Bank and reconciliation.</span></span></div>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span class="sub" style="font-weight: 600">Could not load</span>
+        <div class="ovc cm" style="height: auto; flex: 1">
+          <div class="ovt"><span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: #FDE6E3"><dc-import name="Icon" glyph="bank" tone="bad" size="16" hint-size="16px,16px"></dc-import></span><b class="ovtt">Bank</b></div>
+          <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+            <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #B0190F; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+            <button type="button" class="hs" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+          </div>
+          <div class="ovf"><span class="sub">The other cards are not affected</span></div>
+        </div>
+      </div>
+    </div>
+      <div class="cd" style="gap: 10px">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap"><b style="font-size: 13px">Counters: a zero turns grey</b><span class="sub">Needs attention for AI. "Not in SQL" is left out because AI is Kept here.</span></div>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+          <sc-for list="{{counters}}" as="c" hint-placeholder-count="4">
+            <button type="button" class="hs" aria-label="{{c.sr}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 10px 12px; border-radius: 12px; border: 1px solid #E3E7ED; background: #FFFFFF; font: inherit; color: inherit; cursor: pointer; text-align: left"><span style="{{c.fig}}">{{c.n}}</span><span style="font-size: 12px; color: #46546A">{{c.label}}</span></button>
+          </sc-for>
+        </div>
+      </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="sh">The Overview privacy rule</h2><span class="sub">A rule for every card now and later. Once logins exist, the HR cards show only to people with the HR right.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="cd" style="flex: 1; min-width: 0">
+        <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="eyeOff" tone="bad" size="20" hint-size="20px,20px"></dc-import><b style="font-size: 14px">Never on the Overview</b></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+          <sc-for list="{{never}}" as="n" hint-placeholder-count="6"><div style="display: flex; gap: 8px"><span aria-hidden="true" style="flex: none; width: 6px; height: 6px; margin-top: 7px; border-radius: 99px; background: #B0190F"></span><span>{{n.text}}</span></div></sc-for>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import><b style="font-size: 14px">Allowed</b></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+          <sc-for list="{{allowed}}" as="n" hint-placeholder-count="3"><div style="display: flex; gap: 8px"><span aria-hidden="true" style="flex: none; width: 6px; height: 6px; margin-top: 7px; border-radius: 99px; background: #0A6B3D"></span><span>{{n.text}}</span></div></sc-for>
+        </div>
+      </div>
+      <div style="flex: 1.4; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+          <button type="button" class="ovc hs">
+            <span style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="leave" tone="brand" size="20" hint-size="20px,20px"></dc-import></span><b style="font-size: 14px; flex: 1">On leave</b></span>
+            <span style="font-size: 13px"><b>Aina</b>, <b>Khadijah</b></span>
+            <span class="sub" style="padding-top: 8px; border-top: 1px solid #EEF1F5">3 this week · the type of leave is never shown</span>
+            <span class="vh">Opens HR, Leave, team calendar</span>
+          </button>
+          <button type="button" class="ovc hs">
+            <span style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 32px; height: 32px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="birthday" tone="brand" size="20" hint-size="20px,20px"></dc-import></span><b style="font-size: 14px; flex: 1">Dates coming up: birthdays and anniversaries</b></span>
+            <span style="display: flex; flex-direction: column; gap: 4px; font-size: 13px"><span style="display: flex; justify-content: space-between"><span>Aina</span><span class="sub">3 Oct · 10 years</span></span><span style="display: flex; justify-content: space-between"><span>Kah Seng</span><span class="sub">12 Oct · birthday</span></span><span style="display: flex; justify-content: space-between"><span>Izzati</span><span class="sub">21 Oct · birthday</span></span></span>
+            <span class="sub" style="padding-top: 8px; border-top: 1px solid #EEF1F5">No age, no year of birth</span>
+            <span class="vh">Opens HR, Calendar and reminders</span>
+          </button>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="access" tone="brand" size="20" hint-size="20px,20px"></dc-import><span><b style="color: #0F1A2B">Without the HR right</b> (Marcus Teoh, outside accountant) the HR row of cards is not drawn at all, not greyed out and not locked. The Overview, Next up and its count then cover only what he may see: 8 rows on AISB.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="sh">Approval marker · six readings</h2><span class="sub">One marker on every payment in the register, and in the dialog. It always says it in words; colour only helps.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="cd" style="flex: 1.6; min-width: 0; padding: 6px 18px; gap: 0">
+        <sc-for list="{{markers}}" as="m" hint-placeholder-count="6">
+          <div style="display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 16px; align-items: center; padding: 12px 0; border-bottom: 1px solid #EEF1F5">
+            <span class="{{m.cls}}" style="justify-self: start"><dc-import name="Icon" glyph="{{m.glyph}}" tone="{{m.tone}}" size="14" hint-size="14px,14px"></dc-import>{{m.text}}</span>
+            <div style="min-width: 0"><b style="font-size: 13px">{{m.name}}</b><div style="font-size: 12px; color: #46546A">{{m.where}}</div></div>
+          </div>
+        </sc-for>
+        <div style="padding: 12px 0; font-size: 12px; color: #46546A"><b style="color: #0F1A2B">Approved after payment</b> stays green and adds "(after payment)": Office rental, paid Fri 30 Oct, form dated 5 Nov. It sits under Approved after payment in the audit pack, not under Paid without approval on file.</div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div class="cd">
+          <b style="font-size: 13px">Request pills</b>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-for list="{{reqPills}}" as="p" hint-placeholder-count="10"><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.text}}</span></sc-for>
+          </div>
+          <div class="sub">A claim, advance, salary run or supplier bill moves left to right. Paid and Part paid follow its payment in the register.</div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+          <div class="cd">
+            <b style="font-size: 13px">Leave pills</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{leavePills}}" as="p" hint-placeholder-count="3"><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.text}}</span></sc-for></div>
+          </div>
+          <div class="cd">
+            <b style="font-size: 13px">Staff pills</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{staffPills}}" as="p" hint-placeholder-count="3"><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.text}}</span></sc-for></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="sh">Overridden and Sensitive markers · masked IC · Payroll check tones</h2><span class="sub">Small markers that tell the reader a figure was changed by hand, or a field is personal data.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div class="cd" style="flex: 1; min-width: 0">
+        <b style="font-size: 13px">Overridden</b>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid #E3E7ED; font-size: 13px"><span>Overtime pay, one payslip<div class="sub">Calculated 120.00, entered 135.00</div></span><span style="display: inline-flex; align-items: center; gap: 10px"><b style="font-variant-numeric: tabular-nums">135.00</b><span class="cp warn"><dc-import name="Icon" glyph="edit" tone="warn" size="14" hint-size="14px,14px"></dc-import>Overridden</span></span></div>
+        <div class="sub">A hand-entered value that differs from what the app works out. It always shows the calculated value, and the audit trail keeps who changed it.</div>
+        <b style="font-size: 13px">Sensitive</b>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid #E3E7ED; font-size: 13px"><span>Race and religion<div class="sub">Optional, with written consent</div></span><span class="sv"><dc-import name="Icon" glyph="lock" tone="white" size="14" hint-size="14px,14px"></dc-import>Sensitive</span></div>
+        <div class="sub">Health and religion need explicit consent. The marker is a solid dark chip so it never reads as a status. Sensitive fields are left out of exports unless chosen.</div>
+      </div>
+      <div class="cd" style="flex: 1; min-width: 0">
+        <b style="font-size: 13px">The masked IC style</b>
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid #E3E7ED; font-size: 13px"><span>IC number</span><span class="ic-mask" aria-label="IC number ending 1234">••••••-••-1234</span></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; border: 1px solid #E3E7ED; font-size: 13px"><span>Passport number</span><span class="ic-mask" aria-label="Passport number ending 1307">••••1307</span></div>
+        </div>
+        <div class="sub">Monospace, tabular, the last four characters only. Every board and the Payroll check always show it masked. The HR staff record PDF is the one place the IC number is shown, marked "Confidential: personal data".</div>
+      </div>
+      <div class="cd" style="flex: 1.3; min-width: 0">
+        <b style="font-size: 13px">Payroll check tones</b>
+        <sc-for list="{{checkTones}}" as="t" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #EEF1F5"><span class="{{t.cls}}" style="flex: none; min-width: 156px"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="14" hint-size="14px,14px"></dc-import>{{t.text}}</span><span style="font-size: 12px; color: #46546A">{{t.where}}</span></div>
+        </sc-for>
+        <div class="rb bad" role="status"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #B0190F">3 things to fix before paying, 2 to check</b><div style="color: #46546A">Example Payroll - NOV 2026.xlsx · checked 18 Nov 09:20 · 10 notes</div></div></div>
+        <div class="rb ok" role="status"><dc-import name="Icon" glyph="verified" tone="ok" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #0A6B3D">Nothing to fix or check</b><div style="color: #46546A">Example Payroll - OCT 2026 (corrected).xlsx · checked 22 Oct 09:40 · 9 notes</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="sh">Print · the A4 sheet, the code block and the signature block</h2><span class="sub">Printed pages are always light, black on white, English, and read the same on a plain printer. Shown at about 70 percent.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div style="width: 560px; flex: none; box-sizing: border-box; height: 792px; padding: 36px 40px; background: #FFFFFF; border: 1px solid #C9D2E0; box-shadow: 0 8px 24px rgba(13,27,46,.12); display: flex; flex-direction: column; gap: 14px; color: #000000; font-size: 11px; position: relative" role="img" aria-label="A4 approval form AF-2611-004 for AISB Sdn Bhd, one request, three approvers, page 1 of 1">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px">
+          <div><div style="font: 600 18px 'Space Grotesk', Inter, sans-serif">Approval form</div><div style="font-size: 11px; color: #333333">AISB Sdn Bhd · printed Mon 16 Nov 2026</div></div>
+          <div style="text-align: right"><div style="font: 700 14px ui-monospace, Consolas, monospace">AF-2611-004</div><div style="font-size: 11px; color: #333333">Check: <b class="mono">T9F-5HRG</b></div></div>
+        </div>
+        <div style="display: flex; gap: 14px; align-items: center; padding: 10px; border: 1px solid #000000">
+          <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(21, 4px); grid-auto-rows: 4px; flex: none; padding: 4px; background: #FFFFFF">
+            <sc-for list="{{qr}}" as="q" hint-placeholder-count="441"><span style="{{q.st}}"></span></sc-for>
+          </div>
+          <div style="font-size: 11px; line-height: 1.5"><b>Scan with the phone to upload the signed form.</b><br>No phone? Open Payments › Approvals, choose Upload, and type the form code and the check <b class="mono">T9F-5HRG</b>. The check is kept apart from the code so a wrong form is caught.</div>
+        </div>
+        <div>
+          <div style="font-weight: 700; margin-bottom: 4px">Requests</div>
+          <div style="display: grid; grid-template-columns: 1fr 90px; border-top: 1px solid #000000; border-bottom: 1px solid #000000"><span style="padding: 6px 0">Consultant fee, Payroll Advisory PLT, PA-1010</span><b style="padding: 6px 0; text-align: right; font-variant-numeric: tabular-nums">3,200.00</b></div>
+          <div style="display: flex; justify-content: space-between; padding: 6px 0"><span>Total</span><b style="font-variant-numeric: tabular-nums">RM 3,200.00</b></div>
+        </div>
+        <div style="font-weight: 600">Any one signature approves this form.</div>
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+          <sc-for list="{{signers}}" as="s" hint-placeholder-count="3">
+            <div style="border: 1px solid #000000; padding: 8px; height: 132px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box"><b style="{{s.nm}}">{{s.name}}</b><span style="{{s.line}}">{{s.note}}</span><span style="font-size: 10px; color: #333333">Signature</span><span style="display: flex; align-items: flex-end; gap: 6px; font-size: 10px; color: #333333">Date<span style="flex: 1; border-bottom: 1px solid #000000; height: 12px"></span></span></div>
+          </sc-for>
+        </div>
+        <div style="margin-top: auto; display: flex; flex-direction: column; gap: 6px; font-size: 10px; color: #333333">
+          <span>Prepared by Aisha Rahman, as declared on this computer (declared, not verified).</span>
+          <span style="display: flex; justify-content: space-between; border-top: 1px solid #333333; padding-top: 6px"><span>AF-2611-004 · T9F-5HRG</span><span>Page 1 of 1</span></span>
+        </div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div class="cd">
+          <b style="font-size: 13px">Rules for every printed page</b>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <sc-for list="{{printRules}}" as="r" hint-placeholder-count="6"><div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="{{r.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">{{r.name}}</b> {{r.text}}</span></div></sc-for>
+          </div>
+        </div>
+        <div class="cd">
+          <b style="font-size: 13px">Signature block, three readings</b>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; font-size: 12px">
+            <sc-for list="{{sigReads}}" as="s" hint-placeholder-count="3">
+              <div style="border: 1px solid #0F1A2B; border-radius: 6px; padding: 8px; display: flex; flex-direction: column; gap: 6px; min-height: 96px; box-sizing: border-box"><b style="{{s.nm}}">{{s.name}}</b><span style="{{s.line}}">{{s.note}}</span><span class="sub" style="margin-top: auto">{{s.hint}}</span></div>
+            </sc-for>
+          </div>
+        </div>
+        <div class="cd">
+          <b style="font-size: 13px">"Declared, not verified" and "Page x of y"</b>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+            <span class="cp mute"><dc-import name="Icon" glyph="person" tone="muted" size="14" hint-size="14px,14px"></dc-import>Declared, not verified</span>
+            <span class="cp mute"><dc-import name="Icon" glyph="document" tone="muted" size="14" hint-size="14px,14px"></dc-import>Page 2 of 2</span>
+          </div>
+          <div class="sub">Until logins exist, "who" is what the person at the keyboard said. Anything printed or approved by a declared name says so. On a screen it is a grey chip; on paper it is the plain words.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 class="sh">Phone · tab bar and switcher sheet</h2><span class="sub">Three tabs, because HR and Accounting pages are best done on a computer. Every control is at least 44 px.</span></div>
+    <div style="display: flex; gap: 24px; align-items: flex-start">
+      <div style="width: 375px; flex: none; height: 680px; position: relative; overflow: hidden; border: 1px solid #C9D2E0; border-radius: 28px; background: #F5F6F8">
+        <div style="padding: 14px 16px 0; display: flex; align-items: center; gap: 8px">
+          <button type="button" class="sw" aria-haspopup="dialog" aria-expanded="false" style="flex: 1; height: 44px; justify-content: space-between"><span>AISB · October 2026</span><dc-import name="Icon" glyph="chevronDown" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+          <button type="button" aria-label="Notifications" class="sw" style="width: 44px; height: 44px; padding: 0; justify-content: center"><dc-import name="Icon" glyph="bell" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+        </div>
+        <div style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+          <h3 style="margin: 0; font: 600 24px 'Space Grotesk', Inter, sans-serif">Overview</h3>
+          <div class="cd" style="gap: 6px; padding: 14px 16px"><span class="sub" style="font-weight: 600">Next up</span><span style="font-size: 14px; font-weight: 600">Consultant fee not on the October statement</span><span class="sub">AISB · Payments register · RM 3,200.00</span><span class="pl bad" style="align-self: flex-start"><dc-import name="Icon" glyph="alert" tone="bad" size="14" hint-size="14px,14px"></dc-import>Overdue 31 Oct</span></div>
+          <div class="cd" style="gap: 6px; padding: 14px 16px"><span class="sub" style="font-weight: 600">Checklist</span><span style="font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums">18 of 27</span></div>
+        </div>
+        <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; display: flex; background: #FFFFFF; border-top: 1px solid #E3E7ED">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+            <button type="button" class="tb3" aria-current="{{t.cur}}" aria-label="{{t.sr}}"><span style="position: relative; display: inline-flex"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="24" hint-size="24px,24px"></dc-import><sc-if value="{{t.hasN}}" hint-placeholder-val="{{ true }}"><span class="cb red" aria-hidden="true" style="position: absolute; left: 14px; top: -6px">{{t.n}}</span></sc-if></span><span>{{t.text}}</span></button>
+          </sc-for>
+        </nav>
+      </div>
+      <div style="width: 375px; flex: none; height: 680px; position: relative; overflow: hidden; border: 1px solid #C9D2E0; border-radius: 28px; background: #F5F6F8">
+        <div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(13,27,46,.45)"></div>
+        <div role="dialog" aria-modal="true" aria-labelledby="fo-ps-title" style="position: absolute; left: 0; right: 0; bottom: 0; box-sizing: border-box; padding: 8px 16px 20px; background: #FFFFFF; border-radius: 20px 20px 0 0; display: flex; flex-direction: column; gap: 4px">
+          <span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 99px; background: #C9D2E0; margin-bottom: 6px"></span>
+          <div style="display: flex; align-items: center; justify-content: space-between"><h3 id="fo-ps-title" tabindex="-1" style="margin: 0; font: 600 18px 'Space Grotesk', Inter, sans-serif">Company and month</h3><button type="button" aria-label="Close" class="hs" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #7B8798; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button></div>
+          <span class="sub" style="font-weight: 600; margin-top: 4px">Company</span>
+          <sc-for list="{{phoneCos}}" as="c" hint-placeholder-count="3">
+            <button type="button" class="mi" aria-current="{{c.cur}}" aria-label="{{c.sr}}" style="min-height: 52px"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 14px">{{c.code}}</b><span class="sub">{{c.sub}}</span></span><span class="{{c.cb}}" aria-hidden="true">{{c.n}}</span><sc-if value="{{c.isCur}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="check" tone="brand" size="20" hint-size="20px,20px"></dc-import></sc-if></button>
+          </sc-for>
+          <span class="sub" style="font-weight: 600; margin-top: 8px">Month</span>
+          <div style="display: flex; align-items: center; gap: 8px">
+            <button type="button" aria-label="Previous month" class="hs" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #7B8798; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+            <span style="flex: 1; text-align: center; font-weight: 600">October 2026</span>
+            <button type="button" aria-label="Next month" class="hs" style="width: 44px; height: 44px; border-radius: 10px; border: 1px solid #7B8798; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+          </div>
+          <span class="sub">Current. Others: November 2026 (set up), September 2026 (still open), August 2026 (before first month).</span>
+        </div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+        <div class="cd">
+          <b style="font-size: 13px">Rules for the phone shell</b>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <sc-for list="{{phoneRules}}" as="r" hint-placeholder-count="5"><div style="display: flex; gap: 8px"><dc-import name="Icon" glyph="{{r.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">{{r.name}}</b> {{r.text}}</span></div></sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Motion · seven tokens</h2><span style="color: #5F6C80; font-size: 12px">Small moves: rise 8 px, menus scale from .96, dialogs come up 12 px. Nothing bounces; only spinners and skeletons loop. Hover a card or press Play.</span></div>
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{motion}}" as="m" hint-placeholder-count="7">
+        <div onMouseEnter="{{m.play}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px"><b style="font-size: 14px">{{m.name}}</b><button type="button" class="hs" onClick="{{m.play}}" aria-label="{{m.playLabel}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Play</button></div>
+          <div style="font: 11px ui-monospace, Consolas, monospace; color: #46546A; white-space: pre-line; overflow-wrap: anywhere">{{m.spec}}</div>
+          <div aria-hidden="true" style="position: relative; height: 64px; border-radius: 10px; background: #F5F6F8; overflow: hidden">
+            <sc-if value="{{m.a}}" hint-placeholder-val="{{ true }}"><div class="{{m.cls}}">{{m.sample}}</div></sc-if>
+            <sc-if value="{{m.b}}" hint-placeholder-val="{{ false }}"><div class="{{m.cls}}">{{m.sample}}</div></sc-if>
+          </div>
+          <span style="font-size: 12px; color: #5F6C80">{{m.where}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="sliders" tone="brand" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px">Reduce motion in the system settings turns every movement into an instant change; nothing is lost.</span></div>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><h2 style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Focus and keyboard</h2><span style="color: #5F6C80; font-size: 12px">The ring shows on keyboard focus only, never after a mouse click. Every control is reached with Tab, in reading order.</span></div>
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <div style="width: 420px; flex: none; display: flex; flex-direction: column; gap: 10px">
+        <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><b style="font-size: 13px">Focus ring</b><span style="color: #5F6C80; font-size: 11px; font-family: ui-monospace, Consolas, monospace">2 px #2450B8 · 2 px gap</span></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+            <span style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; outline: 2px solid #2450B8; outline-offset: 2px">Save</span>
+            <span style="display: inline-flex; align-items: center; height: 36px; padding: 0 4px; border-bottom: 2px solid #2450B8; color: #2450B8; font-weight: 600; outline: 2px solid #2450B8; outline-offset: 2px; border-radius: 2px">Payments</span>
+            <span class="cp miss" style="outline: 2px solid #2450B8; outline-offset: 2px"><dc-import name="Icon" glyph="plus" tone="warn" size="14" hint-size="14px,14px"></dc-import>Invoice</span>
+          </div>
+          <div style="border: 1px solid #E3E7ED; border-radius: 10px; overflow: hidden; font-size: 13px">
+            <div style="display: flex; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #EEF1F5"><span>Water bill</span><span style="font-variant-numeric: tabular-nums">RM 96.00</span></div>
+            <div style="display: flex; justify-content: space-between; padding: 10px 12px; outline: 2px solid #2450B8; outline-offset: -2px"><span>Electricity bill</span><span style="font-variant-numeric: tabular-nums">RM 412.00</span></div>
+          </div>
+          <span style="font-size: 12px; color: #5F6C80">Rows and tabs flush with a clipped edge draw the ring 2 px inside, so it is never cut off. Fields keep their ring on the border.</span>
+        </div>
+        <div style="background: #0D1B2E; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px"><b style="font-size: 13px; color: #FFFFFF">On the sidebar and dark theme</b><span style="color: #A7B6CD; font-size: 11px; font-family: ui-monospace, Consolas, monospace">2 px #8DB0FA</span></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+            <span style="display: inline-flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: 10px; background: #1E3256; color: #FFFFFF; font-weight: 600; outline: 2px solid #8DB0FA; outline-offset: 2px"><dc-import name="Icon" glyph="trail" tone="navOn" size="20" hint-size="20px,20px"></dc-import>Audit trail</span>
+            <span style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; background: #3D6BE0; color: #FFFFFF; font-weight: 600; outline: 2px solid #8DB0FA; outline-offset: 2px">Save</span>
+          </div>
+        </div>
+      </div>
+      <div style="flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+        <sc-for list="{{keymap}}" as="k" hint-placeholder-count="9">
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; gap: 10px"><span style="width: 36px; height: 36px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{k.glyph}}" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><b style="font-size: 14px">{{k.name}}</b></div>
+            <sc-for list="{{k.rows}}" as="r" hint-placeholder-count="3">
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; color: #46546A">
+                <sc-for list="{{r.keys}}" as="kb" hint-placeholder-count="1"><kbd style="display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; box-sizing: border-box; border-radius: 6px; border: 1px solid #D5DBE4; border-bottom-width: 2px; background: #F7F8FA; font: 600 11px Inter, sans-serif; color: #0F1A2B">{{kb}}</kbd></sc-for>
+                <span>{{r.text}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":13340}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { fcTipOn: null, fcTipOff: null, play: {}, seg: { co: 0, fil: 0, th: 0 }, why: null, runs: 0, chkBusy: false, chk: null, flashN: 0, mo: 1, dir: 1, mvN: 0, swOpen: false, swPage: 0, swN: 0, swCo: 'AISB' }; }
+  componentDidUpdate(prevProps, prev) {
+    if (this._focusAfter) { const id = this._focusAfter; this._focusAfter = null; const el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); }
+    if (prev.chkBusy && !this.state.chkBusy) { const el = document.getElementById('fo-chk'); if (el && this._chkFocus) { this._chkFocus = false; el.focus({ preventScroll: true }); } }
+  }
+  componentWillUnmount() { clearTimeout(this._ct); }
+  setSeg(k, i) { this.setState({ seg: { ...this.state.seg, [k]: i } }); }
+  swOpenMenu() { this._focusAfter = 'fo-sw-mi-0'; this.setState({ swOpen: true }); }
+  swCloseMenu(back) { if (back) this._focusAfter = 'fo-sw-mb'; this.setState({ swOpen: false }); }
+  renderVals() {
+    const st = this.state;
+    const M = [
+      ['fast', '120 ms\nease-out', 'Hover, press and focus colour; chevron turn', 'Hover'],
+      ['base', '180 ms\ncubic-bezier(.22,1,.36,1)', 'Menus and popovers opening, disclosure content, tab panel swap, segmented-control thumb, toasts leaving', 'Menu'],
+      ['enter', '240 ms\ncubic-bezier(.22,1,.36,1)', 'Dialogs, sheets, toasts arriving, revealed results', 'Dialog'],
+      ['exit', '180 ms\ncubic-bezier(.4,0,1,1)', 'Dialogs and sheets leaving', 'Dialog'],
+      ['dim', '200 ms in · 150 ms out\nease-out · ease-in', 'The backdrop behind a dialog or sheet', ''],
+      ['progress', '320 ms\ncubic-bezier(.2,0,0,1)', 'Progress bars and rings changing width or angle', ''],
+      ['flash', '900 ms\nease-out', 'A row that just changed, or that a link landed on: cobalt tint fading to its own background', 'Electricity bill']
+    ];
+    const pl = st.play;
+    const motion = M.map(([name, spec, where, sample]) => {
+      const n = pl[name] || 0;
+      return { name, spec, where, sample, cls: 'fo-d fo-' + name, a: n % 2 === 0, b: n % 2 === 1, playLabel: 'Play ' + name,
+        play: () => this.setState({ play: { ...this.state.play, [name]: (this.state.play[name] || 0) + 1 } }) };
+    });
+    const row = (keys, text) => ({ keys, text });
+    const keymap = [
+      { name: 'Dialogs', glyph: 'clipboard', rows: [row(['Esc'], 'closes the top layer: a menu first, then the dialog'), row(['Tab'], 'stays inside the dialog'), row([], 'Focus returns to what opened it')] },
+      { name: 'Confirms', glyph: 'alert', rows: [row([], 'Focus starts on the safe button'), row(['Esc'], 'answers No'), row([], 'Unsaved input asks before it closes')] },
+      { name: 'Menus', glyph: 'more', rows: [row(['↓', '↑'], 'move, wrapping round'), row(['Home', 'End'], 'first and last item'), row(['Esc'], 'closes and returns to the button')] },
+      { name: 'Tabs', glyph: 'sliders', rows: [row(['←', '→'], 'previous and next tab'), row(['Home', 'End'], 'first and last tab'), row([], 'One Tab stop for the whole set')] },
+      { name: 'Segmented control', glyph: 'filter', rows: [row(['Tab'], 'moves between the options'), row(['Enter', 'Space'], 'chooses one')] },
+      { name: 'Why note', glyph: 'help', rows: [row(['Enter', 'Space'], 'opens and closes it'), row(['Esc'], 'closes it, focus stays on the status')] },
+      { name: 'Search', glyph: 'search', rows: [row(['Ctrl', 'K'], 'opens'), row(['↑', '↓'], 'moves'), row(['Enter'], 'opens the result'), row(['Esc'], 'closes')] },
+      { name: 'Lists', glyph: 'checklist', rows: [row(['Enter'], 'opens a row')] },
+      { name: 'Toasts', glyph: 'bell', rows: [row([], 'Stay 4 s, 8 s with Undo; errors stay'), row([], 'Pause while hovered or focused'), row(['Esc'], 'dismisses the focused one')] }
+    ];
+    const S = [
+      ['Ink', '#0F1A2B'], ['Ink 2', '#46546A'], ['Line', '#E3E7ED'], ['Canvas', '#F5F6F8'],
+      ['Cobalt', '#2450B8'], ['Cobalt tint', '#EAF0FD'], ['Night', '#0D1B2E'], ['Night raised', '#1E3256'],
+      ['OK', '#0A6B3D'], ['OK tint', '#E3F7EC'], ['Warn', '#934100'], ['Warn tint', '#FEF1D6'],
+      ['Bad', '#B0190F'], ['Bad tint', '#FDE6E3'], ['Muted tint', '#EEF1F5'], ['Surface', '#FFFFFF'],
+      ['Control border', '#7B8798'], ['OK hover', '#085C34']
+    ];
+
+    // ---- segmented controls and theme
+    const mkSeg = (k, label, aria, labels, w, glyphs) => {
+      const sel = st.seg[k];
+      return {
+        label, aria,
+        thumb: 'position:absolute;top:2px;left:2px;height:28px;width:' + w + 'px;border-radius:6px;background:#FFFFFF;box-shadow:0 1px 2px rgba(13,27,46,.18);transform:translateX(' + (sel * w) + 'px);transition:transform .18s cubic-bezier(.22,1,.36,1)',
+        opts: labels.map((text, i) => ({
+          text, pressed: sel === i ? 'true' : 'false', pick: () => this.setSeg(k, i),
+          hasGlyph: !!(glyphs && glyphs[i]), glyph: glyphs ? glyphs[i] || 'auto' : 'auto',
+          style: 'position:relative;z-index:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:' + w + 'px;height:28px;border:0;border-radius:6px;background:transparent;font:600 13px Inter,sans-serif;cursor:pointer;transition:color .12s ease-out;color:' + (sel === i ? '#0F1A2B' : '#46546A')
+        }))
+      };
+    };
+    const segs = [
+      mkSeg('co', 'Company', 'Company', ['AISB', 'AI'], 72),
+      mkSeg('fil', 'Show', 'Show payments', ['All', 'Open', 'Done'], 72),
+      mkSeg('th', 'Theme', 'Theme', ['Auto', 'Light', 'Dark'], 88, ['auto', 'sun', 'moon'])
+    ];
+    const th = st.seg.th, dark = th === 2;
+    // ---- form controls matrix
+    const RING = 'outline:2px solid #2450B8;outline-offset:2px;';
+    const RINGIN = 'outline:2px solid #2450B8;outline-offset:-2px;';
+    const btn = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;min-width:104px;box-sizing:border-box;max-width:100%;';
+    const field = 'display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;background:#FFFFFF;color:#0F1A2B;font:400 14px Inter,sans-serif;width:100%;box-sizing:border-box;';
+    const mk = (name, o) => ({ name, o });
+    const R = [
+      mk('Primary button', { wrap: '', base: btn + 'background:#2450B8;color:#FFFFFF;border:0;', text: 'Save', st: { hover: 'background:#1D419A;', focus: RING, pressed: 'background:#173380;', disabled: 'background:#9AAAC6;', busy: 'cursor:progress;' }, busyText: 'Saving…', spin: 'rgba(255,255,255,.35)|#FFFFFF' }),
+      mk('Secondary button', { wrap: '', base: btn + 'background:#FFFFFF;color:#0F1A2B;border:1px solid #D5DBE4;', text: 'Cancel', st: { hover: 'background:#F0F3F8;', focus: RING, pressed: 'background:#E3E8F0;', disabled: 'background:#F7F8FA;color:#8793A6;border-color:#E3E7ED;', busy: 'cursor:progress;' }, busyText: 'Checking…', spin: '#D6E2FB|#2450B8' }),
+      mk('Text field', { wrap: 'width:100%;', base: field + 'border:1px solid #7B8798;', text: 'Electricity bill', st: { hover: 'border-color:#46546A;', focus: 'border-color:#2450B8;outline:2px solid #2450B8;outline-offset:-1px;', pressed: null, disabled: 'background:#F1F3F7;border-color:#D5DBE4;color:#8793A6;', busy: 'background:#F7F8FA;' }, busyText: 'Electricity bill', spin: '#D6E2FB|#2450B8', spinEnd: true }),
+      mk('Select', { wrap: 'width:100%;', base: field + 'border:1px solid #7B8798;', text: 'Maybank current', trail: true, st: { hover: 'border-color:#46546A;', focus: 'border-color:#2450B8;outline:2px solid #2450B8;outline-offset:-1px;', pressed: null, disabled: 'background:#F1F3F7;border-color:#D5DBE4;color:#8793A6;', busy: null } }),
+      mk('Tick box', { wrap: '', base: 'display:flex;align-items:center;gap:10px;min-height:32px;font:500 14px Inter,sans-serif;color:#0F1A2B;', text: 'Done', box: 'background:#FFFFFF;border:1.5px solid #7B8798;', st: { hover: '|border-color:#2450B8;background:#F0F4FE;', focus: '|' + RING.replace('outline-offset:2px', 'outline-offset:1px'), pressed: '|border-color:#2450B8;background:#D6E2FB;', disabled: 'color:#8793A6;|background:#F1F3F7;border-color:#D5DBE4;', busy: null } }),
+      mk('Tick box, ticked', { wrap: '', base: 'display:flex;align-items:center;gap:10px;min-height:32px;font:500 14px Inter,sans-serif;color:#0F1A2B;', text: 'Done', box: 'background:#2450B8;border:1.5px solid #2450B8;', tick: true, st: { hover: '|background:#1D419A;border-color:#1D419A;', focus: '|' + RING.replace('outline-offset:2px', 'outline-offset:1px'), pressed: '|background:#173380;border-color:#173380;', disabled: 'color:#8793A6;|background:#9AAAC6;border-color:#9AAAC6;', busy: null } }),
+      mk('Segmented option', { wrap: 'padding:2px;border-radius:8px;background:#E9ECF1;', base: 'display:flex;align-items:center;justify-content:center;width:84px;height:28px;border-radius:6px;font:600 13px Inter,sans-serif;color:#46546A;box-sizing:border-box;', text: 'Open', st: { hover: 'background:rgba(255,255,255,.65);color:#0F1A2B;', focus: RING, pressed: 'background:#D5DBE4;color:#0F1A2B;', disabled: 'color:#8793A6;', busy: null } }),
+      mk('Tab', { wrap: 'width:100%;', base: 'display:flex;align-items:center;justify-content:center;height:40px;width:100%;border-bottom:2px solid transparent;font:600 14px Inter,sans-serif;color:#46546A;box-sizing:border-box;', text: 'Documents', st: { hover: 'background:#F0F3F8;color:#0F1A2B;', focus: RINGIN, pressed: 'background:#E3E8F0;color:#0F1A2B;', disabled: 'color:#8793A6;', busy: null } }),
+      mk('Menu item', { wrap: 'width:100%;', base: 'display:flex;align-items:center;gap:8px;height:32px;width:100%;padding:0 10px;border-radius:8px;font:500 13px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;', text: 'Replace file', lead: 'upload', st: { hover: 'background:#F0F3F8;', focus: RINGIN + 'background:#F0F3F8;', pressed: 'background:#E3E8F0;', disabled: 'color:#8793A6;', busy: null } }),
+      mk('Table row', { wrap: 'width:100%;', base: 'display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:40px;width:100%;padding:0 12px;border-bottom:1px solid #EEF1F5;font:400 13px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;', text: 'Water bill · RM 96.00', st: { hover: 'background:#F7F9FC;', focus: RINGIN, pressed: 'background:#EAF0FD;', disabled: 'color:#8793A6;', busy: null } })
+    ];
+    const cols = ['Default', 'Hover', 'Focus', 'Pressed', 'Disabled', 'Busy'].map(name => ({ name }));
+    const matrix = R.map(({ name, o }) => ({
+      name,
+      cells: ['default', 'hover', 'focus', 'pressed', 'disabled', 'busy'].map(s => {
+        if (s !== 'default' && o.st[s] === null) return { na: true, on: false, wrap: '', style: '', text: '', hasBox: false, boxStyle: '', hasTick: false, hasLead: false, lead: 'upload', leadTone: 'muted', hasSpin: false, spin: '', hasTrail: false };
+        let extra = s === 'default' ? '' : o.st[s];
+        let boxExtra = '';
+        if (extra.indexOf('|') >= 0) { const [a, b] = extra.split('|'); extra = a; boxExtra = b; }
+        const spin = o.spin ? o.spin.split('|') : ['#D6E2FB', '#2450B8'];
+        const busy = s === 'busy' && !!o.spin;
+        return {
+          na: false, on: true, wrap: o.wrap,
+          style: o.base + extra,
+          text: busy && o.busyText ? o.busyText : o.text,
+          hasBox: !!o.box, boxStyle: o.box ? 'display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;box-sizing:border-box;flex:none;' + o.box + boxExtra : '',
+          hasTick: !!o.tick, hasLead: !!o.lead, lead: o.lead || 'upload', leadTone: 'muted',
+          hasSpin: busy, spin: 'width:16px;height:16px;flex:none;box-sizing:border-box;border-radius:50%;border:2px solid ' + spin[0] + ';border-top-color:' + spin[1] + ';' + (o.spinEnd ? 'margin-left:auto;order:2;' : ''),
+          hasTrail: !!o.trail
+        };
+      })
+    }));
+    // ---- icons and notes
+    const icons = ['overview','company','payment','checklist','budget','bank','database','recurring','pack','trail','vault','verified','sliders','search','bell','calendar','upload','document','receipt','users','person','alert','check','clock','history','plus','filter','download','printer','link','lock','refresh','clipboard','inbox','chart','coins','sparkflag','edit','help','sun','arrow','chevronDown','chevronLeft','chevronRight','more','close','eye','folder','moon','auto','camera','trash','logout','key','grip','arrowUp','arrowDown','external','copy','archive','sheet','undo','eyeOff','phone','laptop','wifiOff','sort','books','staff','leave','reminder','birthday','claim','advance','payroll','approval','toPay','statutory','access','qr'];
+    const newGlyphs = [
+      ['staff', 'HR › Staff (users stays Customers and suppliers)'], ['leave', 'HR › Leave, Setup › HR › Leave'],
+      ['reminder', 'Calendar and reminders, the Dates coming up card'], ['birthday', 'Birthdays and anniversaries, in the Dates coming up card'],
+      ['claim', 'Claims and advances, Setup › HR › Claim types'], ['advance', 'The Advances tab'],
+      ['payroll', 'HR › Payroll, Setup › HR › Payroll settings'], ['approval', 'Approvals, Setup › HR › Approvers, the Approval marker'],
+      ['toPay', 'Payments › To pay'], ['statutory', 'Statutory payables, KWSP and PERKESO rows (vault stays Backup)'],
+      ['access', 'Admin › Users and access'], ['qr', 'The approval-form code and phone reading'],
+      ['trash', 'The bin: remove a payment, delete a record, remove a document'], ['grip', 'Drag handle on reorderable rows'],
+      ['moon', 'Dark choice in the theme control'], ['auto', 'Auto choice: follows Windows'],
+      ['undo', 'Undo on a toast; Undo sign-off'], ['wifiOff', 'Connection lost strip'],
+      ['eye', 'Show a password or the typed value'], ['eyeOff', 'Hide it again'],
+      ['camera', 'Photograph a document on a phone'], ['key', 'Sign in and the backup password'],
+      ['logout', 'Sign out, in the user menu'], ['folder', 'Records and exports folders'],
+      ['archive', 'Stop using a record'], ['sheet', 'Excel report'],
+      ['copy', 'Copy details'], ['external', 'Opens in another window'],
+      ['arrowUp', 'Sorted ascending'], ['arrowDown', 'Sorted descending'],
+      ['books', 'Accounting › Books and its Next up row'], ['sort', 'A column that can be sorted'], ['laptop', 'Best done on a computer pages'], ['phone', 'Phone layout notes']
+    ].map(([glyph, use]) => ({ glyph, use }));
+    const swaps = [
+      ['×', 'close', 'Dismiss on toasts, close on dialogs'], ['✓', 'check', 'Done chips and ticks'], ['+', 'plus', 'Add, and the missing-document chip'],
+      ['· PV', 'link', 'A SQL voucher chip'], ['⋮⋮', 'grip', 'Drag handle in the checklist editor'], ['− +', 'plus', 'Number steppers (minus still to draw)']
+    ].map(([was, glyph, where]) => ({ was, glyph, where }));
+    // ---- chips
+    const tones = [
+      { name: 'Done', pill: 'pl ok', chip: 'cp ok', glyph: 'check', cglyph: 'check', gt: 'ok', pillText: 'Complete', chipText: 'Bank slip' },
+      { name: 'Needs doing', pill: 'pl warn', chip: 'cp warn', glyph: 'clock', cglyph: 'clock', gt: 'warn', pillText: 'Paid, documents missing', chipText: 'Invoice' },
+      { name: 'Wrong', pill: 'pl bad', chip: 'cp bad', glyph: 'alert', cglyph: 'alert', gt: 'bad', pillText: 'Not on Oct statement', chipText: 'Doesn\'t match' },
+      { name: 'Open', pill: 'pl info', chip: 'cp info', glyph: 'payment', cglyph: 'document', gt: 'brand', pillText: 'Open', chipText: 'Approval.pdf' },
+      { name: 'Nothing to do', pill: 'pl mute', chip: 'cp mute', glyph: 'clock', cglyph: 'link', gt: 'muted', pillText: 'Not paid', chipText: 'PV2610-014' }
+    ];
+    const F = (chip, gt, glyph, label, reason, action) => ({ chip, gt, glyph, label, reason, action });
+    const files = [
+      F('cp ok', 'ok', 'check', 'Read', '1 listing read from D:\\SQL exports: 14 documents, 9 new, 5 already imported.', 'See what\'s not linked'),
+      F('cp mute', 'muted', 'history', 'Imported before', 'Imported before.', 'Nothing to do'),
+      F('cp mute', 'muted', 'copy', 'A copy', 'A copy of PV-listing-oct.xlsx.', 'Nothing to do'),
+      F('cp warn', 'warn', 'company', 'Another company', 'This Payment Voucher Listing is for AI (Agrinexus International), not AISB.', 'Fetch it under AI'),
+      F('cp warn', 'warn', 'alert', 'Company not in Setup', 'This Official Receipt Listing matches no company\'s name or registration number in Setup, so it was left out. Correct the company\'s name or registration number in Setup > Companies, then fetch again.', 'Open Setup > Companies'),
+      F('cp bad', 'bad', 'lock', 'Couldn\'t open', 'This file couldn\'t be opened. Close it if it is open in Excel, then fetch again.', 'Close it in Excel and fetch again'),
+      F('cp warn', 'warn', 'document', 'Not read yet', 'This is a printed report, but not a listing this app reads yet. It reads the Payment Voucher Listing and the Official Receipt Listing.', 'Paste this listing instead'),
+      F('cp bad', 'bad', 'alert', 'Doesn\'t add up', 'This listing says it has 14 documents, but 12 could be read, so nothing was taken from it. Copy and paste this listing instead.', 'Paste this listing instead'),
+      F('cp mute', 'muted', 'sheet', 'Not an SQL listing', 'Not an SQL listing or report, or over 10 MB. It was left alone and isn\'t counted.', 'Nothing to do')
+    ];
+    // ---- why notes
+    const W = [
+      { k: 'pay', where: 'Payment status', cls: 'pl warn tg', glyph: 'clock', gt: 'warn', label: 'Waiting for SQL record', note: 'SQL Account has no voucher for this payment yet. It completes once the listing that holds it is imported.', dis: 'false' },
+      { k: 'doc', where: 'Document chip', cls: 'cp mute tg', glyph: 'link', gt: 'muted', label: 'PV2610-014', note: 'No upload needed; you can still add a copy. A document SQL holds doesn\'t count as an upload.', dis: 'false' },
+      { k: 'del', where: 'Locked Delete', cls: 'dbtn', glyph: 'lock', gt: 'muted', label: 'Delete', note: 'The app relies on it, so it can\'t be deleted. You can stop using it instead.', dis: 'true' },
+      { k: 'seal', where: 'Audit trail mark', cls: 'cp info tg', glyph: 'trail', gt: 'brand', label: 'Sealed late', note: 'Sealed at a later start, after the app stopped unexpectedly.', dis: 'false' }
+    ];
+    const whys = W.map(w => {
+      const open = st.why === w.k, noteId = 'fo-wn-' + w.k, btnId = 'fo-wb-' + w.k;
+      return {
+        ...w, noteId, btnId, open: open ? 'true' : 'false', isOpen: open, notOpen: !open,
+        toggle: () => this.setState({ why: open ? null : w.k }),
+        key: e => { if (e.key === 'Escape' && this.state.why === w.k) { e.stopPropagation(); this._focusAfter = btnId; this.setState({ why: null }); } }
+      };
+    });
+    // ---- dates
+    const D = [
+      ['Sun 15 Nov', 'Overdue 3 days', 'pl bad', 'Sunday 15 November 2026'], ['Tue 17 Nov', 'Overdue 1 day', 'pl bad', 'Tuesday 17 November 2026'],
+      ['Wed 18 Nov', 'Due today', 'pl warn', 'Wednesday 18 November 2026'], ['Fri 20 Nov', 'Due in 2 days', 'pl warn', 'Friday 20 November 2026'],
+      ['Wed 25 Nov', 'Due in 7 days', 'pl info', 'Wednesday 25 November 2026'], ['Thu 26 Nov', 'Due 26 Nov', 'pl mute', 'Thursday 26 November 2026'],
+      ['Sat 31 Oct', 'Overdue 31 Oct', 'pl bad', 'Saturday 31 October 2026'], ['Sat 12 Dec', 'Due 12 Dec', 'pl mute', 'Saturday 12 December 2026']
+    ];
+    const dates = D.map(([due, text, cls, exact]) => ({ due, text, cls, exact }));
+    // ---- long scroll examples
+    const names = ['Rent', 'Electricity bill', 'Water bill', 'Internet', 'Salaries', 'EPF', 'SOCSO', 'EIS', 'Tax', 'Insurance', 'Cleaning', 'Courier', 'Stationery', 'Software', 'Audit fee', 'Petty cash', 'Telephone', 'Parking', 'Security', 'Pest control', 'Repairs', 'Training', 'Travel', 'Subscriptions'];
+    const longRows = names.map((name, i) => ({ name, amt: 'RM ' + (96 + i * 37).toLocaleString('en-US') + '.00', style: 'display:flex;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid #EEF1F5;font-size:12px;background:#FFFFFF' }));
+    const dlgRows = [['Description', 'Electricity bill'], ['Company', 'AISB'], ['Type', 'Utilities'], ['Amount', 'RM 412.00'], ['Bank account', 'Maybank current'], ['Due date', '20 Nov 2026'], ['SQL voucher', 'PV2610-014'], ['Reference', 'TNB 8841-2210'], ['Notes', 'Paid by FPX'], ['Why this change', '']].map(([label, value]) => ({ label, value }));
+    const addrs = [
+      ['All companies, month, Overview', '#/all/2026-10/overview'], ['One company, month, page', '#/AISB/2026-10/payments/register'],
+      ['A staff record (no month)', '#/AISB/hr/staff/S003'], ['A company setup page (no month)', '#/AISB/admin/setup/hr/approvers'], ['A page with no company', '#/admin/setup/companies'],
+      ['An open payment', '#/AISB/2026-10/payments/register/1042'], ['Bank statements', '#/AISB/2026-10/accounting/bank']
+    ].map(([what, url]) => ({ what, url }));
+    // ---- month example
+    const MO = [
+      { label: 'September 2026', filed: true, empty: false, paid: 'RM 61,240.00', left: 'RM 0.00' },
+      { label: 'October 2026', filed: false, empty: false, paid: 'RM 48,600.00', left: 'RM 12,980.00' },
+      { label: 'November 2026', filed: false, empty: true, paid: '', left: '' }
+    ];
+    const m = MO[st.mo], mvCls = 'mv-' + (st.dir > 0 ? 'r' : 'l') + (st.mvN % 2 === 0 ? 'a' : 'b');
+    const go = d => { const n = this.state.mo + d; if (n < 0 || n > 2) return; this.setState({ mo: n, dir: d, mvN: this.state.mvN + 1 }); };
+    // ---- company switcher (live)
+    const SW = [
+      { code: 'AISB', full: 'AISB Sdn Bhd', kind: 'Kept in SQL Account', next: 11, over: 3 },
+      { code: 'AI', full: 'Agrinexus International', kind: 'Kept here', next: 5, over: 1 },
+      { code: 'AIL', full: 'Agrinexus Logistics', kind: 'Kept in SQL Account', next: 2, over: 0 },
+      { code: 'AIP', full: 'Agrinexus Plantations', kind: 'Kept here', next: 2, over: 0 }
+    ];
+    const swPage = st.swPage, swN = st.swN, swCos = swN === 2 ? [] : SW.slice(0, swN === 0 ? 2 : 4), swAll = swPage <= 1;
+    let swSel = st.swCo;
+    if (swSel === 'all' && !swAll) swSel = 'AISB';
+    if (swSel !== 'all' && !swCos.some(c => c.code === swSel)) swSel = swCos.length ? swCos[0].code : null;
+    const swCur = SW.find(c => c.code === swSel);
+    const swText = swN === 2 ? 'No company yet' : swSel === 'all' ? (swPage === 1 ? 'All companies (read only)' : 'All companies') : swCur.code + ' · ' + swCur.kind;
+    const swRows = [];
+    if (swN === 2) swRows.push({ code: 'Add your first company', full: '', kind: '', next: '', cb: 'cb', cur: 'false', sr: 'Add your first company', isAdd: true, hasKind: false, hasN: false, key: 'add' });
+    else {
+      if (swAll) swRows.push({ code: swPage === 1 ? 'All companies (read only)' : 'All companies', full: '', kind: 'One line per company', next: '14', cb: 'cb red', cur: swSel === 'all' ? 'true' : 'false', sr: 'All companies, 14 to do, 4 overdue', isAdd: false, hasKind: true, hasN: true, key: 'all' });
+      swCos.forEach(c => swRows.push({ code: c.code, full: c.full, kind: c.kind, next: String(c.next), cb: c.over ? 'cb red' : 'cb', cur: swSel === c.code ? 'true' : 'false', sr: c.code + ' ' + c.full + ', ' + c.kind + ', ' + c.next + ' to do' + (c.over ? ', ' + c.over + ' overdue' : ''), isAdd: false, hasKind: true, hasN: true, key: c.code }));
+    }
+    const swItems = swRows.map((r, i) => ({ ...r, id: 'fo-sw-mi-' + i, rule: i === 1 && swAll && swN !== 2, pick: () => { this._focusAfter = 'fo-sw-mb'; this.setState({ swOpen: false, swCo: r.key === 'add' ? this.state.swCo : r.key }); } }));
+    const swNote = swN === 2 ? 'No company yet: the button reads "No company yet" and the only choice is "Add your first company".'
+      : swPage === 0 ? (swSel === 'all' ? 'On the Overview, All companies shows one line per company on each money card.' : 'Showing ' + swSel + '. The Overview cards and Next up follow this company.')
+      : swPage === 1 ? 'HR › Staff can list every company\'s staff, but All companies is read only here: choose one company to change a record.'
+      : 'The Payments register works on one company, so All companies is not offered.';
+    const segBtn = (text, on, fn) => ({ text, pressed: on ? 'true' : 'false', pick: fn, style: 'height:32px;padding:0 12px;border:0;border-radius:8px;font:600 12px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out;background:' + (on ? '#FFFFFF' : 'transparent') + ';box-shadow:' + (on ? '0 1px 2px rgba(13,27,46,.18)' : 'none') + ';color:' + (on ? '#0F1A2B' : '#46546A') });
+    const swSegs = [
+      { label: 'On page', aria: 'Page shown behind the switcher', opts: ['Overview', 'HR › Staff', 'Payments register'].map((t, i) => segBtn(t, swPage === i, () => this.setState({ swPage: i, swOpen: false }))) },
+      { label: 'Companies in use', aria: 'Companies in use', opts: ['2', '4', 'None'].map((t, i) => segBtn(t, swN === i, () => this.setState({ swN: i, swOpen: false }))) }
+    ];
+    // ---- Overview cards, privacy, markers, pills
+    const anat = [
+      ['Icon and title', 'One line, never a person. No date on the card: the row heading carries it (Payments · October 2026; Accounting · October 2026, balances as at today; HR · today). A card that does not follow the month shows a small grey Today tag at the right of its title.'],
+      ['Headline', 'One number, 20 px, weight 500; red when it is a problem (3 overdue, Loss RM 103,853). With All companies: the total when the units agree, else the main company’s figure with its currency, and its code leads the note.'],
+      ['Note', 'One short grey line under the headline (1 balance over 30 days). Empty puts the card’s own sentence where the headline was; out of date adds one warning line under the note; could not load says so, with Try again.'],
+      ['Companies', 'With All companies only: one line each, the code on the left and just its figure on the right, a company with none in grey. Not drawn when one company is chosen.'],
+      ['Link and info tip', 'One link, Open … ›, to the same page as before; the whole card is the target, with the standard focus ring. Where the figures come from sits in the info tip: a 32 px button whose note shows on hover or focus, a tap pins it, Escape hides it.']
+    ].map(([name, text]) => ({ name, text }));
+    // the info tips on the anatomy cards: shown on hover or focus (CSS); a tap pins one, Escape hides it until focus leaves
+    const fcTipFor = k => ({ cls: 'tt' + (this.state.fcTipOn === k ? ' on' : '') + (this.state.fcTipOff === k ? ' off' : ''),
+      toggle: () => this.setState(s => ({ fcTipOn: s.fcTipOn === k ? null : k, fcTipOff: null })),
+      key: e => { if (e && e.key === 'Escape') this.setState({ fcTipOn: null, fcTipOff: k }); },
+      reset: () => { if (this.state.fcTipOn === k || this.state.fcTipOff === k) this.setState({ fcTipOn: null, fcTipOff: null }); } });
+    const fcTip = { all: fcTipFor('all'), one: fcTipFor('one'), empty: fcTipFor('empty'), stale: fcTipFor('stale') };
+    const counters = [['1', 'Past due', '#B0190F', 'Past due, 1'], ['1', 'Part paid', '#934100', 'Part paid, 1'], ['0', 'Documents missing', '#5F6C80', 'Documents missing, none'], ['0', 'Lines to explain', '#5F6C80', 'Lines to explain, none']]
+      .map(([n, label, col, sr]) => ({ n, label, sr, fig: 'font-size:20px;font-weight:700;font-variant-numeric:tabular-nums;color:' + col }));
+    const never = ['A salary or any pay figure, a payslip, or a per-person total',
+      'An IC number, passport number, bank account, address, tax number or EPF number',
+      'The reason for leave, the type of leave, any medical detail',
+      'A claim receipt or its amount for one person',
+      'An age or a year of birth (a birthday shows the day and month only)',
+      'The payroll total per person; it appears only as one line inside Payments amounts, for example "Salaries, October"'].map(text => ({ text }));
+    const allowed = ['Names on the On leave and Birthdays cards (first names, as the staff record calls them)',
+      'Counts: headcount, joiners, leavers, requests waiting',
+      'Dates: probation ends, contract ends, permit expires, with no person named'].map(text => ({ text }));
+    const MK = [
+      ['cp mute', 'approval', 'muted', 'Not needed', 'Not needed (grey)', 'Telephone & internet 398.60, Electricity bill 1,163.20, KWSP, PERKESO, PCB, Rental received 2,800.00 (money in)'],
+      ['cp warn', 'clock', 'warn', 'Waiting', 'Waiting (amber)', 'Consultant fee 3,200.00, on form AF-2611-004, not uploaded yet'],
+      ['cp ok', 'check', 'ok', 'Approved by Rajesh Kumar, 1 Oct 2026', 'Approved (green), with who and when', 'Salaries — staff 48,600.00, on form AF-2610-001'],
+      ['cp bad', 'alert', 'bad', 'Paid without approval on file', 'Paid without approval on file (red)', 'Contractor — field works 24,000.00, paid Tue 6 Oct, entered by Aisha Rahman'],
+      ['cp bad', 'alert', 'bad', 'Paid more than approved (RM 120.00)', 'Paid more than approved (red), with the excess', 'Stationery Mart 1,120.00, paid Fri 30 Oct; approved 1,000.00 on AF-2610-004'],
+      ['cp bad', 'alert', 'bad', 'Paid, approval refused', 'Paid, approval refused (red)', 'A claim paid and then refused, such as CL-2609-002. Stays on the Overview card until resolved.']
+    ];
+    const markers = MK.map(([cls, glyph, tone, text, name, where]) => ({ cls, glyph, tone, text, name, where }));
+    const P = (cls, glyph, tone, text) => ({ cls: 'pl ' + cls, glyph, tone, text });
+    const reqPills = [P('mute', 'edit', 'muted', 'Draft'), P('warn', 'clock', 'warn', 'Waiting for approval'), P('ok', 'check', 'ok', 'Approved'), P('bad', 'close', 'bad', 'Not approved'),
+      P('bad', 'alert', 'bad', 'Paid, approval refused'), P('mute', 'undo', 'muted', 'Withdrawn'), P('ok', 'payment', 'ok', 'Paid'), P('info', 'payment', 'brand', 'Part paid'), P('info', 'books', 'brand', 'Recorded'), P('ok', 'verified', 'ok', 'Done')];
+    const leavePills = [P('info', 'calendar', 'brand', 'Booked'), P('ok', 'check', 'ok', 'Taken'), P('mute', 'close', 'muted', 'Cancelled')];
+    const staffPills = [P('ok', 'person', 'ok', 'In employment'), P('warn', 'clock', 'warn', 'On probation'), P('mute', 'logout', 'muted', 'Left')];
+    const checkTones = [['cp bad', 'alert', 'bad', 'Fix before paying', 'The file disagrees with the rules. Stop and correct it.'], ['cp warn', 'eye', 'warn', 'Check', 'Worth a look; it can be right.'],
+      ['cp mute', 'help', 'muted', 'Note', 'Always shown, such as "PCB amounts themselves are not checked".'], ['cp ok', 'check', 'ok', 'Nothing found', 'Nothing to fix or check.']]
+      .map(([cls, glyph, tone, text, where]) => ({ cls, glyph, tone, text, where }));
+    // ---- print
+    const QN = 21, qr = [];
+    let seed = 7;
+    const fin = (r, c, r0, c0) => { const rr = r - r0, cc = c - c0; if (rr < 0 || rr > 6 || cc < 0 || cc > 6) return null; return rr === 0 || rr === 6 || cc === 0 || cc === 6 || (rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4); };
+    for (let r = 0; r < QN; r++) for (let c = 0; c < QN; c++) {
+      let v = fin(r, c, 0, 0); if (v === null) v = fin(r, c, 0, QN - 7); if (v === null) v = fin(r, c, QN - 7, 0);
+      if (v === null) { if ((r < 8 && c < 8) || (r < 8 && c > QN - 9) || (r > QN - 9 && c < 8)) v = false; else { seed = (seed * 1103515245 + 12345) % 2147483648; v = (seed >> 8) % 2 === 0; } }
+      qr.push({ st: 'width:4px;height:4px;background:' + (v ? '#000000' : '#FFFFFF') });
+    }
+    const blank = 'display:block;border-bottom:1px solid #000000;height:32px;font-size:10px';
+    const signers = ['Hassan Ismail', 'Tan Mei Ling', 'Rajesh Kumar'].map(name => ({ name, nm: '', note: '', line: blank }));
+    const sigReads = [
+      { name: 'Tan Mei Ling', nm: '', note: '', line: blank, hint: 'To sign: a blank line' },
+      { name: 'Hassan Ismail', nm: 'text-decoration:line-through', note: 'Can\'t sign: payee', line: 'display:block;font-weight:600;font-size:12px', hint: 'The approver is the payee' },
+      { name: 'Hassan Ismail', nm: '', note: '', line: blank, hint: 'Only one approver (AI): the form reads "The approver’s signature approves this form."' }
+    ];
+    const printRules = [
+      ['printer', 'A4, light only.', 'Portrait, black on white, nothing that needs a colour printer. Dark mode never prints dark.'],
+      ['qr', 'Code, keyed check and QR.', 'A form code such as AF-2611-004, a keyed check such as T9F-5HRG, and a QR that carries both. A wrong or changed form fails the check at upload.'],
+      ['approval', 'Approver blocks.', 'Up to three, the company\'s approvers on the print date, with "Any one signature approves this form." With one approver it reads "The approver’s signature approves this form." Each block has a Signature line and a Date line.'],
+      ['person', 'Declared, not verified.', 'The preparer is the name declared at the keyboard, and the page says so, until logins exist.'],
+      ['document', 'Page x of y.', 'On every page when there are two or more, with the code and check repeated in the footer. A salary run puts totals on page 1 and per person on page 2.'],
+      ['lock', 'Personal data.', 'The HR staff record PDF is the one place the IC number is shown, marked "Confidential: personal data". The emailed payslip PDF has a password; the email names the rule, never the password.']
+    ].map(([glyph, name, text]) => ({ glyph, name, text }));
+    // ---- phone
+    const tabs = [['overview', 'Overview', true, '11'], ['payment', 'Payments', false, ''], ['more', 'More', false, '']].map(([glyph, text, cur, n]) => ({ glyph, text, cur: cur ? 'page' : 'false', tone: cur ? 'brand' : 'muted', n, hasN: !!n, sr: text + (n ? ', 11 to do, 3 overdue' : '') }));
+    const phoneCos = [['All companies', 'Overview only', '14', 'cb red', false, 'All companies, 14 to do, 4 overdue'], ['AISB', 'Kept in SQL Account', '11', 'cb red', true, 'AISB, Kept in SQL Account, 11 to do, 3 overdue'], ['AI', 'Kept here', '5', 'cb red', false, 'AI, Kept here, 5 to do, 1 overdue']]
+      .map(([code, sub, n, cb, cur, sr]) => ({ code, sub, n, cb, cur: cur ? 'true' : 'false', isCur: cur, sr }));
+    const phoneRules = [
+      ['overview', 'Tab bar.', 'Overview, Payments, More. Each tab is 64 px tall with a 24 px icon and a label; the open tab has a cobalt bar on top and aria-current. Overview carries the Next up count, red when one is overdue.'],
+      ['company', 'Switcher sheet.', 'The title button "AISB · October 2026" opens a sheet with the companies (with their Next up counts) and the month with 44 px arrows. All companies is offered only on the Overview.'],
+      ['laptop', 'More.', 'Search, Notifications, the user menu, and the pages best done on a computer (HR, Accounting, Admin), each opening a "Best done on a computer" screen.'],
+      ['camera', 'Signed forms.', 'A payment\'s Approval marker opens the camera screen, which reads the QR and asks which approver signed.'],
+      ['close', 'Closing the sheet.', 'The close button, Esc or a tap on the dim. Focus returns to the title button. It slides in 240 ms and out 180 ms.']
+    ].map(([glyph, name, text]) => ({ glyph, name, text }));
+    return {
+      swSegs, swItems, swOpen: st.swOpen, swExpanded: st.swOpen ? 'true' : 'false', swText, swAria: 'Company: ' + swText + '. Opens a list of companies', swNote,
+      swCrumb: ['Overview', 'HR', 'Payments'][swPage], swPage: ['Today', 'Staff', 'Payments register'][swPage],
+      swToggle: () => { if (this.state.swOpen) this.swCloseMenu(true); else this.swOpenMenu(); },
+      swClose: () => this.swCloseMenu(false),
+      swBtnKey: e => { if (e.key === 'ArrowDown' && !this.state.swOpen) { e.preventDefault(); this.swOpenMenu(); } },
+      swKey: e => {
+        const items = Array.from(e.currentTarget.querySelectorAll('[role="menuitem"]')); if (!items.length) return;
+        const i = items.indexOf(document.activeElement), n = items.length;
+        const go = j => { e.preventDefault(); items[(j + n) % n].focus(); };
+        if (e.key === 'ArrowDown') go(i + 1); else if (e.key === 'ArrowUp') go(i - 1); else if (e.key === 'Home') go(0); else if (e.key === 'End') go(n - 1);
+        else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.swCloseMenu(true); }
+        else if (e.key === 'Tab') this.swCloseMenu(false);
+      },
+      anat, fcTip, counters, never, allowed, markers, reqPills, leavePills, staffPills, checkTones, qr, signers, sigReads, printRules, tabs, phoneCos, phoneRules,
+      motion, keymap, icons, newGlyphs, swaps, tones, files, whys, dates, longRows, dlgRows, addrs, cols, matrix, segs,
+      swatches: S.map(([name, hex]) => ({ name, hex, chip: 'height:36px;background:' + hex + ';border-bottom:1px solid #E3E7ED' })),
+      themeGlyph: th === 0 ? 'auto' : th === 1 ? 'sun' : 'moon', themeTone: dark ? 'dbrand' : 'brand', themeTitle: ['Theme: Auto', 'Theme: Light', 'Theme: Dark'][th],
+      themeCard: 'display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:12px;box-sizing:border-box;transition:background-color .2s ease-out,color .2s ease-out,border-color .2s ease-out;' + (dark ? 'background:#121A27;color:#E6EBF2;border:1px solid #243044' : 'background:#F7F8FA;color:#0F1A2B;border:1px solid #E3E7ED'),
+      themeSub: 'font-size:12px;transition:color .2s ease-out;color:' + (dark ? '#B4BFCE' : '#46546A'),
+      whyOpen: st.why !== null, closeWhy: () => this.setState({ why: null }),
+      chkBusy: st.chkBusy, chkIdle: !st.chkBusy, chkAria: st.chkBusy ? 'true' : 'false', chkDone: !st.chkBusy && st.chk === 'done', chkBad: !st.chkBusy && st.chk === 'bad',
+      runChk: e => {
+        if (this.state.chkBusy) return;
+        this._chkFocus = !!(e && e.currentTarget && document.activeElement === e.currentTarget);
+        const runs = this.state.runs + 1;
+        this.setState({ chkBusy: true, chk: null, runs });
+        clearTimeout(this._ct);
+        this._ct = setTimeout(() => this.setState({ chkBusy: false, chk: runs % 2 === 1 ? 'done' : 'bad' }), 1500);
+      },
+      flashCls: st.flashN === 0 ? '' : (st.flashN % 2 === 1 ? 'fa' : 'fb'), flashAmt: st.flashN === 0 ? '412.00' : (412 + st.flashN * 8).toFixed(2),
+      doFlash: () => this.setState({ flashN: this.state.flashN + 1 }),
+      monthLabel: m.label, moFiled: m.filed, moEmpty: m.empty, moHas: !m.empty, moPaid: m.paid, moLeft: m.left, monthCls: mvCls,
+      noPrev: st.mo === 0, noNext: st.mo === 2, prevMonth: () => go(-1), nextMonth: () => go(1)
+    };
+  }
+}
+</script>
+</body>
+</html>

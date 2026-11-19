@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Search · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+.pi:hover{background:rgba(127,138,160,.14) !important}
+.sw:hover{filter:brightness(.95)}
+/* motion and focus base */
+.pi,.nb,.nv,.tb,.sw{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.dk :where(button,a,summary,[tabindex]):focus-visible{outline-color:#8DB0FA}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-4px) scale(.98)}}
+.dim-in{animation:dimIn .16s ease-out both}
+.dim-out{animation:dimOut .12s ease-in both}
+.dr-in{animation:popIn .18s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .12s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div class="{{k.cls}}" onKeyDown="{{rootKey}}" style="position: relative; min-height: 100vh; display: flex; flex-wrap: wrap; background: {{k.canvas}}; font-family: Inter, system-ui, sans-serif; color: {{k.ink}}; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: {{k.side}}; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="overview" company="{{topCo}}" kind="{{sbKind}}" access="{{sbAccess}}" theme="{{theme}}" hosting="{{hosting}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Overview" page="Overview" company="{{topCo}}" on-company="{{onCo}}" user="{{user}}" theme="{{theme}}" hosting="{{hosting}}" search-open="{{reopen}}" hint-size="100%,64px"></dc-import>
+    <div aria-hidden="true" style="padding: 32px 40px; display: flex; flex-direction: column; gap: 16px">
+      <div style="height: 64px; width: 420px; max-width: 100%; border-radius: 12px; background: {{k.ghost}}"></div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px"><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div></div>
+      <div style="height: 420px; border-radius: 16px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div>
+    </div>
+  </div>
+
+  <sc-if value="{{open}}" hint-placeholder-val="{{ true }}">
+  <div style="position: absolute; inset: 0; z-index: 40; display: flex; justify-content: center; align-items: flex-start; padding: 96px 16px 16px">
+    <div class="{{dimClass}}" onClick="{{close}}" aria-hidden="true" style="position: absolute; inset: 0; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div role="dialog" aria-modal="true" aria-labelledby="cp-title" tabindex="-1" class="{{dlgClass}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="position: relative; width: 640px; max-width: 100%; background: {{k.panel}}; border: 1px solid {{k.line}}; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <h2 id="cp-title" tabindex="-1" style="position: absolute; width: 1px; height: 1px; margin: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Search and jump</h2>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 0 18px; height: 60px; border-bottom: 1px solid {{k.soft}}">
+        <dc-import name="Icon" glyph="search" tone="{{k.brand}}" size="22" hint-size="22px,22px"></dc-import>
+        <label for="cp-input" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search</label>
+        <input id="cp-input" type="text" role="combobox" aria-expanded="true" aria-controls="cp-list" aria-autocomplete="list" aria-activedescendant="{{activeId}}" autocomplete="off" value="{{q}}" onChange="{{onQ}}" onKeyDown="{{inputKey}}" placeholder="Search payments, staff, requests, SQL docs" autofocus style="flex: 1; height: 40px; border: 0; border-radius: 6px; font: 400 17px Inter, sans-serif; color: {{k.ink}}; background: transparent; min-width: 0">
+        <button type="button" onClick="{{close}}" aria-label="Close search" style="height: 32px; min-width: 32px; padding: 0; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><kbd aria-hidden="true" style="font: 600 11px Inter, sans-serif; color: {{k.ink2}}; background: {{k.kbdBg}}; border: 1px solid {{k.kbdLine}}; border-radius: 6px; padding: 2px 6px">Esc</kbd></button>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 18px; border-bottom: 1px solid {{k.soft}}; background: {{k.foot}}">
+        <span style="flex: 1 1 160px; min-width: 0; font-size: 12px; color: {{k.ink3}}">Searching <b style="color: {{k.ink2}}">{{scopeLabel}}</b><sc-if value="{{hasNote}}" hint-placeholder-val="{{ false }}"><span id="cp-note" style="display: block; margin-top: 2px">{{accessNote}}</span></sc-if></span>
+        <div role="group" aria-label="Month" style="display: flex; gap: 2px; padding: 2px; border-radius: 9px; background: {{k.segBg}}">
+          <button type="button" class="sw" aria-pressed="{{pr.moThis}}" onClick="{{setMoThis}}" style="{{st.moThis}}">This month</button>
+          <button type="button" class="sw" aria-pressed="{{pr.moAll}}" onClick="{{setMoAll}}" style="{{st.moAll}}">All months</button>
+        </div>
+      </div>
+      <span role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{countText}}</span>
+      <div style="max-height: 420px; overflow-y: auto; padding: 8px 0">
+        <div role="listbox" id="cp-list" aria-label="Results">
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+            <div role="group" aria-labelledby="{{g.lid}}" style="padding: 6px 0">
+              <span id="{{g.lid}}" style="display: block; padding: 6px 18px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: {{g.ink}}">{{g.label}}</span>
+              <sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+                <a href="{{it.href}}" id="{{it.id}}" role="option" aria-selected="{{it.selected}}" tabindex="-1" class="pi" onMouseMove="{{it.hover}}" style="{{it.style}}">
+                  <span style="{{it.tile}}"><dc-import name="Icon" glyph="{{it.glyph}}" tone="{{it.tone}}" size="18" hint-size="18px,18px"></dc-import></span>
+                  <span style="flex: 1; min-width: 0">
+                    <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px"><span style="{{it.titleStyle}}"><sc-for list="{{it.parts}}" as="p" hint-placeholder-count="2"><span style="{{p.style}}">{{p.t}}</span></sc-for></span><sc-if value="{{it.hasChip}}" hint-placeholder-val="{{ false }}"><span style="{{it.chipStyle}}">{{it.chip}}</span></sc-if></span>
+                    <span style="display: block; color: {{it.subInk}}; font-size: 12px">{{it.sub}}</span>
+                  </span>
+                  <sc-if value="{{it.sel}}" hint-placeholder-val="{{ false }}"><kbd aria-hidden="true" style="{{it.kbd}}">Enter</kbd></sc-if>
+                </a>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+          <div aria-hidden="true" style="display: flex; flex-direction: column; gap: 6px; padding: 6px 18px"><span style="display: block; width: 90px; height: 10px; border-radius: 6px; margin: 6px 0; background: {{k.ghost}}"></span>
+            <sc-for list="{{skel}}" as="sk" hint-placeholder-count="3"><div style="display: flex; align-items: center; gap: 12px; padding: 8px 10px"><span style="width: 34px; height: 34px; border-radius: 10px; background: {{sk.bg}}; flex: none"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 6px"><span style="display: block; height: 12px; width: {{sk.w}}; border-radius: 6px; background: {{sk.bg}}"></span><span style="display: block; height: 10px; width: 40%; border-radius: 6px; background: {{sk.bg}}"></span></span></div></sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{failed}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 32px 18px; text-align: center"><dc-import name="Icon" glyph="alert" tone="{{k.badTone}}" size="32" hint-size="32px,32px"></dc-import><b>Search could not read the records</b><span style="color: {{k.ink3}}; font-size: 13px">Nothing was changed. Try again, or open a page from the menu.</span>
+            <button type="button" class="sw" onClick="{{retry}}" style="{{k.btn}}">Try again</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{hasMore}}" hint-placeholder-val="{{ false }}"><div style="padding: 8px 18px 4px; font-size: 12px; color: {{k.ink3}}">{{moreText}}</div></sc-if>
+        <sc-if value="{{none}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 18px; text-align: center"><dc-import name="Icon" glyph="search" tone="{{k.muted}}" size="32" hint-size="32px,32px"></dc-import><b>Nothing matches “{{q}}”</b><span style="color: {{k.ink3}}; font-size: 13px">Searched {{scopeLabel}}. {{emptyHint}}</span>
+            <sc-if value="{{narrowed}}" hint-placeholder-val="{{ false }}"><button type="button" class="sw" onClick="{{widen}}" style="{{k.btn}}">Search all months and companies</button></sc-if>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; padding: 10px 18px; border-top: 1px solid {{k.soft}}; background: {{k.foot}}; color: {{k.ink3}}; font-size: 12px">
+        <span><kbd style="font: 600 11px Inter, sans-serif; background: {{k.kbdBg}}; color: {{k.ink2}}; border: 1px solid {{k.kbdLine}}; border-radius: 5px; padding: 1px 5px">↑</kbd> <kbd style="font: 600 11px Inter, sans-serif; background: {{k.kbdBg}}; color: {{k.ink2}}; border: 1px solid {{k.kbdLine}}; border-radius: 5px; padding: 1px 5px">↓</kbd> to move</span>
+        <span><kbd style="font: 600 11px Inter, sans-serif; background: {{k.kbdBg}}; color: {{k.ink2}}; border: 1px solid {{k.kbdLine}}; border-radius: 5px; padding: 1px 5px">Enter</kbd> to open</span>
+        <span style="margin-left: auto">{{whereText}}</span>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"hosting":{"editor":"enum","default":"pc","options":["pc","hosted"]},"view":{"editor":"enum","default":"recent","options":["recent","results","none","no-hr","loading","error","many"]},"user":{"editor":"enum","default":"aisha","options":["aisha","marcus","aina"]},"company":{"editor":"enum","default":"all","options":["all","aisb","ai","ail","aip"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // scope: the month (this | all) and the company (this | all); every result says which company and month it is from
+    this.state = this.fromView((p && p.view) || 'recent', p);
+  }
+  fromView(v, p) {
+    const Q = { results: 'wei ming', 'no-hr': 'wei ming', none: 'zzz', loading: 'aina', error: 'aina', many: 'a' };
+    return { q: Q[v] || '', sel: 0, open: true, closing: false, mo: 'this', cp: (p && p.company) || 'all', load: v === 'loading', err: v === 'error' };
+  }
+  componentDidMount() { this.focusInput(); }
+  componentWillUnmount() { clearTimeout(this._t); }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps.view !== this.props.view) { this.setState(this.fromView(this.props.view || 'recent', this.props)); return; }
+    if (this.state.open && !prev.open) this.focusInput();
+    if (!this.state.open && prev.open) {
+      const o = this._opener;
+      const back = o && o.isConnected && o !== document.body ? o : document.getElementById('tb-search');
+      if (back && back.focus) back.focus({ preventScroll: true });
+    }
+    if (this.state.open && this.state.sel !== prev.sel && this._kbd) {
+      this._kbd = false;   // only keyboard moves scroll; a hover must not scroll the list under the pointer
+      const a = document.getElementById('cp-opt-' + this.state.sel);
+      if (a && a.scrollIntoView) a.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  focusInput() { const i = document.getElementById('cp-input'); if (i && i.focus) i.focus({ preventScroll: true }); }
+  openPalette(from) {
+    clearTimeout(this._t);
+    if (this.state.open) { if (this.state.closing) this.setState({ closing: false }); this.focusInput(); return; }
+    this._opener = from || document.activeElement;
+    this.setState({ open: true, closing: false, q: '', sel: 0 });
+  }
+  close() {
+    if (!this.state.open || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.open) this.setState({ open: false, closing: false }); }
+  renderVals() {
+    const dark = (this.props.theme ?? 'light') === 'dark';
+    const hosted = (this.props.hosting ?? 'pc') === 'hosted';
+    const k = dark
+      ? { cls: 'dk', canvas: '#0B111C', side: '#070C15', panel: '#121A27', line: '#243044', soft: '#1C2638', foot: '#0F1724', ghost: '#172133', ink: '#E6EBF2', ink2: '#B4BFCE', ink3: '#8E9BB0', muted: 'dmuted', brand: 'dbrand', segBg: '#1E2838', segOn: '#2C3A52', kbdBg: '#172133', kbdLine: '#2C3A52', sel: '#1B2B4A',
+          btn: 'height:34px;padding:0 12px;border-radius:9px;border:1px solid #2C3A52;background:#172133;font:600 13px Inter,sans-serif;color:#E6EBF2;cursor:pointer',
+          tile: { brand: '#1B2B4A', warn: '#2E2210', bad: '#33171A', ok: '#10291E' }, itone: { brand: 'dbrand', warn: 'dwarn', bad: 'dbad', ok: 'dok' },
+          chip: { bad: 'background:#33171A;color:#F58C80', warn: 'background:#2E2210;color:#F2B35B', ok: 'background:#10291E;color:#5BD49A', muted: 'background:#1E2838;color:#B4BFCE' }, mark: '#8DB0FA', badTone: 'dbad' }
+      : { cls: '', canvas: '#F5F6F8', side: '#0D1B2E', panel: '#FFFFFF', line: '#E3E7ED', soft: '#EEF1F5', foot: '#FAFBFC', ghost: '#E8EBF0', ink: '#0F1A2B', ink2: '#46546A', ink3: '#5F6C80', muted: 'muted', brand: 'brand', segBg: '#EEF1F5', segOn: '#FFFFFF', kbdBg: '#FFFFFF', kbdLine: '#D5DBE4', sel: '#EAF0FD',
+          btn: 'height:34px;padding:0 12px;border-radius:9px;border:1px solid #D5DBE4;background:#FFFFFF;font:600 13px Inter,sans-serif;color:#0F1A2B;cursor:pointer',
+          tile: { brand: '#EAF0FD', warn: '#FEF1D6', bad: '#FDE6E3', ok: '#E3F7EC' }, itone: { brand: 'brand', warn: 'warn', bad: 'bad', ok: 'ok' },
+          chip: { bad: 'background:#FDE6E3;color:#B0190F', warn: 'background:#FEF1D6;color:#934100', ok: 'background:#E3F7EC;color:#0A6B3D', muted: 'background:#EEF1F5;color:#46546A' }, mark: '#2450B8', badTone: 'bad' };
+
+    // [group, glyph, title, detail, company, month, page, status chip, chip tone, right, kind]
+    // right: who may find it (hr, payments, accounting, admin; "a|b" = either; "" = everyone). Rows without one take their group's right (GROUP_RIGHT).
+    // kind: sql or here = only offered for that kind of company. Staff and Requests carry no IC, bank account or pay; Requests are not tied to a month.
+    // Rule shared with Notifications: a row only reaches someone whose menu shows the page it opens. Requests are found by
+    // someone with Payments only when they are on Approvals or To pay, and then open there (the 12th field); withdrawn and
+    // refused claims and salary advances are HR only.
+    // Dates in chips use the app's words: Overdue / Today / Due followed by the short date, never a day count.
+    // waiting for approval per company (samples): AISB 3, AI 0, AIL 1, AIP 0; all companies = the two in use
+    const waitN = ({ AISB: 3, AI: 0, AIL: 1, AIP: 0 })[String(this.state.cp).toUpperCase()] ?? 3;
+    const waitText = waitN ? waitN + (waitN === 1 ? ' request' : ' requests') + ' waiting for approval' : 'No requests waiting for approval';
+    const ALL = [
+      ['Actions', 'plus', 'Add a payment', 'Opens the new payment form', '', '', 'NewPayment.dc.html', '', '', 'payments', ''],
+      ['Actions', 'leave', 'Add leave', 'Opens the leave form', '', '', 'HrLeave.dc.html', '', '', 'hr', ''],
+      ['Actions', 'claim', 'New claim', 'Opens the claim form', '', '', 'HrClaim.dc.html', '', '', 'hr', ''],
+      ['Actions', 'approval', 'Print approval form', waitText, '', '', 'PrintApprovalForm.dc.html', '', '', 'payments', ''],
+      ['Actions', 'upload', 'Upload a signed form', 'Matched by the code printed on it', '', '', 'ApprovalUpload.dc.html', '', '', 'payments', ''],
+      ['Actions', 'database', 'Fetch from SQL exports', 'Reads every listing in the export folder', '', '', 'Sql.dc.html', '', '', 'accounting', 'sql'],
+      ['Actions', 'inbox', 'Explain bank lines', '5 lines still to explain', '', '', 'BankReview.dc.html', '', '', 'accounting', ''],
+      ['Actions', 'upload', 'Import a bank statement', 'Maybank PDF', '', '', 'Bank.dc.html', '', '', 'accounting', ''],
+      ['Actions', 'vault', 'Make an encrypted backup', 'Last one 11 Nov', '', '', 'Backup.dc.html', '', '', 'admin', ''],
+      ['Actions', 'pack', 'Build the audit pack', 'For the month being worked', '', '', 'AuditPack.dc.html', '', '', 'admin', ''],
+      ['Actions', 'company', 'Switch company', 'AISB or AI', '', '', 'CompanySwitcher.dc.html', '', '', '', ''],
+      ['Payments', 'receipt', 'Electricity bill', 'RM 1,163.20 · PV2611-003', 'AISB', 'Oct 2026', 'PaymentsRegister.dc.html', 'Paid, docs missing', 'warn'],
+      ['Payments', 'person', 'Oct 2026 Claims - Wei Ming', 'RM 486.50 · in To pay', 'AISB', 'Oct 2026', 'ToPay.dc.html', 'Overdue 14 Nov', 'bad'],
+      ['Requests', 'claim', 'CL-2610-004', 'Claim · Wei Ming · RM 486.50 · form AF-2611-003', 'AISB', '', 'HrClaim.dc.html', 'Approved', 'ok', 'hr|payments', '', 'ToPay.dc.html'],
+      ['Requests', 'claim', 'CL-2610-005', 'Claim · Aina · RM 408.00 · form AF-2611-003', 'AISB', '', 'HrClaim.dc.html', 'Approved', 'ok', 'hr|payments', '', 'ToPay.dc.html'],
+      ['Requests', 'claim', 'CL-2610-007', 'Claim · Jia Hui · RM 320.00 · form AF-2611-003', 'AISB', '', 'HrClaim.dc.html', 'Approved', 'ok', 'hr|payments', '', 'ToPay.dc.html'],
+      ['Requests', 'claim', 'CL-2611-001', 'Claim · Kah Seng · RM 145.00 · form AF-2611-005', 'AISB', '', 'HrClaim.dc.html', 'Waiting for approval', 'warn', 'hr|payments', '', 'Approvals.dc.html'],
+      ['Requests', 'claim', 'CL-2610-006', 'Claim · Wei Ming · RM 120.00 · entered twice', 'AISB', '', 'HrClaim.dc.html', 'Withdrawn', 'muted', 'hr'],
+      ['Requests', 'claim', 'CL-2609-002', 'Claim · Wei Ming · RM 95.00 · refused 2 Nov', 'AISB', '', 'HrClaim.dc.html', 'Paid, approval refused', 'bad', 'hr'],
+      ['Requests', 'advance', 'SA-2611-001', 'Salary advance · Hafiz · RM 1,500.00 · form AF-2611-001', 'AISB', '', 'HrAdvances.dc.html', 'Approved', 'ok', 'hr'],
+      ['Requests', 'advance', 'SA-2611-002', 'Salary advance · Daniel · RM 4,000.00 · form AF-2611-005', 'AISB', '', 'HrAdvances.dc.html', 'Waiting for approval', 'warn', 'hr'],
+      ['Requests', 'approval', 'Consultant fee, Payroll Advisory PLT', 'PA-1010 · RM 3,200.00 · form AF-2611-004', 'AISB', '', 'Approvals.dc.html', 'Waiting for approval', 'warn', 'payments'],
+      ['Staff', 'staff', 'Aisha Rahman (Aisha)', 'S001 · HR and finance executive', 'AISB', '', 'HrStaffRecord.dc.html', 'In employment', 'ok', 'hr'],
+      ['Staff', 'staff', 'Ong Wei Ming (Wei Ming)', 'S002 · Sales executive', 'AISB', '', 'HrStaffRecord.dc.html', 'In employment', 'ok', 'hr'],
+      ['Staff', 'staff', 'Nurul Aina binti Hashim (Aina)', 'S003 · HR and admin executive', 'AISB', '', 'HrStaffRecord.dc.html', 'In employment', 'ok', 'hr'],
+      ['Staff', 'staff', 'Wong Kah Seng (Kah Seng)', 'S006 · IT support', 'AISB', '', 'HrStaffRecord.dc.html', 'In employment', 'ok', 'hr'],
+      ['Staff', 'staff', 'Goh Jia Hui (Jia Hui)', 'S007 · Marketing executive', 'AISB', '', 'HrStaffRecord.dc.html', 'On probation', 'warn', 'hr'],
+      ['Staff', 'staff', 'Daniel Lee Chee Keong (Daniel)', 'S009 · Accounts assistant', 'AISB', '', 'HrStaffRecord.dc.html', 'On probation', 'warn', 'hr'],
+      ['Staff', 'staff', 'Kavitha Nair (Kavitha)', 'S010 · Marketing executive', 'AISB', '', 'HrStaffRecord.dc.html', 'Left', 'muted', 'hr'],
+      ['Staff', 'staff', 'Mohd Faizal bin Yusof (Faizal)', 'A001 · Farm manager', 'AI', '', 'HrStaffRecord.dc.html', 'In employment', 'ok', 'hr'],
+      ['Staff', 'staff', 'Rina Santoso (Rina)', 'A005 · Farm supervisor', 'AI', '', 'HrStaffRecord.dc.html', 'In employment', 'ok', 'hr'],
+      ['Payments', 'vault', 'KWSP', 'RM 11,240.00 · due 15 Nov', 'AISB', 'Oct 2026', 'PaymentsRegister.dc.html', 'Past legal deadline (15 Nov)', 'bad'],
+      ['Payments', 'vault', 'KWSP', 'RM 4,478.00 · due 15 Nov', 'AI', 'Oct 2026', 'PaymentsRegister.dc.html', 'Past legal deadline (15 Nov)', 'bad'],
+      ['Payments', 'person', 'Consultant fee', 'RM 3,200.00', 'AISB', 'Oct 2026', 'PaymentsRegister.dc.html', 'Not on Oct statement', 'bad'],
+      ['Payments', 'receipt', 'Electricity bill', 'RM 1,097.40 · PV2609-025', 'AISB', 'Sep 2026', 'PaymentsRegister.dc.html', 'Complete', 'ok'],
+      ['Bank lines', 'bank', 'IBG DR WEB HOSTING · 291026', 'Maybank current · 29 Oct · RM 389.00', 'AISB', 'Oct 2026', 'BankReview.dc.html', 'To explain', 'warn'],
+      ['SQL documents', 'database', 'PV2611-003', 'Electricity bill · RM 1,163.20', 'AISB', 'Oct 2026', 'Sql.dc.html', 'Linked', 'ok'],
+      ['SQL documents', 'database', 'PV2611-003', 'Electricity October · SQL 1,136.20', 'AISB', 'Oct 2026', 'Sql.dc.html', 'Changed in SQL', 'warn'],
+      ['Documents', 'document', 'AF-2611-003 signed (paper scan).pdf', 'Uploaded to Oct 2026 Claims - Wei Ming', 'AISB', 'Oct 2026', 'PaymentsRegister.dc.html', '', ''],
+      ['Documents', 'document', 'Bank slip Office rental.pdf', 'Uploaded to Office rental', 'AISB', 'Oct 2026', 'PaymentsRegister.dc.html', '', ''],
+      ['Checklist items', 'checklist', 'e-CP22 for Daniel', 'Joiner reminder', 'AISB', 'Nov 2026', 'MonthlyChecklist.dc.html', 'Due 3 Dec', 'muted'],
+      ['Checklist items', 'checklist', 'Build and file the audit pack', 'Admin', 'AI', 'Oct 2026', 'AuditPack.dc.html', 'Due 30 Nov', 'muted'],
+      ['Recurring', 'recurring', 'Office rental', 'Last day of the month', 'AISB', '', 'Recurring.dc.html', '', ''],
+      ['Setup records', 'sliders', 'Maybank current', 'Bank account', 'AISB', '', 'SetupCompanies.dc.html', '', ''],
+      ['Setup records', 'sliders', '900-400 Utilities', 'Chart of accounts', 'AISB', '', 'SetupChart.dc.html', '', ''],
+      ['Go to', 'overview', 'Overview', 'Overview', '', '', 'Main.dc.html', '', '', '', ''],
+      ['Go to', 'staff', 'Staff', 'HR', '', '', 'HrStaff.dc.html', '', '', 'hr', ''],
+      ['Go to', 'leave', 'Leave', 'HR', '', '', 'HrLeave.dc.html', '', '', 'hr', ''],
+      ['Go to', 'reminder', 'Calendar and reminders', 'HR', '', '', 'HrCalendar.dc.html', '', '', 'hr', ''],
+      ['Go to', 'claim', 'Claims and advances', 'HR', '', '', 'HrClaims.dc.html', '', '', 'hr', ''],
+      ['Go to', 'payroll', 'Payroll', 'HR', '', '', 'PayrollCheck.dc.html', '', '', 'hr', ''],
+      ['Go to', 'approval', 'Approvals', 'Payments', '', '', 'Approvals.dc.html', '', '', 'payments', ''],
+      ['Go to', 'toPay', 'To pay', 'Payments', '', '', 'ToPay.dc.html', '', '', 'payments', ''],
+      ['Go to', 'payment', 'Payments register', 'Payments', '', '', 'PaymentsRegister.dc.html', '', '', 'payments', ''],
+      ['Go to', 'checklist', 'Monthly checklist', 'Payments', '', '', 'MonthlyChecklist.dc.html', '', '', 'payments', ''],
+      ['Go to', 'bank', 'Bank and reconciliation', 'Accounting', '', '', 'Bank.dc.html', '', '', 'accounting', ''],
+      ['Go to', 'database', 'SQL import', 'Accounting', '', '', 'Sql.dc.html', '', '', 'accounting', 'sql'],
+      ['Go to', 'books', 'Books', 'Accounting', '', '', 'Books.dc.html', '', '', 'accounting', ''],
+      ['Go to', 'statutory', 'Statutory payables', 'Accounting', '', '', 'BooksStatutory.dc.html', '', '', 'accounting', ''],
+      ['Go to', 'receipt', 'Sales', 'Accounting', '', '', 'AccountingKeptHere.dc.html', '', '', 'accounting', 'here'],
+      ['Go to', 'trail', 'Audit trail', 'Admin', '', '', 'AuditTrail.dc.html', '', '', 'admin', ''],
+      ['Go to', 'access', 'Users and access', 'Admin', '', '', 'UsersAccess.dc.html', '', '', 'admin', ''],
+      ['Go to', 'sliders', 'Setup', 'Admin', '', '', 'SetupCompanies.dc.html', '', '', 'admin', '']
+    ];
+    // what a group needs when its row names no right of its own
+    const GROUP_RIGHT = { Payments: 'payments', 'Bank lines': 'accounting', 'SQL documents': 'accounting', Documents: 'payments', 'Checklist items': 'payments', Recurring: 'payments', 'Setup records': 'admin' };
+    const view = this.props.view || 'recent';
+    const who = view === 'no-hr' ? 'marcus' : (this.props.user ?? 'aisha');
+    const RIGHTS = { aisha: ['hr', 'payments', 'accounting', 'admin'], marcus: ['payments', 'accounting'], aina: ['hr'] }[who] || ['hr', 'payments', 'accounting', 'admin'];
+    const allowed = r => { const need = (r[9] !== undefined ? r[9] : GROUP_RIGHT[r[0]]) || ''; return !need || need.split('|').some(x => RIGHTS.includes(x)); };
+    const q = String(this.state.q || '').trim().toLowerCase();
+    const moThis = this.state.mo === 'this', cpThis = this.state.cp !== 'all', cpCode = String(this.state.cp).toUpperCase();
+    const cpKind = ({ AISB: 'sql', AIL: 'sql', AI: 'here', AIP: 'here' })[cpCode] || '';
+    const inScope = r => allowed(r) && (!moThis || !r[5] || r[5] === 'Oct 2026') && (!cpThis || !r[4] || r[4] === cpCode) && (!r[10] || !cpKind || r[10] === cpKind);
+    const busy = !!(this.state.load || this.state.err);
+    let order, pool;
+    if (!q) {
+      // empty query: Recent, then Actions, then Go to
+      const recentTitles = ['Electricity bill', 'Explain bank lines', 'Staff', 'Audit trail'];
+      const recent = recentTitles.map(t => ALL.find(r => r[2] === t && inScope(r))).filter(Boolean).slice(0, 3).map(r => ['Recent'].concat(r.slice(1)));
+      pool = recent.concat(ALL.filter(r => (r[0] === 'Actions' || r[0] === 'Go to') && inScope(r)));
+      order = ['Recent', 'Actions', 'Go to'];
+    } else {
+      pool = ALL.filter(r => inScope(r) && (r[2] + ' ' + r[3] + ' ' + r[4] + ' ' + r[5]).toLowerCase().includes(q));
+      order = ['Actions', 'Payments', 'Requests', 'Staff', 'Bank lines', 'SQL documents', 'Documents', 'Checklist items', 'Recurring', 'Setup records', 'Go to'];
+    }
+    // many rows: with a query at most 3 of each kind and 12 in all are listed, so every kind found shows; the rest are counted
+    const LIMIT = 12, PER = 3;
+    const found = order.reduce((n, label) => n + pool.filter(h => h[0] === label).length, 0);
+    if (q && found > LIMIT) { let left = LIMIT; const keep = []; order.forEach(label => pool.filter(h => h[0] === label).slice(0, PER).forEach(h => { if (left > 0) { keep.push(h); left--; } })); pool = keep; }
+    const shownN = pool.length, hiddenN = q && !busy ? Math.max(0, found - shownN) : 0;
+    if (busy) { pool = []; order = []; }
+    const total = order.reduce((s, label) => s + pool.filter(h => h[0] === label).length, 0);
+    const sel = total ? Math.max(0, Math.min(this.state.sel || 0, total - 1)) : -1;
+    const parts = title => {
+      const i = q ? title.toLowerCase().indexOf(q) : -1;
+      const plain = 'font-weight:500', bold = 'font-weight:700;color:' + k.mark;
+      if (i < 0) return [{ t: title, style: plain }];
+      return [{ t: title.slice(0, i), style: plain }, { t: title.slice(i, i + q.length), style: bold }, { t: title.slice(i + q.length), style: plain }].filter(p => p.t);
+    };
+    let n = 0;
+    const groups = order.map((label, gi) => ({ label, lid: 'cp-g-' + gi, ink: k.ink3, items: pool.filter(h => h[0] === label).map(h => {
+      const idx = n++;
+      const on = idx === sel;
+      const tone = h[8] === 'bad' ? 'bad' : h[8] === 'warn' ? 'warn' : h[8] === 'ok' ? 'ok' : 'brand';
+      const where = h[4] ? h[4] + (h[5] ? ' · ' + h[5] : '') : '';
+      return { glyph: h[1], parts: parts(h[2]), sub: [h[3], where].filter(Boolean).join(' · '), subInk: k.ink3, href: h[11] && !RIGHTS.includes('hr') ? h[11] : h[6], tone: k.itone[tone],
+        hasChip: !!h[7], chip: h[7], chipStyle: 'display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap;' + (k.chip[h[8]] || k.chip.muted),
+        sel: on, kbd: 'font:600 11px Inter,sans-serif;color:' + k.ink2 + ';background:' + k.kbdBg + ';border:1px solid ' + k.kbdLine + ';border-radius:6px;padding:2px 6px;flex:none',
+        id: 'cp-opt-' + idx, selected: on ? 'true' : 'false',
+        hover: () => { if (this.state.sel !== idx) this.setState({ sel: idx }); },
+        titleStyle: 'color:' + k.ink,
+        tile: 'width:34px;height:34px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + k.tile[tone],
+        style: 'transition:background-color .12s ease-out;display:flex;align-items:center;gap:12px;margin:0 8px;padding:8px 10px;border-radius:10px;text-decoration:none;color:' + k.ink + ';' + (on ? 'background:' + k.sel : '') };
+    }) })).filter(g => g.items.length);
+    const FOCUSABLE = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    const segBase = 'min-height:32px;padding:0 10px;border:0;border-radius:7px;font:600 12px Inter,sans-serif;cursor:pointer;';
+    const segOn = segBase + 'background:' + k.segOn + ';color:' + k.ink + ';box-shadow:0 1px 2px rgba(16,24,40,.14)', segOff = segBase + 'background:transparent;color:' + k.ink2;
+    const scopeLabel = (cpThis ? cpCode : 'all companies') + ' · ' + (moThis ? 'October 2026' : 'all months');
+    const setScope = (key, val) => () => { if (this.state[key] !== val) this.setState({ [key]: val, sel: 0 }); };
+    return {
+      k, theme: dark ? 'dark' : 'light', hosting: hosted ? 'hosted' : 'pc',
+      q: this.state.q, groups, none: groups.length === 0 && !busy, loading: !!this.state.load, failed: !!this.state.err,
+      skel: ["55%", "70%", "45%"].map(w => ({ w, bg: k.ghost })),
+      retry: () => this.setState({ err: false, sel: 0 }),
+      hasMore: hiddenN > 0, moreText: 'Showing ' + shownN + ' of ' + found + ' results, at most ' + PER + ' of each kind. Type more to narrow them, or choose one month or one company.',
+      user: who, sbAccess: ({ marcus: 'noHrNoAdmin', aina: 'hrOnly' })[who] || 'full',
+      hasNote: who !== 'aisha', accessNote: who === 'marcus' ? 'Staff, leave, the calendar, salary advances and withdrawn or refused claims are not searched with your access.' : 'Payments, bank lines and SQL documents are not searched with your access.',
+      emptyHint: who === 'aina' ? 'Try a person, a staff number, a claim code or a page name.' : who === 'marcus' ? 'Try a payee, an amount, a PV number, a request code or a page name.' : 'Try a payee, an amount, a PV number, a person, a request code or a page name.', narrowed: moThis || cpThis, scopeLabel,
+      widen: () => this.setState({ mo: 'all', cp: 'all', sel: 0 }),
+      pr: { moThis: moThis ? 'true' : 'false', moAll: moThis ? 'false' : 'true' },
+      st: { moThis: moThis ? segOn : segOff, moAll: moThis ? segOff : segOn },
+      setMoThis: setScope('mo', 'this'), setMoAll: setScope('mo', 'all'),
+      topCo: this.state.cp, sbKind: ({ ai: 'here', aip: 'here', ail: 'sql' })[String(this.state.cp).toLowerCase()] || 'sqlPayroll', onCo: code => { if (code !== this.state.cp) this.setState({ cp: code, sel: 0 }); },
+      open: this.state.open,
+      dimClass: this.state.closing ? 'dim-out' : 'dim-in',
+      dlgClass: this.state.closing ? 'dr-out' : 'dr-in',
+      activeId: sel >= 0 ? 'cp-opt-' + sel : '',
+      countText: this.state.load ? 'Searching ' + scopeLabel : this.state.err ? 'Search could not read the records' : (total ? total + (total === 1 ? ' result' : ' results') : 'No results') + ' in ' + scopeLabel,
+      whereText: hosted ? 'Searches your company’s records only' : 'Searches this PC’s records only',
+      onQ: e => this.setState({ q: e.target.value, sel: 0 }),
+      close: () => this.close(),
+      reopen: e => this.openPalette(e && e.currentTarget),
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      rootKey: e => {
+        if ((e.ctrlKey || e.metaKey) && String(e.key).toLowerCase() === 'k') { e.preventDefault(); this.openPalette(document.activeElement); }
+      },
+      inputKey: e => {
+        if (!total) return;
+        let s;
+        if (e.key === 'ArrowDown') s = (sel + 1) % total;
+        else if (e.key === 'ArrowUp') s = (sel - 1 + total) % total;
+        else if (e.key === 'Home') s = 0;
+        else if (e.key === 'End') s = total - 1;
+        else if (e.key === 'Enter') {
+          e.preventDefault();
+          const a = document.getElementById('cp-opt-' + sel);
+          if (a && a.click) a.click();
+          return;
+        } else return;
+        e.preventDefault();
+        this._kbd = s !== sel;
+        this.setState({ sel: s });
+      },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(); return; }
+        if (e.key !== 'Tab') return;
+        const box = e.currentTarget;
+        const f = Array.from(box.querySelectorAll(FOCUSABLE)).filter(x => x.getAttribute('tabindex') !== '-1');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1], i = f.indexOf(document.activeElement);
+        // the heading or the panel itself (tabindex -1) is not in the list: wrap from it too
+        if (e.shiftKey && i <= 0) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); first.focus(); }
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

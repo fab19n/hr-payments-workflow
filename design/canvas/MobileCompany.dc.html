@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile · AISB October · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}
+/* motion and focus base */
+.mc-row{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.mc-row:active{background-color:#F7F8FA !important;border-color:#D5DBE4 !important}
+.mc-icon{transition:background-color .12s ease-out}
+.mc-icon:active{background-color:#F1F3F7 !important}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+.fr:focus-visible{outline-offset:-2px}
+/* a 44px tall touch area around a smaller control, without changing how it looks */
+.hit{position:relative}
+.hit::after{content:"";position:absolute;left:0;right:0;top:50%;height:44px;transform:translateY(-50%)}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes swNA{from{opacity:0;transform:translateX(8px)}}
+@keyframes swNB{from{opacity:0;transform:translateX(8px)}}
+@keyframes swPA{from{opacity:0;transform:translateX(-8px)}}
+@keyframes swPB{from{opacity:0;transform:translateX(-8px)}}
+@keyframes hlA{0%,65%{background-color:#EAF0FD;box-shadow:inset 0 0 0 2px #2450B8}100%{background-color:#FFFFFF;box-shadow:inset 0 0 0 2px rgba(36,80,184,0)}}
+@keyframes hlB{0%,65%{background-color:#EAF0FD;box-shadow:inset 0 0 0 2px #2450B8}100%{background-color:#FFFFFF;box-shadow:inset 0 0 0 2px rgba(36,80,184,0)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sheetOut{from{transform:none}to{transform:translateY(100%)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.swNA{animation:swNA .15s cubic-bezier(.22,1,.36,1) both}
+.swNB{animation:swNB .15s cubic-bezier(.22,1,.36,1) both}
+.swPA{animation:swPA .15s cubic-bezier(.22,1,.36,1) both}
+.swPB{animation:swPB .15s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.hlA{animation:hlA 3s ease-out both}
+.hlB{animation:hlB 3s ease-out both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.sh-in{animation:sheetIn .24s cubic-bezier(.22,1,.36,1) both}
+.sh-out{animation:sheetOut .18s cubic-bezier(.4,0,1,1) both}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}
+/* reduced motion: the row a link landed on keeps a still outline for as long as it is marked */
+.hlA,.hlB{animation:none !important;background-color:#EAF0FD !important;box-shadow:inset 0 0 0 2px #2450B8 !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; overflow: hidden">
+ <div inert="{{sheetOn}}" style="flex: 1; min-height: 0; display: flex; flex-direction: column">
+  <header style="background: #FFFFFF; border-bottom: 1px solid #E3E7ED; padding: 8px 8px 12px; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; align-items: center; gap: 0">
+      <a href="MobileOverview.dc.html" class="mc-icon" aria-label="Back to Overview" style="width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="22" hint-size="22px,22px"></dc-import></a>
+      <button type="button" id="mc-pick" class="mc-icon" onClick="{{openPick}}" aria-haspopup="dialog" aria-label="{{pickLabel}}" style="flex: 1; min-width: 0; min-height: 44px; padding: 0 6px; border: 0; border-radius: 12px; background: transparent; text-align: left; display: flex; flex-direction: column; justify-content: center; cursor: pointer; color: #0F1A2B">
+        <span style="font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #2450B8">{{coCode}}</span>
+        <span style="display: flex; align-items: center; gap: 4px; font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 600; font-size: 17px; white-space: nowrap">{{monthLabel}}<dc-import name="Icon" glyph="chevronDown" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>
+      </button>
+      <button type="button" class="mc-icon" onClick="{{prevMonth}}" disabled="{{prevOff}}" aria-label="Previous month" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; opacity: {{prevOp}}"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="22" hint-size="22px,22px"></dc-import></button>
+      <button type="button" class="mc-icon" onClick="{{nextMonth}}" disabled="{{nextOff}}" aria-label="Next month" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; opacity: {{nextOp}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="22" hint-size="22px,22px"></dc-import></button>
+      <button type="button" id="mc-more" class="mc-icon" onClick="{{openMore}}" aria-haspopup="dialog" aria-label="More actions" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="more" tone="muted" size="22" hint-size="22px,22px"></dc-import></button>
+    </div>
+    <div role="tablist" aria-label="{{tabsLabel}}" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; margin: 0 8px; background: #F1F3F7; border-radius: 12px">
+      <button type="button" role="tab" id="mc-tab-pay" aria-selected="{{paySel}}" aria-controls="mc-panel" tabindex="{{payTab}}" onKeyDown="{{tabKey}}" onClick="{{showPay}}" style="{{tabPay}}">{{payLabel}}</button>
+      <button type="button" role="tab" id="mc-tab-chk" aria-selected="{{chkSel}}" aria-controls="mc-panel" tabindex="{{chkTab}}" onKeyDown="{{tabKey}}" onClick="{{showChk}}" style="{{tabChk}}">{{chkLabel}}</button>
+    </div>
+  </header>
+
+  <main style="flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px 96px; display: flex; flex-direction: column; gap: 10px">
+    <sc-if value="{{notCurrent}}" hint-placeholder-val="{{ false }}">
+      <div class="ex" style="display: flex; align-items: center; gap: 10px; padding: 4px 4px 4px 14px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED">
+        <span style="flex: 1; min-width: 0; font-size: 13px; color: #46546A">Showing {{monthLabel}}</span>
+        <button type="button" onClick="{{goCurrent}}" style="min-height: 44px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: #2450B8; font: 600 14px Inter, sans-serif; cursor: pointer">Current month</button>
+      </div>
+    </sc-if>
+    <div id="mc-panel" role="tabpanel" aria-labelledby="{{panelBy}}" class="{{panelCls}}" style="display: flex; flex-direction: column; gap: 10px">
+      <sc-if value="{{filedOn}}" hint-placeholder-val="{{ false }}">
+        <div role="status" class="rv" style="display: flex; align-items: center; gap: 10px; padding: 10px 6px 10px 14px; border-radius: 14px; background: #E3F7EC; border: 1px solid #BFE8D0; color: #0A6B3D">
+          <dc-import name="Icon" glyph="verified" tone="ok" size="22" hint-size="22px,22px"></dc-import>
+          <span style="flex: 1; min-width: 0; font-weight: 600">{{filedText}}</span>
+          <button type="button" id="mc-reopen" onClick="{{reopen}}" style="min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #0A6B3D; background: #FFFFFF; color: #0A6B3D; font: 600 14px Inter, sans-serif; cursor: pointer">Reopen</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{notSetUp}}" hint-placeholder-val="{{ false }}">
+        <div class="rv" style="display: flex; flex-direction: column; gap: 10px; padding: 18px 16px; border-radius: 14px; background: #FFFFFF; border: 1px dashed #B7C1D0">
+          <dc-import name="Icon" glyph="calendar" tone="brand" size="28" hint-size="28px,28px"></dc-import>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{monthLabel}} isn't set up yet</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px">Setting up a month copies the recurring payments and the checklist into it.</p>
+          <a href="MobileDesktopOnly.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 12px; background: #2450B8; color: #FFFFFF; font-weight: 600; font-size: 15px; text-decoration: none"><dc-import name="Icon" glyph="calendar" tone="white" size="18" hint-size="18px,18px"></dc-import>Set up this month</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{setUp}}" hint-placeholder-val="{{ true }}">
+        <section aria-labelledby="mc-next-h" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 12px 6px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px"><h2 id="mc-next-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Next up · {{coCode}}</h2><span style="color: #5F6C80; font-size: 12px">{{nextCount}}</span></div>
+          <sc-if value="{{nextEmpty}}" hint-placeholder-val="{{ false }}"><div style="display: flex; align-items: center; gap: 10px; padding: 6px 2px 10px"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import><span style="color: #46546A">All caught up for {{coCode}}.</span></div></sc-if>
+          <div id="mc-next" style="display: flex; flex-direction: column">
+            <sc-for list="{{nextRows}}" as="n" hint-placeholder-count="3">
+              <div style="border-top: 1px solid #EEF1F5">
+                <sc-if value="{{n.here}}" hint-placeholder-val="{{ true }}">
+                  <button type="button" onClick="{{n.go}}" class="mc-row fr" style="width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 2px; border: 0; background: transparent; text-align: left; font: 400 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.tone}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600; font-size: 13px">{{n.title}}</span><span style="{{n.dueStyle}}">{{n.due}}</span></span><dc-import name="Icon" glyph="arrow" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+                </sc-if>
+                <sc-if value="{{n.far}}" hint-placeholder-val="{{ false }}">
+                  <a href="MobileDesktopOnly.dc.html" class="mc-row fr" style="display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 2px; text-decoration: none; color: #0F1A2B"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.tone}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600; font-size: 13px">{{n.title}}</span><span style="{{n.dueStyle}}">{{n.due}}</span></span><dc-import name="Icon" glyph="laptop" tone="muted" size="16" hint-size="16px,16px"></dc-import></a>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{nextMore}}" hint-placeholder-val="{{ false }}">
+            <button type="button" id="mc-next-all" onClick="{{toggleNext}}" aria-expanded="{{nextExpanded}}" aria-controls="mc-next" style="min-height: 44px; border: 0; border-top: 1px solid #EEF1F5; background: transparent; color: #2450B8; font: 600 14px Inter, sans-serif; cursor: pointer">{{nextToggleLabel}}</button>
+          </sc-if>
+          <sc-if value="{{hasOlder}}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid #EEF1F5; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 2px 2px 6px; color: #5F6C80; font-size: 13px">Older months still open:
+              <sc-for list="{{older}}" as="o" hint-placeholder-count="1"><button type="button" onClick="{{o.go}}" style="min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: #2450B8; font: 600 13px Inter, sans-serif; cursor: pointer; text-decoration: underline">{{o.label}}</button></sc-for>
+            </div>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{pay}}" hint-placeholder-val="{{ true }}">
+        <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid #7C8799; background: #FFFFFF">
+          <dc-import name="Icon" glyph="search" tone="muted" size="18" hint-size="18px,18px"></dc-import>
+          <input id="mc-search" type="search" aria-label="Search payments" placeholder="Search payments" value="{{q}}" onChange="{{onSearch}}" onInput="{{onSearch}}" autoComplete="off" style="flex: 1; min-width: 0; height: 44px; border: 0; padding: 0; background: transparent; font: 400 16px Inter, sans-serif; color: #0F1A2B; outline: 0">
+          <sc-if value="{{hasQ}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{clearQ}}" aria-label="Clear search" style="width: 44px; height: 44px; margin-right: -12px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button></sc-if>
+        </div>
+        <div role="group" aria-label="Show payments" class="{{rowCls}}" style="display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px; padding: 4px 16px">
+          <sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><button type="button" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}</button></sc-for>
+        </div>
+        <sc-if value="{{attnRule}}" hint-placeholder-val="{{ false }}"><p class="ex" style="margin: 0; color: #5F6C80; font-size: 12px">Needs attention: overdue or past the legal deadline, part paid, or a document or record missing.</p></sc-if>
+        <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+          <div role="status" class="ex" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px 16px; border-radius: 14px; background: #FFFFFF; border: 1px dashed #B7C1D0; text-align: center"><span style="font-weight: 600">{{noMatchText}}</span><button type="button" onClick="{{clearAll}}" style="min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">Show all payments</button></div>
+        </sc-if>
+        <sc-for list="{{payments}}" as="p" hint-placeholder-count="5">
+          <div id="{{p.id}}" class="{{p.cls}}" style="display: flex; flex-direction: column; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED">
+            <a href="MobilePayment.dc.html" class="mc-row" style="display: flex; align-items: flex-start; gap: 10px; padding: 14px 14px 8px; border-radius: 14px 14px 0 0; text-decoration: none; color: #0F1A2B"><span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600">{{p.name}}</span><span style="display: block; color: #5F6C80; font-size: 12px">{{p.sub}}</span></span><span style="text-align: right"><b style="display: block; font-variant-numeric: tabular-nums; white-space: nowrap">{{p.amount}}</b><span style="display: block; color: #5F6C80; font-size: 12px; font-variant-numeric: tabular-nums">{{p.amtNote}}</span></span></a>
+            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding: 0 14px 10px">
+              <sc-if value="{{p.whyBtn}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{p.whyId}}" class="hit" aria-expanded="{{p.whyOpen}}" aria-controls="{{p.noteId}}" aria-label="{{p.whyLabel}}" onClick="{{p.toggleWhy}}" onKeyDown="{{p.whyKey}}" style="{{p.pill}}">{{p.status}}<dc-import name="Icon" glyph="help" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import></button></sc-if>
+              <sc-if value="{{p.plain}}" hint-placeholder-val="{{ false }}"><span style="{{p.pill}}">{{p.status}}</span></sc-if>
+              <span style="color: #5F6C80; font-size: 12px">{{p.docs}}</span>
+              <sc-if value="{{p.sqlChip}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; min-height: 22px; padding: 0 8px; border-radius: 6px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="database" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{p.sqlChip}}</span></sc-if>
+            </div>
+            <sc-if value="{{p.whyOpen2}}" hint-placeholder-val="{{ false }}"><p id="{{p.noteId}}" class="ex" style="margin: 0; padding: 10px 14px 12px; border-top: 1px solid #EEF1F5; color: #46546A; font-size: 13px; border-radius: 0 0 14px 14px; background: #FAFBFC">{{p.why}}</p></sc-if>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{chk}}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{tasks}}" as="t" hint-placeholder-count="5">
+          <div id="{{t.id}}" class="{{t.cls}}" style="{{t.card}}">
+            <div style="display: flex; align-items: flex-start; gap: 4px">
+              <sc-if value="{{t.manual}}" hint-placeholder-val="{{ true }}"><label style="width: 44px; height: 44px; margin: -4px 0 -4px -6px; display: inline-flex; align-items: center; justify-content: center; flex: none; cursor: pointer"><input type="checkbox" checked="{{t.done}}" onChange="{{t.toggle}}" aria-label="{{t.title}}" style="width: 22px; height: 22px; margin: 0; accent-color: #2450B8"></label></sc-if>
+              <sc-if value="{{t.locked}}" hint-placeholder-val="{{ false }}"><span style="width: 44px; height: 32px; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{t.lockGlyph}}" tone="{{t.lockTone}}" size="22" hint-size="22px,22px"></dc-import></span></sc-if>
+              <sc-if value="{{t.reminder}}" hint-placeholder-val="{{ false }}"><span style="width: 44px; height: 32px; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="calendar" tone="muted" size="22" hint-size="22px,22px"></dc-import></span></sc-if>
+              <div style="flex: 1; min-width: 0; padding-top: 2px">
+                <span style="{{t.titleStyle}}">{{t.title}}</span>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 4px">
+                  <sc-if value="{{t.dueText}}" hint-placeholder-val="{{ true }}"><span style="{{t.duePill}}">{{t.dueText}}</span></sc-if>
+                  <sc-if value="{{t.fromRecords}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px; font-weight: 600">{{t.fromRecords}}</span></sc-if>
+                  <sc-if value="{{t.byHand}}" hint-placeholder-val="{{ false }}"><span class="swapA" style="display: inline-flex; align-items: center; min-height: 22px; padding: 0 8px; border-radius: 6px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600">Ticked by hand</span></sc-if>
+                </div>
+                <sc-if value="{{t.detail}}" hint-placeholder-val="{{ true }}"><div style="color: #5F6C80; font-size: 12px; margin-top: 4px">{{t.detail}}</div></sc-if>
+                <sc-if value="{{t.byHand}}" hint-placeholder-val="{{ false }}"><div style="color: #934100; font-size: 12px; margin-top: 4px">Ticked by hand. The records do not show this as done.</div></sc-if>
+              </div>
+            </div>
+            <sc-for list="{{t.files}}" as="f" hint-placeholder-count="1">
+              <div class="ex" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-left: 44px; padding: 6px 6px 6px 12px; border-radius: 10px; background: #F7F8FA">
+                <dc-import name="Icon" glyph="document" tone="ok" size="18" hint-size="18px,18px"></dc-import>
+                <span style="flex: 1 1 120px; min-width: 0; font-size: 13px; overflow-wrap: anywhere">{{f.name}}</span>
+                <button type="button" onClick="{{f.replace}}" aria-label="Replace {{f.name}}" style="min-height: 44px; padding: 0 10px; border: 0; background: transparent; color: #2450B8; font: 600 13px Inter, sans-serif; cursor: pointer">Replace</button>
+                <button type="button" onClick="{{f.remove}}" aria-label="Remove {{f.name}}" style="min-height: 44px; padding: 0 10px; border: 0; background: transparent; color: #B0190F; font: 600 13px Inter, sans-serif; cursor: pointer">Remove</button>
+              </div>
+            </sc-for>
+            <sc-for list="{{t.needs}}" as="u" hint-placeholder-count="1">
+              <button type="button" onClick="{{u.up}}" style="margin-left: 44px; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 11px; border: 1px solid #F3D9A6; background: #FFFBF2; color: #0F1A2B; font: 600 13px Inter, sans-serif; cursor: pointer; text-align: left"><dc-import name="Icon" glyph="upload" tone="warn" size="18" hint-size="18px,18px"></dc-import>{{u.label}}</button>
+            </sc-for>
+            <sc-if value="{{t.canOther}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{t.other}}" style="margin-left: 44px; align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 10px; border: 0; background: transparent; color: #2450B8; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="brand" size="16" hint-size="16px,16px"></dc-import>Other document</button></sc-if>
+            <sc-if value="{{t.remind}}" hint-placeholder-val="{{ false }}"><p style="margin: 2px 0 0 44px; color: #5F6C80; font-size: 12px">{{t.remind}}</p></sc-if>
+          </div>
+        </sc-for>
+      </sc-if>
+    </div>
+  </main>
+ </div>
+
+ <sc-if value="{{showFab}}" hint-placeholder-val="{{ true }}">
+  <a href="MobileNewPayment.dc.html" style="position: absolute; left: 16px; right: 16px; bottom: 16px; height: 52px; border-radius: 14px; background: #2450B8; color: #FFFFFF; font-weight: 600; font-size: 15px; display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; box-shadow: 0 10px 24px rgba(36, 80, 184, .35)"><dc-import name="Icon" glyph="plus" tone="white" size="20" hint-size="20px,20px"></dc-import>Add a payment</a>
+ </sc-if>
+
+ <div role="status" aria-live="polite" style="position: absolute; left: 16px; right: 16px; bottom: 80px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+   <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+     <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 2px 4px 2px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><span>{{toastText}}</span>
+       <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{doUndo}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 0; background: transparent; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: underline; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if>
+       <button type="button" onClick="{{toastDismiss}}" aria-label="Dismiss" style="width: 44px; height: 44px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="white" size="16" hint-size="16px,16px"></dc-import></button></div>
+   </sc-if>
+ </div>
+
+ <sc-if value="{{sheetOn}}" hint-placeholder-val="{{ false }}">
+  <div class="{{dimCls}}" onClick="{{closeSheet}}" aria-hidden="true" style="position: absolute; inset: 0; z-index: 70; background: rgba(13, 27, 46, .5)"></div>
+  <section id="mc-sheet" class="{{sheetCls}}" role="dialog" aria-modal="true" aria-labelledby="mc-sheet-title" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onSheetAnim}}" style="position: absolute; z-index: 71; left: 0; right: 0; bottom: 0; max-height: 640px; background: #FFFFFF; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; overflow: hidden">
+    <div aria-hidden="true" style="display: flex; justify-content: center; padding: 10px 0 4px"><span style="width: 40px; height: 5px; border-radius: 99px; background: #D5DBE4"></span></div>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px 8px 16px">
+      <h2 id="mc-sheet-title" tabindex="-1" style="flex: 1; margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{sheetTitle}}</h2>
+      <button type="button" onClick="{{closeSheet}}" aria-label="Close" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="22" hint-size="22px,22px"></dc-import></button>
+    </div>
+    <div style="overflow-y: auto; padding: 4px 16px 22px; display: flex; flex-direction: column; gap: 14px">
+      <sc-if value="{{pickOn}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px"><span id="mc-co-l" style="font-size: 13px; font-weight: 600; color: #46546A">Company</span>
+          <div role="group" aria-labelledby="mc-co-l" style="display: flex; gap: 4px; padding: 4px; background: #F1F3F7; border-radius: 12px">
+            <sc-for list="{{coOpts}}" as="c" hint-placeholder-count="2"><button type="button" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="{{c.style}}">{{c.label}}</button></sc-for>
+          </div></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span id="mc-mo-l" style="font-size: 13px; font-weight: 600; color: #46546A">Month</span>
+          <div role="group" aria-labelledby="mc-mo-l" style="display: flex; flex-direction: column; gap: 8px">
+            <sc-for list="{{moOpts}}" as="m" hint-placeholder-count="3"><button type="button" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" style="{{m.style}}"><span style="flex: 1; text-align: left">{{m.label}}</span><span style="font-size: 12px; font-weight: 600; color: #5F6C80">{{m.note}}</span></button></sc-for>
+          </div></div>
+      </sc-if>
+      <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <button type="button" id="mc-m-file" onClick="{{fileAction}}" style="display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer; text-align: left"><dc-import name="Icon" glyph="verified" tone="brand" size="22" hint-size="22px,22px"></dc-import>{{fileLabel}}</button>
+          <a href="MobileDesktopOnly.dc.html" style="display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; text-decoration: none"><dc-import name="Icon" glyph="pack" tone="brand" size="22" hint-size="22px,22px"></dc-import><span style="flex: 1">Build the audit pack</span><dc-import name="Icon" glyph="laptop" tone="muted" size="18" hint-size="18px,18px"></dc-import></a>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><span id="mc-th-l" style="font-size: 13px; font-weight: 600; color: #46546A">Appearance</span>
+          <div role="group" aria-labelledby="mc-th-l" style="display: flex; gap: 4px; padding: 4px; background: #F1F3F7; border-radius: 12px">
+            <sc-for list="{{themes}}" as="h" hint-placeholder-count="3"><button type="button" aria-pressed="{{h.pressed}}" onClick="{{h.pick}}" style="{{h.style}}"><dc-import name="Icon" glyph="{{h.glyph}}" tone="{{h.tone}}" size="16" hint-size="16px,16px"></dc-import>{{h.label}}</button></sc-for>
+          </div>
+          <span style="color: #5F6C80; font-size: 12px">{{themeNote}}</span></div>
+      </sc-if>
+      <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; color: #46546A">{{confirmText}}</p>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+          <button type="button" id="mc-c-no" onClick="{{closeSheet}}" style="height: 52px; border-radius: 14px; border: 1px solid #8593A8; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+          <button type="button" id="mc-c-yes" onClick="{{confirmGo}}" style="height: 52px; border-radius: 14px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 15px Inter, sans-serif; cursor: pointer">{{confirmLabel}}</button>
+        </div>
+      </sc-if>
+    </div>
+  </section>
+ </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State to show"},"view":{"editor":"enum","default":"normal","options":["normal","sent-here","sent-checklist","filed","september","not-set-up"],"section":"State to show"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.init(p); }
+  init(p) {
+    const view = (p && p.view) || 'normal', co = (p && p.company) || 'aisb';
+    return { co, tab: view === 'sent-checklist' ? 'chk' : 'pay', f: 'all', q: '', mo: view === 'september' ? -1 : view === 'not-set-up' ? 1 : 0,
+      anim: '', fn: 0, mn: 0, dir: 1, sheet: null, closing: false, confirm: null, theme: 'auto', why: null, nextAll: false,
+      filed: view === 'filed' ? { [co + '|0']: '18 Nov' } : {}, done: {}, byHand: {}, rm: {}, repl: {}, added: {}, got: {}, flash: null, toast: null,
+      hl: view === 'sent-here' ? { tab: 'pay', key: 'consultant', n: 1 } : view === 'sent-checklist' ? { tab: 'chk', key: 'c', n: 1 } : null };
+  }
+  componentDidMount() { this._mounted = true; if (this.state.hl) this.hlTimer(); }
+  componentWillUnmount() { this._mounted = false; clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._hl); }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company) && !this._resetting) {
+      this._resetting = true; clearTimeout(this._tt);
+      this.setState(this.init(this.props));
+      if (this.state.hl) this.hlTimer();
+      this._resetting = false;
+      return;
+    }
+    const s = this.state;
+    if (!prev.sheet && s.sheet) { this.focusId('mc-sheet-title'); return; }
+    if (prev.sheet && !s.sheet) { const o = this._opener; if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); return; }
+    if (this._focus) { const id = this._focus; this._focus = null; this.focusId(id); }
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  // the row a link landed on is marked for about three seconds
+  hlTimer() {
+    clearTimeout(this._hl);
+    this._hl = setTimeout(() => { if (this._mounted !== false) this.setState({ hl: null }); }, 3000);
+    const h = this.state.hl;
+    if (h) setTimeout(() => { const el = document.getElementById((h.tab === 'pay' ? 'mc-p-' : 'mc-t-') + h.key); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'center' }); }, 60);
+  }
+  toastShow(msg, undo) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._undo = undo || null;
+    this.setState({ toast: { msg, undo: !!undo, n: ((this.state.toast && this.state.toast.n) || 0) + 1, out: false } });
+    this._tt = setTimeout(() => this.toastOut(), undo ? 8000 : 6000);
+  }
+  toastOut() { if (this.state.toast) this.setState({ toast: { ...this.state.toast, out: true } }); }
+  // ---- the sample data: the same company, accounts and payments as the Company board (today is 18 Nov 2026) ----
+  data(co, mo) {
+    if (mo > 0) return { setUp: false };
+    const sql = co === 'aisb';
+    if (co === 'aisb' && mo === 0) return { setUp: true, first: 'September 2026',
+      pay: [
+        ['salaries', 'Salaries — staff', '8 people · paid 24 Oct', 'RM 48,600.00', '', 'Complete', 'ok', '3 of 3 documents', 0, 0, 'SQL · PV2610-014', ''],
+        ['director', 'Director fee', 'Paid 24 Oct', 'RM 12,000.00', '', 'Not in SQL', 'warn', '3 of 3 documents', 0, 1, '', 'Paid and documented, but no SQL voucher is linked yet. Record it in SQL Account, then fetch SQL\'s latest listings on the SQL import page.'],
+        ['consultant', 'Consultant fee', 'Due 31 Oct', 'RM 3,200.00', '', 'Not on Oct statement', 'bad', '0 of 2 documents', 1, 1, '', 'The October bank statement is imported, but no line on it is linked to this payment. Link its line, or enter the paid date if it went out another way.'],
+        ['electricity', 'Electricity bill', 'Due 5 Nov', 'RM 1,150.00', 'Estimated', 'Waiting for Nov statement', 'warn', '1 of 3 documents', 1, 0, '', "Probably paid: the Nov bank statement isn't imported yet. Import it to confirm this payment. Until then the budget counts the estimate."],
+        ['kwsp', 'KWSP (EPF)', 'Due 15 Nov', 'RM 11,240.00', '', 'Past legal deadline (15 Nov)', 'bad', '0 of 1 documents', 1, 1, '', 'Not recorded as paid by the legal deadline of 15 Nov. Pay it now, or link its bank line or SQL voucher if it was paid; a late-payment charge may follow.'],
+        ['rental', 'Office rental', 'Paid 30 Oct', 'RM 6,500.00', '', 'Complete', 'ok', '2 of 2 documents', 0, 0, 'SQL · PV2610-021', ''],
+        ['contractor', 'Contractor — field works', 'Paid 6 Oct', 'RM 24,000.00', '', 'Part paid · RM 18,000.00 of 24,000.00', 'warn', '3 of 3 documents', 0, 1, 'SQL · PV2610-003', 'RM 6,000.00 is not on the bank statement yet. Match the rest on the Bank statements page, or note why on the payment. A noted difference makes it count as paid.'],
+        ['received', 'Rental received', 'Received 3 Nov · money in', '+ RM 2,800.00', '', 'Received 3 Nov · 1 doc missing', 'warn', '2 of 3 documents', 0, 1, 'SQL · OR2611-001', 'The e-Invoice on IV2610-031 was cancelled by CN2611-002, so it does not count. Upload the valid e-Invoice or enter its UIN.']
+      ],
+      chk: [
+        { k: 'a', title: 'Import bank statements', locked: true, done0: true, detail: 'Both October statements are imported.' },
+        { k: 'b', title: 'PV in SQL for each salary', locked: true, done0: true, detail: 'Every salary has a payment voucher in SQL Account.' },
+        { k: 'c', title: 'KWSP, PERKESO and PCB filed', due: ['Overdue 15 Nov', 'bad'], detail: 'Upload each portal acknowledgement.', need: ['KWSP acknowledgement', 'PERKESO acknowledgement', 'PCB acknowledgement'] },
+        { k: 'd', title: 'Bank reconciliation filed', due: ['Due in 2 days', 'warn'], detail: 'The signed reconciliation for each account.', files: ['Bank reconciliation Oct.xlsx'] },
+        { k: 'h', title: 'SQL books agree with SQL Account', locked: true, done0: true, detail: "Done: SQL's journal covers October 2026, its documents agree with the listings and SQL's trial balance as at 31 Oct 2026 agrees with the books here" },
+        { k: 'e', title: 'e-Invoices add up', locked: true, due: ['Due in 2 days', 'warn'], detail: 'Waiting for the records: 2 e-Invoices are not in SQL yet.' },
+        { k: 'f', title: 'e-CP22 for the joiner', reminder: 'November', due: ['Due 3 Dec', 'muted'], detail: 'A new joiner started on 3 Nov.' },
+        { k: 'g', title: 'Audit pack built', due: ['Due 30 Nov', 'muted'], detail: 'Build it once the items above are done.' }
+      ],
+      next: [['alert', 'bad', 'Consultant fee not on Oct statement', 'Overdue 31 Oct', 'pay', 'consultant'],
+        ['vault', 'bad', 'Pay KWSP (EPF) for October', 'Overdue 3 days', 'pay', 'kwsp'], ['alert', 'bad', "AISB: EPF (KWSP) for October 2026 wasn't paid by 15 Nov 2026. Check it on Statutory payables.", 'Overdue 3 days', 'far'], ['checklist', 'bad', 'Sep AISB: SQL books agree with SQL Account', 'Overdue 15 Oct', 'far'], ['inbox', 'warn', 'Explain 5 bank lines', 'Due today', 'far'], ['database', 'warn', "Fetch SQL's Oct and Nov Payment Voucher listings on the SQL import page: 4 salaries, bills and statutory not recorded; 1 SQL entry not linked yet; 1 voucher changed in SQL (move the link on the SQL page)", 'Due in 3 days', 'far'],
+        ['users', 'muted', 'e-CP22 for the joiner', 'Due 3 Dec', 'chk', 'f'], ['budget', 'muted', 'Enter the November bank balance', 'Due in 2 days', 'far']],
+      older: [['September', -1]] };
+    if (co === 'aisb') return { setUp: true, first: 'September 2026',
+      pay: [['salaries', 'Salaries — staff', '8 people · paid 24 Sep', 'RM 48,600.00', '', 'Complete', 'ok', '3 of 3 documents', 0, 0, 'SQL · PV2609-012', ''],
+        ['director', 'Director fee', 'Paid 24 Sep', 'RM 12,000.00', '', 'Paid · 1 doc missing', 'warn', '2 of 3 documents', 0, 1, 'SQL · PV2609-013', 'Paid, but one required document is still missing. Upload it on the payment.']],
+      chk: [{ k: 'a', title: 'Import bank statements', locked: true, done0: true, detail: 'Both September statements are imported.' },
+        { k: 'b', title: 'Bank reconciliation filed', locked: true, due: ['Overdue 20 Oct', 'bad'], detail: 'Waiting for the records: 2 bank lines to explain.' },
+        { k: 'h', title: 'SQL books agree with SQL Account', locked: true, due: ['Overdue 15 Oct', 'bad'], detail: "Fetch SQL's GL Journal of Transaction for the whole of September 2026 (from 1 Sep to 30 Sep 2026): no journal fetched covers the whole month." }],
+      next: [['inbox', 'bad', 'Explain 2 bank lines', 'Overdue 20 Oct', 'far']], older: [] };
+    if (mo === 0) return { setUp: true, first: 'September 2026',
+      pay: [['salaries', 'Salaries — staff', '3 people · paid 24 Oct', 'RM 9,800.00', '', 'Complete', 'ok', '3 of 3 documents', 0, 0, '', ''],
+        ['kwsp', 'KWSP (EPF)', 'Due 15 Nov', 'RM 3,120.00', '', 'Past legal deadline (15 Nov)', 'bad', '0 of 1 documents', 1, 1, '', 'Not recorded as paid by the legal deadline of 15 Nov. Pay it now, or link its bank line if it was paid; a late-payment charge may follow.'],
+        ['rental', 'Office rental', 'Paid 30 Oct', 'RM 2,400.00', '', 'Complete', 'ok', '2 of 2 documents', 0, 0, '', '']],
+      chk: [{ k: 'a', title: 'Import bank statements', locked: true, done0: true, detail: 'The October statement is imported.' },
+        { k: 'c', title: 'KWSP, PERKESO and PCB filed', due: ['Overdue 15 Nov', 'bad'], detail: 'Upload each portal acknowledgement.', need: ['KWSP acknowledgement', 'PERKESO acknowledgement'] },
+        { k: 'g', title: 'Audit pack built', due: ['Due 30 Nov', 'muted'], detail: 'Build it once the items above are done.' }],
+      next: [['vault', 'bad', 'Pay KWSP', 'Past legal deadline (15 Nov)', 'pay', 'kwsp'], ['pack', 'muted', 'Build and file the October audit pack', 'Due 30 Nov', 'far']], older: [] };
+    return { setUp: true, first: 'September 2026', pay: [['salaries', 'Salaries — staff', '3 people · paid 24 Sep', 'RM 9,600.00', '', 'Complete', 'ok', '3 of 3 documents', 0, 0, '', ''],
+        ['rental', 'Office rental', 'Paid 30 Sep', 'RM 2,400.00', '', 'Complete', 'ok', '2 of 2 documents', 0, 0, '', '']],
+      chk: [{ k: 'a', title: 'Import bank statements', locked: true, done0: true, detail: 'The September statement is imported.' }, { k: 'g', title: 'Audit pack built', done0: true, detail: 'Filed with the September audit pack.' }],
+      next: [], older: [], filedOn: '5 Oct' };
+  }
+  months() { return [[-1, 'September 2026'], [0, 'October 2026'], [1, 'November 2026']]; }
+  coName(co) { return co === 'ai' ? 'Agrinexus International' : 'AISB'; }
+  coCode(co) { return co === 'ai' ? 'AI' : 'AISB'; }
+  switchMo(mo) {
+    if (mo === this.state.mo || mo < -1 || mo > 1) return;
+    this.setState({ mo, mn: this.state.mn + 1, dir: mo > this.state.mo ? 1 : -1, why: null, hl: null, nextAll: false });
+  }
+  // sheets slide in and out; closing is finished by the animation
+  openSheet(kind, extra) { this._opener = document.activeElement; this.setState({ sheet: kind, closing: false, ...(extra || {}) }); }
+  closeSheet(after) {
+    if (!this.state.sheet || this.state.closing) return;
+    this._after = after || null;
+    if (this.calm()) return this.finishSheet();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishSheet(), 400);
+  }
+  finishSheet() {
+    clearTimeout(this._t);
+    const a = this._after || {}; this._after = null;
+    if (this.state.sheet) this.setState({ sheet: null, closing: false, confirm: null, ...a });
+  }
+  renderVals() {
+    const st = this.state, co = st.co, mo = st.mo, d = this.data(co, mo), key = co + '|' + mo;
+    const mlabel = this.months().find(m => m[0] === mo)[1];
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', warn: 'background:#FEF1D6;color:#934100', bad: 'background:#FDE6E3;color:#B0190F', muted: 'background:#EEF1F5;color:#46546A' };
+    const pillCss = t => 'display:inline-flex;align-items:center;gap:4px;min-height:24px;padding:2px 9px;border-radius:99px;border:0;font:600 12px Inter,sans-serif;' + P[t];
+    const filedOn = st.filed[key] !== undefined ? st.filed[key] : d.filedOn || '';
+    const setUp = !!d.setUp, tab = st.tab, pay = tab === 'pay' && setUp, chk = tab === 'chk' && setUp;
+    const anim = st.anim;
+    // ---- checklist ----
+    const tk = k => key + ':' + k;
+    const items = setUp ? d.chk.map(it => {
+      const id = tk(it.k), done = st.done[id] !== undefined ? st.done[id] : !!it.done0;
+      const files = [...(it.files || []).map(n => st.repl[id + '|' + n] || n), ...(st.added[id] || [])].filter(n => !st.rm[id + '|' + n]);
+      return { ...it, id, done, files, byHand: !!st.byHand[id] && done, needs: (it.need || []).filter(n => !st.got[id + '|' + n]) };
+    }) : [];
+    const counted = items.filter(i => !i.reminder), doneN = counted.filter(i => i.done).length;
+    const fl = st.flash, hl = st.hl;
+    const hlCls = (tb, k) => (hl && hl.tab === tb && hl.key === k ? (hl.n % 2 ? ' hlA' : ' hlB') : '');
+    const tasks = items.map(it => {
+      const manual = !it.locked && !it.reminder, due = it.due;
+      return { id: 'mc-t-' + it.k, title: it.title, manual, locked: !!it.locked, reminder: !!it.reminder, done: it.done,
+        lockGlyph: it.done ? 'check' : 'clock', lockTone: it.done ? 'ok' : 'muted',
+        dueText: it.done ? '' : due ? due[0] : '', duePill: due ? pillCss(due[1]) : '', detail: it.detail || '',
+        fromRecords: it.locked ? (it.done ? 'From records' : 'Waits for records') : '', byHand: it.byHand,
+        remind: it.reminder ? 'Part of the ' + it.reminder + ' checklist. Shown here until that month is set up; not counted in this month or its audit pack.' : '',
+        titleStyle: 'display:block;font-weight:600;transition:color .12s ease-out;' + (it.done || it.reminder ? 'color:#5F6C80;' : '') + (it.done ? 'text-decoration:line-through' : ''),
+        card: 'display:flex;flex-direction:column;gap:4px;padding:12px 12px 8px 10px;border-radius:14px;border:1px ' + (it.reminder ? 'dashed #B7C1D0;background:#FAFBFC' : 'solid #E3E7ED;background:#FFFFFF'),
+        cls: 'mc-row' + hlCls('chk', it.k) + (fl && fl.k === it.k ? (fl.n % 2 ? ' fa' : ' fb') : (anim === 'ex' ? ' ex' : '')),
+        toggle: () => {
+          if (it.done) { this.setState({ done: { ...this.state.done, [it.id]: false }, byHand: { ...this.state.byHand, [it.id]: false }, flash: { k: it.k, n: (fl ? fl.n : 0) + 1 }, anim: '' }); return; }
+          this.openSheet('confirm', { confirm: { kind: 'tick', id: it.id, k: it.k, title: it.title } });
+        },
+        files: it.files.map(n => ({ name: n,
+          replace: () => { const nn = n.replace(/(\.[^.]+)$/, ' (2)$1'); this.setState({ repl: { ...this.state.repl, [it.id + '|' + n]: nn } }); this.toastShow('Replaced ' + n); },
+          remove: () => { const rk = it.id + '|' + n; this.setState({ rm: { ...this.state.rm, [rk]: true } }); this.toastShow('Removed ' + n, () => this.setState({ rm: { ...this.state.rm, [rk]: false } })); } })),
+        needs: it.needs.map(n => ({ label: 'Upload ' + n, up: () => { const nm = n + '.pdf'; this.setState({ got: { ...this.state.got, [it.id + '|' + n]: true }, added: { ...this.state.added, [it.id]: [...(this.state.added[it.id] || []), nm] } }); this.toastShow('Added ' + nm); } })),
+        canOther: manual && !it.reminder,
+        other: () => { const nm = 'Other document ' + ((this.state.added[it.id] || []).length + 1) + '.pdf'; this.setState({ added: { ...this.state.added, [it.id]: [...(this.state.added[it.id] || []), nm] } }); this.toastShow('Added ' + nm); } };
+    });
+    // ---- payments ----
+    const q = st.q.trim().toLowerCase(), f = st.f;
+    const rows = setUp ? d.pay.map(r => ({ k: r[0], name: r[1], sub: r[2], amount: r[3], amtNote: r[4], status: r[5], tone: r[6], docs: r[7], unpaid: !!r[8], attn: !!r[9], chip: sql => (sql ? r[10] : ''), why: r[11] })) : [];
+    const shown = rows.filter(r => (f === 'all' || (f === 'unpaid' && r.unpaid) || (f === 'attn' && r.attn) || (f === 'done' && r.tone === 'ok')) &&
+      (!q || (r.name + ' ' + r.sub + ' ' + r.status + ' ' + r.amount).toLowerCase().indexOf(q) >= 0));
+    const sqlOn = co === 'aisb';
+    const payments = shown.map(r => {
+      const wid = 'mc-why-' + r.k, open = st.why === r.k && !!r.why;
+      return { id: 'mc-p-' + r.k, name: r.name, sub: r.sub, amount: r.amount, amtNote: r.amtNote, status: r.status, tone: r.tone, docs: r.docs,
+        cls: 'mc-row' + (anim && anim !== 'ex' ? ' ' + anim : '') + hlCls('pay', r.k),
+        pill: pillCss(r.tone) + (r.why ? 'cursor:pointer;' : ''), sqlChip: r.chip(sqlOn),
+        whyBtn: !!r.why, plain: !r.why, whyId: wid, noteId: wid + '-note', whyOpen: open ? 'true' : 'false', whyOpen2: open, why: r.why,
+        whyLabel: 'Why: ' + r.status,
+        toggleWhy: () => this.setState({ why: this.state.why === r.k ? null : r.k }),
+        whyKey: e => { if (e.key === 'Escape' && this.state.why === r.k) { e.preventDefault(); e.stopPropagation(); this.setState({ why: null }); } } };
+    });
+    const chip = 'flex:none;min-height:44px;padding:0 16px;border-radius:99px;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:background-color .12s ease-out,color .12s ease-out,border-color .12s ease-out;';
+    const filters = [['all', 'All'], ['unpaid', 'Not paid'], ['attn', 'Needs attention'], ['done', 'Complete']].map(([k, label]) => ({ label, pressed: k === f ? 'true' : 'false',
+      pick: () => { if (k !== this.state.f) this.setState({ f: k, anim: (this.state.fn + 1) % 2 ? 'swapA' : 'swapB', fn: this.state.fn + 1 }); },
+      style: chip + (k === f ? 'background:#0F1A2B;color:#FFFFFF;border:1px solid #0F1A2B' : 'background:#FFFFFF;color:#46546A;border:1px solid #D5DBE4') }));
+    // ---- next up ----
+    const nx = setUp ? d.next : [];
+    const allN = st.nextAll ? nx : nx.slice(0, 3);
+    const nextRows = allN.map(n => {
+      const here = n[4] !== 'far';
+      return { glyph: n[0], tone: n[1], title: n[2], due: n[3], here, far: !here,
+        dueStyle: 'display:block;font-size:12px;font-weight:600;color:' + (n[1] === 'bad' ? '#B0190F' : n[1] === 'warn' ? '#934100' : '#46546A'),
+        go: () => {
+          const h = { tab: n[4], key: n[5], n: ((this.state.hl && this.state.hl.n) || 0) + 1 };
+          this.setState({ tab: n[4], hl: h, anim: '', why: null }, () => this.hlTimer());
+        } };
+    });
+    const older = (setUp ? d.older : []).map(o => ({ label: o[0], go: () => this.switchMo(o[1]) }));
+    // ---- sheets ----
+    const sh = st.sheet, cf = st.confirm;
+    const coOpts = ['aisb', 'ai'].map(c => ({ label: this.coName(c), pressed: c === co ? 'true' : 'false',
+      pick: () => { if (c !== this.state.co) this.setState({ co: c, mn: this.state.mn + 1, dir: 1, why: null, hl: null, f: 'all', q: '', nextAll: false }); },
+      style: 'flex:1;min-height:44px;border:0;border-radius:9px;font:600 14px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (c === co ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') }));
+    const moOpts = this.months().map(([m, label]) => { const dd = this.data(co, m), fo = st.filed[co + '|' + m] !== undefined ? st.filed[co + '|' + m] : dd.filedOn;
+      return { label, note: m === 0 ? 'Current' : !dd.setUp ? 'Not set up' : fo ? 'Filed ' + fo : 'Open', pressed: m === mo ? 'true' : 'false',
+        pick: () => { this.closeSheet(); this.switchMo(m); },
+        style: 'display:flex;align-items:center;gap:8px;min-height:48px;padding:0 14px;border-radius:12px;font:600 15px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out;' + (m === mo ? 'border:2px solid #2450B8;background:#EAF0FD;color:#0F1A2B' : 'border:1px solid #D5DBE4;background:#FFFFFF;color:#0F1A2B') }; });
+    const themeNotes = { auto: "Auto follows your phone's setting.", light: 'Always light.', dark: 'Always dark.' };
+    const themes = [['auto', 'Auto', 'auto'], ['light', 'Light', 'sun'], ['dark', 'Dark', 'moon']].map(([k, label, glyph]) => ({ label, glyph, tone: st.theme === k ? 'brand' : 'muted', pressed: st.theme === k ? 'true' : 'false',
+      pick: () => this.setState({ theme: k }),
+      style: 'flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;border:0;border-radius:9px;font:600 14px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out;' + (st.theme === k ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') }));
+    const openN = counted.filter(i => !i.done).length;
+    const fileMonth = () => { this.closeSheet({ filed: { ...this.state.filed, [key]: '18 Nov' } }); this.toastShow(mlabel + ' marked as filed'); };
+    const sheetTitle = sh === 'pick' ? 'Company and month' : sh === 'more' ? 'More actions' : cf && cf.kind === 'tick' ? 'Tick anyway?' : 'Mark ' + mlabel.split(' ')[0] + ' as filed?';
+    const tabs = ['pay', 'chk'];
+    const tabKey = e => {
+      const i = tabs.indexOf(this.state.tab); let to = null;
+      if (e.key === 'ArrowRight') to = tabs[(i + 1) % 2]; else if (e.key === 'ArrowLeft') to = tabs[(i + 1) % 2];
+      else if (e.key === 'Home') to = tabs[0]; else if (e.key === 'End') to = tabs[1];
+      if (to) { e.preventDefault(); this.pickTab(to, true); }
+    };
+    const dlgKey = e => {
+      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); this.closeSheet(); }
+      else if (e.key === 'Tab') {
+        const fs = e.currentTarget && e.currentTarget.querySelectorAll ? [...e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')] : [];
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement;
+        if (e.shiftKey && (at === first || at === e.currentTarget || !fs.includes(at))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !fs.includes(at))) { e.preventDefault(); first.focus(); }
+      }
+    };
+    const seg = 'min-height:44px;border:0;border-radius:9px;font:600 14px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;';
+    const toast = st.toast;
+    const panelCls = st.mn ? 'sw' + (st.dir > 0 ? 'N' : 'P') + (st.mn % 2 ? 'A' : 'B') : '';
+    const noMatch = pay && !payments.length;
+    return {
+      sheetOn: !!sh, openPick: () => this.openSheet('pick'), openMore: () => this.openSheet('more'),
+      pickLabel: 'Company and month: ' + this.coName(co) + ', ' + mlabel,
+      coCode: this.coCode(co), coName: this.coName(co), monthLabel: mlabel,
+      prevMonth: () => this.switchMo(mo - 1), nextMonth: () => this.switchMo(mo + 1),
+      prevOff: mo <= -1, nextOff: mo >= 1, prevOp: mo <= -1 ? '.4' : '1', nextOp: mo >= 1 ? '.4' : '1',
+      notCurrent: mo !== 0, goCurrent: () => this.switchMo(0),
+      tabsLabel: this.coCode(co) + ' ' + mlabel, tabKey,
+      payLabel: setUp ? 'Payments · ' + rows.length : 'Payments', chkLabel: setUp ? 'Checklist · ' + doneN + ' of ' + counted.length : 'Checklist',
+      paySel: tab === 'pay' ? 'true' : 'false', chkSel: tab === 'chk' ? 'true' : 'false',
+      payTab: tab === 'pay' ? 0 : -1, chkTab: tab === 'chk' ? 0 : -1,
+      panelBy: tab === 'pay' ? 'mc-tab-pay' : 'mc-tab-chk', panelCls,
+      tabPay: seg + (tab === 'pay' ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A'),
+      tabChk: seg + (tab === 'chk' ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A'),
+      showPay: () => this.pickTab('pay'), showChk: () => this.pickTab('chk'),
+      filedOn: !!filedOn && setUp, filedText: 'Filed ' + filedOn + ' by Aisha Rahman',
+      reopen: () => { this.setState({ filed: { ...this.state.filed, [key]: '' } }); this.toastShow('Reopened ' + mlabel); },
+      notSetUp: !setUp, setUp, pay, chk,
+      nextCount: nx.length ? (nx.length > 3 && !st.nextAll ? '3 of ' + nx.length : nx.length + (nx.length === 1 ? ' thing' : ' things')) : '', nextEmpty: setUp && !nx.length, nextRows,
+      nextMore: nx.length > 3, nextExpanded: st.nextAll ? 'true' : 'false', nextToggleLabel: st.nextAll ? 'Show fewer' : 'Show all ' + nx.length,
+      toggleNext: () => this.setState({ nextAll: !this.state.nextAll }), hasOlder: older.length > 0, older,
+      q: st.q, hasQ: !!st.q, onSearch: e => this.setState({ q: e && e.target ? e.target.value : '' }), clearQ: () => { this._focus = 'mc-search'; this.setState({ q: '' }); },
+      filters, rowCls: anim === 'ex' ? 'ex' : '', attnRule: pay && f === 'attn', noMatch,
+      noMatchText: q ? 'No payments match "' + st.q.trim() + '".' : 'No payments in this view.', clearAll: () => this.setState({ q: '', f: 'all' }),
+      payments, tasks,
+      showFab: pay && !sh,
+      toastOn: !!toast, toastText: toast ? toast.msg : '', toastUndo: !!toast && toast.undo,
+      toastCls: toast && toast.out ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toast && this.state.toast.out && e.target === e.currentTarget) this.setState({ toast: null }); },
+      toastHold: () => { clearTimeout(this._tt); },
+      toastGo: () => { if (this.state.toast && !this.state.toast.out) this._tt = setTimeout(() => this.toastOut(), 3000); },
+      toastDismiss: () => { clearTimeout(this._tt); this.toastOut(); },
+      doUndo: () => { const u = this._undo; this._undo = null; clearTimeout(this._tt); if (u) u(); this.setState({ toast: null }); },
+      dimCls: st.closing ? 'dim-out' : 'dim-in', sheetCls: st.closing ? 'sh-out' : 'sh-in',
+      closeSheet: () => this.closeSheet(), dlgKey, onSheetAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishSheet(); },
+      sheetTitle, pickOn: sh === 'pick', moreOn: sh === 'more', confirmOn: sh === 'confirm', coOpts, moOpts, themes, themeNote: themeNotes[st.theme],
+      fileLabel: filedOn ? 'Reopen ' + mlabel.split(' ')[0] : 'Mark ' + mlabel.split(' ')[0] + ' as filed',
+      fileAction: () => {
+        if (!setUp) return this.closeSheet();
+        if (filedOn) return this.closeSheet({ filed: { ...this.state.filed, [key]: '' } });
+        this._focus = 'mc-sheet-title'; this.setState({ confirm: { kind: 'file' }, sheet: 'confirm' });
+      },
+      confirmText: cf && cf.kind === 'tick' ? 'The records do not show "' + cf.title + '" as done yet. If you tick it, it is marked as ticked by hand.'
+        : openN + (openN === 1 ? ' checklist item is' : ' checklist items are') + ' still open. You can reopen the month later.',
+      confirmLabel: cf && cf.kind === 'tick' ? 'Tick anyway' : 'Mark as filed',
+      confirmGo: () => {
+        if (cf && cf.kind === 'tick') this.closeSheet({ done: { ...this.state.done, [cf.id]: true }, byHand: { ...this.state.byHand, [cf.id]: true }, flash: { k: cf.k, n: (fl ? fl.n : 0) + 1 }, anim: '' });
+        else fileMonth();
+      }
+    };
+  }
+  pickTab(tab, focus) {
+    const done = () => { if (focus) this.focusId('mc-tab-' + tab); };
+    if (tab === this.state.tab) return done();
+    this.setState({ tab, anim: 'ex', flash: null, hl: null, why: null }, done);
+  }
+}
+</script>
+</body>
+</html>

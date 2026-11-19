@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · HR · Approvers · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:not(.on):hover{background:#F8FAFD !important}
+.sn:hover{background:#F0F3F8 !important}
+.th:hover{color:#0F1A2B !important}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+input[readonly],select:disabled{background:#F5F6F8 !important;color:#46546A !important}
+/* motion and focus base */
+.hb,.hs,.hd,.hr,.sn,.nv,.nb,.th{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.sp{animation:spin .7s linear infinite}
+button[aria-busy="true"]{cursor:progress !important}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="{{shCo}}" kind="{{shKind}}" companies="{{shCos}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="HR · Approvers" company="{{shCo}}" companies="{{tbCos}}" onCompany="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0">
+        <dc-import name="SetupNav" active="approvers" kind="{{navKind}}" payroll="{{navPayroll}}" hint-size="100%,900px"></dc-import>
+      </div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{pageTitle}}</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 680px">Who may sign the printed approval forms. Up to 3 for each company, and any one signature approves a form. A form prints the company's approvers as they are on the day, and old forms keep the names as they were. People with the Approver right on <a href="UsersAccess.dc.html">Users and access</a> are picked from this list.</p>
+          </div>
+          <sc-if value="{{hasCo}}" hint-placeholder-val="{{ true }}">
+            <button type="button" id="ap-add" class="{{addCls}}" onClick="{{openNew}}" aria-haspopup="dialog" aria-disabled="{{addDis}}" aria-describedby="{{addBy}}" style="{{addStyle}}"><dc-import name="Icon" glyph="plus" tone="{{addTone}}" size="18" hint-size="18px,18px"></dc-import>{{addLabel}}</button>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{noCo}}" hint-placeholder-val="{{ false }}">
+          <section class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+            <span style="width: 52px; height: 52px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="company" tone="brand" size="28" hint-size="28px,28px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Add a company first.</h2>
+            <p style="margin: 0; color: #46546A; max-width: 420px">Approvers belong to a company. Once one is added, its approvers are set up here.</p>
+            <a href="SetupCompanies.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="company" tone="white" size="18" hint-size="18px,18px"></dc-import>Go to Companies</a>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{fullOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ap-full-note" tabindex="-1" class="{{fullCls}}" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>{{coName}} has 3 approvers, the most a company can have.</b> Stop one to add another. Stopping keeps the name on every form already printed.</span></div>
+        </sc-if>
+        <sc-if value="{{oneOn}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b>{{coName}} has one approver.</b> A request paid to {{oneName}}, such as a claim or advance, has no one else to sign it, so it can only be <b>Self-approved</b>, and it is listed on <a href="AuditPackHR.dc.html">Audit pack · HR and approval pages</a>. Add a second approver to avoid that.</span></div>
+        </sc-if>
+
+        <sc-if value="{{loadOn}}" hint-placeholder-val="{{ false }}">
+          <section aria-busy="true" aria-label="Loading approvers" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; gap: 12px; padding: 12px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 10px; width: 20%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div></div>
+            <div style="display: flex; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 30%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 16%; border-radius: 5px"></div></div><div class="sk" style="height: 12px; width: 12%; border-radius: 5px"></div><div class="sk" style="height: 22px; width: 70px; border-radius: 99px"></div></div>
+            <div style="display: flex; gap: 12px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 26%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div></div><div class="sk" style="height: 12px; width: 12%; border-radius: 5px"></div><div class="sk" style="height: 22px; width: 70px; border-radius: 99px"></div></div>
+            <div style="display: flex; gap: 12px; padding: 16px 18px; align-items: center"><div style="flex: 1; display: flex; flex-direction: column; gap: 6px"><div class="sk" style="height: 12px; width: 34%; border-radius: 5px"></div><div class="sk" style="height: 10px; width: 18%; border-radius: 5px"></div></div><div class="sk" style="height: 12px; width: 12%; border-radius: 5px"></div><div class="sk" style="height: 22px; width: 70px; border-radius: 99px"></div></div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{errOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" aria-live="off" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; box-sizing: border-box">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the approvers</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The records folder C:\HR-Records can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+            <div style="display: flex; gap: 8px"><button type="button" id="ap-retry" class="hb" onClick="{{retry}}" aria-busy="{{retryAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 150px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{retrying}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Looking for it…</sc-if><sc-if value="{{notRetrying}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</sc-if></button><button type="button" class="hs" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Copy details</button></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="ap-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <h2 id="ap-list-h" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0">{{listHeading}}</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+              <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 220px; max-width: 320px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search approvers" aria-label="Search approvers" aria-describedby="ap-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+              <span id="ap-count" aria-live="polite" style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{countTxt}}</span>
+              <div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+                <label style="display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{showStopped}}" onChange="{{toggleStopped}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Show former ({{nStopped}})</label>
+              </div>
+            </div>
+            <p style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">{{hintTxt}}</p>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+                <thead>
+                  <tr style="background: #FAFBFC; text-align: left">
+                    <sc-for list="{{heads}}" as="h" hint-placeholder-count="5"><th scope="col" aria-sort="{{h.sort}}" style="{{h.thStyle}}"><button type="button" class="th" onClick="{{h.click}}" style="{{h.btnStyle}}">{{h.label}}<dc-import name="Icon" glyph="{{h.glyph}}" tone="{{h.tone}}" size="14" hint-size="14px,14px"></dc-import></button></th></sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+                    <tr class="{{r.cls}}" onClick="{{r.open}}" style="{{r.rowStyle}}">
+                      <td style="padding: 12px 18px"><button type="button" id="{{r.id}}" onKeyDown="{{r.key}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; font: 600 14px Inter, sans-serif; color: inherit; cursor: pointer; text-align: left">{{r.name}}</button><div style="color: #5F6C80; font-size: 12px">{{r.sub}}</div></td>
+                      <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="2"><td style="{{c.style}}">{{c.txt}}</td></sc-for>
+                      <td style="padding: 12px; text-align: right"><b style="font-variant-numeric: tabular-nums">{{r.usedN}}</b><div style="color: #5F6C80; font-size: 12px; max-width: 200px; margin-left: auto">{{r.usedTxt}}</div></td>
+                      <td style="padding: 12px 18px"><div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span class="{{r.pillCls}}" style="{{r.pill}}">{{r.statusTxt}}</span></div></td>
+                    </tr>
+                  </sc-for>
+                  <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+                    <tr><td colspan="5" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="{{emptyGlyph}}" tone="muted" size="28" hint-size="28px,28px"></dc-import><b style="color: #0F1A2B">{{emptyHead}}</b><span style="max-width: 460px">{{emptyTxt}}</span><sc-if value="{{emptyBtnOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{emptyAct}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{emptyBtn}}</button></sc-if></div></td></tr>
+                  </sc-if>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </sc-if>
+
+        <section aria-labelledby="ap-key-h" style="{{keyBox}}">
+          <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start">
+            <span style="width: 44px; height: 44px; border-radius: 12px; background: {{keyTile}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="key" tone="{{keyTone}}" size="24" hint-size="24px,24px"></dc-import></span>
+            <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h2 id="ap-key-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Form key</h2><span class="{{keyPillCls}}" style="{{keyPill}}">{{keyPillTxt}}</span></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 640px">The secret behind the keyed check printed on every approval form, as text and as a QR code. A form whose details changed after printing no longer matches. One key serves every company. It is kept in the records, never shown, and never taken out by Move setup.</p>
+              <span id="ap-key-line" style="color: {{keyLineColor}}; font-size: 13px; font-weight: 500">{{keyLine}}</span>
+              <span style="color: #5F6C80; font-size: 12px">The check proves only that the details are unchanged since printing. The signature shows who approved.</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <button type="button" id="ap-key-btn" class="{{keyBtnCls}}" onClick="{{keyOpen}}" aria-haspopup="dialog" style="{{keyBtnStyle}}"><dc-import name="Icon" glyph="{{keyBtnGlyph}}" tone="{{keyBtnTone}}" size="18" hint-size="18px,18px"></dc-import>{{keyBtn}}</button>
+              <a href="AuditTrail.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="muted" size="16" hint-size="16px,16px"></dc-import>Key changes in the audit trail</a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 560px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ap-title" aria-describedby="ap-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 720px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dEyebrow}}</span>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h2 id="ap-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2><sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}"><span class="{{dPillCls}}" style="{{dPill}}">{{dPillTxt}}</span></sc-if><sc-if value="{{dSysOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; border: 1px solid #C9D7F6; background: #FFFFFF; color: #2450B8; font-size: 12px; font-weight: 600">Used by the app</span></sc-if></div>
+          <span id="ap-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 20px">
+        <sc-if value="{{dNotesOn}}" hint-placeholder-val="{{ false }}">
+          <div class="{{dNotesCls}}" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 4px"><sc-for list="{{dNotes}}" as="n" hint-placeholder-count="1"><span>{{n.txt}}</span></sc-for></div></div>
+        </sc-if>
+        <sc-if value="{{fRefOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ap-refused" role="alert" tabindex="-1" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F5C2BB; background: #FDF3F2; color: #8E1A10; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div><b>Nothing was saved</b><div style="color: #46546A">{{fRefText}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{sumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{sumTitle}}</b> {{sumList}}</span></div>
+        </sc-if>
+
+        <sc-for list="{{dGroups}}" as="g" hint-placeholder-count="3">
+          <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+            <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{g.label}}</legend>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <sc-for list="{{g.fields}}" as="f" hint-placeholder-count="4">
+                <div style="{{f.wrap}}">
+                  <sc-if value="{{f.isBool}}" hint-placeholder-val="{{ false }}">
+                    <label for="{{f.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600; color: #46546A; cursor: pointer"><input id="{{f.id}}" type="checkbox" checked="{{f.checked}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-describedby="{{f.by}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">{{f.label}}<sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                  </sc-if>
+                  <sc-if value="{{f.notBool}}" hint-placeholder-val="{{ true }}">
+                    <label for="{{f.id}}" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}<sc-if value="{{f.req}}" hint-placeholder-val="{{ false }}"><span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></sc-if><sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                    <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><input id="{{f.id}}" type="{{f.type}}" value="{{f.val}}" onChange="{{f.change}}" readOnly="{{f.ro}}" maxLength="{{f.max}}" aria-required="{{f.reqAria}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" autoComplete="off" style="{{f.style}}"></sc-if>
+                    <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><select id="{{f.id}}" value="{{f.val}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" style="{{f.style}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></sc-if>
+                    <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}"><textarea id="{{f.id}}" rows="3" value="{{f.val}}" onChange="{{f.change}}" aria-describedby="{{f.by}}" style="{{f.style}}"></textarea></sc-if>
+                  </sc-if>
+                  <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{f.err}}</span></sc-if>
+                  <sc-if value="{{f.hintOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.hintId}}" style="color: #5F6C80; font-size: 12px">{{f.hint}}</span></sc-if>
+                  <sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.lockId}}" style="display: flex; gap: 6px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: #F5F6F8; color: #46546A; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import><span>{{f.lock}}</span></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </fieldset>
+        </sc-for>
+
+        <sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="ap-used-h" style="display: flex; flex-direction: column; gap: 8px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <h3 id="ap-used-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Where used</h3>
+            <sc-if value="{{dUsedAny}}" hint-placeholder-val="{{ true }}"><ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{dUsed}}" as="u" hint-placeholder-count="3"><li style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; background: #F5F6F8; color: #0F1A2B; font-size: 13px"><b style="font-variant-numeric: tabular-nums">{{u.n}}</b>{{u.what}}</li></sc-for></ul></sc-if>
+            <sc-if value="{{dUsedNone}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Not used anywhere yet.</span></sc-if>
+          </section>
+
+          <section aria-labelledby="ap-act-h" style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <h3 id="ap-act-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{actHeading}}</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <sc-if value="{{canStop}}" hint-placeholder-val="{{ true }}"><button type="button" id="ap-act-stop" class="hs" onClick="{{actStop}}" aria-expanded="{{stopExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import>{{stopLbl}}</button></sc-if>
+              <sc-if value="{{canUse}}" hint-placeholder-val="{{ false }}"><button type="button" id="ap-act-use" class="hs" onClick="{{actUse}}" aria-expanded="{{useExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{useLbl}}</button></sc-if>
+              <sc-if value="{{canDelete}}" hint-placeholder-val="{{ false }}"><button type="button" id="ap-act-delete" onClick="{{actDelete}}" aria-expanded="{{delExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer"><dc-import name="Icon" glyph="trash" tone="bad" size="18" hint-size="18px,18px"></dc-import>Delete</button></sc-if>
+              <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{extraId}}" class="hs" onClick="{{extraAct}}" aria-expanded="{{extraExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="{{extraGlyph}}" tone="muted" size="18" hint-size="18px,18px"></dc-import>{{extraLabel}}</button></sc-if>
+            </div>
+            <span style="color: #5F6C80; font-size: 12px">{{actNote}}</span>
+            <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{extraNote}}</span></sc-if>
+
+            <sc-if value="{{whyOn}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-labelledby="ap-why-l" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid {{whyBorder}}; background: {{whyBg}}">
+                <span style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #0F1A2B"><dc-import name="Icon" glyph="{{whyGlyph}}" tone="{{whyTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{whyNote}}</span></span>
+                <label id="ap-why-l" for="ap-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+                <input id="ap-why" type="text" value="{{whyText}}" onChange="{{onWhy}}" onKeyDown="{{whyKey}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{whyInv}}" aria-describedby="{{whyBy}}" placeholder="Kept in the audit trail with the change" style="{{whyStyle}}">
+                <sc-if value="{{whyErr}}" hint-placeholder-val="{{ false }}"><span id="ap-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+                <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}"><span id="ap-why-refused" role="alert" tabindex="-1" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import><span>{{refuseText}} Nothing was changed.</span></span></sc-if>
+                <div style="display: flex; gap: 8px; justify-content: flex-end">
+                  <button type="button" id="ap-why-cancel" class="hs" onClick="{{whyCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                  <button type="button" id="ap-why-go" class="{{whyGoCls}}" onClick="{{whyGo}}" style="{{whyGoStyle}}">{{whyLabel}}</button>
+                </div>
+              </div>
+            </sc-if>
+          </section>
+
+          <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <button type="button" class="fr" onClick="{{histToggle}}" aria-expanded="{{histExp}}" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{histChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{histCount}}</span></button>
+            <sc-if value="{{histOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; gap: 12px">
+                <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+                  <sc-for list="{{hist}}" as="h" hint-placeholder-count="3">
+                    <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                      <span aria-hidden="true" style="{{h.dot}}"></span>
+                      <div style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="{{h.srcStyle}}">{{h.src}}</span><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                        <sc-if value="{{h.whyOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">Why: {{h.why}}</span></sc-if>
+                        <sc-if value="{{h.noteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{h.note}}</span></sc-if>
+                        <sc-if value="{{h.diffOn}}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{h.toggle}}" aria-expanded="{{h.exp}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 8px 0 4px; border: 0; border-radius: 8px; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{h.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{h.diffLabel}}</button>
+                          <sc-if value="{{h.open}}" hint-placeholder-val="{{ false }}">
+                            <table class="ex" style="border-collapse: collapse; font-size: 13px; width: 100%; max-width: 520px">
+                              <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px"><th scope="col" style="padding: 6px 10px 6px 0; font-weight: 600">Field</th><th scope="col" style="padding: 6px 10px; font-weight: 600">{{h.beforeLabel}}</th><th scope="col" style="padding: 6px 0 6px 10px; font-weight: 600">{{h.afterLabel}}</th></tr></thead>
+                              <tbody><sc-for list="{{h.rows}}" as="x" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><td style="padding: 6px 10px 6px 0; color: #46546A">{{x.f}}</td><td style="padding: 6px 10px; color: #8F140C; text-decoration: line-through; text-decoration-color: rgba(143,20,12,.4)">{{x.b}}</td><td style="padding: 6px 0 6px 10px; color: #0A6B3D; font-weight: 600">{{x.a}}</td></tr></sc-for></tbody>
+                            </table>
+                          </sc-if>
+                        </sc-if>
+                      </div>
+                    </li>
+                  </sc-for>
+                </ol>
+                <sc-if value="{{histEmpty}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Nothing recorded yet.</span></sc-if>
+                <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Open in the audit trail</a>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ap-discard-q" aria-describedby="ap-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ap-discard-q">Discard your changes?</b><div id="ap-discard-d" style="color: #5F6C80; font-size: 12px">{{discardDetail}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ap-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="ap-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="ap-foot" class="{{footCls}}" style="{{footStyle}}"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ap-cancel" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{closeLabel}}</button>
+              <button type="submit" id="ap-save" class="hb" disabled="{{saving}}" aria-busy="{{savingAria}}" aria-describedby="ap-foot" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 124px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span>Saving…</sc-if><sc-if value="{{dPlus}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="plus" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if><sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}">{{saveLabel}}</sc-if></button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{pbOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 64px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <div class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ap-pb-title" aria-describedby="ap-pb-sub" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 600px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: {{pbTile}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{pbGlyph}}" tone="{{pbTone}}" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{pbEyebrow}}</span>
+          <h2 id="ap-pb-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{pbTitle}}</h2>
+          <span id="ap-pb-sub" style="color: #46546A; font-size: 13px">{{pbSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{pbRefused}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>{{pbRefTitle}}</b> {{pbRefusal}} Nothing was changed.</span></div>
+        </sc-if>
+        <sc-if value="{{pbPreview}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+            <span>{{pbDeletedLine}}</span>
+            <span style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="{{pbLineGlyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{pbBackLine}}</span></span>
+            <sc-for list="{{pbNotes}}" as="n" hint-placeholder-count="1"><span style="display: flex; gap: 8px; align-items: flex-start; color: #46546A"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{n.txt}}</span></span></sc-for>
+          </div>
+          <div style="padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px">{{pbEffect}}</div>
+          <sc-if value="{{pbWhyOn}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="ap-pb-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">{{pbWhyLabel}} <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="ap-pb-why" type="text" value="{{pbText}}" onChange="{{onPbWhy}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{pbInv}}" aria-describedby="{{pbBy}}" placeholder="Kept in the audit trail with the change" style="{{pbStyle}}">
+            <sc-if value="{{pbErr}}" hint-placeholder-val="{{ false }}"><span id="ap-pb-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+          </div></sc-if>
+        </sc-if>
+        <sc-if value="{{pbHistOn}}" hint-placeholder-val="{{ true }}">
+        <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid #EEF1F5">
+          <button type="button" class="fr" onClick="{{pbHistToggle}}" aria-expanded="{{pbHistExp}}" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{pbHistChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{pbHistCount}}</span></button>
+          <sc-if value="{{pbHistOpen}}" hint-placeholder-val="{{ false }}">
+            <ol class="ex" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+              <sc-for list="{{pbHist}}" as="h" hint-placeholder-count="2">
+                <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                  <span aria-hidden="true" style="{{h.dot}}"></span>
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="{{h.srcStyle}}">{{h.src}}</span><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                    <sc-if value="{{h.whyOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">Why: {{h.why}}</span></sc-if>
+                    <sc-if value="{{h.noteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{h.note}}</span></sc-if>
+                  </div>
+                </li>
+              </sc-for>
+            </ol>
+          </sc-if>
+        </section>
+        </sc-if>
+      </div>
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ap-pbd-q" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><b id="ap-pbd-q">Discard your changes?</b></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ap-pb-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="ap-pb-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end">
+            <button type="button" id="ap-pb-cancel" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{pbCloseLabel}}</button>
+            <sc-if value="{{pbPreview}}" hint-placeholder-val="{{ true }}"><button type="button" id="ap-pb-go" class="hb" onClick="{{pbGo}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="{{pbGoGlyph}}" tone="white" size="16" hint-size="16px,16px"></dc-import>{{pbGoLabel}}</button></sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","search","no-match","only-former","none-yet","no-company","one-only","stop-refused","full","history","new","new-errors","refused","edit","dirty","saving","discard","saved","nothing-changed","stop","stop-error","stopped","use-refused","no-key","key-make","key-change","key-change-error","key-changed","loading","error"],"section":"State"},"companies":{"editor":"enum","default":"2","options":["2","4","1"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai","ail","aip"],"section":"State"},"$preview":{"width":1440,"height":1380}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'list');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv); clearTimeout(this._rt); }
+
+  // ---------- this section: Setup › HR › Approvers (up to 3 per company; hrp approvers list, new in the scope) ----------
+  cfg() {
+    return {
+      pre: 'ap', section: 'Approvers', label: 'Approver', lower: 'approver', plural: 'approvers', nameKey: 'name', perEntity: true, glyph: 'approval', defCo: 'AISB', max: 3,
+      liveWord: 'Approver', stopWord: 'Former',
+      stopNote: 'Former approver: not printed on new forms. The name stays on every form already printed and on every approval already kept, as it was on the day.',
+      useNote: 'Approver again: printed on new forms from today. Forms already printed do not change.',
+      groups: [
+        ['The approver', [
+          { k: 'name', l: 'Name', req: true, hint: 'As it is printed on every form. A digitally signed PDF is matched to the approver by this name, so write it as the signature names the person. Changing it later does not change forms already printed.' },
+          { k: 'title', l: 'Position', hint: 'Printed under the name, for example Director.' }]],
+        ['Dates', [
+          { k: 'from', l: 'Approver from', t: 'date', req: true, hint: 'The first day the person is printed on forms. Forms printed earlier do not list them.' }]],
+        ['Notes', [{ k: 'notes', l: 'Notes', t: 'area', wide: true }]]
+      ],
+      heads: [['name', 'Approver'], ['from', 'Approver from'], ['until', 'Until'], ['used', 'Forms signed', true], ['status', 'Status']],
+      blank: { name: '', title: 'Director', from: '2026-11-18', until: '', notes: '' }
+    };
+  }
+  fmt(iso) {
+    if (!iso) return '';
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], p = String(iso).split('-');
+    return p.length === 3 ? Number(p[2]) + ' ' + M[Number(p[1]) - 1] + ' ' + p[0] : String(iso);
+  }
+  rowOf(r) {
+    const v = r.vals;
+    return { name: v.name || '(no name)', sub: v.title || 'No position',
+      cells: [this.fmt(v.from) || '—', v.until ? this.fmt(v.until) : '—'],
+      sort: { name: v.name, from: v.from, until: v.until || '9999', status: r.status },
+      text: [v.name, v.title, this.fmt(v.from), v.notes].join(' ') };
+  }
+  // the Forms signed column: how many forms this person has signed, and out of how many printed with the name
+  usedCol(r) { return [r.signed || 0, r.printed ? 'of ' + r.printed + ' printed' : 'No form printed yet']; }
+  liveCount(co) { return (this.state.recs[co || this.state.co] || []).filter(r => r.status === 'live').length; }
+  isFull(co) { return this.liveCount(co) >= this.cfg().max; }
+  // a rule the app refuses on, in words; '' when fine
+  refuseNew(co, name, list) { return (list || this.list(co)).filter(r => r.status === 'live').length >= this.cfg().max ? co + ' already has 3 approvers, the most a company can have, so ' + (String(name || '').trim() || 'this person') + ' can’t be added. Stop one approver first, then add them.' : ''; }
+  // the states the State tweak shows
+  viewState(view, base, recs) {
+    const K = base.co;
+    const edit = (id, extra) => { const r = recs[K].find(x => x.id === id); return { ...base, dlg: { id, isNew: false }, form: { ...r.vals }, loaded: { ...r.vals }, ...extra }; };
+    const neu = extra => ({ ...base, dlg: { id: null, isNew: true }, form: { ...this.cfg().blank }, loaded: { ...this.cfg().blank }, ...extra });
+    const keyDlg = (kind, extra) => ({ ...base, put: { mode: 'key', kind }, ...extra });
+    switch (view) {
+      case 'search': return { ...base, q: 'rajesh' };
+      case 'no-match': return { ...base, q: 'nurul' };
+      case 'only-former': return { ...base, recs: { ...recs, [K]: recs[K].filter(r => r.status === 'stopped') } };
+      case 'none-yet': return base;   // AIP, in the four-company list (startCo and companyList)
+      case 'no-company': return { ...base, noCo: true };
+      case 'full': return { ...base, fullN: 1 };
+      case 'new': return neu({});
+      case 'new-errors': return neu({ tried: true, form: { ...this.cfg().blank, title: 'Director', from: '' } });
+      case 'refused': { const f = { ...this.cfg().blank, name: 'Nurul Aina', title: 'Director' }; return neu({ form: f, fRef: this.refuseNew(K, f.name, recs[K]) }); }
+      case 'edit': return edit(2, {});
+      case 'dirty': { const s = edit(2, {}); s.form = { ...s.form, title: 'Finance director', notes: 'Signs on paper only.' }; return s; }
+      case 'saving': { const s = edit(2, { saving: true }); s.form = { ...s.form, title: 'Finance director' }; return s; }
+      case 'discard': { const s = edit(2, { confirm: true }); s.form = { ...s.form, title: 'Finance director' }; return s; }
+      case 'saved': return edit(2, { toast: { text: 'Saved', undo: true }, notesN: 1, flashId: 2, flashN: 1, undo: { recs, key: base.key } });
+      case 'nothing-changed': return edit(2, { footMsg: 'Nothing has changed.', footN: 1 });
+      case 'history': return edit(3, { histOpen: true, histExp: { 0: true } });
+      case 'stop': return edit(3, { why: 'stop' });
+      case 'stop-error': return edit(3, { why: 'stop', whyErr: true });
+      case 'stop-refused': return edit(11, { why: 'stop', whyText: 'Hassan Ismail is stepping down.', refuse: this.stopBlockOf(recs[K].find(x => x.id === 11), recs[K], K) });
+      case 'use-refused': return edit(4, { why: 'use', whyText: 'Farid Osman rejoined the board.', refuse: this.refuseNew(K, 'Farid Osman', recs[K]).replace(' can’t be added. Stop one approver first, then add them.', ' can’t be made an approver again. Stop one approver first.') });
+      case 'stopped': {
+        const s = edit(3, { pillN: 1, toast: { text: 'Rajesh Kumar stopped as approver. Forms already printed keep the name.', undo: true }, undo: { recs, key: base.key } });
+        s.recs = { ...recs, [K]: recs[K].map(r => (r.id === 3 ? { ...r, status: 'stopped', vals: { ...r.vals, until: '2026-11-18' } } : r)) };
+        s.form = { ...s.recs[K].find(x => x.id === 3).vals }; s.loaded = { ...s.form };
+        return s;
+      }
+      case 'no-key': return { ...base, key: { set: false } };
+      case 'key-make': return keyDlg('make', { key: { set: false } });
+      case 'key-change': return keyDlg('change', { pbText: 'Our backup copy of the records was shared by mistake.' });
+      case 'key-change-error': return keyDlg('change', { pbErr: true });
+      case 'key-changed': return { ...base, key: { set: true, on: '18 Nov 2026', by: 'Aisha Rahman', forms: 12, changed: true }, keyN: 1, toast: { text: 'Form key changed. 3 printed forms need printing again.', undo: true }, undo: { recs, key: base.key } };
+      case 'loading': return { ...base, load: 'loading' };
+      case 'error': return { ...base, load: 'error' };
+      default: return base;
+    }
+  }
+  stopBlockOf(r, list, co) { co = co || this.state.co; return list.filter(x => x.status === 'live').length <= 1 && r.status === 'live' ? r.vals.name + ' is the only approver for ' + co + '. Add another approver first, or no one can sign ' + co + '’s approval forms.' : ''; }
+  errors(f) {
+    const e = {};
+    if (!String(f.name ?? '').trim()) e.name = 'This can’t be empty.';
+    if (!String(f.from ?? '').trim()) e.from = 'Enter the date they start, for example 18 Nov 2026.';
+    const me = this.state.dlg && this.state.dlg.id;
+    const dup = this.list().find(r => r.id !== me && String(r.vals.name).trim().toLowerCase() === String(f.name || '').trim().toLowerCase());
+    if (!e.name && dup) e.name = dup.status === 'live' ? dup.vals.name + ' is already an approver for ' + this.state.co + '.' : dup.vals.name + ' is on the list as a former approver. Open that row and make the person an approver again.';
+    return e;
+  }
+  clean(f) { return { ...f, name: String(f.name || '').trim(), title: String(f.title || '').trim() }; }
+  startCo(view) {
+    const u = String(this.props.company || '').toUpperCase();
+    if (/^(one-only|stop-refused)$/.test(view || '')) return 'AI';
+    if (view === 'none-yet') return 'AIP';
+    if (/^(edit|dirty|saving|discard|saved|nothing-changed|history|stop|stop-error|stopped|use-refused|new|new-errors|refused|full|no-key|key-make|key-change|key-change-error|key-changed)$/.test(view || '')) return this.cfg().defCo;
+    return this.companyList().some(x => x[0] === u) ? u : this.cfg().defCo;
+  }
+  // the company the shell (menu and top bar) shows follows the one this page shows; the top-bar switcher picks it
+  shell() {
+    const SH = { AISB: ['aisb', 'sqlPayroll', 'sql', 'true'], AI: ['ai', 'here', 'here', 'false'], AIL: ['ail', 'sql', 'sql', 'false'], AIP: ['aip', 'here', 'here', 'false'] };
+    const h = SH[String(this.state.co || '').toUpperCase()] || SH.AISB;
+    const nc = this.companyList().length, cosWord = nc === 1 ? 'one' : nc >= 4 ? 'four' : 'two';
+    return { shCo: h[0], shKind: h[1], navKind: h[2], navPayroll: h[3], shCos: cosWord, tbCos: cosWord, onTopCo: code => { const u = String(code).toUpperCase(); if (this.companyList().some(x => x[0] === u)) this.setState({ co: u, q: '', fullN: 0 }); } };
+  }
+  companyList() {
+    const n = this._four ? '4' : (this.props.companies ?? '2');   // the none-yet state shows AIP, so it draws the four companies
+    const all = [['AISB', 'AISB Sdn Bhd'], ['AI', 'Agrinexus International'], ['AIL', 'Agrinexus Logistics'], ['AIP', 'Agrinexus Plantations']];
+    return n === '1' ? all.slice(0, 1) : n === '4' ? all : all.slice(0, 2);
+  }
+  records() {
+    const seed = { when: '6 Jan 2025, 08:02', op: 'As it stood', src: 'Starting data', who: '', note: 'As it stood when the audit trail started.' };
+    const base = { name: '', title: 'Director', from: '2025-01-01', until: '', notes: '' };
+    const RIGHT = 'Has the Approver right on Users and access, tied to this list.';
+    const PAYEE = 'Is paid a director fee, so another approver signs any request paid to him: his own claim, advance or fee.';
+    const USED = (p, s) => [['forms printed with the name', p], ['forms signed', s]];
+    return {
+      AISB: [
+        { id: 1, status: 'live', vals: { ...base, name: 'Hassan Ismail' }, printed: 8, signed: 1, used: USED(8, 1), notes: [RIGHT, PAYEE], hist: [seed] },
+        { id: 2, status: 'live', vals: { ...base, name: 'Tan Mei Ling' }, printed: 8, signed: 2, used: USED(8, 2), notes: ['Approves on paper: no user, so no login yet.'], hist: [seed] },
+        { id: 3, status: 'live', vals: { ...base, name: 'Rajesh Kumar', from: '2026-07-01' }, printed: 8, signed: 2, used: USED(8, 2), notes: ['Approves on paper: no user, so no login yet.'],
+          hist: [{ when: '30 Jun 2026, 17:08', op: 'Added', src: 'In the app', who: 'Aisha Rahman', why: 'Replaces Farid Osman from 1 July.', added: true, rows: [['Name', '', 'Rajesh Kumar'], ['Position', '', 'Director'], ['Approver from', '', '1 Jul 2026']] }] },
+        { id: 4, status: 'stopped', vals: { ...base, name: 'Farid Osman', until: '2026-06-30' }, printed: 0, signed: 0, used: [], notes: ['Stopped before approval forms began in October 2026. A signature in his name is shown as: signer not in the approvers list.'],
+          hist: [{ when: '30 Jun 2026, 17:05', op: 'Stopped', src: 'In the app', who: 'Aisha Rahman', why: 'Left the board on 30 June.', rows: [['Approver', 'Yes', 'No'], ['Until', '—', '30 Jun 2026']] }, seed] }
+      ],
+      AI: [
+        { id: 11, status: 'live', vals: { ...base, name: 'Hassan Ismail' }, printed: 3, signed: 3, used: USED(3, 3), notes: [RIGHT, 'The only approver for AI, so his own claim or advance can only be Self-approved.'], hist: [seed] }
+      ],
+      AIL: [
+        { id: 21, status: 'live', vals: { ...base, name: 'Hassan Ismail' }, printed: 0, signed: 0, used: [], notes: [RIGHT], hist: [seed] },
+        { id: 22, status: 'live', vals: { ...base, name: 'Tan Mei Ling' }, printed: 0, signed: 0, used: [], notes: [], hist: [seed] }
+      ],
+      // AIP has no approvers yet: the no-approvers example (samples section 2), as on Approvals and the approval form print
+      AIP: []
+    };
+  }
+
+  // ---------- the shared Setup record pattern (same on every Setup list board) ----------
+  fields() { return this.cfg().groups.flatMap(g => g[1]); }
+  init(view) {
+    const recs = this.records();
+    this._four = view === 'none-yet';
+    const base = { co: this.startCo(view), q: '', sort: null, stopped: false, noCo: false, recs, load: null, retrying: false,
+      key: { set: true, on: '6 Jan 2025', by: 'Aisha Rahman', forms: 12 }, keyN: 0, fullN: 0,
+      dlg: null, put: null, closing: false, form: null, loaded: null, tried: false, saving: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '',
+      confirm: false, footMsg: '', footN: 0, histOpen: false, histExp: {}, notesN: 0, pillN: 0,
+      pbText: '', pbErr: false, toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0 };
+    return this.viewState(view, base, recs);
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.companies !== this.props.companies || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv);
+      const nx = this.init(this.props.view || 'list');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state, p = this.cfg().pre;
+    const open = !!(st.dlg || st.put), was = !!(prev.dlg || prev.put);
+    if (open && !was) { this.focusId(st.dlg ? p + '-title' : p + '-pb-title'); return; }
+    if (!open && was) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId(p + '-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId(p + (st.put ? '-pb-keep' : '-keep')); return; }
+    if (prev.confirm && !st.confirm && open && !st.closing) this.focusId(p + (st.put ? '-pb-cancel' : '-cancel'));
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  list(co) { return (this.state.recs[co || this.state.co] || []); }
+  rec(id) { return this.list().find(r => r.id === id) || null; }
+  setRec(id, fn) { const st = this.state; this.setState({ recs: { ...st.recs, [st.co]: this.list().map(r => (r.id === id ? fn(r) : r)) } }); }
+  snap() { const st = this.state; return { recs: st.recs, key: st.key }; }
+  dirty() {
+    const st = this.state;
+    if (st.put) return !!st.pbText.trim();
+    if (!st.dlg) return false;
+    return JSON.stringify(st.form) !== JSON.stringify(st.loaded) || !!st.whyText.trim();
+  }
+  openRec(id) {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const r = this.rec(id);
+    if (!r) return;
+    clearTimeout(this._t);
+    this.setState({ dlg: { id, isNew: false }, put: null, closing: false, form: { ...r.vals }, loaded: { ...r.vals }, tried: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '', confirm: false, footMsg: '', histOpen: false, histExp: {}, notesN: 0 });
+  }
+  openNew() {
+    if (this.state.dlg || this.state.put) return;
+    if (this.isFull()) { this._focusId = 'ap-full-note'; this.setState({ fullN: this.state.fullN + 1 }); return; }
+    this._opener = document.activeElement;
+    const b = { ...this.cfg().blank };
+    clearTimeout(this._t);
+    this.setState({ dlg: { id: null, isNew: true }, put: null, closing: false, form: b, loaded: { ...b }, tried: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '', confirm: false, footMsg: '', histOpen: false, histExp: {} });
+  }
+  openKey() {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    clearTimeout(this._t);
+    this.setState({ put: { mode: 'key', kind: this.state.key.set ? 'change' : 'make' }, dlg: null, closing: false, pbText: '', pbErr: false, confirm: false });
+  }
+  askClose() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDrawer();
+  }
+  closeDrawer() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    const st = this.state;
+    if (!(st.dlg || st.put)) return;
+    const next = { dlg: null, put: null, closing: false, confirm: false, saving: false, fRef: '', why: null, whyText: '', whyErr: false, refuse: '', pbText: '', pbErr: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = st.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  // Save: checks, then shows Saving… for a moment while the records are written
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state, c = this.cfg();
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    const errs = this.errors(st.form), first = this.fields().find(x => errs[x.k]);
+    if (first) { this._focusId = c.pre + '-f-' + first.k; this.setState({ tried: true, fRef: '' }); return; }
+    if (!st.dlg.isNew && JSON.stringify(st.form) === JSON.stringify(st.loaded)) { this.setState({ footMsg: 'Nothing has changed.', footN: st.footN + 1 }); return; }
+    this.setState({ saving: true, fRef: '' });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => this.commitSave(), 700);
+  }
+  commitSave() {
+    const st = this.state, c = this.cfg();
+    if (!st.dlg || !st.saving) return;
+    const vals = this.clean(st.form), snap = this.snap();
+    if (st.dlg.isNew) {
+      const why = this.refuseNew(st.co, vals.name);
+      if (why) { this._focusId = c.pre + '-refused'; this.setState({ saving: false, fRef: why }); return; }
+      const id = 100 + st.footN + Object.values(st.recs).flat().length;
+      const r = { id, status: 'live', vals, printed: 0, signed: 0, used: [], notes: [], hist: [{ when: '18 Nov 2026, 10:15', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true, rows: [['Name', '', vals.name], ['Position', '', vals.title || '—'], ['Approver from', '', this.fmt(vals.from)]] }] };
+      this._changed = id;
+      this.setState({ recs: { ...st.recs, [st.co]: [...this.list(), r] }, dlg: { id, isNew: false }, form: { ...vals }, loaded: { ...vals }, tried: false, saving: false, footMsg: '', notesN: st.notesN + 1, undo: snap });
+      this.toast(vals.name + ' added as approver', { undo: true });
+      return;
+    }
+    this._changed = st.dlg.id;
+    this.setRec(st.dlg.id, r => ({ ...r, vals, hist: [{ when: '18 Nov 2026, 10:15', op: 'Changed', src: 'In the app', who: 'Aisha Rahman',
+      rows: this.fields().filter(x => JSON.stringify(st.form[x.k]) !== JSON.stringify(st.loaded[x.k])).map(x => [x.l, this.shown(x, st.loaded[x.k]), this.shown(x, st.form[x.k])]) }, ...r.hist] }));
+    this.setState({ form: { ...vals }, loaded: { ...vals }, saving: false, footMsg: '', tried: false, notesN: st.notesN + 1, undo: snap });
+    this.toast('Saved', { undo: true });
+  }
+  shown(x, v) { if (x.t === 'bool') return v ? 'Yes' : 'No'; if (x.t === 'date') return v ? this.fmt(v) : '—'; return v === '' || v == null ? '—' : String(v); }
+  startWhy(act) {
+    const st = this.state;
+    if (st.why === act) return this.setState({ why: null, whyText: '', whyErr: false, refuse: '' });
+    this._focusId = this.cfg().pre + '-why';
+    this.setState({ why: act, whyText: '', whyErr: false, refuse: '' });
+  }
+  whyGo() {
+    const st = this.state, c = this.cfg(), act = st.why, reason = st.whyText.trim();
+    if (!act || !st.dlg) return;
+    if (!reason) { this._focusId = c.pre + '-why'; this.setState({ whyErr: true }); return; }
+    const id = st.dlg.id, r = this.rec(id);
+    if (!r) return;
+    const stop = act === 'stop';
+    const block = stop ? this.stopBlockOf(r, this.list()) : (this.isFull() ? this.refuseNew(st.co, r.vals.name).replace(' can’t be added. Stop one approver first, then add them.', ' can’t be made an approver again. Stop one approver first.') : '');
+    if (block) { this._focusId = c.pre + '-why-refused'; this.setState({ refuse: block }); return; }
+    const step = { when: '18 Nov 2026, 10:16', src: 'In the app', who: 'Aisha Rahman', why: reason };
+    const snap = this.snap(), until = stop ? '2026-11-18' : '';
+    this._changed = id;
+    this._focusId = c.pre + (stop ? '-act-use' : '-act-stop');
+    this.setRec(id, x => ({ ...x, status: stop ? 'stopped' : 'live', vals: { ...x.vals, until },
+      hist: [{ ...step, op: stop ? 'Stopped' : 'Approver again', rows: [['Approver', stop ? 'Yes' : 'No', stop ? 'No' : 'Yes'], ['Until', stop ? '—' : this.fmt(x.vals.until) || '—', stop ? this.fmt(until) : '—']] }, ...x.hist] }));
+    this.setState({ form: { ...st.form, until }, loaded: { ...st.loaded, until }, why: null, whyText: '', whyErr: false, refuse: '', pillN: st.pillN + 1, undo: snap });
+    this.toast(stop ? r.vals.name + ' stopped as approver. Forms already printed keep the name.' : r.vals.name + ' is an approver again', { undo: true });
+  }
+  undoLast() {
+    const u = this.state.undo;
+    if (!u) return;
+    const st = this.state, next = { recs: u.recs, key: u.key, undo: null, pillN: st.pillN + 1, keyN: st.keyN + 1, flashN: st.flashN + 1 };
+    if (st.dlg) {
+      const r = (u.recs[st.co] || []).find(x => x.id === st.dlg.id);
+      if (r) { next.form = { ...r.vals }; next.loaded = { ...r.vals }; next.flashId = r.id; } else { next.dlg = null; next.closing = false; }
+    }
+    this.setState(next);
+    this.toast('Undone');
+  }
+  pbGo() {
+    const st = this.state, c = this.cfg();
+    if (!st.put || st.put.mode !== 'key') return;
+    const kind = st.put.kind;
+    if (kind === 'change' && !st.pbText.trim()) { this._focusId = c.pre + '-pb-why'; this.setState({ pbErr: true }); return; }
+    const snap = this.snap();
+    this._opener = document.getElementById(c.pre + '-key-btn');
+    this.setState({ key: { set: true, on: '18 Nov 2026', by: 'Aisha Rahman', forms: st.key.forms || 12, changed: kind === 'change' }, keyN: st.keyN + 1, undo: snap, pbText: '', pbErr: false });
+    this.closeDrawer();
+    this.toast(kind === 'make' ? 'Form key made. Approval forms can be printed now.' : 'Form key changed. 3 printed forms need printing again.', { undo: true });
+  }
+  retry() {
+    if (this.state.retrying) return;
+    this.setState({ retrying: true });
+    clearTimeout(this._rt);
+    this._rt = setTimeout(() => this.setState({ retrying: false, load: null }), 900);
+  }
+  histItems(list, prefix, expanded, toggle) {
+    const SRC = { 'In the app': 'background:#EAF0FD;color:#2450B8', 'Starting data': 'background:#EEF1F5;color:#46546A', 'Import': 'background:#EEF1F5;color:#46546A' };
+    return (list || []).map((h, i) => {
+      const rows = (h.rows || []).map(([f, b, a]) => ({ f, b: b === '' ? '—' : b, a: a === '' ? '—' : a }));
+      const open = !!(expanded && expanded[i]);
+      return { op: h.op, src: h.src, who: h.who || '', when: h.when, why: h.why || '', whyOn: !!h.why, note: h.note || '', noteOn: !!h.note,
+        srcStyle: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;' + (SRC[h.src] || SRC['Starting data']),
+        dot: 'width:10px;height:10px;margin-top:5px;border-radius:99px;box-sizing:border-box;' + (h.op === 'Stopped' ? 'background:#FFFFFF;border:2px solid #B0190F' : h.op === 'As it stood' ? 'background:#FFFFFF;border:2px solid #8792A2' : 'background:#0A6B3D'),
+        diffOn: rows.length > 0, rows, open, exp: open ? 'true' : 'false', chev: open ? 'chev on' : 'chev',
+        diffLabel: open ? 'Hide what changed' : (h.removed ? 'Show what was removed' : h.added ? 'Show what was added' : 'Show what changed'),
+        beforeLabel: h.added ? '' : 'Before', afterLabel: h.removed ? '' : 'After',
+        toggle: () => toggle(i) };
+    });
+  }
+  renderVals() {
+    const st = this.state, c = this.cfg(), p = c.pre;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', grey: 'background:#EEF1F5;color:#46546A', warn: 'background:#FEF1D6;color:#934100' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const cos = this.companyList();
+    const coName = (cos.find(x => x[0] === st.co) || cos[0])[0];
+    const all = this.list();
+    const nStopped = all.filter(r => r.status === 'stopped').length;
+    const live = all.filter(r => r.status === 'live').length;
+    const visible = all.filter(r => st.stopped || r.status !== 'stopped');
+    const q = st.q.trim().toLowerCase();
+    let shown = visible.filter(r => !q || (this.rowOf(r).text + ' ' + (r.status === 'stopped' ? 'former' : 'approver')).toLowerCase().includes(q));
+    if (st.sort) {
+      const { col, dir } = st.sort;
+      const key = r => col === 'used' ? this.usedCol(r)[0] : String(this.rowOf(r).sort[col] || '').toLowerCase();
+      shown = shown.slice().sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * dir; });
+    }
+    const heads = c.heads.map(([k, label, num], i) => {
+      const on = st.sort && st.sort.col === k, dir = on ? st.sort.dir : 0;
+      return { label, sort: on ? (dir > 0 ? 'ascending' : 'descending') : 'none',
+        glyph: on ? (dir > 0 ? 'arrowUp' : 'arrowDown') : 'sort', tone: on ? 'brand' : 'muted',
+        thStyle: 'padding:4px ' + (i === 0 ? '12px 4px 12px' : i === c.heads.length - 1 ? '12px 4px 6px' : '6px') + ';font-weight:600;' + (num ? 'text-align:right' : ''),
+        btnStyle: 'display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 6px;border:0;border-radius:6px;background:transparent;font:600 12px Inter,sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;' + (on ? 'color:#0F1A2B' : 'color:#5F6C80') + (num ? ';flex-direction:row-reverse' : ''),
+        click: () => { const s = this.state.sort; this.setState({ sort: !s || s.col !== k ? { col: k, dir: 1 } : s.dir > 0 ? { col: k, dir: -1 } : null }); } };
+    });
+    const rows = shown.map((r, k) => {
+      const v = this.rowOf(r), stopped = r.status === 'stopped', flash = st.flashId === r.id && st.flashN, uc = this.usedCol(r);
+      return { id: p + '-row-' + r.id, name: v.name, sub: v.sub,
+        cells: v.cells.map(t => ({ txt: t, style: 'padding:12px 12px;' + (stopped ? 'color:#5F6C80' : '') })),
+        usedN: uc[0], usedTxt: uc[1],
+        statusTxt: stopped ? c.stopWord : c.liveWord, pill: pill(stopped ? 'grey' : 'ok'),
+        pillCls: st.flashId === r.id && st.pillN ? (st.pillN % 2 ? 'swapA' : 'swapB') : '',
+        cls: 'hr' + (flash ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        rowStyle: 'border-top:1px solid #EEF1F5;cursor:pointer;' + (stopped ? 'color:#46546A' : ''),
+        open: () => this.openRec(r.id),
+        key: e => {
+          const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? k - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? shown.length - 1 : null;
+          if (to === null || to < 0 || to >= shown.length) return;
+          e.preventDefault();
+          this.focusId(p + '-row-' + shown[to].id);
+        } };
+    });
+    const emptyKind = shown.length ? '' : !all.length ? 'none' : !visible.length ? 'stopped' : 'match';
+
+    // the record dialog
+    const dlg = st.dlg, r = dlg && !dlg.isNew ? this.rec(dlg.id) : null;
+    const errsAll = dlg ? this.errors(st.form) : {};
+    const errs = st.tried ? errsAll : {};
+    const ctl = 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;';
+    const dGroups = !dlg ? [] : c.groups.map(([label, fs]) => ({ label, fields: fs.map(x => {
+      const t = x.t || 'text', err = errs[x.k] || '';
+      const id = p + '-f-' + x.k, val = st.form[x.k];
+      const by = [err ? id + '-err' : '', x.hint ? id + '-hint' : ''].filter(Boolean).join(' ');
+      return { id, label: x.l, req: !!x.req, reqAria: x.req ? 'true' : 'false', lockOn: false, lock: '', lockId: id + '-lock',
+        isBool: false, notBool: true, isInput: t !== 'area', isSelect: false, isArea: t === 'area',
+        type: t === 'date' ? 'date' : 'text', max: x.max || 200,
+        val: val == null ? '' : String(val), checked: false, ro: false, dis: false, opts: [],
+        hintOn: !!x.hint, hint: x.hint || '', hintId: id + '-hint',
+        errOn: !!err, err, errId: id + '-err', inv: err ? 'true' : 'false', by,
+        wrap: 'display:flex;flex-direction:column;gap:6px;min-width:0;' + (x.wide || t === 'area' || x.k === 'name' ? 'grid-column:1 / -1' : ''),
+        style: ctl + (t === 'area' ? 'height:auto;min-height:76px;padding:10px 12px;resize:vertical;' : '') + 'border:1px solid ' + (err ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+        change: e => {
+          const tv = e && e.target ? e.target.value : '';
+          this.setState({ form: { ...this.state.form, [x.k]: tv }, footMsg: '', fRef: '' });
+        } };
+    }) }));
+    const stopped = r && r.status === 'stopped';
+    const badN = Object.keys(errs).length;
+    const whyMeta = { stop: [c.stopLbl || 'Stop as approver', c.stopNote, 'eyeOff', 'muted', '#D5DBE4', '#FAFBFC', false], use: ['Make approver again', c.useNote, 'eye', 'brand', '#C9D7F6', '#F3F6FE', false] }[st.why] || ['', '', 'help', 'muted', '#D5DBE4', '#FFFFFF', false];
+    const notes = r ? [...(stopped ? [c.stopNote] : []), ...r.notes] : [];
+    const dirty = this.dirty();
+    const nUsed = r ? r.used.reduce((n, u) => n + u[1], 0) : 0;
+
+    // the form key dialog (the second dialog)
+    const put = st.put, make = !!put && put.kind === 'make';
+    const full = this.isFull();
+    const kset = st.key.set;
+    const noKeyBox = 'background:#FFF8EC;border:1px solid #F0C98A;border-radius:16px;padding:18px 20px';
+
+    return { ...this.shell(),
+      pageTitle: st.noCo ? c.section : c.section + ' · ' + coName,
+      listHeading: c.section + ' of ' + coName, coName,
+      noCo: !!st.noCo, hasCo: !st.noCo,
+      loadOn: !st.noCo && st.load === 'loading', errOn: !st.noCo && st.load === 'error', listOn: !st.noCo && !st.load,
+      retry: () => this.retry(), retrying: !!st.retrying, notRetrying: !st.retrying, retryAria: st.retrying ? 'true' : 'false',
+      fullOn: !st.noCo && !st.load && full, fullCls: st.fullN ? (st.fullN % 2 ? 'fa' : 'fb') : '',
+      oneOn: !st.noCo && !st.load && live === 1 && !full, oneName: (all.find(x => x.status === 'live') || { vals: { name: 'The approver' } }).vals.name,
+      addCls: full ? 'hs' : 'hb', addDis: full ? 'true' : 'false', addBy: full ? 'ap-full-note' : '', addTone: full ? 'muted' : 'white',
+      addStyle: 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;' + (full ? 'border:1px solid #D5DBE4;background:#EEF1F5;color:#46546A' : 'border:0;background:#2450B8;color:#FFFFFF'),
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '' }),
+      countTxt: shown.length + ' of ' + all.length + ' shown',
+      showStopped: !!st.stopped, nStopped, toggleStopped: () => this.setState({ stopped: !this.state.stopped }),
+      hintTxt: 'Click a row to change it. ' + live + ' of ' + c.max + ' approvers in use. An approver is never deleted: stop one instead, and the history stays for the audit pack.',
+      heads, rows,
+      emptyOn: !!emptyKind, emptyGlyph: emptyKind === 'match' ? 'search' : emptyKind === 'stopped' ? 'eyeOff' : c.glyph,
+      emptyHead: emptyKind === 'none' ? 'No approvers yet for ' + coName : emptyKind === 'stopped' ? 'Only former approvers' : 'No approvers match',
+      emptyTxt: emptyKind === 'none' ? 'Approval forms can’t be printed until a company has an approver. Add the director who signs for ' + coName + '.' : emptyKind === 'stopped' ? 'Tick Show former to see them. Add an approver so forms can be signed.' : 'Check the spelling, or clear the search to see all ' + all.length + '.',
+      emptyBtnOn: !!emptyKind,
+      emptyBtn: emptyKind === 'match' ? 'Clear the search' : emptyKind === 'stopped' ? 'Show former' : 'Add approver',
+      emptyAct: () => { if (emptyKind === 'match') this.setState({ q: '' }); else if (emptyKind === 'stopped') this.setState({ stopped: true }); else this.openNew(); },
+      openNew: () => this.openNew(),
+      addLabel: 'Add approver', dGlyph: c.glyph,
+
+      keyBox: kset ? 'background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:18px 20px' : noKeyBox,
+      keyTile: kset ? '#EAF0FD' : '#FEF1D6', keyTone: kset ? 'brand' : 'warn',
+      keyPillTxt: kset ? 'Set' : 'No key yet', keyPill: pill(kset ? 'ok' : 'warn'), keyPillCls: st.keyN ? (st.keyN % 2 ? 'swapA' : 'swapB') : '',
+      keyLine: kset ? (st.key.changed ? 'Changed on ' + st.key.on + ' by ' + st.key.by + '. Forms printed before then carry the old key.' : 'Made on ' + st.key.on + ' by ' + st.key.by + '. ' + st.key.forms + ' forms have been printed with it; 3 are waiting for a signature.') : 'No form key yet. Approval forms can’t be printed until there is one.',
+      keyLineColor: kset ? '#46546A' : '#5C2B00',
+      keyBtn: kset ? 'Change the form key' : 'Make the form key', keyBtnGlyph: 'key', keyBtnTone: kset ? 'muted' : 'white', keyBtnCls: kset ? 'hs' : 'hb',
+      keyBtnStyle: 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;' + (kset ? 'border:1px solid #8792A2;background:#FFFFFF;color:#0F1A2B' : 'border:0;background:#2450B8;color:#FFFFFF'),
+      keyOpen: () => this.openKey(),
+
+      anyDlg: !!(dlg || put),
+      dlgOn: !!dlg, pbOn: !!put,
+      dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      dEyebrow: c.label + ' · ' + coName,
+      dTitle: !dlg ? '' : dlg.isNew ? 'New approver' : (r ? r.vals[c.nameKey] || '(no name)' : ''),
+      dSub: !dlg ? '' : dlg.isNew ? 'Printed on every form from the date below. Nothing is kept until you add the person.' : 'Changes are kept in the audit trail with your name.',
+      dIsNew: !!(dlg && dlg.isNew), dIsEdit: !!r, dPlus: !!(dlg && dlg.isNew) && !st.saving,
+      dPillTxt: stopped ? c.stopWord : c.liveWord, dPill: pill(stopped ? 'grey' : 'ok'), dPillCls: st.pillN ? (st.pillN % 2 ? 'swapA' : 'swapB') : '',
+      dSysOn: false,
+      dNotesOn: notes.length > 0, dNotes: notes.map(txt => ({ txt })), dNotesCls: st.notesN ? (st.notesN % 2 ? 'swapA' : 'swapB') : '',
+      fRefOn: !!st.fRef, fRefText: st.fRef || '',
+      sumOn: badN > 0, sumTitle: badN === 1 ? '1 field needs a fix.' : badN + ' fields need a fix.',
+      sumList: this.fields().filter(x => errs[x.k]).map(x => x.l).join(', ') + '.',
+      dGroups,
+      dUsedAny: nUsed > 0, dUsedNone: !!r && !nUsed, dUsed: r ? r.used.map(([what, n]) => ({ n, what })) : [],
+      actHeading: 'Status', stopLbl: c.stopLbl || 'Stop as approver', useLbl: 'Make approver again',
+      canStop: !!r && !stopped, canUse: !!r && stopped, canDelete: false,
+      stopExp: st.why === 'stop' ? 'true' : 'false', useExp: st.why === 'use' ? 'true' : 'false', delExp: 'false',
+      actNote: !r ? '' : 'An approver is never deleted: who approved, and from when, is part of the audit pack. Stop as approver instead and the name stays on every form already printed.',
+      extraOn: false, extraId: '', extraLabel: '', extraGlyph: 'help', extraNote: '', extraExp: 'false', extraAct: () => {},
+      actStop: () => this.startWhy('stop'), actUse: () => this.startWhy('use'), actDelete: () => {},
+      whyOn: !!st.why, whyLabel: whyMeta[0], whyNote: whyMeta[1], whyGlyph: whyMeta[2], whyTone: whyMeta[3], whyBorder: whyMeta[4], whyBg: whyMeta[5],
+      whyGoCls: 'hb',
+      whyGoStyle: 'height:40px;padding:0 16px;border-radius:10px;border:0;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:pointer;background:#2450B8',
+      refuseOn: !!st.refuse, refuseText: st.refuse || '', whyText: st.whyText, whyErr: !!st.whyErr, whyInv: st.whyErr ? 'true' : 'false', whyBy: st.whyErr ? p + '-why-err' : '',
+      whyStyle: ctl + 'border:1px solid ' + (st.whyErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onWhy: e => this.setState({ whyText: e && e.target ? e.target.value : '', whyErr: false, refuse: '' }),
+      whyKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.whyGo(); } },
+      whyGo: () => this.whyGo(),
+      whyCancel: () => { const was = this.state.why; this._focusId = p + '-act-' + was; this.setState({ why: null, whyText: '', whyErr: false, refuse: '' }); },
+      histOpen: !!st.histOpen, histExp: st.histOpen ? 'true' : 'false', histChev: st.histOpen ? 'chev on' : 'chev',
+      histCount: r ? (r.hist.length === 1 ? '1 step' : r.hist.length + ' steps') : '',
+      histToggle: () => this.setState({ histOpen: !this.state.histOpen }),
+      hist: r && st.histOpen ? this.histItems(r.hist, p, st.histExp, i => this.setState({ histExp: { ...this.state.histExp, [i]: !this.state.histExp[i] } })) : [],
+      histEmpty: !!r && !r.hist.length,
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      saving: !!st.saving, notSaving: !st.saving, savingAria: st.saving ? 'true' : 'false',
+      discardDetail: st.put ? 'The reason you typed is not kept.' : 'What you changed here is not kept.',
+      footDirty: dirty && !st.footMsg && !st.saving,
+      footNote: st.saving ? 'Saving…' : st.footMsg ? st.footMsg : !dlg ? '' : dlg.isNew ? (badN ? 'Fix the fields above, then add the person.' : 'The person is printed on forms from the date above.') : dirty ? 'Unsaved changes' : 'Saved changes are kept in the audit trail.',
+      footCls: st.footN ? (st.footN % 2 ? 'swapA' : 'swapB') : '',
+      footStyle: 'display:inline-flex;align-items:center;gap:8px;font-size:13px;' + (dirty && !st.footMsg && !st.saving ? 'color:#934100;font-weight:600' : 'color:#5F6C80'),
+      closeLabel: dlg && dlg.isNew ? 'Cancel' : 'Close',
+      saveLabel: dlg && dlg.isNew ? 'Add approver' : 'Save',
+      save: e => this.save(e),
+      askClose: () => this.askClose(),
+      keepEditing: () => this.setState({ confirm: false }),
+      discard: () => { this.setState({ confirm: false, saving: false }); this.closeDrawer(); },
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); e.preventDefault();
+          const s = this.state;
+          if (s.saving) return;
+          if (s.confirm) this.setState({ confirm: false });
+          else if (s.why) { this._focusId = p + '-act-' + s.why; this.setState({ why: null, whyText: '', whyErr: false, refuse: '' }); }   // Escape in the reason box closes only that box
+          else this.askClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+
+      pbEyebrow: 'Form key · all companies', pbTitle: make ? 'Make the form key' : 'Change the form key?',
+      pbTile: make ? '#EAF0FD' : '#FEF1D6', pbGlyph: 'key', pbTone: make ? 'brand' : 'warn',
+      pbSub: make ? 'The app makes a random secret and keeps it in the records.' : 'One key serves every company. The key itself is never shown or exported.',
+      pbRefused: false, pbRefusal: '', pbRefTitle: '', pbPreview: !!put,
+      pbDeletedLine: make ? 'Approval forms can be printed once there is a key. Each form gets a reference code and a keyed check, as text and as a QR code.' : 'A new secret replaces the old one. Forms printed from now on carry a check made with the new key.',
+      pbLineGlyph: make ? 'check' : 'alert',
+      pbBackLine: make ? 'The key is made once. Changing it later is a separate step, kept in the audit trail with a reason.' : 'Forms already signed and uploaded stay approved: their check was read when they were uploaded.',
+      pbNotes: make ? [] : [{ txt: '3 printed forms are still waiting for a signature: AF-2611-004, AF-2611-005 and the October month review. They won’t match once the key changes, so print them again.' }, { txt: 'The audit trail records that the key changed, who changed it and why. It never records the key.' }],
+      pbEffect: make ? 'Nothing else changes.' : 'No approval already on file changes. Undo, in the message that follows, puts the old key back.',
+      pbWhyOn: !make, pbWhyLabel: 'Why are you changing the key?',
+      pbText: st.pbText, pbErr: !!st.pbErr, pbInv: st.pbErr ? 'true' : 'false', pbBy: st.pbErr ? p + '-pb-err' : '',
+      pbStyle: ctl + 'border:1px solid ' + (st.pbErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onPbWhy: e => this.setState({ pbText: e && e.target ? e.target.value : '', pbErr: false }),
+      pbGo: () => this.pbGo(), pbGoLabel: make ? 'Make the key' : 'Change the key', pbGoGlyph: 'key',
+      pbCloseLabel: 'Cancel',
+      pbHistOn: false, pbHistOpen: false, pbHistExp: 'false', pbHistChev: 'chev', pbHistCount: '', pbHistToggle: () => {}, pbHist: [],
+
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo),
+      toastUndo: () => this.undoLast(),
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

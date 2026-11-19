@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · Chart of accounts · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:not(:disabled):hover{background:#1D419A !important}
+.hs:not(:disabled):hover{background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD !important}
+.hd:not(:disabled):hover{background:#FBEAE8 !important}
+/* motion and focus base */
+.hb,.hs,.hr,.hd,.sn,.nv,.nb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.tb{transition:filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+input:disabled,select:disabled,textarea:disabled{background:#F5F6F8 !important;color:#5F6C80 !important;cursor:not-allowed}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{dlgOn}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="{{shCo}}" kind="{{shKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{dlgOn}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="{{pageName}}" company="{{shCo}}" onCompany="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0"><dc-import name="SetupNav" active="{{navActive}}" kind="{{navKind}}" payroll="{{navPayroll}}" hint-size="100%,820px"></dc-import></div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{heading}}</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 640px">{{help}}</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" id="ch-paste" class="hs" aria-haspopup="dialog" disabled="{{noCo}}" onClick="{{openPaste}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8794A8; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="clipboard" tone="brand" size="18" hint-size="18px,18px"></dc-import>Paste a list</button>
+            <button type="button" id="ch-add" class="hb" aria-haspopup="dialog" disabled="{{noCo}}" onClick="{{openNew}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>{{addLabel}}</button>
+          </div>
+        </div>
+
+        <div role="tablist" aria-label="List" style="display: flex; gap: 24px; border-bottom: 1px solid #E3E7ED">
+          <button type="button" role="tab" id="ch-tab-gl" aria-selected="{{tabs.gl.sel}}" aria-controls="ch-panel" tabindex="{{tabs.gl.ti}}" onKeyDown="{{tabKey}}" onClick="{{showGl}}" style="{{tabGl}}">Chart of accounts <span style="color: #5F6C80; font-weight: 500">{{nGl}}</span></button>
+          <button type="button" role="tab" id="ch-tab-parties" aria-selected="{{tabs.parties.sel}}" aria-controls="ch-panel" tabindex="{{tabs.parties.ti}}" onKeyDown="{{tabKey}}" onClick="{{showParties}}" style="{{tabParties}}">Customers and suppliers <span style="color: #5F6C80; font-weight: 500">{{nParties}}</span></button>
+        </div>
+
+        <div id="ch-panel" role="tabpanel" aria-labelledby="{{tabBy}}" style="display: flex; flex-direction: column; gap: 20px">
+
+        <sc-if value="{{noCo}}" hint-placeholder-val="{{ false }}">
+          <section class="ex" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 28px 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between">
+            <div style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 16px">Add a company first.</b><span style="color: #46546A">This list is kept for each company, so there is nothing to show until one exists.</span></div>
+            <a href="SetupCompanies.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #8794A8; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">Go to Companies</a>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{hasCo}}" hint-placeholder-val="{{ true }}">
+          <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+              <label style="display: flex; align-items: center; gap: 8px; flex: 1 1 220px; max-width: 340px; height: 36px; padding: 0 10px; border: 1px solid #8794A8; border-radius: 10px; background: #FFFFFF; box-sizing: border-box" class="fx"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" id="ch-q" aria-label="{{searchLabel}}" placeholder="{{searchLabel}}" value="{{q}}" onChange="{{onQ}}" onKeyDown="{{qKey}}" style="flex: 1; min-width: 0; height: 32px; border: 0; background: transparent; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+              <span role="status" aria-live="polite" style="color: #46546A; font-size: 13px">{{countText}}</span>
+              <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A"><input type="checkbox" checked="{{stopped}}" onChange="{{toggleStopped}}" style="width: 18px; height: 18px; accent-color: #2450B8">Show stopped ({{nStopped}})</label>
+              <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A"><input type="checkbox" checked="{{showDel}}" onChange="{{toggleDel}}" style="width: 18px; height: 18px; accent-color: #2450B8">Show deleted</label>
+              <sc-if value="{{isGl}}" hint-placeholder-val="{{ true }}">
+                <div role="group" aria-label="Show the accounts as" style="display: flex; gap: 2px; padding: 3px; background: #E9ECF1; border-radius: 8px">
+                  <button type="button" aria-pressed="{{treeOn}}" onClick="{{showTree}}" style="{{segTree}}">Tree</button>
+                  <button type="button" aria-pressed="{{flatOn}}" onClick="{{showFlat}}" style="{{segFlat}}">Flat list</button>
+                </div>
+              </sc-if>
+              <sc-if value="{{treeOn}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; gap: 8px"><button type="button" class="hs" disabled="{{searching}}" onClick="{{openAll}}" style="{{allStyle}}">Open all</button><button type="button" class="hs" disabled="{{searching}}" onClick="{{closeAll}}" style="{{allStyle}}">Close all</button></div>
+              </sc-if>
+            </div>
+            <div style="padding: 10px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #46546A; background: #FAFBFC">
+              <span>Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</span>
+              <sc-if value="{{searchNote}}" hint-placeholder-val="{{ false }}"><span class="ex" id="ch-search-note">While searching, everything found is shown open. Parent accounts stay as context. Clear the search to open or close groups.</span></sc-if>
+            </div>
+
+            <sc-if value="{{treeOn}}" hint-placeholder-val="{{ true }}">
+              <div class="ex" style="overflow-x: auto">
+                <table aria-label="Chart of accounts by SQL group" style="width: 100%; min-width: 760px; border-collapse: collapse">
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 18px; font-weight: 600">Code</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Name</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Type</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Special</th><th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Used by</th><th scope="col" style="padding: 10px 18px; font-weight: 600">Status</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{treeRows}}" as="r" hint-placeholder-count="8">
+                      <tr class="{{r.cls}}" onClick="{{r.open}}" style="{{r.trStyle}}">
+                        <sc-if value="{{r.isGroup}}" hint-placeholder-val="{{ false }}">
+                          <th colspan="6" scope="rowgroup" style="padding: 0; text-align: left; font-weight: 400; background: #F5F7FA">
+                            <sc-if value="{{r.gBtn}}" hint-placeholder-val="{{ true }}">
+                              <button type="button" class="hr fr" id="{{r.id}}" aria-expanded="{{r.exp}}" onClick="{{r.toggle}}" onKeyDown="{{r.key}}" style="width: 100%; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 18px; border: 0; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer"><span class="{{r.chevCls}}" aria-hidden="true"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><b style="flex: 1">{{r.label}}</b><span style="color: #5F6C80; font-size: 13px">{{r.count}}</span></button>
+                            </sc-if>
+                            <sc-if value="{{r.gPlain}}" hint-placeholder-val="{{ false }}">
+                              <div style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 18px"><span aria-hidden="true" style="display: inline-flex; transform: rotate(90deg)"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><b style="flex: 1">{{r.label}}</b><span style="color: #5F6C80; font-size: 13px">{{r.count}}</span></div>
+                            </sc-if>
+                          </th>
+                        </sc-if>
+                        <sc-if value="{{r.isRow}}" hint-placeholder-val="{{ true }}">
+                          <td style="{{r.codeCell}}">
+                            <div style="display: flex; align-items: center; gap: 4px">
+                              <sc-if value="{{r.canToggle}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" aria-expanded="{{r.exp}}" aria-label="{{r.toggleLabel}}" title="{{r.toggleTitle}}" onClick="{{r.toggle}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><span class="{{r.chevCls}}" aria-hidden="true"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span></button></sc-if>
+                              <sc-if value="{{r.noToggle}}" hint-placeholder-val="{{ true }}"><span aria-hidden="true" style="width: 32px; flex: none"></span></sc-if>
+                              <button type="button" id="{{r.id}}" aria-haspopup="dialog" onKeyDown="{{r.key}}" style="border: 0; background: transparent; padding: 4px 2px; min-height: 32px; font: 600 13px ui-monospace, Consolas, monospace; color: #2450B8; cursor: pointer; text-decoration: underline; text-underline-offset: 3px">{{r.code}}</button>
+                              <sc-if value="{{r.hidden}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px; font-weight: 600">{{r.hidden}}</span></sc-if>
+                            </div>
+                          </td>
+                          <td style="padding: 6px 12px">{{r.name}}<sc-if value="{{r.ctx}}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; font-style: italic; color: #5F6C80">Shown for an account found under it</div></sc-if></td>
+                          <td style="padding: 6px 12px; color: #46546A">{{r.type}}</td>
+                          <td style="padding: 6px 12px"><sc-if value="{{r.special}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; height: 22px; align-items: center; padding: 0 8px; border-radius: 6px; background: #EAF0FD; color: #2450B8; font-size: 11px; font-weight: 600">{{r.special}}</span></sc-if></td>
+                          <td title="{{r.usedTitle}}" style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums">{{r.used}}</td>
+                          <td style="padding: 6px 18px"><span style="{{r.pill}}">{{r.status}}</span></td>
+                        </sc-if>
+                      </tr>
+                    </sc-for>
+                    <sc-if value="{{treeEmpty}}" hint-placeholder-val="{{ false }}"><tr><td colspan="6" style="padding: 28px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5">{{emptyMsg}}</td></tr></sc-if>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{flatOn}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="overflow-x: auto">
+                <table aria-label="Chart of accounts, flat list" style="width: 100%; min-width: 860px; border-collapse: collapse">
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                    <sc-for list="{{glHeads}}" as="h" hint-placeholder-count="7">
+                      <th scope="col" aria-sort="{{h.aria}}" style="{{h.thStyle}}"><button type="button" class="hs" onClick="{{h.sort}}" style="{{h.btnStyle}}">{{h.label}}<dc-import name="Icon" glyph="{{h.glyph}}" tone="muted" size="14" hint-size="14px,14px"></dc-import></button></th>
+                    </sc-for>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{flatRows}}" as="r" hint-placeholder-count="8">
+                      <tr class="{{r.cls}}" onClick="{{r.open}}" style="{{r.trStyle}}">
+                        <td style="padding: 6px 18px"><button type="button" id="{{r.id}}" aria-haspopup="dialog" onKeyDown="{{r.key}}" style="border: 0; background: transparent; padding: 4px 2px; min-height: 32px; font: 600 13px ui-monospace, Consolas, monospace; color: #2450B8; cursor: pointer; text-decoration: underline; text-underline-offset: 3px">{{r.code}}</button></td>
+                        <td style="padding: 6px 12px">{{r.name}}</td>
+                        <td style="padding: 6px 12px; color: #46546A">{{r.type}}</td>
+                        <td style="padding: 6px 12px; color: #46546A">{{r.group}}</td>
+                        <td style="padding: 6px 12px"><sc-if value="{{r.special}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; height: 22px; align-items: center; padding: 0 8px; border-radius: 6px; background: #EAF0FD; color: #2450B8; font-size: 11px; font-weight: 600">{{r.special}}</span></sc-if></td>
+                        <td title="{{r.usedTitle}}" style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums">{{r.used}}</td>
+                        <td style="padding: 6px 18px"><span style="{{r.pill}}">{{r.status}}</span></td>
+                      </tr>
+                    </sc-for>
+                    <sc-if value="{{flatEmpty}}" hint-placeholder-val="{{ false }}"><tr><td colspan="7" style="padding: 28px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5">{{emptyMsg}}</td></tr></sc-if>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{partiesOn}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="overflow-x: auto">
+                <table aria-label="Customers and suppliers" style="width: 100%; min-width: 820px; border-collapse: collapse">
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                    <sc-for list="{{partyHeads}}" as="h" hint-placeholder-count="6">
+                      <th scope="col" aria-sort="{{h.aria}}" style="{{h.thStyle}}"><button type="button" class="hs" onClick="{{h.sort}}" style="{{h.btnStyle}}">{{h.label}}<dc-import name="Icon" glyph="{{h.glyph}}" tone="muted" size="14" hint-size="14px,14px"></dc-import></button></th>
+                    </sc-for>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{partyRows}}" as="p" hint-placeholder-count="6">
+                      <tr class="{{p.cls}}" onClick="{{p.open}}" style="{{p.trStyle}}">
+                        <td style="padding: 6px 18px"><div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="{{p.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><button type="button" id="{{p.id}}" aria-haspopup="dialog" onKeyDown="{{p.key}}" style="border: 0; background: transparent; padding: 4px 2px; min-height: 32px; font: 600 14px Inter, sans-serif; color: #2450B8; cursor: pointer; text-align: left; text-decoration: underline; text-underline-offset: 3px">{{p.name}}</button></div></td>
+                        <td style="padding: 6px 12px"><span style="{{p.kindPill}}">{{p.kind}}</span></td>
+                        <td style="padding: 6px 12px; font: 500 13px ui-monospace, Consolas, monospace">{{p.code}}</td>
+                        <td style="padding: 6px 12px; color: #46546A">{{p.for}}</td>
+                        <td title="{{p.usedTitle}}" style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums">{{p.used}}</td>
+                        <td style="padding: 6px 18px"><span style="{{p.pill}}">{{p.status}}</span></td>
+                      </tr>
+                    </sc-for>
+                    <sc-if value="{{partyEmpty}}" hint-placeholder-val="{{ false }}"><tr><td colspan="6" style="padding: 28px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5">{{emptyMsg}}</td></tr></sc-if>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{showDel}}" hint-placeholder-val="{{ false }}">
+            <section class="ex" aria-labelledby="ch-del-title" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <div style="padding: 14px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 2px"><h2 id="ch-del-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{delTitle}}</h2><span style="color: #46546A; font-size: 13px">Deleting keeps the record and its history. A deleted record can be put back while nothing now stands in its way.</span></div>
+              <div style="overflow-x: auto">
+                <table aria-labelledby="ch-del-title" style="width: 100%; min-width: 780px; border-collapse: collapse">
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 18px; font-weight: 600">Name</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Deleted</th><th scope="col" style="padding: 10px 12px; font-weight: 600">By</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Why</th><th scope="col" style="padding: 10px 18px; font-weight: 600">Put it back</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{delRows}}" as="d" hint-placeholder-count="3">
+                      <tr style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                        <td style="padding: 12px 18px"><b>{{d.name}}</b><div style="font: 500 12px ui-monospace, Consolas, monospace; color: #5F6C80">{{d.code}}</div></td>
+                        <td style="padding: 12px"><div>{{d.when}}</div><div style="color: #5F6C80; font-size: 12px">Entry {{d.entry}}</div></td>
+                        <td style="padding: 12px">{{d.by}}</td>
+                        <td style="padding: 12px; color: #46546A">{{d.why}}</td>
+                        <td style="padding: 8px 18px; max-width: 300px">
+                          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                            <sc-if value="{{d.ok}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{d.id}}" class="hs" aria-haspopup="dialog" onClick="{{d.put}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8794A8; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="brand" size="16" hint-size="16px,16px"></dc-import>Put it back</button></sc-if>
+                            <sc-if value="{{d.refused}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; gap: 6px; align-items: flex-start; font-size: 13px; color: #46546A"><span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="lock" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><span>{{d.refusal}}</span></span></sc-if>
+                            <a href="AuditTrail.dc.html" style="font-size: 13px; font-weight: 600">History</a>
+                          </div>
+                        </td>
+                      </tr>
+                    </sc-for>
+                    <sc-if value="{{delEmpty}}" hint-placeholder-val="{{ false }}"><tr><td colspan="5" style="padding: 24px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5">None deleted.</td></tr></sc-if>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </sc-if>
+        </sc-if>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>{{toastText}}</div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimClass}}" onClick="{{closeDlg}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 56px 16px 24px; box-sizing: border-box; pointer-events: none">
+      <div class="{{dlgClass}}" role="dialog" aria-modal="true" aria-labelledby="ch-title" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 720px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+        <div style="padding: 20px 24px 16px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dlgGlyph}}" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <span style="color: #5F6C80; font-size: 13px">{{dlgEyebrow}}</span>
+            <h2 id="ch-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dlgTitle}}</h2>
+            <sc-if value="{{dlgSub}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">{{dlgSub}}</span></sc-if>
+          </div>
+          <button type="button" class="hs" onClick="{{closeDlg}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+        </div>
+
+        <sc-if value="{{isPaste}}" hint-placeholder-val="{{ false }}">
+          <ol aria-label="Steps" style="list-style: none; margin: 0; padding: 12px 24px; display: flex; flex-wrap: wrap; gap: 8px 20px; border-bottom: 1px solid #EEF1F5; background: #FAFBFC">
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+              <li aria-current="{{s.current}}" style="{{s.style}}"><span style="{{s.dot}}">{{s.n}}</span>{{s.label}}</li>
+            </sc-for>
+          </ol>
+        </sc-if>
+
+        <div style="padding: 20px 24px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px">
+
+          <sc-if value="{{isRec}}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{rec.isEdit}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; font-size: 13px; color: #46546A"><span>{{rec.usedLine}}</span><a href="AuditTrail.dc.html" style="font-weight: 600">History</a></div>
+            </sc-if>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 16px">
+              <sc-for list="{{fields}}" as="fl" hint-placeholder-count="7">
+                <div style="{{fl.cell}}">
+                  <label for="{{fl.id}}" style="font-size: 13px; font-weight: 600; color: #46546A">{{fl.label}}<sc-if value="{{fl.req}}" hint-placeholder-val="{{ false }}"> <span style="color: #B0190F">*</span></sc-if></label>
+                  <sc-if value="{{fl.isText}}" hint-placeholder-val="{{ true }}"><input type="text" id="{{fl.id}}" value="{{fl.value}}" onChange="{{fl.change}}" disabled="{{fl.locked}}" aria-invalid="{{fl.invalid}}" aria-describedby="{{fl.did}}" autocomplete="off" spellcheck="false" style="{{fl.ctl}}"></sc-if>
+                  <sc-if value="{{fl.isSel}}" hint-placeholder-val="{{ false }}"><select id="{{fl.id}}" value="{{fl.value}}" onChange="{{fl.change}}" disabled="{{fl.locked}}" aria-invalid="{{fl.invalid}}" aria-describedby="{{fl.did}}" style="{{fl.ctl}}"><sc-for list="{{fl.options}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.label}}</option></sc-for></select></sc-if>
+                  <sc-if value="{{fl.isArea}}" hint-placeholder-val="{{ false }}"><textarea id="{{fl.id}}" rows="3" value="{{fl.value}}" onChange="{{fl.change}}" aria-describedby="{{fl.did}}" style="{{fl.ctlArea}}"></textarea></sc-if>
+                  <span id="{{fl.did}}" style="font-size: 12px; line-height: 1.4">
+                    <sc-if value="{{fl.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="display: inline-flex; gap: 6px; align-items: flex-start; color: #B0190F; font-weight: 600"><span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="alert" tone="danger" size="14" hint-size="14px,14px"></dc-import></span>{{fl.err}}</span></sc-if>
+                    <sc-if value="{{fl.hasNote}}" hint-placeholder-val="{{ false }}"><span style="{{fl.noteStyle}}">{{fl.note}}</span></sc-if>
+                  </span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ch-reason" style="font-size: 13px; font-weight: 600; color: #46546A">{{rec.reasonLabel}}</label>
+              <input type="text" id="ch-reason" value="{{rec.reason}}" onChange="{{onRecReason}}" placeholder="Kept in the audit trail with the change" autocomplete="off" style="height: 40px; padding: 0 12px; border: 1px solid #8794A8; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+            </div>
+          </sc-if>
+
+          <sc-if value="{{isPb}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid #E3E7ED; border-radius: 12px; background: #FAFBFC; font-size: 13px">
+              <span style="color: #5F6C80; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; font-size: 12px">It was deleted</span>
+              <span>{{pb.when}} by {{pb.by}} (entry {{pb.entry}})</span>
+              <span style="color: #46546A">Why: {{pb.why}}</span>
+            </div>
+            <p style="margin: 0">{{pb.same}}</p>
+            <div style="padding: 14px 16px; border: 1px solid #C9D6F4; border-radius: 12px; background: #F3F6FE; display: flex; flex-direction: column; gap: 6px">
+              <b>Putting it back also changes</b>
+              <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px">
+                <sc-for list="{{pb.effects}}" as="e" hint-placeholder-count="2"><li>{{e.text}}</li></sc-for>
+              </ul>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ch-pb-reason" style="font-size: 13px; font-weight: 600; color: #46546A">Why are you putting it back? <span style="color: #B0190F">*</span></label>
+              <input type="text" id="ch-pb-reason" value="{{pb.reason}}" onChange="{{onPbReason}}" aria-invalid="{{pb.invalid}}" aria-describedby="ch-pb-reason-d" autocomplete="off" style="{{pb.ctl}}">
+              <span id="ch-pb-reason-d" style="font-size: 12px; line-height: 1.4"><sc-if value="{{pb.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="display: inline-flex; gap: 6px; align-items: flex-start; color: #B0190F; font-weight: 600"><span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="alert" tone="danger" size="14" hint-size="14px,14px"></dc-import></span>Write a reason. It is kept in the audit trail.</span></sc-if><sc-if value="{{pb.noErr}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80">Kept in the audit trail with the change.</span></sc-if></span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{psStep1}}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 12px 14px; border-radius: 12px; background: #F3F6FE; border: 1px solid #C9D6F4; font-size: 13px; color: #23304A">{{ps.how}}</div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ch-ps-text" style="font-size: 13px; font-weight: 600; color: #46546A">The list</label>
+              <textarea id="ch-ps-text" rows="8" value="{{ps.text}}" onChange="{{onPsText}}" aria-invalid="{{ps.invalid}}" aria-describedby="ch-ps-text-d" placeholder="Paste the rows here" spellcheck="false" autocomplete="off" style="{{ps.ctl}}"></textarea>
+              <span id="ch-ps-text-d" style="font-size: 12px; line-height: 1.4"><sc-if value="{{ps.hasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" style="display: inline-flex; gap: 6px; align-items: flex-start; color: #B0190F; font-weight: 600"><span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="alert" tone="danger" size="14" hint-size="14px,14px"></dc-import></span>Paste the list first.</span></sc-if><sc-if value="{{ps.noErr}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80">Rows are matched by their code: a new code is added, one already here is updated. Empty cells change nothing, and nothing missing from the list is stopped or deleted.</span></sc-if></span>
+            </div>
+            <sc-if value="{{ps.isParties}}" hint-placeholder-val="{{ false }}">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 16px">
+                <div style="display: flex; flex-direction: column; gap: 6px"><label for="ch-ps-scope" style="font-size: 13px; font-weight: 600; color: #46546A">For</label><select id="ch-ps-scope" value="{{ps.scope}}" onChange="{{onPsScope}}" style="height: 40px; padding: 0 10px; border: 1px solid #8794A8; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><option value="company">This company (AISB)</option><option value="all">Every company</option></select></div>
+                <div style="display: flex; flex-direction: column; gap: 6px"><label for="ch-ps-kind" style="font-size: 13px; font-weight: 600; color: #46546A">These are</label><select id="ch-ps-kind" value="{{ps.kind}}" onChange="{{onPsKind}}" style="height: 40px; padding: 0 10px; border: 1px solid #8794A8; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><option value="customer">Customers</option><option value="supplier">Suppliers</option><option value="related">Related companies</option><option value="statutory">Statutory bodies</option><option value="">From a Kind column</option></select></div>
+              </div>
+            </sc-if>
+          </sc-if>
+
+          <sc-if value="{{psStep2}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="display: flex; flex-direction: column; gap: 16px">
+              <div style="display: flex; flex-direction: column; gap: 2px"><b>Preview: nothing is saved yet</b><span style="color: #46546A; font-size: 13px">Read as: columns separated by tabs. Check that each column is the one it should be.</span></div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 16px">
+                <sc-for list="{{psFields}}" as="pf" hint-placeholder-count="4">
+                  <div style="display: flex; flex-direction: column; gap: 6px"><label for="{{pf.id}}" style="font-size: 13px; font-weight: 600; color: #46546A">{{pf.label}}<sc-if value="{{pf.needed}}" hint-placeholder-val="{{ false }}"> <span style="font-weight: 500; color: #5F6C80">(needed)</span></sc-if></label><select id="{{pf.id}}" value="{{pf.value}}" onChange="{{pf.change}}" style="{{pf.ctl}}"><option value="">(none)</option><sc-for list="{{pf.options}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for></select></div>
+                </sc-for>
+              </div>
+              <sc-if value="{{psWarn}}" hint-placeholder-val="{{ false }}">
+                <div role="alert" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FDECEA; border: 1px solid #F0B8B2; color: #7A130B"><span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="alert" tone="danger" size="18" hint-size="18px,18px"></dc-import></span><span><b>Choose the right columns above first.</b> {{psWarnText}}</span></div>
+              </sc-if>
+              <sc-if value="{{psRowsOn}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px" role="status"><span style="{{pillNew}}">{{psCounts.add}} new</span><span style="{{pillChange}}">{{psCounts.change}} to change</span><span style="{{pillSame}}">{{psCounts.same}} already the same</span><span style="{{pillProblem}}">{{psCounts.problem}} problems (skipped)</span></div>
+                <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden"><div style="overflow-x: auto">
+                  <table aria-label="What happens to each row" style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px">
+                    <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px; font-weight: 600">Row</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Code</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Name</th><th scope="col" style="padding: 8px 12px; font-weight: 600">What happens</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{psRows}}" as="pr" hint-placeholder-count="4">
+                        <tr style="border-top: 1px solid #EEF1F5; vertical-align: top"><td style="padding: 8px 12px; color: #5F6C80">{{pr.n}}</td><td style="padding: 8px 12px; font-family: ui-monospace, Consolas, monospace">{{pr.code}}</td><td style="padding: 8px 12px">{{pr.name}}</td><td style="padding: 8px 12px"><span style="{{pr.pill}}">{{pr.label}}</span><sc-if value="{{pr.what}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 4px; color: #46546A">{{pr.what}}</div></sc-if></td></tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div></div>
+                <sc-if value="{{psHasSame}}" hint-placeholder-val="{{ true }}">
+                  <div>
+                    <button type="button" class="hs" aria-expanded="{{sameOpen}}" aria-controls="ch-same" onClick="{{toggleSame}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px 0 6px; border: 0; border-radius: 8px; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{sameChev}}" aria-hidden="true"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></span>{{sameLabel}}</button>
+                    <sc-if value="{{sameOpen}}" hint-placeholder-val="{{ false }}"><ul id="ch-same" class="ex" style="margin: 6px 0 0; padding-left: 28px; color: #46546A; font-size: 13px; display: flex; flex-direction: column; gap: 2px"><sc-for list="{{psSame}}" as="sm" hint-placeholder-count="2"><li>Row {{sm.n}}: {{sm.code}} {{sm.name}}</li></sc-for></ul></sc-if>
+                  </div>
+                </sc-if>
+              </sc-if>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="ch-ps-reason" style="font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? (optional)</label>
+                <input type="text" id="ch-ps-reason" value="{{ps.reason}}" onChange="{{onPsReason}}" maxlength="500" autocomplete="off" style="height: 40px; padding: 0 12px; border: 1px solid #8794A8; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{psStep3}}" hint-placeholder-val="{{ false }}">
+            <div class="rv" role="status" style="display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; gap: 12px; align-items: center"><span style="width: 40px; height: 40px; border-radius: 99px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="check" tone="ok" size="22" hint-size="22px,22px"></dc-import></span><div style="display: flex; flex-direction: column"><b style="font-size: 16px">{{psDone.title}}</b><span style="color: #46546A; font-size: 13px">Nothing missing from the list was stopped or deleted. {{psDone.skipped}}</span></div></div>
+              <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px">
+                <sc-for list="{{psDone.items}}" as="di" hint-placeholder-count="3"><li>{{di.text}}</li></sc-for>
+              </ul>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="padding: 14px 24px; border-top: 1px solid #EEF1F5; display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; justify-content: space-between; background: #FFFFFF">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+            <sc-if value="{{isRec}}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{rec.isEdit}}" hint-placeholder-val="{{ false }}">
+                <button type="button" class="hs" disabled="{{rec.noReason}}" onClick="{{recStop}}" style="{{rec.stopStyle}}">{{rec.stopLabel}}</button>
+                <sc-if value="{{rec.canDelete}}" hint-placeholder-val="{{ false }}"><button type="button" class="hd" disabled="{{rec.noReason}}" onClick="{{recDelete}}" style="{{rec.delStyle}}">Delete</button></sc-if>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{psStep2}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{psBack}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8794A8; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Back</button></sc-if>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; justify-content: flex-end">
+            <span role="status" style="display: inline-flex; align-items: center; font-size: 13px; color: #46546A"><sc-if value="{{footNote}}" hint-placeholder-val="{{ false }}"><span>{{footNote}}</span></sc-if><sc-if value="{{recSaved}}" hint-placeholder-val="{{ false }}"><span class="{{savedCls}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>Saved</span></sc-if></span>
+            <sc-if value="{{showCancel}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" onClick="{{closeDlg}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8794A8; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{cancelLabel}}</button></sc-if>
+            <sc-if value="{{isRec}}" hint-placeholder-val="{{ false }}"><button type="button" class="hb" disabled="{{rec.saveOff}}" onClick="{{recSave}}" style="{{rec.saveStyle}}">{{rec.saveLabel}}</button></sc-if>
+            <sc-if value="{{isPb}}" hint-placeholder-val="{{ false }}"><button type="button" class="hb" onClick="{{pbGo}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Put it back</button></sc-if>
+            <sc-if value="{{psStep1}}" hint-placeholder-val="{{ false }}"><button type="button" class="hb" onClick="{{psRead}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Read the list</button></sc-if>
+            <sc-if value="{{psStep2}}" hint-placeholder-val="{{ false }}"><button type="button" class="hb" disabled="{{psSaveOff}}" onClick="{{psSave}}" style="{{psSaveStyle}}">{{psSaveLabel}}</button></sc-if>
+            <sc-if value="{{psStep3}}" hint-placeholder-val="{{ false }}"><button type="button" class="hb" onClick="{{closeDlg}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Done</button></sc-if>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"tree","options":["tree","search","flat","parties","empty","stopped-only","no-company","deleted","edit","new-party","paste","paste-check","paste-warn","paste-done","putback"]},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State"},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.init((p && p.view) || 'tree'); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv); }
+
+  // ---------- sample data (same company, accounts and dates as the other boards) ----------
+  data() {
+    const G = [['FA', 'Non-current assets', 'asset'], ['IV', 'Investment', 'asset'], ['OA', 'Other assets', 'asset'], ['CA', 'Current assets', 'asset'], ['CL', 'Current liabilities', 'liability'], ['OL', 'Other liabilities', 'liability'], ['CP', 'Equity', 'equity'], ['RV', 'Reserve', 'equity'], ['RE', 'Retained earnings', 'equity'], ['LT', 'Non-current liabilities', 'liability'], ['SL', 'Revenue', 'income'], ['SA', 'Revenue adjustment', 'income'], ['CO', 'Cost of goods sold', 'expense'], ['OI', 'Other income', 'income'], ['EO', 'Extraordinary income', 'income'], ['EP', 'Expenses', 'expense'], ['TX', 'Taxation', 'expense'], ['AP', 'Appropriation account', 'equity']];
+    const T = { asset: 'Asset', liability: 'Liability', equity: 'Equity', income: 'Income', expense: 'Expense' };
+    const SP = { bank: 'Bank account', cash: 'Cash', debtor_control: 'Debtor control', creditor_control: 'Creditor control', accumulated_depreciation: 'Accumulated depreciation', deposit: 'Deposit / prepayment', stock: 'Stock (balance sheet)', opening_stock: 'Opening stock', closing_stock: 'Closing stock' };
+    const a = (id, code, name, grp, type, special, parent, used, status) => ({ id, co: 'AISB', code, name, grp, type, special, parent, used, status: status || 'In use', notes: '' });
+    const L = 'statement lines', P = 'payments', AL = 'SQL account lines', U = 'accounts under it', CT = 'claim types';   // AL and U: masters.py USAGE gl_accounts; CT: Setup › HR › Claim types (new work)
+    const A = [
+      a('a1', '200-000', 'Office equipment', 'FA', 'asset', '', '', [[P, 4]]),
+      a('a2', '200-100', 'Motor vehicles', 'FA', 'asset', '', '', []),
+      a('a3', '300-000', 'Trade debtors', 'CA', 'asset', 'debtor_control', '', [[L, 38]]),
+      a('a4', '300-900', 'Cash and bank', 'CA', 'asset', '', '', [[U, 3]]),
+      a('a5', '310-000', 'Maybank current', 'CA', 'asset', 'bank', '300-900', [[L, 214]]),
+      a('a6', '310-100', 'Maybank savings', 'CA', 'asset', 'bank', '300-900', [[L, 92]]),
+      a('a7', '310-200', 'USD collections', 'CA', 'asset', 'bank', '300-900', [[L, 31]], 'Stopped'),
+      a('a8', '320-000', 'Salary advances', 'CA', 'asset', 'deposit', '', [[P, 6]]),
+      a('n1', '330-000', 'Fixed deposit', 'CA', 'asset', '', '', [[AL, 1]]),
+      a('a9', '400-000', 'Trade creditors', 'CL', 'liability', 'creditor_control', '', [[P, 57]]),
+      // Net salaries payable on Setup › Statutory accounts (samples D20), credited by the payroll journal JV2610-007
+      a('a10', '420-000', 'Accruals', 'CL', 'liability', '', '', [['statutory accounts', 1, 'Net salaries payable'], [AL, 1, 'JV2610-007']]),
+      a('a11', '430-000', 'Statutory payables', 'CL', 'liability', '', '', [[U, 4]]),
+      a('a12', '430-100', 'KWSP payable', 'CL', 'liability', '', '430-000', [[P, 12]]),
+      a('a13', '430-200', 'PERKESO payable', 'CL', 'liability', '', '430-000', [[P, 12]]),
+      a('n2', '430-210', 'EIS (SIP) payable', 'CL', 'liability', '', '430-000', [[AL, 2]]),
+      a('a14', '430-300', 'PCB payable', 'CL', 'liability', '', '430-000', [[P, 12]]),
+      a('n3', '440-000', 'Deposits received', 'CL', 'liability', '', '', [[AL, 1]]),
+      a('a15', '500-000', 'Share capital', 'CP', 'equity', '', '', [[U, 1]]),
+      a('n4', '500-F001', 'Funds from Agrinexus International', 'CP', 'equity', '', '500-000', [[AL, 1]]),
+      a('n5', '510-000', 'Retained earnings', 'RE', 'equity', '', '', []),
+      a('a16', '600-000', 'Rental income', 'SL', 'income', '', '', [[P, 12]]),
+      a('n6', '610-000', 'Management fees', 'SL', 'income', '', '', [[AL, 1]]),
+      a('n7', '650-000', 'Bank profit', 'OI', 'income', '', '', [[AL, 1]]),
+      a('n8', '900-010', 'Bank charges', 'EP', 'expense', '', '', [[AL, 4]]),
+      a('a17', '900-100', 'Salaries and wages', 'EP', 'expense', '', '', [[P, 48]]),
+      a('n9', '900-110', 'KWSP - employer', 'EP', 'expense', '', '', [[AL, 1]]),
+      a('n10', '900-120', 'PERKESO - employer', 'EP', 'expense', '', '', [[AL, 1]]),
+      a('n11', '900-130', 'EIS - employer', 'EP', 'expense', '', '', [[AL, 1]]),
+      a('a18', '900-200', 'Directors fee', 'EP', 'expense', '', '', [[P, 3]]),
+      a('a19', '900-300', 'Office rental', 'EP', 'expense', '', '', [[P, 12]]),
+      a('a20', '900-400', 'Utilities', 'EP', 'expense', '', '', [[P, 11]]),
+      a('a21', '900-600', 'Telephone and internet', 'EP', 'expense', '', '', [[P, 9], [CT, 1]]),
+      a('n12', '900-700', 'Contract works', 'EP', 'expense', '', '', [[AL, 1]]),
+      a('n13', '900-800', 'Printing, postage and stationery', 'EP', 'expense', '', '', [[AL, 2], [CT, 1]]),
+      // the accounts AISB's claim types need (samples D17): 900-850 is kept for a later Team meals type
+      a('h1', '900-850', 'Staff welfare', 'EP', 'expense', '', '', []),
+      a('h2', '900-860', 'Travelling', 'EP', 'expense', '', '', [[CT, 3]]),
+      a('h3', '900-870', 'Entertainment', 'EP', 'expense', '', '', [[CT, 1]]),
+      a('n14', '900-900', 'Professional fees', 'EP', 'expense', '', '', [[AL, 1]]),
+      a('a22', '350-000', 'Deposits paid', '', 'asset', 'deposit', '', []),
+      a('a23', '999-000', 'Suspense', '', '', '', '', [])
+    ];
+    const p = (id, co, name, kind, code, used, status, glyph, gl) => ({ id, co, name, kind, code, used, status: status || 'In use', glyph, short: '', tin: '', brn: '', gl: gl || '', words: '', notes: '' });
+    // the one list of customers and suppliers: Setup › Customers and suppliers' rows, uses and deleted rows (samples D20)
+    const RP = 'recurring payments', SE = 'SQL entries', FW = 'SQL filing word rules';
+    const PA = [
+      p('p1', 'AISB', 'Electricity supplier', 'supplier', '400-E012', [[SE, 22], [RP, 1]], '', 'company', '400-000'),
+      p('p2', 'AISB', 'Office landlord', 'supplier', '400-R001', [[SE, 12], [RP, 1], [FW, 1]], '', 'company', '400-000'),
+      { ...p('p3', '', 'Payroll advisor', 'supplier', '400-P004', [[RP, 1], [SE, 10]], '', 'person', '400-000'), short: 'Payroll Advisory PLT' },
+      p('p4', 'AISB', 'Tenant', 'customer', '300-T001', [[SE, 5], [RP, 1]], '', 'person', '300-000'),
+      p('p9', 'AISB', 'Office tenant (Unit 3A)', 'customer', '300-U001', [[SE, 4]], '', 'company', '300-000'),
+      p('p5', '', 'KWSP', 'statutory', '400-K001', [[RP, 1], [SE, 22], [FW, 1]], '', 'vault', '430-100'),
+      p('p6', 'AISB', 'Agrinexus International', 'related', '400-A001', [[SE, 14]], '', 'company', ''),
+      p('p7', 'AISB', 'Old cleaning contractor', 'supplier', '400-C003', [[SE, 8], [RP, 1]], 'Stopped', 'company', '400-000'),
+      p('p10', 'AISB', 'Bina Jaya Sdn Bhd', 'supplier', '400-B002', [], '', 'company', '400-000'),
+      p('p11', 'AI', 'Plantation supplies', 'supplier', '', [], '', 'company', '400-000')
+    ];
+    const DA = [
+      { id: 'da1', co: 'AISB', name: 'Entertainment', code: '900-500', when: 'Mon 9 Nov 2026, 14:32', entry: '1,308', by: 'Aisha Rahman', why: 'Merged into Office rental', ok: true, sameId: true, rec: a('a24', '900-500', 'Entertainment', 'EP', 'expense', '', '', []),
+        effects: ['It comes back under Expenses · EP, with the code 900-500.', 'Nothing was posted to it, so no payment or statement line changes.'] },
+      { id: 'da2', co: 'AISB', name: 'Telephone (old)', code: '900-600', when: 'Thu 5 Nov 2026, 10:05', entry: '1,291', by: 'Aisha Rahman', why: 'Duplicate of the new one', ok: false, refusal: "There is a GL account with the code 900-600 now, so this one can't be put back." },
+      { id: 'da3', co: 'AISB', name: 'Petty cash', code: '310-300', when: 'Tue 3 Nov 2026, 16:20', entry: '1,284', by: 'Aisha Rahman', why: 'Not used', ok: false, refusal: 'This was put back already (entry 1,322).' }
+    ];
+    const DP = [
+      { id: 'dp1', co: 'AISB', name: 'Sri Cahaya Printing', code: '400-S004', when: 'Thu 22 Oct 2026, 09:55', entry: '1,150', by: 'Aisha Rahman', why: 'Pasted twice by mistake.', ok: true, sameId: true, rec: p('p8', 'AISB', 'Sri Cahaya Printing', 'supplier', '400-S004', [], '', 'company', '400-000'),
+        effects: ['It comes back as a supplier for AISB.', 'Its SQL code 400-S004 is free, so nothing else has to move.'] },
+      { id: 'dp2', co: 'AISB', name: 'Old tenant', code: '300-T001', when: 'Sat 3 Jan 2026, 12:10', entry: '655', by: 'Aisha Rahman', why: 'The lease ended in December.', ok: false, refusal: "Another customer or supplier the same company sees already has the SQL code 300-T001, so this one can't be put back." }
+    ];
+    const PS = {
+      parties: { label: 'customers and suppliers', headers: ['SQL code', 'Name', 'Kind'], need: ['name', 'sql_code'],
+        fields: [['sql_code', 'SQL code', true, '0'], ['name', 'Name', true, '1'], ['kind', 'Kind', false, '2'], ['tin', 'Tax ID (TIN)', false, '']],
+        text: 'SQL code\tName\tKind\n400-E012\tElectricity supplier\tSupplier\n400-N002\tNusantara Packaging\tSupplier\n400-G003\tGreen Pest Control\tSupplier\n300-T001\tTenant (Block A)\tCustomer\n400-P004\tPayroll advisor\tSupplier\n400-X009\t\tSupplier',
+        rows: [[1, '400-E012', 'Electricity supplier', 'same'], [2, '400-N002', 'Nusantara Packaging', 'new'], [3, '400-G003', 'Green Pest Control', 'new'], [4, '300-T001', 'Tenant (Block A)', 'change', 'Name: Tenant → Tenant (Block A)', 'p4'], [5, '400-P004', 'Payroll advisor', 'same'], [6, '400-X009', '', 'problem', 'Has no name, so it is skipped.']] },
+      // OPEN ITEM (package K): 900-880 Staff training is not in samples.md. Every GL account the samples name is already in
+      // AISB's chart, so the paste demo has no sample account for its 'new' row until samples.md adds one.
+      gl: { label: 'accounts', headers: ['Code', 'Description', 'A/C Type'], need: ['code', 'name'],
+        fields: [['code', 'Code', true, '0'], ['name', 'Name', true, '1'], ['sql_type', 'SQL group', false, '2'], ['special', 'Special', false, '']],
+        text: 'Code\tDescription\tA/C Type\n310-000\tMaybank current\tCA\n310-100\tMaybank savings account\tCA\n900-010\tBank charges\tEP\n900-850\tStaff welfare\tEP\n900-880\tStaff training\tEP\n\tRounding\tEP',
+        rows: [[1, '310-000', 'Maybank current', 'same'], [2, '310-100', 'Maybank savings account', 'change', 'Name: Maybank savings → Maybank savings account', 'a6'], [3, '900-010', 'Bank charges', 'same'], [4, '900-850', 'Staff welfare', 'same'], [5, '900-880', 'Staff training', 'new'], [6, '', 'Rounding', 'problem', 'Has no code, so it is skipped.']] }
+    };
+    return { G, T, SP, A, PA, DA, DP, PS };
+  }
+
+  base() {
+    return { tab: 'gl', co: this.startCo(), qs: { gl: '', parties: '' }, stopped: false, showDel: false, layout: 'tree', closed: { 'a:430-000': true }, sorts: { gl: null, parties: null },
+      dlg: null, closing: false, rec: null, ps: null, pb: null, toast: null, toastLeaving: false, flashId: null, flashN: 0, savedN: 0, savedOn: false,
+      ed: {}, addA: [], addP: [], gone: {}, delA: [], delP: [], back: {}, nid: 1, sameOpen: false };
+  }
+  init(view) {
+    const s = this.base(), d = this.data();
+    if (view === 'search') s.qs.gl = 'kwsp';
+    if (view === 'flat') { s.layout = 'flat'; s.stopped = true; s.sorts.gl = { col: 'used', dir: 'desc' }; }
+    if (view === 'parties') { s.tab = 'parties'; s.stopped = true; }
+    if (view === 'empty') s.co = 'AI';
+    if (view === 'stopped-only') s.qs.gl = 'usd';
+    if (view === 'no-company') s.co = null;
+    if (view === 'deleted') s.showDel = true;
+    if (view === 'edit') { s.dlg = 'rec'; s.rec = this.recFor('account', 'edit', d.A[4]); }
+    if (view === 'new-party') { s.tab = 'parties'; s.dlg = 'rec'; s.rec = this.recFor('party', 'new', null); s.rec.tried = true; }
+    if (view === 'putback') { s.showDel = true; s.dlg = 'pb'; s.pb = { item: d.DA[0], reason: '', tried: false, set: 'gl' }; }
+    if (view.indexOf('paste') === 0) {
+      s.dlg = 'paste'; s.tab = 'gl';
+      s.ps = this.newPaste('gl', d);
+      if (view === 'paste-check' || view === 'paste-warn') s.ps.step = 2;
+      if (view === 'paste-warn') s.ps.map = { ...s.ps.map, code: '' };
+      if (view === 'paste-done') { const o = this.outcome(s.ps, d); this.applyPaste(s, s.ps, o, d); s.ps.step = 3; s.ps.out = o; }
+    }
+    return s;
+  }
+  newPaste(set, d) {
+    const P = d.PS[set], map = {}; P.fields.forEach(f => { map[f[0]] = f[3]; });
+    return { set, step: 1, text: P.text, scope: 'company', kind: 'supplier', map, reason: '', tried: false, out: null };
+  }
+  outcome(ps, d) {
+    const P = d.PS[ps.set], warn = P.need.some(k => !ps.map[k]);
+    const rows = P.rows.map(([n, code, name, act, what, target]) => ({ n, code, name, act, what: what || '', target: target || '' }));
+    const c = { add: 0, change: 0, same: 0, problem: 0 };
+    rows.forEach(r => { c[r.act === 'new' ? 'add' : r.act]++; });
+    return { warn, rows, counts: c };
+  }
+  applyPaste(s, ps, o, d) {
+    const nA = [], nP = [];
+    o.rows.forEach(r => {
+      if (r.act === 'new') {
+        const id = (ps.set === 'gl' ? 'a' : 'p') + 'n' + (s.nid++);
+        if (ps.set === 'gl') nA.push({ id, co: 'AISB', code: r.code, name: r.name, grp: 'EP', type: 'expense', special: '', parent: '', used: [], status: 'In use', notes: '' });
+        else nP.push({ id, co: ps.scope === 'all' ? '' : 'AISB', name: r.name, kind: ps.kind || 'supplier', code: r.code, used: [], status: 'In use', glyph: 'company', short: '', tin: '', brn: '', gl: '', words: '', notes: '' });
+        if (!s.flashId) s.flashId = id;
+      } else if (r.act === 'change' && r.target) {
+        s.ed = { ...s.ed, [r.target]: { ...(s.ed[r.target] || {}), name: r.name } };
+        if (!s.flashId) s.flashId = r.target;
+      }
+    });
+    s.addA = s.addA.concat(nA); s.addP = s.addP.concat(nP); s.flashN = (s.flashN || 0) + 1;
+  }
+  recFor(kind, mode, r) {
+    const f = kind === 'account'
+      ? (r ? { code: r.code, name: r.name, grp: r.grp, type: r.type, special: r.special, parent: r.parent, notes: r.notes } : { code: '', name: '', grp: 'EP', type: 'expense', special: '', parent: '', notes: '' })
+      : (r ? { name: r.name, kind: r.kind, co: r.co, code: r.code, short: r.short, tin: r.tin, brn: r.brn, gl: r.gl, words: r.words, notes: r.notes } : { name: '', kind: 'supplier', co: 'AISB', code: '', short: '', tin: '', brn: '', gl: '', words: '', notes: '' });
+    return { kind, mode, id: r ? r.id : null, f, reason: '', tried: false };
+  }
+
+  // ---------- records with edits applied ----------
+  accounts() { const st = this.state; return this.data().A.concat(st.addA).filter(r => !st.gone[r.id]).map(r => ({ ...r, ...(st.ed[r.id] || {}) })); }
+  parties() { const st = this.state; return this.data().PA.concat(st.addP).filter(r => !st.gone[r.id]).map(r => ({ ...r, ...(st.ed[r.id] || {}) })); }
+  usedOf(r) {
+    const ONE = { 'SQL account lines': 'SQL account line', 'accounts under it': 'account under it', 'statement lines': 'statement line', payments: 'payment', receipts: 'receipt', 'claim types': 'claim type', 'recurring payments': 'recurring payment', 'SQL entries': 'SQL entry', 'SQL filing word rules': 'SQL filing word rule', 'statutory accounts': 'statutory account' };
+    const n = (r.used || []).reduce((s, u) => s + u[1], 0);
+    return { n, text: n ? (r.used || []).map(u => u[1] + ' ' + (u[1] === 1 ? ONE[u[0]] || u[0] : u[0]) + (u[2] ? ' (' + u[2] + ')' : '')).join(', ') : 'Not used yet' };
+  }
+
+  // ---------- actions ----------
+  flash(id) { this.setState({ flashId: id, flashN: this.state.flashN + 1 }); }
+  toastNow(text) { clearTimeout(this._tt); this.setState({ toast: text, toastLeaving: false }); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); }
+  openDlg(kind, patch, openerId) {
+    if (this.state.dlg) return;
+    this._opener = (openerId && document.getElementById(openerId)) || document.activeElement;
+    this.setState({ dlg: kind, closing: false, savedOn: false, ...patch });
+  }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.dlg) return;
+    this.setState({ dlg: null, closing: false, rec: null, ps: null, pb: null, savedOn: false });
+  }
+  // the company the shell (menu and top bar) shows follows the one this page shows; the top-bar switcher picks it
+  startCo() { const u = String(this.props.company || "").toUpperCase(); return u === "AI" ? "AI" : "AISB"; }
+  shell() {
+    const SH = { AISB: ["aisb", "sqlPayroll", "sql", "true"], AI: ["ai", "here", "here", "false"], AIL: ["ail", "sql", "sql", "false"], AIP: ["aip", "here", "here", "false"] };
+    const h = SH[String(this.state.co || "").toUpperCase()] || SH.AISB;
+    return { shCo: h[0], shKind: h[1], navKind: h[2], navPayroll: h[3], onTopCo: code => { const u = String(code).toUpperCase(); if (u !== "AISB" && u !== "AI") return; this.setState({ co: u }); } };
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt);
+      this.setState(this.init(this.props.view || 'tree'));
+      return;
+    }
+    const st = this.state;
+    if (!prev.dlg && st.dlg) { this.focusId('ch-title'); return; }
+    if (prev.dlg && !st.dlg) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('ch-add');
+      return;
+    }
+    if (st.dlg === 'paste' && prev.ps && st.ps && prev.ps.step !== st.ps.step) { this.focusId('ch-title'); return; }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); }
+  }
+  setF(patch) { const r = this.state.rec; if (r) this.setState({ rec: { ...r, f: { ...r.f, ...patch } } }); }
+  errorsFor(r) {
+    const e = {}, f = r.f;
+    if (!String(f.name || '').trim()) e.name = 'Write a name.';
+    if (r.kind === 'account') {
+      const code = String(f.code || '').trim();
+      if (!code) e.code = 'Write the code as SQL Account has it.';
+      else if (this.accounts().some(x => x.co === this.state.co && x.id !== r.id && String(x.code).toUpperCase() === code.toUpperCase())) e.code = 'There is a GL account with this code already.';
+    } else if (!f.kind) e.kind = 'Choose a kind.';
+    return e;
+  }
+  recSave() {
+    const st = this.state, r = st.rec; if (!r) return;
+    const errs = this.errorsFor(r);
+    if (Object.keys(errs).length) { this._focusId = 'ch-f-' + Object.keys(errs)[0]; this.setState({ rec: { ...r, tried: true } }); return; }
+    if (r.mode === 'edit' && !r.reason.trim()) return;
+    const isA = r.kind === 'account';
+    if (r.mode === 'new') {
+      const id = (isA ? 'a' : 'p') + 'n' + st.nid;
+      const f = r.f;
+      const rec = isA ? { id, co: st.co, code: f.code.toUpperCase(), name: f.name.trim(), grp: f.grp, type: f.type, special: f.special, parent: f.parent, notes: f.notes, used: [], status: 'In use' }
+        : { id, co: f.co, name: f.name.trim(), kind: f.kind, code: f.code, short: f.short, tin: f.tin, brn: f.brn, gl: f.gl, words: f.words, notes: f.notes, used: [], status: 'In use', glyph: f.kind === 'customer' ? 'person' : 'company' };
+      this.setState(isA ? { addA: st.addA.concat([rec]) } : { addP: st.addP.concat([rec]) });
+      this.setState({ nid: st.nid + 1, rec: { ...r, mode: 'edit', id, reason: '', tried: false }, flashId: id, flashN: st.flashN + 1, savedOn: true, savedN: st.savedN + 1 });
+    } else {
+      this.setState({ ed: { ...st.ed, [r.id]: { ...(st.ed[r.id] || {}), ...r.f } }, rec: { ...r, reason: '' }, flashId: r.id, flashN: st.flashN + 1, savedOn: true, savedN: st.savedN + 1 });
+    }
+    this.toastNow('Saved');
+  }
+  recStop() {
+    const st = this.state, r = st.rec; if (!r || !r.id || !r.reason.trim()) return;
+    const cur = (r.kind === 'account' ? this.accounts() : this.parties()).find(x => x.id === r.id);
+    const stopped = cur && cur.status !== 'Stopped';
+    this.setState({ ed: { ...st.ed, [r.id]: { ...(st.ed[r.id] || {}), status: stopped ? 'Stopped' : 'In use' } }, rec: { ...r, reason: '' }, flashId: r.id, flashN: st.flashN + 1, savedOn: false });
+    this.toastNow(stopped ? 'Stopped. Its history stays.' : 'In use again');
+  }
+  recDelete() {
+    const st = this.state, r = st.rec; if (!r || !r.id || !r.reason.trim()) return;
+    const isA = r.kind === 'account', cur = (isA ? this.accounts() : this.parties()).find(x => x.id === r.id);
+    if (!cur || this.usedOf(cur).n) return;
+    const item = { id: 'dn' + st.nid, co: st.co, name: cur.name, code: cur.code, when: 'Wed 18 Nov 2026, 10:12', entry: '1,331', by: 'Aisha Rahman', why: r.reason.trim(), ok: true, sameId: true, rec: cur, effects: ['It comes back as it was, with the same code ' + cur.code + '.'] };
+    this.setState({ gone: { ...st.gone, [r.id]: true }, nid: st.nid + 1, ...(isA ? { delA: st.delA.concat([item]) } : { delP: st.delP.concat([item]) }) });
+    this.closeDlg();
+    this.toastNow(cur.name + ' deleted. Show deleted lists it.');
+  }
+  pbGo() {
+    const st = this.state, pb = st.pb; if (!pb) return;
+    if (!pb.reason.trim()) { this._focusId = 'ch-pb-reason'; this.setState({ pb: { ...pb, tried: true } }); return; }
+    const it = pb.item, isA = pb.set === 'gl', rec = { ...it.rec, status: 'In use' };
+    this.setState({ back: { ...st.back, [it.id]: true }, ...(isA ? { addA: st.addA.concat([rec]) } : { addP: st.addP.concat([rec]) }), flashId: rec.id, flashN: st.flashN + 1 });
+    this.closeDlg();
+    this.toastNow(it.name + (it.sameId ? ' put back' : ' put back as #' + it.newId));
+  }
+  psRead() {
+    const ps = this.state.ps; if (!ps) return;
+    if (!ps.text.trim()) { this._focusId = 'ch-ps-text'; this.setState({ ps: { ...ps, tried: true } }); return; }
+    this.setState({ ps: { ...ps, step: 2, tried: false }, sameOpen: false });
+  }
+  psSave() {
+    const st = this.state, ps = st.ps; if (!ps) return;
+    const d = this.data(), o = this.outcome(ps, d);
+    if (o.warn || o.counts.add + o.counts.change === 0) return;
+    const s = { nid: st.nid, ed: st.ed, addA: st.addA, addP: st.addP, flashId: null, flashN: st.flashN };
+    this.applyPaste(s, ps, o, d);
+    this.setState({ ...s, ps: { ...ps, step: 3, out: o } });
+    this.toastNow('Saved: ' + o.counts.add + ' added, ' + o.counts.change + ' changed');
+  }
+  sortFor(tab, col) {
+    const cur = this.state.sorts[tab];
+    const next = !cur || cur.col !== col ? { col, dir: 'asc' } : cur.dir === 'asc' ? { col, dir: 'desc' } : null;   // three clicks: up, down, off
+    this.setState({ sorts: { ...this.state.sorts, [tab]: next } });
+  }
+
+  renderVals() {
+    const st = this.state, d = this.data();
+    const tab = st.tab, isGl = tab === 'gl', co = st.co, hasCo = !!co;
+    const noCo = co === null;
+    const q = (st.qs[tab] || '').trim().toLowerCase();
+    const tabBase = 'height:44px;padding:0 2px;border:0;background:transparent;font:600 14px Inter,sans-serif;cursor:pointer;margin-bottom:-1px;transition:border-color .12s ease-out,color .12s ease-out;';
+    const pill = (kind) => 'display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;' + kind;
+    const OK = 'background:#E3F7EC;color:#0A6B3D', GREY = 'background:#EEF1F5;color:#46546A', BLUE = 'background:#EAF0FD;color:#1D419A', RED = 'background:#FDECEA;color:#9A1409', AMB = 'background:#FEF1D6;color:#7A3A00';
+    const statusPill = s => pill(s === 'In use' ? OK : GREY);
+    const KIND = { supplier: ['Supplier', BLUE], customer: ['Customer', OK], statutory: ['Statutory body', AMB], related: ['Related company', GREY] };
+    const coLabel = c => c === '' ? 'Every company' : c;
+    const flashCls = id => (st.flashId === id ? (st.flashN % 2 ? 'fa' : 'fb') : '');
+    const nav = ids => i => e => {
+      const to = e.key === 'ArrowDown' ? i + 1 : e.key === 'ArrowUp' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? ids.length - 1 : null;
+      if (to === null || to < 0 || to >= ids.length) return;
+      e.preventDefault();
+      this.focusId(ids[to]);
+    };
+
+    // ---- the lists ----
+    const A = this.accounts().filter(r => r.co === co);
+    const Pall = this.parties().filter(r => r.co === co || r.co === '');
+    const coList = tab === 'gl' ? A : Pall;
+    const nStopped = coList.filter(r => r.status === 'Stopped').length;
+    const grpOf = r => r.grp || '~' + (r.type || '');
+    const grpName = r => { const g = d.G.find(x => x[0] === r.grp); return g ? g[1] : (r.type ? d.T[r.type] + ' · no SQL group' : 'No type or SQL group'); };
+    const textA = r => [r.code, r.name, d.T[r.type] || '', grpName(r), d.SP[r.special] || '', r.status].join(' ').toLowerCase();
+    const textP = r => [r.name, KIND[r.kind][0], r.code, coLabel(r.co), r.status, r.short || ''].join(' ').toLowerCase();
+    const words = q ? q.split(/\s+/) : [];
+    const matchA = r => words.every(w => textA(r).indexOf(w) >= 0), matchP = r => words.every(w => textP(r).indexOf(w) >= 0);
+    const plural = isGl ? 'accounts' : 'customers and suppliers';
+    const emptyFor = (all, visible, cand) => visible.length ? '' : !all.length ? 'None yet.' : !cand.length ? 'No ' + plural + ' match.' : 'Only stopped ' + plural + ': tick Show stopped to see them.';
+
+    // tree
+    const shownA = st.stopped ? A : A.filter(r => r.status !== 'Stopped');
+    const hit = q ? new Set(shownA.filter(matchA).map(r => r.id)) : null;
+    const byCode = {}; shownA.forEach(r => { byCode[String(r.code).toUpperCase()] = r; });
+    const keep = new Set();
+    if (hit) hit.forEach(id => { let r = shownA.find(x => x.id === id), g = 0; while (r && !keep.has(r.id) && g++ < 12) { keep.add(r.id); r = r.parent ? byCode[String(r.parent).toUpperCase()] : null; } });
+    const nodes = hit ? shownA.filter(r => keep.has(r.id)) : shownA;
+    const nodeCodes = {}; nodes.forEach(r => { nodeCodes[String(r.code).toUpperCase()] = true; });
+    const kids = {}; nodes.forEach(r => { const p = r.parent && nodeCodes[String(r.parent).toUpperCase()] ? String(r.parent).toUpperCase() : ''; (kids[p] = kids[p] || []).push(r); });
+    const size = r => 1 + (kids[String(r.code).toUpperCase()] || []).reduce((n, k) => n + size(k), 0);
+    const groups = d.G.map(g => ({ key: g[0], label: g[1] + ' · ' + g[0] })).concat([['asset', 'Assets'], ['liability', 'Liabilities'], ['equity', 'Equity'], ['income', 'Income'], ['expense', 'Expenses']].map(t => ({ key: '~' + t[0], label: t[1] + ' · no SQL group' })), [{ key: '~', label: 'No type or SQL group' }]);
+    const searching = !!hit;
+    const treeIds = [];
+    const treeSpec = [];
+    const walk = (list, depth) => list.forEach(r => {
+      const ch = kids[String(r.code).toUpperCase()] || [], key = 'a:' + String(r.code).toUpperCase(), open = searching || !st.closed[key];
+      treeSpec.push({ r, ch, key, open, depth });
+      if (ch.length && open) walk(ch, depth + 1);
+    });
+    const groupSpec = [];
+    groups.forEach(g => {
+      const roots = (kids[''] || []).filter(r => grpOf(r) === g.key);
+      if (!roots.length) return;
+      const key = 'g:' + g.key, open = searching || !st.closed[key];
+      groupSpec.push({ g, key, open, count: roots.reduce((n, r) => n + size(r), 0) });
+      treeSpec.push({ group: groupSpec[groupSpec.length - 1] });
+      if (open) walk(roots, 0);
+    });
+    treeSpec.forEach(t => { if (t.group) { if (!searching) t.group.id = 'ch-g-' + t.group.g.key; } else t.id = 'ch-a-' + t.r.id; });
+    treeSpec.forEach(t => { const id = t.group ? t.group.id : t.id; if (id) treeIds.push(id); });
+    const tnav = nav(treeIds);
+    const flip = key => () => this.setState({ closed: { ...st.closed, [key]: !st.closed[key] } });
+    const openRec = (kind, r, id) => () => this.openDlg('rec', { rec: this.recFor(kind, 'edit', r) }, id);
+    const treeRows = treeSpec.map(t => {
+      if (t.group) {
+        const gg = t.group, i = treeIds.indexOf(gg.id);
+        return { cls: '', trStyle: 'border-top:1px solid #E3E7ED', isGroup: true, isRow: false, open: () => {}, gBtn: !searching, gPlain: searching, id: gg.id || '', exp: gg.open ? 'true' : 'false', chevCls: gg.open ? 'chev on' : 'chev', label: gg.g.label, count: gg.count + (gg.count === 1 ? ' account' : ' accounts'),
+          toggle: flip(gg.key), key: i >= 0 ? tnav(i) : () => {}, canToggle: false, noToggle: false, toggleLabel: '', toggleTitle: '', codeCell: '', code: '', hidden: '', ctx: false, name: '', type: '', special: '', used: '', usedTitle: '', status: '', pill: '' };
+      }
+      const r = t.r, u = this.usedOf(r), i = treeIds.indexOf(t.id), canToggle = t.ch.length > 0 && !searching, isCtx = !!hit && !hit.has(r.id);
+      const n = size(r) - 1;
+      return { cls: 'hr ' + flashCls(r.id), trStyle: 'border-top:1px solid #EEF1F5;cursor:pointer;' + (isCtx ? 'color:#5F6C80' : '') + (r.status === 'Stopped' ? ';color:#5F6C80' : ''), isGroup: false, isRow: true, open: openRec('account', r, t.id),
+        gBtn: false, gPlain: false, id: t.id, exp: t.open ? 'true' : 'false', chevCls: t.open ? 'chev on' : 'chev', label: '', count: '',
+        toggle: e => { if (e && e.stopPropagation) e.stopPropagation(); flip(t.key)(); }, key: tnav(i),
+        canToggle, noToggle: !canToggle, toggleLabel: (t.open ? 'Close ' : 'Open ') + r.code, toggleTitle: (t.open ? 'Close' : 'Open') + ' the ' + t.ch.length + ' account' + (t.ch.length === 1 ? '' : 's') + ' under it',
+        codeCell: 'padding:2px 12px 2px ' + (10 + t.depth * 24) + 'px', code: r.code, hidden: t.ch.length && !t.open && !searching ? '+' + n : '', ctx: isCtx, name: r.name, type: d.T[r.type] || '', special: d.SP[r.special] || '',
+        used: String(u.n), usedTitle: u.text, status: r.status, pill: statusPill(r.status) };
+    });
+    const treeOn = isGl && st.layout === 'tree', flatOn = isGl && st.layout === 'flat', partiesOn = !isGl;
+    const treeVisible = treeSpec.filter(t => !t.group).length;
+    const candA = A.filter(matchA);
+    const treeEmpty = treeOn && !treeSpec.length;
+
+    // flat accounts
+    const sortOf = (rows, s, getters) => { if (!s) return rows; const g = getters[s.col], m = s.dir === 'asc' ? 1 : -1; return rows.slice().sort((x, y) => { const a = g(x), b = g(y); return (typeof a === 'number' ? a - b : String(a).localeCompare(String(b), undefined, { numeric: true })) * m; }); };
+    const getA = { code: r => r.code, name: r => r.name, type: r => d.T[r.type] || '', group: r => grpName(r), special: r => d.SP[r.special] || '', used: r => this.usedOf(r).n, status: r => r.status };
+    const flatList = sortOf(shownA.filter(matchA), st.sorts.gl, getA);
+    const flatIds = flatList.map(r => 'ch-a-' + r.id), fnav = nav(flatIds);
+    const flatRows = flatList.map((r, i) => { const u = this.usedOf(r); return { cls: 'hr ' + flashCls(r.id), trStyle: 'border-top:1px solid #EEF1F5;cursor:pointer;' + (r.status === 'Stopped' ? 'color:#5F6C80' : ''), open: openRec('account', r, 'ch-a-' + r.id), id: 'ch-a-' + r.id, key: fnav(i), code: r.code, name: r.name, type: d.T[r.type] || '', group: grpName(r), special: d.SP[r.special] || '', used: String(u.n), usedTitle: u.text, status: r.status, pill: statusPill(r.status) }; });
+    const heads = (tabKey, defs) => defs.map(([col, label, num]) => { const s = st.sorts[tabKey], on = s && s.col === col;
+      return { label, aria: on ? (s.dir === 'asc' ? 'ascending' : 'descending') : 'none', glyph: on ? (s.dir === 'asc' ? 'arrowUp' : 'arrowDown') : 'sort', sort: () => this.sortFor(tabKey, col),
+        thStyle: 'padding:4px 8px;font-weight:600;' + (num ? 'text-align:right' : ''), btnStyle: 'display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 10px;border:0;border-radius:8px;background:transparent;font:600 12px Inter,sans-serif;text-transform:uppercase;letter-spacing:.05em;color:' + (on ? '#0F1A2B' : '#5F6C80') + ';cursor:pointer' }; });
+    const glHeads = heads('gl', [['code', 'Code'], ['name', 'Name'], ['type', 'Type'], ['group', 'SQL group'], ['special', 'Special'], ['used', 'Used by', true], ['status', 'Status']]);
+    const partyHeads = heads('parties', [['name', 'Name'], ['kind', 'Kind'], ['code', 'SQL code'], ['for', 'For'], ['used', 'Used by', true], ['status', 'Status']]);
+
+    // parties
+    const shownP = st.stopped ? Pall : Pall.filter(r => r.status !== 'Stopped');
+    const getP = { name: r => r.name, kind: r => KIND[r.kind][0], code: r => r.code, for: r => coLabel(r.co), used: r => this.usedOf(r).n, status: r => r.status };
+    const pList = sortOf(shownP.filter(matchP), st.sorts.parties, getP);
+    const pIds = pList.map(r => 'ch-p-' + r.id), pnav = nav(pIds);
+    const partyRows = pList.map((r, i) => { const u = this.usedOf(r); return { cls: 'hr ' + flashCls(r.id), trStyle: 'border-top:1px solid #EEF1F5;cursor:pointer;' + (r.status === 'Stopped' ? 'color:#5F6C80' : ''), open: openRec('party', r, 'ch-p-' + r.id), id: 'ch-p-' + r.id, key: pnav(i), name: r.name, glyph: r.glyph || 'company', kind: KIND[r.kind][0], kindPill: pill(KIND[r.kind][1]), code: r.code || '—', for: coLabel(r.co), used: String(u.n), usedTitle: u.text, status: r.status, pill: statusPill(r.status) }; });
+
+    const shownCount = isGl ? (treeOn ? (hit ? hit.size : treeVisible) : flatList.length) : pList.length;
+    const visible = isGl ? (treeOn ? (hit ? Array.from(hit) : shownA) : flatList) : pList;
+    const cand = isGl ? candA : Pall.filter(matchP);
+    const emptyMsg = emptyFor(coList, visible, cand);
+
+    // deleted
+    const delSrc = isGl ? d.DA.concat(st.delA) : d.DP.concat(st.delP);
+    const delRows = delSrc.filter(x => x.co === co && !st.back[x.id]).map(x => ({ ...x, id: 'ch-put-' + x.id, refused: !x.ok, refusal: x.refusal || '',
+      put: () => this.openDlg('pb', { pb: { item: x, reason: '', tried: false, set: tab } }, 'ch-put-' + x.id) }));
+
+    // dialog
+    const dlg = st.dlg, rec = st.rec, ps = st.ps, pb = st.pb;
+    const dlgOn = !!dlg, isRec = dlg === 'rec' && !!rec, isPaste = dlg === 'paste' && !!ps, isPb = dlg === 'pb' && !!pb;
+    const recKind = rec ? rec.kind : 'account', recIsA = recKind === 'account', isEdit = !!rec && rec.mode === 'edit';
+    const curRec = rec && rec.id ? (recIsA ? this.accounts() : this.parties()).find(x => x.id === rec.id) : null;
+    const used = curRec ? this.usedOf(curRec) : { n: 0, text: '' };
+    const errs = rec ? this.errorsFor(rec) : {};
+    const ctlBase = 'width:100%;box-sizing:border-box;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;';
+    const mk = (key, label, type, o) => {
+      o = o || {}; const f = rec ? rec.f : {}, err = rec && rec.tried ? (errs[key] || '') : '';
+      const locked = !!o.locked, note = locked ? o.lockWhy : (o.hint || '');
+      return { id: 'ch-f-' + key, did: 'ch-f-' + key + '-d', label, req: !!o.req, isText: type === 'text', isSel: type === 'sel', isArea: type === 'area', value: f[key] == null ? '' : String(f[key]), locked,
+        cell: 'display:flex;flex-direction:column;gap:6px;' + (o.wide ? 'grid-column:1 / -1' : ''), invalid: err ? 'true' : 'false',
+        ctl: ctlBase + 'height:40px;border:1px solid ' + (err ? '#B0190F' : '#8794A8') + ';' + (o.mono ? 'font-family:ui-monospace,Consolas,monospace;' : ''),
+        ctlArea: ctlBase + 'padding:10px 12px;border:1px solid #8794A8;resize:vertical',
+        hasErr: !!err, err, hasNote: !err && !!note, note, noteStyle: 'color:#5F6C80',
+        options: (o.options || []).map(x => ({ v: x[0], label: x[1] })),
+        change: e => { const v = o.upper ? String(e.target.value).toUpperCase() : e.target.value; if (key === 'grp') { const g = d.G.find(x => x[0] === v); this.setF({ grp: v, type: g ? g[2] : this.state.rec.f.type }); } else this.setF({ [key]: v }); } };
+    };
+    const lockWhy = used.n ? "Used by " + used.text + ": it can't be changed. Stop using it and add a new one instead." : '';
+    const fields = !rec ? [] : recIsA ? [
+      mk('code', 'Code', 'text', { req: true, mono: true, upper: true, hint: 'As in SQL Account, e.g. 310-000.', locked: isEdit && used.n > 0, lockWhy }),
+      mk('name', 'Name', 'text', { req: true }),
+      mk('grp', 'SQL group', 'sel', { hint: "SQL Account's A/C Type. The type follows it.", options: [['', '(none)']].concat(d.G.map(g => [g[0], g[1] + ' (' + g[0] + ')'])) }),
+      mk('type', 'Type', 'sel', { options: [['', '(none)']].concat(Object.keys(d.T).map(k => [k, d.T[k]])) }),
+      mk('special', 'Special', 'sel', { options: [['', '(none)']].concat(Object.keys(d.SP).map(k => [k, d.SP[k]])) }),
+      mk('parent', 'Parent account', 'text', { mono: true, upper: true, hint: 'The account it sits under, if any.' }),
+      mk('notes', 'Notes', 'area', { wide: true })
+    ] : [
+      mk('name', 'Name', 'text', { req: true, wide: true, hint: 'As SQL Account names it.' }),
+      mk('kind', 'Kind', 'sel', { req: true, options: [['customer', 'Customer (money in)'], ['supplier', 'Supplier (money out)'], ['related', 'Related company'], ['statutory', 'Statutory body']] }),
+      mk('co', 'For', 'sel', { hint: "One company, or every company. Each company's SQL Account database keeps its own codes.", options: [['AISB', 'AISB · AISB Sdn Bhd'], ['AI', 'AI · Agrinexus International'], ['', 'Every company']] }),
+      mk('code', 'SQL code', 'text', { mono: true, upper: true, hint: 'Its customer or supplier code in SQL Account, e.g. 300-A001.', locked: isEdit && used.n > 0, lockWhy }),
+      mk('short', 'Short name', 'text'),
+      mk('tin', 'Tax ID (TIN)', 'text'),
+      mk('brn', 'Business registration no. (BRN)', 'text'),
+      mk('gl', 'Control account (GL code)', 'text', { mono: true, upper: true, hint: 'Its debtor or creditor control account.' }),
+      mk('words', 'Words in SQL descriptions', 'text', { wide: true, hint: 'Kept for reference; matching uses the code.' }),
+      mk('notes', 'Notes', 'area', { wide: true })
+    ];
+    const noReason = !rec || !rec.reason.trim();
+    const stoppedNow = curRec && curRec.status === 'Stopped';
+    const btn = on => 'height:40px;padding:0 14px;border-radius:10px;border:1px solid ' + (on ? '#8794A8' : '#D5DBE4') + ';background:#FFFFFF;font:600 14px Inter,sans-serif;color:' + (on ? '#0F1A2B' : '#7A8699') + ';cursor:' + (on ? 'pointer' : 'not-allowed');
+    const recV = rec ? {
+      isEdit, usedLine: curRec ? 'Used by ' + used.text : '', reason: rec.reason, noReason,
+      reasonLabel: isEdit ? 'Reason for this change *' : 'Why are you adding it? (optional)',
+      stopLabel: stoppedNow ? 'Use it again' : 'Stop using this', stopStyle: btn(!noReason), canDelete: used.n === 0, delStyle: 'height:40px;padding:0 14px;border-radius:10px;border:1px solid ' + (noReason ? '#D5DBE4' : '#B0190F') + ';background:#FFFFFF;font:600 14px Inter,sans-serif;color:' + (noReason ? '#C79A95' : '#B0190F') + ';cursor:' + (noReason ? 'not-allowed' : 'pointer'),
+      saveOff: isEdit && noReason, saveLabel: isEdit ? 'Save changes' : (recIsA ? 'Add GL account' : 'Add customer or supplier'),
+      saveStyle: 'height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;background:' + (isEdit && noReason ? '#9AAAC6' : '#2450B8') + ';cursor:' + (isEdit && noReason ? 'not-allowed' : 'pointer')
+    } : { isEdit: false, usedLine: '', reason: '', noReason: true, reasonLabel: '', stopLabel: '', stopStyle: '', canDelete: false, delStyle: '', saveOff: true, saveLabel: '', saveStyle: '' };
+    const pbItem = pb ? pb.item : null;
+    // a live account with the same name (900-870 Entertainment, for claims, against the deleted 900-500): say so, not refused
+    const pbTwin = pbItem && pb.set === 'gl' ? this.accounts().find(x => x.co === pbItem.co && x.code !== pbItem.code && x.name.trim().toLowerCase() === pbItem.name.trim().toLowerCase()) : null;
+    const pbEffects = (pbItem && pbItem.effects || []).concat(pbTwin ? ['An account called ' + pbTwin.name + ' is in use now (' + pbTwin.code + '), so two accounts will have that name. Rename one of them after putting this back.'] : []);
+    const pbV = pbItem ? { when: pbItem.when, by: pbItem.by, entry: pbItem.entry, why: pbItem.why, effects: pbEffects.map(t => ({ text: t })),
+      same: pbItem.sameId ? 'It comes back as it was, with the same number.' : 'Its old number is taken, so it comes back as #' + pbItem.newId + '.', reason: pb.reason, invalid: pb.tried && !pb.reason.trim() ? 'true' : 'false',
+      hasErr: pb.tried && !pb.reason.trim(), noErr: !(pb.tried && !pb.reason.trim()), ctl: ctlBase + 'height:40px;border:1px solid ' + (pb.tried && !pb.reason.trim() ? '#B0190F' : '#8794A8') } : { when: '', by: '', entry: '', why: '', effects: [], same: '', reason: '', invalid: 'false', hasErr: false, noErr: true, ctl: '' };
+
+    // paste
+    const step = ps ? ps.step : 1, PSd = ps ? d.PS[ps.set] : d.PS.gl;
+    const out = ps ? (ps.out && step === 3 ? ps.out : this.outcome(ps, d)) : { warn: false, rows: [], counts: { add: 0, change: 0, same: 0, problem: 0 } };
+    const psFields = ps ? PSd.fields.map(f => ({ id: 'ch-pm-' + f[0], label: f[1], needed: f[2], value: ps.map[f[0]] == null ? '' : ps.map[f[0]],
+      ctl: 'height:40px;padding:0 10px;border-radius:10px;background:#FFFFFF;font:400 14px Inter,sans-serif;color:#0F1A2B;border:1px solid ' + (f[2] && !ps.map[f[0]] ? '#B0190F' : '#8794A8'),
+      options: PSd.headers.map((h, i) => ({ v: String(i), label: h })),
+      change: e => this.setState({ ps: { ...this.state.ps, map: { ...this.state.ps.map, [f[0]]: e.target.value } } }) })) : [];
+    const psPill = a => pill({ new: OK, change: BLUE, same: GREY, problem: RED }[a]);
+    const psRowsShow = out.rows.filter(r => r.act !== 'same');
+    const psSame = out.rows.filter(r => r.act === 'same');
+    const nothing = !out.warn && out.counts.add + out.counts.change === 0;
+    const psSaveOff = out.warn || nothing;
+    const doneItems = out.rows.filter(r => r.act === 'new' || r.act === 'change').map(r => ({ text: r.act === 'new' ? 'Added ' + r.code + ' ' + r.name : 'Changed ' + r.code + ': ' + r.what }));
+    const stepNames = ['Paste', 'Check', 'Saved'];
+    const steps = stepNames.map((n, i) => ({ n: String(i + 1), label: n, current: i + 1 === step ? 'step' : 'false',
+      style: 'display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:' + (i + 1 === step ? 700 : 500) + ';color:' + (i + 1 === step ? '#0F1A2B' : '#46546A'),
+      dot: 'display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:99px;font-size:12px;font-weight:700;' + (i + 1 === step ? 'background:#2450B8;color:#FFFFFF' : i + 1 < step ? 'background:#0A6B3D;color:#FFFFFF' : 'background:#E3E7ED;color:#46546A') }));
+        const footNote = isPaste && step === 2 ? (out.warn ? 'Choose the right columns above first.' : nothing ? 'Nothing to add or change.' : '') : '';
+
+    const dlgTitle = isRec ? (isEdit ? (curRec ? curRec.name : rec.f.name) : (recIsA ? 'Add GL account' : 'Add customer or supplier')) : isPb ? 'Put back ' + pbItem.name + '?' : isPaste ? 'Paste a list' : '';
+    const dlgEyebrow = isRec ? (recIsA ? 'GL account' : 'Customer or supplier') + (recIsA ? ' · ' + co : '') : isPb ? (pb.set === 'gl' ? 'GL account' : 'Customer or supplier') + ' · ' + co : isPaste ? (ps.set === 'gl' ? 'Chart of accounts' : 'Customers and suppliers') + ' · AISB' : '';
+    const dlgSub = isRec ? (isEdit ? 'Click Save changes to keep your edits. A reason is needed and stays in the audit trail.' : 'It is added to the list for ' + (recIsA ? co : 'the company you choose') + '.') : isPb ? 'Nothing is changed until you put it back.' : '';
+
+    // company switch, tabs and text
+    const COS = ['AISB', 'AI'];
+    const segOn = 'height:32px;padding:0 12px;border-radius:6px;border:0;background:#FFFFFF;color:#0F1A2B;font:600 13px Inter,sans-serif;box-shadow:0 1px 2px rgba(16,24,40,.12);cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out';
+    const segOff = 'height:32px;padding:0 12px;border-radius:6px;border:0;background:transparent;color:#46546A;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out';
+    const cos = COS.map(c => ({ label: c, on: st.co === c ? 'true' : 'false', style: st.co === c ? segOn : segOff, pick: () => this.setState({ co: c }) }));
+    const nGl = this.accounts().filter(r => r.co === co).length, nParties = this.parties().filter(r => r.co === co || r.co === '').length;
+    const allClosed = {}; groupSpec.forEach(g => { allClosed['g:' + g.g.key] = true; }); shownA.forEach(r => { if (shownA.some(k => k.parent && String(k.parent).toUpperCase() === String(r.code).toUpperCase())) allClosed['a:' + String(r.code).toUpperCase()] = true; });
+    const order = ['gl', 'parties'];
+    const tabKey = e => {
+      const i = order.indexOf(st.tab), n = order.length;
+      const to = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i + n - 1) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : null;
+      if (to === null) return;
+      e.preventDefault();
+      this.setState({ tab: order[to] });
+      this.focusId('ch-tab-' + order[to]);
+    };
+    const segBtn = on => on ? segOn : segOff;
+    const showCo = co || '';
+    return {
+      ...this.shell(), dlgOn, noCo, hasCo: !noCo, isGl, treeOn, flatOn, partiesOn,
+      pageName: isGl ? 'Chart of accounts' : 'Customers and suppliers', navActive: isGl ? 'gl_accounts' : 'parties',
+      eyebrow: (noCo ? 'No company' : showCo) + ' · from SQL Account',
+      heading: (isGl ? 'Chart of accounts' : 'Customers and suppliers') + (noCo ? '' : ' · ' + showCo),
+      help: isGl ? "Each company's chart of accounts in SQL Account, for reference: nothing is posted to it." : "Customers pay money in and suppliers are paid money out. Staff are not added here: they stay recurring payments.",
+      addLabel: isGl ? 'Add GL account' : 'Add customer or supplier',
+      tabs: { gl: { sel: isGl ? 'true' : 'false', ti: isGl ? 0 : -1 }, parties: { sel: isGl ? 'false' : 'true', ti: isGl ? -1 : 0 } },
+      tabBy: isGl ? 'ch-tab-gl' : 'ch-tab-parties', tabKey, nGl: noCo ? 0 : nGl, nParties: noCo ? 0 : nParties,
+      tabGl: tabBase + (isGl ? 'color:#0F1A2B;border-bottom:2px solid #2450B8' : 'color:#5F6C80;border-bottom:2px solid transparent'),
+      tabParties: tabBase + (!isGl ? 'color:#0F1A2B;border-bottom:2px solid #2450B8' : 'color:#5F6C80;border-bottom:2px solid transparent'),
+      showGl: () => this.setState({ tab: 'gl' }), showParties: () => this.setState({ tab: 'parties' }),
+      cos, q: st.qs[tab] || '', onQ: e => this.setState({ qs: { ...this.state.qs, [this.state.tab]: e.target.value } }),
+      qKey: e => { if (e.key === 'Escape' && (this.state.qs[this.state.tab] || '')) { e.stopPropagation(); this.setState({ qs: { ...this.state.qs, [this.state.tab]: '' } }); } },
+      searchLabel: 'Search ' + coList.length + ' ' + plural,
+      countText: shownCount + ' of ' + coList.length + ' shown',
+      nStopped, stopped: st.stopped, toggleStopped: () => this.setState({ stopped: !this.state.stopped }),
+      showDel: st.showDel, toggleDel: () => this.setState({ showDel: !this.state.showDel }),
+      segTree: segBtn(treeOn), segFlat: segBtn(flatOn), showTree: () => this.setState({ layout: 'tree' }), showFlat: () => this.setState({ layout: 'flat' }),
+      searching, searchNote: treeOn && searching,
+      allStyle: 'height:32px;padding:0 10px;border-radius:8px;border:1px solid ' + (searching ? '#D5DBE4' : '#8794A8') + ';background:#FFFFFF;font:600 13px Inter,sans-serif;color:' + (searching ? '#7A8699' : '#0F1A2B') + ';cursor:' + (searching ? 'not-allowed' : 'pointer'),
+      openAll: () => this.setState({ closed: {} }), closeAll: () => this.setState({ closed: allClosed }),
+      treeRows, treeEmpty, flatRows, flatEmpty: flatOn && !flatList.length, glHeads, partyHeads, partyRows, partyEmpty: partiesOn && !pList.length, emptyMsg,
+      delTitle: 'Deleted ' + plural, delRows, delEmpty: !delRows.length,
+      openNew: () => { if (noCo) return; this.openDlg('rec', { rec: this.recFor(isGl ? 'account' : 'party', 'new', null) }, 'ch-add'); },
+      openPaste: () => { if (noCo) return; this.openDlg('paste', { ps: this.newPaste(isGl ? 'gl' : 'parties', d) }, 'ch-paste'); },
+      // toast
+      toastOn: !!st.toast, toastText: st.toast || '', toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); } },
+      // dialog shell
+      dimClass: st.closing ? 'dim-out' : 'dim-in', dlgClass: st.closing ? 'dr-out' : 'dr-in',
+      dlgGlyph: isPb ? 'undo' : isPaste ? 'clipboard' : recIsA ? 'trail' : 'users', dlgTitle, dlgEyebrow, dlgSub,
+      closeDlg: () => this.closeDlg(),
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); this.closeDlg(); return; }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      isRec, isPb, isPaste, rec: recV, fields, onRecReason: e => { const r = this.state.rec; if (r) this.setState({ rec: { ...r, reason: e.target.value } }); },
+      recSave: () => this.recSave(), recStop: () => this.recStop(), recDelete: () => this.recDelete(),
+      recSaved: isRec && st.savedOn, savedCls: st.savedN % 2 ? 'rv' : 'swapA',
+      pb: pbV, onPbReason: e => { const p = this.state.pb; if (p) this.setState({ pb: { ...p, reason: e.target.value } }); }, pbGo: () => this.pbGo(),
+      steps, psStep1: isPaste && step === 1, psStep2: isPaste && step === 2, psStep3: isPaste && step === 3,
+      ps: ps ? { text: ps.text, how: ps.set === 'gl' ? 'In SQL Account, open Maintain Account, click a row, press Ctrl+A then Ctrl+C, and paste below. A text file exported from SQL Account, or a list from Excel, works too: columns separated by tabs, commas, | or spaces.' : 'In SQL Account, open Maintain Customer (or Supplier), click a row, press Ctrl+A then Ctrl+C, and paste below. A text file exported from SQL Account, or a list from Excel, works too: columns separated by tabs, commas, | or spaces.',
+        invalid: ps.tried && !ps.text.trim() ? 'true' : 'false', hasErr: ps.tried && !ps.text.trim(), noErr: !(ps.tried && !ps.text.trim()), isParties: ps.set === 'parties', scope: ps.scope, kind: ps.kind, reason: ps.reason,
+        ctl: 'width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;font:400 13px ui-monospace,Consolas,monospace;color:#0F1A2B;background:#FFFFFF;resize:vertical;border:1px solid ' + (ps.tried && !ps.text.trim() ? '#B0190F' : '#8794A8') }
+        : { text: '', how: '', invalid: 'false', hasErr: false, noErr: true, isParties: false, scope: '', kind: '', reason: '', ctl: '' },
+      onPsText: e => { const p = this.state.ps; if (p) this.setState({ ps: { ...p, text: e.target.value, tried: false } }); },
+      onPsScope: e => { const p = this.state.ps; if (p) this.setState({ ps: { ...p, scope: e.target.value } }); },
+      onPsKind: e => { const p = this.state.ps; if (p) this.setState({ ps: { ...p, kind: e.target.value } }); },
+      onPsReason: e => { const p = this.state.ps; if (p) this.setState({ ps: { ...p, reason: e.target.value } }); },
+      psRead: () => this.psRead(), psSave: () => this.psSave(), psBack: () => { const p = this.state.ps; if (p) this.setState({ ps: { ...p, step: 1 } }); },
+      psFields, psWarn: out.warn, psWarnText: 'Rows are matched by their code, so the code and the name must each have a column. Nothing is read until they do.', psRowsOn: !out.warn,
+      psCounts: out.counts, pillNew: pill(OK), pillChange: pill(BLUE), pillSame: pill(GREY), pillProblem: pill(RED),
+      psRows: psRowsShow.map(r => ({ n: r.n, code: r.code || '(none)', name: r.name || '(none)', pill: psPill(r.act), label: { new: 'New', change: 'Changes', same: 'Same', problem: 'Problem' }[r.act], what: r.what })),
+      psHasSame: psSame.length > 0, sameOpen: st.sameOpen, sameChev: st.sameOpen ? 'chev on' : 'chev', sameLabel: psSame.length + (psSame.length === 1 ? ' row already the same' : ' rows already the same'), toggleSame: () => this.setState({ sameOpen: !this.state.sameOpen }), psSame: psSame.map(r => ({ n: r.n, code: r.code, name: r.name })),
+      psSaveOff, psSaveLabel: out.warn || nothing ? 'Save' : 'Save ' + (out.counts.add + out.counts.change) + ' rows',
+      psSaveStyle: 'height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;background:' + (psSaveOff ? '#9AAAC6' : '#2450B8') + ';cursor:' + (psSaveOff ? 'not-allowed' : 'pointer'),
+      psDone: { title: 'Saved: ' + out.counts.add + ' added, ' + out.counts.change + ' changed', skipped: out.counts.problem ? out.counts.problem + (out.counts.problem === 1 ? ' row was skipped.' : ' rows were skipped.') : '', items: doneItems },
+      footNote, showCancel: !(isPaste && step === 3), cancelLabel: isRec ? 'Close' : 'Cancel'
+    };
+  }
+}
+</script>
+</body>
+</html>

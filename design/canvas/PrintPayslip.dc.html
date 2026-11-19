@@ -1,0 +1,656 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payslip · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD}
+/* motion and focus base */
+.hb,.hs,.hg,.hr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.flA{animation:flashA .9s ease-out}
+.flB{animation:flashB .9s ease-out}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.btn,a.btn:hover{color:#FFFFFF}
+.btn:disabled{cursor:progress;opacity:.85}
+.sec{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #778588;background:#FFFFFF;color:#0F1A2B;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.sec,a.sec:hover{color:#0F1A2B}
+.sec.sm{height:32px;padding:0 10px;font-size:13px}
+.sec:disabled,.sec[aria-disabled="true"]{color:#5F6C80;border-color:#C5CCD6;cursor:progress}
+.pl{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.info{background:#F3F6FE;border-color:#C9D7F7;color:#1D2F5C}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid #C5CCD6;border-top-color:#2450B8;box-sizing:border-box;animation:spin .7s linear infinite}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:10px 12px;font-size:12px;font-weight:600;color:#5F6C80;text-transform:uppercase;letter-spacing:.05em;background:#FAFBFC;border-bottom:1px solid #EEF1F5;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid #F1F3F7;vertical-align:middle}
+/* the printed page: A4 at real size, print type sizes, black and grey on white */
+.pg{position:relative;flex:none;width:210mm;height:297mm;box-sizing:border-box;padding:14mm 15mm 11mm;background:#FFFFFF;color:#000000;font:400 9.5pt/1.35 Inter,Arial,sans-serif;display:flex;flex-direction:column;gap:4mm;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.22),0 10px 28px rgba(16,24,40,.14)}
+.pg .co{display:flex;justify-content:space-between;align-items:flex-start;gap:6mm;padding-bottom:3mm;border-bottom:0.35mm solid #000000}
+.pg .cn{font-weight:700;font-size:12pt}
+.pg .g{color:#333333}
+.pg .conf{display:inline-block;border:0.35mm solid #000000;padding:0.8mm 2.2mm;font-weight:700;font-size:7.5pt;text-transform:uppercase;letter-spacing:.04em}
+.pg .ttl{font:600 17pt/1.1 'Space Grotesk',Inter,sans-serif}
+.pg .who{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 8mm}
+.pg dl{margin:0;display:grid;grid-template-columns:30mm 1fr;gap:0.9mm 3mm;font-size:9pt}
+.pg dt{color:#333333}
+.pg dd{margin:0;font-weight:600;min-width:0}
+.pg .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 8mm;align-items:start}
+.pg table{width:100%;border-collapse:collapse;font-size:9pt}
+.pg th{text-align:left;font-weight:700;font-size:7.5pt;text-transform:uppercase;letter-spacing:.05em;border-bottom:0.35mm solid #000000;padding:0 0 1.2mm}
+.pg td{padding:1.1mm 0;border-bottom:0.2mm solid #B8B8B8;vertical-align:top}
+.pg .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:3mm}
+.pg tfoot td{font-weight:700;border-top:0.35mm solid #000000;border-bottom:0;padding-top:1.4mm}
+.pg .nt{display:block;font-size:7.5pt;color:#333333}
+.pg .net{display:flex;justify-content:space-between;align-items:center;gap:6mm;border:0.5mm solid #000000;padding:2.6mm 4mm}
+.pg .bx{border:0.3mm solid #000000;padding:2.4mm 3mm;display:flex;flex-direction:column;gap:1mm}
+.pg .bxh{font-weight:700;font-size:7.5pt;text-transform:uppercase;letter-spacing:.05em}
+.pg ul{margin:0;padding-left:4mm;font-size:8.5pt;display:flex;flex-direction:column;gap:0.8mm}
+.pg .ft{margin-top:auto;display:flex;justify-content:space-between;gap:6mm;padding-top:2mm;border-top:0.25mm solid #333333;font-size:7.5pt;color:#333333}
+.pg .wm{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-32deg);white-space:nowrap;font:700 40pt/1 Inter,Arial,sans-serif;letter-spacing:.06em;color:rgba(0,0,0,.11);pointer-events:none}
+.pg .rp{display:flex;justify-content:space-between;gap:6mm;padding-bottom:2mm;border-bottom:0.35mm solid #000000;font-size:8.5pt}
+@media (max-width:760px){.ps-main{padding:24px 16px 48px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" sub="Payslip" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="ps-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="PayrollRun.dc.html" class="hg" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 4px; margin: -6px 0 4px -4px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>Payroll › Run</a>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+        <h1 id="ps-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payslip</h1>
+        <p style="margin: 0; color: #46546A; max-width: 780px">One A4 page per person and month, laid out like today's payslip: the company, the person, the pay, the deductions, the employer's contributions, the year to date and who approved the run. It prints, opens as a PDF and is emailed to the person locked with a password. English only.</p>
+      </div>
+
+      <div role="group" aria-label="State to show" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%">
+        <sc-for list="{{states}}" as="s" hint-placeholder-count="11"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+      </div>
+
+      <sc-if value="{{isAI}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ps-ai-h" class="rv card" style="padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="payroll" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="ps-ai-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No payslips for AI</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 600px">Agrinexus International doesn't run payroll in this app: its 5 staff are paid from the recurring row Salaries — staff (RM 21,300.00 a month), so nothing here makes a payslip for them. Its Workbook check is the only Payroll tab. <a href="SetupCompanies.dc.html" style="font-weight: 600">Setup › Companies</a> turns on “Runs payroll in this app”.</p>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px"><a href="PayrollCheck.dc.html#ai" class="sec hs">Open AI's Workbook check</a><button type="button" class="sec hs" onClick="{{goAisb}}">Back to AISB</button></div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isAina}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ps-no-h" class="rv card" style="padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="lock" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="ps-no-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Payslips need the Payroll figures right</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 600px">Later, with logins: Nurul Aina has HR without Payroll figures. On the Run tab she sees that October's 8 payslips were approved on AF-2610-009 and emailed, with every amount hidden, and she can't open, print or send a payslip. Rights are set on <a href="UsersAccess.dc.html" style="font-weight: 600">Users and access</a>.</p>
+          <a href="PayrollRun.dc.html" class="sec hs">Open the Run tab</a>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showSlip}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+          <section aria-labelledby="ps-lead-h" class="rv card" style="flex: 2 1 440px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px"><h2 id="ps-lead-h" class="h2">{{leadTitle}}</h2><span class="{{chipCls}}"><dc-import name="Icon" glyph="{{chipGlyph}}" tone="{{chipTone}}" size="14" hint-size="14px,14px"></dc-import>{{chipText}}</span></div>
+            <p style="margin: 0; color: #46546A; font-size: 13px">{{leadText}}</p>
+            <sc-if value="{{hasFlag}}" hint-placeholder-val="{{ false }}"><div class="rb warn"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>Check with KWSP and PERKESO.</b> {{flagText}}</span></div></sc-if>
+            <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px">
+              <sc-for list="{{facts}}" as="f" hint-placeholder-count="4"><dt style="color: #5F6C80; font-weight: 600">{{f.k}}</dt><dd style="margin: 0; color: #0F1A2B; min-width: 0; overflow-wrap: anywhere">{{f.v}}</dd></sc-for>
+            </dl>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px">
+              <sc-for list="{{leadLinks}}" as="l" hint-placeholder-count="2"><a href="{{l.href}}" style="font-weight: 600">{{l.text}}</a></sc-for>
+            </div>
+          </section>
+
+          <section aria-labelledby="ps-act-h" class="card" style="flex: 1 1 320px; min-width: 0; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+            <h2 id="ps-act-h" class="h2">This payslip</h2>
+            <sc-if value="{{canPick}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="ps-who" style="font-size: 13px; font-weight: 600; color: #46546A">Person</label>
+                <select id="ps-who" value="{{who}}" onChange="{{pickWho}}" aria-describedby="ps-who-hint" style="height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 500 14px Inter, sans-serif; color: #0F1A2B">
+                  <sc-for list="{{whoOpts}}" as="o" hint-placeholder-count="8"><option value="{{o.v}}">{{o.t}}</option></sc-for>
+                </select>
+                <span id="ps-who-hint" style="font-size: 12px; color: #5F6C80">{{whoHint}}</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{noPick}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; color: #46546A">{{fixedWho}}</p></sc-if>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button type="button" id="ps-dl" class="sec hs" onClick="{{doDownload}}"><dc-import name="Icon" glyph="download" tone="muted" size="18" hint-size="18px,18px"></dc-import>Download PDF</button>
+              <button type="button" id="ps-print" class="sec hs" onClick="{{doPrint}}"><dc-import name="Icon" glyph="printer" tone="muted" size="18" hint-size="18px,18px"></dc-import>Print</button>
+            </div>
+            <sc-if value="{{hasDone}}" hint-placeholder-val="{{ false }}"><div class="ex" style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #0A6B3D"><dc-import name="Icon" glyph="check" tone="ok" size="18" hint-size="18px,18px"></dc-import><span>{{done}}</span></div></sc-if>
+            <p style="margin: 0; font-size: 12px; color: #5F6C80">{{actNote}}</p>
+          </section>
+        </div>
+
+        <section aria-labelledby="ps-paper-h" style="background: #E9ECF1; border: 1px solid #DDE2EA; border-radius: 16px; padding: 20px 24px 28px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 16px">
+            <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+            <h2 id="ps-paper-h" style="margin: 0; font-size: 14px; font-weight: 600">{{fileName}}</h2>
+            <span style="color: #46546A; font-size: 13px">{{pageCount}} · A4 portrait, 210 × 297 mm, drawn at full size</span>
+          </div>
+          <div role="region" aria-label="The printed payslip, scrolls sideways on a narrow screen" tabindex="0" class="fr" style="overflow-x: auto; padding: 4px">
+            <div class="{{swapCls}}" style="display: flex; flex-direction: column; gap: 28px; width: max-content; margin: 0 auto">
+
+              <article aria-label="{{p1Label}}" class="pg">
+                <div class="co">
+                  <div style="display: flex; flex-direction: column; gap: 0.6mm">
+                    <span class="cn">{{co.name}}</span>
+                    <span class="g" style="font-size: 8pt">{{co.regNo}}</span>
+                    <span class="g" style="font-size: 8pt">{{co.address}}</span>
+                    <span class="g" style="font-size: 8pt">{{co.employerNos}}</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1mm; text-align: right">
+                    <span class="conf">Private and confidential</span>
+                    <span class="ttl">Payslip</span>
+                    <span style="font-weight: 600; font-size: 10.5pt">{{month}}</span>
+                  </div>
+                </div>
+
+                <div class="who">
+                  <dl><sc-for list="{{whoL}}" as="f" hint-placeholder-count="5"><dt>{{f.k}}</dt><dd><span class="sr">{{f.sr}}</span><span aria-hidden="true">{{f.v}}</span></dd></sc-for></dl>
+                  <dl><sc-for list="{{whoR}}" as="f" hint-placeholder-count="4"><dt>{{f.k}}</dt><dd><span class="sr">{{f.sr}}</span><span aria-hidden="true">{{f.v}}</span></dd></sc-for></dl>
+                </div>
+
+                <div class="two">
+                  <table>
+                    <caption class="sr">Earnings, RM</caption>
+                    <thead><tr><th scope="col">Earnings</th><th scope="col" class="n">RM</th></tr></thead>
+                    <tbody><sc-for list="{{earn}}" as="e" hint-placeholder-count="3"><tr><td>{{e.label}}<sc-if value="{{e.hasNote}}" hint-placeholder-val="{{ false }}"><span class="nt">{{e.note}}</span></sc-if></td><td class="n">{{e.amt}}</td></tr></sc-for></tbody>
+                    <tfoot><tr><td>Gross pay</td><td class="n">{{gross}}</td></tr></tfoot>
+                  </table>
+                  <table>
+                    <caption class="sr">Deductions, RM</caption>
+                    <thead><tr><th scope="col">Deductions</th><th scope="col" class="n">RM</th></tr></thead>
+                    <tbody><sc-for list="{{ded}}" as="e" hint-placeholder-count="5"><tr><td>{{e.label}}<sc-if value="{{e.hasNote}}" hint-placeholder-val="{{ false }}"><span class="nt">{{e.note}}</span></sc-if></td><td class="n">{{e.amt}}</td></tr></sc-for></tbody>
+                    <tfoot><tr><td>Total deductions</td><td class="n">{{dedTotal}}</td></tr></tfoot>
+                  </table>
+                </div>
+
+                <div class="net">
+                  <div style="display: flex; flex-direction: column; gap: 0.6mm"><span style="font-weight: 700; font-size: 11pt">Net pay</span><span class="g" style="font-size: 8.5pt">{{payLine}}</span></div>
+                  <span style="font-weight: 700; font-size: 15pt; font-variant-numeric: tabular-nums; white-space: nowrap">RM {{net}}</span>
+                </div>
+
+                <div class="two">
+                  <table>
+                    <caption class="sr">Employer's contributions, RM, not taken from pay</caption>
+                    <thead><tr><th scope="col">Employer's contributions</th><th scope="col" class="n">RM</th></tr></thead>
+                    <tbody><sc-for list="{{er}}" as="e" hint-placeholder-count="3"><tr><td>{{e.label}}<sc-if value="{{e.hasNote}}" hint-placeholder-val="{{ false }}"><span class="nt">{{e.note}}</span></sc-if></td><td class="n">{{e.amt}}</td></tr></sc-for></tbody>
+                    <tfoot><tr><td>Paid by {{co.short}}, not taken from pay</td><td class="n">{{erTotal}}</td></tr></tfoot>
+                  </table>
+                  <div class="bx">
+                    <span class="bxh">{{ytdHead}}</span>
+                    <sc-if value="{{hasYtd}}" hint-placeholder-val="{{ true }}">
+                      <table>
+                        <caption class="sr">{{ytdHead}}, RM</caption>
+                        <tbody><sc-for list="{{ytd}}" as="y" hint-placeholder-count="4"><tr><td>{{y.label}}</td><td class="n">{{y.amt}}</td></tr></sc-for></tbody>
+                      </table>
+                    </sc-if>
+                    <span class="g" style="font-size: 7.5pt">{{ytdNote}}</span>
+                  </div>
+                </div>
+
+                <sc-if value="{{hasNotes}}" hint-placeholder-val="{{ false }}">
+                  <div class="bx">
+                    <span class="bxh">{{notesHead}}</span>
+                    <ul><sc-for list="{{notes}}" as="n" hint-placeholder-count="2"><li>{{n.t}}</li></sc-for></ul>
+                  </div>
+                </sc-if>
+
+                <div class="bx" style="flex-direction: row; justify-content: space-between; align-items: flex-end; gap: 8mm">
+                  <div style="display: flex; flex-direction: column; gap: 0.8mm; min-width: 0">
+                    <span class="bxh">Approved by</span>
+                    <span style="font-weight: 700; font-size: 10.5pt">{{apName}}</span>
+                    <span class="g" style="font-size: 8.5pt">{{apLine}}</span>
+                  </div>
+                  <span class="g" style="flex: none; max-width: 52mm; font-size: 7.5pt; text-align: right">{{apNote}}</span>
+                </div>
+
+                <div class="ft"><span>{{footL}}</span><span style="flex: none">{{p1Of}}</span></div>
+                <sc-if value="{{hasMark}}" hint-placeholder-val="{{ false }}"><span class="wm" aria-hidden="true">{{mark}}</span></sc-if>
+              </article>
+
+              <sc-if value="{{isLeaver}}" hint-placeholder-val="{{ false }}">
+                <article aria-label="Payslip page 2 of 2: Wong Kah Seng's final pay, December 2026, how each part was worked out" class="pg">
+                  <div class="rp"><span><b>{{co.name}}</b> · Payslip · December 2026</span><span>Wong Kah Seng · S006 · IC <span class="sr">ending 1035</span><span aria-hidden="true">••••••-••-1035</span></span></div>
+                  <div style="display: flex; flex-direction: column; gap: 1mm">
+                    <span style="font: 600 13pt/1.2 'Space Grotesk', Inter, sans-serif">Final pay: how each part was worked out</span>
+                    <span class="g" style="font-size: 8.5pt">Last day Thu 31 Dec 2026, retiring at the end of his contract. Each part is a pay item with its own EPF, SOCSO, EIS and PCB ticks (Setup › HR › Payroll settings).</span>
+                  </div>
+                  <table>
+                    <caption class="sr">Parts of the final pay, RM</caption>
+                    <thead><tr><th scope="col" style="width: 44mm">Part</th><th scope="col">How</th><th scope="col" class="n">RM</th></tr></thead>
+                    <tbody><sc-for list="{{parts}}" as="x" hint-placeholder-count="7"><tr><td style="font-weight: 600; padding-right: 3mm">{{x.part}}</td><td>{{x.how}}<span class="nt">Counts for: {{x.counts}}</span><sc-if value="{{x.hasFlag}}" hint-placeholder-val="{{ false }}"><span class="nt" style="font-weight: 700">{{x.flag}}</span></sc-if></td><td class="n">{{x.amt}}</td></tr></sc-for></tbody>
+                    <tfoot><tr><td colspan="2">Gross final pay</td><td class="n">9,900.00</td></tr></tfoot>
+                  </table>
+                  <div class="bx">
+                    <span class="bxh">Hold until tax clearance</span>
+                    <span style="font-size: 9pt">A CP22A was filed with LHDN on Tue 1 Dec 2026, 30 days before his last day. {{co.short}} holds this payment until LHDN's clearance letter is on file, or until Mon 1 Mar 2027, 90 days after LHDN received the CP22A. Paying in full before then makes {{co.short}} liable for his tax.</span>
+                  </div>
+                  <div class="bx">
+                    <span class="bxh">Advance</span>
+                    <span style="font-size: 9pt">No advance left to deduct.</span>
+                  </div>
+                  <div class="ft"><span>{{footL}}</span><span style="flex: none">Page 2 of 2</span></div>
+                </article>
+              </sc-if>
+            </div>
+          </div>
+        </section>
+
+        <sc-if value="{{isMail}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+            <section aria-labelledby="ps-mail-h" class="rv card" style="flex: 1 1 420px; min-width: 0; overflow: hidden">
+              <div style="padding: 18px 22px 12px; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center"><dc-import name="Icon" glyph="inbox" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ps-mail-h" class="h2">The email {{mailTo}} gets</h2></div>
+              <dl style="margin: 0; padding: 0 22px 12px; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; font-size: 13px; border-bottom: 1px solid #EEF1F5">
+                <sc-for list="{{mailHead}}" as="h" hint-placeholder-count="4"><dt style="color: #5F6C80; font-weight: 600">{{h.k}}</dt><dd style="margin: 0; min-width: 0; overflow-wrap: anywhere">{{h.v}}</dd></sc-for>
+              </dl>
+              <div style="padding: 16px 22px; font-size: 14px; line-height: 1.55; white-space: pre-line; color: #0F1A2B">{{mailBody}}</div>
+              <div style="margin: 0 22px 18px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #E3E7ED; border-radius: 10px; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="brand" size="18" hint-size="18px,18px"></dc-import><span style="font-weight: 600" class="mono">{{mailFile}}</span><span style="color: #46546A">1 page · locked with AES-256</span></div>
+              <div style="padding: 12px 22px 18px; border-top: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+                <b style="color: #0F1A2B">The sentence that names the password rule</b>
+                <span>IC number (the default): <q style="color: #0F1A2B">Open it with your IC number, without dashes.</q></span>
+                <span>Own password set by HR on the staff record: <q style="color: #0F1A2B">Open it with the password you asked HR to set.</q> Wei Ming set his on 2 Nov 2026, so his emails say this from November.</span>
+                <span>The password itself is never in the email, a list, an export or the audit trail. <a href="{{mailPwHref}}" style="font-weight: 600">Payslip password on the staff record</a></span>
+              </div>
+            </section>
+
+            <section aria-labelledby="ps-sent-h" class="card" style="flex: 1 1 520px; min-width: 0; overflow: hidden">
+              <div style="padding: 18px 22px 12px; display: flex; flex-direction: column; gap: 4px">
+                <h2 id="ps-sent-h" class="h2">{{sentHead}}</h2>
+                <span style="font-size: 13px; color: #46546A">{{sentSub}}</span>
+              </div>
+              <div role="region" aria-label="Payslip emails, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto">
+                <table class="tbl" style="min-width: 560px">
+                  <caption class="sr">October 2026 payslip emails: person, address, which password opens it, and whether it was sent</caption>
+                  <thead><tr><th scope="col" style="padding-left: 22px">Person</th><th scope="col">Sent to</th><th scope="col">Opens with</th><th scope="col" style="padding-right: 22px">Status</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{sends}}" as="r" hint-placeholder-count="8">
+                      <tr id="{{r.rid}}" class="{{r.cls}}">
+                        <td style="padding-left: 22px; white-space: nowrap"><span class="mono" style="color: #5F6C80; font-size: 12px; margin-right: 8px">{{r.no}}</span>{{r.name}}</td>
+                        <td style="color: #46546A">{{r.mail}}</td>
+                        <td>{{r.rule}}</td>
+                        <td style="padding-right: 22px">
+                          <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+                            <span id="{{r.pid}}" tabindex="-1" class="{{r.pillCls}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="14" hint-size="14px,14px"></dc-import>{{r.pill}}</span>
+                            <sc-if value="{{r.hasWhy}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #8E1A10; max-width: 260px">{{r.why}}</span></sc-if>
+                            <sc-if value="{{r.canRetry}}" hint-placeholder-val="{{ false }}">
+                              <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                                <button type="button" id="ps-retry" class="sec sm hs" onClick="{{r.retry}}" aria-disabled="{{r.busyAria}}" aria-busy="{{r.busyAria}}"><sc-if value="{{r.busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{r.retryText}}</button>
+                                <button type="button" class="sec sm hs" onClick="{{r.printIt}}">Print it instead</button>
+                              </div>
+                            </sc-if>
+                          </div>
+                        </td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <p style="margin: 0; padding: 12px 22px 16px; border-top: 1px solid #EEF1F5; font-size: 12px; color: #5F6C80">Each send is in the <a href="AuditTrail.dc.html">audit trail</a> as Emailed payslip, with the person's staff no., the month and the address; a failure is kept with the mail server's reason. Payslips are emailed only after the run is approved.</p>
+            </section>
+          </div>
+        </sc-if>
+
+        <section aria-labelledby="ps-rules-h" class="card" style="padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <h2 id="ps-rules-h" class="h2">What every payslip follows</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 20px; font-size: 13px; color: #46546A">
+            <sc-for list="{{rules}}" as="r" hint-placeholder-count="6"><li style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="{{r.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">{{r.name}}</b> {{r.text}}</span></li></sc-for>
+          </ul>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"staff","options":["staff","advance","overtime-unpaid","leaver","sixty","parallel","not-approved","emailed","email-failed","no-payroll-figures","ai"],"section":"State to show"},"$preview":{"width":1440,"height":3000}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.initial((p && p.view) || 'staff');
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+  componentDidUpdate(pp) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._t); this.setState(this.initial(this.props.view || 'staff')); return; }
+    if (this._focus) { const id = this._focus; this._focus = null; const e = document.getElementById(id); if (e && e.focus) e.focus({ preventScroll: false }); }
+  }
+  // each state, as on its own day (today is Wed 18 Nov 2026); who is shown first
+  initial(view) {
+    const WHO = { staff: 'S001', advance: 'S004', 'overtime-unpaid': 'S008', leaver: 'S006', sixty: 'S006', parallel: 'S001', 'not-approved': 'S001', emailed: 'S001', 'email-failed': 'S008' };
+    return { view, who: WHO[view] || 'S001', retry: 'failed', done: '', say: '', swap: 0, flash: 0 };
+  }
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  // ---- sample data, money in sen: samples.md sections 5 and 6, PayrollRun (October), PayrollOpeningYtd (Jan to Nov) ----
+  // [no, full name, preferred, IC last 4, position, department, joined, bank, work email, password rule,
+  //  basic, allowance, overtime, EPF, SOCSO, EIS, Lindung 24 Jam worked out, PCB, employer EPF, SOCSO, EIS,
+  //  year to date Jan to Nov: gross, EPF, PCB]
+  people() {
+    if (this._ppl) return this._ppl;
+    const rows = [
+      ['S001', 'Aisha Rahman', 'Aisha', '3418', 'HR and finance executive', 'Finance and HR', '2 May 2019', 'Maybank ····2210', 'aisha@aisb.example', 'ic', 860000, 120000, 0, 94600, 2975, 1190, 4465, 108000, 103200, 10415, 1190, 10780000, 1038000, 1188000],
+      ['S002', 'Ong Wei Ming', 'Wei Ming', '5127', 'Sales executive', 'Sales', '1 Jun 2021', 'CIMB ····8841', 'weiming@aisb.example', 'own', 780000, 300000, 0, 85800, 2975, 1190, 4465, 118000, 93600, 10415, 1190, 11880000, 943800, 1298000],
+      ['S003', 'Nurul Aina binti Hashim', 'Aina', '2046', 'HR and admin executive', 'Finance and HR', '3 Oct 2016', 'Maybank ····5532', 'aina@aisb.example', 'ic', 700000, 80000, 0, 77000, 2975, 1190, 4465, 70000, 84000, 10415, 1190, 8580000, 847000, 770000],
+      ['S004', 'Mohd Hafiz bin Rosli', 'Hafiz', '7391', 'Operations executive', 'Operations', '4 Mar 2019', 'Public Bank ····0917', 'hafiz@aisb.example', 'ic', 570000, 260000, 0, 62700, 2825, 1130, 4240, 56000, 68400, 9890, 1130, 9130000, 689700, 616000],
+      ['S005', 'Nor Khadijah binti Omar', 'Khadijah', '6582', 'Customer service executive', 'Customer service', '1 Feb 2020', 'Maybank ····7764', 'khadijah@aisb.example', 'ic', 550000, 60000, 0, 60500, 2725, 1090, 4090, 34000, 66000, 9540, 1090, 6710000, 665500, 374000],
+      ['S006', 'Wong Kah Seng', 'Kah Seng', '1035', 'IT support', 'IT', '1 Jan 2024', 'RHB ····3390', 'kahseng@aisb.example', 'ic', 780000, 60000, 84790, 85800, 2975, 1190, 4465, 100000, 93600, 10415, 1190, 9733250, 858000, 1100000],
+      ['S007', 'Goh Jia Hui', 'Jia Hui', '4720', 'Marketing executive', 'Marketing', '1 Sep 2026', 'Maybank ····6128', 'jiahui@aisb.example', 'ic', 340000, 60000, 0, 37400, 1675, 665, 2515, 5500, 44200, 5860, 665, 1200000, 112200, 16500],
+      ['S008', 'Nur Izzati binti Kamal', 'Izzati', '8264', 'Office assistant', 'Administration', '15 Jan 2025', 'Bank Islam ····4405', 'izzati@aisb.example', 'ic', 280000, 30000, 0, 30800, 1375, 545, 2065, 0, 36400, 4810, 545, 3410000, 338800, 0]
+    ];
+    const o = {};
+    rows.forEach(a => {
+      const p = { no: a[0], name: a[1], pref: a[2], ic: a[3], pos: a[4], dept: a[5], joined: a[6], bank: a[7], mail: a[8], pw: a[9],
+        basic: a[10], allow: a[11], ot: a[12], epf: a[13], socso: a[14], eis: a[15], skb: a[16], pcb: a[17], erEpf: a[18], erSocso: a[19], erEis: a[20] };
+      p.gross = p.basic + p.allow + p.ot;
+      // November is October's pay again, except Kah Seng (no overtime, 60-and-over rates: EPF 0.00, PCB 1,000.00)
+      const nov = p.no === 'S006' ? { gross: 840000, epf: 0, pcb: 100000 } : { gross: p.gross, epf: p.epf, pcb: p.pcb };
+      p.ytdNov = { gross: a[21], epf: a[22], pcb: a[23] };
+      p.ytdOct = { gross: a[21] - nov.gross, epf: a[22] - nov.epf, pcb: a[23] - nov.pcb };
+      o[p.no] = p;
+    });
+    this._ppl = o;
+    return o;
+  }
+
+  // the company printed at the top, as Setup › Companies holds it (nothing on the page is fixed to one company)
+  company() {
+    return { short: 'AISB', name: 'AISB Sdn Bhd', regNo: 'Registration no. 201901023456 (1331234-K)',
+      address: 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor',
+      employerNos: 'Employer no. KWSP 012345678 · PERKESO E1234567891A · LHDN E 9876543210' };
+  }
+
+  // one payslip for the state shown: everything that prints on page 1
+  slip(view, who) {
+    const F = n => this.fmt(n), P = this.people(), p = P[who] || P.S001, co = this.company();
+    const L = (label, amt, note) => ({ label, amt: F(amt), note: note || '', hasNote: !!note });
+    const IC = x => ({ k: 'IC no.', v: '••••••-••-' + x, sr: 'IC number ending ' + x });
+    const K = (k, v) => ({ k, v, sr: v });
+    const whoL = q => [K('Name', q.name), K('Staff no.', q.no), IC(q.ic), K('Position', q.pos), K('Department', q.dept)];
+    const ytdRows = (y, zak) => [L('Gross pay', y.gross), L('EPF (employee)', y.epf), L('PCB', y.pcb), L('Zakat', zak || 0)];
+    const OCT_AP = { apName: 'Hassan Ismail', apLine: 'Director · signed Thu 22 Oct 2026 · approval form AF-2610-009', apNote: 'Any one signature on the run\'s approval form approves it' };
+
+    // October, as the run approved on AF-2610-009 (also the base for the parallel run and the not-approved draft)
+    const oct = (q, skb) => {
+      const earn = [L('Basic pay', q.basic), L('Travelling allowance', q.allow)];
+      if (q.ot) earn.push(L('Overtime', q.ot, 'Weekend work on the server move'));
+      const ded = [L('EPF', q.epf), L('SOCSO', q.socso), L('EIS', q.eis), L('Lindung 24 Jam', skb), L('PCB (monthly tax deduction)', q.pcb)];
+      const dt = q.epf + q.socso + q.eis + skb + q.pcb;
+      return {
+        month: 'October 2026', code: '2026-10', earn, ded, gross: F(q.gross), dedTotal: F(dt), net: F(q.gross - dt),
+        er: [L('EPF', q.erEpf), L('SOCSO', q.erSocso), L('EIS', q.erEis)], erTotal: F(q.erEpf + q.erSocso + q.erEis),
+        whoL: whoL(q), whoR: [K('Pay period', '1 to 31 Oct 2026'), K('Pay date', 'Sat 24 Oct 2026'), K('Paid to', q.bank), K('Date joined', q.joined)],
+        payLine: 'Paid by bank transfer to ' + q.bank + ' on Sat 24 Oct 2026',
+        ytdHead: 'Year to date · ' + (q.no === 'S007' ? 'September' : 'January') + ' to October 2026', hasYtd: true, ytd: ytdRows(q.ytdOct),
+        ytdNote: q.no === 'S007' ? 'Joined 1 Sep 2026. Never typed: kept from each month.' : 'The opening year to date plus every month kept; never typed.',
+        notes: [], ...OCT_AP, mark: '', printed: 'Wed 18 Nov 2026'
+      };
+    };
+
+    if (view === 'parallel') {
+      const s = oct(p, p.skb);
+      return { ...s, whoR: [K('Pay period', '1 to 31 Oct 2026'), K('Pay date', 'None: not paid'), K('Paid to', 'Not paid'), K('Date joined', p.joined)],
+        payLine: 'Not paid: a parallel run pays nothing and posts nothing',
+        hasYtd: false, ytd: [], ytdHead: 'Year to date', ytdNote: 'Not kept for a parallel run. The run paid from this app keeps it.',
+        apName: 'Not for approval', apNote: 'No approval form for a parallel run', apLine: 'A parallel run is for comparing with the workbook only. Nothing is paid, posted or emailed from it.',
+        notes: [{ t: 'Lindung 24 Jam ' + F(p.skb) + ' is worked out by the app at 0.75% of wages up to RM 6,000. The workbook has 0.00, so this net pay is ' + F(p.skb) + ' lower than the workbook\'s.' }],
+        notesHead: 'Parallel run', mark: 'PARALLEL RUN · NOT PAID', suffix: ' parallel run', printed: 'Wed 18 Nov 2026' };
+    }
+    if (view === 'not-approved') {
+      const s = oct(p, 0);
+      return { ...s, whoR: [K('Pay period', '1 to 31 Oct 2026'), K('Pay date', 'Sat 24 Oct 2026, planned'), K('Paid to', p.bank), K('Date joined', p.joined)],
+        payLine: 'To be paid by bank transfer to ' + p.bank + ' on Sat 24 Oct 2026',
+        apName: 'Not approved yet', apNote: 'Waiting for the signed form', apLine: 'Approval form AF-2610-009 was printed on Wed 21 Oct 2026 and is waiting for a signature. Any one of the 3 approvers may sign it.',
+        mark: 'NOT APPROVED', suffix: ' draft', printed: 'Wed 21 Oct 2026' };
+    }
+    if (view === 'overtime-unpaid') {
+      // drawn state (Izzati, October): 4 hours' overtime on a normal day and 1 day of unpaid leave. Her wages for EPF, SOCSO
+      // and EIS are basic less unpaid leave, 2,692.31: EPF band to 2,700.00 (297.00 / 351.00), SOCSO band 2,600.01 to
+      // 2,700.00 (13.25 / 46.35), EIS 5.30 each. Overtime is outside those wages (samples section 6).
+      const q = P.S008, day = 10769, ot = 8076, gross = q.basic + q.allow + ot;
+      const ded = [L('Unpaid leave, 1 day', day, 'Fri 16 Oct: RM 2,800.00 ÷ 26 a day'), L('EPF', 29700), L('SOCSO', 1325), L('EIS', 530), L('Lindung 24 Jam', 0), L('PCB (monthly tax deduction)', 0)];
+      const dt = day + 29700 + 1325 + 530;
+      // a what-if: AF-2610-009 approved her October net at 2,772.80, so this page names no approver and no form
+      return { ...oct(q, 0),
+        earn: [L('Basic pay', q.basic), L('Travelling allowance', q.allow), L('Overtime, 4 hours', ot, 'Wed 14 Oct, normal working day: 4 × 1.5 × RM 13.46 an hour')],
+        payLine: 'Drawn example, not a payment: her approved October net pay was RM 2,772.80',
+        apName: 'Drawn example: not on an approved run', apLine: 'No approval form approved these figures. A real payslip names the signer, the date and the form code.', apNote: 'Printed only to show how overtime and unpaid leave appear',
+        ded, gross: F(gross), dedTotal: F(dt), net: F(gross - dt),
+        er: [L('EPF', 35100), L('SOCSO', 4635), L('EIS', 530)], erTotal: F(35100 + 4635 + 530),
+        ytd: ytdRows({ gross: q.ytdOct.gross - q.gross + gross, epf: q.ytdOct.epf - q.epf + 29700, pcb: 0 }),
+        notesHead: 'Overtime and unpaid leave',
+        notes: [{ t: 'Overtime: hourly rate RM 13.46 = monthly pay RM 2,800.00 ÷ 26 ÷ 8 hours. A normal working day pays 1.5 times, a rest day 2 times, a public holiday 3 times.' },
+          { t: 'Unpaid leave comes from Leave. EPF, SOCSO and EIS are on wages after the unpaid day (RM 2,692.31); overtime and the travelling allowance are outside them.' }] };
+    }
+    // November 2026 is a parallel run (PayrollRun, PayrollParallel): it pays nothing, posts nothing, has no approver and
+    // keeps no year to date; the app works out Lindung 24 Jam where the workbook has 0. December is the first paid run.
+    const NOV_PAR = q => ({ month: 'November 2026', code: '2026-11',
+      whoR: [K('Pay period', '1 to 30 Nov 2026'), K('Pay date', 'None: not paid'), K('Paid to', 'Not paid'), K('Date joined', q.joined)],
+      payLine: 'Not paid: a parallel run pays nothing and posts nothing',
+      hasYtd: false, ytd: [], ytdHead: 'Year to date', ytdNote: 'Not kept for a parallel run. The run paid from this app keeps it, from December 2026.',
+      apName: 'Not for approval', apNote: 'No approval form for a parallel run', apLine: 'November is paid from the recurring rows. This run is for comparing with the workbook only: nothing is paid, posted or emailed from it.',
+      mark: 'PARALLEL RUN · NOT PAID', suffix: ' parallel run', printed: 'Tue 24 Nov 2026' });
+    const skbNote = q => ({ t: 'Lindung 24 Jam ' + F(q.skb) + ' is worked out by the app at 0.75% of wages up to RM 6,000. The workbook has 0.00, so this net pay is ' + F(q.skb) + ' lower than the workbook\'s.' });
+    if (view === 'advance') {
+      // November 2026's parallel run (samples section 6): Hafiz's first deduction of SA-2611-001 comes off the
+      // workbook's pay, paid from the recurring row; the run shows the same line to compare. Net 6,531.05.
+      const q = P.S004, adv = 50000;
+      const ded = [L('EPF', q.epf), L('SOCSO', q.socso), L('EIS', q.eis), L('Lindung 24 Jam', q.skb), L('PCB (monthly tax deduction)', q.pcb), L('Advance repayment', adv, 'SA-2611-001, 1 of 3')];
+      const dt = q.epf + q.socso + q.eis + q.skb + q.pcb + adv;
+      return { ...oct(q, 0), ...NOV_PAR(q), ded, dedTotal: F(dt), net: F(q.gross - dt),
+        notesHead: 'Parallel run · salary advance SA-2611-001',
+        notes: [{ t: 'RM 1,500.00, approved on AF-2611-001. Repaid RM 500.00 a month, November 2026 to January 2027; no interest.' },
+          { t: 'November\'s 500.00 comes off his pay from the recurring row, as the workbook has it, leaving 1,000.00. This run shows the same line to compare and records no repayment.' },
+          skbNote(q)] };
+    }
+    if (view === 'sixty') {
+      // November 2026's parallel run: Kah Seng's first month at the 60-and-over rates (samples section 6)
+      const q = P.S006, gross = q.basic + q.allow, pcb = 100000;
+      return { ...oct(q, 0), ...NOV_PAR(q),
+        earn: [L('Basic pay', q.basic), L('Travelling allowance', q.allow)], gross: F(gross),
+        ded: [L('EPF', 0, 'Aged 60 and over: 0%'), L('SOCSO', 0, 'Second category: employer only'), L('EIS', 0, 'Not paid at 60 or over'), L('Lindung 24 Jam', q.skb, 'Check with PERKESO whether it is paid at 60 or over'), L('PCB (monthly tax deduction)', pcb)],
+        dedTotal: F(q.skb + pcb), net: F(gross - q.skb - pcb),
+        er: [L('EPF', 31200, '4% from 60'), L('SOCSO', 7440, 'Second category, 1.25%'), L('EIS', 0, 'Not paid at 60 or over')], erTotal: F(31200 + 7440),
+        notesHead: 'Parallel run · aged 60 and over',
+        notes: [{ t: 'Turned 60 on 12 Oct 2026. The 60-and-over rates apply from November 2026\'s pay: EPF 0% for him and 4% for ' + co.short + ', SOCSO second category, no EIS.' },
+          skbNote(q)] };
+    }
+    if (view === 'leaver') {
+      // December 2026, the first run paid from this app: Kah Seng's final pay as PayrollLeaver draws it (PCB 890.00 an example)
+      const q = P.S006;
+      return { ...oct(q, 0), month: 'December 2026 · final pay', code: '2026-12',
+        earn: [L('Salary', 780000, '1 to 31 Dec: 31 of 31 days'), L('Travelling allowance', 60000), L('Annual leave not taken', 150000, '5 days × RM 300.00 (monthly pay ÷ 26)')], gross: F(990000),
+        ded: [L('EPF', 0, 'Aged 60 and over: 0%'), L('SOCSO', 0, 'Second category: employer only'), L('EIS', 0, 'Not paid at 60 or over'), L('Lindung 24 Jam', 4465, '0.75% of wages up to RM 6,000. Check with PERKESO whether it is paid at 60 or over'), L('PCB (monthly tax deduction)', 89000, 'Leave paid out as additional pay')],
+        dedTotal: F(4465 + 89000), net: F(990000 - 4465 - 89000),
+        er: [L('EPF', 37200, '4% on 9,300.00: basic and leave paid out. Leave paid out included: check with KWSP'), L('SOCSO', 7440, 'Second category, 1.25%'), L('EIS', 0, 'Not paid at 60 or over')], erTotal: F(37200 + 7440),
+        whoR: [K('Pay period', '1 to 31 Dec 2026'), K('Last day', 'Thu 31 Dec 2026, retiring'), K('Paid to', q.bank), K('Date joined', q.joined)],
+        payLine: 'Held until tax clearance: paid to ' + q.bank + ' once LHDN\'s letter is on file, or from Mon 1 Mar 2027',
+        ytdHead: 'Year to date · January to December 2026', ytd: ytdRows({ gross: q.ytdNov.gross + 990000, epf: q.ytdNov.epf, pcb: q.ytdNov.pcb + 89000 }),
+        ytdNote: 'The whole year: these go on his EA form for 2026.',
+        apName: 'Hassan Ismail', apLine: 'Director · signed Tue 22 Dec 2026 on December 2026\'s run approval form',
+        notesHead: 'Final pay', notes: [{ t: 'His last pay: page 2 shows how each part was worked out, and the hold until tax clearance.' }], printed: 'Tue 22 Dec 2026' };
+    }
+    // staff, emailed, email failed: October as approved
+    return { ...oct(p, 0), printed: view === 'staff' ? 'Wed 18 Nov 2026' : 'Thu 22 Oct 2026' };
+  }
+
+  pickView(v, label) { clearTimeout(this._t); this.setState({ ...this.initial(v), swap: this.state.swap + 1, say: label + ' shown.' }); }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if (c === 'AI' && this.state.view !== 'ai') { this._focus = 'ps-ai-h'; this.setState({ ...this.initial('ai'), say: 'No payslips for AI' }); }
+    if (c === 'AISB' && this.state.view === 'ai') { this._focus = 'ps-h1'; this.setState({ ...this.initial('staff'), say: 'Showing AISB\'s payslips' }); }
+  }
+  retry() {
+    if (this.state.retry !== 'failed') return;
+    this.setState({ retry: 'sending', say: 'Sending Izzati\'s payslip again' });
+    clearTimeout(this._t);
+    // the button and Print it instead leave the row once sent: focus goes to the row's status pill
+    this._t = setTimeout(() => { this._focus = 'ps-s008-status'; this.setState({ retry: 'sent', flash: this.state.flash + 1, say: 'Sent to izzati@aisb.example. 8 of 8 payslips sent.' }); }, 1200);
+  }
+
+  renderVals() {
+    const st = this.state, view = st.view, P = this.people();
+    const isAI = view === 'ai', isAina = view === 'no-payroll-figures', showSlip = !isAI && !isAina;
+    const OCT = ['staff', 'parallel', 'not-approved', 'emailed', 'email-failed'];
+    const canPick = showSlip && OCT.includes(view);
+    const s = showSlip ? this.slip(view, st.who) : this.slip('staff', 'S001');
+    const pNo = { advance: 'S004', 'overtime-unpaid': 'S008', leaver: 'S006', sixty: 'S006' }[view] || st.who;
+    const p = P[pNo] || P.S001;
+    const isLeaver = view === 'leaver', pages = isLeaver ? 2 : 1, co = this.company();
+    const isPar = s.suffix === ' parallel run';
+    const fileCode = co.short + ' Payslip ' + s.code + ' ' + p.no + (s.suffix || '');
+    const isMail = view === 'emailed' || view === 'email-failed';
+
+    // lead card, per state
+    const LEAD = {
+      staff: ['October 2026, as approved', ['ok', 'check', 'ok', 'Approved'],
+        'The October run was approved on AF-2610-009, signed by Hassan Ismail on Thu 22 Oct, and paid on Sat 24 Oct. Each payslip prints from the run as frozen on approval. Choose a person to see theirs.',
+        [['As on', 'Wed 18 Nov 2026'], ['Opened from', 'Payslips on HR › Payroll › Run, or Payslip, October 2026 on the staff record\'s Pay tab'], ['Audit trail', 'Opened file · payslip ' + p.no + ', October 2026 · Aisha Rahman'], ['Who can open it', 'Users with the Payroll figures right']],
+        [['PayrollRun.dc.html', 'October run'], ['HrStaffRecord.dc.html#' + p.no + '-pay', 'Staff record, Pay tab']]],
+      advance: ['Repaying a salary advance', ['mute', 'refresh', 'muted', 'Parallel run · not paid'],
+        'Hafiz\'s advance comes off his pay at RM 500.00 a month as a deduction line, and the box under the pay says what is left. November is the last month paid from the recurring rows, so its run here is a parallel run that pays nothing: the page is marked PARALLEL RUN · NOT PAID, has no approver and keeps no year to date. Drawn as it will print once November\'s run is calculated, the example run from later; on Wed 18 Nov it isn\'t started yet.',
+        [['File', fileCode + '.pdf'], ['Printed', 'Tue 24 Nov 2026: the example run from later. On Wed 18 Nov November\'s run isn\'t started yet'], ['Advance', 'SA-2611-001, RM 1,500.00, approved on AF-2611-001 by Rajesh Kumar, 3 Nov'], ['Limit', 'RM 500.00 is well within 50% of his RM 5,700.00 wages, so no warning'], ['Difference', 'Lindung 24 Jam 42.40: the workbook has 0.00'], ['From December', 'The first run paid from this app: the deduction is 2 of 3, leaving 500.00']],
+        [['HrAdvances.dc.html', 'Advances tab'], ['PayrollParallel.dc.html', 'Parallel run tab']]],
+      'overtime-unpaid': ['Overtime in hours and unpaid leave', ['mute', 'document', 'muted', 'Drawn example · not approved'],
+        'Drawn state: no one at AISB had unpaid leave in October, so this page is a what-if and names no approver or form: AF-2610-009 approved Izzati\'s October net at RM 2,772.80. Izzati earns RM 2,800.00, so the overtime rules cover her and overtime typed in hours is valued at 1.5 times her hourly rate on a normal day. Unpaid leave comes from Leave and is taken off at monthly pay ÷ 26 a day. Both days fall before the Sat 24 Oct pay date.',
+        [['File', fileCode + '.pdf'], ['Overtime', 'Wed 14 Oct: 4 hours × 1.5 × RM 13.46 = 80.76'], ['Unpaid leave', 'Fri 16 Oct: 1 day × RM 107.69 (RM 2,800.00 ÷ 26)'], ['Formulas', 'To be confirmed against the current Act before building (scope section 6)']],
+        [['HrLeave.dc.html', 'Leave'], ['PayrollRun.dc.html', 'Run tab, What changes this month']]],
+      leaver: ['Leaver\'s final pay', ['warn', 'lock', 'warn', 'Held until tax clearance'],
+        'Kah Seng retires when his contract ends on Thu 31 Dec 2026. His final pay is his line on December 2026\'s run, the first run paid from this app, so his payslip has a second page with each part. A CP22A was made, so the payment is held and the payslip says so.',
+        [['File', fileCode + '.pdf · 2 pages'], ['PCB', '890.00 is an example figure, as on Payroll › Leaver: the samples have no December run'], ['Form code', 'Left off: the samples hold no December run form yet'], ['Page 2', 'Repeats the company, the month and the person at the top']],
+        [['PayrollLeaver.dc.html', 'Leaver tab'], ['HrCalendar.dc.html', 'CP22A on Calendar and reminders']]],
+      sixty: ['Aged 60 and over', ['mute', 'refresh', 'muted', 'Parallel run · not paid'],
+        'Kah Seng turned 60 on 12 Oct 2026. October was paid at the under-60 rates; from November 2026\'s pay EPF is 0% for him and 4% for AISB, SOCSO is the second category (employer only, 1.25%) and EIS stops. November\'s run here is a parallel run that pays nothing, so the page is marked PARALLEL RUN · NOT PAID, has no approver and keeps no year to date. Drawn as it will print once November\'s run is calculated, the example run from later; on Wed 18 Nov it isn\'t started yet.',
+        [['File', fileCode + '.pdf'], ['Printed', 'Tue 24 Nov 2026: the example run from later. On Wed 18 Nov November\'s run isn\'t started yet'], ['Employer', 'EPF 312.00 · SOCSO 74.40 · EIS none (samples section 6)'], ['Difference', 'Lindung 24 Jam 44.65: the workbook has 0.00']],
+        [['HrStaffRecord.dc.html#' + p.no, 'His staff record'], ['PayrollParallel.dc.html', 'Parallel run tab'], ['SetupPayroll.dc.html', 'Setup › HR › Payroll settings']]],
+      parallel: ['Parallel run payslip', ['mute', 'refresh', 'muted', 'Parallel run · not paid'],
+        'During the parallel run the app works out every payslip beside the workbook, to compare. Nothing is paid, posted or emailed from it, so every page carries PARALLEL RUN · NOT PAID and has no approver. The app\'s figures differ from the workbook\'s only in Lindung 24 Jam.',
+        [['File', fileCode + '.pdf'], ['Opened from', 'Parallel run tab, a person\'s row'], ['Difference', 'Lindung 24 Jam ' + this.fmt(p.skb) + ': the workbook has 0.00'], ['Emailed', 'Never: the Email button isn\'t offered for a parallel run']],
+        [['PayrollParallel.dc.html', 'Parallel run tab'], ['PayrollCheck.dc.html', 'Workbook check']]],
+      'not-approved': ['Not approved yet', ['warn', 'clock', 'warn', 'Waiting for approval'],
+        'As on Wed 21 Oct: the run is Checked and its form AF-2610-009 is printed, waiting for a signature. A payslip can be looked at or printed as a draft, marked NOT APPROVED on the page; it is emailed only once the run is approved. Approval never blocks paying: sent to pay first, it still reads Not approved yet until the signed form is uploaded.',
+        [['File', fileCode + '.pdf'], ['As on', 'Wed 21 Oct 2026, 15:00'], ['Emailed', 'Not yet: payslips are emailed once the run is approved']],
+        [['Approvals.dc.html', 'Payments › Approvals'], ['ApprovalUpload.dc.html', 'Upload the signed form']]],
+      emailed: ['Emailed as a locked PDF', ['ok', 'check', 'ok', 'Emailed'],
+        'Once the run is approved, each payslip is emailed to the person\'s work email as a PDF locked with AES-256. The email says which password opens it, never the password: the IC number without dashes by default, or the person\'s own password if HR set one on the staff record.',
+        [['As on', 'Thu 22 Oct 2026, 16:15'], ['Sent', '8 of 8, Thu 22 Oct 2026, 16:10, after AF-2610-009 was uploaded'], ['Audit trail', 'Emailed payslip · ' + p.no + ', October 2026 · ' + p.mail]],
+        [['HrStaffRecord.dc.html#' + p.no, 'Payslip password on the staff record'], ['AuditTrail.dc.html', 'Audit trail']]],
+      'email-failed': ['An email that wasn\'t sent', st.retry === 'sent' ? ['ok', 'check', 'ok', 'Emailed'] : ['bad', 'alert', 'bad', 'Email not sent'],
+        '7 of the 8 October payslips were sent. Izzati\'s mail server refused hers, so it is marked Not sent with the server\'s reason. Send it again, or print it and hand it to her. Nothing about the password is in the message or the trail.',
+        [['As on', 'Thu 22 Oct 2026, 16:20'], ['Audit trail', 'Payslip email not sent · S008, October 2026 · the mail server\'s reason']],
+        [['HrStaffRecord.dc.html#' + p.no, 'Work email on the staff record'], ['AuditTrail.dc.html', 'Audit trail']]]
+    };
+    const ld = LEAD[view] || LEAD.staff;
+    const facts = (view === 'staff' || view === 'emailed' || view === 'email-failed' ? [['File', fileCode + '.pdf']] : []).concat(ld[3]).map(x => ({ k: x[0], v: x[1] }));
+
+    // the state chips
+    const LABELS = [['staff', 'Staff'], ['advance', 'Advance repayment'], ['overtime-unpaid', 'Overtime and unpaid leave'], ['leaver', 'Leaver\'s final pay'], ['sixty', '60 and over'], ['parallel', 'Parallel run'], ['not-approved', 'Not approved yet'], ['emailed', 'Emailed'], ['email-failed', 'Email failed'], ['no-payroll-figures', 'Without Payroll figures'], ['ai', 'AI, no payroll run']];
+    const btn = on => 'min-height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const states = LABELS.map(([k, label]) => ({ label, pressed: view === k ? 'true' : 'false', style: btn(view === k), pick: () => this.pickView(k, label) }));
+
+    // the email list (October): Izzati's failed in the failed state until sent again
+    const SENT_AT = 'Sent Thu 22 Oct, 16:10';
+    const sends = Object.keys(P).map(k => {
+      const q = P[k], failed = view === 'email-failed' && k === 'S008';
+      const rs = failed ? st.retry : 'sent';
+      const pill = rs === 'failed' ? ['pl bad', 'alert', 'bad', 'Not sent'] : rs === 'sending' ? ['pl info', 'clock', 'brand', 'Sending'] : ['pl ok', 'check', 'ok', failed ? 'Sent Thu 22 Oct, 16:24' : SENT_AT];
+      return { no: k, name: q.name, mail: q.mail, rule: 'IC number',
+        rid: 'ps-row-' + k, pid: 'ps-' + k.toLowerCase() + '-status', cls: failed && rs === 'sent' ? (st.flash % 2 ? 'flA' : 'flB') : '',
+        pillCls: pill[0], glyph: pill[1], tone: pill[2], pill: pill[3],
+        hasWhy: failed && rs !== 'sent', why: 'The mail server refused it: izzati@aisb.example\'s mailbox is full.',
+        canRetry: failed && rs !== 'sent', busy: rs === 'sending', busyAria: rs === 'sending' ? 'true' : 'false', retryText: rs === 'sending' ? 'Sending' : 'Send again',
+        retry: () => this.retry(), printIt: () => { this._focus = 'ps-print'; this.setState({ ...this.initial('staff'), who: 'S008', swap: this.state.swap + 1, say: 'Izzati\'s payslip shown, ready to print' }); } };
+    });
+    const sentN = view === 'email-failed' && st.retry !== 'sent' ? 7 : 8;
+    const mp = P[st.who] || P.S001;
+    const firstName = mp.pref;
+    const mailBody = 'Dear ' + firstName + ',\n\nYour payslip for October 2026 from ' + co.name + ' is attached as a PDF.\n\nOpen it with your IC number, without dashes.\n\nThis email doesn\'t contain your password. If the PDF won\'t open, ask HR; they can set a password of your own on your staff record.\n\n' + co.name + ', HR';
+
+    const rules = [
+      ['lock', 'IC masked to the last 4.', 'The payslip is emailed, so the IC prints as ••••••-••-1234, as the Payroll check shows it. The full IC prints only on the HR staff record PDF.'],
+      ['key', 'Password rule, never the password.', 'The PDF is locked with AES-256: the IC number without dashes (passport number for a foreign worker), or an own password HR set on the staff record.'],
+      ['approval', 'Approved by.', 'The signer of the run\'s approval form, with the date and form code. Before that it reads Not approved yet, and a parallel run has no approver.'],
+      ['history', 'Year to date.', 'The opening year to date plus every month kept, never typed. A parallel run keeps none.'],
+      ['printer', 'A4, black on white.', 'Print type sizes, Page x of y, and a repeated heading from page 2. The marks NOT APPROVED and PARALLEL RUN are grey and the same words print in the Approved by box, so they read on any printer.'],
+      ['company', 'From Setup › Companies.', 'The company\'s name, registration number, address and employer numbers. Nothing is fixed to AISB: a company that doesn\'t run payroll in this app has no payslips.']
+    ].map(([glyph, name, text]) => ({ glyph, name, text }));
+
+    const order = ['S001', 'S002', 'S003', 'S004', 'S005', 'S006', 'S007', 'S008'];
+    return {
+      say: st.say, eyebrow: isAI ? 'AI · Kept here' : 'AISB · Kept in SQL Account · HR › Payroll',
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: isAina ? 'hrOnly' : 'full', tbUser: isAina ? 'aina' : 'aisha',
+      onTopCo: code => this.pickCo(code), goAisb: () => this.pickCo('AISB'),
+      states, isAI, isAina, showSlip,
+      leadTitle: ld[0], chipCls: 'pl ' + ld[1][0], chipGlyph: ld[1][1], chipTone: ld[1][2], chipText: ld[1][3], leadText: ld[2], facts,
+      leadLinks: ld[4].map(x => ({ href: x[0], text: x[1] })),
+      hasFlag: view === 'sixty' || view === 'leaver',
+      flagText: view === 'leaver'
+        ? 'As on Payroll › Leaver: check with PERKESO whether Lindung 24 Jam (44.65) is paid at 60 or over, and check with KWSP whether the 5 days\' leave paid out (1,500.00) are EPF wages; employer EPF 372.00 includes them. Common payroll practice, not a published rule (KWSP 03-8922 6000, PERKESO 1-300-22-8000).'
+        : 'Neither says whether the 60-and-over rates start in the birthday month or the month after. The app uses the month after. Nor is it settled whether Lindung 24 Jam (44.65) is paid at 60 or over: check with PERKESO, as Payroll › Leaver flags. Common payroll practice, not a published rule (KWSP 03-8922 6000, PERKESO 1-300-22-8000).',
+      canPick, noPick: showSlip && !canPick, who: st.who,
+      whoOpts: order.map(k => ({ v: k, t: P[k].no + ' · ' + P[k].name })),
+      whoHint: 'The 8 people on the October run.',
+      fixedWho: 'Shown for ' + p.name + ' (' + p.no + '), the person this state is about.',
+      pickWho: ev => { const v = ev && ev.target ? ev.target.value : ''; if (!P[v]) return; this.setState({ who: v, done: '', swap: this.state.swap + 1, say: 'Payslip for ' + P[v].name + ' shown' }); },
+      doDownload: () => this.setState({ done: 'Downloaded ' + fileCode + '.pdf' + (s.mark ? ', with its mark on every page.' : '.') + ' Opened file is added to the audit trail.', say: 'Downloaded ' + fileCode + '.pdf' }),
+      doPrint: () => this.setState({ done: 'Sent to the printer: ' + pages + (pages === 1 ? ' page' : ' pages') + ', A4. Printed is added to the audit trail.', say: 'Sent to the printer' }),
+      hasDone: !!st.done, done: st.done,
+      actNote: isPar ? 'A parallel run payslip is never emailed.' : view === 'overtime-unpaid' ? 'A drawn example is never emailed.' : view === 'not-approved' ? 'Email is offered once the run is approved.' : 'The PDF opened here isn\'t locked; only the emailed copy has a password.',
+      fileName: fileCode + '.pdf', pageCount: pages === 1 ? '1 page' : '2 pages', swapCls: st.swap % 2 ? 'flA' : '',
+      p1Label: 'Payslip page 1 of ' + pages + ': ' + p.name + ', ' + s.month + ', net pay RM ' + s.net + (s.mark ? ', marked ' + s.mark : ''),
+      month: s.month, whoL: s.whoL, whoR: s.whoR, earn: s.earn, ded: s.ded, gross: s.gross, dedTotal: s.dedTotal, net: s.net, payLine: s.payLine,
+      er: s.er, erTotal: s.erTotal, ytdHead: s.ytdHead, hasYtd: s.hasYtd, ytd: s.ytd, ytdNote: s.ytdNote,
+      hasNotes: s.notes.length > 0, notes: s.notes, notesHead: s.notesHead || '',
+      apName: s.apName, apLine: s.apLine, apNote: s.apNote,
+      footL: fileCode + ' · printed ' + s.printed + ' by Aisha Rahman (declared, not verified)', p1Of: 'Page 1 of ' + pages,
+      hasMark: !!s.mark, mark: s.mark, isLeaver,
+      parts: [
+        ['Part-month salary', '1 to 31 Dec 2026: 31 of 31 days, a full month of RM 7,800.00.', 'EPF, SOCSO and EIS, HRDF, PCB normal pay', '7,800.00'],
+        ['Travelling allowance', 'Fixed allowance on his staff record.', 'HRDF, PCB normal pay', '600.00'],
+        ['Annual leave not taken', '5 days left at his last day (12 of 12 months, 7 taken) × RM 300.00 a day (monthly pay ÷ 26).', 'EPF, SOCSO and EIS, PCB additional pay', '1,500.00', 'Check with KWSP whether leave paid out on leaving is EPF wages'],
+        ['Notice pay, or pay in lieu of notice', 'None: his contract ends on its date.', 'pay in lieu of notice is not EPF wages', '0.00'],
+        ['Termination benefits', 'Not due: he is retiring at the end of his contract, and he earns over RM 4,000 a month.', 'PCB additional pay', '0.00'],
+        ['Tax on loss of job', 'None: no compensation for loss of job is paid.', '—', '0.00'],
+        ['Advance balance', 'No advance left.', 'a deduction', '0.00']
+      ].map(a => ({ part: a[0], how: a[1], counts: a[2], amt: a[3], flag: a[4] || '', hasFlag: !!a[4] })),
+      isMail, mailTo: firstName,
+      mailHead: [{ k: 'From', v: co.name + ', HR' }, { k: 'To', v: mp.name + ' <' + mp.mail + '>' }, { k: 'Subject', v: 'Your payslip for October 2026' }, { k: 'Sent', v: view === 'email-failed' && st.who === 'S008' ? (st.retry === 'sent' ? 'Thu 22 Oct 2026, 16:24' : 'Not sent yet') : 'Thu 22 Oct 2026, 16:10' }],
+      mailBody, mailPwHref: 'HrStaffRecord.dc.html#' + mp.no, mailFile: co.short + ' Payslip 2026-10 ' + mp.no + '.pdf', co,
+      sentHead: 'October 2026 · ' + sentN + ' of 8 sent',
+      sentSub: 'Every person on the run with a work email. In October all 8 opened with their IC number: Wei Ming set his own password later, on 2 Nov.',
+      sends, rules
+    };
+  }
+}
+</script>
+</body>
+</html>

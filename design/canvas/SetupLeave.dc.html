@@ -1,0 +1,756 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup › HR · Leave types and policy · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:hover{background:#F8FAFD !important}
+.th:hover{color:#0F1A2B !important}
+input[readonly]{background:#F5F6F8 !important;color:#46546A !important}
+.hb,.hs,.hd,.hr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .8s linear infinite;box-sizing:border-box}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.sk{animation:none}.spin{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="{{shCo}}" kind="{{shKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="Leave types and policy" company="{{shCo}}" onCompany="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0">
+        <dc-import name="SetupNav" active="leave_policy" kind="{{navKind}}" payroll="{{navPayroll}}" hint-size="100%,1150px"></dc-import>
+      </div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Leave types and policy</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 660px">Each leave type's days, by years of service, for {{coLine}}. Filled in with the legal minimums, which are the entitlement. A value above the law shows a warning and is kept; a value below it is refused. A change applies from the date you choose, and earlier years keep what they had.</p>
+          </div>
+          <sc-if value="{{isReady}}" hint-placeholder-val="{{ true }}">
+            <button type="button" id="lv-add" class="hb" onClick="{{openNew}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a leave type</button>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+          <section aria-busy="true" aria-label="Loading leave types" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="padding: 14px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 12px; align-items: center"><span role="status" style="font-size: 13px; color: #46546A">Loading…</span><div class="sk" style="height: 30px; width: 280px; border-radius: 8px"></div></div>
+            <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 16px">
+              <sc-for list="{{skRows}}" as="k" hint-placeholder-count="6">
+                <div style="display: flex; gap: 16px; align-items: center"><div class="sk" style="height: 14px; width: 22%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 18%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 10%; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div><div class="sk" style="height: 22px; width: 120px; border-radius: 99px; margin-left: auto"></div></div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+          <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+            <span style="width: 52px; height: 52px; border-radius: 14px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="28" hint-size="28px,28px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+            <p style="margin: 0; color: #46546A; max-width: 460px; font-size: 13px">The leave policy couldn't be read from the records folder. Check the drive is connected, then try again. Nothing was changed.</p>
+            <button type="button" id="lv-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{noCo}}" hint-placeholder-val="{{ false }}">
+          <section class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+            <span style="width: 52px; height: 52px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="company" tone="brand" size="28" hint-size="28px,28px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Add a company first.</h2>
+            <p style="margin: 0; color: #46546A; max-width: 440px">Leave policy is set per company. When a company is added, its leave types are filled in here with the legal minimums.</p>
+            <a href="SetupCompanies.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="company" tone="white" size="18" hint-size="18px,18px"></dc-import>Go to Companies</a>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isReady}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="leave" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 4px"><span><b>Legal minimums: Employment Act 1955, as at Nov 2026.</b> They apply to every employee in Peninsular Malaysia and Labuan, whatever their salary. Check them each year.</span><span>Leave recorded beyond a person's legal days, or a value set here above the law, is a warning only. Nothing above the law is refused.</span></div></div>
+
+          <sc-if value="{{sabahOn}}" hint-placeholder-val="{{ false }}">
+            <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>AI's staff work in Sabah.</b> Sabah follows its own Labour Ordinance: check these minimums. The work location on each staff record decides which law the check uses.</span></div>
+          </sc-if>
+
+          <section aria-labelledby="lv-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <h2 id="lv-list-h" class="vh">Leave types for {{coCode}}</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+              <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 220px; max-width: 320px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search leave types" aria-label="Search leave types" aria-describedby="lv-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+              <span id="lv-count" role="status" aria-live="polite" style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{countTxt}}</span>
+              <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; {{sumStyle}}"><dc-import name="Icon" glyph="{{sumGlyph}}" tone="{{sumTone}}" size="14" hint-size="14px,14px"></dc-import>{{sumTxt}}</span>
+            </div>
+            <p style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">Click a leave type to change it. The days are per year unless the row says otherwise.</p>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 860px; border-collapse: collapse">
+                <caption class="vh">Leave types, the days the law gives and the company's policy</caption>
+                <thead>
+                  <tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px">
+                    <th scope="col" style="padding: 10px 18px; font-weight: 600">Leave type</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600">Days</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600">Paid</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600">Half days</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600">Certificate</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600">Carry forward</th>
+                    <th scope="col" style="padding: 10px 18px; font-weight: 600">Policy</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+                    <tr class="{{r.cls}}" onClick="{{r.open}}" style="border-top: 1px solid #EEF1F5; cursor: pointer; vertical-align: top">
+                      <td style="padding: 12px 18px"><button type="button" id="{{r.btnId}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; min-height: 24px; font: 600 14px Inter, sans-serif; color: inherit; cursor: pointer; text-align: left">{{r.name}}</button><div style="color: #5F6C80; font-size: 12px; max-width: 260px">{{r.sub}}</div></td>
+                      <td style="padding: 12px; font-variant-numeric: tabular-nums"><span style="font-weight: 600">{{r.days}}</span><div style="color: #5F6C80; font-size: 12px">{{r.daysSub}}</div><sc-if value="{{r.nextOn}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 4px; display: inline-flex; align-items: center; gap: 4px; color: #2450B8; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="calendar" tone="brand" size="13" hint-size="13px,13px"></dc-import>{{r.next}}</div></sc-if></td>
+                      <td style="padding: 12px; color: #46546A">{{r.paid}}</td>
+                      <td style="padding: 12px; color: #46546A">{{r.half}}</td>
+                      <td style="padding: 12px; color: #46546A">{{r.cert}}</td>
+                      <td style="padding: 12px; color: #46546A; max-width: 200px; font-size: 13px">{{r.carry}}</td>
+                      <td style="padding: 12px 18px"><span style="{{r.pillStyle}}"><dc-import name="Icon" glyph="{{r.pillGlyph}}" tone="{{r.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.pill}}</span><sc-if value="{{r.warnOn}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 6px; color: #934100; font-size: 12px; max-width: 220px">{{r.warn}}</div></sc-if></td>
+                    </tr>
+                  </sc-for>
+                  <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+                    <tr><td colspan="7" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="search" tone="muted" size="28" hint-size="28px,28px"></dc-import><span>No leave type matches “{{q}}”.</span><button type="button" class="hs" onClick="{{clearQ}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear the search</button></div></td></tr>
+                  </sc-if>
+                </tbody>
+              </table>
+            </div>
+            <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+                <span role="status" aria-live="polite" style="font-size: 13px; color: #46546A">{{moreTxt}}</span>
+                <button type="button" class="hs" onClick="{{showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreBtn}}</button>
+              </div>
+            </sc-if>
+          </section>
+
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+            <section aria-labelledby="lv-ph-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="calendar" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="lv-ph-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Public holidays</h2></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px">At least 11 paid days a year, 5 of them fixed by law. Which days depends on the state where the staff work: {{holState}} for {{coCode}}.</p>
+              <a href="SetupHolidays.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none">Set them on Public holidays<dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></a>
+            </section>
+            <section aria-labelledby="lv-who-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="staff" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="lv-who-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Who the minimums cover</h2></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px">Part-time staff (under 70% of normal hours) follow the Employment (Part-Time Employees) Regulations 2010. Interns are flagged on their record and get only the company's policy leave. Balances and the year-end carry forward are on HR › Leave.</p>
+              <a href="HrLeaveYear.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none">Open the leave year<dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></a>
+            </section>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 620px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 40px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="lv-title" aria-describedby="lv-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" aria-busy="{{savingAria}}" style="pointer-events: auto; width: 760px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="leave" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dEyebrow}}</span>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h2 id="lv-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2><sc-if value="{{dPillOn}}" hint-placeholder-val="{{ true }}"><span style="{{dPillStyle}}"><dc-import name="Icon" glyph="{{dPillGlyph}}" tone="{{dPillTone}}" size="14" hint-size="14px,14px"></dc-import>{{dPill}}</span></sc-if></div>
+          <span id="lv-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 20px">
+        <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+          <div id="lv-refuse" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A; font-size: 13px">{{refuseTxt}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{errSumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>Check the fields marked below.</b> {{errSum}}</span></div>
+        </sc-if>
+        <sc-if value="{{warnSumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="status" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>Above the law.</b> {{warnSum}} It can be saved: a value above the law is a warning only, and leave beyond a person's legal days is warned about when it is entered.</span></div>
+        </sc-if>
+        <sc-if value="{{dNoteOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{dNote}}</span></div>
+        </sc-if>
+
+        <sc-if value="{{nameOn}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="lv-f-name" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Name<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="lv-f-name" type="text" value="{{nameVal}}" onChange="{{onName}}" maxLength="60" aria-required="true" aria-invalid="{{nameInv}}" aria-describedby="{{nameBy}}" autoComplete="off" style="{{nameStyle}}">
+            <sc-if value="{{nameErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-name-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Give the leave type a name.</span></sc-if>
+            <span id="lv-f-name-hint" style="color: #5F6C80; font-size: 12px">A type the law doesn't have. It is company policy only, so no minimum applies.</span>
+          </div>
+        </sc-if>
+
+        <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{bandsLegend}}</legend>
+          <div style="display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px 16px; align-items: start">
+            <span aria-hidden="true" style="font-size: 12px; font-weight: 600; color: #5F6C80">{{bandHead}}</span><span aria-hidden="true" style="font-size: 12px; font-weight: 600; color: #5F6C80">The law gives</span><span aria-hidden="true" style="font-size: 12px; font-weight: 600; color: #5F6C80">This company gives</span>
+            <sc-for list="{{bands}}" as="b" hint-placeholder-count="3">
+              <label for="{{b.id}}" style="display: flex; flex-direction: column; min-height: 40px; justify-content: center; font-size: 14px; font-weight: 600">{{b.label}}<span style="font-size: 12px; font-weight: 500; color: #5F6C80">{{b.who}}</span></label>
+              <span style="display: flex; align-items: center; gap: 6px; min-height: 40px; color: #46546A; font-variant-numeric: tabular-nums"><sc-if value="{{b.lawOn}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import></sc-if>{{b.lawTxt}}</span>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; align-items: center; gap: 8px"><input id="{{b.id}}" type="text" inputMode="decimal" value="{{b.val}}" onChange="{{b.change}}" aria-invalid="{{b.inv}}" aria-describedby="{{b.by}}" autoComplete="off" style="{{b.style}}"><span style="color: #46546A; font-size: 13px">{{b.unit}}</span></div>
+                <sc-if value="{{b.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{b.errId}}" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{b.err}}</span></sc-if>
+                <sc-if value="{{b.warnOn}}" hint-placeholder-val="{{ false }}"><span id="{{b.warnId}}" style="display: flex; gap: 6px; align-items: flex-start; color: #934100; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="warn" size="15" hint-size="15px,15px"></dc-import>{{b.warn}}</span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{peopleOn}}" hint-placeholder-val="{{ false }}">
+            <span style="color: #5F6C80; font-size: 12px">Years of service are counted at 1 January of the leave year. A joiner's days are prorated in the year of joining; a leaver's by completed months. Days by grade aren't set up: the days here are by years of service only.</span>
+          </sc-if>
+        </fieldset>
+
+        <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">How it is taken</legend>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+            <sc-for list="{{ticks}}" as="t" hint-placeholder-count="3">
+              <div style="display: flex; flex-direction: column; gap: 4px">
+                <label for="{{t.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font-size: 14px; cursor: pointer"><input id="{{t.id}}" type="checkbox" checked="{{t.checked}}" onChange="{{t.change}}" disabled="{{t.dis}}" aria-describedby="{{t.by}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">{{t.label}}</label>
+                <span id="{{t.by}}" style="display: flex; gap: 4px; align-items: flex-start; color: #5F6C80; font-size: 12px"><sc-if value="{{t.lockOn}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import></sc-if>{{t.hint}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </fieldset>
+
+        <sc-if value="{{carryOn}}" hint-placeholder-val="{{ false }}">
+          <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+            <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Carry forward</legend>
+            <label for="lv-f-carry" style="font-size: 13px; font-weight: 600; color: #46546A">Untaken days can still be taken until</label>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><input id="lv-f-carry" type="text" inputMode="numeric" value="{{carryVal}}" onChange="{{onCarry}}" aria-invalid="{{carryInv}}" aria-describedby="{{carryBy}}" autoComplete="off" style="{{carryStyle}}"><span style="color: #46546A; font-size: 13px">months after the year ends</span><span style="display: inline-flex; align-items: center; gap: 4px; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>The law: 12 months</span></div>
+            <sc-if value="{{carryErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-carry-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{carryErr}}</span></sc-if>
+            <sc-if value="{{carryWarnOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-carry-warn" style="display: flex; gap: 6px; align-items: center; color: #934100; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="warn" size="15" hint-size="15px,15px"></dc-import>Above the law (12 months). It is kept as the company's policy.</span></sc-if>
+            <span id="lv-f-carry-hint" style="color: #5F6C80; font-size: 12px">Leave not taken by then lapses. Leave not taken is paid out when someone leaves. No carry forward beyond the law until the owner sets one.</span>
+            <div style="display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: #F5F6F8; font-size: 13px"><span style="font-weight: 600; color: #46546A">How many days may be carried forward</span><span style="display: inline-flex; align-items: center; gap: 6px; color: #46546A"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>All untaken days, as the law. A cap would give staff the Employment Act covers less than the law, so none is set.</span></div>
+          </fieldset>
+        </sc-if>
+
+        <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+          <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">When it applies</legend>
+          <label for="lv-f-from" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Applies from<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+          <input id="lv-f-from" type="date" value="{{fromVal}}" onChange="{{onFrom}}" aria-required="true" aria-invalid="{{fromInv}}" aria-describedby="{{fromBy}}" style="{{fromStyle}}">
+          <sc-if value="{{fromErrOn}}" hint-placeholder-val="{{ false }}"><span id="lv-f-from-err" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fromErr}}</span></sc-if>
+          <span id="lv-f-from-hint" style="color: #5F6C80; font-size: 12px">{{fromHint}}</span>
+        </fieldset>
+
+        <sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}">
+          <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <button type="button" class="fr" onClick="{{histToggle}}" aria-expanded="{{histExp}}" aria-controls="lv-hist" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{histChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{histCount}}</span></button>
+            <sc-if value="{{histOpen}}" hint-placeholder-val="{{ false }}">
+              <div id="lv-hist" class="ex" style="display: flex; flex-direction: column; gap: 12px">
+                <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+                  <sc-for list="{{hist}}" as="h" hint-placeholder-count="2">
+                    <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                      <span aria-hidden="true" style="{{h.dot}}"></span>
+                      <div style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                        <span style="font-size: 13px; color: #46546A">{{h.note}}</span>
+                      </div>
+                    </li>
+                  </sc-for>
+                </ol>
+                <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Open in the audit trail</a>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="lv-discard-q" aria-describedby="lv-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="lv-discard-q">Discard your changes?</b><div id="lv-discard-d" style="color: #5F6C80; font-size: 12px">{{discardTxt}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="lv-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="lv-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="lv-foot" role="status" style="display: inline-flex; align-items: center; gap: 8px; color: #5F6C80; font-size: 12px"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="lv-cancel" class="hs" onClick="{{askClose}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+              <button type="submit" id="lv-save" class="hb" aria-describedby="lv-foot" aria-disabled="{{savingAria}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; min-width: 128px; justify-content: center; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{saveLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","above-law","saving","saved","service","below-law","new-type","new-errors","dated","past-date","carry","history","discard","no-match","many","no-company","loading","error"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'list', (p && p.company) || 'aisb');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); }
+
+  // ---------- the leave types: the legal minimums (Employment Act 1955, Peninsular Malaysia and Labuan, as at Nov 2026) ----------
+  types() {
+    const PAID = 'Paid by law.';
+    const pre = { when: 'Mon 2 Nov 2026, 09:10', op: 'Filled in', who: 'The app', note: 'Filled in with the legal minimums (Employment Act 1955, as at Nov 2026).', kind: 'seed' };
+    const T = (id, name, sub, bands, o) => ({ id, name, sub, bands: bands.map(([label, law]) => ({ label, law, val: law })), unit: 'days', paid: 1, half: 0, cert: 0, locks: {}, carry: null, policy: false, custom: false, next: null, from: '2026-01-01', hist: [pre], ...o });
+    const P = (id, name, sub) => T(id, name, sub, [['Days a year', null]], { policy: true, paid: 0, bands: [{ label: 'Days a year', law: null, val: '' }],
+      hist: [{ ...pre, note: 'Added as a company policy type, not set. The law gives no minimum.' }] });
+    return [
+      T('annual', 'Annual leave', 'Prorated in the year of joining and by completed months in the year of leaving. Paid out on leaving.',
+        [['Under 2 years', 8], ['2 to 5 years', 12], ['5 years or more', 16]], { half: 1, carry: 12, locks: { paid: PAID } }),
+      T('sick', 'Sick leave', 'Without hospitalisation. Needs a medical certificate.',
+        [['Under 2 years', 14], ['2 to 5 years', 18], ['5 years or more', 22]], { cert: 1, locks: { paid: PAID, cert: 'Needed by law.' } }),
+      T('hosp', 'Hospitalisation', 'Includes the sick days above, not on top of them.', [['Days a year', 60]], { cert: 1, unit: 'days, up to', locks: { paid: PAID, cert: 'Needed by law.' } }),
+      T('mat', 'Maternity', 'In a row. Paid if employed 90 days in the 9 months before the birth, with fewer than 5 surviving children: HR confirms it.', [['Days in a row', 98]], { locks: { paid: 'Paid when eligible.', half: 'Taken in a row.' } }),
+      T('pat', 'Paternity', 'In a row, per birth, up to 5 births. Married male staff with 12 months’ service, 30 days’ notice.', [['Days in a row, per birth', 7]], { locks: { paid: PAID, half: 'Taken in a row.' } }),
+      P('unpaid', 'Unpaid leave', 'Flows to payroll as days to deduct.'),
+      P('comp', 'Compassionate leave', 'Company policy only.'),
+      P('marr', 'Marriage leave', 'Company policy only.'),
+      P('study', 'Study leave', 'Company policy only.'),
+      P('repl', 'Replacement leave', 'For a public holiday worked, by agreement.')
+    ];
+  }
+  extraTypes() {
+    const names = ['Birthday leave', 'Family care leave', 'Exam leave', 'Emergency leave', 'Volunteer leave', 'Moving house leave', 'Blood donation leave', 'Child care leave', 'Graduation leave', 'Sports leave', 'Long service leave', 'Wellness day', 'Disaster leave', 'Court attendance leave', 'Training leave', 'Sabbatical'];
+    const days = [1, 3, 2, 2, 1, 1, 1, 3, 1, 2, 5, 1, 3, 2, 3, 20];
+    return names.map((n, i) => ({ id: 'x' + i, name: n, sub: 'Company policy only.', bands: [{ label: 'Days a year', law: null, val: days[i] }], unit: 'days', paid: 1, half: i % 3 === 0 ? 1 : 0, cert: 0, locks: {}, carry: null, policy: true, custom: true, next: null, from: '2026-01-01',
+      hist: [{ when: 'Tue 10 Nov 2026, 14:0' + (i % 10), op: 'Added', who: 'Aisha Rahman', note: 'Added as a company type: ' + days[i] + (days[i] === 1 ? ' day' : ' days') + ' a year, paid.' }] }));
+  }
+
+  // ---------- states ----------
+  init(view, company) {
+    const co = String(company || 'aisb').toUpperCase() === 'AI' ? 'AI' : 'AISB';
+    const base = { co, phase: 'ready', noCo: false, recs: { AISB: this.types(), AI: this.types() }, q: '', limit: 25,
+      dlg: null, form: null, loaded: null, tried: false, refuse: '', confirm: false, saving: false, closing: false,
+      histOpen: false, footMsg: '', toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0 };
+    const recOf = id => base.recs[co].find(r => r.id === id);
+    const edit = (id, f, extra) => { const r = recOf(id); const form = this.formOf(r); const loaded = { ...form, vals: form.vals.slice() }; return { ...base, dlg: { id, isNew: false }, form: { ...form, ...(f || {}) }, loaded, ...(extra || {}) }; };
+    const neu = (f, extra) => { const form = this.blank(); return { ...base, dlg: { id: null, isNew: true }, form: { ...form, ...(f || {}) }, loaded: { ...form, vals: form.vals.slice() }, ...(extra || {}) }; };
+    switch (view) {
+      case 'loading': return { ...base, phase: 'loading' };
+      case 'error': return { ...base, phase: 'error' };
+      case 'no-company': return { ...base, phase: 'none', noCo: true };
+      case 'no-match': return { ...base, q: 'carer' };
+      case 'many': return { ...base, recs: { ...base.recs, [co]: [...base.recs[co], ...this.extraTypes()] } };
+      case 'above-law': return edit('annual', { vals: ['8', '14', '16'] });
+      case 'saving': return edit('annual', { vals: ['8', '14', '16'] }, { saving: true });
+      case 'saved': {
+        const s = { ...base };
+        const prev = recOf('annual');
+        const form = { ...this.formOf(prev), vals: ['8', '14', '16'] };
+        const next = this.commit(prev, form);
+        s.recs = { ...base.recs, [co]: base.recs[co].map(r => (r.id === 'annual' ? next : r)) };
+        return { ...s, toast: { text: this.savedText(prev, form), undo: true }, undo: { co, rec: prev }, flashId: 'annual', flashN: 1 };
+      }
+      case 'past-date': { const f = { vals: ['8', '13', '16'], from: '2025-03-01' }; return edit('annual', f, { tried: true, refuse: this.refusal(recOf('annual'), f.vals, '12', f.from) }); }
+      case 'service': return edit('annual', null, { people: true });
+      case 'below-law': return edit('sick', { vals: ['14', '18', '20'] }, { tried: true, refuse: this.refusal(recOf('sick'), ['14', '18', '20'], null) });
+      case 'new-type': return neu({ name: 'Birthday leave', vals: ['1'], paid: 1 });
+      case 'new-errors': return neu({ name: '', vals: [''] }, { tried: true });
+      case 'dated': return edit('comp', { vals: ['3'], paid: 1, from: '2027-01-01' });
+      case 'carry': return edit('annual', { carry: '18' });
+      case 'history': {
+        const s = { ...base };
+        const prev = recOf('annual');
+        const mid = { ...prev, hist: [{ when: 'Fri 13 Nov 2026, 16:20', op: 'Changed', who: 'Aisha Rahman', note: 'Half days allowed: No → Yes. From 1 Jan 2026.' }, { when: 'Fri 13 Nov 2026, 16:02', op: 'Changed', who: 'Aisha Rahman', note: 'Half days allowed: Yes → No. From 1 Jan 2026. Undone at 16:20.' }, ...prev.hist] };
+        s.recs = { ...base.recs, [co]: base.recs[co].map(r => (r.id === 'annual' ? mid : r)) };
+        const form = this.formOf(mid);
+        return { ...s, dlg: { id: 'annual', isNew: false }, form, loaded: { ...form, vals: form.vals.slice() }, histOpen: true };
+      }
+      case 'discard': return edit('annual', { vals: ['8', '13', '16'] }, { confirm: true });
+      default: return base;
+    }
+  }
+  blank() { return { name: '', vals: [''], paid: 1, half: 0, cert: 0, carry: '', from: '2026-01-01' }; }
+  formOf(r) { return { name: r.name, vals: r.bands.map(b => (b.val === '' || b.val == null ? '' : String(b.val))), paid: r.paid, half: r.half, cert: r.cert, carry: r.carry == null ? '' : String(r.carry), from: '2026-01-01' }; }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st);
+      const nx = this.init(this.props.view || 'list', this.props.company || 'aisb');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (st.dlg && !prev.dlg) { this.focusId('lv-title'); return; }
+    if (!st.dlg && prev.dlg) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('lv-add');
+      this._opener = null;
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('lv-keep'); return; }
+    if (prev.confirm && !st.confirm && st.dlg && !st.closing) this.focusId('lv-cancel');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+
+  // ---------- the rules ----------
+  num(v) { const s = String(v == null ? '' : v).trim(); return s === '' ? null : /^\d+(\.5)?$/.test(s) ? Number(s) : NaN; }
+  // field errors that stop a save (not the refusal below the law)
+  errors(form, r) {
+    const e = { bands: [], name: '', carry: '', from: '' };
+    if (!r && !String(form.name || '').trim()) e.name = 'name';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(form.from || ''))) e.from = 'Choose the date it applies from.';
+    form.vals.forEach((v, i) => {
+      const n = this.num(v), law = r ? r.bands[i].law : null;
+      if (n === null) e.bands[i] = law != null ? 'Enter the days. The law gives ' + law + '.' : (!r ? 'Enter the days a year.' : '');
+      else if (Number.isNaN(n)) e.bands[i] = 'A number of days, like 12 or 12.5.';
+      else e.bands[i] = '';
+    });
+    if (r && r.carry != null) { const c = this.num(form.carry); if (c === null || Number.isNaN(c) || c % 1) e.carry = 'A whole number of months, like 12.'; }
+    return e;
+  }
+  belowLaw(r, vals, carry) {
+    const out = [];
+    if (!r) return out;
+    vals.forEach((v, i) => { const n = this.num(v), law = r.bands[i].law; if (law != null && n != null && !Number.isNaN(n) && n < law) out.push({ i, label: r.bands[i].label, law }); });
+    if (r.carry != null && carry != null) { const c = this.num(carry); if (c != null && !Number.isNaN(c) && c < 12) out.push({ i: -1, label: 'Carry forward', law: 12 }); }
+    return out;
+  }
+  aboveLaw(r, vals, carry) {
+    const out = [];
+    if (!r) return out;
+    vals.forEach((v, i) => { const n = this.num(v), law = r.bands[i].law; if (law != null && n != null && !Number.isNaN(n) && n > law) out.push({ i, label: r.bands[i].label, law, n }); });
+    if (r.carry != null) { const c = this.num(carry); if (c != null && !Number.isNaN(c) && c > 12) out.push({ i: -1, label: 'Carry forward', law: 12, n: c }); }
+    return out;
+  }
+  // the current leave year starts 1 Jan 2026; earlier years are never rewritten
+  yearStart() { return '2026-01-01'; }
+  pastDate(from) { return !!from && String(from) < this.yearStart(); }
+  refusal(r, vals, carry, from) {
+    if (this.pastDate(from)) return 'Earlier leave years keep what they had, so a change can’t apply from ' + this.fmtDate(from) + '. Choose ' + this.fmtDate(this.yearStart()) + ' or later.';
+    const b = this.belowLaw(r, vals, carry);
+    if (!b.length) return '';
+    const x = b[0];
+    if (x.i < 0) return 'Untaken annual leave can be taken until 12 months after the year ends by law. A policy can’t make it shorter for staff the Employment Act covers.';
+    const band = r.bands.length > 1 ? ', ' + x.label.charAt(0).toLowerCase() + x.label.slice(1) : '';
+    return r.name + band + ': the law gives at least ' + x.law + ' days to staff the Employment Act covers, so a policy can’t give less. What you typed is kept below.';
+  }
+  status(r) {
+    if (r.policy) return r.bands.some(b => b.val !== '' && b.val != null) ? 'policy' : 'notset';
+    const up = r.bands.some(b => b.law != null && Number(b.val) > b.law) || (r.carry != null && r.carry > 12);
+    return up ? 'above' : 'law';
+  }
+  daysTxt(r, bands) {
+    const bs = bands || r.bands;
+    if (r.policy && bs.every(b => b.val === '' || b.val == null)) return '—';
+    if (bs.length > 1) return bs.map(b => b.val).join(' · ') + ' days';
+    const v = bs[0].val;
+    if (r.id === 'hosp') return 'Up to ' + v + ' days';
+    if (r.id === 'mat') return v + ' days in a row';
+    if (r.id === 'pat') return v + ' days per birth';
+    return v + (Number(v) === 1 ? ' day a year' : ' days a year');
+  }
+  fmtDate(iso) {
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+    return m ? Number(m[3]) + ' ' + M[Number(m[2]) - 1] + ' ' + m[1] : '—';
+  }
+  // what a save changes, in the words of the toast and the "From …" line (one sentence per change)
+  changeParts(r, form) {
+    const vals = form.vals.map(v => (String(v).trim() === '' ? '' : Number(v)));
+    const parts = [];
+    if (r.bands.some((b, i) => String(b.val) !== String(vals[i]))) parts.push(this.daysTxt(r, r.bands.map((b, i) => ({ ...b, val: vals[i] }))));
+    if (r.paid !== form.paid) parts.push(form.paid ? 'paid' : 'unpaid');
+    if (r.half !== form.half) parts.push(form.half ? 'half days allowed' : 'no half days');
+    if (r.cert !== form.cert) parts.push(form.cert ? 'certificate needed' : 'no certificate needed');
+    if (r.carry != null && Number(form.carry) !== r.carry) parts.push('untaken days until ' + Number(form.carry) + ' months after the year ends');
+    return parts;
+  }
+  savedText(r, form) {
+    const later = String(form.from) > this.yearStart();
+    return 'Saved. ' + r.name + ': ' + (this.changeParts(r, form).join(', ') || this.daysTxt(r)) + (later ? ' from ' : ', from ') + this.fmtDate(form.from) + '.';
+  }
+  // apply a saved form to a record: now, or as a change from a later date
+  commit(r, form) {
+    const vals = form.vals.map(v => (String(v).trim() === '' ? '' : Number(v)));
+    const carry = r.carry != null ? Number(form.carry) : null;
+    const later = String(form.from) > this.yearStart();
+    const when = 'Wed 18 Nov 2026, 10:15';
+    const changes = [];
+    r.bands.forEach((b, i) => { if (String(b.val) !== String(vals[i])) changes.push((r.bands.length > 1 ? b.label : 'Days') + ': ' + (b.val === '' ? 'not set' : b.val) + ' → ' + (vals[i] === '' ? 'not set' : vals[i])); });
+    if (r.paid !== form.paid) changes.push('Paid: ' + (r.paid ? 'Yes' : 'No') + ' → ' + (form.paid ? 'Yes' : 'No'));
+    if (r.half !== form.half) changes.push('Half days allowed: ' + (r.half ? 'Yes' : 'No') + ' → ' + (form.half ? 'Yes' : 'No'));
+    if (r.cert !== form.cert) changes.push('Certificate needed: ' + (r.cert ? 'Yes' : 'No') + ' → ' + (form.cert ? 'Yes' : 'No'));
+    if (carry != null && carry !== r.carry) changes.push('Carry forward: ' + r.carry + ' → ' + carry + ' months');
+    const note = (changes.join('. ') || 'Saved with no change') + '. From ' + this.fmtDate(form.from) + '.' + (this.aboveLaw(r, form.vals, form.carry).length ? ' Above the law: warned, kept.' : '');
+    const h = { when, op: 'Changed', who: 'Aisha Rahman', note };
+    if (later) return { ...r, next: { from: this.fmtDate(form.from), bands: r.bands.map((b, i) => ({ ...b, val: vals[i] })), paid: form.paid, half: form.half, cert: form.cert, carry, txt: this.changeParts(r, form).join(', ') || this.daysTxt(r) }, hist: [h, ...r.hist] };
+    return { ...r, bands: r.bands.map((b, i) => ({ ...b, val: vals[i] })), paid: form.paid, half: form.half, cert: form.cert, carry, hist: [h, ...r.hist] };
+  }
+
+  // ---------- actions ----------
+  list(co) { return this.state.recs[co || this.state.co] || []; }
+  rec(id) { return this.list().find(r => r.id === id) || null; }
+  openRec(id) {
+    const st = this.state;
+    if (st.dlg) return;
+    this._opener = document.activeElement;
+    const r = this.rec(id);
+    if (!r) return;
+    const form = this.formOf(r);
+    this.setState({ dlg: { id, isNew: false }, form, loaded: { ...form, vals: form.vals.slice() }, tried: false, refuse: '', confirm: false, saving: false, closing: false, histOpen: false, footMsg: '', people: false });
+  }
+  openNew() {
+    if (this.state.dlg) return;
+    this._opener = document.activeElement;
+    const form = this.blank();
+    this.setState({ dlg: { id: null, isNew: true }, form, loaded: { ...form, vals: form.vals.slice() }, tried: false, refuse: '', confirm: false, saving: false, closing: false, histOpen: false, footMsg: '', people: false });
+  }
+  dirty() { const st = this.state; return !!st.dlg && JSON.stringify(st.form) !== JSON.stringify(st.loaded); }
+  askClose() {
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDlg();
+  }
+  closeDlg() {
+    const st = this.state;
+    if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.dlg) return;
+    const next = { dlg: null, closing: false, confirm: false, saving: false, refuse: '', tried: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = this.state.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  setForm(patch) { const st = this.state; this.setState({ form: { ...st.form, ...patch }, footMsg: '', refuse: st.refuse && (patch.vals || patch.from !== undefined || patch.carry !== undefined) ? '' : st.refuse }); }
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    const r = st.dlg.isNew ? null : this.rec(st.dlg.id);
+    const errs = this.errors(st.form, r);
+    const firstBand = errs.bands.findIndex(x => !!x);
+    if (errs.name || firstBand >= 0 || errs.carry || errs.from) {
+      this._focusId = errs.name ? 'lv-f-name' : firstBand >= 0 ? 'lv-f-b' + firstBand : errs.carry ? 'lv-f-carry' : 'lv-f-from';
+      this.setState({ tried: true, refuse: '' });
+      return;
+    }
+    const why = this.refusal(r, st.form.vals, st.form.carry, st.form.from);
+    if (why) { this._focusId = 'lv-refuse'; this.setState({ tried: true, refuse: why }); return; }
+    if (!st.dlg.isNew && !this.dirty()) { this.setState({ footMsg: 'Nothing has changed.' }); return; }
+    this.setState({ saving: true });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => this.finishSave(), 700);
+  }
+  finishSave() {
+    const st = this.state;
+    if (!st.dlg || !st.saving) return;
+    if (st.dlg.isNew) {
+      const v = this.num(st.form.vals[0]);
+      const id = 'n' + (this.list().length + 1);
+      const r = { id, name: String(st.form.name).trim(), sub: 'Company policy only.', bands: [{ label: 'Days a year', law: null, val: v }], unit: 'days', paid: st.form.paid, half: st.form.half, cert: st.form.cert, locks: {}, carry: null, policy: true, custom: true, next: null, from: st.form.from,
+        hist: [{ when: 'Wed 18 Nov 2026, 10:15', op: 'Added', who: 'Aisha Rahman', note: 'Added as a company type: ' + v + (v === 1 ? ' day' : ' days') + ' a year, ' + (st.form.paid ? 'paid' : 'unpaid') + '. From ' + this.fmtDate(st.form.from) + '.' }] };
+      this._changed = id;
+      this.setState({ recs: { ...st.recs, [st.co]: [...this.list(), r] }, undo: { co: st.co, addId: id } });
+      this.closeDlg();
+      this.toast(r.name + ' added.', { undo: true });
+      return;
+    }
+    const prev = this.rec(st.dlg.id);
+    const next = this.commit(prev, st.form);
+    this._changed = prev.id;
+    this.setState({ recs: { ...st.recs, [st.co]: this.list().map(r => (r.id === prev.id ? next : r)) }, undo: { co: st.co, rec: prev } });
+    this.closeDlg();
+    this.toast(this.savedText(prev, st.form), { undo: true });
+  }
+  undo() {
+    const st = this.state, u = st.undo;
+    if (!u) return;
+    const list = st.recs[u.co] || [];
+    const recs = u.addId ? list.filter(r => r.id !== u.addId) : list.map(r => (r.id === u.rec.id ? u.rec : r));
+    this.setState({ recs: { ...st.recs, [u.co]: recs }, undo: null, flashId: u.rec ? u.rec.id : null, flashN: st.flashN + 1 });
+    this.toast(u.addId ? 'Leave type removed again.' : 'Change undone. ' + u.rec.name + ' is as it was.');
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+
+  // ---------- what the page shows ----------
+  renderVals() {
+    const st = this.state;
+    const co = st.co, isAI = co === 'AI';
+    const SH = { AISB: ['aisb', 'sqlPayroll', 'sql', 'true'], AI: ['ai', 'here', 'here', 'false'] }[co];
+    const PILL = { law: ['Same as the law', 'ok', 'check', '#E3F7EC', '#0A6B3D'], above: ['Above the law', 'warn', 'alert', '#FEF1D6', '#934100'], policy: ['Company policy', 'brand', 'sliders', '#EAF0FD', '#2450B8'], notset: ['Company policy: not set', 'muted', 'sliders', '#EEF1F5', '#46546A'] };
+    const pillStyle = k => 'display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + PILL[k][3] + ';color:' + PILL[k][4];
+    const all = this.list();
+    const q = String(st.q || '').trim().toLowerCase();
+    const match = all.filter(r => !q || (r.name + ' ' + r.sub + ' ' + PILL[this.status(r)][0]).toLowerCase().includes(q));
+    const shown = match.slice(0, st.limit);
+    const rows = shown.map(r => {
+      const k = this.status(r), up = this.aboveLaw(r, r.bands.map(b => b.val), r.carry);
+      const nb = r.next ? r.next.bands : null;
+      const multi = r.bands.length > 1;
+      return { id: r.id, name: r.name, sub: r.sub, btnId: 'lv-r-' + r.id,
+        cls: 'hr' + (st.flashId === r.id ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        days: this.daysTxt(r), daysSub: multi ? r.bands.map(b => b.label.replace(' years', '').replace(' or more', '+')).join(' · ') + ' years' : (r.policy && k === 'notset' ? 'Set by the company' : (r.bands[0].law != null ? 'The law: ' + r.bands[0].law : 'No legal minimum')),
+        nextOn: !!r.next, next: r.next ? 'From ' + r.next.from + ': ' + (r.next.txt || this.daysTxt(r, nb)) : '',
+        paid: r.paid ? 'Yes' : 'No', half: r.half ? 'Yes' : 'No', cert: r.cert ? 'Needed' : '—',
+        carry: r.carry != null ? (r.carry === 12 ? 'As the law: until 12 months after the year ends' : 'Until ' + r.carry + ' months after the year ends') : 'Not carried forward',
+        pill: PILL[k][0], pillTone: PILL[k][1], pillGlyph: PILL[k][2], pillStyle: pillStyle(k),
+        warnOn: k === 'above', warn: up.map(u => (u.i < 0 ? 'Carry forward ' + u.n + ' months (law 12)' : (multi ? u.label + ': ' : '') + u.n + ' days (law ' + u.law + ')')).join('; ') + '. Kept; a warning only.',
+        open: () => this.openRec(r.id) };
+    });
+    const nLaw = all.filter(r => !r.policy).length, nAbove = all.filter(r => this.status(r) === 'above').length, nSet = all.filter(r => this.status(r) === 'policy').length, nNot = all.filter(r => this.status(r) === 'notset').length;
+    const sumKey = nAbove ? 'above' : 'law';
+    const sumTxt = nAbove ? nAbove + ' above the law (warning only)' : 'Every type the law sets: same as the law';
+    const countTxt = (q ? match.length + ' of ' + all.length + ' match' : all.length + ' leave types') + ' · ' + nLaw + ' set by law' + (nSet ? ', ' + nSet + ' company policy' : '') + (nNot ? ', ' + nNot + ' not set' : '');
+
+    // the dialog
+    const dlg = st.dlg, f = st.form;
+    const r = dlg && !dlg.isNew ? this.rec(dlg.id) : null;
+    const isNew = !!(dlg && dlg.isNew);
+    let v = {};
+    if (dlg && f) {
+      const errs = this.errors(f, r);
+      const below = this.belowLaw(r, f.vals, f.carry), above = this.aboveLaw(r, f.vals, f.carry);
+      const fromRefused = !!st.refuse && this.pastDate(f.from);
+      const refused = !!st.refuse && !fromRefused;
+      const fromErr = (st.tried && errs.from) || (fromRefused ? 'Earlier years keep what they had.' : '');
+      const bandsSrc = r ? r.bands : [{ label: 'Days a year', law: null }];
+      // who is on each band's days this leave year (service counted at 1 Jan 2026; 2026 joiners are on the first band), per company (samples sections 5 and 8)
+      const PEOPLE = { AISB: [['Jia Hui', 'Izzati', 'Daniel'], ['Wei Ming', 'Kah Seng'], ['Aisha', 'Aina', 'Hafiz', 'Khadijah']], AI: [['Rina'], ['Pei Shan', 'Priya', 'Jun Wei'], ['Faizal']] }[co] || [[], [], []];
+      const field = (bad, warn) => 'height:40px;width:96px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;font-variant-numeric:tabular-nums;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : warn ? '#C77700' : '#8792A2');
+      const bands = bandsSrc.map((b, i) => {
+        const id = 'lv-f-b' + i;
+        const fieldErr = st.tried ? errs.bands[i] : '';
+        const low = refused && below.find(x => x.i === i);
+        const err = fieldErr || (low ? 'The law gives at least ' + b.law + ' days.' : '');
+        const hi = above.find(x => x.i === i);
+        return { id, label: b.label, who: st.people && r && r.id === 'annual' && PEOPLE[i] ? PEOPLE[i].length + ' in ' + co + ' on this year’s days: ' + PEOPLE[i].join(', ') : '',
+          lawOn: b.law != null, lawTxt: b.law != null ? b.law + (b.law === 1 ? ' day' : ' days') : 'No minimum: company policy',
+          val: f.vals[i], unit: r && r.id === 'hosp' ? 'days at most' : 'days',
+          change: e => { const vals = this.state.form.vals.slice(); vals[i] = e.target.value; this.setForm({ vals }); },
+          inv: err ? 'true' : 'false', errOn: !!err, err, errId: id + '-err',
+          warnOn: !err && !!hi, warn: hi ? 'Above the law (' + b.law + ' days). Kept as the company’s policy.' : '', warnId: id + '-warn',
+          by: err ? id + '-err' : hi ? id + '-warn' : '', style: field(!!err, !!hi) };
+      });
+      const lockOf = k => (r && r.locks && r.locks[k]) || '';
+      const tick = (k, label, hint) => ({ id: 'lv-f-' + k, label, checked: !!f[k], dis: !!lockOf(k), lockOn: !!lockOf(k), hint: lockOf(k) || hint, by: 'lv-f-' + k + '-h',
+        change: e => this.setForm({ [k]: e.target.checked ? 1 : 0 }) });
+      const ticks = [tick('paid', 'Paid', 'Unpaid days are deducted in payroll.'), tick('half', 'Half days allowed', 'Morning or afternoon.'), tick('cert', 'Certificate needed', 'Attached when the leave is entered.')];
+      const carryOn = !!(r && r.carry != null);
+      const cErr = st.tried && errs.carry ? errs.carry : (refused && below.some(x => x.i < 0) ? 'The law: at least 12 months.' : '');
+      const cWarn = !cErr && above.some(x => x.i < 0);
+      const k = r ? this.status(r) : 'policy';
+      const later = String(f.from) > '2026-01-01';
+      const nameErr = st.tried && !!errs.name;
+      const errList = [];
+      if (st.tried && !st.refuse) { if (errs.name) errList.push('Name'); errs.bands.forEach((x, i) => { if (x) errList.push(bandsSrc[i].label); }); if (errs.carry) errList.push('Carry forward'); if (errs.from) errList.push('Applies from'); }
+      v = {
+        dEyebrow: 'Setup › HR · Leave types and policy · ' + co,
+        dTitle: isNew ? 'Add a leave type' : r.name,
+        dSub: isNew ? 'A company type, on top of the ones the law sets.' : (r.policy ? 'Company policy only: the law sets no minimum.' : 'Employment Act 1955 · the legal minimums are the entitlement.'),
+        dPillOn: !isNew, dPill: PILL[k][0], dPillTone: PILL[k][1], dPillGlyph: PILL[k][2], dPillStyle: pillStyle(k),
+        dNoteOn: !isNew && !!r.sub, dNote: r ? r.sub : '', dIsEdit: !isNew,
+        refuseOn: !!st.refuse, refuseTxt: st.refuse,
+        errSumOn: errList.length > 0, errSum: errList.join(', ') + '.',
+        warnSumOn: !st.refuse && above.length > 0, warnSum: above.map(u => (u.i < 0 ? 'Carry forward: ' + u.n + ' months, the law 12.' : (bandsSrc.length > 1 ? u.label + ': ' : '') + u.n + ' days, the law ' + u.law + '.')).join(' '),
+        nameOn: isNew, nameVal: f.name, onName: e => this.setForm({ name: e.target.value }), nameInv: nameErr ? 'true' : 'false', nameErrOn: nameErr, nameBy: nameErr ? 'lv-f-name-err lv-f-name-hint' : 'lv-f-name-hint',
+        nameStyle: 'height:40px;width:100%;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;border:1px solid ' + (nameErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+        bandsLegend: bandsSrc.length > 1 ? 'Days a year, by years of service' : 'Days', bandHead: bandsSrc.length > 1 ? 'Years of service' : 'Entitlement',
+        bands, peopleOn: bandsSrc.length > 1, ticks,
+        carryOn, carryVal: f.carry, onCarry: e => this.setForm({ carry: e.target.value }), carryInv: cErr ? 'true' : 'false', carryErrOn: !!cErr, carryErr: cErr, carryWarnOn: cWarn,
+        carryBy: cErr ? 'lv-f-carry-err lv-f-carry-hint' : cWarn ? 'lv-f-carry-warn lv-f-carry-hint' : 'lv-f-carry-hint',
+        carryStyle: field(!!cErr, cWarn).replace('width:96px', 'width:72px'),
+        fromVal: f.from, onFrom: e => this.setForm({ from: e.target.value || '' }),
+        fromInv: fromErr ? 'true' : 'false', fromErrOn: !!fromErr, fromErr, fromBy: fromErr ? 'lv-f-from-err lv-f-from-hint' : 'lv-f-from-hint',
+        fromStyle: 'height:40px;width:200px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;border:1px solid ' + (fromErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+        fromHint: later ? 'The 2026 leave year keeps what it has. From ' + this.fmtDate(f.from) + ' the new days apply; balances for that year are worked out with them.' : 'From the start of the 2026 leave year. Earlier years keep what they had. Pick a later date to change it from then.',
+        histOpen: !!st.histOpen, histExp: st.histOpen ? 'true' : 'false', histChev: st.histOpen ? 'chev on' : 'chev', histCount: r ? r.hist.length : 0,
+        histToggle: () => this.setState({ histOpen: !this.state.histOpen }),
+        hist: (r ? r.hist : []).map(h => ({ op: h.op, who: h.who, when: h.when, note: h.note, dot: 'width:10px;height:10px;margin-top:5px;border-radius:99px;box-sizing:border-box;' + (h.kind === 'seed' ? 'background:#FFFFFF;border:2px solid #8792A2' : 'background:#0A6B3D') })),
+        confirmOn: !!st.confirm, footOn: !st.confirm,
+        discardTxt: isNew ? 'The new leave type isn’t added.' : 'Your changes to ' + r.name + ' aren’t saved. It stays as it is.',
+        footDirty: this.dirty() && !st.saving, footNote: st.saving ? 'Saving…' : st.footMsg ? st.footMsg : this.dirty() ? 'Not saved yet' : (isNew ? 'Recorded in the audit trail when added.' : 'Changes are recorded in the audit trail.'),
+        saveLabel: st.saving ? 'Saving…' : isNew ? 'Add leave type' : 'Save changes', savingAria: st.saving ? 'true' : 'false'
+      };
+    }
+    const D = { dEyebrow: '', dTitle: '', dSub: '', dPillOn: false, dPill: '', dPillTone: 'muted', dPillGlyph: 'check', dPillStyle: '', dNoteOn: false, dNote: '', dIsEdit: false, refuseOn: false, refuseTxt: '', errSumOn: false, errSum: '', warnSumOn: false, warnSum: '',
+      nameOn: false, nameVal: '', onName: () => {}, nameInv: 'false', nameErrOn: false, nameBy: '', nameStyle: '', bandsLegend: '', bandHead: '', bands: [], peopleOn: false, ticks: [], carryOn: false, carryVal: '', onCarry: () => {}, carryInv: 'false', carryErrOn: false, carryErr: '', carryWarnOn: false, carryBy: '', carryStyle: '',
+      fromVal: '', onFrom: () => {}, fromHint: '', fromInv: 'false', fromErrOn: false, fromErr: '', fromBy: 'lv-f-from-hint', fromStyle: '', histOpen: false, histExp: 'false', histChev: 'chev', histCount: 0, histToggle: () => {}, hist: [], confirmOn: false, footOn: true, discardTxt: '', footDirty: false, footNote: '', saveLabel: 'Save changes', savingAria: 'false' };
+
+    return {
+      ...D, ...v,
+      shCo: SH[0], shKind: SH[1], navKind: SH[2], navPayroll: SH[3],
+      onTopCo: code => { const u = String(code || '').toUpperCase(); if (u === 'AISB' || u === 'AI') this.setState({ co: u, q: '', limit: 25 }); },
+      anyDlg: !!dlg,
+      isReady: st.phase === 'ready', isLoading: st.phase === 'loading', isError: st.phase === 'error', noCo: !!st.noCo,
+      retry: () => this.setState({ phase: 'ready' }),
+      skRows: [1, 2, 3, 4, 5, 6],
+      coCode: co, coLine: isAI ? 'AI (Agrinexus International)' : 'AISB (AISB Sdn Bhd)', sabahOn: isAI, holState: isAI ? 'Sabah' : 'Wilayah Persekutuan Kuala Lumpur',
+      q: st.q, onQ: e => this.setState({ q: e.target.value, limit: 25 }), clearQ: () => this.setState({ q: '' }),
+      countTxt, sumTxt, sumGlyph: PILL[sumKey][2], sumTone: PILL[sumKey][1], sumStyle: 'background:' + PILL[sumKey][3] + ';color:' + PILL[sumKey][4],
+      rows, emptyOn: rows.length === 0,
+      moreOn: match.length > 25, moreTxt: 'Showing ' + shown.length + ' of ' + match.length + ' leave types', moreBtn: shown.length < match.length ? 'Show ' + Math.min(25, match.length - shown.length) + ' more' : 'Show fewer',
+      showMore: () => this.setState({ limit: this.state.limit < match.length ? this.state.limit + 25 : 25 }),
+      openNew: () => this.openNew(),
+      dlgOn: !!dlg, dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      onPanelAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      askClose: () => this.askClose(), save: e => this.save(e), saving: !!st.saving,
+      keepEditing: () => this.setState({ confirm: false }), discard: () => { this.setState({ confirm: false }); this.closeDlg(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (this.state.confirm) this.setState({ confirm: false }); else this.askClose(); return; }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo), toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      toastUndo: () => this.undo(),
+      onToastAnim: () => { if (this.state.toastLeaving) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt), toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Printed staff record, leave and claim lists</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg,.pl{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.pl:hover{background:#EAF0FD !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .18s ease-out}
+.swapB{animation:swapB .18s ease-out}
+.sv{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;background:#0F1A2B;color:#FFFFFF;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ph-opt{display:flex;gap:10px;align-items:flex-start;min-height:40px;padding:8px 10px;border-radius:10px;border:1px solid #E3E7ED;cursor:pointer;box-sizing:border-box}
+.ph-opt:hover{background:#F8FAFD}
+.ph-opt input{width:18px;height:18px;margin:2px 0 0;flex:none;accent-color:#2450B8;cursor:pointer}
+.ph-paper dd{margin:0}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="{{sbActive}}" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="{{tbPage}}" sub="{{tbSub}}" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="{{backHref}}" class="hg" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 4px; margin: -6px 0 4px -4px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{backLabel}}</a>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Printed staff record, leave and claim lists</h1>
+        <p style="margin: 0; color: #46546A; max-width: 820px">What HR prints from its own pages: one person's staff record, the leave taken and booked in a month, leave balances at a date, and the claims of a month. Each opens as a PDF in a new tab, A4 portrait, English, black on white. Every page is HR's own paper and says so.</p>
+      </div>
+
+      <div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C7D6F7">
+        <span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="lock" tone="brand" size="20" hint-size="20px,20px"></dc-import></span>
+        <p style="margin: 0; color: #0F1A2B; max-width: 940px"><b>Personal data on paper.</b> The staff record is the one place the full IC number prints; everywhere else it is masked to the last 4, the payslip included. Race and religion are left out unless chosen. Pay prints only for someone with the Payroll figures right. Leave types print on HR's own lists, never anywhere else, and no medical detail prints at all. Each print is kept in the audit trail.</p>
+      </div>
+
+      <div role="group" aria-label="State to show" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%">
+        <sc-for list="{{states}}" as="s" hint-placeholder-count="6"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+        <section aria-labelledby="ph-lead-h" class="rv" style="flex: 2 1 440px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="{{leadGlyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ph-lead-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{leadTitle}}</h2></div>
+          <p style="margin: 0; color: #46546A">{{leadText}}</p>
+          <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="5"><dt style="color: #5F6C80; font-weight: 600">{{f.k}}</dt><dd style="margin: 0; color: #0F1A2B; min-width: 0; overflow-wrap: anywhere">{{f.v}}</dd></sc-for>
+          </dl>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: auto">
+            <a href="{{backHref}}" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px; text-decoration: none">{{openLabel}}</a>
+            <a href="AuditTrail.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px; text-decoration: none">Audit trail</a>
+          </div>
+        </section>
+
+        <sc-if value="{{isRecord}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="ph-opt-h" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+            <h2 id="ph-opt-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What goes on it</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px">Asked each time, before the PDF opens. The page beside changes as you choose.</p>
+            <label class="ph-opt" for="ph-sens">
+              <input id="ph-sens" type="checkbox" checked="{{sens}}" onChange="{{toggleSens}}" aria-describedby="ph-sens-h">
+              <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+                <span style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-weight: 600; font-size: 13px">Race and religion<span class="sv"><dc-import name="Icon" glyph="lock" tone="white" size="14" hint-size="14px,14px"></dc-import>Sensitive</span></span>
+                <span id="ph-sens-h" style="color: #46546A; font-size: 12px">Left out unless chosen. Nobody at AISB has them recorded, so choosing prints “Not recorded”. The choice is kept in the audit trail.</span>
+              </span>
+            </label>
+            <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+              <legend style="padding: 0; margin-bottom: 8px; font-weight: 600; font-size: 13px">Printed by</legend>
+              <sc-for list="{{byOpts}}" as="o" hint-placeholder-count="2">
+                <label class="ph-opt" for="{{o.id}}">
+                  <input id="{{o.id}}" type="radio" name="ph-by" checked="{{o.on}}" onChange="{{o.pick}}">
+                  <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-weight: 600; font-size: 13px">{{o.name}}</span><span style="color: #46546A; font-size: 12px">{{o.hint}}</span></span>
+                </label>
+              </sc-for>
+              <span style="color: #5F6C80; font-size: 12px">Until logins exist, the name is the one declared at the keyboard. The board draws both readings.</span>
+            </fieldset>
+          </section>
+        </sc-if>
+        <sc-if value="{{isList}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="ph-holds-h" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+            <h2 id="ph-holds-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What the list holds</h2>
+            <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+              <sc-for list="{{holds}}" as="h" hint-placeholder-count="4"><li>{{h.t}}</li></sc-for>
+            </ul>
+          </section>
+        </sc-if>
+      </div>
+
+      <section aria-labelledby="ph-paper-h" style="background: #E9ECF1; border: 1px solid #DDE2EA; border-radius: 16px; padding: 20px 24px 28px; overflow-x: auto">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 16px">
+          <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+          <h2 id="ph-paper-h" style="margin: 0; font-size: 14px; font-weight: 600">{{fileName}}</h2>
+          <span style="color: #46546A; font-size: 13px">{{pageCount}} · A4 portrait, 210 × 297 mm, drawn at print size · opens in a new tab</span>
+        </div>
+        <div class="{{swapCls}} ph-paper" style="display: flex; flex-direction: column; gap: 28px; align-items: center; width: max-content; margin: 0 auto">
+          <sc-for list="{{pages}}" as="pg" hint-placeholder-count="2">
+            <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+              <span style="font-size: 12px; font-weight: 600; color: #46546A">{{pg.caption}}</span>
+              <article aria-label="{{pg.aria}}" style="position: relative; flex: none; width: 210mm; height: 297mm; box-sizing: border-box; padding: 13mm 15mm 11mm; background: #FFFFFF; color: #000000; font-family: Inter, Arial, sans-serif; font-size: 9pt; line-height: 1.35; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 1px 3px rgba(16,24,40,.22), 0 10px 28px rgba(16,24,40,.14)">
+                <sc-if value="{{pg.first}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6mm">
+                    <div style="display: flex; flex-direction: column; gap: 0.6mm; min-width: 0">
+                      <b style="font-size: 11pt">{{pg.coName}}</b>
+                      <span style="font-size: 8pt; color: #333333">{{pg.coReg}}</span>
+                      <sc-if value="{{pg.coAddrOn}}" hint-placeholder-val="{{ true }}"><span style="font-size: 8pt; color: #333333">{{pg.coAddr}}</span></sc-if>
+                    </div>
+                    <div style="flex: none; border: 1.2pt solid #000000; padding: 1.5mm 3mm; text-align: center"><b style="display: block; font-size: 9.5pt">Confidential: personal data</b><span style="font-size: 7.5pt">HR's own file. Keep it locked away.</span></div>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 6mm; margin-top: 5mm; padding-bottom: 2.5mm; border-bottom: 1.2pt solid #000000">
+                    <div style="display: flex; flex-direction: column; gap: 0.8mm; min-width: 0"><h2 style="margin: 0; font: 600 16pt 'Space Grotesk', Inter, sans-serif">{{pg.title}}</h2><span style="font-size: 9.5pt">{{pg.sub}}</span></div>
+                    <span style="flex: none; font-size: 8pt; color: #333333; text-align: right; white-space: pre-line">{{pg.printedAt}}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{pg.cont}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; justify-content: space-between; align-items: center; gap: 6mm; padding-bottom: 2mm; border-bottom: 1.2pt solid #000000; font-size: 8.5pt">
+                    <span style="min-width: 0">{{pg.contLine}}</span>
+                    <b style="flex: none; border: 1pt solid #000000; padding: 0.6mm 2mm">Confidential: personal data</b>
+                  </div>
+                </sc-if>
+                <div style="display: flex; flex-direction: column; gap: 4.5mm; margin-top: 4.5mm">
+                  <sc-for list="{{pg.blocks}}" as="b" hint-placeholder-count="5">
+                    <section style="display: flex; flex-direction: column; gap: 1.5mm">
+                      <sc-if value="{{b.hasHead}}" hint-placeholder-val="{{ true }}"><h3 style="margin: 0; font-size: 10pt; font-weight: 700; padding-bottom: 1mm; border-bottom: 0.75pt solid #000000">{{b.head}}</h3></sc-if>
+                      <sc-if value="{{b.isBox}}" hint-placeholder-val="{{ false }}"><div style="border: 1pt solid #000000; padding: 2mm 3mm; display: flex; flex-direction: column; gap: 0.8mm"><b>{{b.boxTitle}}</b><span>{{b.boxText}}</span></div></sc-if>
+                      <sc-if value="{{b.isKv}}" hint-placeholder-val="{{ true }}">
+                        <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 7mm">
+                          <sc-for list="{{b.kv}}" as="k" hint-placeholder-count="6"><div style="{{k.st}}"><dt style="color: #333333">{{k.l}}</dt><dd style="{{k.vst}}">{{k.v}}<sc-if value="{{k.subOn}}" hint-placeholder-val="{{ false }}"><span style="display: block; font-size: 7.5pt; font-weight: 400; font-family: Inter, Arial, sans-serif; color: #333333">{{k.sub}}</span></sc-if></dd></div></sc-for>
+                        </dl>
+                      </sc-if>
+                      <sc-if value="{{b.isTable}}" hint-placeholder-val="{{ false }}">
+                        <sc-if value="{{b.gOn}}" hint-placeholder-val="{{ false }}"><div style="display: flex; justify-content: space-between; align-items: baseline; gap: 4mm"><b style="font-size: 9.5pt; min-width: 0">{{b.gLeft}}</b><b style="flex: none; font-variant-numeric: tabular-nums">{{b.gRight}}</b></div></sc-if>
+                        <sc-if value="{{b.gSubOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 8pt">{{b.gSub}}</span></sc-if>
+                        <table style="{{b.tblSt}}">
+                          <thead><tr><sc-for list="{{b.cols}}" as="c" hint-placeholder-count="5"><th scope="col" style="{{c.st}}">{{c.t}}</th></sc-for></tr></thead>
+                          <tbody><sc-for list="{{b.rows}}" as="r" hint-placeholder-count="3"><tr><sc-for list="{{r.cells}}" as="x" hint-placeholder-count="5"><td style="{{x.st}}">{{x.t}}<sc-if value="{{x.subOn}}" hint-placeholder-val="{{ false }}"><span style="display: block; font-size: 7.5pt; font-weight: 400; color: #333333">{{x.sub}}</span></sc-if></td></sc-for></tr></sc-for></tbody>
+                        </table>
+                      </sc-if>
+                      <sc-if value="{{b.isText}}" hint-placeholder-val="{{ false }}"><sc-for list="{{b.paras}}" as="q" hint-placeholder-count="1"><p style="{{q.st}}">{{q.t}}</p></sc-for></sc-if>
+                    </section>
+                  </sc-for>
+                </div>
+                <div style="margin-top: auto; display: flex; flex-direction: column; gap: 1.5mm; padding-top: 3mm; font-size: 7.5pt; color: #333333">
+                  <span>{{pg.byLine}}</span>
+                  <span style="display: flex; justify-content: space-between; gap: 4mm; border-top: 0.75pt solid #000000; padding-top: 1.5mm; color: #000000"><span>{{pg.footLeft}}</span><b style="flex: none">{{pg.pageNo}}</b></span>
+                </div>
+              </article>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+        <section aria-labelledby="ph-rules-h" style="flex: 3 1 480px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <h2 id="ph-rules-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What every HR printout follows</h2>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <sc-for list="{{rules}}" as="r" hint-placeholder-count="6"><div style="display: flex; gap: 8px"><span style="flex: none"><dc-import name="Icon" glyph="{{r.glyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import></span><span><b style="color: #0F1A2B">{{r.name}}</b> {{r.text}}</span></div></sc-for>
+          </div>
+        </section>
+        <section aria-labelledby="ph-from-h" style="flex: 2 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <h2 id="ph-from-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Where each one is printed from</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 13px">
+            <sc-for list="{{froms}}" as="w" hint-placeholder-count="4"><li style="display: flex; flex-direction: column; gap: 2px; padding: 6px 0; border-bottom: 1px solid #F1F3F7"><a href="{{w.href}}" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; text-decoration: none">{{w.label}}</a><span style="color: #46546A">{{w.note}}</span></li></sc-for>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"staff","options":["staff","staff-race-religion","staff-no-pay-figures","leaver","leave-october","balances-31-dec","claims-october","empty-period"],"section":"State to show"},"$preview":{"width":1440,"height":5000}}'>
+class Component extends DCLogic {
+  // HR › printed pages (scope 5.1 to 5.5, 9; review board 40; samples sections 2, 4, 5, 8, 10, 11).
+  // New work: the app prints no HR pages yet. The staff record is the one place the full IC number prints;
+  // the full numbers below are made up for the board (birthplace code 17), built from the masked last 4 in samples.md.
+  constructor(p) {
+    super(p);
+    // A link can name the printout: PrintHrLists.dc.html#leaver, #leave-october, #balances-31-dec, #claims-october,
+    // #empty-period, #staff-no-pay-figures. It applies on first load, over the default state.
+    let v = (p && p.view) || 'staff', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'staff' && ['staff-race-religion', 'staff-no-pay-figures', 'leaver', 'leave-october', 'balances-31-dec', 'claims-october', 'empty-period'].includes(h)) v = h;
+    this.state = this.init(v);
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) this.setState(this.init(this.props.view || 'staff'));
+  }
+  init(view) {
+    const V = {
+      'staff': ['staff', false, 'aisha'], 'staff-race-religion': ['staff', true, 'aisha'], 'staff-no-pay-figures': ['staff', false, 'aina'],
+      'leaver': ['leaver', false, 'aisha'], 'leave-october': ['leave', false, 'aisha'], 'balances-31-dec': ['balances', false, 'aisha'],
+      'claims-october': ['claims', false, 'aisha'], 'empty-period': ['empty', false, 'aisha']
+    }[view] || ['staff', false, 'aisha'];
+    return { stage: V[0], sens: V[1], by: V[2], say: '', swap: 0 };
+  }
+
+  // ---------- the company head, as Setup › Companies holds it (stage 1 section 2) ----------
+  co(code) {
+    return {
+      AISB: { name: 'AISB Sdn Bhd', reg: 'Registration no. 201901023456 (1331234-K)', addr: 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor' },
+      AI: { name: 'Agrinexus International', reg: 'Registration no. 202001045678 (1378901-W)', addr: '' }
+    }[code];
+  }
+
+  // ---------- paper building blocks ----------
+  blk(o) { return { hasHead: false, head: '', isBox: false, boxTitle: '', boxText: '', isKv: false, kv: [], isTable: false, gOn: false, gLeft: '', gRight: '', gSubOn: false, gSub: '', tblSt: '', cols: [], rows: [], isText: false, paras: [], ...o }; }
+  kv(head, items) {
+    return this.blk({ hasHead: !!head, head: head || '', isKv: true, kv: items.filter(Boolean).map(([l, v, o]) => {
+      o = o || {};
+      return { l, v: v == null || v === '' ? '—' : v, subOn: !!o.sub, sub: o.sub || '',
+        st: 'display:grid;grid-template-columns:31mm minmax(0,1fr);gap:2mm;padding:1mm 0;border-bottom:0.5pt solid #B3B3B3' + (o.full ? ';grid-column:1 / -1' : ''),
+        vst: 'margin:0;' + (o.mono ? 'font-family:ui-monospace,Consolas,monospace;font-weight:700;letter-spacing:.02em' : o.b ? 'font-weight:700' : '') };
+    }) });
+  }
+  box(title, text) { return this.blk({ isBox: true, boxTitle: title, boxText: text }); }
+  text(paras, head) { return this.blk({ hasHead: !!head, head: head || '', isText: true, paras: paras.map(t => ({ t, st: 'margin:0;font-size:8.5pt' })) }); }
+  th(t, num, w) { return { t, st: 'text-align:' + (num ? 'right' : 'left') + ';font-weight:700;padding:1mm 1.5mm;border-bottom:1pt solid #000000;vertical-align:bottom' + (w ? ';width:' + w : '') }; }
+  td(t, o) {
+    o = o || {};
+    return { t: t == null || t === '' ? (o.blank ? '' : '—') : String(t), subOn: !!o.sub, sub: o.sub || '',
+      st: 'padding:1.1mm 1.5mm;border-bottom:0.5pt solid #B3B3B3;vertical-align:top;' + (o.num ? 'text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;' : '') + (o.b ? 'font-weight:700;' : '') + (o.nw ? 'white-space:nowrap;' : '') + (o.top ? 'border-top:1pt solid #000000;' : '') };
+  }
+  table(head, cols, rows, g) {
+    g = g || {};
+    return this.blk({ hasHead: !!head, head: head || '', isTable: true, gOn: !!g.left, gLeft: g.left || '', gRight: g.right || '', gSubOn: !!g.sub, gSub: g.sub || '',
+      tblSt: 'width:100%;border-collapse:collapse;font-size:8.5pt' + (g.fixed ? ';table-layout:fixed' : ''),
+      cols: cols.map(c => typeof c === 'string' ? this.th(c) : this.th(c[0], c[1], c[2])), rows: rows.map(cells => ({ cells })) });
+  }
+  page(o) {
+    const C = this.co(o.co);
+    return { first: o.n === 1, cont: o.n > 1, coName: C.name, coReg: C.reg, coAddrOn: !!C.addr, coAddr: C.addr,
+      title: o.title || '', sub: o.sub || '', printedAt: o.at || '', contLine: o.contLine || '', blocks: o.blocks,
+      byLine: 'Printed by ' + o.byName + ', as declared on this computer (declared, not verified).',
+      footLeft: o.foot, pageNo: 'Page ' + o.n + ' of ' + o.of,
+      caption: 'Page ' + o.n + ' of ' + o.of + (o.n > 1 ? ' · the head repeats in short' : ''),
+      aria: 'Page ' + o.n + ' of ' + o.of + ', ' + o.what };
+  }
+
+  // ---------- the staff record (Wong Kah Seng, S006) ----------
+  staffPages(sens, pay, byName, at) {
+    const T = (head, cols, rows, g) => this.table(head, cols, rows, g), D = (t, o) => this.td(t, o);
+    const raceRow = sens ? ['Race and religion', 'Not recorded', { sub: 'Chosen for this printout. Optional, only with written consent.' }] : null;
+    const p1 = [
+      this.box('Leaving on Thu 31 Dec 2026 · Retiring.', 'His contract ends the same day. CP22A is due by Tue 1 Dec 2026 (30 days before); it starts the hold on his final pay until LHDN’s clearance letter arrives or 90 days pass.'),
+      this.kv('Personal', [
+        ['Full name as on IC', 'Wong Kah Seng'], ['Preferred name', 'Kah Seng'],
+        ['IC number', '661012-00-1035', { mono: true, sub: 'In full on this record only.' }], ['Date of birth', '12 Oct 1966 · aged 60'],
+        ['Gender', 'Male'], ['Nationality and citizenship', 'Malaysian · Citizen'],
+        raceRow, ['Marital status', 'Married'],
+        ['Address, phone, personal email', 'Not recorded', { full: sens }]
+      ]),
+      this.kv('Job', [
+        ['Employer', 'AISB Sdn Bhd'], ['Staff number', 'S006'], ['Position', 'IT support'], ['Department', 'IT'],
+        ['Employment type', 'Contract, 1 Jan 2024 to 31 Dec 2026'], ['Date joined', '1 Jan 2024 · 2 years 10 months'],
+        ['Working week', '5 days, 8 hours a day'], ['Manual work', 'No', { sub: 'Overtime rules apply only up to RM 4,000.00 a month.' }],
+        ['Work location', 'Peninsular Malaysia'], ['Reports to', 'Hassan Ismail'],
+        ['Work email', 'kahseng@aisb.example'], ['Last day and reason', 'Thu 31 Dec 2026 · Retiring', { sub: 'CP22A due by Tue 1 Dec 2026' }]
+      ]),
+      this.kv('Statutory numbers', [
+        ['EPF (KWSP) number', 'On file'], ['SOCSO (PERKESO) number', 'On file'],
+        ['Income tax number (TIN)', 'On file'], ['First contributions', 'With an earlier employer, before 55']
+      ])
+    ];
+    const p2 = [
+      T('Statutory categories, worked out for November 2026 pay', ['Scheme', 'Category', ['Employee', true], ['Employer', true], 'Why'], [
+        [D('EPF', { b: true }), D('Malaysian citizen, 60 and over', { sub: pay ? 'To October 2026 pay: Under 60, 11% / 12%' : 'To October 2026 pay: Under 60, 11% / 13% or 12%' }), D('0%', { num: true }), D('4%', { num: true }), D('From the pay of the month after the 60th birthday.')],
+        [D('SOCSO', { b: true }), D('Second category (injury only)', { sub: 'To October 2026 pay: First category, 0.5% / 1.75%' }), D('0%', { num: true }), D('1.25%', { num: true }), D('60 and over: employment injury only.')],
+        [D('EIS', { b: true }), D('Not covered', { sub: 'To October 2026 pay: Covered, 0.2% / 0.2%' }), D('—', { num: true }), D('—', { num: true }), D('EIS ends at 60.')],
+        [D('Lindung 24 Jam', { b: true, nw: true }), D('Covered', { sub: 'Check with PERKESO whether a worker aged 60 or over still pays' }), D('0.75%', { num: true }), D('0%', { num: true }), D('From 1 June 2026, wages up to RM 6,000.00.')],
+        [D('HRDF', { b: true }), D('Counted'), D('—', { num: true }), D('—', { num: true }), D('Malaysian: counted for the HRDF headcount. AISB isn’t HRDF registered, so no levy.')]
+      ]),
+      this.text(['Kah Seng turned 60 on Mon 12 Oct 2026. October was still paid at the under-60 rates; the 60-and-over rates start with November 2026 pay, the month after the month of the birthday. This is common payroll practice, not a published rule: check with KWSP and PERKESO.'])
+    ];
+    const p3 = [];
+    if (pay) {
+      p2.push(this.kv('Pay', [
+        ['Basic', '7,800.00 a month from 1 Jan 2024'], ['Fixed allowances', 'Travelling 600.00 a month'],
+        ['Employer-paid insurance', 'None'], ['Bank', 'RHB ····3390', { mono: true }],
+        ['How paid', 'Bank transfer'], ['Payslip password', 'IC number, without dashes', { sub: 'The rule only. The password itself never prints.' }]
+      ]));
+      p2.push(T('', ['', ['Basic', true], ['Travelling', true], ['Overtime', true], ['Gross', true], ['EPF', true], ['SOCSO', true], ['EIS', true], ['PCB', true], ['Net pay', true]], [
+        [D('Staff', { b: true }), D('7,800.00', { num: true }), D('600.00', { num: true }), D('847.90', { num: true }), D('9,247.90', { num: true, b: true }), D('858.00', { num: true }), D('29.75', { num: true }), D('11.90', { num: true }), D('1,000.00', { num: true }), D('7,348.25', { num: true, b: true })],
+        [D('Employer', { b: true }), D('', { num: true, blank: true }), D('', { num: true, blank: true }), D('', { num: true, blank: true }), D('', { num: true, blank: true }), D('936.00', { num: true }), D('104.15', { num: true }), D('11.90', { num: true }), D('', { num: true, blank: true }), D('', { num: true, blank: true })]
+      ], { left: 'October 2026 pay (paid Sat 24 Oct)', right: 'Net 7,348.25' }));
+      p2.push(this.text(['From November 2026 pay, at the 60-and-over rates: EPF 0.00 employee / 312.00 employer, SOCSO 0.00 / 74.40, no EIS. The 847.90 in October was weekend overtime on the server move (contractual; he is above the RM 4,000.00 line).']));
+    } else {
+      p2.push(this.box('Pay is left out.', 'Printed without the Payroll figures right, so the basic, allowances, bank, payslip password rule and the month’s pay are not on this record. Someone with that right prints them.'));
+    }
+    p2.push(this.kv('PCB details', [
+      ['Tax resident', 'Yes'], ['Tax category', '3 · married, spouse working'], ['Children by relief type', 'None'],
+      ['Spouse disabled, person disabled', 'Not declared'], ['Zakat through payroll', 'None'], ['TP1, TP2, TP3 forms', 'TP1 (2026) on file']
+    ]));
+    p3.push(this.kv('Emergency contact and notes', [['Emergency contact', 'Not recorded'], ['Phone', '—'], ['Notes', 'No notes', { full: true }]]));
+    p3.push(T('Leave 2026', ['Dates', 'Type', ['Days', true], 'Status', 'Note'], [
+      [D('Mon 2 Nov 2026', { nw: true }), D('Sick leave'), D('1', { num: true }), D('Taken'), D('Certificate attached')]
+    ], { left: 'Annual leave at Wed 18 Nov 2026: 12 by law · 7 taken · 0 booked · 5 left', sub: 'Leaving 31 Dec: 12 of 12 months. Untaken days are paid out in his final pay. Sick leave from 1 Oct: 1 of 18 days.' }));
+    p3.push(T('Claims and advances', ['Claim', 'Lines', ['Amount', true], 'Status'], [
+      [D('CL-2611-001', { nw: true }), D('Phone 145.00 (October bill)'), D('145.00', { num: true }), D('Waiting for approval', { sub: 'On form AF-2611-005, printed Tue 17 Nov' })]
+    ], { sub: 'No advances.' }));
+    p3.push(T('Documents', ['Kind', 'Description', 'Expires'], [
+      [D('IC or passport copy'), D('IC copy'), D('—')], [D('Offer letter'), D('Offer letter'), D('—')],
+      [D('Contract'), D('Contract, 1 Jan 2024 to 31 Dec 2026'), D('Thu 31 Dec 2026', { b: true, nw: true })], [D('TP1'), D('TP1 (2026)'), D('—')]
+    ], { sub: 'Listed only: the files are kept under a code, not the person’s name, and are not printed.' }));
+    p3.push(T('Coming up', ['Date', 'What', 'Reminder'], [
+      [D('Tue 1 Dec 2026', { nw: true }), D('CP22A for Kah Seng'), D('Leaver task (retiring 31 Dec); starts the tax-clearance hold')],
+      [D('Thu 31 Dec 2026', { nw: true }), D('Contract ends and last day'), D('60 and 30 days before')]
+    ]));
+    p3.push(T('History', ['When', 'Who', 'What'], [
+      [D('Tue 17 Nov 2026, 16:40', { nw: true }), D('Aisha Rahman', { nw: true }), D('Claim CL-2611-001 (Phone, 145.00) printed on approval form AF-2611-005.')],
+      [D('Mon 2 Nov 2026, 09:15', { nw: true }), D('Aisha Rahman', { nw: true }), D('Sick leave Mon 2 Nov, 1 day, certificate attached.')],
+      [D('Sun 1 Nov 2026, 00:00', { nw: true }), D('The app', { nw: true }), D('Statutory categories from November 2026 pay: EPF 60 and over (0% / 4%), SOCSO second category, no EIS. Turned 60 on 12 Oct 2026.')]
+    ]));
+    const base = { co: 'AISB', of: 3, byName, foot: 'Staff record S006 · Confidential: personal data', what: 'staff record of Wong Kah Seng, S006' };
+    return [
+      this.page({ ...base, n: 1, title: 'Staff record', sub: 'Wong Kah Seng (Kah Seng) · S006 · In employment, leaving Thu 31 Dec 2026', at: 'Printed Wed 18 Nov 2026, ' + at + '\nRecord as at that time', blocks: p1 }),
+      this.page({ ...base, n: 2, contLine: 'AISB Sdn Bhd · Staff record · Wong Kah Seng (S006), continued', blocks: p2 }),
+      this.page({ ...base, n: 3, contLine: 'AISB Sdn Bhd · Staff record · Wong Kah Seng (S006), continued', blocks: p3 })
+    ];
+  }
+
+  // ---------- the leaver record (Kavitha Nair, S010) ----------
+  leaverPages(sens, pay, byName, at) {
+    const T = (head, cols, rows, g) => this.table(head, cols, rows, g), D = (t, o) => this.td(t, o);
+    const raceRow = sens ? ['Race and religion', 'Not recorded', { sub: 'Chosen for this printout. Optional, only with written consent.' }] : null;
+    const p1 = [
+      this.box('Left on Mon 31 Aug 2026 · Resigned.', 'Off the current lists. The record is kept until 31 Dec 2033, 7 years after the year of the last pay (pay and tax records), and can be removed after that. It can’t be deleted before: it has pay, leave and an advance.'),
+      this.kv('Personal', [
+        ['Full name as on IC', 'Kavitha Nair'], ['Preferred name', 'Kavitha'],
+        ['IC number', '960808-00-3306', { mono: true, sub: 'In full on this record only.' }], ['Date of birth', '8 Aug 1996 · aged 30'],
+        ['Gender', 'Female'], ['Nationality and citizenship', 'Malaysian · Citizen'],
+        raceRow, ['Marital status', 'Single'],
+        ['Address, phone, personal email', 'Not recorded', { full: sens }]
+      ]),
+      this.kv('Job', [
+        ['Employer', 'AISB Sdn Bhd'], ['Staff number', 'S010'], ['Position', 'Marketing executive'], ['Department', 'Marketing'],
+        ['Employment type', 'Permanent'], ['Date joined', '1 Jul 2023 · 3 years 1 month to the last day'],
+        ['Working week', '5 days, 8 hours a day'], ['Work location', 'Peninsular Malaysia'],
+        ['Last day and reason', 'Mon 31 Aug 2026 · Resigned', { b: true }], ['Moved company', 'None'],
+        ['Tax forms at leaving', 'No CP22A or CP21 for this reason.', { full: true }]
+      ]),
+      this.kv('Statutory numbers', [
+        ['EPF (KWSP) number', 'On file'], ['SOCSO (PERKESO) number', 'On file'],
+        ['Income tax number (TIN)', 'On file'], ['Statutory categories', 'Not worked out after the last day']
+      ]),
+      this.kv('PCB details', [
+        ['Tax resident', 'Yes'], ['Tax category', '1 · single'], ['Children by relief type', 'None'],
+        ['Spouse disabled, person disabled', 'Not declared'], ['Zakat through payroll', 'None'], ['TP1, TP2, TP3 forms', 'None given']
+      ])
+    ];
+    const p2 = [];
+    if (pay) {
+      p2.push(this.kv('Pay', [
+        ['Last basic', '3,200.00 a month', { sub: 'Until the last day, 31 Aug 2026' }], ['Fixed allowances', 'None'],
+        ['Bank', 'Maybank ····1196', { mono: true }], ['How paid', 'Bank transfer'],
+        ['Payslip password', 'IC number, without dashes', { sub: 'The rule only. The password itself never prints.', full: true }]
+      ]));
+      p2.push(this.text(['Her pay records stay until 31 Dec 2033. August final pay: RM 1,600.00 of advance SA-2606-001 taken off, the 50% limit on RM 3,200.00 of wages. RM 400.00 is still to collect.']));
+    } else {
+      p2.push(this.box('Pay is left out.', 'Printed without the Payroll figures right, so the last basic, bank, payslip password rule and the final pay are not on this record.'));
+    }
+    p2.push(this.kv('Emergency contact and notes', [['Emergency contact', 'Not recorded'], ['Phone', '—'], ['Notes', 'No notes', { full: true }]]));
+    // Without the Payroll figures right the final-pay deduction stays hidden, so Amount and Repaid are left out too:
+    // with them (or Amount alone, given July's 400.00 and Left) the 1,600.00 could be worked out.
+    if (pay) {
+      p2.push(T('Advance', ['Advance', 'Schedule', ['Amount', true], ['Repaid', true], ['Left', true]], [
+        [D('SA-2606-001', { nw: true }), D('RM 400.00 a month from Jul 2026', { sub: 'Before approval forms were kept' }), D('2,400.00', { num: true }), D('2,000.00', { num: true }), D('400.00', { num: true, b: true })]
+      ], { left: 'RM 400.00 to collect', sub: 'Closed at leaving: 400.00 repaid in July, 1,600.00 from the August final pay.' }));
+    } else {
+      p2.push(T('Advance', ['Advance', 'Schedule', ['Left', true]], [
+        [D('SA-2606-001', { nw: true }), D('RM 400.00 a month from Jul 2026', { sub: 'Before approval forms were kept' }), D('400.00', { num: true, b: true })]
+      ], { left: 'RM 400.00 to collect', sub: 'Closed at leaving: 400.00 repaid in July; part came off her August final pay (amount hidden: no Payroll figures right).' }));
+    }
+    p2.push(this.text(['No balance kept after leaving: annual leave not taken was settled in the final pay. Her 2026 leave stays in the records with her pay.'], 'Leave 2026'));
+    p2.push(this.text(['No claims. No documents kept. No reminders: Kavitha left on Mon 31 Aug 2026.'], 'Claims, documents and reminders'));
+    p2.push(T('History', ['When', 'Who', 'What'], [
+      [D('Mon 31 Aug 2026, 17:30', { nw: true }), D('Aisha Rahman', { nw: true }), D(pay ? 'Left on Mon 31 Aug 2026: Resigned. Advance balance RM 2,000.00: RM 1,600.00 from the final pay, RM 400.00 to collect.' : 'Left on Mon 31 Aug 2026: Resigned. Advance balance: RM 400.00 to collect.')]
+    ]));
+    const base = { co: 'AISB', of: 2, byName, foot: 'Staff record S010 · Left · Confidential: personal data', what: 'leaver record of Kavitha Nair, S010' };
+    return [
+      this.page({ ...base, n: 1, title: 'Staff record · Left', sub: 'Kavitha Nair (Kavitha) · S010 · Left on Mon 31 Aug 2026', at: 'Printed Wed 18 Nov 2026, ' + at + '\nKept until 31 Dec 2033', blocks: p1 }),
+      this.page({ ...base, n: 2, contLine: 'AISB Sdn Bhd · Staff record · Kavitha Nair (S010), left, continued', blocks: p2 })
+    ];
+  }
+
+  // ---------- leave taken and booked, October 2026 (AISB) ----------
+  leavePages(byName, at) {
+    const T = (head, cols, rows, g) => this.table(head, cols, rows, g), D = (t, o) => this.td(t, o);
+    const blocks = [
+      this.kv('', [
+        ['Month', 'October 2026, 1 to 31 Oct'], ['Entries', '2 · none cancelled in the month'],
+        ['Public holidays', 'Wilayah Persekutuan Kuala Lumpur, rest day Sunday · none in October 2026', { full: true }]
+      ]),
+      T('', ['Staff', 'Type', 'Dates', ['In Oct', true], ['In all', true], 'Status', 'Note'], [
+        [D('Nor Khadijah binti Omar', { sub: 'S005 · Khadijah' }), D('Maternity'), D('Mon 5 Oct 2026 to Sun 10 Jan 2027'), D('27', { num: true }), D('98', { num: true }), D('Taken'), D('98 days in a row; back on Mon 11 Jan 2027. Eligibility confirmed by Aisha Rahman on Thu 1 Oct 2026: paid.')],
+        [D('Ong Wei Ming', { sub: 'S002 · Wei Ming' }), D('Annual leave'), D('Wed 14 Oct 2026, half day (morning)'), D('0.5', { num: true }), D('0.5', { num: true }), D('Taken'), D('')]
+      ]),
+      T('Days in October by type', ['Type', ['People', true], ['Days', true]], [
+        [D('Annual leave'), D('1', { num: true }), D('0.5', { num: true })],
+        [D('Maternity'), D('1', { num: true }), D('27', { num: true })]
+      ]),
+      this.text([
+        'Days in October count the days of each entry that fall in the month. Maternity counts 98 days in a row, rest days and holidays included; annual leave counts working days only.',
+        'Leave from 1 Oct 2026 is entered here. Annual leave taken from 1 Jan to 30 Sep 2026 is in the opening balances, imported from “Leave balances 2026.xlsx” on Wed 4 Nov 2026 by Aisha Rahman.',
+        'Medical certificates stay attached to the leave in the app; no medical detail prints.'
+      ])
+    ];
+    return [this.page({ co: 'AISB', n: 1, of: 1, byName, title: 'Leave taken and booked', sub: 'October 2026 · every entry with a day in the month, by start date', at: 'Printed Wed 18 Nov 2026, ' + at, blocks, foot: 'Leave AISB October 2026 · Confidential: personal data', what: 'leave taken and booked at AISB in October 2026' })];
+  }
+
+  // ---------- leave balances at 31 Dec 2026 (AISB) ----------
+  balancePages(byName, at) {
+    const T = (head, cols, rows, g) => this.table(head, cols, rows, g), D = (t, o) => this.td(t, o);
+    const R = (name, sub, svc, svcSub, law, taken, bal, note, o) => [D(name, { sub }), D(svc, { sub: svcSub }), D(law, { num: true }), D(taken, { num: true }), D('0', { num: true }), D(bal, { num: true, b: true, sub: o && o.warn ? 'Warning' : '' }), D(note)];
+    const blocks = [
+      T('', ['Staff', 'Service', ['By law', true], ['Taken', true], ['Booked', true], ['Balance', true], 'Note'], [
+        R('Aisha Rahman', 'S001 · Permanent', '7 years', '', '16', '11', '5', ''),
+        R('Ong Wei Ming', 'S002 · Permanent', '5 years', '2 to 5 years at 1 Jan 2026', '12', '8.5', '3.5', ''),
+        R('Nurul Aina binti Hashim', 'S003 · Permanent', '10 years', '', '16', '14', '2', ''),
+        R('Mohd Hafiz bin Rosli', 'S004 · Permanent', '7 years', '', '16', '11', '5', ''),
+        R('Nor Khadijah binti Omar', 'S005 · Permanent', '6 years', '', '16', '6', '10', 'On maternity leave until Sun 10 Jan 2027'),
+        R('Wong Kah Seng', 'S006 · Contract to 31 Dec 2026', '2 years 10 months', 'Leaving 31 Dec: 12 of 12 months', '12', '7', '5', 'Leaving 31 Dec: untaken days are paid out in his final pay'),
+        R('Goh Jia Hui', 'S007 · On probation', 'Joined 1 Sep 2026', '8 × 4/12 = 2.67, rounded to 3', '3', '4', '−1', 'Taken 4: 1 day beyond her legal days. A warning only.', { warn: true }),
+        R('Nur Izzati binti Kamal', 'S008 · Permanent', '1 year 10 months', '', '8', '5', '3', ''),
+        R('Daniel Lee Chee Keong', 'S009 · On probation', 'Joined 3 Nov 2026', '8 × 2/12 = 1.33, rounded to 1', '1', '0', '1', '')
+      ], { left: 'Annual leave 2026 at Thu 31 Dec 2026', right: '9 people', sub: 'Booked leave up to this date counts as taken, so nothing is still booked: Hafiz’s Fri 20 Nov and Jia Hui’s Mon 7 to Thu 10 Dec are in Taken.' }),
+      T('Other leave at Thu 31 Dec 2026', ['Staff', 'Leave', 'Where it stands'], [
+        [D('Wong Kah Seng', { sub: 'S006' }), D('Sick leave from 1 Oct'), D('1 of 18 days (Mon 2 Nov, certificate attached)')],
+        [D('Nor Khadijah binti Omar', { sub: 'S005' }), D('Maternity'), D('88 of 98 days used (from Mon 5 Oct 2026); back on Mon 11 Jan 2027')]
+      ], { sub: 'No one else has sick, hospitalisation, paternity or unpaid leave from 1 Oct.' }),
+      this.text([
+        'By law: 8, 12 or 16 days by years of service at 1 Jan 2026, prorated for joiners and leavers. Balance = by law + carried forward − taken − booked. A balance below zero is a warning only, never refused.',
+        'Printed on Wed 18 Nov 2026 for a later date: leave entered after the print changes these figures. Kavitha Nair (S010, left 31 Aug 2026) is not listed: no balance is kept after leaving.'
+      ])
+    ];
+    return [this.page({ co: 'AISB', n: 1, of: 1, byName, title: 'Leave balances', sub: 'Annual leave 2026, at Thu 31 Dec 2026 · everyone in employment', at: 'Printed Wed 18 Nov 2026, ' + at, blocks, foot: 'Leave balances AISB at 31 Dec 2026 · Confidential: personal data', what: 'annual leave balances at AISB at 31 December 2026' })];
+  }
+
+  // ---------- claims, October 2026 (AISB) ----------
+  claimPages(byName, at) {
+    const D = (t, o) => this.td(t, o);
+    const cols = [['Date', false, '16mm'], ['Type', false, '28mm'], 'Description', ['Expense account', false, '40mm'], ['Receipt', false, '18mm'], ['Amount', true, '18mm']];
+    const L = (d, type, desc, acct, rec, amt, flag) => [D(d, { nw: true }), D(type), D(desc, { sub: flag }), D(acct), D(rec), D(amt, { num: true })];
+    const claim = (left, right, sub, lines) => this.table('', cols, lines, { left, right, sub, fixed: true });
+    const blocks = [
+      claim('CL-2610-004 · Oct 2026 Claims - Wei Ming · Ong Wei Ming (S002)', '486.50', 'Approved on AF-2611-003 (Tan Mei Ling, 12 Nov) · in To pay, due Sat 14 Nov: past due', [
+        L('Tue 6 Oct', 'Parking and toll', 'Parking, client visit', '900-860 Travelling', '1 receipt', '12.00'),
+        L('Wed 14 Oct', 'Client meals', 'Client lunch', '900-870 Entertainment', '1 receipt', '186.50', 'Over limit: over the RM 150.00 monthly limit by RM 36.50 (limit set 12 Nov, after the form was printed; the approval stands)'),
+        L('Thu 22 Oct', 'Mileage', '480 km at RM 0.60 a km', '900-860 Travelling', 'Trip log', '288.00')
+      ]),
+      claim('CL-2610-005 · Oct 2026 Claims - Aina · Nurul Aina binti Hashim (S003)', '408.00', 'Approved on AF-2611-003 (Tan Mei Ling, 12 Nov) · in To pay, due Fri 20 Nov', [
+        L('Mon 5 Oct', 'Mileage', '240 km at RM 0.60 a km', '900-860 Travelling', 'Trip log', '144.00'),
+        L('Mon 12 Oct', 'Parking and toll', 'Parking and toll, bank visits', '900-860 Travelling', '2 receipts', '64.00'),
+        L('Wed 21 Oct', 'Stationery and materials', 'Office stationery', '900-800 Printing, postage and stationery', '1 receipt', '200.00')
+      ]),
+      claim('CL-2610-007 · Oct 2026 Claims - Jia Hui · Goh Jia Hui (S007)', '320.00', 'Approved on AF-2611-003 (Tan Mei Ling, 12 Nov) · in To pay, due Fri 20 Nov', [
+        L('Fri 30 Oct', 'Stationery and materials', 'Event materials', '900-800 Printing, postage and stationery', '1 receipt', '320.00')
+      ]),
+      claim('CL-2610-006 · Oct 2026 Claims - Wei Ming · Ong Wei Ming (S002)', '120.00', 'Withdrawn: Entered twice. Kept, never deleted; not counted in the totals.', [
+        L('Tue 6 Oct', 'Parking and toll', 'Parking', '900-860 Travelling', '1 receipt', '120.00')
+      ]),
+      this.table('Totals for October 2026', ['', ['Amount', true]], [
+        [D('900-860 Travelling'), D('508.00', { num: true })],
+        [D('900-870 Entertainment'), D('186.50', { num: true })],
+        [D('900-800 Printing, postage and stationery'), D('520.00', { num: true })],
+        [D('3 approved claims, on AF-2611-003', { b: true, top: true }), D('1,214.50', { num: true, b: true, top: true })]
+      ], { sub: 'Withdrawn CL-2610-006 (120.00) is left out. None is paid yet, so none is recorded in SQL Account.' })
+    ];
+    return [this.page({ co: 'AISB', n: 1, of: 1, byName, title: 'Claims', sub: 'October 2026 · every claim for the month, with its lines', at: 'Printed Wed 18 Nov 2026, ' + at, blocks, foot: 'Claims AISB October 2026 · Confidential: personal data', what: 'claims at AISB for October 2026' })];
+  }
+
+  // ---------- an empty period: AI, leave in October 2026 ----------
+  emptyPages(byName, at) {
+    const blocks = [
+      this.box('No leave was taken or booked at Agrinexus International in October 2026.', 'The list has no rows. It still prints, so a paper file shows the month was looked at.'),
+      this.kv('', [
+        ['Month', 'October 2026, 1 to 31 Oct'], ['Staff in employment', '5'],
+        ['Public holidays', 'Sabah, rest day Sunday · Sat 3 Oct 2026, Governor of Sabah’s birthday', { full: true }],
+        ['Leave policy', 'Same as the law', { sub: 'Sabah follows its own Labour Ordinance: check these minimums.', full: true }]
+      ]),
+      this.text(['The next entry is in November: unpaid leave on Mon 9 and Tue 10 Nov.'])
+    ];
+    return [this.page({ co: 'AI', n: 1, of: 1, byName, title: 'Leave taken and booked', sub: 'October 2026 · every entry with a day in the month, by start date', at: 'Printed Wed 18 Nov 2026, ' + at, blocks, foot: 'Leave AI October 2026 · Confidential: personal data', what: 'leave at Agrinexus International in October 2026, no entries' })];
+  }
+
+  renderVals() {
+    const st = this.state, stage = st.stage, pay = st.by === 'aisha';
+    const byName = pay ? 'Aisha Rahman' : 'Nurul Aina';
+    const isRecord = stage === 'staff' || stage === 'leaver';
+    const choice = (st.sens ? 'race and religion chosen' : 'race and religion left out') + (pay ? '' : ' · pay left out');
+    const S = {
+      staff: { label: 'Staff record', at: '11:05', glyph: 'staff', file: 'Staff record AISB S006.pdf', back: ['HrStaffRecord.dc.html', 'Wong Kah Seng'], open: 'Open the staff record',
+        sb: ['staff', 'aisb', 'sqlPayroll'], tb: ['Staff', 'Kah Seng'], eyebrow: 'AISB · Kept in SQL Account · HR › Staff',
+        title: 'Staff record as PDF', text: 'Record as PDF on a person’s record prints everything HR holds on them, on three pages. It is the one printout with the full IC number, so every page carries the “Confidential: personal data” mark.',
+        from: 'HR › Staff › Wong Kah Seng › Record as PDF', audit: 'Opened file · Staff record PDF · S006 Wong Kah Seng (AISB) · ' + choice + ' · Wed 18 Nov 2026, 11:05' },
+      leaver: { label: 'Leaver record', at: '11:12', glyph: 'logout', file: 'Staff record AISB S010.pdf', back: ['HrStaffRecord.dc.html', 'Kavitha Nair'], open: 'Open the staff record',
+        sb: ['staff', 'aisb', 'sqlPayroll'], tb: ['Staff', 'Kavitha'], eyebrow: 'AISB · Kept in SQL Account · HR › Staff › Left',
+        title: 'Leaver record as PDF', text: 'The same printout for someone who has left: the last day and reason, how long the record is kept, the final pay and the advance still to collect. Nothing is worked out after the last day.',
+        from: 'HR › Staff › Left › Kavitha Nair › Record as PDF', audit: 'Opened file · Staff record PDF · S010 Kavitha Nair (AISB) · ' + choice + ' · Wed 18 Nov 2026, 11:12' },
+      leave: { label: 'Leave list, October', at: '11:20', glyph: 'leave', file: 'Leave AISB 2026-10.pdf', back: ['HrLeave.dc.html', 'Leave'], open: 'Open Leave',
+        sb: ['leave', 'aisb', 'sqlPayroll'], tb: ['Leave', ''], eyebrow: 'AISB · Kept in SQL Account · HR › Leave',
+        title: 'Leave list for a month', text: 'Print on the Taken and booked tab, for the month chosen: every entry with a day in it, with its type, because this is HR’s own list. Cancelled entries in the month print with their reason.',
+        from: 'HR › Leave › Taken and booked › Print, month October 2026', audit: 'Opened file · Leave list PDF · AISB, October 2026 · 2 entries · Wed 18 Nov 2026, 11:20' },
+      balances: { label: 'Balances at 31 Dec', at: '11:24', glyph: 'leave', file: 'Leave balances AISB at 2026-12-31.pdf', back: ['HrLeave.dc.html', 'Leave'], open: 'Open Leave, Balances',
+        sb: ['leave', 'aisb', 'sqlPayroll'], tb: ['Leave', 'Balances'], eyebrow: 'AISB · Kept in SQL Account · HR › Leave › Balances',
+        title: 'Leave balances at a date', text: 'Print on the Balances tab, at the date chosen there. At a later date, leave booked up to it counts as taken, as on screen. A balance below zero prints as a warning, never as an error.',
+        from: 'HR › Leave › Balances › Balances at 31 Dec 2026 › Print', audit: 'Opened file · Leave balances PDF · AISB, annual leave at 31 Dec 2026 · 9 people · Wed 18 Nov 2026, 11:24' },
+      claims: { label: 'Claim list, October', at: '11:30', glyph: 'claim', file: 'Claims AISB 2026-10.pdf', back: ['HrClaims.dc.html', 'Claims and advances'], open: 'Open Claims',
+        sb: ['claims', 'aisb', 'sqlPayroll'], tb: ['Claims and advances', 'Claims'], eyebrow: 'AISB · Kept in SQL Account · HR › Claims and advances',
+        title: 'Claim list for a month', text: 'Print list on the Claims tab, for the month chosen: each claim with its lines, expense accounts, receipts, its approval form and where its payment stands, then the totals by account.',
+        from: 'HR › Claims and advances › Claims › Print list, month October 2026', audit: 'Opened file · Claim list PDF · AISB, October 2026 · 4 claims · Wed 18 Nov 2026, 11:30' },
+      empty: { label: 'Empty period', at: '11:34', glyph: 'leave', file: 'Leave AI 2026-10.pdf', back: ['HrLeave.dc.html', 'Leave'], open: 'Open Leave',
+        sb: ['leave', 'ai', 'here'], tb: ['Leave', ''], eyebrow: 'AI · Kept here · HR › Leave',
+        title: 'A month with nothing in it', text: 'AI had no leave in October. The page says so in one line and keeps the head, the holidays and the footer. AI has no address in Setup › Companies, so the head prints its name and registration number only.',
+        from: 'HR › Leave (AI) › Taken and booked › Print, month October 2026', audit: 'Opened file · Leave list PDF · AI, October 2026 · no entries · Wed 18 Nov 2026, 11:34' }
+    };
+    const K = ['staff', 'leaver', 'leave', 'balances', 'claims', 'empty'];
+    const cur = S[stage] || S.staff;
+    const btn = on => 'height:36px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const states = K.map(k => ({ label: S[k].label, pressed: stage === k ? 'true' : 'false', style: btn(stage === k),
+      pick: () => this.setState({ stage: k, swap: this.state.swap + 1, say: S[k].label + ' shown.' }) }));
+
+    let pages;
+    if (stage === 'staff') pages = this.staffPages(st.sens, pay, byName, cur.at);
+    else if (stage === 'leaver') pages = this.leaverPages(st.sens, pay, byName, cur.at);
+    else if (stage === 'leave') pages = this.leavePages('Aisha Rahman', cur.at);
+    else if (stage === 'balances') pages = this.balancePages('Aisha Rahman', cur.at);
+    else if (stage === 'claims') pages = this.claimPages('Aisha Rahman', cur.at);
+    else pages = this.emptyPages('Aisha Rahman', cur.at);
+
+    const recBy = isRecord ? byName : 'Aisha Rahman';
+    const facts = [
+      { k: 'File', v: cur.file + ' · ' + pages.length + (pages.length === 1 ? ' page' : ' pages') },
+      { k: 'Printed from', v: cur.from },
+      { k: 'Printed by', v: recBy + (isRecord && !pay ? ' (HR, no Payroll figures)' : ' (HR, Payroll figures)') + ', as declared on this computer' },
+      { k: 'Audit trail', v: cur.audit },
+      { k: 'Kept', v: 'The app keeps no copy of the PDF; the audit trail keeps the entry above.' },
+      { k: 'Who can print', v: 'Anyone with the HR right. Marcus Teoh (Payments, Accounting) has no Print button on HR pages.' }
+    ];
+    const byOpts = [
+      { id: 'ph-by-aisha', name: 'Aisha Rahman', hint: 'HR and Payroll figures: the Pay part prints.', on: pay, pick: () => this.setState({ by: 'aisha', swap: this.state.swap + 1, say: 'Printed by Aisha Rahman: the Pay part prints.' }) },
+      { id: 'ph-by-aina', name: 'Nurul Aina', hint: 'HR without Payroll figures: the Pay part is left out.', on: !pay, pick: () => this.setState({ by: 'aina', swap: this.state.swap + 1, say: 'Printed by Nurul Aina: the Pay part is left out.' }) }
+    ];
+    const H = {
+      leave: ['Every entry with a day in October, by start date: person, type, dates, days in the month and in all, status and the note.', 'Leave types print here because it is HR’s own list. The Overview and every page outside HR never show a type.', 'No medical detail: a sick day says “Certificate attached”, nothing more.', 'No pay figures, so the Payroll figures right isn’t needed.'],
+      balances: ['Annual leave for everyone in employment at the date, with the legal days, taken, booked and the balance.', 'Jia Hui’s −1 prints as a warning: leave above the legal days is never refused.', 'Sick leave from 1 Oct and maternity in use, as on the Balances tab.', 'Leavers are left out: no balance is kept after leaving.'],
+      claims: ['Each claim of the month with its lines, expense accounts and receipts, its approval form and where its payment stands.', 'The over-limit line says so in words, so it reads on a plain printer.', 'A withdrawn claim prints with its reason and stays out of the totals.', 'Totals by expense account, for whoever records them.'],
+      empty: ['Nothing to list: one line says so, and the page keeps its head, the month’s holidays and the footer.', 'The same happens for any list and any company with nothing in the period.', 'Nothing about this is fixed to AISB: AI’s head, holidays and leave policy come from its own Setup.']
+    };
+    const holds = (H[stage] || []).map(t => ({ t }));
+    const rules = [
+      ['printer', 'A4, light only.', 'Portrait, black and grey on white, 9 pt body, 15 mm side margins. Nothing needs a colour printer: a warning says so in words.'],
+      ['lock', 'Confidential: personal data.', 'On every page, in the head and the footer. The full IC number prints on the staff record only; bank numbers keep the last 4; statutory numbers print as on the record.'],
+      ['eyeOff', 'Left out unless chosen.', 'Race and religion print only when ticked for that print. Pay prints only for someone with the Payroll figures right.'],
+      ['document', 'Page x of y.', 'On every page. From page 2 the head repeats in one line: company, what it is, whose it is, continued.'],
+      ['person', 'Declared, not verified.', 'The person printing is the name declared at the keyboard, and the footer says so, until logins exist.'],
+      ['trail', 'Every print is kept.', 'Opening the PDF adds an Opened file entry to the audit trail, with what was chosen. The PDF itself is not kept by the app.']
+    ].map(([glyph, name, text]) => ({ glyph, name, text }));
+    const froms = [
+      { href: 'HrStaffRecord.dc.html', label: 'HR › Staff › a record › Record as PDF', note: 'Staff record and leaver record. The button is on every record, left ones included.' },
+      { href: 'HrLeave.dc.html', label: 'HR › Leave › Taken and booked › Print', note: 'Leave list for the month chosen.' },
+      { href: 'HrLeave.dc.html', label: 'HR › Leave › Balances › Print', note: 'Balances at the date chosen in Balances at.' },
+      { href: 'HrClaims.dc.html', label: 'HR › Claims and advances › Claims › Print list', note: 'Claim list for the month chosen. Print approval form stays the selection’s own button.' }
+    ];
+
+    return {
+      say: st.say, states, isRecord, isList: !isRecord,
+      sbActive: cur.sb[0], sbCo: cur.sb[1], sbKind: cur.sb[2], sbAccess: isRecord && !pay ? 'hrOnly' : 'full',
+      tbPage: cur.tb[0], tbSub: cur.tb[1], tbUser: isRecord && !pay ? 'aina' : 'aisha',
+      onTopCo: code => {
+        const u = String(code || '').toUpperCase();
+        if (u === 'AI' && this.state.stage !== 'empty') this.setState({ stage: 'empty', swap: this.state.swap + 1, say: 'Showing AI: no leave in October 2026.' });
+        else if (u === 'AISB' && this.state.stage === 'empty') this.setState({ stage: 'leave', swap: this.state.swap + 1, say: 'Showing AISB: leave list for October 2026.' });
+      },
+      backHref: cur.back[0], backLabel: cur.back[1], openLabel: cur.open, eyebrow: cur.eyebrow,
+      leadGlyph: cur.glyph, leadTitle: cur.title, leadText: cur.text, facts,
+      sens: !!st.sens, toggleSens: () => this.setState({ sens: !this.state.sens, swap: this.state.swap + 1, say: this.state.sens ? 'Race and religion left out.' : 'Race and religion chosen: they print as Not recorded.' }),
+      byOpts, holds,
+      fileName: cur.file, pageCount: pages.length + (pages.length === 1 ? ' page' : ' pages'), swapCls: st.swap % 2 ? 'swapA' : 'swapB',
+      pages, rules, froms
+    };
+  }
+}
+</script>
+</body>
+</html>

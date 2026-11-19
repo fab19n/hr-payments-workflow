@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SQL import · account lines and checks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg,.pb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+.pb:hover{box-shadow:0 0 0 2px rgba(15,26,43,.08)}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+button.hr:focus-visible,summary:focus-visible{outline-offset:-2px}
+.tb:focus-visible{outline-color:#8DB0FA}
+summary{cursor:pointer}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="sql" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="SQL import" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 420px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">SQL import</h1>
+          <sc-if value="{{isSql}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; color: #46546A; max-width: 760px">SQL's account lines of each entry, from the GL Journal of Transaction fetched, and the checks against SQL's GL Ledger and Trial Balance. Nothing here can be changed: SQL Account stays the books.</p></sc-if>
+        </div>
+      </div>
+
+      <sc-if value="{{notSql}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="sb-notsql-h" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="database" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="sb-notsql-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">SQL import isn't used for AI</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">Agrinexus International is kept here, so there is nothing to import from SQL Account: no SQL account lines and no checks against SQL's reports. Switch to a company that is Kept in SQL Account to see them.</p>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px"><button type="button" class="hs" onClick="{{goAisb}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Go to AISB</button><a href="Main.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none">Open the Overview</a></div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isSql}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 24px">
+
+      <section aria-labelledby="sb-fetch-h" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 22px">
+        <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="folder" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+        <div style="flex: 1 1 320px; min-width: 0"><h2 id="sb-fetch-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Fetch exported listings (one click)</h2><span style="color: #5F6C80; font-size: 13px; overflow-wrap: anywhere">Reads every SQL listing saved in C:\Users\you\Downloads, whatever the files are called, and shows what is new and what is already imported.</span></div>
+        <a href="Sql.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none; white-space: nowrap"><dc-import name="Icon" glyph="download" tone="white" size="18" hint-size="18px,18px"></dc-import>Fetch from SQL exports</a>
+      </section>
+
+      <sc-if value="{{hasChanged}}" hint-placeholder-val="{{ true }}">
+        <section id="sb-changed" aria-labelledby="sb-changed-h" style="background: #FFFFFF; border: 1px solid #F3D9A6; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 16px 22px; background: #FFFBF2; border-bottom: 1px solid #F3D9A6">
+            <dc-import name="Icon" glyph="alert" tone="warn" size="22" hint-size="22px,22px"></dc-import>
+            <div style="flex: 1 1 360px; min-width: 0"><h2 id="sb-changed-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Changed in SQL</h2><span style="color: #5C3100; font-size: 13px">These vouchers were edited in SQL after they were linked to a payment: the latest fetch gives another amount or date. The link stays on the earlier entry until you move it. Moving it keeps the earlier entry, marked as replaced.</span></div>
+          </div>
+          <div role="group" aria-labelledby="sb-ch-doc" style="display: flex; flex-direction: column; gap: 8px; padding: 16px 22px">
+            <div id="sb-ch-doc"><b style="font-family: ui-monospace, Consolas, monospace">PV2611-003</b> changed in SQL from 1,163.20 to 1,136.20.</div>
+            <div style="color: #46546A; font-size: 13px">{{chLinked}}{{chLedger}}</div>
+            <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; align-self: flex-start"><input type="checkbox" checked="{{follow}}" onChange="{{toggleFollow}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Also change the payment's amount from RM 1,163.20 to RM 1,136.20</label>
+            <div><button type="button" class="hs" onClick="{{move}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Move the link to the new amount</button></div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-for list="{{cards}}" as="c" hint-placeholder-count="5">
+        <section id="{{c.sid}}" aria-labelledby="{{c.hid}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <sc-if value="{{c.fold}}" hint-placeholder-val="{{ false }}">
+            <h2 style="margin: 0; font-size: inherit; font-weight: inherit; line-height: inherit"><button type="button" id="{{c.bid}}" class="hr" aria-expanded="{{c.open}}" onClick="{{c.toggle}}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 22px; border: 0; background: #FFFFFF; font: inherit; color: inherit; text-align: left; cursor: pointer"><span class="{{c.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></span><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.tone}}" size="22" hint-size="22px,22px"></dc-import><span id="{{c.hid}}" style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{c.title}}</span><span style="color: #5F6C80">{{c.count}}</span></button></h2>
+          </sc-if>
+          <sc-if value="{{c.flat}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.tone}}" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1 1 360px; min-width: 0"><h2 id="{{c.hid}}" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{c.title}} <span style="font-family: Inter, sans-serif; font-weight: 500; font-size: 14px; color: #5F6C80">{{c.count}}</span></h2><span style="color: #5F6C80; font-size: 13px">{{c.note}}</span></div></div>
+          </sc-if>
+          <sc-if value="{{c.show}}" hint-placeholder-val="{{ true }}">
+            <div class="{{c.bodyCls}}">
+              <sc-if value="{{c.foldNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: 12px 22px; border-top: 1px solid #EEF1F5; color: #46546A; font-size: 13px">{{c.note}}</p></sc-if>
+              <sc-for list="{{c.groups}}" as="g" hint-placeholder-count="1">
+                <sc-if value="{{g.head}}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 16px 22px 12px; border-top: 1px solid #E3E7ED; background: #FAFBFC"><h3 style="margin: 0; font-size: 14px; font-weight: 600">{{g.title}}</h3><span style="color: #5F6C80; font-size: 13px">{{g.note}}</span></div>
+                </sc-if>
+                <sc-if value="{{g.some}}" hint-placeholder-val="{{ true }}">
+                  <div style="overflow-x: auto">
+                    <table style="width: 100%; min-width: 900px; border-collapse: collapse">
+                      <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">Doc no.</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Date</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">{{g.hAmt}}</th><sc-if value="{{g.hasDetail}}" hint-placeholder-val="{{ true }}"><th scope="col" style="{{g.hDetailStyle}}">{{g.hDetail}}</th></sc-if><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Action</span></th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{g.rows}}" as="u" hint-placeholder-count="3">
+                          <tr class="hr" style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                            <td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{u.no}}</td>
+                            <td style="padding: 12px; color: #46546A; white-space: nowrap">{{u.date}}<sc-if value="{{u.hasNow}}" hint-placeholder-val="{{ false }}"><div style="font-size: 12px; color: #5F6C80">{{u.now}}</div></sc-if></td>
+                            <td style="padding: 12px">{{u.desc}}<div style="color: #5F6C80; font-size: 12px">{{u.sub}}</div>
+                              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px">
+                                <sc-if value="{{u.pillBtn}}" hint-placeholder-val="{{ true }}"><button type="button" class="pb" aria-expanded="{{u.open}}" aria-controls="{{u.rowId}}" title="Show the account lines" onClick="{{u.toggle}}" style="{{u.pillStyle}}">{{u.pillText}}<span class="{{u.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="{{u.pillTone}}" size="12" hint-size="12px,12px"></dc-import></span></button></sc-if>
+                                <sc-if value="{{u.moneyIn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600">Money in</span></sc-if>
+                                <sc-if value="{{u.hasMark}}" hint-placeholder-val="{{ false }}"><span style="{{u.markStyle}}"><dc-import name="Icon" glyph="{{u.markGlyph}}" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{u.markText}}</span></sc-if>
+                              </div>
+                            </td>
+                            <td style="{{u.amtStyle}}">{{u.amtText}}</td>
+                            <sc-if value="{{u.hasDetail}}" hint-placeholder-val="{{ true }}">
+                              <td style="{{u.detailStyle}}">
+                                <sc-if value="{{u.hasChip}}" hint-placeholder-val="{{ false }}"><span style="{{u.chipStyle}}"><dc-import name="Icon" glyph="{{u.chipGlyph}}" tone="{{u.chipTone}}" size="14" hint-size="14px,14px"></dc-import>{{u.chipText}}</span></sc-if>
+                                <b style="font-weight: 600">{{u.detail}}</b> <span style="color: #5F6C80; font-size: 13px">{{u.detailMuted}}</span>
+                                <sc-if value="{{u.hasNote}}" hint-placeholder-val="{{ false }}"><div style="color: #46546A; font-size: 13px; margin-top: 6px">{{u.note}}</div></sc-if>
+                              </td>
+                            </sc-if>
+                            <td style="padding: 12px 22px 12px 12px; text-align: right"><div style="display: inline-flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end">
+                              <sc-if value="{{u.hasAct}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" aria-label="{{u.actAria}}" onClick="{{u.act}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; white-space: nowrap">{{u.actLabel}}</button></sc-if>
+                              <sc-if value="{{u.hasAct2}}" hint-placeholder-val="{{ false }}"><button type="button" class="hg" aria-label="{{u.act2Aria}}" onClick="{{u.act2}}" style="height: 34px; padding: 0 10px; border-radius: 9px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #46546A; cursor: pointer">{{u.act2Label}}</button></sc-if>
+                            </div></td>
+                          </tr>
+                          <sc-if value="{{u.open}}" hint-placeholder-val="{{ false }}">
+                            <tr id="{{u.rowId}}" class="ex"><td colspan="{{u.span}}" style="padding: 0 22px 16px 22px; background: #F7F9FC">
+                              <div style="border: 1px solid #DCE2EA; border-radius: 12px; background: #FFFFFF; overflow: hidden">
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid #EEF1F5">
+                                  <b style="font-family: ui-monospace, Consolas, monospace; font-size: 13px">{{u.v.no}}</b><span style="color: #5F6C80; font-size: 13px">{{u.v.book}}</span>
+                                  <sc-if value="{{u.v.hasState}}" hint-placeholder-val="{{ false }}"><span style="{{u.v.stateStyle}}">{{u.v.stateText}}</span></sc-if>
+                                  <span style="flex: 1 1 320px; min-width: 0; text-align: right; color: #5F6C80; font-size: 12px; overflow-wrap: anywhere">{{u.v.source}}</span>
+                                </div>
+                                <div style="overflow-x: auto">
+                                  <table style="width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13px">
+                                    <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 14px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 14px 8px 12px; font-weight: 600; text-align: right">Credit</th></tr></thead>
+                                    <tbody>
+                                      <sc-for list="{{u.v.lines}}" as="l" hint-placeholder-count="2">
+                                        <tr style="{{l.tr}}"><td style="padding: 8px 14px"><span style="font-family: ui-monospace, Consolas, monospace">{{l.code}}</span> {{l.name}}<sc-if value="{{l.isBank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 11px; font-weight: 600">Bank</span></sc-if><sc-if value="{{l.unknown}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: #FEF1D6; color: #7A4300; font-size: 11px; font-weight: 600">Not in chart</span></sc-if></td><td style="padding: 8px 12px; color: #46546A">{{l.desc}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{l.dr}}</td><td style="padding: 8px 14px 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{l.cr}}</td></tr>
+                                      </sc-for>
+                                      <tr style="border-top: 1px solid #C9D2DF; font-weight: 600"><td colspan="2" style="padding: 8px 14px">Total</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{u.v.totDr}}</td><td style="padding: 8px 14px 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{u.v.totCr}}</td></tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border-top: 1px solid #EEF1F5; font-size: 13px">
+                                  <sc-for list="{{u.v.checks}}" as="k" hint-placeholder-count="1"><div style="display: flex; gap: 6px; align-items: flex-start; color: #7A4300"><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import><span>{{k.text}}</span></div></sc-for>
+                                  <sc-if value="{{u.v.ok}}" hint-placeholder-val="{{ true }}"><div style="display: flex; gap: 6px; align-items: center; color: #0A6B3D"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import><span>{{u.v.okText}}</span></div></sc-if>
+                                  <sc-if value="{{u.v.hasOlder}}" hint-placeholder-val="{{ false }}">
+                                    <details open="{{u.v.olderOpen}}" style="border-top: 1px solid #EEF1F5; padding-top: 6px"><summary style="color: #2450B8; font-weight: 600; padding: 4px 0">Earlier versions ({{u.v.olderN}})</summary>
+                                      <sc-for list="{{u.v.older}}" as="o" hint-placeholder-count="1">
+                                        <div style="color: #5F6C80; font-size: 12px; margin: 6px 0">{{o.source}}</div>
+                                        <div style="overflow-x: auto; border: 1px solid #EEF1F5; border-radius: 10px">
+                                          <table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px; color: #46546A">
+                                            <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 6px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 6px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 6px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 6px 12px; font-weight: 600; text-align: right">Credit</th></tr></thead>
+                                            <tbody>
+                                              <sc-for list="{{o.lines}}" as="l2" hint-placeholder-count="2"><tr><td style="padding: 6px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{l2.code}}</span> {{l2.name}}<sc-if value="{{l2.isBank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 11px; font-weight: 600">Bank</span></sc-if></td><td style="padding: 6px 12px">{{l2.desc}}</td><td style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums">{{l2.dr}}</td><td style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums">{{l2.cr}}</td></tr></sc-for>
+                                              <tr style="border-top: 1px solid #DCE2EA; font-weight: 600"><td colspan="2" style="padding: 6px 12px">Total</td><td style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums">{{o.totDr}}</td><td style="padding: 6px 12px; text-align: right; font-variant-numeric: tabular-nums">{{o.totCr}}</td></tr>
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      </sc-for>
+                                    </details>
+                                  </sc-if>
+                                </div>
+                              </div>
+                            </td></tr>
+                          </sc-if>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </sc-if>
+                <sc-if value="{{g.none}}" hint-placeholder-val="{{ false }}"><div style="display: flex; align-items: center; gap: 10px; padding: 18px 22px; border-top: 1px solid #EEF1F5; color: #46546A"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import>{{g.noneText}}</div></sc-if>
+              </sc-for>
+            </div>
+          </sc-if>
+        </section>
+      </sc-for>
+
+      <sc-if value="{{hasChecks}}" hint-placeholder-val="{{ true }}">
+        <section id="sb-checks" aria-labelledby="sb-checks-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="verified" tone="brand" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1 1 360px; min-width: 0"><h2 id="sb-checks-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Checks against SQL's reports</h2><span style="color: #5F6C80; font-size: 13px">The latest of SQL's GL Journal of Transaction, GL Ledger and Trial Balance fetched, checked against the account lines kept. Not checked: Period To Date and opening balances against the lines (SQL's trial balance moves earlier profit and loss into retained earnings on its From date), and anything after the dates the journals read cover.</span></div></div>
+          <sc-for list="{{reports}}" as="r" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 8px; padding: 16px 22px; border-top: 1px solid #EEF1F5">
+              <div style="display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between"><h3 style="margin: 0; font-size: 15px; font-weight: 600">{{r.title}}</h3><span style="color: #5F6C80; font-size: 13px; overflow-wrap: anywhere">{{r.meta}}</span></div>
+              <sc-if value="{{r.noDiff}}" hint-placeholder-val="{{ true }}"><div><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>No differences</span></div></sc-if>
+              <sc-if value="{{r.hasTable}}" hint-placeholder-val="{{ false }}">
+                <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                  <table style="width: 100%; min-width: 860px; border-collapse: collapse; font-size: 13px">
+                    <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">What differs</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">SQL's figure</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">The lines</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Difference</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{r.rows}}" as="x" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5; vertical-align: top"><td style="padding: 10px 12px; font-family: ui-monospace, Consolas, monospace; white-space: nowrap">{{x.acct}}</td><td style="padding: 10px 12px; color: #46546A">{{x.what}}</td><td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{x.sql}}</td><td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{x.lines}}</td><td style="padding: 10px 12px; text-align: right; font-weight: 600; color: #8E1A10; font-variant-numeric: tabular-nums; white-space: nowrap">{{x.diff}}</td></tr></sc-for>
+                    </tbody>
+                  </table>
+                </div>
+              </sc-if>
+              <sc-if value="{{r.stale}}" hint-placeholder-val="{{ false }}"><div role="note" style="display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F1F3F6; border: 1px solid #DCE2EA; font-size: 13px"><dc-import name="Icon" glyph="clock" tone="muted" size="18" hint-size="18px,18px"></dc-import><b>Possibly out of date</b><span style="flex: 1 1 360px; color: #46546A">{{r.staleText}}</span></div></sc-if>
+              <sc-for list="{{r.notes}}" as="n" hint-placeholder-count="2"><div style="color: #46546A; font-size: 13px">{{n.text}}</div></sc-for>
+            </div>
+          </sc-for>
+          <sc-for list="{{orphans}}" as="g" hint-placeholder-count="3">
+            <div style="border-top: 1px solid #E3E7ED">
+              <sc-if value="{{g.fold}}" hint-placeholder-val="{{ false }}">
+                <h3 style="margin: 0; font-size: inherit; font-weight: inherit"><button type="button" class="hr" aria-expanded="{{g.open}}" onClick="{{g.toggle}}" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: 14px 22px; border: 0; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; text-align: left; cursor: pointer"><span class="{{g.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>{{g.title}}</button></h3>
+              </sc-if>
+              <sc-if value="{{g.flat}}" hint-placeholder-val="{{ true }}"><h3 style="margin: 0; padding: 14px 22px 0; font-size: 14px; font-weight: 600">{{g.title}}</h3></sc-if>
+              <sc-if value="{{g.show}}" hint-placeholder-val="{{ true }}">
+                <div class="{{g.bodyCls}}">
+                  <p style="margin: 0; padding: 6px 22px 10px; color: #46546A; font-size: 13px">{{g.note}}</p>
+                  <div style="overflow-x: auto">
+                    <table style="width: 100%; min-width: 640px; border-collapse: collapse">
+                      <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px 8px 22px; font-weight: 600">Doc no.</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Date</th><sc-if value="{{g.hasThird}}" hint-placeholder-val="{{ true }}"><th scope="col" style="padding: 8px 12px; font-weight: 600">{{g.h3}}</th></sc-if><sc-if value="{{g.hasAmt}}" hint-placeholder-val="{{ false }}"><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Amount (RM)</th></sc-if><th scope="col" style="padding: 8px 22px 8px 12px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Action</span></th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{g.rows}}" as="u" hint-placeholder-count="2">
+                          <tr class="hr" style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                            <td style="padding: 10px 12px 10px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{u.no}}</td>
+                            <td style="padding: 10px 12px; color: #46546A; white-space: nowrap">{{u.date}}<sc-if value="{{u.hasGone}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #FDE6E3; color: #B0190F; font-size: 12px; font-weight: 600">No longer in SQL</span></sc-if></td>
+                            <sc-if value="{{u.hasThird}}" hint-placeholder-val="{{ true }}"><td style="padding: 10px 12px; color: #46546A">{{u.third}}</td></sc-if>
+                            <sc-if value="{{u.hasAmt}}" hint-placeholder-val="{{ false }}"><td style="padding: 10px 12px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums">{{u.amt}}</td></sc-if>
+                            <td style="padding: 10px 22px 10px 12px; text-align: right">
+                              <sc-if value="{{u.hasLines}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" aria-expanded="{{u.open}}" aria-controls="{{u.rowId}}" aria-label="{{u.linesAria}}" onClick="{{u.toggle}}" style="display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Lines<span class="{{u.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="14" hint-size="14px,14px"></dc-import></span></button></sc-if>
+                              <sc-if value="{{u.hasDel}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" aria-label="{{u.delAria}}" onClick="{{u.del}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; white-space: nowrap">Deleted in SQL</button></sc-if>
+                              <sc-if value="{{u.hasMutedAct}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 13px">Linked to a payment: unlink it first</span></sc-if>
+                            </td>
+                          </tr>
+                          <sc-if value="{{u.open}}" hint-placeholder-val="{{ false }}">
+                            <tr id="{{u.rowId}}" class="ex"><td colspan="{{u.span}}" style="padding: 0 22px 16px 22px; background: #F7F9FC">
+                              <div style="border: 1px solid #DCE2EA; border-radius: 12px; background: #FFFFFF; overflow: hidden">
+                                <div style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 12px 14px; border-bottom: 1px solid #EEF1F5">
+                                  <b style="font-family: ui-monospace, Consolas, monospace; font-size: 13px">{{u.v.no}}</b><span style="color: #5F6C80; font-size: 13px">{{u.v.book}}</span>
+                                  <sc-if value="{{u.v.hasState}}" hint-placeholder-val="{{ false }}"><span style="{{u.v.stateStyle}}">{{u.v.stateText}}</span></sc-if>
+                                  <span style="flex: 1 1 320px; min-width: 0; text-align: right; color: #5F6C80; font-size: 12px; overflow-wrap: anywhere">{{u.v.source}}</span>
+                                </div>
+                                <div style="overflow-x: auto">
+                                  <table style="width: 100%; min-width: 600px; border-collapse: collapse; font-size: 13px">
+                                    <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 14px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 14px 8px 12px; font-weight: 600; text-align: right">Credit</th></tr></thead>
+                                    <tbody>
+                                      <sc-for list="{{u.v.lines}}" as="l" hint-placeholder-count="2">
+                                        <tr style="{{l.tr}}"><td style="padding: 8px 14px"><span style="font-family: ui-monospace, Consolas, monospace">{{l.code}}</span> {{l.name}}<sc-if value="{{l.isBank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 11px; font-weight: 600">Bank</span></sc-if><sc-if value="{{l.unknown}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: #FEF1D6; color: #7A4300; font-size: 11px; font-weight: 600">Not in chart</span></sc-if></td><td style="padding: 8px 12px; color: #46546A">{{l.desc}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{l.dr}}</td><td style="padding: 8px 14px 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{l.cr}}</td></tr>
+                                      </sc-for>
+                                      <tr style="border-top: 1px solid #C9D2DF; font-weight: 600"><td colspan="2" style="padding: 8px 14px">Total</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{u.v.totDr}}</td><td style="padding: 8px 14px 8px 12px; text-align: right; font-variant-numeric: tabular-nums">{{u.v.totCr}}</td></tr>
+                                    </tbody>
+                                  </table>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border-top: 1px solid #EEF1F5; font-size: 13px">
+                                  <sc-for list="{{u.v.checks}}" as="k" hint-placeholder-count="1"><div style="display: flex; gap: 6px; align-items: flex-start; color: #7A4300"><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import><span>{{k.text}}</span></div></sc-for>
+                                  <sc-if value="{{u.v.ok}}" hint-placeholder-val="{{ true }}"><div style="display: flex; gap: 6px; align-items: center; color: #0A6B3D"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import><span>{{u.v.okText}}</span></div></sc-if>
+                                </div>
+                              </div>
+                            </td></tr>
+                          </sc-if>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+        </section>
+      </sc-if>
+
+      </div>
+      </sc-if>
+
+      <sc-if value="{{hasFlash}}" hint-placeholder-val="{{ false }}">
+        <div class="rv" style="position: sticky; bottom: 20px; z-index: 5; align-self: flex-end; max-width: min(480px, 100%); box-sizing: border-box; display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22)">
+          <dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>
+          <span style="flex: 1; min-width: 0; font-size: 13px">{{flashText}}</span>
+          <button type="button" class="tb" aria-label="Close this message" onClick="{{clearFlash}}" style="width: 34px; height: 34px; border-radius: 9px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="white" size="16" hint-size="16px,16px"></dc-import></button>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"lines-open","options":["lines","lines-open","lines-mismatch","checks","checks-differ","checks-stale","changed-stale-lines","moved","deleted","deleted-linked","before-tracking","no-reads","not-sql"],"section":"State to show"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State to show"},"$preview":{"width":1440,"height":3600}}'>
+class Component extends DCLogic {
+  // The lower half of the SQL import page for AISB, after the fetch of 18 Nov 2026, 10:42 (stage1/samples.md sections 7, 8 and 15):
+  // the entry lists with SQL's account lines on each, Changed in SQL, Replaced, Before tracking, and the checks against SQL's reports.
+  constructor(p) {
+    super(p);
+    this.state = this.fromView((p && p.view) || 'lines-open');
+  }
+  // Each "State to show" starts from: which lines are open, what was done to the entries, and the toast that says so.
+  fromView(view) {
+    const moved = view === 'moved';
+    return { co: view === 'not-sql' || (this.props && this.props.company === 'ai') ? 'AI' : 'AISB', say: '', follow: moved, moved,
+      open: view === 'lines-open' ? 'L:PV2611-003' : view === 'lines-mismatch' ? 'L:OR2610-006' : view === 'checks' ? 'C:PV2611-012' : '',
+      st: view === 'deleted' ? { 'PV2611-008': 'deleted' } : view === 'deleted-linked' ? { 'PV2611-008': 'linkedDel' } : {},
+      fold: { linked: true, ignored: true, before: view === 'before-tracking', replaced: moved, own: false },
+      flash: view === 'deleted' ? { text: 'PV2611-008 marked as deleted in SQL; listed under Ignored' }
+        : moved ? { text: "PV2611-003: the link of Electricity bill moved to the amount SQL gives now, and the payment's amount changed with it" } : null };
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.company !== this.props.company) this.setState({ co: this.props.company === "ai" ? "AI" : "AISB" });
+        if (prevProps && prevProps.view !== this.props.view) { this.setState(this.fromView(this.props.view || 'lines-open')); return; }
+    if (!prev) return;
+    // A card that leaves after an action hands focus to where the entry went.
+    const to = !prev.moved && this.state.moved ? 'sb-fold-replaced' : prev.st !== this.state.st && this.state.focus ? this.state.focus : '';
+    if (to) { const el = document.getElementById(to); if (el) el.focus(); }
+  }
+  renderVals() {
+    const s = this.state, set = x => this.setState(x);
+    const view = this.props.view ?? 'lines-open';
+    const noReads = view === 'no-reads', mismatch = view === 'lines-mismatch', staleLines = view === 'changed-stale-lines';
+    const differ = view === 'checks-differ' || view === 'checks-stale', stale = view === 'checks-stale';
+    const isSql = s.co === 'AISB';
+    const f2 = n => Math.abs(n).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const br = n => (n < 0 ? '(' + f2(n) + ')' : f2(n));  // report tables: brackets for the other way round
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const short = iso => Number(iso.slice(8, 10)) + ' ' + MON[Number(iso.slice(5, 7)) - 1];
+    const long = iso => short(iso) + ' ' + iso.slice(0, 4);
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthOf = iso => MONTHS[Number(iso.slice(5, 7)) - 1] + ' ' + iso.slice(0, 4);
+
+    // AISB's chart of accounts and customers and suppliers, as far as these lines name them.
+    const ACCT = { '300-T001': 'Tenant', '300-U001': 'Office tenant (Unit 3A)', '310-000': 'Maybank current', '310-100': 'Maybank savings', '400-E012': 'Electricity supplier',
+      '400-R001': 'Office landlord', '420-000': 'Accruals', '430-100': 'KWSP payable', '430-200': 'PERKESO payable', '430-210': 'EIS (SIP) payable', '430-300': 'PCB payable',
+      '500-F001': 'Funds from Agrinexus International', '600-000': 'Rental income', '900-010': 'Bank charges', '900-100': 'Salaries and wages', '900-110': 'KWSP - employer',
+      '900-120': 'PERKESO - employer', '900-130': 'EIS - employer', '900-200': 'Directors fee', '900-400': 'Utilities', '900-800': 'Printing, postage and stationery' };
+    const BANKS = ['310-000', '310-100'];
+    const BOOK = { bank: 'the Bank Journal', general: 'the General Journal', sales: 'the Sales Journal', purchase: 'the Purchase Journal' };
+    // SQL's GL Journal of Transaction reads kept: 12 Nov (1 to 12 Nov) and 18 Nov (1 Oct to 17 Nov).
+    const R18 = { file: 'GL Journal Oct-Nov.xlsx', read: '2026-11-18 10:42:13' }, R12 = { file: 'GL Journal Nov.xlsx', read: '2026-11-12 16:04:10' };
+    const D = (book, iso, text, lines, more) => ({ book, iso, text, lines, v: 1, src: R18, ...(more || {}) });
+    const LINES = {
+      'PV2610-005': D('bank', '2026-10-15', 'KWSP SEPTEMBER', [['430-100', 5320, 0], ['900-110', 5860, 0], ['310-000', 0, 11180]]),
+      'OR2610-006': D('bank', '2026-10-20', 'FUND RECEIVED', [['310-000', 45000, 0], ['500-F001', 0, 45000]]),
+      'PV2610-014': D('bank', '2026-10-24', 'SALARIES OCTOBER', [['420-000', 48600, 0], ['310-000', 0, 48600]]),
+      'PV2610-021': D('bank', '2026-10-30', 'OFFICE RENTAL OCTOBER', [['400-R001', 6500, 0], ['310-000', 0, 6500]]),
+      'CB2610-041': D('bank', '2026-10-31', 'BANK CHARGES', [['900-010', 48, 0], ['310-000', 0, 48]]),
+      'CB2610-044': D('bank', '2026-10-31', 'REVERSAL OF CB2610-041', [['310-000', 48, 0], ['900-010', 0, 48]]),
+      'PV2611-003': D('bank', '2026-11-04', 'ELECTRICITY OCTOBER', [['400-E012', 1136.20, 0], ['310-000', 0, 1136.20]],
+        { v: 2, older: [{ v: 1, iso: '2026-11-04', src: R12, rows: [['400-E012', 1163.20, 0], ['310-000', 0, 1163.20]] }] }),
+      'PV2611-006': D('bank', '2026-11-05', 'WATER BILL OCTOBER', [['900-400', 84.30, 0], ['310-000', 0, 84.30]]),
+      'PV2611-009': D('bank', '2026-11-06', 'COURIER CHARGES OCTOBER', [['900-800', 186.50, 0], ['310-000', 0, 186.50]]),
+      'PV2611-008': D('bank', '2026-11-07', 'PRINTING PAPER AND TONER', [['900-800', 250, 0], ['310-000', 0, 250]], { src: R12, gone: true }),
+      'JV2610-006': D('general', '2026-10-24', 'DIRECTOR FEE OCTOBER', [['900-200', 12000, 0], ['310-000', 0, 12000]]),
+      'JV2610-007': D('general', '2026-10-31', 'PAYROLL JOURNAL OCTOBER', [['900-100', 59147.90, 0], ['420-000', 0, 48600], ['430-100', 0, 5346], ['430-200', 0, 205], ['430-210', 0, 81.90], ['430-300', 0, 4915]]),
+      'JV2611-004': D('general', '2026-11-08', 'TRANSFER TO MAYBANK SAVINGS', [['310-100', 5000, 0], ['900-010', 1, 0], ['310-000', 0, 5001]]),
+      'IV2610-014': D('sales', '2026-10-01', 'OFFICE RENTAL OCTOBER, UNIT 3A', [['300-U001', 1800, 0], ['600-000', 0, 1800]]),
+      'IV2610-031': D('sales', '2026-10-31', 'RENT OCTOBER, BLOCK A', [['300-T001', 2800, 0], ['600-000', 0, 2800]]),
+      'PI2610-012': D('purchase', '2026-10-31', 'ELECTRICITY OCTOBER (TNB)', [['900-400', 1136.20, 0], ['400-E012', 0, 1136.20]]),
+      'PV2611-012': D('bank', '2026-11-14', 'PCB OCTOBER', [['430-300', 4915, 0], ['310-000', 0, 4915]], { noListing: true }),
+      'PV2611-015': D('bank', '2026-11-17', 'PERKESO OCTOBER', [['430-200', 205, 0], ['900-120', 717.60, 0], ['430-210', 81.90, 0], ['900-130', 81.90, 0], ['310-000', 0, 1086.40]], { noListing: true }),
+      'CN2611-002': D('', '2026-11-10', 'CREDIT NOTE: RENT OCTOBER, BLOCK A', [['600-000', 2800, 0], ['300-T001', 0, 2800]], { noListing: true }),
+      'JV2610-012': D('general', '2026-10-08', 'SERVICE CHARGE', [['900-010', 48, 0], ['310-000', 0, 48]], { noListing: true, src: { file: 'GL Journal Oct-Nov (2).xlsx', read: '2026-11-18 11:05:20' } })
+    };
+    const pillCss = (bg, fg) => 'display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const PILL = { ok: pillCss('#E3F7EC', '#0A6B3D'), warn: pillCss('#FEF1D6', '#7A4300'), bad: pillCss('#FDE6E3', '#B0190F'), grey: pillCss('#E3E7ED', '#46546A') };
+    const EDGE = { ok: '#0A6B3D', warn: '#7A4300', bad: '#B0190F' };
+
+    // The pill beside an entry (linesPill): no journal read covering it, no pill; then gone, unbalanced, not the listing's amount, a later version, or its line count.
+    const pillOf = no => {
+      const L = LINES[no];
+      if (noReads || !L) return null;
+      if (L.gone) return { text: 'No longer in SQL', tone: 'bad' };
+      if (mismatch && no === 'OR2610-006') return { text: 'Lines ≠ amount', tone: 'warn' };
+      if (L.v > 1 && !(staleLines && no === 'PV2611-003')) return { text: 'Changed in SQL (v' + L.v + ')', tone: 'warn' };
+      return { text: L.lines.length + ' lines', tone: 'ok' };
+    };
+    const source = (v, iso, src) => 'Version ' + v + ', ' + long(iso) + ", from SQL's GL Journal of Transaction (" + src.file + '), read ' + src.read;
+    const linesOf = (rows, text) => rows.map(([code, dr, cr]) => ({ code, name: ACCT[code] || '', desc: text, dr: dr ? f2(dr) : '', cr: cr ? f2(cr) : '',
+      isBank: BANKS.includes(code), unknown: !ACCT[code], tr: 'border-top:1px solid #F1F3F7' + (BANKS.includes(code) ? ';background:#F4F7FE' : '') }));
+    const sum = (rows, i) => rows.reduce((t, r) => t + r[i], 0);
+    // The inline row a pill opens (ledgerDocView): the current version's lines, the checks on them, the earlier versions.
+    const viewOf = no => {
+      const L = LINES[no];
+      if (!L) return { no, book: '', hasState: false, stateText: '', stateStyle: '', source: '', lines: [], totDr: '', totCr: '', checks: [], ok: false, okText: '', hasOlder: false, olderN: 0, olderOpen: false, older: [] };
+      let cur = { v: L.v, iso: L.iso, src: L.src, rows: L.lines }, older = L.older || [];
+      if (no === 'OR2610-006' && mismatch) cur = { ...cur, rows: [['310-000', 44950, 0], ['900-010', 50, 0], ['500-F001', 0, 45000]] };
+      if (no === 'PV2611-003' && staleLines) { cur = older[0]; older = []; }
+      const checks = [];
+      if (L.gone) checks.push(no + " is no longer in SQL's Journal of Transaction: it was deleted or renumbered in SQL.");
+      if (no === 'OR2610-006' && mismatch) checks.push("The lines on the bank account have debits of 44,950.00 and move money in of 44,950.00 net, but the listing has 45,000.00 money in (checked on the bank account's lines).");
+      return { no, book: L.book ? '· ' + BOOK[L.book] : '', hasState: !!L.gone, stateText: 'No longer in SQL', stateStyle: PILL.bad,
+        source: source(cur.v, cur.iso, cur.src), lines: linesOf(cur.rows, L.text), totDr: f2(sum(cur.rows, 1)), totCr: f2(sum(cur.rows, 2)),
+        checks: checks.map(text => ({ text })), ok: !checks.length,
+        // A document with no listing has nothing to agree with (the app says "and agree with the listing" here too).
+        okText: L.noListing ? 'The lines balance.' : 'The lines balance and agree with the listing.',
+        hasOlder: older.length > 0, olderN: older.length, olderOpen: view === 'lines-open',
+        older: older.map(o => ({ source: source(o.v, o.iso, o.src), lines: linesOf(o.rows, L.text), totDr: f2(sum(o.rows, 1)), totCr: f2(sum(o.rows, 2)) })) };
+    };
+
+    // The SQL entries kept for AISB, and where each one is listed now.
+    const ENTRIES = [
+      { no: 'PV2609-027', iso: '2026-09-30', desc: 'Printer toner', sub: 'Code 400-P004 · Chq 104417', amt: 312, g: 'linked', pay: 'Printer supplies', month: 'September 2026' },
+      { no: 'PV2611-008', iso: '2026-11-07', desc: 'Printing paper and toner', sub: 'Code 400-S004 · Chq 104431', amt: 250, g: 'wait' },
+      { no: 'PV2611-009', iso: '2026-11-06', desc: 'Courier charges October', sub: 'Code 400-C007', amt: 186.50, g: 'wait' },
+      { no: 'CB2610-041', iso: '2026-10-31', desc: 'Bank charges', sub: 'Code 310-000', amt: 48, g: 'corr', corr: true },
+      { no: 'CB2610-044', iso: '2026-10-31', desc: 'Reversal of CB2610-041', sub: 'Code 310-000', amt: 48, g: 'corr', corr: true, moneyIn: true },
+      { no: 'PV2610-005', iso: '2026-10-15', desc: 'KWSP September', sub: 'Code 400-K001', amt: 11180, g: 'linked', pay: 'KWSP', month: 'September 2026' },
+      { no: 'OR2610-006', iso: '2026-10-20', desc: 'Fund received', sub: 'Code 500-F001', amt: 45000, g: 'linked', pay: 'Fund receipt', month: 'October 2026', moneyIn: true },
+      { no: 'PV2610-014', iso: '2026-10-24', desc: 'Salaries October', sub: 'Code 400-S001 · Method Maybank', amt: 48600, g: 'linked', pay: 'Salaries', month: 'October 2026' },
+      { no: 'PV2610-021', iso: '2026-10-30', desc: 'Office rental October', sub: 'Code 400-R001 · Chq 104420', amt: 6500, g: 'linked', pay: 'Office rental', month: 'October 2026' },
+      { no: 'PV2611-003', iso: '2026-11-04', desc: 'Electricity October', sub: 'Code 400-E012', amt: 1163.20, g: 'linked', pay: 'Electricity bill', month: 'October 2026' },
+      { no: 'PV2611-006', iso: '2026-11-05', desc: 'Water bill October', sub: 'Code 400-W001', amt: 84.30, g: 'linked', pay: 'Water bill', month: 'October 2026' },
+      { no: 'OR2608-003', iso: '2026-08-03', desc: 'Rental received July', sub: 'Code 300-T001', amt: 2800, g: 'before', moneyIn: true },
+      { no: 'PV2608-019', iso: '2026-08-28', desc: 'Office rental August', sub: 'Code 400-R001 · Chq 104398', amt: 6500, g: 'before' }
+    ];
+    const now = ENTRIES.map(e => {
+      const v = s.st[e.no];
+      if (e.no === 'PV2611-003' && s.moved) return { ...e, amt: 1136.20 };  // the link moved to the later entry
+      if (!v) return e;
+      if (v === 'deleted') return { ...e, g: 'ignored', deleted: true };
+      if (v === 'ignored') return { ...e, g: 'ignored' };
+      if (v === 'wait') return { ...e, g: e.corr ? 'corr' : 'wait' };
+      if (v === 'linkedDel') return { ...e, g: 'linked', pay: 'Office supplies', month: 'November 2026' };
+      return { ...e, g: 'linked', pay: v.slice(7), month: monthOf(e.iso) };
+    });
+    const by = g => now.filter(e => e.g === g);
+    const flash = (text, x) => set({ ...(x || {}), flash: { text }, say: text });
+    const amtStyle = moneyIn => 'padding:12px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap' + (moneyIn ? ';color:#0A6B3D' : '');
+    const detailBase = 'padding:12px;font-size:14px';
+    // One row of any list: the pill and the lines it opens, the payment or checklist item, and what can be done.
+    const row = (e, x) => {
+      const key = 'L:' + e.no, p = pillOf(e.no), open = !!p && s.open === key;
+      return { no: e.no, date: short(e.iso), hasNow: false, now: '', desc: e.desc, sub: e.sub || '', moneyIn: !!e.moneyIn,
+        amtText: (e.moneyIn ? '+' : '') + f2(e.amt), amtStyle: amtStyle(e.moneyIn),
+        pillBtn: !!p, pillText: p ? p.text : '', pillTone: p ? p.tone : 'ok',
+        pillStyle: p ? PILL[p.tone] + ';border:1px solid ' + EDGE[p.tone] + ';font-family:Inter,sans-serif;cursor:pointer;height:24px' : '',
+        open, chevCls: open ? 'chev on' : 'chev', rowId: 'sb-l-' + e.no, span: 6,
+        toggle: () => set({ open: open ? '' : key, say: open ? e.no + "'s account lines closed." : e.no + "'s account lines shown." }),
+        v: viewOf(open ? e.no : ''),
+        hasMark: !!e.deleted, markText: 'Deleted in SQL 18 Nov', markStyle: PILL.grey, markGlyph: 'trash',
+        hasDetail: true, detailStyle: detailBase, hasChip: false, chipText: '', chipStyle: '', chipGlyph: 'checklist', chipTone: 'ok', detail: '', detailMuted: '', hasNote: false, note: '',
+        hasAct: false, actLabel: '', actAria: '', act: () => {}, hasAct2: false, act2Label: '', act2Aria: '', act2: () => {}, ...(x || {}) };
+    };
+    const wait = by('wait'), corr = by('corr'), linked = by('linked'), ignored = by('ignored'), before = by('before');
+    const waitRow = e => row(e, { hasDetail: false, span: 5,
+      hasAct: true, actLabel: 'Create payment', actAria: 'Create payment for ' + e.no,
+      act: () => flash('Payment created', { st: { ...s.st, [e.no]: 'linked:' + e.desc }, open: '', focus: 'sb-fold-linked' }),
+      hasAct2: true, act2Label: 'Ignore', act2Aria: 'Ignore ' + e.no,
+      act2: () => flash('Ignored ' + e.no + '. It is kept under Ignored, below.', { st: { ...s.st, [e.no]: 'ignored' }, open: '', focus: 'sb-fold-ignored' }) });
+    const linkedRow = e => row(e, { detail: e.pay, detailMuted: '(' + e.month + ')',
+      hasAct: true, actLabel: 'Unlink', actAria: 'Unlink ' + e.no,
+      act: () => flash(e.no + ' unlinked from ' + e.pay + "; it's back under SQL entries not linked", { st: { ...s.st, [e.no]: 'wait' }, open: '', focus: 'sb-wait-h' }) });
+    const ignoredRow = e => row(e, { hasDetail: false, span: 5,
+      hasAct: true, actLabel: 'Un-ignore', actAria: 'Un-ignore ' + e.no,
+      act: () => flash(e.no + ' is back under SQL entries not linked', { st: { ...s.st, [e.no]: 'wait' }, open: '', focus: 'sb-wait-h' }) });
+    const beforeRow = e => row(e, { hasDetail: false, span: 5 });
+    const group = (rows, more) => ({ head: false, title: '', note: '', rows, some: rows.length > 0, none: rows.length === 0, noneText: '',
+      hAmt: 'Amount (RM)', hasDetail: true, hDetail: '', hDetailStyle: 'padding:10px 12px;font-weight:600', ...(more || {}) });
+    const card = (key, title, more) => {
+      const fold = !!(more && more.fold), open = fold ? !!s.fold[key] : true;
+      return { key, sid: 'sb-' + key, hid: 'sb-' + key + '-h', bid: 'sb-fold-' + key, title, count: '', note: '', glyph: 'inbox', tone: 'brand', fold, flat: !fold, open, show: open,
+        bodyCls: fold ? 'ex' : '', chevCls: open ? 'chev on' : 'chev',
+        toggle: () => set({ fold: { ...s.fold, [key]: !open } }), groups: [], ...(more || {}), foldNote: fold && !!(more && more.note) };
+    };
+
+    // The journals and invoices kept on file, as the SQL board lists them (without the print bar and e-Invoice column).
+    const JOURNALS = [
+      { no: 'JV2610-006', iso: '2026-10-24', desc: 'Director fee October', amt: 12000, note: 'Moves RM 12,000.00 out of the bank, so it counts in the bank reconciliation.' },
+      { no: 'JV2610-007', iso: '2026-10-31', desc: 'Payroll journal October', amt: 59147.90, task: 'Salary PVs in SQL (one per person) (Oct 2026)' },
+      { no: 'JV2611-004', iso: '2026-11-08', desc: 'Transfer to Maybank savings', amt: 5001, note: 'Moves RM 5,001.00 out of the bank, so it counts in the bank reconciliation.' },
+      { no: 'IV2610-014', iso: '2026-10-01', desc: 'Office rental October, Unit 3A', amt: 1800, task: 'e-Invoice to the office tenant for rental (Oct 2026)', note: 'Receipt: Rental received October' },
+      { no: 'IV2610-031', iso: '2026-10-31', desc: 'Rent October, Block A', amt: 2800 },
+      { no: 'PI2610-012', iso: '2026-10-31', desc: 'Electricity October (TNB)', amt: 1136.20, sub: 'Supplier invoice' },
+      ...(view === 'before-tracking' ? [{ no: 'JV2608-007', iso: '2026-08-31', desc: 'Payroll journal August', amt: 59064.20, before: true }] : [])
+    ];
+    const jRows = JOURNALS.map(j => row(j, { sub: j.sub || '',
+      hasChip: !!j.task || !!j.before, chipText: j.before ? 'Before tracking' : j.task || '', chipStyle: j.before ? PILL.grey : PILL.ok, chipGlyph: j.before ? 'history' : 'checklist', chipTone: j.before ? 'muted' : 'ok',
+      detail: j.task || j.before ? '' : '—', hasNote: !!j.note, note: j.note || '' }));
+
+    const cards = [
+      card('wait', 'SQL entries not linked to a payment', { count: '· ' + wait.length, glyph: 'inbox', tone: 'warn',
+        note: 'These are in SQL but not in HR Payments. Link each one to a payment, create a payment for it, or ignore it (for example a reversal).'
+          + (wait.some(e => LINES[e.no] && LINES[e.no].gone) ? ' An entry no longer in SQL is not counted in the Next up total: mark it Deleted in SQL under the checks below.' : ''),
+        groups: [group(wait.map(waitRow), { hasDetail: false, noneText: 'Nothing waiting. Every SQL entry is linked to a payment or ignored.' }),
+          ...(corr.length ? [group(corr.map(waitRow), { head: true, hasDetail: false, title: 'Probably a correction (no money moved)',
+            note: 'Reversals and contras made in SQL, or a receipt and a payment for the same amount on the same day. Create payments for all leaves these out. Ignore them, unless money really moved.' })] : [])] }),
+      card('linked', 'Linked to payments', { fold: true, count: '· ' + linked.length, glyph: 'link', tone: 'ok',
+        note: "Linked to the wrong payment? Unlink it: it goes back to the list above, and the payment's amount and paid date go back to what they were. A payment made from the voucher with Create payment, with nothing added since, is removed.",
+        groups: [group(linked.map(linkedRow), { hDetail: 'Payment', noneText: 'None yet.' })] }),
+      ...(ignored.length ? [card('ignored', 'Ignored', { fold: true, count: '· ' + ignored.length, glyph: 'archive', tone: 'muted',
+        groups: [group(ignored.map(ignoredRow), { hasDetail: false })] })] : []),
+      card('before', 'Before tracking (' + before.length + ')', { fold: true, glyph: 'history', tone: 'muted',
+        note: "These SQL entries are from months before September 2026, the first month tracked here. They are kept with SQL's books (their account lines and the checks against SQL's reports) but are not tracked as payments, so nothing asks you to link them.",
+        groups: [group(before.map(beforeRow), { hasDetail: false })] }),
+      ...(s.moved ? [card('replaced', 'Replaced by a later version from SQL', { fold: true, count: '· 1', glyph: 'history', tone: 'muted',
+        note: 'Earlier entries of vouchers edited in SQL. They are kept as they were read; the later entry is the one that counts.',
+        groups: [group([row({ no: 'PV2611-003', iso: '2026-11-04', desc: 'Electricity October', amt: 1163.20 }, { pillBtn: false, open: false, v: viewOf(''), detail: '1,136.20', detailMuted: '',
+          detailStyle: 'padding:12px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap' })],
+          { hAmt: 'Amount then (RM)', hDetail: 'Amount now (RM)', hDetailStyle: 'padding:10px 12px;font-weight:600;text-align:right' })] })] : []),
+      card('docs', 'Journals and invoices', { glyph: 'receipt', tone: 'brand',
+        note: 'Journals, customer invoices and supplier invoices, kept on file against their checklist item. A journal that moves the bank counts in the bank reconciliation.',
+        groups: [group(jRows, { hDetail: 'Checklist item' })] })
+    ];
+
+    // Checks against SQL's reports (sqlChecksCard): each report's own section, then SQL's documents that no listing matches.
+    const tbRead = differ ? '2026-11-18 10:58:41' : '2026-11-18 10:42:13';
+    const MOVED = "SQL's trial balance counts profit and loss from its From date (01/10/2026), so it moved a loss of 781,963.60 from earlier into retained earnings. No document carries that move.";
+    const rep = (title, meta, more) => ({ title, meta, noDiff: false, hasTable: false, rows: [], stale: false, staleText: '', notes: [], ...(more || {}) });
+    const reports = noReads ? [] : [
+      rep('GL Journal of Transaction', stale ? 'GL Journal Oct-Nov (2).xlsx · 1 Oct to 17 Nov · read 2026-11-18 11:05:20' : 'GL Journal Oct-Nov.xlsx · 1 Oct to 17 Nov · read 2026-11-18 10:42:13',
+        { notes: [{ text: stale ? '35 documents (1 new, 0 changed, 34 unchanged, 1 no longer in SQL), 80 lines.' : '34 documents (22 new, 1 changed, 11 unchanged, 1 no longer in SQL), 78 lines.' }] }),
+      rep('GL Ledger', 'GL Ledger.xlsx · 1 Oct to 12 Nov · read 2026-11-18 10:42:13', { noDiff: true, notes: [{ text: '12 accounts agree with the lines.' }] }),
+      differ
+        ? rep('Trial Balance', 'Trial Balance Oct.xlsx · 1 Oct to 31 Oct · read ' + tbRead, { hasTable: true, stale,
+          staleText: "A GL Journal of Transaction read after this trial balance changed documents in its dates, so these differences may only be the trial balance being old. Export SQL's Trial Balance again for the same dates (1 Oct to 31 Oct) and Fetch it.",
+          rows: [
+            { acct: '310-000', what: "310-000 Maybank current: the trial balance's Month To Date nets -55,648.00, the lines dated 01/10/2026-31/10/2026 -55,600.00.", sql: br(-55648), lines: br(-55600), diff: br(48) },
+            { acct: '900-010', what: "900-010 Bank charges: the trial balance's Month To Date nets 58.00, the lines dated 01/10/2026-31/10/2026 10.00.", sql: br(58), lines: br(10), diff: br(-48) },
+            { acct: '900-010', what: "900-010 Bank charges: the trial balance's Year To Date nets 58.00, the lines dated 01/10/2026-31/10/2026 10.00.", sql: br(58), lines: br(10), diff: br(-48) }],
+          notes: [{ text: '29 accounts agree with the lines for the month.' }, { text: '14 profit and loss accounts agree with the lines dated 01/10/2026-31/10/2026.' }, { text: MOVED }] })
+        : rep('Trial Balance', 'Trial Balance Oct.xlsx · 1 Oct to 31 Oct · read ' + tbRead, { noDiff: true,
+          notes: [{ text: '31 accounts agree with the lines for the month.' }, { text: '15 profit and loss accounts agree with the lines dated 01/10/2026-31/10/2026.' }, { text: MOVED }] })
+    ];
+    const orow = (no, iso, x) => { const key = 'C:' + no, open = s.open === key;
+      return { no, date: short(iso), hasGone: false, hasThird: true, third: '', hasAmt: false, amt: '', hasLines: true, open, chevCls: open ? 'chev on' : 'chev',
+        rowId: 'sb-c-' + no, linesAria: (open ? 'Hide' : 'Show') + ' the account lines of ' + no, span: 4,
+        toggle: () => set({ open: open ? '' : key, say: open ? no + "'s account lines closed." : no + "'s account lines shown." }), v: viewOf(open ? no : ''),
+        hasDel: false, delAria: '', del: () => {}, hasMutedAct: false, ...(x || {}) }; };
+    const ogroup = (key, title, note, rows, more) => {
+      const fold = !!(more && more.fold), open = fold ? !!s.fold[key] : true;
+      return { title, note, rows, fold, flat: !fold, open, show: open, bodyCls: fold ? 'ex' : '', chevCls: open ? 'chev on' : 'chev',
+        toggle: () => set({ fold: { ...s.fold, [key]: !open } }), hasThird: true, h3: 'Section', hasAmt: false, ...(more || {}) };
+    };
+    // A listing entry dated inside a journal read but missing from it; Deleted in SQL once nothing is linked to it.
+    const p8 = now.find(e => e.no === 'PV2611-008');
+    const missing = p8.deleted ? [] : [orow('PV2611-008', p8.iso, { hasGone: true, hasThird: false, hasAmt: true, amt: f2(p8.amt), hasLines: false, span: 4,
+      hasDel: p8.g !== 'linked', hasMutedAct: p8.g === 'linked', delAria: 'Deleted in SQL: PV2611-008',
+      del: () => flash('PV2611-008 marked as deleted in SQL; listed under Ignored', { st: { ...s.st, 'PV2611-008': 'deleted' }, fold: { ...s.fold, ignored: true }, open: '', focus: 'sb-fold-ignored' }) })];
+    const noListing = [orow('PV2611-012', '2026-11-14', { third: BOOK.bank }), orow('PV2611-015', '2026-11-17', { third: BOOK.bank }),
+      ...(stale ? [orow('JV2610-012', '2026-10-08', { third: BOOK.general })] : [])];
+    const orphans = noReads ? [] : [
+      ogroup('nolist', "In SQL's journal but no listing fetched · " + noListing.length, "Fetch SQL's listing these are in on the SQL import page, so each can be matched to a payment.", noListing),
+      ogroup('own', 'No listing this app reads yet · 1', "No listing this app reads yet: checked by their account lines and SQL's trial balance. These are in other sections of SQL's journal (cash sales, credit or debit notes, deposits, refunds, contra and the like), so nothing asks for their listing.",
+        [orow('CN2611-002', '2026-11-10', { hasThird: false, span: 3 })], { fold: true, hasThird: false }),
+      ...(missing.length ? [ogroup('missing', "Listing entries missing from SQL's Journal of Transaction · 1", 'Dated inside a journal read, but not in it: deleted or renumbered in SQL. If SQL no longer has one, click Deleted in SQL: it is kept here, listed under Ignored, and left out of the checks (Un-ignore puts it back).', missing, { hasThird: false, hasAmt: true })] : [])
+    ];
+
+    const seg = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    return {
+      eyebrow: s.co + (isSql ? ' · Kept in SQL Account' : ' · Kept here'), isSql, notSql: !isSql, say: s.say,
+      // The top-bar switcher: back to AISB from the old-address view. Choosing AI lands on AI's Overview (Topbar), so the page is left as it is.
+      onTopCo: code => { if (code === 'aisb' && this.state.co !== 'AISB') set({ co: 'AISB', say: 'Showing SQL import for AISB.' }); },
+      goAisb: () => set({ co: 'AISB', say: 'Showing SQL import for AISB.' }),
+      sbCo: isSql ? "aisb" : "ai", sbKind: isSql ? "sqlPayroll" : "here",
+      coA: seg(isSql), coB: seg(!isSql), coAOn: isSql ? 'true' : 'false', coBOn: isSql ? 'false' : 'true',
+      pickA: () => set({ co: 'AISB' }), pickB: () => set({ co: 'AI' }),
+      // Changed in SQL: PV2611-003 was 1,163.20 when it was linked; SQL now gives 1,136.20.
+      hasChanged: !s.moved, follow: !!s.follow, toggleFollow: e => set({ follow: !!(e && e.target && e.target.checked) }),
+      chLinked: 'Linked to Electricity bill (October 2026), whose amount is RM 1,163.20.',
+      chLedger: noReads ? '' : staleLines ? " SQL's GL Journal of Transaction kept here still has RM 1,163.20: fetch it again for the same dates so the account lines follow."
+        : " SQL's GL Journal of Transaction (version 2) already has RM 1,136.20.",
+      move: () => flash('PV2611-003: the link of Electricity bill moved to the amount SQL gives now' + (s.follow ? ", and the payment's amount changed with it" : "; the payment's amount is as it was"),
+        { moved: true, fold: { ...s.fold, replaced: true } }),
+      cards, hasChecks: !noReads, reports, orphans,
+      hasFlash: !!s.flash, flashText: s.flash ? s.flash.text : '', clearFlash: () => set({ flash: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

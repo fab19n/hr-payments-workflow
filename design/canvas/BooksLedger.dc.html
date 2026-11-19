@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Books · General ledger · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg,.sg,.lk{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+.sg:hover:not([aria-pressed="true"]){background:#F4F6F9 !important;color:#0F1A2B !important}
+.lk{color:#2450B8;text-decoration:underline;text-underline-offset:3px;border-radius:4px}
+.lk:hover{color:#1D419A}
+summary{cursor:pointer;border-radius:6px}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.tb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+::placeholder{color:#5F6C80;opacity:1}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .18s cubic-bezier(.22,1,.36,1)}
+.swapB{animation:swapB .18s cubic-bezier(.22,1,.36,1)}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.spd{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(36,80,184,.25);border-top-color:#2450B8;animation:spin .7s linear infinite;flex:none}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="books" kind="{{sbKind}}" company="{{sbCompany}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="Books" company="{{sbCompany}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 420px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Accounting</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Books</h1>
+          <p style="margin: 0; color: #46546A; max-width: 820px">{{intro}}</p>
+        </div>
+      </div>
+
+      <section aria-label="Period and report" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 22px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end">
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">From</span><input type="date" id="bl-from" value="{{fromVal}}" onChange="{{setFrom}}" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">To</span><input type="date" id="bl-to" value="{{toVal}}" onChange="{{setTo}}" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+          <button type="button" id="bl-show" class="hb" onClick="{{show}}" disabled="{{busy}}" aria-busy="{{showBusyAttr}}" style="min-width: 132px; height: 40px; padding: 0 18px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{showBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{showLabel}}</button>
+          <button type="button" id="bl-fy" class="hs" onClick="{{fyToDate}}" disabled="{{busy}}" aria-busy="{{fyBusyAttr}}" style="min-width: 232px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{fyBusy}}" hint-placeholder-val="{{ false }}"><span class="spd" aria-hidden="true"></span></sc-if>{{fyLabel}}</button>
+          <span style="flex: 1 1 0"></span>
+          <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}"><a href="#" id="bl-excel" class="hg" onClick="{{excel}}" title="This report as an Excel file, for the dates and options shown" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 10px; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="sheet" tone="brand" size="18" hint-size="18px,18px"></dc-import>Excel</a></sc-if>
+        </div>
+        <div role="group" aria-label="Report" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%; box-sizing: border-box">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+            <sc-if value="{{t.isBtn}}" hint-placeholder-val="{{ false }}"><button type="button" class="sg" aria-pressed="{{t.pressed}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button></sc-if>
+            <sc-if value="{{t.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{t.href}}" class="sg" style="{{t.style}}">{{t.label}}</a></sc-if>
+          </sc-for>
+        </div>
+      </section>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" aria-label="Loading the report" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+          <span style="color: #46546A">Loading…</span>
+          <span class="sk" style="height: 22px; width: 340px; max-width: 100%"></span>
+          <span class="sk" style="height: 14px; width: 560px; max-width: 100%"></span>
+          <span class="sk" style="height: 160px; width: 100%"></span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; gap: 10px; align-items: flex-start">
+          <dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import>
+          <span style="color: #934100; font-weight: 600">{{errText}}</span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isFail}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">{{failText}}</p>
+          <button type="button" id="bl-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isNoBooks}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="bl-nb-h" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="books" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="bl-nb-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No books yet</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 580px">{{noBooksText}}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+            <a href="BankBookLine.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="bank" tone="white" size="16" hint-size="16px,16px"></dc-import>Book a statement line</a>
+            <a href="AccountingKeptHere.dc.html#journals" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">Opening balances in Journals</a>
+          </div>
+          <span style="color: #5F6C80; font-size: 12px; max-width: 580px">New work: today a company kept here reads “No line or opening balance is kept for any account in these dates.”</span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isReport}}" hint-placeholder-val="{{ true }}">
+        <section aria-labelledby="bl-h2" class="{{swapCls}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px 22px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end">
+            <label style="display: flex; flex-direction: column; gap: 6px; flex: 0 1 340px; min-width: 0"><span style="font-size: 13px; font-weight: 600; color: #46546A">Account (type to search)</span>
+              <input id="bl-acct" list="bl-choices" value="{{acctVal}}" onChange="{{setAcct}}" placeholder="All accounts" autocomplete="off" spellcheck="false" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+            <datalist id="bl-choices"><sc-for list="{{choices}}" as="o" hint-placeholder-count="6"><option value="{{o.code}}">{{o.label}}</option></sc-for></datalist>
+            <sc-if value="{{hasAccount}}" hint-placeholder-val="{{ true }}"><button type="button" id="bl-all" class="hs" onClick="{{allAccounts}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">All accounts</button></sc-if>
+          </div>
+
+          <h2 id="bl-h2" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{h2}}</h2>
+
+          <sc-for list="{{accounts}}" as="a" hint-placeholder-count="1">
+            <article aria-labelledby="{{a.hid}}" style="border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; justify-content: space-between; padding: 14px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5">
+                <h3 id="{{a.hid}}" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><span style="font-family: ui-monospace, Consolas, monospace">{{a.code}}</span><span>{{a.name}}</span><sc-if value="{{a.nic}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600">Not in chart</span></sc-if></h3>
+                <sc-if value="{{a.hasCtl}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Sub-ledger of <button type="button" class="lk" title="{{a.ctlTitle}}" onClick="{{a.pickCtl}}" style="border: 0; background: transparent; padding: 2px; font: 600 13px ui-monospace, Consolas, monospace; cursor: pointer">{{a.ctl}}</button></span></sc-if>
+              </div>
+              <div style="overflow-x: auto">
+                <table style="width: 100%; min-width: 900px; border-collapse: collapse">
+                  <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{a.caption}}</caption>
+                  <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                    <th scope="col" style="padding: 10px 12px 10px 18px; font-weight: 600; width: 72px">Date</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600; width: 120px">Doc No</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600; width: 90px">Book</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600">Description</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Debit</th>
+                    <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Credit</th>
+                    <th scope="col" style="padding: 10px 18px 10px 12px; font-weight: 600; text-align: right">Balance</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr style="border-top: 1px solid #EEF1F5; background: #F7F8FA">
+                      <td style="padding: 10px 12px 10px 18px; color: #46546A; white-space: nowrap">{{a.openDate}}</td><td></td><td></td>
+                      <td style="padding: 10px 12px">Opening balance<sc-if value="{{a.hasWords}}" hint-placeholder-val="{{ true }}"> <span style="color: #5F6C80">· {{a.openWords}}</span></sc-if></td>
+                      <td></td><td></td>
+                      <td style="padding: 10px 18px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600">{{a.openBal}}</td>
+                    </tr>
+                    <sc-for list="{{a.rows}}" as="r" hint-placeholder-count="6">
+                      <tr class="hr" style="border-top: 1px solid #F1F3F7">
+                        <td style="padding: 10px 12px 10px 18px; color: #46546A; white-space: nowrap">{{r.date}}</td>
+                        <td style="padding: 8px 12px; white-space: nowrap"><sc-if value="{{r.isLine}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{r.btnId}}" class="lk" aria-expanded="{{r.exp}}" title="{{r.title}}" onClick="{{r.toggle}}" style="border: 0; background: transparent; padding: 2px; font: 600 13px ui-monospace, Consolas, monospace; cursor: pointer">{{r.no}}</button></sc-if></td>
+                        <td style="padding: 10px 12px; color: #46546A">{{r.book}}</td>
+                        <td style="{{r.descStyle}}">{{r.desc}}</td>
+                        <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.dr}}</td>
+                        <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.cr}}</td>
+                        <td style="padding: 10px 18px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.bal}}</td>
+                      </tr>
+                      <sc-if value="{{r.isOpen}}" hint-placeholder-val="{{ false }}">
+                        <tr>
+                          <td colspan="7" style="padding: 0">
+                            <div class="ex" role="region" aria-labelledby="{{r.btnId}}" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 18px 16px; background: #F7F8FA; border-top: 1px solid #E3E7ED; box-shadow: inset 3px 0 0 #2450B8">
+                              <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; justify-content: space-between">
+                                <b style="display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center"><span style="font-family: ui-monospace, Consolas, monospace">{{r.doc.no}}</span><sc-if value="{{r.doc.hasLabel}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80; font-weight: 500">· {{r.doc.label}}</span></sc-if></b>
+                                <span style="color: #5F6C80; font-size: 12px">{{r.doc.src}}</span>
+                              </div>
+                              <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px; background: #FFFFFF">
+                                <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                  <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{r.doc.caption}}</caption>
+                                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                                    <th scope="col" style="padding: 8px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th>
+                                    <th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Credit</th>
+                                  </tr></thead>
+                                  <tbody>
+                                    <sc-for list="{{r.doc.lines}}" as="l" hint-placeholder-count="2">
+                                      <tr style="{{l.trStyle}}">
+                                        <td style="padding: 8px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{l.code}}</span> {{l.name}}<sc-if value="{{l.nic}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600">Not in chart</span></sc-if><sc-if value="{{l.bank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">Bank</span></sc-if></td>
+                                        <td style="padding: 8px 12px; color: #46546A">{{l.desc}}</td>
+                                        <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{l.dr}}</td>
+                                        <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{l.cr}}</td>
+                                      </tr>
+                                    </sc-for>
+                                    <tr style="border-top: 2px solid #E3E7ED; font-weight: 700"><td colspan="2" style="padding: 8px 12px">Total</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.doc.totDr}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.doc.totCr}}</td></tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                              <span style="display: inline-flex; gap: 6px; align-items: center; color: #0A6B3D; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>{{r.doc.check}}</span>
+                              <sc-if value="{{r.doc.hasOlder}}" hint-placeholder-val="{{ false }}">
+                                <details style="display: flex; flex-direction: column; gap: 8px">
+                                  <summary style="color: #46546A; font-size: 13px; font-weight: 600; padding: 4px 0">Earlier versions ({{r.doc.olderN}})</summary>
+                                  <sc-for list="{{r.doc.older}}" as="ov" hint-placeholder-count="1">
+                                    <div class="ex" style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px">
+                                      <span style="color: #5F6C80; font-size: 12px">{{ov.src}}</span>
+                                      <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px; background: #FFFFFF">
+                                        <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                          <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{ov.caption}}</caption>
+                                          <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                                            <th scope="col" style="padding: 8px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th>
+                                            <th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Credit</th>
+                                          </tr></thead>
+                                          <tbody>
+                                            <sc-for list="{{ov.lines}}" as="ol" hint-placeholder-count="2">
+                                              <tr style="{{ol.trStyle}}">
+                                                <td style="padding: 8px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{ol.code}}</span> {{ol.name}}<sc-if value="{{ol.bank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">Bank</span></sc-if></td>
+                                                <td style="padding: 8px 12px; color: #46546A">{{ol.desc}}</td>
+                                                <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ol.dr}}</td>
+                                                <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ol.cr}}</td>
+                                              </tr>
+                                            </sc-for>
+                                            <tr style="border-top: 2px solid #E3E7ED; font-weight: 700"><td colspan="2" style="padding: 8px 12px">Total</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ov.totDr}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ov.totCr}}</td></tr>
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  </sc-for>
+                                </details>
+                              </sc-if>
+                            </div>
+                          </td>
+                        </tr>
+                      </sc-if>
+                    </sc-for>
+                    <tr style="border-top: 2px solid #E3E7ED; font-weight: 700">
+                      <td colspan="4" style="padding: 10px 12px 10px 18px">Total for the period</td>
+                      <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{a.dr}}</td>
+                      <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{a.cr}}</td>
+                      <td></td>
+                    </tr>
+                    <tr style="border-top: 1px solid #EEF1F5; background: #F7F8FA">
+                      <td style="padding: 10px 12px 10px 18px; color: #46546A; white-space: nowrap">{{a.closeDate}}</td><td></td><td></td>
+                      <td style="padding: 10px 12px; font-weight: 600">Closing balance</td><td></td><td></td>
+                      <td style="padding: 10px 18px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 700">{{a.closeBal}}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <sc-if value="{{a.hasNotes}}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 12px 18px 14px; border-top: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 6px">
+                  <sc-for list="{{a.notes}}" as="n" hint-placeholder-count="1"><p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{n.text}}<sc-if value="{{n.isNew}}" hint-placeholder-val="{{ false }}"> <span style="color: #5F6C80; font-size: 12px">{{n.newText}}</span></sc-if></p></sc-for>
+                </div>
+              </sc-if>
+            </article>
+          </sc-for>
+
+          <sc-if value="{{hasMore}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border: 1px solid #E3E7ED; border-radius: 12px; background: #F7F8FA">
+              <span role="status" style="font-size: 13px; color: #46546A">{{moreText}}</span>
+              <sc-if value="{{moreBtn}}" hint-placeholder-val="{{ true }}"><button type="button" id="bl-more" class="hs" onClick="{{showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreLabel}}</button></sc-if>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{noAccounts}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; padding: 18px; border: 1px dashed #C9D2DF; border-radius: 12px; color: #5F6C80; text-align: center">{{emptyText}}</p></sc-if>
+          <sc-for list="{{notes}}" as="n" hint-placeholder-count="1"><p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{n.text}}</p></sc-for>
+
+          <aside aria-label="What the Excel link gives" class="{{xlCls}}" style="border: 1px dashed #C9D2DF; border-radius: 12px; padding: 12px 14px; background: #FAFBFC; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import><b style="font-size: 13px; overflow-wrap: anywhere">{{xlName}}</b><span style="color: #5F6C80; font-size: 12px">· the file the Excel link gives for this view, sheet "General ledger"</span></div>
+            <sc-for list="{{xlRows}}" as="x" hint-placeholder-count="3">
+              <div style="display: flex; gap: 10px; font-size: 13px"><span style="flex: none; width: 48px; color: #5F6C80">Row {{x.n}}</span><span style="color: #46546A; overflow-wrap: anywhere">{{x.text}}</span></div>
+            </sc-for>
+            <span style="color: #5F6C80; font-size: 12px">Columns on row 5: Account, Date, Doc No, Book, Description, Debit, Credit, Balance (debit above 0). Per account: a bold header, the opening balance, the lines, Total for the period, Closing balance and its notes.</span>
+            <span style="color: #5F6C80; font-size: 12px">{{xlNew}}</span>
+          </aside>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"account","options":["account","year-start","doc-open","control","all","many-rows","opening","doc-changed","company-ai","loading","could-not-load"],"section":"State to show"},"$preview":{"width":1440,"height":1620}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.initial((p && p.view) || 'account');
+    // A code in the address (a code link on another Books board: BooksLedger.dc.html#400-000) opens that account's ledger on first load.
+    const h = this.state.account === '310-000' && (!p || !p.view || p.view === 'account') ? this.hashCode() : null;
+    if (h) Object.assign(this.state, { account: h, acctVal: h });
+    this.timer = null;
+  }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      // The "State to show" tweak changed: start that state afresh.
+      clearTimeout(this.timer);
+      this.setState(this.initial(this.props.view || 'account'));
+      return;
+    }
+    if (this._focus) {
+      const id = this._focus; this._focus = null;
+      const el = document.getElementById(id);
+      if (el && el.focus) el.focus({ preventScroll: true });
+    }
+  }
+
+  // ---------- The shared sample: stage1/samples.md sections 2-12. The same data and arithmetic sit on Books, BooksLedger and BooksStatements. ----------
+  data() {
+    if (this._d) return this._d;
+    const S = x => Math.round(x * 100);
+    const CHART = {};
+    [
+      ['200-000', 'Office equipment', 'FA', 'asset'], ['200-100', 'Motor vehicles', 'FA', 'asset'],
+      ['300-000', 'Trade debtors', 'CA', 'asset'], ['300-900', 'Cash and bank', 'CA', 'asset'],
+      ['310-000', 'Maybank current', 'CA', 'asset', '300-900'], ['310-100', 'Maybank savings', 'CA', 'asset', '300-900'],
+      ['310-200', 'USD collections', 'CA', 'asset', '300-900'], ['320-000', 'Salary advances', 'CA', 'asset'],
+      ['330-000', 'Fixed deposit', 'CA', 'asset'], ['350-000', 'Deposits paid', null, 'asset'],
+      ['400-000', 'Trade creditors', 'CL', 'liability'], ['420-000', 'Accruals', 'CL', 'liability'],
+      ['430-000', 'Statutory payables', 'CL', 'liability'], ['430-100', 'KWSP payable', 'CL', 'liability', '430-000'],
+      ['430-200', 'PERKESO payable', 'CL', 'liability', '430-000'], ['430-210', 'EIS (SIP) payable', 'CL', 'liability', '430-000'],
+      ['430-300', 'PCB payable', 'CL', 'liability', '430-000'], ['440-000', 'Deposits received', 'CL', 'liability'],
+      ['500-000', 'Share capital', 'CP', 'equity'], ['500-F001', 'Funds from Agrinexus International', 'CP', 'equity', '500-000'],
+      ['510-000', 'Retained earnings', 'RE', 'equity'],
+      ['600-000', 'Rental income', 'SL', 'income'], ['610-000', 'Management fees', 'SL', 'income'], ['650-000', 'Bank profit', 'OI', 'income'],
+      ['900-010', 'Bank charges', 'EP', 'expense'], ['900-100', 'Salaries and wages', 'EP', 'expense'], ['900-110', 'KWSP - employer', 'EP', 'expense'],
+      ['900-120', 'PERKESO - employer', 'EP', 'expense'], ['900-130', 'EIS - employer', 'EP', 'expense'], ['900-200', 'Directors fee', 'EP', 'expense'],
+      ['900-300', 'Office rental', 'EP', 'expense'], ['900-400', 'Utilities', 'EP', 'expense'], ['900-600', 'Telephone and internet', 'EP', 'expense'],
+      ['900-700', 'Contract works', 'EP', 'expense'], ['900-800', 'Printing, postage and stationery', 'EP', 'expense'], ['900-900', 'Professional fees', 'EP', 'expense'],
+      ['999-000', 'Suspense', null, null]
+    ].forEach(([code, name, grp, type, parent]) => { CHART[code] = { name, grp, type, parent: parent || null }; });
+    // Customer and supplier codes with entries (Setup › Customers and suppliers; 300-A001 is kept out of Setup, so it is named from what SQL printed).
+    const PARTY = {
+      '300-A001': { name: 'AGRINEXUS INTERNATIONAL', from: 'printed', ctl: '300-000' },
+      '300-T001': { name: 'Tenant', from: 'party', ctl: '300-000' },
+      '300-U001': { name: 'Office tenant (Unit 3A)', from: 'party', ctl: '300-000' },
+      '400-E012': { name: 'Electricity supplier', from: 'party', ctl: '400-000' },
+      '400-P004': { name: 'Payroll advisor', from: 'party', ctl: '400-000' },
+      '400-R001': { name: 'Office landlord', from: 'party', ctl: '400-000' }
+    };
+    // What SQL printed for a code the chart doesn't have (the "Not in chart" state: 500-F001 before it was added).
+    const PRINTED = { '500-F001': 'FUNDS FROM AGRINEXUS INTERNATIONAL' };
+    // Openings kept at 1 Oct 2026 from SQL's trial balance (Trial Balance Oct.xlsx, From date 1 Oct): debit above 0.
+    const OPEN = {};
+    [['200-000', 18500], ['300-000', 8500], ['310-000', 89218.35], ['310-100', 50000], ['320-000', 1500], ['350-000', 6000],
+      ['400-000', -850], ['430-100', -5320], ['500-000', -100000], ['500-F001', -1050000], ['510-000', 200488.05],
+      ['600-000', -41400], ['610-000', -37200], ['650-000', -168.60], ['900-010', 412], ['900-100', 522384.60], ['900-110', 46480],
+      ['900-120', 6458.40], ['900-130', 737.10], ['900-200', 108000], ['900-300', 58500], ['900-400', 10215.60], ['900-600', 3780],
+      ['900-700', 72000], ['900-800', 2964.50], ['900-900', 28800]].forEach(([c, v]) => { OPEN[c] = S(v); });
+    const NEW = { file: 'GL Journal Oct-Nov.xlsx', read: '2026-11-18 10:42' }, OLD = { file: 'GL Journal Nov.xlsx', read: '2026-11-12 16:04' };
+    const L = ls => ls.map(([code, dr, cr]) => ({ code, dr: S(dr || 0), cr: S(cr || 0) }));
+    const doc = (no, iso, book, desc, lines, src, older) => ({ no, iso, book, desc, src: src || NEW, v: older ? 2 : 1, older: older || null, lines: L(lines) });
+    // The account lines of SQL's GL Journal of Transaction kept here: 20 October documents (45 lines) and 14 November ones to 17 Nov (33 lines).
+    const DOCS = [
+      doc('IV2610-014', '2026-10-01', 'sales', 'Office rental October, Unit 3A', [['300-U001', 1800], ['600-000', 0, 1800]]),
+      doc('OR2610-001', '2026-10-02', 'bank', 'Rental received September', [['310-000', 2800], ['300-T001', 0, 2800]]),
+      doc('PV2610-003', '2026-10-06', 'bank', 'Contractor — field works', [['900-700', 24000], ['310-000', 0, 24000]]),
+      doc('OR2610-002', '2026-10-15', 'bank', 'Deposit received, Klinik Sehat', [['310-100', 8000], ['440-000', 0, 8000]]),
+      doc('PV2610-005', '2026-10-15', 'bank', 'KWSP September', [['430-100', 5320], ['900-110', 5860], ['310-000', 0, 11180]]),
+      doc('OR2610-006', '2026-10-20', 'bank', 'Fund received', [['310-000', 45000], ['500-F001', 0, 45000]]),
+      doc('JV2610-006', '2026-10-24', 'general', 'Director fee October', [['900-200', 12000], ['310-000', 0, 12000]]),
+      doc('PV2610-014', '2026-10-24', 'bank', 'Salaries October', [['420-000', 48600], ['310-000', 0, 48600]]),
+      doc('PI2610-011', '2026-10-30', 'purchase', 'Office rental October', [['900-300', 6500], ['400-R001', 0, 6500]]),
+      doc('PI2610-013', '2026-10-30', 'purchase', 'Payroll advisory October', [['900-900', 3200], ['400-P004', 0, 3200]]),
+      doc('PV2610-021', '2026-10-30', 'bank', 'Office rental October', [['400-R001', 6500], ['310-000', 0, 6500]]),
+      doc('PV2610-022', '2026-10-30', 'bank', 'Stationery Mart (cheque 000214)', [['900-800', 1120], ['310-000', 0, 1120]]),
+      doc('CB2610-041', '2026-10-31', 'bank', 'Bank charges', [['900-010', 48], ['310-000', 0, 48]]),
+      doc('CB2610-044', '2026-10-31', 'bank', 'Reversal of CB2610-041', [['310-000', 48], ['900-010', 0, 48]]),
+      doc('CB2610-050', '2026-10-31', 'bank', 'Profit paid', [['310-100', 21.40], ['650-000', 0, 21.40]]),
+      doc('CB2610-051', '2026-10-31', 'bank', 'Service charge', [['900-010', 10], ['310-100', 0, 10]]),
+      doc('IV2610-031', '2026-10-31', 'sales', 'Rent October, Block A', [['300-T001', 2800], ['600-000', 0, 2800]]),
+      doc('IV2610-033', '2026-10-31', 'sales', 'Management fee October', [['300-A001', 4500], ['610-000', 0, 4500]]),
+      doc('JV2610-007', '2026-10-31', 'general', 'Payroll journal October', [['900-100', 59147.90], ['420-000', 0, 48600], ['430-100', 0, 5346], ['430-200', 0, 205], ['430-210', 0, 81.90], ['430-300', 0, 4915]]),
+      doc('PI2610-012', '2026-10-31', 'purchase', 'Electricity October', [['900-400', 1136.20], ['400-E012', 0, 1136.20]]),
+      doc('IV2611-002', '2026-11-02', 'sales', 'Office rental November, Unit 3A', [['300-U001', 1800], ['600-000', 0, 1800]], OLD),
+      doc('IV2611-005', '2026-11-02', 'sales', 'Utilities recharge November, Unit 3A', [['300-U001', 245.60], ['900-400', 0, 245.60]], OLD),
+      doc('OR2611-001', '2026-11-03', 'bank', 'Rental received October', [['310-000', 2800], ['300-T001', 0, 2800]], OLD),
+      doc('JV2611-001', '2026-11-03', 'general', 'Transfer to fixed deposit', [['330-000', 20000], ['310-000', 0, 20000]], OLD),
+      doc('PV2611-003', '2026-11-04', 'bank', 'Electricity October', [['400-E012', 1136.20], ['310-000', 0, 1136.20]], NEW,
+        [{ v: 1, iso: '2026-11-04', src: OLD, lines: L([['400-E012', 1163.20], ['310-000', 0, 1163.20]]) }]),
+      doc('PV2611-004', '2026-11-05', 'bank', 'Internet and phone', [['900-600', 420], ['310-000', 0, 420]], OLD),
+      doc('PV2611-006', '2026-11-05', 'bank', 'Water bill October', [['900-400', 84.30], ['310-000', 0, 84.30]], OLD),
+      doc('OR2611-002', '2026-11-05', 'bank', 'Rental received October, Unit 3A', [['310-000', 1800], ['300-U001', 0, 1800]], OLD),
+      doc('PV2611-007', '2026-11-06', 'bank', 'Cloud software subscription October', [['900-600', 300], ['900-600', 170], ['310-000', 0, 470]], OLD),
+      doc('PV2611-009', '2026-11-06', 'bank', 'Courier charges October', [['900-800', 186.50], ['310-000', 0, 186.50]], OLD),
+      doc('JV2611-004', '2026-11-08', 'general', 'Transfer to Maybank savings', [['310-100', 5000], ['900-010', 1], ['310-000', 0, 5001]], OLD),
+      doc('CN2611-002', '2026-11-10', 'other', 'Credit note: Rent October, Block A', [['600-000', 2800], ['300-T001', 0, 2800]], OLD),
+      doc('PV2611-012', '2026-11-14', 'bank', 'PCB October', [['430-300', 4915], ['310-000', 0, 4915]]),
+      doc('PV2611-015', '2026-11-17', 'bank', 'PERKESO October', [['430-200', 205], ['900-120', 717.60], ['430-210', 81.90], ['900-130', 81.90], ['310-000', 0, 1086.40]])
+    ];
+    // State-only variants (samples.md section 21): the 8 Oct SERVICE CHARGE booked in SQL as JV2610-012 after the journal was fetched;
+    // and the same charge put on 999-000 Suspense, which the chart doesn't type.
+    const EXTRA = {
+      jv012: doc('JV2610-012', '2026-10-08', 'general', 'Service charge', [['900-010', 48], ['310-000', 0, 48]]),
+      suspense: doc('JV2610-012', '2026-10-08', 'general', 'Service charge', [['999-000', 48], ['310-000', 0, 48]])
+    };
+    this._d = { CHART, PARTY, PRINTED, OPEN, DOCS, EXTRA, START: '2026-10-01', COVER: ['2026-10-01', '2026-11-17'],
+      DEFAULT_TO: { AISB: '2026-11-17', AI: '2026-11-18' }, BANKS: ['310-000', '310-100', '310-200'],
+      BOOK: { bank: 'Bank', general: 'General', sales: 'Sales', purchase: 'Purchase', other: 'Other' },
+      BOOK_LABEL: { bank: 'the Bank Journal', general: 'the General Journal', sales: 'the Sales Journal', purchase: 'the Purchase Journal', other: null },
+      CO: { AISB: { code: 'AISB', name: 'AISB Sdn Bhd', sql: true }, AI: { code: 'AI', name: 'Agrinexus International', sql: false } } };
+    return this._d;
+  }
+
+  // Formats, as the app writes them: money 1,234.56 (sen in), balances x Dr / x Cr, dates 1 Oct 2026, 01/10/2026 and 1 Oct.
+  fmt(sen) {
+    const neg = sen < 0, v = Math.abs(sen);
+    return (neg ? '-' : '') + String(Math.floor(v / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + String(v % 100).padStart(2, '0');
+  }
+  rmPlain(n) { return n === null || n === undefined ? '—' : this.fmt(n); }
+  rmCell(n) { return n ? this.fmt(n) : ''; }
+  drCr(n) { return n === null || n === undefined ? '—' : n === 0 ? '0.00' : this.fmt(Math.abs(n)) + (n > 0 ? ' Dr' : ' Cr'); }
+  fsAmt(n) { return n === null || n === undefined ? '—' : n < 0 ? '(' + this.fmt(-n) + ')' : this.fmt(n); }
+  fmtDate(iso) { const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const [y, m, d] = iso.split('-'); return Number(d) + ' ' + M[Number(m) - 1] + ' ' + y; }
+  shortDate(iso) { return this.fmtDate(iso).split(' ').slice(0, 2).join(' '); }
+  dmy(iso) { const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; }
+  fileDate(iso) { const [y, m, d] = iso.split('-'); return d + '-' + m + '-' + y; }
+  next(iso) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10); }
+
+  // The period a report shows: the dates given, else To = the last day SQL's reports kept reach (today for AI) and From = the financial year start before it.
+  period(co, from, to) {
+    const D = this.data();
+    const t = to || D.DEFAULT_TO[co];
+    const f = from || (t.slice(0, 4) + '-01-01');
+    return { from: f, to: t };
+  }
+
+  // The books worked out from the openings and the account lines, as hrp/books.py does (one opening date kept: 1 Oct 2026).
+  // co 'AI' keeps nothing. opts: { extra: a document added (state-only variants), noChart: codes left out of the chart }.
+  books(co, opts) {
+    const D = this.data(), o = opts || {}, self = this;
+    const sql = D.CO[co].sql;
+    const CH = Object.assign({}, D.CHART);
+    (o.noChart || []).forEach(c => { delete CH[c]; });
+    const OPEN = sql ? D.OPEN : {};
+    const docs = sql ? D.DOCS.concat(o.extra ? [D.EXTRA[o.extra]] : []) : [];
+    const lines = {};
+    docs.forEach(d => d.lines.forEach((l, i) => { (lines[l.code] = lines[l.code] || []).push({ iso: d.iso, no: d.no, book: d.book, desc: d.desc, dr: l.dr, cr: l.cr, seq: i }); }));
+    Object.keys(lines).forEach(c => lines[c].sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : a.no < b.no ? -1 : a.no > b.no ? 1 : a.seq - b.seq)));
+    const START = D.START;
+    const ctl = c => (D.PARTY[c] || {}).ctl || null;
+    const nameOf = c => CH[c] ? { name: CH[c].name, from: 'chart' } : D.PARTY[c] ? { name: D.PARTY[c].name, from: D.PARTY[c].from } : { name: D.PRINTED[c] || '', from: 'printed' };
+    const kind = c => { if (ctl(c)) return 'bs'; const a = CH[c]; if (!a || !a.type) return null; if (a.grp === 'RE') return 're'; return a.type === 'income' || a.type === 'expense' ? 'pl' : 'bs'; };
+    const moved = (c, a, b) => { let dr = 0, cr = 0; (lines[c] || []).forEach(x => { if (x.iso >= a && x.iso < b) { dr += x.dr; cr += x.cr; } }); return [dr, cr]; };
+    const net = (c, a, b) => { const m = moved(c, a, b); return m[0] - m[1]; };
+    // The balance before day: SQL's opening at 1 Oct (nothing for an account not on SQL's trial balance, and for a customer's or supplier's
+    // code, whose balance before then is inside its control account) plus the lines since. Unknown (null) before 1 Oct. Books kept here: the lines.
+    // As books.py: profit and loss start again at each financial year start (1 January) after the openings (books.pl_balance), and retained
+    // earnings take in what those year starts moved (books.carried). f: the latest year start whose move counts (the one on or before day).
+    const ORIGIN = sql ? START : '0000-00-00';
+    const fy = d => d.slice(0, 4) + '-01-01';
+    const codes = () => { const s = new Set(Object.keys(OPEN)); Object.keys(lines).forEach(c => s.add(c)); if (sql && CH['510-000']) s.add('510-000'); return [...s].sort(); };
+    const plCodes = () => codes().filter(c => kind(c) === 'pl');
+    const plBal = (c, day, f) => (day < ORIGIN ? null : f > ORIGIN ? net(c, f, day) : (OPEN[c] || 0) + net(c, ORIGIN, day));
+    const carried = f => (f > ORIGIN ? plCodes().reduce((s, c) => s + (OPEN[c] || 0) + net(c, ORIGIN, f), 0) : 0);
+    const bal = (c, day, f) => {
+      if (day < ORIGIN) return null;
+      const y = f || fy(day), k = kind(c);
+      if (k === 'pl') return plBal(c, day, y);
+      return (OPEN[c] || 0) + net(c, ORIGIN, day) + (k === 're' ? carried(y) : 0);
+    };
+    // The balance at the end of to (books.closing): on a year's last day, before that year end's move, which is dated the next day.
+    const closing = (c, to) => bal(c, self.next(to), fy(to));
+    // The year starts after from and on or before to, and what each moves on an account (books._resets): out of a profit and loss
+    // account (the opposite of its balance before it), into retained earnings (what they all held). Zero moves are left out.
+    const yearStarts = (from, to) => { const out = []; for (let y = Number(from.slice(0, 4)) + 1; y + '-01-01' <= to; y++) out.push(y + '-01-01'); return out; };
+    const resets = (c, from, to) => {
+      const k = kind(c);
+      return yearStarts(from, to).map(Y => {
+        const p = (Number(Y.slice(0, 4)) - 1) + '-01-01';
+        if (k === 'pl') { const b = plBal(c, Y, p); return [Y, b === null ? 0 : -b]; }
+        return [Y, k === 're' ? plCodes().reduce((s, x) => s + (plBal(x, Y, p) || 0), 0) : 0];
+      }).filter(x => x[1]);
+    };
+    const how = (c, day) => (!sql ? 'fresh' : day < START ? null : ctl(c) ? 'in_control' : OPEN[c] !== undefined ? 'sql_tb' : 'not_on_tb');
+    const cover = (from, to) => (sql && !(D.COVER[0] <= from && to <= D.COVER[1])
+      ? ['The GL Journal of Transaction reads kept cover ' + self.dmy(D.COVER[0]) + '-' + self.dmy(D.COVER[1]) + ', not all of ' + self.dmy(from) + '-' + self.dmy(to) + ': lines dated outside them are missing here. Fetch the journal for the whole period.']
+      : []);
+    const WORDS = { sql_tb: "SQL's trial balance", sql_ledger: "SQL's GL ledger", here: 'entered here', fresh: 'the books kept here from the start', not_on_tb: "not on SQL's trial balance, so nothing", in_control: 'inside its control account' };
+    // The trial balance (books.trial_balance): opening, the period's debits and credits, what a year start inside the period moved (ys), closing;
+    // customers and suppliers rolled into their control accounts.
+    const tb = (from, to, rollup) => {
+      const after = self.next(to), rows = {}, unknown = [], untyped = [], starts = {};
+      codes().forEach(c => {
+        const op = bal(c, from), cl = closing(c, to), [dr, cr] = moved(c, from, after), ys = resets(c, from, to).reduce((s, x) => s + x[1], 0);
+        if (!(op || cl || dr || cr || ys) && op !== null && cl !== null) return;
+        const h = how(c, from);
+        if (h && h !== 'in_control') starts[h] = (starts[h] || 0) + 1;
+        if (op === null || cl === null) unknown.push(c);
+        if (kind(c) === null) untyped.push(c);
+        const nm = nameOf(c);
+        rows[c] = { code: c, name: nm.name, from: nm.from, kind: kind(c), ctl: ctl(c), o: op, dr, cr, ys, cl, rolled: [] };
+      });
+      if (rollup) Object.keys(rows).filter(c => rows[c].ctl).forEach(c => {
+        const s = rows[c]; delete rows[c];
+        let into = rows[s.ctl];
+        if (!into) { const nm = nameOf(s.ctl); into = rows[s.ctl] = { code: s.ctl, name: nm.name, from: nm.from, kind: kind(s.ctl), ctl: null, o: 0, dr: 0, cr: 0, ys: 0, cl: 0, rolled: [] }; }
+        into.o = into.o === null || s.o === null ? null : into.o + s.o;
+        into.cl = into.cl === null || s.cl === null ? null : into.cl + s.cl;
+        into.dr += s.dr; into.cr += s.cr; into.ys += s.ys; into.rolled.push(c);
+      });
+      const out = Object.values(rows).sort((a, b) => (a.code < b.code ? -1 : 1));
+      out.forEach(r => r.rolled.sort());
+      const known = out.every(r => r.o !== null && r.cl !== null);
+      const sum = f => out.reduce((s, r) => s + f(r), 0);
+      const tot = { odr: known ? sum(r => Math.max(r.o, 0)) : null, ocr: known ? sum(r => Math.max(-r.o, 0)) : null, dr: sum(r => r.dr), cr: sum(r => r.cr), ys: sum(r => r.ys),
+        cdr: known ? sum(r => Math.max(r.cl, 0)) : null, ccr: known ? sum(r => Math.max(-r.cl, 0)) : null };
+      const balanced = known && tot.odr === tot.ocr && tot.dr === tot.cr && tot.cdr === tot.ccr && tot.ys === 0;
+      const notes = [];
+      if (unknown.length) notes.push('No opening balance is kept for ' + unknown.join(', ') + ', so ' + (unknown.length > 1 ? 'their' : 'its') + " balances can't be shown and the totals can't be checked. Fetch SQL's trial balance (with a From date) or its GL ledger for the start of the period.");
+      else if (!balanced) notes.push("The trial balance doesn't balance: the openings come to " + self.fmt(tot.odr) + ' debit and ' + self.fmt(tot.ocr) + ' credit, the closings to ' + self.fmt(tot.cdr) + ' and ' + self.fmt(tot.ccr) + '.');
+      if (untyped.length) notes.push('Not typed in the chart of accounts, so taken as balance-sheet accounts (never started again at the year start): ' + untyped.join(', ') + '. Set their types in Setup.');
+      const fIn = yearStarts(from, to);
+      if (fIn.length) notes.push('The period holds the start of the financial year (' + fIn.map(f => self.dmy(f)).join(', ') + '): profit and loss start again there, and what they held moves into retained earnings (the Year start column).');
+      notes.push(...cover(from, to));
+      const parts = ['sql_tb', 'sql_ledger', 'here', 'fresh', 'not_on_tb'].filter(k => starts[k]).map(k => WORDS[k] + (k === 'fresh' ? '' : ' at ' + self.fmtDate(START)) + ' (' + starts[k] + ' account' + (starts[k] === 1 ? '' : 's') + ')');
+      return { from, to, rollup, rows: out, tot, known, balanced, unknown, notes, hasYs: out.some(r => r.ys), openings: parts.length ? 'Openings from ' + parts.join('; ') + '.' : '' };
+    };
+    return { sql, CH, lines, docs, ctl, kind, nameOf, moved, net, bal, closing, fy, yearStarts, resets, how, codes, cover, tb, WORDS };
+  }
+
+  // ---------- This board: the shell and the General ledger tab ----------
+  hashCode() {
+    let h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)).trim().toUpperCase(); } catch (e) { h = ''; }
+    if (!h) return null;
+    const B = this.books('AISB');
+    return B.codes().indexOf(h) >= 0 || B.CH[h] ? h : null;
+  }
+  initial(view) {
+    const s = { co: 'AISB', from: '2026-10-01', to: '2026-10-31', account: '310-000', open: null, busy: false, busyBy: null, err: '', xlN: 0, swapN: 0, say: '', fail: false, limit: 10 };
+    if (view === 'year-start') { s.to = '2027-01-31'; s.account = '900-100'; }
+    if (view === 'doc-open') s.open = '310-000|PV2610-005';
+    if (view === 'control') s.account = '400-000';
+    if (view === 'all') s.account = null;
+    if (view === 'opening') { s.from = null; s.to = null; }
+    if (view === 'doc-changed') { s.from = null; s.to = null; s.open = '310-000|PV2611-003'; }
+    if (view === 'company-ai') { s.co = 'AI'; s.from = null; s.to = null; s.account = null; }
+    if (view === 'loading') { s.busy = true; s.busyBy = 'show'; }   // a static preview: it holds Loading…
+    if (view === 'could-not-load') s.fail = true;
+    if (view === 'many-rows') { s.account = null; s.to = '2026-11-17'; s.limit = 20; }   // all accounts, after Show 10 more once
+    const per = this.period(s.co, s.from, s.to);
+    s.fromVal = per.from; s.toVal = per.to; s.acctVal = s.account || '';
+    return s;
+  }
+
+  // Show (or a company switch, or This financial year to date): Loading…, then the ledger for those dates, written back into the inputs.
+  // by: the button that started it ('show' or 'fy'), which shows the busy state and gets focus back once it is enabled again.
+  run(next, by) {
+    clearTimeout(this.timer);
+    this.setState({ busy: true, busyBy: by || null, err: '', fail: false, say: 'Loading…' });
+    this.timer = setTimeout(() => {
+      const s = Object.assign({}, this.state, next);
+      const per = this.period(s.co, s.from, s.to);
+      if (by) this._focus = by === 'fy' ? 'bl-fy' : 'bl-show';
+      if (per.from > per.to) {
+        this.setState(Object.assign({}, next, { busy: false, busyBy: null, err: 'The From date is after the To date.', say: 'The From date is after the To date.' }));
+        return;
+      }
+      this.setState(Object.assign({}, next, { busy: false, busyBy: null, open: null, limit: 10, fromVal: per.from, toVal: per.to, acctVal: s.account || '', swapN: (this.state.swapN || 0) + 1,
+        say: 'General ledger, ' + this.fmtDate(per.from) + ' to ' + this.fmtDate(per.to) + ' shown.' }));
+    }, 450);
+  }
+
+  // The general ledger (books.ledger_report): per account its opening, every line of the period with a running balance, totals and closing.
+  // One control account asked for is followed by its customers' and suppliers' codes, which the trial balance adds into it.
+  ledger(B, from, to, code) {
+    const D = this.data(), after = this.next(to);
+    const active = c => { const m = B.moved(c, from, after); return !!(m[0] || m[1] || B.bal(c, from) || B.closing(c, to)); };
+    let codes, subs = [];
+    if (code) { subs = B.codes().filter(c => B.ctl(c) === code && active(c)); codes = [code].concat(subs); }
+    else codes = B.codes().filter(active);
+    const accounts = codes.map(c => {
+      const o = B.bal(c, from), h = B.how(c, from), nm = B.nameOf(c);
+      let run = o || 0;
+      // The lines of the period and, when it holds a year start, that year start's move (dated the year start, before its lines).
+      const ys = B.resets(c, from, to).map(([f, a]) => ({ ys: true, iso: f, no: '', book: '', seq: -1, dr: Math.max(a, 0), cr: Math.max(-a, 0),
+        desc: B.kind(c) === 'pl' ? "Year start: the year's profit and loss moved to retained earnings" : 'Year start: the profit and loss of the year before carried in' }));
+      const rows = (B.lines[c] || []).filter(x => x.iso >= from && x.iso <= to).concat(ys)
+        .sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : (a.ys ? 0 : 1) - (b.ys ? 0 : 1) || (a.no < b.no ? -1 : a.no > b.no ? 1 : a.seq - b.seq)))
+        .map(x => { run += x.dr - x.cr; return Object.assign({}, x, { bal: run }); });
+      const notes = [];
+      if (o === null) notes.push({ text: 'No opening balance of ' + c + " is kept: fetch SQL's trial balance (with a From date) or its GL ledger for the start of the period, or a period after one. The running balance starts from 0." });
+      if (B.ctl(c)) notes.push({ text: "A customer's or supplier's account: it rolls up into " + B.ctl(c) + (h ? ', whose opening holds its balance before ' + this.dmy(D.START) + '; its own balance here is its lines from then.' : '; its own balance here is its lines.'),
+        isNew: nm.from === 'party', newText: 'New work: the app repeats the control account in the name ("' + nm.name + ' · sub-ledger of ' + B.ctl(c) + '") as well as in the Sub-ledger note, here and on the document lines; show it once.' });
+      const m = B.moved(c, from, after);
+      return { code: c, name: nm.name, nic: nm.from === 'printed' || !nm.name, ctl: B.ctl(c), o, how: h, rows, dr: m[0], cr: m[1], cl: B.closing(c, to), notes };
+    });
+    if (subs.length) {
+      const cls = accounts.map(a => a.cl), together = cls.indexOf(null) >= 0 ? null : cls.reduce((x, y) => x + y, 0);
+      accounts[0].notes.push({ text: 'The trial balance, with customers and suppliers added into their control accounts, shows ' + code + ' with ' + subs.join(', ') + ' added in: '
+        + (subs.length > 1 ? 'their ledgers follow' : 'its ledger follows') + ' below' + (together !== null ? ', and together they close at ' + this.drCr(together) + '.' : '.'),
+        isNew: together !== null, newText: 'New work: the app writes this total signed (-5,186.20); here it reads Dr or Cr like every other balance.' });
+    }
+    const notes = B.cover(from, to).map(text => ({ text }));
+    return { accounts, notes };
+  }
+
+  // A document's account lines, opened under its row (ledgerDocView): the current version, its checks and the earlier versions.
+  docView(B, no) {
+    const D = this.data(), d = B.docs.filter(x => x.no === no)[0];
+    if (!d) return null;
+    const rm = n => (n ? 'RM ' + this.fmt(n) : '');
+    const lineRows = ls => ls.map(l => {
+      const nm = B.nameOf(l.code), bank = D.BANKS.indexOf(l.code) >= 0;
+      return { code: l.code, name: nm.name, nic: !(nm.from === 'chart' || nm.from === 'party' || B.ctl(l.code)), bank, desc: d.desc, dr: rm(l.dr), cr: rm(l.cr),
+        trStyle: 'border-top: 1px solid #F1F3F7;' + (bank ? ' background: #F3F6FE' : '') };
+    });
+    const sum = (ls, k) => 'RM ' + this.fmt(ls.reduce((s, l) => s + l[k], 0));
+    const src = (v, iso, sr) => 'Version ' + v + ', ' + this.fmtDate(iso) + ", from SQL's GL Journal of Transaction (" + sr.file + '), read ' + sr.read;
+    return { no: d.no, label: D.BOOK_LABEL[d.book] || '', hasLabel: !!D.BOOK_LABEL[d.book], src: src(d.v, d.iso, d.src), caption: 'The account lines of ' + d.no,
+      lines: lineRows(d.lines), totDr: sum(d.lines, 'dr'), totCr: sum(d.lines, 'cr'), check: 'The lines balance and agree with the listing.',
+      hasOlder: !!(d.older && d.older.length), olderN: d.older ? d.older.length : 0,
+      older: (d.older || []).map(ov => ({ src: src(ov.v, ov.iso, ov.src), caption: 'Version ' + ov.v + ' of ' + d.no, lines: lineRows(ov.lines), totDr: sum(ov.lines, 'dr'), totCr: sum(ov.lines, 'cr') })) };
+  }
+
+  renderVals() {
+    const s = this.state, D = this.data(), set = x => this.setState(x);
+    const co = s.co, C = D.CO[co], isSql = C.sql;
+    const per = this.period(co, s.from, s.to);
+    const B = this.books(co);
+
+    // ---- shell ----
+    const seg = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap;box-sizing:border-box;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;'
+      + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const sbCompany = co === 'AISB' ? 'aisb' : 'ai', sbKind = co === 'AISB' ? 'sqlPayroll' : 'here';
+    // the top-bar switcher replaced the in-page AISB / AI control and picks the company the same way
+    const onTopCo = code => { const k = code === 'aisb' ? 'AISB' : code === 'ai' ? 'AI' : null; if (k && k !== this.state.co) this.run({ co: k, from: null, to: null, account: null }); };
+    // four tabs: Customers and suppliers and Statutory payables are pages of their own in the Accounting menu
+    const TABS = [['tb', 'Trial balance', 'Books.dc.html'], ['ledger', 'General ledger', 'BooksLedger.dc.html'], ['pl', 'Profit and loss', 'BooksStatements.dc.html#pl'],
+      ['bs', 'Balance sheet', 'BooksStatements.dc.html#bs']];
+    const tabs = TABS.map(([k, label, href]) => ({ label, href, isBtn: k === 'ledger', isLink: k !== 'ledger', pressed: k === 'ledger' ? 'true' : 'false', style: seg(k === 'ledger'), pick: () => {} }));
+    const intro = (isSql
+      ? "The books worked out here: each account starts from the opening balance SQL printed (its trial balance or ledger, kept when they were fetched) and adds the account lines of SQL's GL Journal of Transaction."
+      : 'The books kept here for this company: each account starts from its opening balance entered here (or from nothing) and adds the account lines entered here.')
+      + ' Profit and loss start again at the financial year start (1 January). Nothing on this page can be changed' + (isSql ? '; it follows what is fetched from SQL.' : '.');
+    // a company kept here with nothing posted has no books yet
+    const noBooks = !isSql && !B.docs.length && !Object.keys(B.lines).length;
+    const showing = !s.busy && !s.err && !s.fail;
+
+    // ---- the account picker: every chart account and every code with lines or an opening ----
+    const all = Object.keys(B.sql ? B.CH : {}).concat(B.codes()).filter((c, i, a) => a.indexOf(c) === i).sort();
+    const choices = all.map(c => ({ code: c, label: c + ' ' + (B.nameOf(c).name || '') }));
+    const pick = code => { this._focus = code ? 'bl-a-0' : 'bl-h2'; set({ limit: 10, account: code, acctVal: code || '', open: null, swapN: (this.state.swapN || 0) + 1, say: code ? 'The ledger of ' + code + ' shown.' : 'All accounts shown.' }); };
+
+    // ---- the cards ----
+    const L = this.ledger(B, per.from, per.to, s.account);
+    // all accounts: 10 cards at a time (the States many-rows pattern); one account shows every line, as a ledger must
+    const lim = s.account ? L.accounts.length : (s.limit || 10);
+    const accounts = L.accounts.slice(0, lim).map((a, ai) => {
+      const rows = a.rows.map((x, ri) => {
+        const key = a.code + '|' + x.no, isOpen = !x.ys && s.open === key;
+        return { date: this.shortDate(x.iso), no: x.no, book: D.BOOK[x.book] || x.book, desc: x.desc, isLine: !x.ys, descStyle: 'padding: 10px 12px;' + (x.ys ? ' color: #46546A; font-style: italic;' : ''), dr: this.rmCell(x.dr), cr: this.rmCell(x.cr), bal: this.drCr(x.bal),
+          btnId: 'bl-doc-' + ai + '-' + ri, exp: isOpen ? 'true' : 'false', title: 'Show the lines of ' + x.no, isOpen,
+          doc: isOpen ? this.docView(B, x.no) : { no: '', label: '', hasLabel: false, src: '', caption: '', lines: [], totDr: '', totCr: '', check: '', hasOlder: false, olderN: 0, older: [] },
+          toggle: () => x.ys ? null : set({ open: this.state.open === key ? null : key, say: this.state.open === key ? 'Lines of ' + x.no + ' closed.' : 'Lines of ' + x.no + ' shown below its row.' }) };
+      });
+      const words = a.how ? B.WORDS[a.how] + (a.how === 'fresh' ? '' : ' at ' + this.fmtDate(D.START)) : '';
+      return { code: a.code, name: a.name, nic: a.nic, hid: 'bl-a-' + ai, caption: 'Ledger of ' + a.code + ' ' + a.name,
+        hasCtl: !!a.ctl, ctl: a.ctl || '', ctlTitle: 'Open the ledger of ' + (a.ctl || ''), pickCtl: () => pick(a.ctl),
+        openDate: this.shortDate(per.from), hasWords: !!words, openWords: words, openBal: this.drCr(a.o),
+        rows, dr: this.rmPlain(a.dr), cr: this.rmPlain(a.cr), closeDate: this.shortDate(per.to), closeBal: this.drCr(a.cl),
+        hasNotes: a.notes.length > 0, notes: a.notes.map(n => ({ text: n.text, isNew: !!n.isNew, newText: n.newText || '' })) };
+    });
+
+    const xlName = C.code + ' General ledger ' + (s.account ? s.account + ' ' : '') + 'to ' + this.fileDate(per.to) + '.xlsx';
+    const xlRows = [
+      { n: 1, text: C.name + ' (' + C.code + ')' },
+      { n: 2, text: 'General ledger' + (s.account ? ' of ' + s.account : ', all accounts') + ', ' + this.dmy(per.from) + ' to ' + this.dmy(per.to) },
+      { n: 3, text: (isSql ? 'Mirrored from SQL Account, read 18/11/2026' : "Kept here: this company's books are entered in this app") + '. Exported 18/11/2026 11:05.' }
+    ];
+    const busyBy = s.busy ? s.busyBy : null;
+    return {
+      say: s.say, coCode: C.code, intro, sbCompany, sbKind, onTopCo, tabs,
+      fromVal: s.fromVal || '', toVal: s.toVal || '',
+      setFrom: e => set({ fromVal: (e && e.target && e.target.value) || '' }),
+      setTo: e => set({ toVal: (e && e.target && e.target.value) || '' }),
+      show: () => this.run({ from: this.state.fromVal || null, to: this.state.toVal || null }, 'show'),
+      fyToDate: () => this.run({ from: null, to: null }, 'fy'),
+      busy: !!s.busy, showBusy: busyBy === 'show', showBusyAttr: busyBy === 'show' ? 'true' : 'false', showLabel: busyBy === 'show' ? 'Showing…' : 'Show',
+      fyBusy: busyBy === 'fy', fyBusyAttr: busyBy === 'fy' ? 'true' : 'false', fyLabel: busyBy === 'fy' ? 'Showing…' : 'This financial year to date',
+      excelOn: showing && !noBooks,
+      hasMore: !s.account && L.accounts.length > 10, moreBtn: lim < L.accounts.length,
+      moreText: (lim < L.accounts.length ? 'Showing ' + lim + ' of ' : 'Showing all ') + L.accounts.length + ' accounts',
+      moreLabel: 'Show ' + Math.min(10, L.accounts.length - lim) + ' more',
+      showMore: () => { this._focus = 'bl-a-' + lim; set({ limit: lim + 10, say: 'Showing ' + Math.min(lim + 10, L.accounts.length) + ' of ' + L.accounts.length + ' accounts.' }); },
+      excel: e => { if (e && e.preventDefault) e.preventDefault(); set({ xlN: (this.state.xlN || 0) + 1, say: 'Excel file: ' + xlName }); },
+      isLoading: !!s.busy, isError: !s.busy && !!s.err, errText: s.err, isReport: showing && !noBooks,
+      isFail: !s.busy && !!s.fail, failText: "The books couldn't be worked out: the server stopped with an error. Nothing was changed. Try again; if it keeps happening, restart the app.",
+      retry: () => this.run({}, 'show'),
+      isNoBooks: showing && noBooks, noBooksText: C.name + ' is kept here, so its books are what is posted in this app. Nothing is posted yet: the first payment voucher, official receipt or journal starts them, and the trial balance, ledger and statements fill in from there.',
+      swapCls: (s.swapN || 0) % 2 ? 'swapA' : (s.swapN ? 'swapB' : ''),
+      acctVal: s.acctVal || '', choices,
+      // As the app: an empty field shows all accounts, a known code shows its ledger, anything else is ignored until it is a code.
+      setAcct: e => {
+        const v = ((e && e.target && e.target.value) || '').trim().toUpperCase(), code = v.split(/\s+/)[0];
+        if (!v) return pick(null);
+        if (all.indexOf(code) >= 0 && code !== this.state.account) return pick(code);
+        set({ acctVal: (e && e.target && e.target.value) || '' });
+      },
+      hasAccount: !!s.account, allAccounts: () => { this._focus = 'bl-acct'; pick(null); },
+      h2: 'General ledger, ' + this.fmtDate(per.from) + ' to ' + this.fmtDate(per.to),
+      accounts, noAccounts: !accounts.length, emptyText: 'No line or opening balance is kept for ' + (s.account || 'any account') + ' in these dates.',
+      notes: L.notes,
+      xlNew: 'New work: for a company kept here, today the file prints a double full stop before Exported (booksexcel.source_line ends with one).',
+      xlName, xlRows, xlCls: (s.xlN || 0) === 0 ? '' : (s.xlN % 2 ? 'fa' : 'fb')
+    };
+  }
+}
+</script>
+</body>
+</html>

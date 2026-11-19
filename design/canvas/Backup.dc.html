@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Backup · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{filter:brightness(.92)}
+.hs:hover{background:#F0F3F8 !important}
+.hl:hover{background:#EAF0FD !important}
+input:focus{outline:2px solid #2450B8;outline-offset:-1px}
+.hb:disabled:hover,.hs:disabled:hover{filter:none;background:#FFFFFF}
+/* motion and focus base */
+.hb,.hs,.hl,.nv,.nb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.rvfa{animation:rise .24s cubic-bezier(.22,1,.36,1) both,flashA .9s ease-out}
+.rvfb{animation:rise .24s cubic-bezier(.22,1,.36,1) both,flashB .9s ease-out}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.spd{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(70,84,106,.3);border-top-color:#2450B8;animation:spin .7s linear infinite;flex:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="backup" company="aisb" kind="sqlPayroll" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Backup" company="aisb" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Records folder · C:\HR-Records</span>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Backup</h1>
+      </div>
+
+      <section aria-labelledby="bk-st-title" class="{{stCls}}" style="{{stBox}}">
+        <span style="{{stIconBox}}"><dc-import name="Icon" glyph="{{stGlyph}}" tone="{{stTone}}" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1 1 280px; min-width: 0">
+          <h2 id="bk-st-title" style="{{stTitleStyle}}">{{stTitle}}</h2>
+          <div style="{{stTextStyle}}">{{stText}}</div>
+        </div>
+        <a class="hl" href="SetupGeneral.dc.html" style="display: inline-flex; align-items: center; height: 36px; padding: 0 12px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none">Change the reminder in Setup</a>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+        <div style="flex: 3 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+
+        <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; align-items: center; gap: 14px"><span style="width: 52px; height: 52px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="vault" tone="brand" size="30" hint-size="30px,30px"></dc-import></span><div><h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 19px; font-weight: 600">Encrypted backup</h2><span style="color: #5F6C80; font-size: 13px">AES-256 zip, opened again and every file checked after it is made</span></div></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: start">
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="bk-pw" style="font-size: 13px; font-weight: 600; color: #46546A">Password</label><input id="bk-pw" type="{{pwType}}" value="{{pw}}" onChange="{{onPw}}" autocomplete="new-password" aria-describedby="bk-pw-hint" style="height: 44px; padding: 0 12px; border: 1px solid #D5DBE4; border-radius: 10px; font: 400 15px Inter, sans-serif; color: #0F1A2B"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="bk-pw2" style="font-size: 13px; font-weight: 600; color: #46546A">Type it again</label><input id="bk-pw2" type="{{pwType}}" value="{{pw2}}" onChange="{{onPw2}}" autocomplete="new-password" aria-invalid="{{pw2Invalid}}" aria-describedby="bk-pw2-err" style="{{pw2Style}}"><div id="bk-pw2-err" role="alert" style="min-height: 0"><sc-if value="{{mismatch}}" hint-placeholder-val="{{ false }}"><span class="rv" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #B3261E"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>The two passwords are not the same</span></sc-if></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px"><sc-for list="{{meter}}" as="m" hint-placeholder-count="4"><span class="bar" aria-hidden="true" style="{{m.style}}"></span></sc-for></div>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 13px">
+              <span id="bk-pw-hint" style="{{lenStyle}}"><dc-import name="Icon" glyph="{{lenGlyph}}" tone="{{lenTone}}" size="16" hint-size="16px,16px"></dc-import>At least 12 characters<span class="sr">{{lenSr}}</span></span>
+              <span style="{{matchStyle}}"><dc-import name="Icon" glyph="{{matchGlyph}}" tone="{{matchTone}}" size="16" hint-size="16px,16px"></dc-import>Both match<span class="sr">{{matchSr}}</span></span>
+              <span style="color: #46546A">Strength: <b style="color: #0F1A2B">{{meterLabel}}</b> <span style="color: #5F6C80">Longer is stronger. A phrase of several words is best.</span></span>
+              <button type="button" class="hl" aria-pressed="{{showPressed}}" onClick="{{onShow}}" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer"><dc-import name="Icon" glyph="{{showGlyph}}" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{showLabel}}</button>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; padding: 12px 14px; border-radius: 12px; background: #FFFBF2; border: 1px solid #F3D9A6"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><span style="font-size: 13px; color: #5C3100">The password is never saved or logged. Without it the backup cannot be opened. File names inside the zip can be seen without it. HR documents are stored under a code, not the person's name; keep people's names out of other document file names too.</span></div>
+          <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+            <button type="button" class="hb" disabled="{{cantBack}}" aria-busy="{{busyAttr}}" aria-describedby="bk-reason" onClick="{{make}}" style="{{makeStyle}}"><sc-if value="{{making}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="lock" tone="white" size="18" hint-size="18px,18px"></dc-import></sc-if>{{makeLabel}}</button>
+            <span id="bk-reason" style="font-size: 13px; color: #5F6C80"><sc-if value="{{hasReason}}" hint-placeholder-val="{{ true }}">{{reason}}</sc-if></span>
+          </div>
+
+          <div id="bk-res" tabindex="-1" aria-live="polite" style="outline-offset: 2px">
+            <sc-if value="{{resBusy}}" hint-placeholder-val="{{ false }}"><div class="rv" style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; border: 1px solid #E3E7ED; font-size: 13px; color: #0F1A2B"><span class="spd" aria-hidden="true"></span>{{resBusyText}}</div></sc-if>
+            <sc-if value="{{resShow}}" hint-placeholder-val="{{ false }}"><div class="rv" style="{{resBox}}"><dc-import name="Icon" glyph="{{resGlyph}}" tone="{{resTone}}" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><b style="{{resTitleStyle}}">{{resTitle}}</b><span style="{{resTextStyle}}">{{resText}}</span><div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px"><sc-if value="{{resRetry}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{make}}" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Try again</button></sc-if><sc-if value="{{resFolderLink}}" hint-placeholder-val="{{ false }}"><a href="#bk-dir" class="hs" style="display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; text-decoration: none">Check the backup folder</a></sc-if></div></div></div></sc-if>
+          </div>
+
+          <div style="border-top: 1px solid #EEF1F5; padding-top: 14px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+            <button type="button" id="bk-pcbtn" class="hl" disabled="{{pcBtnOff}}" aria-expanded="{{pcAsk}}" onClick="{{pcOpen}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; margin-left: -10px; border: 0; border-radius: 8px; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; text-decoration: underline; cursor: pointer">Backup on this PC only (not encrypted)</button>
+            <sc-if value="{{pcAsk}}" hint-placeholder-val="{{ false }}"><div role="group" aria-labelledby="bk-pc-title" class="rv" onKeyDown="{{pcKey}}" style="align-self: stretch; display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; background: #FFFBF2; border: 1px solid #F3D9A6"><h3 id="bk-pc-title" tabindex="-1" style="margin: 0; font-size: 14px; font-weight: 600; color: #5C3100">Save without a password?</h3><span style="font-size: 13px; color: #5C3100">Anyone who can open this PC can read the records in it, staff records and pay included. It stays in the backups folder on this PC and is not copied to the backup folder.</span><div style="display: flex; flex-wrap: wrap; gap: 8px"><button type="button" class="hs" onClick="{{pcSave}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #B8860B; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Save on this PC only</button><button type="button" class="hs" onClick="{{pcCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button></div></div></sc-if>
+          </div>
+        </section>
+
+        <section aria-labelledby="bk-doc-title" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: center; gap: 12px"><span style="width: 40px; height: 40px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="verified" tone="brand" size="24" hint-size="24px,24px"></dc-import></span><div><h2 id="bk-doc-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Documents</h2><span style="color: #5F6C80; font-size: 13px">Compares every uploaded document with the fingerprint taken when it was uploaded.</span></div></div>
+          <div><button type="button" class="hs" disabled="{{docBusy}}" aria-busy="{{docBusyAttr}}" onClick="{{checkDocs}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 280px; padding: 0 16px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><sc-if value="{{docBusy}}" hint-placeholder-val="{{ false }}"><span class="spd" aria-hidden="true"></span></sc-if>{{docLabel}}</button></div>
+          <div aria-live="polite">
+            <sc-if value="{{docShow}}" hint-placeholder-val="{{ false }}"><div class="{{docCls}}" style="{{docBox}}"><dc-import name="Icon" glyph="{{docGlyph}}" tone="{{docTone}}" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><b style="{{docTitleStyle}}">{{docTitle}}</b><span style="{{docTextStyle}}">{{docText}}</span>
+              <sc-if value="{{docProblem}}" hint-placeholder-val="{{ false }}"><ul style="margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: #5C1810"><sc-for list="{{docRows}}" as="d" hint-placeholder-count="2"><li><b>{{d.name}}</b> · {{d.what}}</li></sc-for></ul></sc-if></div></div></sc-if>
+          </div>
+        </section>
+
+        <section aria-labelledby="bk-log-title" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 16px 22px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 2px"><h2 id="bk-log-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Activity log</h2><span style="font-size: 13px; color: #5F6C80">Everything done in the app, newest first, last 200 lines. The Overview shows only the latest few under Recent activity.</span></div>
+          <div style="overflow-x: auto"><table style="width: 100%; border-collapse: collapse; font-size: 13px">
+            <caption class="sr">Activity log</caption>
+            <thead><tr><th scope="col" style="text-align: left; padding: 8px 22px; font-size: 12px; font-weight: 600; color: #5F6C80; white-space: nowrap">When</th><th scope="col" style="text-align: left; padding: 8px 12px; font-size: 12px; font-weight: 600; color: #5F6C80">What</th><th scope="col" style="text-align: left; padding: 8px 22px 8px 12px; font-size: 12px; font-weight: 600; color: #5F6C80; white-space: nowrap">Who</th></tr></thead>
+            <tbody>
+              <sc-for list="{{logRows}}" as="r" hint-placeholder-count="4"><tr class="{{r.cls}}" style="border-top: 1px solid #F1F3F7"><td style="padding: 10px 22px; font: 400 12px ui-monospace, Consolas, monospace; color: #46546A; white-space: nowrap">{{r.at}}</td><td style="padding: 10px 12px">{{r.what}}</td><td style="padding: 10px 22px 10px 12px; color: #46546A; white-space: nowrap">{{r.who}}</td></tr></sc-for>
+              <sc-if value="{{logEmpty}}" hint-placeholder-val="{{ false }}"><tr style="border-top: 1px solid #F1F3F7"><td colspan="3" style="padding: 18px 22px; color: #5F6C80">Nothing yet.</td></tr></sc-if>
+            </tbody>
+          </table></div>
+        </section>
+        </div>
+
+        <div style="flex: 2 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+          <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="folder" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 style="margin: 0; font-size: 15px; font-weight: 600">Backup folder (optional)</h2></div>
+            <span id="bk-dir-note" style="color: #5F6C80; font-size: 13px">Encrypted backups are also copied here. Only encrypted backups are copied there. If this folder is inside your OneDrive folder, OneDrive uploads it. Leave it empty to copy nowhere.</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <div style="flex: 1 1 200px; min-width: 0"><label for="bk-dir" class="sr">Backup folder</label><input id="bk-dir" type="text" value="{{dir}}" onChange="{{onDir}}" placeholder="C:\Users\you\OneDrive\HR-Backup" autocomplete="off" aria-invalid="{{dirInvalid}}" aria-describedby="bk-dir-note bk-dir-msg" style="{{dirStyle}}"></div>
+              <button type="button" class="hs" disabled="{{dirSaving}}" aria-busy="{{dirBusyAttr}}" onClick="{{saveDir}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 112px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><sc-if value="{{dirSaving}}" hint-placeholder-val="{{ false }}"><span class="spd" aria-hidden="true"></span></sc-if>{{dirBtn}}</button>
+              <sc-if value="{{canClear}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" disabled="{{dirSaving}}" onClick="{{clearDir}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear folder</button></sc-if>
+            </div>
+            <div id="bk-dir-msg" role="status">
+              <sc-if value="{{dirMsg}}" hint-placeholder-val="{{ false }}"><span class="rv" style="{{dirMsgStyle}}"><dc-import name="Icon" glyph="{{dirMsgGlyph}}" tone="{{dirMsgTone}}" size="16" hint-size="16px,16px"></dc-import><span>{{dirMsgText}}</span></span></sc-if>
+            </div>
+          </section>
+
+          <section aria-labelledby="bk-rec-title" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><h2 id="bk-rec-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Recent backups</h2></div>
+            <sc-for list="{{recents}}" as="b" hint-placeholder-count="3"><div id="{{b.id}}" tabindex="-1" class="{{b.cls}}" style="{{b.style}}"><dc-import name="Icon" glyph="{{b.glyph}}" tone="{{b.tone}}" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="font-size: 13px">{{b.title}}</b><div style="{{b.subStyle}}">{{b.sub}}</div></div></div></sc-for>
+            <sc-if value="{{noRecents}}" hint-placeholder-val="{{ false }}"><div style="padding: 16px 22px; color: #5F6C80; font-size: 13px">No backups yet.</div></sc-if>
+          </section>
+
+          <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 22px; display: flex; gap: 12px">
+            <dc-import name="Icon" glyph="help" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+            <div style="font-size: 13px; color: #46546A"><b style="color: #0F1A2B">Restoring</b> · Close HR Payments, open the zip with 7-Zip (Windows Explorer cannot open AES zips) and type the password, then copy <code>records.db</code> and <code>documents</code> into C:\HR-Records.</div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1700},"view":{"editor":"enum","default":"normal","options":["normal","stale","never","ready","mismatch","working","saved","copy-failed","pc-only","failed","checking-docs","docs-ok","docs-problem","folder-error","folder-saved","log-empty"],"section":"State to show"}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.fromView(p.view || 'normal'); }
+  componentDidUpdate(pp, prev) {
+    if (pp.view !== this.props.view) { this.setState(this.fromView(this.props.view || 'normal')); return; }
+    // a backup just finished: put focus on its result, which says what happened
+    if (prev.working && !this.state.working) { const r = document.getElementById('bk-res'); if (r) r.focus({ preventScroll: true }); }
+    if (!prev.pcAsk && this.state.pcAsk) { const t = document.getElementById('bk-pc-title'); if (t) t.focus({ preventScroll: true }); }
+    if (prev.pcAsk && !this.state.pcAsk && this._back) { this._back = false; const b = document.getElementById('bk-pcbtn'); if (b) b.focus({ preventScroll: true }); }
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._d); clearTimeout(this._f); }
+  dirOld() { return 'C:\\Users\\you\\OneDrive\\HR-Backup'; }
+  baseState() {
+    const d = this.dirOld();
+    return { pw: '', pw2: '', showPw: false, working: null, result: null, pcAsk: false, backedUp: 'recent', mode: 'ok',
+      docs: null, docsBusy: false, docsMode: 'pass', dir: d, savedDir: d, dirMsg: null, dirSaving: false,
+      added: [], logAdded: [], logEmpty: false, n: 0 };
+  }
+  // what a finished backup leaves behind: its result, a row in Recent backups and a line in the log
+  finished(kind, s) {
+    const out = { result: { kind }, working: null, n: s.n + 1 };
+    if (kind === 'failed') return out;
+    out.added = [{ kind }].concat(s.added);
+    out.logAdded = [{ kind, dir: s.savedDir }].concat(s.logAdded);
+    if (kind !== 'pconly') out.backedUp = 'today';
+    return out;
+  }
+  fromView(v) {
+    const s = this.baseState();
+    const pass = 'correct horse battery';
+    if (v === 'stale') s.backedUp = 'stale';
+    else if (v === 'never') s.backedUp = 'never';
+    else if (v === 'ready') { s.pw = pass; s.pw2 = pass; }
+    else if (v === 'mismatch') { s.pw = pass; s.pw2 = 'correct horse batter'; }
+    else if (v === 'working') { s.pw = pass; s.pw2 = pass; s.working = 'enc'; }
+    else if (v === 'saved') Object.assign(s, this.finished('ok', s));
+    else if (v === 'copy-failed') { s.mode = 'copyfailed'; Object.assign(s, this.finished('copyfailed', s)); }
+    else if (v === 'pc-only') Object.assign(s, this.finished('pconly', s));
+    else if (v === 'failed') { s.mode = 'failed'; s.pw = pass; s.pw2 = pass; Object.assign(s, this.finished('failed', s)); }
+    else if (v === 'checking-docs') s.docsBusy = true;
+    else if (v === 'docs-ok') s.docs = 'pass';
+    else if (v === 'docs-problem') { s.docsMode = 'problem'; s.docs = 'problem'; }
+    else if (v === 'folder-error') { s.dir = 'C:\\HR-Records\\Backups'; s.dirMsg = { tone: 'bad', text: 'Choose a folder outside the records folder, so a backup is not kept beside what it protects.' }; }
+    else if (v === 'folder-saved') s.dirMsg = { tone: 'ok', text: 'Backup folder saved' };
+    else if (v === 'log-empty') { s.logEmpty = true; s.backedUp = 'never'; }
+    return s;
+  }
+  renderVals() {
+    const S = this.state;
+    const { pw, pw2, working } = S;
+    const making = working === 'enc', pcing = working === 'pc';
+    // password rules: the app's only rule is 12 characters and a match; the meter is extra guidance
+    const score = pw.length < 12 ? 0 : pw.length < 16 ? 2 : pw.length < 20 ? 3 : 4;
+    const colors = ['#C7372B', '#D98A0B', '#2450B8', '#0E8A50'];
+    const words = ['Too short', '', 'OK', 'Good', 'Strong'];
+    const meter = [0, 1, 2, 3].map(i => ({ style: 'height:6px;border-radius:99px;background:' + (i < score ? colors[score - 1] : '#E3E7ED') }));
+    const lenOk = pw.length >= 12, matchOk = pw.length > 0 && pw === pw2;
+    const ok = lenOk && matchOk;
+    const mismatch = pw2.length > 0 && pw2 !== pw;
+    const line = good => 'display:inline-flex;align-items:center;gap:6px;' + (good ? 'color:#0A6B3D;font-weight:600' : 'color:#5F6C80');
+    const dirOld = this.dirOld();
+    const folder = S.savedDir;
+
+    // am I backed up
+    const ST = {
+      recent: { glyph: 'verified', tone: 'ok', box: '#F0FBF5', line: '#BFE6D0', ink: '#0A6B3D', title: 'You are backed up', text: 'Last encrypted backup 11 Nov 2026, every file checked. That was 7 days ago.' },
+      today: { glyph: 'verified', tone: 'ok', box: '#F0FBF5', line: '#BFE6D0', ink: '#0A6B3D', title: 'You are backed up', text: 'Last encrypted backup today, 18 Nov 2026, every file checked.' },
+      stale: { glyph: 'alert', tone: 'warn', box: '#FFFBF2', line: '#F3D9A6', ink: '#7A4A00', title: 'Your last encrypted backup is 14 days old', text: 'It was made on 4 Nov 2026. You asked to be reminded after 7 days. Make a new one below.' },
+      never: { glyph: 'alert', tone: 'bad', box: '#FDEEEC', line: '#F2C4BE', ink: '#B3261E', title: 'No encrypted backup yet', text: 'If this PC fails, the records and documents would be lost. Make an encrypted backup below.' }
+    };
+    const st = ST[S.backedUp];
+
+    // the result of the backup just made: stays until the next run
+    const kinds = {
+      ok: { tone: 'done', title: 'Backup made and checked', text: folder ? 'Saved HR-Records backup 20261118-1042 (encrypted).zip (412 MB), opened again with every file checked, and copied to ' + folder : 'Saved HR-Records backup 20261118-1042 (encrypted).zip (412 MB) in the backups folder on this PC, opened again with every file checked. No backup folder is set, so it was not copied anywhere.' },
+      copyfailed: { tone: 'warn', title: 'Backup saved on this PC, but copying to ' + (folder || dirOld) + ' failed: The network path was not found.', text: 'The copy on this PC is fine and was checked. Check the backup folder, then make another backup.' },
+      pconly: { tone: 'warn', title: 'Saved on this PC only', text: (folder ? 'It was not copied to ' + folder + ' because it is not encrypted.' : 'It is not encrypted, so it is never copied to a backup folder.') + ' Anyone who can open this PC can read it, staff records and pay included.' },
+      failed: { tone: 'bad', title: 'The backup was not made: There is not enough space on the disk.', text: 'Free some space, then try again.' }
+    };
+    const RT = { done: { box: '#F0FBF5', line: '#BFE6D0', ink: '#0A6B3D', body: '#14432B', glyph: 'check', icon: 'ok' }, warn: { box: '#FFFBF2', line: '#F3D9A6', ink: '#5C3100', body: '#5C3100', glyph: 'alert', icon: 'warn' }, bad: { box: '#FDEEEC', line: '#F2C4BE', ink: '#8A1F14', body: '#5C1810', glyph: 'alert', icon: 'bad' } };
+    const rk = S.result ? kinds[S.result.kind] : null;
+    const rt = rk ? RT[rk.tone] : RT.done;
+
+    // documents
+    const docsDone = S.docs && !S.docsBusy;
+    const dp = S.docs === 'problem';
+
+    // folder
+    const dirErr = S.dirMsg && S.dirMsg.tone === 'bad';
+    const dm = S.dirMsg || { tone: 'ok', text: '' };
+
+    // recent backups
+    const base = S.backedUp === 'stale' ? '4 Nov 2026 · encrypted' : '11 Nov 2026 · encrypted';
+    const baseSub = S.backedUp === 'stale' ? '398 MB · every file checked · copied to OneDrive' : '412 MB · every file checked · copied to OneDrive';
+    const rowStyle = last => 'display:flex;align-items:center;gap:12px;padding:12px 22px;' + (last ? '' : 'border-bottom:1px solid #F1F3F7;');
+    const recs = [];
+    S.added.forEach((a, i) => {
+      const pc = a.kind === 'pconly', bad = a.kind === 'copyfailed';
+      recs.push({ id: i === 0 ? 'bk-new' : 'bk-add-' + i, cls: i === 0 ? (S.n % 2 ? 'rvfa' : 'rvfb') : '', style: rowStyle(false) + (pc ? '' : 'background:' + (bad ? '#FFFBF2' : '#F0FBF5') + ';'),
+        glyph: pc ? 'lock' : bad ? 'alert' : 'verified', tone: pc ? 'muted' : bad ? 'warn' : 'ok',
+        title: '18 Nov 2026 · ' + (pc ? 'this PC only' : 'encrypted'),
+        sub: pc ? 'Just now · saved on this PC only, not copied because it is not encrypted · staff records and pay readable' : bad ? 'Just now · 412 MB · every file checked · not copied, the network path was not found' : 'Just now · 412 MB · every file checked' + (folder ? ' · copied to OneDrive' : ''),
+        subStyle: 'font-size:12px;color:' + (pc ? '#5F6C80' : bad ? '#7A4A00' : '#0A6B3D') });
+    });
+    if (S.backedUp !== 'never') {
+      recs.push({ id: 'bk-r1', cls: '', style: rowStyle(false), glyph: 'verified', tone: 'ok', title: base, sub: baseSub, subStyle: 'font-size:12px;color:#5F6C80' });
+      recs.push({ id: 'bk-r2', cls: '', style: rowStyle(false), glyph: 'verified', tone: 'ok', title: '16 Oct 2026 · encrypted', sub: 'After AI’s September 2026 was filed (5 Oct) · 398 MB', subStyle: 'font-size:12px;color:#5F6C80' });
+      recs.push({ id: 'bk-r3', cls: '', style: rowStyle(true), glyph: 'lock', tone: 'muted', title: '2 Oct 2026 · this PC only', sub: 'Not encrypted · saved on this PC only · staff records and pay readable', subStyle: 'font-size:12px;color:#5F6C80' });
+    }
+
+    // activity log
+    const rows = [];
+    const who = 'Aisha Rahman';
+    S.logAdded.forEach((l, i) => {
+      const what = l.kind === 'ok' ? 'Backup made and copied to ' + (l.dir || 'the backups folder') : l.kind === 'copyfailed' ? 'Backup made. Copying to ' + (l.dir || dirOld) + ' failed' : 'Backup made on this PC only (not encrypted)';
+      rows.push({ at: '2026-11-18 10:42', what, who, cls: i === 0 ? (S.n % 2 ? 'rvfa' : 'rvfb') : '' });
+    });
+    if (!S.logEmpty) {
+      rows.push({ at: '2026-11-18 10:42', what: 'MyInvois for AISB: IV2609-028: issued e-Invoice 7RPN2QXK… filled in from MyInvois, Validated (was Submitted, not validated).', who, cls: '' });
+      rows.push({ at: '2026-11-18 10:42', what: 'Read MyInvois copy "MyInvois Sep-Nov.xlsx" for AISB: 18 e-Invoices, 18 new, 0 changed, 0 unchanged', who, cls: '' });
+      rows.push({ at: '2026-11-18 10:42', what: "Read GL Journal of Transaction 'GL Journal Oct-Nov.xlsx' for AISB, 01/10/2026-17/11/2026: 34 documents (22 new, 1 changed, 11 unchanged, 1 no longer in SQL), 78 lines", who, cls: '' });
+      rows.push({ at: '2026-11-18 10:42', what: "Read Trial Balance 'Trial Balance Oct.xlsx' for AISB, 01/10/2026-31/10/2026: 31 accounts; trial balance check: 0 differences; opening balances at 01/10/2026 kept for 31 accounts", who, cls: '' });
+      rows.push({ at: '2026-11-18 10:42', what: "Read GL Ledger 'GL Ledger.xlsx' for AISB, 01/10/2026-12/11/2026: 12 accounts; ledger check: 0 differences; opening balances at 01/10/2026 kept for 12 accounts", who, cls: '' });
+      rows.push({ at: '2026-11-18 09:15', what: 'Uploaded the logo printed on AISB\x27s invoices: "aisb-logo.png"', who, cls: '' });
+      rows.push({ at: '2026-11-18 08:41', what: 'Signed in', who, cls: '' });
+      rows.push({ at: '2026-11-14 11:20', what: 'Audit pack built for AI, September 2026', who, cls: '' });
+      rows.push({ at: '2026-11-12 16:04', what: 'Imported the SQL export for AISB, October 2026', who, cls: '' });
+      if (S.backedUp !== 'never') rows.push({ at: S.backedUp === 'stale' ? '2026-11-04 09:30' : '2026-11-11 09:30', what: 'Backup made and copied to ' + dirOld, who, cls: '' });
+    }
+
+    const reason = lenOk ? (mismatch || !matchOk ? 'Type the same password again.' : '') : 'Enter a password of at least 12 characters, and type it again.';
+    const calm = () => window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const start = (kind) => {
+      this.setState({ working: kind, result: null, pcAsk: false });
+      clearTimeout(this._t);
+      this._t = setTimeout(() => {
+        const mode = kind === 'pc' ? 'pconly' : this.state.mode;
+        const next = this.finished(mode, this.state);
+        if (mode !== 'failed' && kind === 'enc') { next.pw = ''; next.pw2 = ''; }
+        this.setState(next);
+      }, 1200);
+    };
+    return {
+      stBox: 'display:flex;flex-wrap:wrap;align-items:center;gap:14px 16px;padding:16px 20px;border-radius:16px;background:' + st.box + ';border:1px solid ' + st.line,
+      stCls: 'rv', stIconBox: 'width:44px;height:44px;border-radius:12px;background:#FFFFFF;border:1px solid ' + st.line + ';display:inline-flex;align-items:center;justify-content:center;flex:none',
+      stGlyph: st.glyph, stTone: st.tone, stTitle: st.title, stText: st.text,
+      stTitleStyle: "margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600;color:" + st.ink,
+      stTextStyle: 'font-size:13px;color:#46546A',
+      pw, pw2, meter, meterLabel: pw.length === 0 ? 'Not yet' : words[score],
+      pwType: S.showPw ? 'text' : 'password', showPressed: S.showPw ? 'true' : 'false', showLabel: S.showPw ? 'Hide passwords' : 'Show passwords', showGlyph: S.showPw ? 'eyeOff' : 'eye',
+      onShow: () => this.setState({ showPw: !this.state.showPw }),
+      onPw: e => this.setState({ pw: e.target.value }), onPw2: e => this.setState({ pw2: e.target.value }),
+      mismatch, pw2Invalid: mismatch ? 'true' : 'false',
+      pw2Style: 'height:44px;padding:0 12px;border-radius:10px;font:400 15px Inter,sans-serif;color:#0F1A2B;border:' + (mismatch ? '2px solid #B3261E' : '1px solid #D5DBE4'),
+      lenStyle: line(lenOk), lenGlyph: lenOk ? 'check' : 'clock', lenTone: lenOk ? 'ok' : 'muted', lenSr: lenOk ? ' (done)' : ' (not yet)',
+      matchStyle: line(matchOk), matchGlyph: matchOk ? 'check' : 'clock', matchTone: matchOk ? 'ok' : 'muted', matchSr: matchOk ? ' (done)' : ' (not yet)',
+      cantBack: !ok || !!working, busyAttr: making ? 'true' : 'false', making, idle: !making,
+      reason, hasReason: !ok && !working,
+      make: () => { if (this.state.working) return; const s = this.state; if (!(s.pw.length >= 12 && s.pw === s.pw2)) return; start('enc'); },
+      makeLabel: making ? 'Encrypting, then checking…' : 'Make encrypted backup',
+      makeStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;min-width:280px;box-sizing:border-box;padding:0 18px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;'
+        + (making ? 'background:#2450B8;cursor:progress' : ok ? 'background:#2450B8;cursor:pointer' : 'background:#6B7A94;cursor:not-allowed'),
+      resBusy: !!working, resBusyText: pcing ? 'Saving the backup on this PC…' : 'Encrypting, then opening it again and checking every file…',
+      resShow: !!rk && !working, resBox: 'display:flex;gap:12px;padding:14px 16px;border-radius:12px;background:' + rt.box + ';border:1px solid ' + rt.line,
+      resGlyph: rt.glyph, resTone: rt.icon, resTitle: rk ? rk.title : '', resText: rk ? rk.text : '',
+      resTitleStyle: 'font-size:14px;color:' + rt.ink, resTextStyle: 'font-size:13px;color:' + rt.body,
+      resRetry: !!S.result && S.result.kind === 'failed', resFolderLink: !!S.result && S.result.kind === 'copyfailed',
+      pcBtnOff: !!working, pcAsk: S.pcAsk,
+      pcOpen: () => this.setState({ pcAsk: !this.state.pcAsk }),
+      pcCancel: () => { this._back = true; this.setState({ pcAsk: false }); },
+      pcSave: () => start('pc'),
+      pcKey: e => { if (e.key === 'Escape') { e.stopPropagation(); this._back = true; this.setState({ pcAsk: false }); } },
+      docBusy: S.docsBusy, docBusyAttr: S.docsBusy ? 'true' : 'false',
+      docLabel: S.docsBusy ? 'Checking 450 documents…' : "Check documents haven't changed",
+      checkDocs: () => {
+        if (this.state.docsBusy) return;
+        this.setState({ docsBusy: true, docs: null });
+        clearTimeout(this._d);
+        this._d = setTimeout(() => this.setState({ docsBusy: false, docs: this.state.docsMode, n: this.state.n + 1 }), 1400);
+      },
+      docShow: !!docsDone, docCls: S.n % 2 ? 'rvfa' : 'rvfb', docProblem: dp,
+      docBox: 'display:flex;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid ' + (dp ? '#F2C4BE' : '#BFE6D0') + ';background:' + (dp ? '#FDEEEC' : '#F0FBF5'),
+      docGlyph: dp ? 'alert' : 'check', docTone: dp ? 'bad' : 'ok',
+      docTitle: dp ? '2 of 450 documents are missing or changed' : 'All 450 documents match their upload fingerprints',
+      docText: dp ? 'Put them back from a backup, or upload them again.' : 'Checked 18 Nov 2026, 10:42. Nothing has been changed since it was uploaded.',
+      docTitleStyle: 'font-size:14px;color:' + (dp ? '#8A1F14' : '#0A6B3D'), docTextStyle: 'font-size:13px;color:' + (dp ? '#5C1810' : '#14432B'),
+      docRows: [{ name: 'Rent invoice Sep 2026.pdf', what: 'changed since it was uploaded' }, { name: 'Lease agreement 2026.pdf', what: 'missing' }],
+      logRows: rows, logEmpty: S.logEmpty,
+      dir: S.dir, dirInvalid: dirErr ? 'true' : 'false',
+      dirStyle: 'width:100%;box-sizing:border-box;height:40px;padding:0 12px;border-radius:10px;font:400 13px ui-monospace,Consolas,monospace;color:#0F1A2B;border:' + (dirErr ? '2px solid #B3261E' : '1px solid #D5DBE4'),
+      onDir: e => this.setState({ dir: e.target.value }),
+      dirSaving: S.dirSaving, dirBusyAttr: S.dirSaving ? 'true' : 'false', dirBtn: S.dirSaving ? 'Saving…' : 'Save folder',
+      canClear: !!S.savedDir,
+      dirMsg: !!S.dirMsg && !S.dirSaving, dirMsgText: dm.text, dirMsgGlyph: dm.tone === 'bad' ? 'alert' : 'check', dirMsgTone: dm.tone,
+      dirMsgStyle: 'display:inline-flex;align-items:flex-start;gap:6px;font-size:13px;font-weight:600;color:' + (dm.tone === 'bad' ? '#B3261E' : '#0A6B3D'),
+      saveDir: () => this.saveFolder(this.state.dir),
+      clearDir: () => { this.setState({ dir: '' }); this.saveFolder(''); },
+      recents: recs, noRecents: recs.length === 0
+    };
+  }
+  // the same rules the app applies when the folder is saved
+  saveFolder(raw) {
+    const v = (raw || '').trim().replace(/^"|"$/g, '');
+    this.setState({ dirSaving: true, dirMsg: null, dir: v });
+    clearTimeout(this._f);
+    this._f = setTimeout(() => {
+      let msg;
+      if (v && !/^[A-Za-z]:\\/.test(v)) msg = { tone: 'bad', text: 'Give the full path of the folder, starting with the drive letter, for example D: and then the folders.' };
+      else if (/^C:\\HR-Records(\\|$)/i.test(v)) msg = { tone: 'bad', text: 'Choose a folder outside the records folder, so a backup is not kept beside what it protects.' };
+      else if (/^[A-Za-z]:\\(unplugged|offline)/i.test(v)) msg = { tone: 'bad', text: "That folder can't be used: the drive is not connected." };
+      if (msg) this.setState({ dirSaving: false, dirMsg: msg });
+      else this.setState({ dirSaving: false, savedDir: v, dirMsg: { tone: 'ok', text: v ? 'Backup folder saved' : 'Backup folder cleared' } });
+    }, 600);
+  }
+}
+</script>
+</body>
+</html>

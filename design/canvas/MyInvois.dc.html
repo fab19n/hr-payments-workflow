@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>e-Invoices · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg,.pl{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+.pl:hover{background:#EAF0FD !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+tr[tabindex]:focus-visible{outline-offset:-2px}
+button.hr:focus-visible,[role="tab"]:focus-visible{outline-offset:-2px}
+::placeholder{color:#5F6C80;opacity:1}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swap{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.sw{animation:swap .12s ease-out}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid #C9D2DF;border-top-color:#2450B8;animation:spin .7s linear infinite;flex:none}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="einvoices" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="e-Invoices" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">e-Invoices</h1>
+        <p style="margin: 0; color: #46546A; max-width: 820px">{{intro}}</p>
+      </div>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" aria-label="Loading e-Invoices" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; gap: 24px; align-items: center; padding: 18px 22px; border-bottom: 1px solid #E3E7ED"><div class="sk" style="height: 14px; width: 90px"></div><div class="sk" style="height: 14px; width: 110px"></div><div class="sk" style="height: 14px; width: 100px"></div><div style="flex: 1"></div><div class="sk" style="height: 30px; width: 180px"></div></div>
+          <div style="display: flex; gap: 12px; padding: 14px 22px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 18%"></div><div style="flex: 1"></div><div class="sk" style="height: 30px; width: 160px"></div></div>
+          <div style="display: flex; gap: 12px; padding: 16px 22px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 12%"></div><div class="sk" style="height: 12px; width: 34%"></div><div style="flex: 1"></div><div class="sk" style="width: 90px; height: 22px; border-radius: 99px"></div><div class="sk" style="height: 12px; width: 10%"></div></div>
+          <div style="display: flex; gap: 12px; padding: 16px 22px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 12%"></div><div class="sk" style="height: 12px; width: 28%"></div><div style="flex: 1"></div><div class="sk" style="width: 90px; height: 22px; border-radius: 99px"></div><div class="sk" style="height: 12px; width: 10%"></div></div>
+          <div style="display: flex; gap: 12px; padding: 16px 22px; align-items: center"><div class="sk" style="height: 12px; width: 12%"></div><div class="sk" style="height: 12px; width: 38%"></div><div style="flex: 1"></div><div class="sk" style="width: 90px; height: 22px; border-radius: 99px"></div><div class="sk" style="height: 12px; width: 10%"></div></div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" aria-live="off" aria-labelledby="ei-err-h" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="ei-err-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the e-Invoices</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px"><button type="button" id="ei-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button><button type="button" class="hs" onClick="{{copyDetails}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Copy details</button></div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ei-empty-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="verified" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="ei-empty-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No e-Invoices yet</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">Nothing has been fetched from SQL Account for AISB yet. Fetch SQL's Customer Invoice listing and a copy of its MyInvois Transaction screen on SQL import, and AISB's e-Invoices show here.</p>
+          <a href="Sql.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="database" tone="white" size="16" hint-size="16px,16px"></dc-import>Open SQL import</a>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isHere}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ei-here-h" class="sw" style="display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-start; padding: 20px 22px; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px">
+          <span style="width: 48px; height: 48px; border-radius: 14px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="clock" tone="muted" size="26" hint-size="26px,26px"></dc-import></span>
+          <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <h2 id="ei-here-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Submission method not decided yet</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 760px">Agrinexus International is kept here, so its e-Invoices don't come from SQL Account. How they will reach MyInvois is not decided yet, so nothing is sent to MyInvois or read from it for AI. Once Sales holds AI's invoices and notes, they are listed here with a Print column and print from AI's own documents.</p>
+          </div>
+          <a href="AccountingKeptHere.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; box-sizing: border-box; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 14px; text-decoration: none; white-space: nowrap; flex: none">Open Sales</a>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{hasSource}}" hint-placeholder-val="{{ true }}">
+        <section aria-label="Where these e-Invoices come from" class="sw" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+          <sc-if value="{{srcRead}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 10px 16px">
+              <dc-import name="Icon" glyph="sheet" tone="brand" size="18" hint-size="18px,18px"></dc-import>
+              <p style="flex: 1 1 420px; min-width: 0; margin: 0; font-size: 13px; color: #46546A; overflow-wrap: anywhere">From <b style="color: #0F1A2B">{{srcName}}</b>, saved {{srcSaved}}, read {{srcWhen}} by Fetch on SQL import: {{srcCount}}.</p>
+              <a href="Sql.dc.html" style="display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 4px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap">Open SQL import<dc-import name="Icon" glyph="arrow" tone="brand" size="14" hint-size="14px,14px"></dc-import></a>
+            </div>
+          </sc-if>
+          <sc-if value="{{srcNone}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: flex-start; padding: 12px 16px; background: #FAFBFC">
+              <dc-import name="Icon" glyph="inbox" tone="muted" size="18" hint-size="18px,18px"></dc-import>
+              <p style="flex: 1 1 420px; min-width: 0; margin: 0; font-size: 13px; color: #46546A; max-width: 860px"><b style="color: #0F1A2B">No copy of MyInvois read yet</b>, so the status shown is SQL's own and nothing received is known. In SQL, open the MyInvois Transaction screen, click the grid, press <b>Ctrl+A</b> then <b>Ctrl+C</b>, paste it into a new Excel workbook with its headings and save it in the exports folder under any name, then use Fetch from SQL exports on SQL import. The company's TIN must be in Setup › Companies.</p>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px 12px"><a href="Sql.dc.html" style="display: inline-flex; align-items: center; height: 34px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap">Open SQL import</a><a href="SetupCompanies.dc.html" style="display: inline-flex; align-items: center; height: 34px; font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap">Open Setup › Companies</a></div>
+            </div>
+          </sc-if>
+          <sc-if value="{{hasUnused}}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid #F3D9A6; background: #FFFBF2">
+              <button type="button" class="hr" aria-expanded="{{unusedOpen}}" onClick="{{toggleUnused}}" style="width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 40px; padding: 6px 16px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #5C3100; text-align: left; cursor: pointer"><span class="{{unusedChev}}"><dc-import name="Icon" glyph="chevronRight" tone="warn" size="16" hint-size="16px,16px"></dc-import></span><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import>The fetch of 18 Nov 2026, 10:42 left out 3 MyInvois copies</button>
+              <sc-if value="{{unusedOpen}}" hint-placeholder-val="{{ true }}">
+                <ul id="ei-unused" class="ex" style="margin: 0; padding: 0 16px 8px 40px; list-style: none">
+                  <sc-for list="{{unused}}" as="f" hint-placeholder-count="3">
+                    <li style="display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; padding: 8px 0; border-top: 1px solid #F3E3C2">
+                      <div style="flex: 1 1 360px; min-width: 0; font-size: 13px; color: #46546A; overflow-wrap: anywhere"><b style="color: #0F1A2B">{{f.name}}</b>: {{f.reason}}</div>
+                      <span style="{{f.chip}}"><dc-import name="Icon" glyph="{{f.chipGlyph}}" tone="{{f.tone}}" size="14" hint-size="14px,14px"></dc-import>{{f.word}}</span>
+                      <sc-if value="{{f.isSetup}}" hint-placeholder-val="{{ false }}"><a href="SetupCompanies.dc.html" style="display: inline-flex; align-items: center; height: 34px; padding: 0 4px; font-weight: 600; font-size: 13px; text-decoration: none; flex: none">Open Setup › Companies</a></sc-if>
+                    </li>
+                  </sc-for>
+                </ul>
+              </sc-if>
+            </div>
+          </sc-if>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+        <section aria-labelledby="ei-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <h2 id="ei-list-h" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{listHead}}</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; justify-content: space-between; padding: 0 22px; border-bottom: 1px solid #E3E7ED">
+            <div role="tablist" aria-label="Which e-Invoices" style="display: flex; flex-wrap: wrap; gap: 0 24px">
+              <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-label="{{t.aria}}" aria-controls="ei-panel" tabindex="{{t.tab}}" onKeyDown="{{t.key}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}<span style="{{t.countStyle}}">{{t.count}}</span></button></sc-for>
+            </div>
+            <label style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 0"><span style="font-size: 13px; font-weight: 600; color: #46546A">Month</span><select value="{{month}}" onChange="{{pickMonth}}" style="height: 34px; padding: 0 8px; border: 1px solid #5F6C80; border-radius: 9px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><sc-for list="{{months}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></label>
+          </div>
+
+          <div role="tabpanel" id="ei-panel" aria-labelledby="{{panelBy}}" class="{{panelCls}}">
+            <sc-if value="{{showPrint}}" hint-placeholder-val="{{ true }}">
+              <div role="group" aria-label="Print" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 22px; border-bottom: 1px solid #EEF1F5; background: #FAFBFC">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center">
+                  <dc-import name="Icon" glyph="printer" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+                  <span style="font-size: 13px; font-weight: 600; color: #46546A">Print</span>
+                  <sc-if value="{{canZip}}" hint-placeholder-val="{{ true }}">
+                    <button type="button" id="ei-zip" class="hs" disabled="{{zipBusy}}" aria-busy="{{zipBusyAttr}}" aria-describedby="ei-zip-what" onClick="{{makeZip}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 176px; box-sizing: border-box; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><sc-if value="{{zipBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if><sc-if value="{{zipIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="download" tone="brand" size="16" hint-size="16px,16px"></dc-import></sc-if>{{zipLabel}}</button>
+                    <span id="ei-zip-what" style="font-size: 13px; color: #46546A; overflow-wrap: anywhere">{{zipWhat}}</span>
+                  </sc-if>
+                  <sc-if value="{{noZip}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #5F6C80">{{noZipText}}</span></sc-if>
+                  <sc-if value="{{zipDone}}" hint-placeholder-val="{{ false }}"><span class="rv" style="display: inline-flex; align-items: center; gap: 5px; color: #0A6B3D; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>{{zipDoneText}}</span></sc-if>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 13px; color: #5C3100">
+                  <dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import>
+                  <div style="flex: 1 1 320px; min-width: 0"><b>Print settings:</b> invoices print without what is missing.<ul style="margin: 4px 0 0; padding-left: 18px"><li>No signature: upload it under Printed invoices in Setup › Companies › AISB.</li></ul></div>
+                  <a href="SetupCompanies.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 34px; box-sizing: border-box; padding: 0 12px; border-radius: 9px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; text-decoration: none; white-space: nowrap">Open Setup › Companies</a>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showDocs}}" hint-placeholder-val="{{ true }}">
+              <div role="region" aria-label="{{boxLabel}}" tabindex="0" class="fr" style="{{boxStyle}}">
+                <table style="width: 100%; min-width: 1060px; border-collapse: collapse">
+                  <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{caption}}</caption>
+                  <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px 10px 22px; font-weight: 600">Doc no.</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Date</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Description</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600; text-align: right">{{amtHead}}</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Status</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">MyInvois</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 22px 10px 12px; font-weight: 600">Print</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{docs}}" as="d" hint-placeholder-count="3">
+                      <tr id="{{d.rowId}}" tabindex="-1" class="hr" style="border-top: 1px solid #F1F3F7; vertical-align: top">
+                        <td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{d.no}}</td>
+                        <td style="padding: 12px; color: #46546A; white-space: nowrap">{{d.date}}</td>
+                        <td style="padding: 12px">{{d.desc}}<div style="color: #5F6C80; font-size: 12px">{{d.party}}</div><sc-if value="{{d.hasPaidAs}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{d.paidAs}}</div></sc-if></td>
+                        <td style="padding: 12px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap">{{d.amt}}</td>
+                        <td style="padding: 12px; white-space: nowrap"><span style="{{d.pillStyle}}"><dc-import name="Icon" glyph="{{d.pillGlyph}}" tone="{{d.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{d.pillText}}</span><sc-if value="{{d.link}}" hint-placeholder-val="{{ false }}"><div><a href="{{d.url}}" target="_blank" rel="noopener noreferrer" aria-label="{{d.linkAria}}" style="display: inline-flex; align-items: center; height: 32px; font-size: 13px; font-weight: 600; text-decoration: none">MyInvois ↗</a></div></sc-if></td>
+                        <td style="padding: 12px; max-width: 300px"><sc-if value="{{d.hasMi}}" hint-placeholder-val="{{ true }}"><div style="font-family: ui-monospace, Consolas, monospace; font-size: 12px; overflow-wrap: anywhere">{{d.uuid}}</div><div style="color: #5F6C80; font-size: 12px">{{d.note}}</div></sc-if><sc-if value="{{d.noMi}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80">—</span></sc-if></td>
+                        <td style="padding: 8px 22px 8px 12px; white-space: nowrap"><sc-if value="{{d.hasPdf}}" hint-placeholder-val="{{ true }}"><a class="pl" href="InvoicePdf.dc.html" target="_blank" title="{{d.pdfTip}}" aria-label="{{d.pdfAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="document" tone="brand" size="16" hint-size="16px,16px"></dc-import>{{d.pdfText}}</a></sc-if><sc-if value="{{d.noPdf}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80">—</span></sc-if></td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showRecv}}" hint-placeholder-val="{{ false }}">
+              <div role="region" aria-label="{{boxLabel}}" tabindex="0" class="fr" style="{{boxStyle}}">
+                <table style="width: 100%; min-width: 1060px; border-collapse: collapse">
+                  <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{caption}}</caption>
+                  <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px 10px 22px; font-weight: 600">Issued</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">From</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Their number</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600; text-align: right">Amount (RM)</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">Status</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 12px; font-weight: 600">MyInvois</th><th scope="col" style="position: sticky; top: 0; z-index: 1; background: #FAFBFC; padding: 10px 22px 10px 12px; font-weight: 600">In SQL</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{recv}}" as="r" hint-placeholder-count="6">
+                      <tr class="hr" style="border-top: 1px solid #F1F3F7; vertical-align: top">
+                        <td style="padding: 12px 12px 12px 22px; color: #46546A; white-space: nowrap">{{r.date}}</td>
+                        <td style="padding: 12px">{{r.party}}<sc-if value="{{r.hasCode}}" hint-placeholder-val="{{ true }}"><div style="color: #5F6C80; font-size: 12px">{{r.code}}</div></sc-if></td>
+                        <td style="padding: 12px; font-family: ui-monospace, Consolas, monospace; font-size: 13px; white-space: nowrap">{{r.their}}</td>
+                        <td style="padding: 12px; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.amt}}</td>
+                        <td style="padding: 12px; white-space: nowrap"><span style="{{r.stStyle}}"><dc-import name="Icon" glyph="verified" tone="ok" size="14" hint-size="14px,14px"></dc-import>{{r.status}}</span><div style="color: #5F6C80; font-size: 12px; margin-top: 4px">{{r.validated}}</div></td>
+                        <td style="padding: 12px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; max-width: 280px; overflow-wrap: anywhere"><sc-if value="{{r.link}}" hint-placeholder-val="{{ true }}"><a href="{{r.url}}" target="_blank" rel="noopener noreferrer" title="Open it on MyInvois" aria-label="{{r.linkAria}}" style="display: inline-flex; align-items: center; min-height: 32px">{{r.uuid}} ↗</a></sc-if><sc-if value="{{r.noLink}}" hint-placeholder-val="{{ false }}"><span>{{r.uuid}}</span></sc-if></td>
+                        <td style="padding: 12px 22px 12px 12px">
+                          <div style="display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center">
+                            <sc-if value="{{r.hasDoc}}" hint-placeholder-val="{{ true }}"><b style="font-family: ui-monospace, Consolas, monospace; font-size: 13px">{{r.doc}}</b></sc-if>
+                            <sc-if value="{{r.hasPill}}" hint-placeholder-val="{{ false }}"><span title="{{r.pillTip}}" style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 99px; background: #E3E7ED; color: #46546A; font-size: 12px; font-weight: 600; white-space: nowrap">{{r.pill}}</span></sc-if>
+                            <sc-if value="{{r.notFound}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 5px; color: #7A4300; font-weight: 600"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>Not found</span></sc-if>
+                          </div>
+                        </td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}">
+              <div class="sw" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 26px 22px; color: #46546A">
+                <span style="width: 40px; height: 40px; border-radius: 12px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="inbox" tone="muted" size="22" hint-size="22px,22px"></dc-import></span>
+                <span style="flex: 1 1 360px; min-width: 0">{{emptyText}}</span>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{isMany}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 22px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+                <span role="status" aria-live="off" style="font-size: 13px; color: #46546A">{{shownText}}</span>
+                <sc-if value="{{canMore}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" onClick="{{showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreLabel}}</button></sc-if>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{showUnbooked}}" hint-placeholder-val="{{ false }}">
+              <div style="padding: 18px 22px 8px; border-top: 1px solid #EEF1F5">
+                <h3 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">e-Invoices received but not found in SQL's books (1)</h3>
+                <p style="margin: 4px 0 0; color: #46546A; font-size: 13px; max-width: 820px">Valid e-Invoices issued to the company from September 2026 that no supplier invoice or payment voucher in SQL has, by the supplier's document number, its TIN and amount, or its amount alone (a whole voucher, or one line of a claim, dated near it). Check each one: it may still have to be entered in SQL. Listed whatever month is chosen.</p>
+              </div>
+              <div style="overflow-x: auto; padding-bottom: 6px">
+                <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+                  <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">e-Invoices received but not found in SQL's books</caption>
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">Doc no.</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Supplier</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Supplier TIN</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Issued</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600; text-align: right">Total</th></tr></thead>
+                  <tbody>
+                    <tr class="hr" style="border-top: 1px solid #F1F3F7"><td style="padding: 12px 12px 12px 22px; font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px">GPC/2611/0457</td><td style="padding: 12px">Green Pest Control</td><td style="padding: 12px; font-family: ui-monospace, Consolas, monospace; font-size: 13px">C2234567890</td><td style="padding: 12px; color: #46546A">12 Nov 2026</td><td style="padding: 12px 22px 12px 12px; text-align: right; font-variant-numeric: tabular-nums">250.00</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </sc-if>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showUnbooked}}" hint-placeholder-val="{{ false }}"><p style="margin: -12px 0 0; color: #5F6C80; font-size: 12px; max-width: 820px"><b>Design note</b> (not app text): when no e-Invoice is missing, the received-but-not-found table is replaced by the line "None: every valid e-Invoice received is in SQL's books."</p></sc-if>
+      <sc-if value="{{isMany}}" hint-placeholder-val="{{ false }}"><p style="margin: -12px 0 0; color: #5F6C80; font-size: 12px; max-width: 820px"><b>Design note</b> (not app text): state-only sample. January to August 2026 are invented by repeating the three monthly invoices, to show the many-rows pattern from the States board (first 25 rows, the count, Show 25 more); they are not in the books.</p></sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"issued","options":["issued","received","self-billed","no-copy","not-used","kept-here","empty","loading","error","many"],"section":"State to show"},"$preview":{"width":1440,"height":2000}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.fromView((p && p.view) || 'issued');
+    this.timer = null;
+  }
+  // Each view of the "State to show" tweak: the company, the tab, the month and whether the page has loaded.
+  fromView(view) {
+    const tab = view === 'received' ? 'received' : view === 'self-billed' ? 'self' : 'issued';
+    const month = view === 'received' || view === 'many' ? 'all' : view === 'self-billed' ? '2026-11' : '2026-10';
+    return { view, co: view === 'kept-here' ? 'AI' : 'AISB', tab, month, swap: 0, shown: 25, zip: '', zipBusy: false,
+      unusedOpen: view === 'not-used', stage: view === 'loading' || view === 'error' ? view : 'ready', say: '' };
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) { clearTimeout(this.timer); this.setState(this.fromView(this.props.view || 'issued')); }
+  }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  focusSoon(id) { setTimeout(() => { const el = document.getElementById(id); if (el) el.focus(); }, 0); }
+  renderVals() {
+    const s = this.state, set = x => this.setState(x);
+    const view = s.view;
+    const here = s.co === 'AI';
+    const noCopy = view === 'no-copy' && !here, empty = view === 'empty' && !here, many = view === 'many' && !here;
+    const loading = s.stage === 'loading', failed = s.stage === 'error';
+    const CHIP = (bg, fg) => 'display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const OK = CHIP('#E3F7EC', '#0A6B3D'), WARN = CHIP('#FEF1D6', '#7A4300'), BAD = CHIP('#FDE6E3', '#B0190F');
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthName = m => MONTHS[Number(m.slice(5, 7)) - 1] + ' ' + m.slice(0, 4);
+    // "2026-10-01 11:19:44" is written "1 Oct 2026, 11:19".
+    const when = iso => { if (!iso) return '—'; const d = iso.slice(0, 10).split('-'); return Number(d[2]) + ' ' + MON[Number(d[1]) - 1] + ' ' + d[0] + (iso.length > 10 ? ', ' + iso.slice(11, 16) : ''); };
+    const day = iso => Number(iso.slice(8, 10)) + ' ' + MON[Number(iso.slice(5, 7)) - 1];
+    // Stand-in identifiers, made up for the sample: the same 26-letter UUIDs as the printed invoice board (seed = the row in the copy, from 1).
+    const A = 'ABCDEFGHJKMNPQRSTVWXYZ0123456789';
+    const gen = (n, seed) => { let x = seed * 7919 + 13, o = ''; for (let i = 0; i < n; i++) { x = (Math.imul(x, 1103515245) + 12345) & 0x7fffffff; o += A[(x >>> 16) % A.length]; } return o; };
+    const share = (uuid, long) => 'https://myinvois.hasil.gov.my/' + uuid + '/share/' + long;
+    const TIN = { 'Agrinexus International': 'C3456789012', Tenant: 'C4567890123', 'Office tenant (Unit 3A)': 'C5678901234' };
+
+    // The status of an e-Invoice as the SQL document carries it.
+    const WORD = {
+      ok: ['Validated', 'verified', 'ok', OK], cancelledSep: ['Cancelled by CN2609-002', 'alert', 'warn', WARN], cancelledOct: ['Cancelled by CN2611-002', 'alert', 'warn', WARN],
+      uuid: ['Has UUID', 'clock', 'warn', WARN], submitted: ['Submitted, not validated', 'clock', 'warn', WARN]
+    };
+    // MyInvois Sep-Nov.xlsx (stage1/samples.md section 16): 11 issued, 1 self-billed, 6 received, by their row in the copy.
+    const I = (row, no, type, party, desc, amt, st, val, iss, hasLong, word) => ({ row, no, dir: 'issued', type, party, desc, amt, st, val, iss, hasLong, word });
+    let ISSUED = [
+      I(1, 'IV2609-015', 'Invoice', 'Agrinexus International', 'Management fee August', '4,500.00', 'Valid', '2026-09-03 10:02:11', '2026-09-03', true, 'cancelledSep'),
+      I(2, 'CN2609-002', 'Credit Note', 'Agrinexus International', 'Credit note: Management fee August', '4,500.00', 'Valid', '2026-09-10 09:40:05', '2026-09-10', true, 'ok'),
+      I(3, 'IV2609-028', 'Invoice', 'Agrinexus International', 'Consultancy recharge September', '1,200.00', 'Valid', '2026-09-25 15:12:30', '2026-09-25', true, 'ok'),
+      I(4, 'IV2609-022', 'Invoice', 'Agrinexus International', 'Management fee September', '4,500.00', 'Valid', '2026-09-30 16:45:02', '2026-09-30', false, 'uuid'),
+      I(5, 'IV2609-030', 'Invoice', 'Tenant', 'Rent September, Block A', '2,800.00', 'Valid', '2026-09-30 16:50:18', '2026-09-30', true, 'ok'),
+      I(6, 'IV2610-014', 'Invoice', 'Office tenant (Unit 3A)', 'Office rental October, Unit 3A', '1,800.00', 'Valid', '2026-10-01 11:19:44', '2026-10-01', true, 'ok'),
+      I(7, 'IV2610-031', 'Invoice', 'Tenant', 'Rent October, Block A', '2,800.00', 'Valid', '2026-10-31 17:02:40', '2026-10-31', true, 'cancelledOct'),
+      I(8, 'IV2610-033', 'Invoice', 'Agrinexus International', 'Management fee October', '4,500.00', 'Valid', '2026-10-31 17:05:20', '2026-10-31', true, 'ok'),
+      I(9, 'IV2611-002', 'Invoice', 'Office tenant (Unit 3A)', 'Office rental November, Unit 3A', '1,800.00', 'Valid', '2026-11-02 10:11:09', '2026-11-02', true, 'ok'),
+      I(10, 'IV2611-005', 'Invoice', 'Office tenant (Unit 3A)', 'Utilities recharge November, Unit 3A', '245.60', 'Submitted', '', '2026-11-02', false, 'submitted'),
+      I(11, 'CN2611-002', 'Credit Note', 'Tenant', 'Credit note: Rent October, Block A', '2,800.00', 'Valid', '2026-11-10 09:31:27', '2026-11-10', true, 'ok')
+    ];
+    // Before a MyInvois copy is read, only the SQL documents fetched with an e-Invoice, with SQL's own status (as SQL import shows them).
+    if (noCopy) {
+      const SQLWORD = { 'IV2609-015': 'cancelledSep', 'IV2609-028': 'submitted', 'IV2609-022': 'uuid', 'IV2610-014': 'ok', 'IV2610-031': 'ok', 'IV2610-033': 'ok' };
+      ISSUED = ISSUED.filter(e => e.no in SQLWORD).map(e => ({ ...e, word: SQLWORD[e.no] }));
+    }
+    // The many-rows sample: January to August invented by repeating the three monthly invoices (state-only).
+    if (many) {
+      const extra = [];
+      for (let m = 1; m <= 8; m++) {
+        const mm = (m < 10 ? '0' : '') + m, last = new Date(2026, m, 0).getDate(), name = MONTHS[m - 1];
+        extra.push(I(100 + m * 3, 'IV26' + mm + '-0' + (10 + m), 'Invoice', 'Office tenant (Unit 3A)', 'Office rental ' + name + ', Unit 3A', '1,800.00', 'Valid', '2026-' + mm + '-01 10:30:00', '2026-' + mm + '-01', true, 'ok'));
+        extra.push(I(101 + m * 3, 'IV26' + mm + '-0' + (30 + m), 'Invoice', 'Tenant', 'Rent ' + name + ', Block A', '2,800.00', 'Valid', '2026-' + mm + '-' + last + ' 16:40:00', '2026-' + mm + '-' + last, true, 'ok'));
+        extra.push(I(102 + m * 3, 'IV26' + mm + '-0' + (50 + m), 'Invoice', 'Agrinexus International', 'Management fee ' + name, '4,500.00', 'Valid', '2026-' + mm + '-' + last + ' 16:45:00', '2026-' + mm + '-' + last, true, 'ok'));
+      }
+      ISSUED = [...extra, ...ISSUED];
+    }
+    const SELF = noCopy ? [] : [{ row: 12, no: 'PV2611-007', dir: 'self', type: 'Self-billed Invoice', party: 'Brightline Software Pte Ltd', tin: 'EI00000000030', desc: 'Cloud software subscription October',
+      amt: 'USD 100.00', paidAs: 'Paid as MYR 470.00 by PV2611-007', st: 'Valid', val: '2026-11-06 14:19:44', iss: '2026-11-06', hasLong: true, word: 'ok' }];
+    const R = (row, party, code, their, amt, val, doc, pill) => ({ row, party, code, their, amt, val, iss: val.slice(0, 10), doc, pill });
+    const RECV = noCopy ? [] : [
+      R(15, 'Payroll advisor', '400-P004', '—', '312.00', '2026-09-28 11:05:47', 'PV2609-027', ''),
+      R(16, 'Courier', '400-C007', '—', '93.28', '2026-10-20 10:22:31', 'PV2611-009', 'Paid together'),
+      R(17, 'Courier', '400-C007', '—', '93.22', '2026-10-27 16:08:19', 'PV2611-009', 'Paid together'),
+      R(14, 'Water supplier', '400-W001', '—', '84.30', '2026-11-02 14:31:08', 'PV2611-006', ''),
+      R(13, 'Internet provider', '400-T003', '—', '420.00', '2026-11-03 09:14:52', 'PV2611-004', 'By amount'),
+      R(18, 'Green Pest Control', '', 'GPC/2611/0457', '250.00', '2026-11-12 13:40:02', '', '')
+    ];
+    // What the read changed on a SQL document, said after its validated time (the fill note).
+    const FILL = { 'IV2609-028': '(was Submitted, not validated)' };
+    const PILLTIP = { 'By amount': 'A likely match, by amount only: check it', 'Paid together': 'One voucher in SQL paid these together' };
+
+    // AI is kept here: nothing comes from SQL, and the submission method is not decided, so every list is empty.
+    const lists = here ? { issued: [], received: [], self: [] } : { issued: ISSUED, received: RECV, self: SELF };
+    const inMonth = e => s.month === 'all' || e.iss.slice(0, 7) === s.month;
+    const byDate = (a, b) => (a.iss < b.iss ? -1 : a.iss > b.iss ? 1 : 0);
+    const monthKeys = [...new Set([...lists.issued, ...lists.received, ...lists.self].map(e => e.iss.slice(0, 7)))];
+    if (!monthKeys.includes('2026-10')) monthKeys.push('2026-10');
+    monthKeys.sort().reverse();
+    const months = [...monthKeys.map(m => ({ v: m, l: monthName(m) })), { v: 'all', l: here ? 'All months' : many ? 'All months in the copy (1 Jan to 13 Nov)' : noCopy ? 'All months fetched' : 'All months in the copy (3 Sep to 13 Nov)' }];
+    const pickMonth = e => { clearTimeout(this.timer); const v = e.target.value || '2026-10'; set({ month: v, swap: (s.swap || 0) + 1, shown: 25, zip: '', zipBusy: false, say: (v === 'all' ? 'All months' : monthName(v)) + ' shown.' }); };
+
+    // Tabs: Issued, Received, Self-billed, each with its count in the month chosen (roving tabindex, arrows move).
+    const TABS = [['issued', 'Issued', 'ei-tab-issued'], ['received', 'Received', 'ei-tab-received'], ['self', 'Self-billed', 'ei-tab-sb']];
+    const order = TABS.map(t => t[0]);
+    const pickTab = k => { clearTimeout(this.timer); const t = TABS.find(x => x[0] === k); set({ tab: k, swap: (s.swap || 0) + 1, shown: 25, zip: '', zipBusy: false, say: t[1] + ' e-Invoices shown.' }); };
+    const tabKey = e => {
+      if (!e) return;
+      const i = order.indexOf(s.tab);
+      const j = e.key === 'ArrowRight' ? (i + 1) % 3 : e.key === 'ArrowLeft' ? (i + 2) % 3 : e.key === 'Home' ? 0 : e.key === 'End' ? 2 : -1;
+      if (j < 0) return;
+      if (e.preventDefault) e.preventDefault();
+      pickTab(order[j]); this.focusSoon(TABS[j][2]);
+    };
+    const tabBase = 'display:inline-flex;align-items:center;gap:8px;white-space:nowrap;height:48px;padding:0 2px;border:0;background:transparent;font:600 14px Inter,sans-serif;cursor:pointer;margin-bottom:-1px;transition:border-color .12s ease-out,color .12s ease-out;';
+    const tabs = TABS.map(([k, label, id]) => {
+      const on = s.tab === k, n = lists[k].filter(inMonth).length;
+      return { id, label, count: String(n), aria: label + ', ' + n, sel: on ? 'true' : 'false', tab: on ? 0 : -1, pick: () => pickTab(k), key: tabKey,
+        style: tabBase + (on ? 'color:#0F1A2B;border-bottom:2px solid #2450B8' : 'color:#5F6C80;border-bottom:2px solid transparent'),
+        countStyle: 'display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:20px;padding:0 6px;box-sizing:border-box;border-radius:99px;font-size:12px;font-weight:600;' + (on ? 'background:#EAF0FD;color:#2450B8' : 'background:#EEF1F5;color:#46546A') };
+    });
+    const tabLabel = TABS.find(t => t[0] === s.tab)[1];
+    const mName = s.month === 'all' ? 'all months' : monthName(s.month);
+
+    // Rows of the tab chosen.
+    const isDocs = s.tab !== 'received';
+    const all = lists[s.tab].filter(inMonth).slice().sort(byDate);
+    const shownRows = many ? all.slice(0, s.shown) : all;
+    const docs = isDocs ? shownRows.map((e, i) => {
+      const w = WORD[e.word], uuid = gen(26, e.row), mi = !noCopy, cn = e.no.slice(0, 2) === 'CN', self = e.dir === 'self';
+      const what = cn ? 'credit note' : self ? 'self-billed invoice' : 'invoice', pdfText = cn ? 'Credit note PDF' : 'Invoice PDF';
+      return { rowId: 'ei-row-' + i, no: e.no, date: day(e.iss), desc: e.desc, amt: e.amt,
+        party: (self ? 'Supplier: ' + e.party + ' (' + e.tin + ')' : 'Buyer: ' + e.party + ' (' + TIN[e.party] + ')'), hasPaidAs: !!e.paidAs, paidAs: e.paidAs || '',
+        pillText: w[0], pillGlyph: w[1], pillTone: w[2], pillStyle: w[3],
+        link: mi && e.hasLong, url: share(uuid, gen(40, e.row + 100)), linkAria: 'Open ' + e.no + ' on MyInvois, opens in a new tab',
+        hasMi: mi, noMi: !mi, uuid, note: e.type + ' · ' + e.st + (e.val ? ' · validated ' + when(e.val) : '') + (FILL[e.no] ? ' ' + FILL[e.no] : ''),
+        hasPdf: true, noPdf: false, pdfText, pdfTip: 'The ' + what + ', laid out as SQL Account prints it', pdfAria: pdfText + ' of ' + e.no + ', opens in a new tab' };
+    }) : [];
+    const recv = !isDocs ? shownRows.map(e => {
+      const uuid = gen(26, e.row);
+      return { date: when(e.iss), party: e.party, hasCode: !!e.code, code: e.code ? 'Code ' + e.code : '', their: e.their, amt: e.amt,
+        status: 'Valid', stStyle: OK, validated: 'Validated ' + when(e.val), uuid, link: true, noLink: false, url: share(uuid, gen(40, e.row + 100)),
+        linkAria: 'Open the e-Invoice from ' + e.party + (e.their !== '—' ? ' ' + e.their : '') + ' on MyInvois, opens in a new tab',
+        hasDoc: !!e.doc, doc: e.doc, hasPill: !!e.pill, pill: e.pill, pillTip: PILLTIP[e.pill] || '', notFound: !e.doc };
+    }) : [];
+    const nRows = all.length;
+    const EMPTY = here
+      ? { issued: "No e-Invoices for AI yet. Its invoices and notes will be listed here once Sales holds them.", received: "Nothing received is known for AI: how AI's e-Invoices reach MyInvois is not decided yet.", self: 'No self-billed e-Invoices for AI yet.' }
+      : noCopy
+        ? { issued: 'No SQL document with an e-Invoice in ' + mName + '.', received: "No copy of MyInvois read yet, so the e-Invoices other companies sent AISB aren't known here.", self: "None known yet: a self-billed e-Invoice shows once a copy of MyInvois is read." }
+        : { issued: 'No e-Invoice issued in ' + mName + '.', received: 'No e-Invoice received in ' + mName + '.', self: 'No self-billed e-Invoice in ' + mName + '. They are made for overseas suppliers and claims paid abroad.' };
+
+    // Print: All of the month makes one zip of the tab's documents for the month chosen.
+    const showPrint = !here && isDocs;
+    const zipFile = (s.tab === 'self' ? 'AISB Self-billed invoices ' : 'AISB Invoices ') + s.month + '.zip';
+    const canZip = showPrint && s.month !== 'all' && nRows > 0;
+    const zipKinds = s.tab === 'self' ? (nRows === 1 ? 'self-billed invoice' : 'self-billed invoices') : (nRows === 1 ? 'document' : 'invoices, debit and credit notes');
+    const makeZip = () => {
+      if (!canZip || s.zipBusy) return;
+      clearTimeout(this.timer);
+      set({ zipBusy: true, zip: '', say: 'Making ' + zipFile + '…' });
+      this.timer = setTimeout(() => this.setState({ zipBusy: false, zip: zipFile, say: 'Saved ' + zipFile + '.' }), 900);
+    };
+    const shownN = shownRows.length, left = nRows - shownN;
+    const showMore = () => { const first = shownN; set({ shown: s.shown + 25, say: 'Showing ' + Math.min(nRows, s.shown + 25) + ' of ' + nRows + ' e-Invoices.' }); this.focusSoon('ei-row-' + first); };
+
+    // Where the e-Invoices come from: one line instead of the fetch panels, which stay on SQL import.
+    const UNUSED = [
+      { name: 'MyInvois Oct.xlsx', word: "Couldn't be read", tone: 'bad', chip: BAD, chipGlyph: 'alert', reason: "Row 7 of this MyInvois copy has a UUID that isn't one LHDN gives (3KQ7WN2XHD), so nothing was taken from it. Copy the whole MyInvois Transaction grid again, with its headings." },
+      { name: 'MyInvois AI.xlsx', word: 'Another company', tone: 'warn', chip: WARN, chipGlyph: 'company', reason: 'This MyInvois copy is for AI (Agrinexus International), not AISB.' },
+      { name: 'MyInvois Other.xlsx', word: 'Company not in Setup', tone: 'warn', chip: WARN, chipGlyph: 'company', isSetup: true, reason: "This MyInvois copy has no e-Invoice whose supplier or buyer TIN is AISB's, so it was left out. Enter the company's TIN in Setup › Companies, then fetch again." }
+    ].map(u => ({ isSetup: false, ...u }));
+    const ready = !loading && !failed;
+    const listOn = ready && !empty;
+
+    return {
+      say: s.say,
+      sbCo: here ? 'ai' : 'aisb', sbKind: here ? 'here' : 'sqlPayroll',
+      onTopCo: code => { const c = String(code).toUpperCase(); if ((c === 'AISB' || c === 'AI') && c !== this.state.co) { clearTimeout(this.timer); this.setState({ co: c, swap: (this.state.swap || 0) + 1, shown: 25, zip: '', zipBusy: false, say: 'Showing the e-Invoices of ' + c + '.' }); } },
+      eyebrow: here ? 'AI · Kept here' : 'AISB · Kept in SQL Account',
+      intro: here
+        ? "AI's MyInvois e-Invoices: those it issues, those it receives and the self-billed ones it makes. AI is kept here, so they will come from its own documents, not from SQL Account."
+        : "AISB's MyInvois e-Invoices: those it issued to customers, those suppliers sent it, and the self-billed ones it made for overseas suppliers. Each shows whether LHDN validated it and links to its MyInvois page; customer documents and self-billed invoices print as SQL Account prints them. Nothing here can be edited: it follows SQL.",
+      isLoading: loading, isError: failed, isEmpty: ready && empty, isHere: ready && here,
+      retry: () => { set({ stage: 'ready', say: 'e-Invoices loaded.' }); this.focusSoon(TABS.find(t => t[0] === s.tab)[2]); },
+      copyDetails: () => set({ say: 'Details copied.' }),
+      hasSource: ready && !here && !empty, srcRead: !noCopy, srcNone: noCopy,
+      srcName: many ? 'MyInvois Jan-Nov.xlsx' : 'MyInvois Sep-Nov.xlsx', srcSaved: '17 Nov 2026, 16:05', srcWhen: '18 Nov 2026, 10:42',
+      srcCount: many ? '42 e-Invoices (35 issued, 6 received, 1 self-billed)' : '18 e-Invoices (11 issued, 6 received, 1 self-billed)',
+      hasUnused: view === 'not-used' && !here, unusedOpen: s.unusedOpen ? 'true' : 'false', unusedChev: s.unusedOpen ? 'chev on' : 'chev',
+      toggleUnused: () => set({ unusedOpen: !s.unusedOpen }), unused: UNUSED,
+      showList: listOn, listHead: tabLabel + ' e-Invoices, ' + mName,
+      tabs, months, month: s.month, pickMonth,
+      panelBy: TABS.find(t => t[0] === s.tab)[2], panelCls: (s.swap || 0) % 2 ? 'swapB' : 'swapA',
+      showPrint, canZip, noZip: showPrint && !canZip,
+      noZipText: s.month === 'all' ? 'Choose a month to print all of it as one zip.' : 'Nothing to print for ' + mName + '.',
+      zipBusy: !!s.zipBusy, zipIdle: !s.zipBusy, zipBusyAttr: s.zipBusy ? 'true' : 'false', makeZip,
+      zipLabel: s.zipBusy ? 'Making the zip…' : 'All of the month',
+      zipWhat: zipFile + ': the ' + nRows + ' ' + zipKinds + ' of ' + mName + ', one PDF each',
+      zipDone: !!s.zip && !s.zipBusy, zipDoneText: 'Saved ' + s.zip,
+      showDocs: isDocs && nRows > 0, showRecv: !isDocs && nRows > 0, noRows: nRows === 0, emptyText: EMPTY[s.tab],
+      docs, recv,
+      amtHead: s.tab === 'self' ? 'Amount' : 'Amount (RM)',
+      caption: tabLabel + ' e-Invoices, ' + mName + (many ? ', ' + shownN + ' of ' + nRows + ' shown' : ''),
+      boxLabel: tabLabel + ' e-Invoices' + (many ? ', scrolls' : ''),
+      boxStyle: many ? 'max-height:640px;overflow:auto' : 'overflow-x:auto',
+      isMany: many && nRows > 0, shownText: 'Showing ' + shownN + ' of ' + nRows + ' e-Invoices', canMore: left > 0,
+      moreLabel: 'Show ' + Math.min(25, Math.max(left, 0)) + ' more', showMore,
+      showUnbooked: listOn && !here && !noCopy && s.tab === 'received'
+    };
+  }
+}
+</script>
+</body>
+</html>

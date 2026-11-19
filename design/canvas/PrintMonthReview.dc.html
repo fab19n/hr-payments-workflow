@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Printed Month review sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hg,.hr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* the printed page: print sizes, black and grey on white */
+.mr-t{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt;line-height:1.3;margin-top:1.2mm}
+.mr-t th{text-align:left;font-weight:600;padding:0.7mm 1.6mm 0.7mm 0;border-bottom:0.25mm solid #000000;vertical-align:bottom}
+.mr-t td{padding:0.8mm 1.6mm 0.8mm 0;vertical-align:top;border-bottom:0.15mm solid #B5B5B5}
+.mr-t .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mr-h{margin:3.6mm 0 0;padding-bottom:0.7mm;border-bottom:0.35mm solid #000000;font:700 10pt/1.25 Inter,Arial,sans-serif;display:flex;gap:2.5mm}
+.mr-s{font-size:7.5pt;color:#333333}
+.mr-m{font-family:ui-monospace,Consolas,monospace}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="approvals" company="{{sbCo}}" kind="{{sbKind}}" companies="{{sbCos}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Payments" page="Approvals" sub="Month review sheet" company="{{sbCo}}" companies="{{tbCos}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="Approvals.dc.html" class="hg" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 4px; margin: -6px 0 4px -4px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>Approvals</a>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Printed Month review sheet</h1>
+        <p style="margin: 0; color: #46546A; max-width: 820px">What opens when you press <b style="color: #0F1A2B">Print the Month review</b> on Payments › Approvals or on the Monthly checklist. One approver reviews the month and signs it: the payments register total, what was paid without approval on file, the approvals each approver gave, and the bank reconciliation. The signed sheet is uploaded like an approval form, and the checklist item <b style="color: #0F1A2B">Month reviewed</b> ticks once it is on file. Signing it approves no payment.</p>
+      </div>
+
+      <div role="group" aria-label="State to show" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%">
+        <sc-for list="{{states}}" as="s" hint-placeholder-count="6"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+        <section aria-labelledby="mr-lead-h" class="rv" style="flex: 2 1 460px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <h2 id="mr-lead-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{leadTitle}}</h2>
+          <p style="margin: 0; color: #46546A">{{leadText}}</p>
+          <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="5"><dt style="color: #5F6C80; font-weight: 600">{{f.k}}</dt><dd style="margin: 0; color: #0F1A2B; min-width: 0; overflow-wrap: anywhere">{{f.v}}</dd></sc-for>
+          </dl>
+        </section>
+
+        <section aria-labelledby="mr-links-h" style="flex: 1 1 320px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <h2 id="mr-links-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Where it is printed and where it goes</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: 13px">
+            <sc-for list="{{links}}" as="l" hint-placeholder-count="6"><li style="display: flex; flex-direction: column; padding: 4px 0"><a href="{{l.href}}" style="font-weight: 600; min-height: 32px; display: inline-flex; align-items: center; align-self: flex-start">{{l.label}}</a><span style="color: #46546A">{{l.note}}</span></li></sc-for>
+          </ul>
+        </section>
+      </div>
+
+      <sc-if value="{{hasDone}}" hint-placeholder-val="{{ false }}">
+        <div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 12px; background: #E3F7EC; border: 1px solid #A8DDBF">
+          <span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import></span>
+          <p style="margin: 0; color: #0F1A2B; max-width: 920px">{{doneText}} <a href="MonthlyChecklist.dc.html" style="font-weight: 600">Open the Monthly checklist</a></p>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{hasNotice}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="mr-ask-h" id="mr-ask" tabindex="-1" style="display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px; border-radius: 14px; background: #FFF8EB; border: 1px solid #F0C97A; max-width: 920px">
+          <span style="flex: none; margin-top: 2px"><dc-import name="Icon" glyph="alert" tone="warn" size="22" hint-size="22px,22px"></dc-import></span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+            <h2 id="mr-ask-h" style="margin: 0; font-size: 16px; font-weight: 600; color: #6E3500">Maybank current isn't signed off for October 2026</h2>
+            <p style="margin: 0; color: #0F1A2B">The sheet shows the reconciliation as it stands: 5 bank lines to explain, and the books RM 695.80 below the bank. You can print now, and the approver reviews it as it is. Or explain the lines and sign off first. Printing is never blocked.</p>
+            <p style="margin: 0; color: #46546A; font-size: 13px">If the reconciliation is signed off after printing, the sheet's figures change, so its check no longer matches: the upload says so, and the sheet is printed again before it is signed.</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px">
+              <button type="button" class="hb" onClick="{{printAnyway}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="printer" tone="white" size="18" hint-size="18px,18px"></dc-import>Print anyway</button>
+              <a href="Bank.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 1px solid #5F6C80; border-radius: 10px; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="bank" tone="muted" size="18" hint-size="18px,18px"></dc-import>Open Bank and reconciliation</a>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{hasPrinted}}" hint-placeholder-val="{{ false }}">
+        <div role="note" id="mr-printed" tabindex="-1" style="display: flex; gap: 12px; align-items: center; padding: 12px 16px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E3E7ED; max-width: 920px">
+          <dc-import name="Icon" glyph="printer" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+          <span>MR-2610-AISB printed with the Maybank current reconciliation not signed off. It opened in a new tab. Approvals shows it as <b>Waiting for upload</b>.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{hasNone}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="mr-none-h" style="display: flex; gap: 14px; align-items: flex-start; padding: 20px 22px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E7ED; max-width: 920px">
+          <span style="flex: none; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; background: #EEF1F5"><dc-import name="Icon" glyph="approval" tone="muted" size="24" hint-size="24px,24px"></dc-import></span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+            <h2 id="mr-none-h" style="margin: 0; font-size: 16px; font-weight: 600">Nothing printed</h2>
+            <p style="margin: 0; color: #0F1A2B">Agrinexus Plantations has no approver in use, so no one can sign its Month review for October 2026. Add the director who signs in Setup › HR › Approvers, then print it.</p>
+            <p style="margin: 0; color: #46546A; font-size: 13px">The checklist item Month reviewed stays open and says the same. Approval forms can't be printed for AIP either, until it has an approver.</p>
+            <a href="SetupApprovers.dc.html" class="hb" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="approval" tone="white" size="18" hint-size="18px,18px"></dc-import>Open Setup › HR › Approvers</a>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{hasPaper}}" hint-placeholder-val="{{ true }}">
+        <section aria-labelledby="mr-paper-h" style="background: #E9ECF1; border: 1px solid #DDE2EA; border-radius: 16px; padding: 20px 24px 28px; overflow-x: auto">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 16px">
+            <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+            <h2 id="mr-paper-h" style="margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere">{{fileName}}</h2>
+            <span style="color: #46546A; font-size: 13px">{{fileMeta}}</span>
+            <span style="{{chipStyle}}">{{chipText}}</span>
+          </div>
+          <div style="width: max-content; margin: 0 auto; display: flex; flex-direction: column; gap: 10px">
+            <article aria-label="{{sheetAria1}}" style="{{sheetStyle}}">
+              <div style="display: flex; justify-content: space-between; gap: 8mm; align-items: flex-start">
+                <div style="min-width: 0">
+                  <h3 style="margin: 0; font: 700 16pt/1.1 'Space Grotesk', Inter, Arial, sans-serif">Month review</h3>
+                  <div style="font-size: 9.5pt; font-weight: 600; margin-top: 1.6mm">{{sh.coName}}</div>
+                  <div class="mr-s">{{sh.coReg}}</div>
+                  <sc-if value="{{sh.hasAddr}}" hint-placeholder-val="{{ true }}"><div class="mr-s">{{sh.coAddr}}</div></sc-if>
+                </div>
+                <div style="text-align: right; flex: none">
+                  <div class="mr-m" style="font-size: 12pt; font-weight: 700">{{sh.code}}</div>
+                  <div style="font-size: 8.5pt">Check: <b class="mr-m">{{sh.check}}</b></div>
+                  <div style="font-size: 9pt; font-weight: 600; margin-top: 1mm">October 2026</div>
+                  <div class="mr-s">Printed {{sh.printed}}</div>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 4mm; align-items: center; margin-top: 3mm; padding: 2mm 2.5mm; border: 0.3mm solid #000000">
+                <div aria-hidden="true" style="{{sh.qrStyle}}"></div>
+                <div style="font-size: 8.5pt; line-height: 1.4"><b>Scan with the phone to upload the signed sheet.</b> No phone? Open Payments › Approvals, choose Upload, and type the code <b class="mr-m">{{sh.code}}</b> and the check <b class="mr-m">{{sh.check}}</b>. If a figure on this sheet changes after printing, the check no longer matches and the sheet is printed again.</div>
+              </div>
+
+              <p style="margin: 3mm 0 0; font-size: 8.5pt">{{sh.intro}}</p>
+
+              <h4 class="mr-h"><span>1</span><span>Payments register, October 2026</span></h4>
+              <table class="mr-t">
+                <caption class="sr">Payments register totals for October 2026</caption>
+                <colgroup><col style="width: 62mm"/><col style="width: 22mm"/><col/></colgroup>
+                <thead><tr><th scope="col">Payments</th><th scope="col" class="n">Number</th><th scope="col" class="n">Amount (RM unless marked)</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{sh.tot}}" as="t" hint-placeholder-count="4"><tr><td style="{{t.kStyle}}">{{t.k}}</td><td class="n">{{t.n}}</td><td class="n" style="{{t.aStyle}}">{{t.amt}}</td></tr></sc-for>
+                </tbody>
+              </table>
+              <p style="margin: 1.2mm 0 0; font-size: 8pt">{{sh.apLine}}</p>
+              <p class="mr-s" style="margin: 0.6mm 0 0">{{sh.totNote}}</p>
+
+              <h4 class="mr-h"><span>2</span><span>Paid without approval on file</span></h4>
+              <div style="font-size: 8pt; font-weight: 600; margin-top: 1.2mm">{{sh.openHead}}</div>
+              <sc-if value="{{sh.hasOpen}}" hint-placeholder-val="{{ true }}">
+                <table class="mr-t">
+                  <caption class="sr">Payments still paid without approval on file</caption>
+                  <colgroup><col style="width: 44mm"/><col style="width: 20mm"/><col style="width: 18mm"/><col style="width: 19mm"/><col/></colgroup>
+                  <thead><tr><th scope="col">Payment</th><th scope="col">Voucher</th><th scope="col">Paid</th><th scope="col" class="n">Amount</th><th scope="col">Why it is listed</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{sh.open}}" as="o" hint-placeholder-count="2"><tr><td style="font-weight: 600">{{o.pay}}</td><td class="mr-m" style="font-size: 7.5pt">{{o.ref}}</td><td>{{o.paid}}</td><td class="n">{{o.amt}}</td><td>{{o.note}}</td></tr></sc-for>
+                  </tbody>
+                </table>
+              </sc-if>
+              <sc-if value="{{sh.noOpen}}" hint-placeholder-val="{{ false }}"><p style="margin: 0.6mm 0 0; font-size: 8pt">{{sh.noOpenText}}</p></sc-if>
+              <div style="font-size: 8pt; font-weight: 600; margin-top: 2mm">{{sh.afterHead}}</div>
+              <sc-if value="{{sh.hasAfter}}" hint-placeholder-val="{{ true }}">
+                <table class="mr-t">
+                  <caption class="sr">Payments approved after payment</caption>
+                  <colgroup><col style="width: 44mm"/><col style="width: 20mm"/><col style="width: 18mm"/><col style="width: 19mm"/><col/></colgroup>
+                  <thead><tr><th scope="col">Payment</th><th scope="col">Voucher</th><th scope="col">Paid</th><th scope="col" class="n">Amount</th><th scope="col">Form</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{sh.after}}" as="a" hint-placeholder-count="1"><tr><td style="font-weight: 600">{{a.pay}}</td><td class="mr-m" style="font-size: 7.5pt">{{a.ref}}</td><td>{{a.paid}}</td><td class="n">{{a.amt}}</td><td>{{a.note}}</td></tr></sc-for>
+                  </tbody>
+                </table>
+              </sc-if>
+              <p class="mr-s" style="margin: 0.8mm 0 0">{{sh.pwaNote}}</p>
+
+              <h4 class="mr-h"><span>3</span><span>Approvals by approver</span></h4>
+              <p style="margin: 1mm 0 0; font-size: 8pt">{{sh.apIntro}}</p>
+              <table class="mr-t">
+                <caption class="sr">Approvals given for October's payments, by approver</caption>
+                <colgroup><col style="width: 6mm"/><col style="width: 21mm"/><col style="width: 19mm"/><col style="width: 21mm"/><col/><col style="width: 26mm"/><col style="width: 19mm"/></colgroup>
+                <thead><tr><th scope="col"><span class="sr">Checked</span></th><th scope="col">Approver</th><th scope="col">Form</th><th scope="col">Date on form</th><th scope="col">Payment</th><th scope="col" class="n">Approved</th><th scope="col">Recorded</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{sh.aps}}" as="r" hint-placeholder-count="8"><tr style="{{r.rowStyle}}"><td><span style="{{r.box}}">{{r.tick}}</span></td><td style="font-weight: 600">{{r.who}}</td><td class="mr-m" style="font-size: 7.5pt">{{r.form}}</td><td>{{r.date}}</td><td>{{r.pay}}</td><td class="n">{{r.amt}}</td><td class="mr-s">{{r.how}}</td></tr></sc-for>
+                </tbody>
+              </table>
+              <p style="margin: 1mm 0 0; font-size: 8pt">{{sh.waitLine}}</p>
+              <p style="margin: 0.4mm 0 0; font-size: 8pt">{{sh.selfLine}}</p>
+
+              <div style="position: absolute; left: 15mm; right: 15mm; bottom: 8mm; display: flex; justify-content: space-between; gap: 6mm; border-top: 0.25mm solid #333333; padding-top: 1.4mm; font-size: 7.5pt; color: #333333">
+                <span>{{sh.foot}}</span><span>Page 1 of 2</span>
+              </div>
+            </article>
+
+            <article aria-label="{{sheetAria2}}" style="{{sheetStyle}}">
+              <div style="display: flex; justify-content: space-between; gap: 8mm; align-items: baseline; padding-bottom: 1.6mm; border-bottom: 0.25mm solid #333333">
+                <div style="min-width: 0"><b style="font: 700 11pt/1.2 'Space Grotesk', Inter, Arial, sans-serif">Month review</b> <span style="font-size: 8.5pt">· {{sh.coName}} · October 2026 (continued)</span></div>
+                <div style="flex: none; font-size: 8.5pt"><b class="mr-m">{{sh.code}}</b> · Check <b class="mr-m">{{sh.check}}</b></div>
+              </div>
+
+              <h4 class="mr-h"><span>4</span><span>Bank reconciliation, October 2026</span></h4>
+              <table class="mr-t">
+                <caption class="sr">Bank reconciliation of each bank account</caption>
+                <colgroup><col style="width: 38mm"/><col style="width: 37mm"/><col style="width: 25mm"/><col style="width: 19mm"/><col/><col style="width: 33mm"/></colgroup>
+                <thead><tr><th scope="col">Account</th><th scope="col" class="n">Bank statement</th><th scope="col" class="n">Books, 31 Oct</th><th scope="col" class="n">Difference</th><th scope="col">Lines</th><th scope="col">Sign-off</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{sh.bank}}" as="b" hint-placeholder-count="2"><tr><td><b>{{b.acct}}</b></td><td class="n">{{b.stmt}}</td><td class="n">{{b.books}}</td><td class="n">{{b.diff}}</td><td>{{b.lines}}</td><td style="{{b.signStyle}}">{{b.sign}}</td></tr></sc-for>
+                </tbody>
+              </table>
+              <sc-for list="{{sh.bankNotes}}" as="n" hint-placeholder-count="2"><p style="margin: 1mm 0 0; font-size: 8pt">{{n.t}}</p></sc-for>
+
+              <h4 class="mr-h"><span>5</span><span>Each payment of the month</span></h4>
+              <table class="mr-t">
+                <caption class="sr">Each payment in the register for October 2026, with its approval</caption>
+                <colgroup><col style="width: 46mm"/><col style="width: 15mm"/><col style="width: 15mm"/><col style="width: 24mm"/><col/></colgroup>
+                <thead><tr><th scope="col">Payment</th><th scope="col">Due</th><th scope="col">Paid</th><th scope="col" class="n">Amount</th><th scope="col">Approval</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{sh.list}}" as="x" hint-placeholder-count="16"><tr><td>{{x.pay}}</td><td>{{x.due}}</td><td>{{x.paid}}</td><td class="n">{{x.amt}}</td><td style="{{x.apStyle}}">{{x.ap}}</td></tr></sc-for>
+                </tbody>
+              </table>
+              <p class="mr-s" style="margin: 0.8mm 0 0">{{sh.listNote}}</p>
+
+              <h4 class="mr-h"><span>6</span><span>Review and signature</span></h4>
+              <p style="margin: 1mm 0 0; font-size: 8.5pt"><b>One approver signs this sheet.</b> {{sh.signText}}</p>
+              <div style="{{sh.sigGrid}}">
+                <sc-for list="{{sh.signers}}" as="s" hint-placeholder-count="3">
+                  <div style="border: 0.3mm solid #000000; padding: 2mm 2.4mm; display: flex; flex-direction: column; gap: 1mm; min-width: 0">
+                    <b style="font-size: 9pt">{{s.name}}</b>
+                    <span class="mr-s">{{s.role}}</span>
+                    <div style="position: relative; height: 10mm; border-bottom: 0.25mm solid #000000"><span aria-hidden="true" style="{{s.sigStyle}}"></span></div>
+                    <div style="display: flex; justify-content: space-between; gap: 2mm; align-items: flex-end"><span class="mr-s">Signature</span><span class="mr-s">Date <span style="{{s.dateStyle}}">{{s.date}}</span></span></div>
+                  </div>
+                </sc-for>
+              </div>
+              <p class="mr-s" style="margin: 2mm 0 0">{{sh.prepLine}}</p>
+
+              <div style="position: absolute; left: 15mm; right: 15mm; bottom: 8mm; display: flex; justify-content: space-between; gap: 6mm; border-top: 0.25mm solid #333333; padding-top: 1.4mm; font-size: 7.5pt; color: #333333">
+                <span>{{sh.foot}}</span><span>Page 2 of 2</span>
+              </div>
+            </article>
+            <p style="margin: 0; color: #46546A; font-size: 12px; max-width: 210mm">Drawn at print size: A4 portrait, 210 × 297 mm, 12 mm and 15 mm margins, body 8 to 9.5 pt; the header repeats on page 2. The QR is a stand-in pattern, not a scannable code. {{paperCaption}}</p>
+          </div>
+        </section>
+      </sc-if>
+
+      <section aria-labelledby="mr-parts-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="padding: 20px 22px 12px; display: flex; flex-direction: column; gap: 6px">
+          <h2 id="mr-parts-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What each part says, and where it comes from</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">The sheet takes every figure from the pages below as they stand when it is printed, and the keyed check is worked out from them. Nothing on it is typed by hand.</p>
+        </div>
+        <div style="overflow-x: auto; border-top: 1px solid #EEF1F5">
+          <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px">
+            <caption class="sr">The parts of the Month review sheet and their sources</caption>
+            <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">Part</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Comes from</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">What it holds</th></tr></thead>
+            <tbody>
+              <sc-for list="{{parts}}" as="p" hint-placeholder-count="6"><tr class="hr" style="border-top: 1px solid #F1F3F7"><td style="padding: 11px 12px 11px 22px; font-weight: 600; white-space: nowrap">{{p.name}}</td><td style="padding: 11px 12px"><a href="{{p.href}}" style="font-weight: 600">{{p.src}}</a></td><td style="padding: 11px 22px 11px 12px; color: #46546A">{{p.what}}</td></tr></sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"aisb","options":["aisb","none","ai","rec-open","uploaded","no-approvers"],"section":"State to show"},"$preview":{"width":1440,"height":3500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the sheet: PrintMonthReview.dc.html#ai (MR-2610-AI, from Approvals for AI), #uploaded, #rec-open,
+    // #none, #no-approvers. It applies on first load, over the default state.
+    let v = (p && p.view) || 'aisb', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'aisb' && ['none', 'ai', 'rec-open', 'uploaded', 'no-approvers'].includes(h)) v = h;
+    this.state = { view: v, printed: false, say: '' };
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) this.setState({ view: this.props.view || 'aisb', printed: false, say: '' });
+  }
+  renderVals() {
+    const V = this.state.view;
+    const co = V === 'ai' ? 'ai' : V === 'no-approvers' ? 'aip' : 'aisb';
+
+    // A stand-in QR: 25 x 25 modules with the three finder squares, drawn as one SVG path (not a scannable code).
+    const qrUri = text => {
+      const n = 25, m = [];
+      let h = 7;
+      for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) % 2147483647;
+      for (let y = 0; y < n; y++) { m.push([]); for (let x = 0; x < n; x++) { h = (h * 1103515245 + 12345) % 2147483648; m[y].push((h >> 8) % 2); } }
+      const finder = (ox, oy) => {
+        for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+          const x = ox + dx, y = oy + dy;
+          if (x < 0 || y < 0 || x >= n || y >= n) continue;
+          m[y][x] = dx === -1 || dy === -1 || dx === 7 || dy === 7 ? 0 : (dx === 0 || dy === 0 || dx === 6 || dy === 6) ? 1 : (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4) ? 1 : 0;
+        }
+      };
+      finder(0, 0); finder(n - 7, 0); finder(0, n - 7);
+      let d = '';
+      for (let y = 0; y < n; y++) { let x = 0; while (x < n) { if (m[y][x]) { const s = x; while (x < n && m[y][x]) x++; d += 'M' + s + ' ' + y + 'h' + (x - s) + 'v1h-' + (x - s) + 'z'; } else x++; } }
+      const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 25 25' shape-rendering='crispEdges'><path fill='#000' d='" + d + "'/></svg>";
+      return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+    };
+    // A pen signature on the scanned copy (Hassan Ismail's), as one stroke.
+    const sigUri = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 34'><path d='M4 26 C 12 6, 20 6, 18 22 S 30 30, 36 12 S 46 4, 48 20 S 58 28, 66 14 C 70 8, 74 8, 74 18 S 84 26, 92 12 S 104 6, 114 16' fill='none' stroke='#1B2A6B' stroke-width='1.6' stroke-linecap='round'/><path d='M30 30 C 50 27, 80 26, 108 28' fill='none' stroke='#1B2A6B' stroke-width='1.1' stroke-linecap='round'/></svg>") + '")';
+    const INK = "font-family:'Segoe Script','Bradley Hand','Comic Sans MS',cursive;color:#1B2A6B;";
+    const scan = V === 'uploaded';
+
+    const BOX = 'display:inline-flex;vertical-align:top;margin-top:0.2mm;align-items:center;justify-content:center;width:3.2mm;height:3.2mm;border:0.25mm solid #000000;box-sizing:border-box;font-size:9pt;line-height:1;' + (scan ? INK : '');
+    const NOBOX = 'display:none';
+    const ap = (who, form, date, pay, amt, how, first) => ({ who: first ? who : '', form, date, pay, amt, how, paper: how.indexOf('Scan') === 0, first });
+    const SCAN = up => 'Scan, ' + up;
+    const DIG = up => 'PDF, ' + up;
+    const L = (pay, due, paid, amt, apText) => ({ pay, due, paid, amt, ap: apText });
+    const NN = 'Not needed';
+
+    // ---- AISB, October 2026, as printed Tue 17 Nov (samples sections 12 and 13; register totals as PaymentsRegister shows them)
+    const AISB = {
+      coName: 'AISB Sdn Bhd', coReg: 'Registration no. 201901023456 (1331234-K)', hasAddr: true,
+      coAddr: 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor',
+      code: 'MR-2610-AISB', check: 'N5B-2RWH', printed: 'Tue 17 Nov 2026',
+      intro: 'One approver reviews the month and signs in part 6, on page 2. Signing confirms the review and approves no payment.',
+      tot: [['Money out', '15', '115,437.70 + USD 1,200.00', 0], ['Paid', '9', '99,783.20', 1], ['Not paid yet', '6', '15,654.50 + USD 1,200.00', 1], ['Money in, received 3 Nov 2026', '1', '2,800.00', 0]],
+      apLine: 'Approval: 10 payments need it: approved 7, paid more than approved 1, waiting 1, paid without approval on file 1. Not needed: 6 (KWSP, PERKESO, PCB, telephone, electricity, rental received).',
+      totNote: 'As the Payments register shows October on the print date; money in and each currency added up apart. Each payment is in part 5.',
+      openHead: 'Still open: 2',
+      open: [
+        { pay: 'Contractor — field works', ref: 'PV2610-003', paid: 'Tue 6 Oct', amt: '24,000.00', note: 'No approval form on file.' },
+        { pay: 'Stationery Mart', ref: 'PV2610-022', paid: 'Fri 30 Oct', amt: '1,120.00', note: 'RM 120.00 above the 1,000.00 approved on AF-2610-004.' }
+      ],
+      noOpenText: '',
+      afterHead: 'Approved after payment: 1',
+      after: [{ pay: 'Office rental', ref: 'PV2610-021', paid: 'Fri 30 Oct', amt: '6,500.00', note: 'AF-2611-002: dated 5 Nov, uploaded 6 Nov 2026.' }],
+      pwaNote: 'Both entered by Aisha Rahman (declared, not verified). Approval never blocks a payment; one moves to Approved after payment when its signed form is uploaded.',
+      aps: [
+        ap('Rajesh Kumar', 'AF-2610-001', '1 Oct 2026', 'Salaries — staff, recurring set-up (totals)', '48,600.00 a month', SCAN('2 Oct'), true),
+        ap('Rajesh Kumar', 'AF-2610-001', '1 Oct 2026', 'Director fee (payee line struck)', 'In part 5, page 2', SCAN('2 Oct')),
+        ap('Tan Mei Ling', 'AF-2610-004', '27 Oct 2026', 'Stationery Mart, SQ-2210 (paid 1,120.00)', '1,000.00', SCAN('27 Oct'), true),
+        ap('Tan Mei Ling', 'AF-2611-003', '12 Nov 2026', 'Oct 2026 Claims - Wei Ming, CL-2610-004', '486.50', SCAN('13 Nov')),
+        ap('Tan Mei Ling', 'AF-2611-003', '12 Nov 2026', 'Oct 2026 Claims - Aina, CL-2610-005', '408.00', SCAN('13 Nov')),
+        ap('Tan Mei Ling', 'AF-2611-003', '12 Nov 2026', 'Oct 2026 Claims - Jia Hui, CL-2610-007', '320.00', SCAN('13 Nov')),
+        ap('Hassan Ismail', 'AF-2611-002', '5 Nov 2026', 'Office rental, recurring set-up (after payment)', '6,500.00 a month', SCAN('6 Nov'), true),
+        ap('Hassan Ismail', 'AF-2611-002', '5 Nov 2026', 'Cloud hosting, annual plan', 'USD 1,200.00', SCAN('6 Nov'))
+      ],
+      apIntro: 'Rajesh Kumar 2, Tan Mei Ling 4, Hassan Ismail 2: all 8 recorded from a paper scan, the approver chosen by Aisha Rahman (declared, not verified). Tick each line that is right; cross out any that is not and write why.',
+      waitLine: 'Waiting for a signature: Consultant fee, Payroll Advisory PLT, PA-1010, 3,200.00, on AF-2611-004 (printed 16 Nov 2026).',
+      selfLine: 'Self-approved (approver is the payee): none. The director fee, paid to Hassan Ismail, was signed by Rajesh Kumar.',
+      bank: [
+        { acct: 'Maybank current ····4417', stmt: '34,314.15 at 31 Oct', books: '33,618.35', diff: '695.80', lines: '14 lines: 5 to explain', sign: 'Not signed off', open: true },
+        { acct: 'Maybank savings ····0932', stmt: '58,011.40 at 31 Oct', books: '58,011.40', diff: '0.00', lines: '3 lines, all confirmed', sign: 'Signed off 3 Nov 2026', open: false }
+      ],
+      bankNotes: [
+        'Maybank current: the books are 695.80 below the bank. Still to explain: 14 Oct IBG DR CONSULTANCY 3,200.00; 27 Oct IBG DR 271026 150.00 and its reversal the same day; 29 Oct web hosting 389.00; 31 Oct profit paid 12.80. In the books, not cleared yet: cheque 000214 to Stationery Mart, 1,120.00.',
+        'Kept in SQL Account: the books agree with SQL\'s account 310-000 at 31 Oct 2026. Each account\'s reconciliation statement, with Prepared by and Reviewed by, is printed from Bank and reconciliation.'
+      ],
+      list: [
+        L('Contractor — field works', '6 Oct', '6 Oct', '24,000.00', 'Paid without approval on file'),
+        L('Salaries — staff (8 people)', '24 Oct', '24 Oct', '48,600.00', 'Approved by Rajesh Kumar, 1 Oct 2026'),
+        L('Director fee', '24 Oct', '24 Oct', '12,000.00', 'Approved by Rajesh Kumar, 1 Oct 2026'),
+        L('Telephone & internet', '28 Oct', '28 Oct', '398.60', NN),
+        L('Stationery Mart', '30 Oct', '30 Oct', '1,120.00', 'Paid more than approved (RM 120.00)'),
+        L('Office rental', '31 Oct', '30 Oct', '6,500.00', 'Approved by Hassan Ismail, 5 Nov 2026 (after payment)'),
+        L('Consultant fee', '31 Oct', '—', '3,200.00', 'Waiting'),
+        L('Electricity bill', '5 Nov', '4 Nov', '1,163.20', NN),
+        L('Rental received (money in)', '5 Nov', '3 Nov', '+2,800.00', NN),
+        L('Oct 2026 Claims - Wei Ming', '14 Nov', '—', '486.50', 'Approved by Tan Mei Ling, 12 Nov 2026'),
+        L('KWSP', '15 Nov', '—', '11,240.00', NN),
+        L('PERKESO', '15 Nov', '17 Nov', '1,086.40', NN),
+        L('PCB', '15 Nov', '14 Nov', '4,915.00', NN),
+        L('Oct 2026 Claims - Aina', '20 Nov', '—', '408.00', 'Approved by Tan Mei Ling, 12 Nov 2026'),
+        L('Oct 2026 Claims - Jia Hui', '20 Nov', '—', '320.00', 'Approved by Tan Mei Ling, 12 Nov 2026'),
+        L('Cloud hosting', '25 Nov', '—', 'USD 1,200.00', 'Approved by Hassan Ismail, 5 Nov 2026')
+      ],
+      listNote: '16 payments, by due date. The telephone bill counts at its bank line, 398.60 (planned 420.00). "—": not paid on the print date.',
+      signText: 'By signing you confirm you have reviewed parts 1 to 5 and checked the approvals recorded from a paper scan in part 3. Any one of the three may sign.',
+      signers: [['Hassan Ismail', 'Director, approver from 1 Jan 2025'], ['Tan Mei Ling', 'Director, approver from 1 Jan 2025'], ['Rajesh Kumar', 'Director, approver from 1 Jul 2026']],
+      prepLine: 'Printed by Aisha Rahman, as declared on this computer (declared, not verified). Approvers as in Setup › HR › Approvers on 17 Nov 2026.'
+    };
+
+    // ---- AISB, nothing still open: a what-if of its own, as if AF-2611-007 and AF-2611-008 were uploaded on 18 Nov and the sheet then printed again (made-up check)
+    const NONE = Object.assign({}, AISB, {
+      check: 'F4H-9KXT', printed: 'Wed 18 Nov 2026',
+      apLine: 'Approval: 10 payments need it: approved 9, waiting 1. Not needed: 6 (KWSP, PERKESO, PCB, telephone, electricity, rental received).',
+      openHead: 'Still open: none',
+      open: [],
+      noOpenText: 'Every paid payment that needs approval has its signed form on file, and none was paid above it.',
+      afterHead: 'Approved after payment: 3',
+      after: [
+        { pay: 'Contractor — field works', ref: 'PV2610-003', paid: 'Tue 6 Oct', amt: '24,000.00', note: 'AF-2611-007: Rajesh Kumar, signed and uploaded 18 Nov.' },
+        { pay: 'Office rental', ref: 'PV2610-021', paid: 'Fri 30 Oct', amt: '6,500.00', note: 'AF-2611-002: dated 5 Nov, uploaded 6 Nov 2026.' },
+        { pay: 'Stationery Mart, the excess', ref: 'PV2610-022', paid: 'Fri 30 Oct', amt: '120.00', note: 'AF-2611-008: Tan Mei Ling, signed and uploaded 18 Nov.' }
+      ],
+      pwaNote: 'Approval never blocks a payment; one moves to Approved after payment when its signed form is uploaded.',
+      aps: [
+        ap('Rajesh Kumar', 'AF-2610-001', '1 Oct 2026', 'Salaries — staff, recurring set-up (totals)', '48,600.00 a month', SCAN('2 Oct'), true),
+        ap('Rajesh Kumar', 'AF-2610-001', '1 Oct 2026', 'Director fee (payee line struck)', 'In part 5, page 2', SCAN('2 Oct')),
+        ap('Rajesh Kumar', 'AF-2611-007', '18 Nov 2026', 'Contractor — field works (after payment)', '24,000.00', SCAN('18 Nov')),
+        ap('Tan Mei Ling', 'AF-2610-004', '27 Oct 2026', 'Stationery Mart, SQ-2210', '1,000.00', SCAN('27 Oct'), true),
+        ap('Tan Mei Ling', 'AF-2611-008', '18 Nov 2026', 'Stationery Mart, the amount above approval', '120.00', SCAN('18 Nov')),
+        ap('Tan Mei Ling', 'AF-2611-003', '12 Nov 2026', 'Oct 2026 Claims - Wei Ming, CL-2610-004', '486.50', SCAN('13 Nov')),
+        ap('Tan Mei Ling', 'AF-2611-003', '12 Nov 2026', 'Oct 2026 Claims - Aina, CL-2610-005', '408.00', SCAN('13 Nov')),
+        ap('Tan Mei Ling', 'AF-2611-003', '12 Nov 2026', 'Oct 2026 Claims - Jia Hui, CL-2610-007', '320.00', SCAN('13 Nov')),
+        ap('Hassan Ismail', 'AF-2611-002', '5 Nov 2026', 'Office rental, recurring set-up (after payment)', '6,500.00 a month', SCAN('6 Nov'), true),
+        ap('Hassan Ismail', 'AF-2611-002', '5 Nov 2026', 'Cloud hosting, annual plan', 'USD 1,200.00', SCAN('6 Nov'))
+      ],
+      apIntro: 'Rajesh Kumar 3, Tan Mei Ling 5, Hassan Ismail 2 (Stationery Mart has two forms): all 10 recorded from a paper scan, the approver chosen by Aisha Rahman (declared, not verified). Tick each line that is right; cross out any that is not and write why.',
+      prepLine: 'Printed by Aisha Rahman, as declared on this computer (declared, not verified). Approvers as in Setup › HR › Approvers on 18 Nov 2026.'
+    });
+    NONE.list = AISB.list.map(x => x.pay === 'Contractor — field works' ? Object.assign({}, x, { ap: 'Approved by Rajesh Kumar, 18 Nov 2026 (after payment)' })
+      : x.pay === 'Stationery Mart' ? Object.assign({}, x, { ap: 'Approved by Tan Mei Ling, 18 Nov 2026 (after payment)' }) : x);
+
+    // ---- AI, October 2026: one approver (Hassan Ismail), Kept here with no chart of accounts yet, as it prints when Print is pressed on Wed 18 Nov
+    const AI = {
+      coName: 'Agrinexus International', coReg: 'Registration no. 202001045678 (1378901-W)', hasAddr: false, coAddr: '',
+      code: 'MR-2610-AI', check: 'R8C-5TJN', printed: 'Wed 18 Nov 2026',
+      intro: 'One approver reviews the month and signs in part 6, on page 2. Signing confirms the review and approves no payment.',
+      tot: [['Money out', '6', '37,060.40', 0], ['Paid', '3', '28,662.40', 1], ['Not paid yet', '3', '8,398.00', 1], ['Money in, part received', '1', 'USD 8,400.00 (USD 5,000.00 received)', 0]],
+      apLine: 'Approval: 3 payments need it: approved 3. Not needed: 4 (KWSP, PERKESO, electricity, produce export received).',
+      totNote: 'As the Payments register shows October on the print date; money in and each currency added up apart. Each payment is in part 5.',
+      openHead: 'Still open: none',
+      open: [],
+      noOpenText: 'Every paid payment that needs approval has its signed form on file, and none was paid above it.',
+      afterHead: 'Approved after payment: none',
+      after: [],
+      pwaNote: 'Approval never blocks a payment. A payment paid with no approved form on file would be listed here until its form is uploaded.',
+      aps: [
+        ap('Hassan Ismail', 'AF-2610-002', '1 Oct 2026', 'Salaries — staff, recurring set-up (totals)', '21,300.00 a month', DIG('2 Oct'), true),
+        ap('Hassan Ismail', 'AF-2610-003', '16 Oct 2026', 'Farm supplies, Agro inputs INV-7781', '6,750.00', DIG('16 Oct')),
+        ap('Hassan Ismail', 'AF-2611-006', '17 Nov 2026', 'Consultant — farm audit (quarterly)', '2,500.00', DIG('17 Nov'))
+      ],
+      apIntro: 'Hassan Ismail 3. All 3 were digitally signed PDFs ("PDF", with the upload date), matched to him automatically, so there is nothing to tick.',
+      waitLine: 'Waiting for a signature: none.',
+      selfLine: 'Self-approved (approver is the payee): none. AI has one approver, so a payment to Hassan Ismail himself could only be self-approved, and would be listed here.',
+      bank: [
+        { acct: 'Maybank FCA ····1186', stmt: 'USD 17,480.00 at 30 Oct', books: 'USD 17,480.00', diff: '0.00', lines: '2 lines, all confirmed', sign: 'Not signed off', open: true }
+      ],
+      bankNotes: [
+        'Maybank FCA: every line is confirmed and the books agree with the bank, so it is ready to sign off on Bank and reconciliation.',
+        'Kept here, with no chart of accounts yet: the book side is the payments recorded in this app. Its reconciliation statement, with Prepared by and Reviewed by, is printed from Bank and reconciliation.'
+      ],
+      list: [
+        L('Farm supplies, Agro inputs', '20 Oct', '19 Oct', '6,750.00', 'Approved by Hassan Ismail, 16 Oct 2026'),
+        L('Salaries — staff (5 people)', '24 Oct', '24 Oct', '21,300.00', 'Approved by Hassan Ismail, 1 Oct 2026'),
+        L('Produce export (money in)', '31 Oct', '30 Oct', '+USD 8,400.00', NN),
+        L('Electricity bill', '7 Nov', '—', '1,420.00', NN),
+        L('KWSP', '15 Nov', '—', '4,478.00', NN),
+        L('PERKESO', '15 Nov', '14 Nov', '612.40', NN),
+        L('Consultant — farm audit', '30 Nov', '—', '2,500.00', 'Approved by Hassan Ismail, 17 Nov 2026')
+      ],
+      listNote: '7 payments, by due date. "—": not paid on the print date.',
+      signText: 'By signing you confirm you have reviewed parts 1 to 5. Hassan Ismail is Agrinexus International\'s only approver, so he reviews approvals he gave himself.',
+      signers: [['Hassan Ismail', 'Director, the only approver for Agrinexus International']],
+      prepLine: 'Printed by Aisha Rahman, as declared on this computer (declared, not verified). Approvers as in Setup › HR › Approvers on 18 Nov 2026.'
+    };
+
+    const SRC =V === 'none' ? NONE : V === 'ai' ? AI : AISB;
+    const hasPaper = V !== 'no-approvers';
+    const sh = Object.assign({}, SRC);
+    sh.qrStyle = 'flex:none;width:16mm;height:16mm;background:' + qrUri(SRC.code + '|' + SRC.check) + ' center/100% 100% no-repeat';
+    sh.tot = SRC.tot.map(r => ({ k: r[0], n: r[1], amt: r[2], kStyle: r[3] ? 'padding-left:4mm' : 'font-weight:600', aStyle: r[3] ? '' : 'font-weight:600' }));
+    sh.hasOpen = SRC.open.length > 0; sh.noOpen = !sh.hasOpen;
+    sh.hasAfter = SRC.after.length > 0;
+    sh.aps = SRC.aps.map(a => ({ who: a.who, form: a.form, date: a.date, pay: a.pay, amt: a.amt, how: a.how,
+      box: a.paper ? BOX : NOBOX, tick: a.paper && scan ? '✓' : '',
+      rowStyle: a.first ? 'border-top:0.3mm solid #000000' : '' }));
+    sh.bank = SRC.bank.map(b => ({ ...b, signStyle: b.open ? 'font-weight:700' : '' }));
+    sh.bankNotes = SRC.bankNotes.map(t => ({ t }));
+    sh.list = SRC.list.map(x => ({ ...x, apStyle: /^Paid (without|more)/.test(x.ap) ? "font-weight:700" : "" }));
+    sh.sigGrid = 'display:grid;gap:3mm;margin-top:1.6mm;grid-template-columns:' + (SRC.signers.length > 1 ? 'repeat(3, minmax(0, 1fr))' : 'minmax(0, 62mm)');
+    sh.signers = SRC.signers.map(([name, role], i) => {
+      const signed = scan && i === 0;
+      return { name, role, date: signed ? '18/11/2026' : '',
+        sigStyle: signed ? 'position:absolute;left:2mm;bottom:0.5mm;width:36mm;height:10mm;background:' + sigUri + ' left bottom/contain no-repeat' : 'display:none',
+        dateStyle: signed ? INK + 'font-size:9pt' : 'display:inline-block;width:18mm;border-bottom:0.25mm solid #000000' };
+    });
+    sh.foot = SRC.code + ' · ' + SRC.check + ' · ' + SRC.coName + ' · Month review, October 2026';
+    const sheetStyle = 'position:relative;flex:none;width:210mm;height:297mm;box-sizing:border-box;padding:12mm 15mm 16mm;color:#000000;font-family:Inter,Arial,sans-serif;font-size:9pt;line-height:1.35;overflow:hidden;'
+      + (scan ? 'background:#FBFBF8;transform:rotate(-0.3deg);box-shadow:0 1px 3px rgba(16,24,40,.28),0 10px 28px rgba(16,24,40,.16)' : 'background:#FFFFFF;box-shadow:0 1px 3px rgba(16,24,40,.22),0 10px 28px rgba(16,24,40,.14)');
+
+    // ---- the board around the page, per state
+    const LEADS = {
+      aisb: ['AISB, October 2026: 2 paid without approval', 'As printed on Tue 17 Nov 2026 and waiting for a signature. Both payments still paid without approval on file are listed, with the office rental under Approved after payment. Maybank current is not signed off, so the sheet says so and lists the lines still to explain.',
+        [['File', 'MR-2610-AISB Month review October 2026.pdf · 2 pages, A4'], ['Code and check', 'MR-2610-AISB · N5B-2RWH, printed as text and as a QR'], ['Printed', 'Tue 17 Nov 2026, by Aisha Rahman (declared, not verified)'], ['Audit trail', 'Added · Month review MR-2610-AISB printed · 17 Nov 2026 · Aisha Rahman'], ['Status', 'Waiting for upload: Month reviewed on the checklist is not ticked (18 of 27)']]],
+      none: ['None paid without approval', 'What-if, not in the shared data: as if the contractor\'s form AF-2611-007 and Stationery Mart\'s second form AF-2611-008 were uploaded on 18 Nov before the 17 Nov copy was signed, and the sheet then printed again. Part 2 says none is still open and lists all three under Approved after payment.',
+        [['File', 'MR-2610-AISB Month review October 2026.pdf · 2 pages, A4'], ['Code and check', 'MR-2610-AISB · F4H-9KXT, a sample check made up for this what-if (printed again: the figures changed, so the check is new)'], ['The 17 Nov copy', 'N5B-2RWH no longer matches: uploading it says so and asks for this copy'], ['Audit trail', 'Added · Month review MR-2610-AISB printed again · 18 Nov 2026 · Aisha Rahman']]],
+      ai: ['AI, one approver', 'Agrinexus International is Kept here and has one approver, Hassan Ismail. He gave every approval of the month and signs the review of them: the sheet says so, and has one signature block. Nothing is paid without approval. AI has no address in Setup › Companies, so none prints.',
+        [['File', 'MR-2610-AI Month review October 2026.pdf · 2 pages, A4'], ['Code and check', 'MR-2610-AI · R8C-5TJN (given when it is printed; not printed yet today)'], ['Printed', 'Wed 18 Nov 2026, by Aisha Rahman (declared, not verified)'], ['Status', 'Month reviewed on AI\'s checklist is open (15 of 22) until the signed sheet is uploaded']]],
+      'rec-open': ['Reconciliation not signed off', 'Pressing Print while a bank account of the month is not signed off shows this note first. It never blocks printing: the sheet prints the reconciliation as it stands, marked Not signed off, with the lines still to explain.',
+        [['Shown when', 'Any bank account of the company is not signed off for the month'], ['Print anyway', 'Prints MR-2610-AISB as drawn below; Approvals shows it Waiting for upload'], ['Sign off first', 'Opens Bank and reconciliation on Maybank current, October 2026'], ['After printing', 'A sign-off changes the sheet\'s figures, so the printed check no longer matches']]],
+      uploaded: ['Signed and uploaded: the checklist ticks', 'The signed copy of MR-2610-AISB as it was uploaded: Hassan Ismail signed and dated it 18/11/2026 and ticked the 8 approvals recorded from a paper scan. Its code and check were read from the QR and matched, so Month reviewed ticked itself on the October checklist.',
+        [['File', 'MR-2610-AISB signed (paper scan).pdf · 820 KB, 2 pages'], ['Uploaded', '18 Nov 2026, 11:05, on Payments › Approvals; code read from the QR'], ['Who signed', 'Hassan Ismail: approver chosen by Aisha Rahman from a paper scan'], ['Date on the sheet', '18 Nov 2026'], ['Audit pack', 'Month review on file: signed by Hassan Ismail, uploaded 18 Nov 2026']]],
+      'no-approvers': ['No approvers set: nothing prints', 'What-if, not in the shared data: Agrinexus Plantations (AIP, four-company variant) as if its only approver, Tan Mei Ling, were stopped. With no approver in use there is no one to sign, so no sheet is made and the page says why.',
+        [['Shown when', 'Setup › HR › Approvers has no approver in use for the company'], ['Printed', 'Nothing; no code is used up'], ['Checklist', 'Month reviewed stays open, with the same reason']]]
+    };
+    const lead = LEADS[V] || LEADS.aisb;
+    const FILES = { aisb: 'MR-2610-AISB Month review October 2026.pdf', none: 'MR-2610-AISB Month review October 2026.pdf', 'rec-open': 'MR-2610-AISB Month review October 2026.pdf', ai: 'MR-2610-AI Month review October 2026.pdf', uploaded: 'MR-2610-AISB signed (paper scan).pdf' };
+    const CHIP = (bg, fg) => 'display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const chip = scan ? ['On file · Month reviewed ticked', CHIP('#E3F7EC', '#0A6B3D')] : V === 'ai' ? ['Not printed yet: as it prints', CHIP('#EEF1F5', '#46546A')] : ['Waiting for upload', CHIP('#FEF1D6', '#7A4300')];
+
+    const LABELS = [['aisb', 'AISB October'], ['none', 'None paid without approval'], ['ai', 'AI, one approver'], ['rec-open', 'Reconciliation not signed off'], ['uploaded', 'Signed and uploaded'], ['no-approvers', 'No approvers set']];
+    const btn = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const go = (k, label) => this.setState({ view: k, printed: false, say: label + ' shown.' });
+    const states = LABELS.map(([k, label]) => ({ label, pressed: V === k ? 'true' : 'false', style: btn(V === k), pick: () => go(k, label) }));
+
+    const links = [
+      { href: 'Approvals.dc.html', label: 'Payments › Approvals', note: 'Print the Month review, Print again, and Upload signed sheet.' },
+      { href: 'MonthlyChecklist.dc.html', label: 'Monthly checklist', note: 'Month reviewed ticks itself when the signed sheet is on file.' },
+      { href: 'ApprovalUpload.dc.html', label: 'Upload a signed form', note: 'Reads the code from the PDF or the QR and checks it.' },
+      { href: 'MobileApprovalPhoto.dc.html', label: 'Phone: upload a signed form', note: 'The same phone screen takes the Month review sheet.' },
+      { href: 'AuditPackHR.dc.html', label: 'Audit pack, Month review on file', note: 'Who signed, the date on the sheet and the upload date.' },
+      { href: 'PrintBankRec.dc.html', label: 'Bank reconciliation statement', note: 'Each account’s own printed statement, with Prepared by and Reviewed by. Part 4 sums it up.' }
+    ];
+    const parts = [
+      ['1 Payments register', 'Payments register', 'PaymentsRegister.dc.html', 'The month\'s payments as the register shows them on the print date: paid and not paid, money in apart, each currency apart, and how many need approval.'],
+      ['2 Paid without approval', 'Approvals', 'Approvals.dc.html', 'The Paid without approval on file list: still open (paid, entered by, why), then Approved after payment with the date on the form and the upload date.'],
+      ['3 Approvals by approver', 'Approvals', 'Approvals.dc.html', 'Every approval given for the month\'s payments, by approver as recorded. A line recorded from a paper scan gets a box for the signer to tick; a digitally signed one does not.'],
+      ['4 Bank reconciliation', 'Bank and reconciliation', 'Bank.dc.html', 'Each bank account of the company: statement and book balances, the difference, lines to explain and the sign-off. The detail is on each account\'s reconciliation statement.'],
+      ['5 Each payment', 'Payments register', 'PaymentsRegister.dc.html', 'Every payment of the month by due date, with its amount, paid date and Approval marker reading, so part 1 can be checked line by line.'],
+      ['6 Signature', 'Setup › HR › Approvers', 'SetupApprovers.dc.html', 'The company\'s approvers in use on the print date, one block each (up to 3). One signature is enough.'],
+      ['Code and check', 'Approvals', 'Approvals.dc.html', 'MR-month-company and a keyed check worked out from every figure above, as text and as a QR. A changed figure fails the check at upload.']
+    ].map(p => ({ name: p[0], src: p[1], href: p[2], what: p[3] }));
+
+    const TBC = { aisb: 'aisb', ai: 'ai', aip: 'no-approvers' };
+    const onTopCo = code => {
+      const k = TBC[String(code).toLowerCase()];
+      if (k) go(k, LABELS.find(x => x[0] === k)[1]);
+      else this.setState({ say: 'No Month review is drawn for ' + String(code).toUpperCase() + '.' });
+    };
+
+    return {
+      say: this.state.say,
+      sbCo: co, sbKind: co === 'aisb' ? 'sqlPayroll' : 'here', sbCos: co === 'aip' ? 'four' : 'two', tbCos: co === 'aip' ? 'four' : 'two', onTopCo,
+      eyebrow: co === 'ai' ? 'AI · Kept here' : co === 'aip' ? 'AIP · Kept here' : 'AISB · Kept in SQL Account',
+      states, leadTitle: lead[0], leadText: lead[1], facts: lead[2].map(x => ({ k: x[0], v: x[1] })), links, parts,
+      hasDone: scan, doneText: 'Month reviewed is ticked on the October 2026 checklist for AISB (19 of 27). The signed sheet is kept with the month and in the audit pack.',
+      hasNotice: V === 'rec-open' && !this.state.printed, hasPrinted: V === 'rec-open' && this.state.printed,
+      printAnyway: () => { this.setState({ printed: true, say: 'MR-2610-AISB printed. It opened in a new tab.' }); setTimeout(() => { const el = document.getElementById('mr-printed'); if (el) el.focus(); }, 0); },
+      hasNone: V === 'no-approvers',
+      hasPaper, sh, sheetStyle,
+      sheetAria1: 'Printed Month review ' + SRC.code + ' for ' + SRC.coName + ', October 2026, page 1 of 2' + (scan ? ', the approvals ticked' : ''),
+      sheetAria2: 'Printed Month review ' + SRC.code + ', page 2 of 2' + (scan ? ', signed by Hassan Ismail on 18 November 2026' : ''),
+      fileName: FILES[V] || FILES.aisb, fileMeta: scan ? 'Paper scan · 2 pages · uploaded 18 Nov 2026, 11:05' : '2 pages · A4, 210 × 297 mm · opens in a new tab',
+      chipText: chip[0], chipStyle: chip[1],
+      paperCaption: scan ? 'Handwriting in blue stands for the pen on the scan.' : ''
+    };
+  }
+}
+</script>
+</body>
+</html>

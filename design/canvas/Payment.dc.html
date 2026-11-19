@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payment dialog · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.mi:hover{background:#F1F3F7 !important}
+.ha:hover{background:#EAF0FD !important}
+.hd:hover{background:#FDE6E3 !important}
+button:disabled{cursor:not-allowed !important;opacity:.55}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* motion and focus base */
+.hb,.hs,.mi,.ha,.hd{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes menuIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.mn{transform-origin:top right;animation:menuIn .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+/* dialog */
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+/* status pill: cross-fade on change, one ring pulse on Complete */
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.pv-done{animation:swapA .12s ease-out,pulse .4s ease-out}
+.okA{animation:swapA .12s ease-out,pulse .4s ease-out}
+.okB{animation:swapB .12s ease-out,pulse .4s ease-out}
+.pop{animation:pop .18s cubic-bezier(.22,1,.36,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+/* status pills and chips, as Foundations draws them (a glyph and words, five tones) */
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;border:0;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+input:disabled,select:disabled{background:#F5F6F8 !important;color:#46546A !important;cursor:not-allowed}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="position: relative; min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="register" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Payments" page="Payments register" sub="{{crumb}}" company="{{sbCo}}" on-company="{{onTopCo}}" dark-href="DarkPayment.dc.html" hint-size="100%,64px"></dc-import>
+    <div style="padding: 32px 40px; display: flex; flex-direction: column; gap: 16px">
+      <div aria-hidden="true" style="height: 56px; width: 420px; max-width: 100%; border-radius: 12px; background: #E8EBF0"></div>
+      <div aria-hidden="true" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px"><div style="height: 76px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED"></div><div style="height: 76px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED"></div><div style="height: 76px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED"></div><div style="height: 76px; border-radius: 14px; background: #FFFFFF; border: 1px solid #E3E7ED"></div></div>
+      <div aria-hidden="true" style="height: 560px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E7ED"></div>
+      <sc-if value="{{closed}}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none">
+          <button type="button" id="pay-reopen" class="hb" onClick="{{reopen}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 18px; border-radius: 12px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer; box-shadow: 0 10px 24px rgba(36, 80, 184, .3)"><dc-import name="Icon" glyph="receipt" tone="white" size="18" hint-size="18px,18px"></dc-import>Open {{title}} again</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{open}}" hint-placeholder-val="{{ true }}">
+    <div class="{{dimClass}}" onClick="{{close}}" onDragOver="{{bodyOver}}" onDrop="{{bodyDrop}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 72px 16px 24px; box-sizing: border-box; pointer-events: none">
+      <aside class="{{dlgClass}}" role="dialog" aria-modal="true" aria-labelledby="pay-title" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" onDragOver="{{bodyOver}}" onDrop="{{bodyDrop}}" style="{{dlgStyle}}">
+
+        <sc-if value="{{vOn}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="pay-v-title" class="ex" style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; border-right: 1px solid #E3E7ED; background: #F5F6F8; min-height: 0">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 14px 16px; border-bottom: 1px solid #E3E7ED; background: #FFFFFF">
+              <dc-import name="Icon" glyph="document" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+              <div style="flex: 1 1 200px; min-width: 0"><h3 id="pay-v-title" tabindex="-1" style="margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere">{{v.name}}</h3><span style="color: #5F6C80; font-size: 12px">{{v.meta}}</span></div>
+              <sc-if value="{{v.shows}}" hint-placeholder-val="{{ true }}">
+                <div role="group" aria-label="Pages" style="display: inline-flex; align-items: center; gap: 2px">
+                  <button type="button" class="hs" onClick="{{v.prev}}" disabled="{{v.atFirst}}" aria-label="Previous page" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                  <span aria-live="polite" style="min-width: 76px; text-align: center; font-size: 13px; font-variant-numeric: tabular-nums">{{v.pageLabel}}</span>
+                  <button type="button" class="hs" onClick="{{v.next}}" disabled="{{v.atLast}}" aria-label="Next page" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                </div>
+                <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #46546A">Zoom <select id="pay-v-zoom" value="{{v.zoom}}" onChange="{{v.setZoom}}" style="height: 32px; padding: 0 8px; border: 1px solid #7C8799; border-radius: 8px; font: 400 13px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><option value="75">75%</option><option value="100">100%</option><option value="125">125%</option><option value="150">150%</option></select></label>
+              </sc-if>
+              <sc-if value="{{v.canDl}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" onClick="{{v.download}}" aria-label="Download {{v.name}}" title="Download" style="width: 32px; height: 32px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="download" tone="brand" size="16" hint-size="16px,16px"></dc-import></button></sc-if>
+              <button type="button" class="hs" onClick="{{v.close}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="16" hint-size="16px,16px"></dc-import>Close preview</button>
+            </div>
+            <div style="flex: 1; min-height: 0; overflow: auto; padding: 20px; background: #E8EBF0; display: flex; justify-content: center; align-items: flex-start">
+              <sc-if value="{{v.shows}}" hint-placeholder-val="{{ true }}">
+                <div role="img" aria-label="{{v.alt}}" class="{{v.pageCls}}" style="{{v.page}}">
+                  <sc-if value="{{v.first}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start"><div style="display: flex; flex-direction: column; gap: 6px"><b style="font-size: 1.15em">{{v.docTitle}}</b><span style="color: #5F6C80">{{v.docSub}}</span></div><span style="width: 3.2em; height: 3.2em; border-radius: .6em; background: #EEF1F5"></span></div>
+                    <div style="height: 1px; background: #E3E7ED; margin: 1.2em 0"></div>
+                  </sc-if>
+                  <sc-for list="{{v.lines}}" as="l" hint-placeholder-count="6"><div style="{{l.style}}"></div></sc-for>
+                  <sc-if value="{{v.first}}" hint-placeholder-val="{{ true }}"><div style="margin-top: 1.4em; padding: .8em 1em; border-radius: .5em; background: #F7F8FA; display: flex; justify-content: space-between; gap: 12px"><span>{{v.totalLabel}}</span><b style="font-variant-numeric: tabular-nums">{{v.total}}</b></div></sc-if>
+                  <sc-if value="{{v.signOn}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 1em; padding-top: .8em; border-top: 1px dashed #B8C1CE; display: flex; justify-content: space-between; gap: 12px; color: #46546A"><span style="font-style: italic">{{v.sign}}</span><span>Any one signature approves this form.</span></div></sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{v.cant}}" hint-placeholder-val="{{ false }}">
+                <div role="status" style="max-width: 420px; margin-top: 40px; padding: 28px 24px; border-radius: 16px; background: #FFFFFF; border: 1px solid #E3E7ED; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+                  <span style="width: 56px; height: 56px; border-radius: 18px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="eyeOff" tone="warn" size="28" hint-size="28px,28px"></dc-import></span>
+                  <b style="font-size: 16px">{{v.cantTitle}}</b>
+                  <p style="margin: 0; color: #46546A; font-size: 13px">{{v.cantText}}</p>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+                    <sc-if value="{{v.canDl}}" hint-placeholder-val="{{ true }}"><button type="button" class="hb" onClick="{{v.download}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="download" tone="white" size="16" hint-size="16px,16px"></dc-import>Download</button></sc-if>
+                    <button type="button" class="hs" onClick="{{v.replace}}" disabled="{{off}}" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Replace</button>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+        </sc-if>
+
+        <div style="flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; min-height: 0">
+        <div style="flex: none; padding: 8px 26px; background: #F5F6F8; border-bottom: 1px solid #E3E7ED; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; font-size: 12px; color: #5F6C80">
+          <span>Design sample only, not in the app</span>
+          <label style="display: inline-flex; align-items: center; gap: 6px">Sample <select id="pay-sample" value="{{sample}}" onChange="{{pickSample}}" style="height: 28px; max-width: 330px; border: 1px solid #7C8799; border-radius: 8px; font: 400 12px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{sampleGroups}}" as="g" hint-placeholder-count="3"><optgroup label="{{g.label}}"><sc-for list="{{g.opts}}" as="o" hint-placeholder-count="4"><option value="{{o.k}}">{{o.label}}</option></sc-for></optgroup></sc-for></select></label>
+          <sc-if value="{{flagPick}}" hint-placeholder-val="{{ false }}"><label style="display: inline-flex; align-items: center; gap: 6px">Why unpaid <select id="pay-flag" value="{{flagKey}}" onChange="{{pickFlag}}" style="height: 28px; border: 1px solid #7C8799; border-radius: 8px; font: 400 12px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><option value="waiting_statement">Waiting for Nov statement</option><option value="waiting_sql">Waiting for SQL record</option><option value="not_on_statement">Not on Nov statement</option></select></label></sc-if>
+          <span style="flex: 1 1 260px">Close, Cancel, Escape and a click outside ask first when there are unsaved changes.</span>
+          <sc-if value="{{sampleNote}}" hint-placeholder-val="{{ false }}"><span style="flex: 1 1 100%; color: #46546A">{{sampleNote}}</span></sc-if>
+        </div>
+        <div style="padding: 20px 26px 16px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; gap: 14px; align-items: flex-start">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="receipt" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+              <span style="color: #5F6C80; font-size: 13px">{{eyebrow}}</span>
+              <h2 id="pay-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{title}}</h2>
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px">
+                <span class="{{pillCls}}" aria-live="polite" style="{{pill}}">{{status}}</span>
+                <span style="display: inline-flex; align-items: center; gap: 6px"><span style="color: #5F6C80; font-size: 12px; font-weight: 600">Approval</span><span class="{{mk.cls}}"><dc-import name="Icon" glyph="{{mk.glyph}}" tone="{{mk.tone}}" size="14" hint-size="14px,14px"></dc-import>{{mk.text}}</span></span>
+                <sc-if value="{{flagOn}}" hint-placeholder-val="{{ false }}"><span title="{{flagHint}}" style="{{flagStyle}}">{{flagText}}</span></sc-if>
+                <sc-if value="{{est}}" hint-placeholder-val="{{ true }}"><span title="{{estTitle}}" style="display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">estimate</span></sc-if>
+              </div>
+              <sc-if value="{{hintOn}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 13px; max-width: 75ch">{{hintText}}</div></sc-if>
+              <div style="color: #46546A; font-size: 13px">Pay to: <span style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #0F1A2B">{{payTo}}</span></div>
+            </div>
+            <button type="button" class="hs" onClick="{{close}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: #EEF1F5; border: 1px solid #EEF1F5; border-radius: 12px; overflow: hidden">
+            <div style="background: #FFFFFF; padding: 12px 14px"><span style="color: #5F6C80; font-size: 12px">Amount</span><div style="font-weight: 700; font-size: 16px; font-variant-numeric: tabular-nums">{{amountText}}</div><span style="color: #5F6C80; font-size: 12px">{{amountNote}}</span></div>
+            <div style="background: #FFFFFF; padding: 12px 14px"><span style="color: #5F6C80; font-size: 12px">Paid on</span><div style="font-weight: 700; font-size: 16px">{{paidText}}</div><span style="color: #5F6C80; font-size: 12px">{{paidNote}}</span></div>
+            <div style="background: #FFFFFF; padding: 12px 14px"><span style="color: #5F6C80; font-size: 12px">Paid from</span><div style="font-weight: 700; font-size: 16px">{{acctText}}</div><span style="color: #5F6C80; font-size: 12px">{{acctNote}}</span></div>
+            <div style="background: #FFFFFF; padding: 12px 14px"><span style="color: #5F6C80; font-size: 12px">Documents</span><div style="font-weight: 700; font-size: 16px">{{docCount}}</div><div style="height: 5px; border-radius: 99px; background: #EEF1F5; margin-top: 6px; overflow: hidden"><div class="bar" style="{{docBar}}"></div></div></div>
+          </div>
+          <sc-if value="{{lockOn}}" hint-placeholder-val="{{ false }}">
+            <div role="note" style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 12px 14px; border-radius: 12px; border: 1px solid #D5DBE4; background: #F7F8FA">
+              <dc-import name="Icon" glyph="lock" tone="muted" size="20" hint-size="20px,20px"></dc-import>
+              <div style="flex: 1 1 320px; min-width: 0; font-size: 13px"><b>{{lockTitle}}</b><div style="color: #46546A">{{lockText}}</div></div>
+              <a href="MonthlyChecklist.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">Open the Monthly checklist</a>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 4px 26px 24px; display: flex; flex-wrap: wrap; align-content: flex-start; column-gap: 32px">
+          <div style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column">
+            <sc-for list="{{secs}}" as="s" hint-placeholder-count="2">
+              <section style="padding: 18px 0; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px"><dc-import name="Icon" glyph="{{s.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import><h3 style="margin: 0; flex: 1; font-size: 15px; font-weight: 600">{{s.title}}</h3><sc-if value="{{s.multiOn}}" hint-placeholder-val="{{ false }}"><button type="button" id="pay-multi" class="hs" onClick="{{s.multi}}" disabled="{{s.off}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="brand" size="16" hint-size="16px,16px"></dc-import>Upload several files</button></sc-if></div>
+                <sc-if value="{{s.note}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6C80; font-size: 13px; max-width: 75ch">{{s.note}}</p></sc-if>
+                <sc-if value="{{s.pickOn}}" hint-placeholder-val="{{ false }}">
+                  <div role="group" aria-labelledby="pay-pick-h" class="ex" style="display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 12px; border: 1px solid #C9D6F5; background: #F7F9FE">
+                    <b id="pay-pick-h">Which document is each file?</b>
+                    <span style="color: #46546A; font-size: 13px">Each file is filed as the type chosen here. The first guess comes from the file name.</span>
+                    <sc-for list="{{s.pick}}" as="f" hint-placeholder-count="3">
+                      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 8px 10px; border-radius: 10px; background: #FFFFFF; border: 1px solid #E3E7ED">
+                        <dc-import name="Icon" glyph="document" tone="brand" size="18" hint-size="18px,18px"></dc-import>
+                        <span style="flex: 1 1 200px; min-width: 0; font-size: 13px; overflow-wrap: anywhere"><b style="font-weight: 600">{{f.name}}</b> <span style="color: #5F6C80">{{f.size}}</span></span>
+                        <label for="{{f.selId}}" class="sr">Document type for {{f.name}}</label>
+                        <select id="{{f.selId}}" value="{{f.type}}" onChange="{{f.set}}" disabled="{{f.off}}" style="height: 34px; padding: 0 8px; border: 1px solid #7C8799; border-radius: 9px; font: 400 13px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; max-width: 240px"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="4"><option value="{{o.k}}">{{o.label}}</option></sc-for></select>
+                      </div>
+                    </sc-for>
+                    <div style="display: flex; justify-content: flex-end; gap: 8px">
+                      <button type="button" class="hs" onClick="{{s.pickCancel}}" disabled="{{s.off}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                      <button type="button" id="pay-pick-go" class="hb" onClick="{{s.pickGo}}" disabled="{{s.off}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer">{{s.pickGoLabel}}</button>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{s.upsOn}}" hint-placeholder-val="{{ false }}">
+                  <ul aria-label="Uploads" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px">
+                    <sc-for list="{{s.ups}}" as="u" hint-placeholder-count="2">
+                      <li class="ex" style="{{u.row}}">
+                        <span class="{{u.iconCls}}" style="display: inline-flex; flex: none"><dc-import name="Icon" glyph="{{u.glyph}}" tone="{{u.tone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                          <div style="display: flex; flex-wrap: wrap; gap: 2px 10px; justify-content: space-between"><span style="font-size: 13px; overflow-wrap: anywhere"><b style="font-weight: 600">{{u.name}}</b> <span style="color: #5F6C80">{{u.as}}</span></span><span style="{{u.stStyle}}">{{u.stText}}</span></div>
+                          <sc-if value="{{u.busy}}" hint-placeholder-val="{{ true }}"><div role="progressbar" aria-label="Uploading {{u.name}}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{u.pct}}" style="height: 4px; border-radius: 99px; background: #E3E7ED; overflow: hidden"><div class="bar" style="{{u.bar}}"></div></div></sc-if>
+                          <sc-if value="{{u.why}}" hint-placeholder-val="{{ false }}"><span style="color: #B0190F; font-size: 13px">{{u.why}}</span></sc-if>
+                        </div>
+                        <sc-if value="{{u.retry}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{u.retryFn}}" disabled="{{u.off}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; flex: none"><dc-import name="Icon" glyph="refresh" tone="brand" size="14" hint-size="14px,14px"></dc-import>Retry</button></sc-if>
+                        <sc-if value="{{u.anyway}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{u.anywayFn}}" disabled="{{u.off}}" style="height: 32px; padding: 0 10px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; flex: none">Upload anyway</button></sc-if>
+                        <sc-if value="{{u.dismiss}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{u.dismissFn}}" disabled="{{u.off}}" aria-label="Dismiss {{u.name}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="16" hint-size="16px,16px"></dc-import></button></sc-if>
+                      </li>
+                    </sc-for>
+                  </ul>
+                </sc-if>
+                <sc-for list="{{s.docs}}" as="d" hint-placeholder-count="2">
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <sc-for list="{{d.rows}}" as="r" hint-placeholder-count="1">
+                      <div onDragOver="{{r.over}}" onDragEnter="{{r.over}}" onDragLeave="{{r.leave}}" onDrop="{{r.drop}}" style="{{r.row}}">
+                        <span class="{{r.iconCls}}" style="display: inline-flex; flex: none"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="22" hint-size="22px,22px"></dc-import></span>
+                        <div style="flex: 1; min-width: 0"><b>{{r.label}}</b><div style="{{r.noteStyle}}">{{r.note}}</div><sc-if value="{{r.why}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 13px; margin-top: 2px; max-width: 70ch">{{r.why}}</div></sc-if></div>
+                        <sc-if value="{{r.need}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{r.upId}}" class="hb" onClick="{{r.upload}}" disabled="{{r.off}}" aria-label="Upload {{r.label}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer; flex: none"><dc-import name="Icon" glyph="upload" tone="white" size="16" hint-size="16px,16px"></dc-import>Upload</button></sc-if>
+                        <sc-if value="{{r.isFile}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{r.viewId}}" class="hs" onClick="{{r.view}}" aria-label="View {{r.fileName}}" aria-pressed="{{r.viewing}}" style="{{r.viewStyle}}"><dc-import name="Icon" glyph="eye" tone="brand" size="16" hint-size="16px,16px"></dc-import>View</button><button type="button" class="hs" onClick="{{r.download}}" aria-label="Download {{r.fileName}}" title="Download" style="width: 34px; height: 34px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="download" tone="brand" size="16" hint-size="16px,16px"></dc-import></button></sc-if>
+                        <sc-if value="{{r.isLink}}" hint-placeholder-val="{{ false }}"><a href="{{r.href}}" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap; flex: none"><dc-import name="Icon" glyph="eye" tone="brand" size="16" hint-size="16px,16px"></dc-import>{{r.linkLabel}}</a></sc-if>
+                        <sc-if value="{{r.hasMenu}}" hint-placeholder-val="{{ false }}"><div style="position: relative; flex: none"><button type="button" class="hs" id="{{r.mbId}}" onClick="{{r.toggleMenu}}" disabled="{{r.off}}" onKeyDown="{{r.menuBtnKey}}" aria-label="More actions for {{r.menuName}}" aria-haspopup="menu" aria-expanded="{{r.expanded}}" style="width: 34px; height: 34px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="more" tone="muted" size="16" hint-size="16px,16px"></dc-import></button><sc-if value="{{r.menuOpen}}" hint-placeholder-val="{{ false }}"><div aria-hidden="true" onClick="{{r.closeMenu}}" style="position: fixed; inset: 0; z-index: 4"></div><div role="menu" class="mn" aria-label="More actions for {{r.menuName}}" onKeyDown="{{r.menuKey}}" style="position: absolute; right: 0; top: 40px; z-index: 5; min-width: 190px; padding: 6px; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 12px; box-shadow: 0 12px 32px rgba(13, 27, 46, .16); display: flex; flex-direction: column"><sc-for list="{{r.menu}}" as="m" hint-placeholder-count="2"><button type="button" role="menuitem" id="{{m.id}}" tabindex="-1" class="mi" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button></sc-for></div></sc-if></div></sc-if>
+                      </div>
+                      <sc-if value="{{r.askOn}}" hint-placeholder-val="{{ false }}">
+                        <div role="alertdialog" aria-label="{{r.askText}}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 14px; border: 1px solid #F3D9A6; background: #FFFBF2; border-radius: 12px">
+                          <span style="flex: 1 1 260px; min-width: 0; font-size: 13px; overflow-wrap: anywhere">{{r.askText}}</span>
+                          <button type="button" id="pay-ask-no" class="hs" onClick="{{r.askNo}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                          <button type="button" class="hb" onClick="{{r.askYes}}" disabled="{{r.off}}" style="{{r.askYesStyle}}">{{r.askYesLabel}}</button>
+                        </div>
+                      </sc-if>
+                    </sc-for>
+                    <sc-if value="{{d.canAdd}}" hint-placeholder-val="{{ false }}">
+                      <div onDragOver="{{d.over}}" onDragEnter="{{d.over}}" onDragLeave="{{d.leave}}" onDrop="{{d.drop}}" style="{{d.addRow}}">
+                        <button type="button" id="{{d.addId}}" class="ha" onClick="{{d.add}}" disabled="{{d.off}}" style="display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #2450B8; font: 600 13px Inter, sans-serif; cursor: pointer; white-space: nowrap"><dc-import name="Icon" glyph="plus" tone="brand" size="14" hint-size="14px,14px"></dc-import>{{d.addLabel}}</button>
+                        <span style="{{d.addNoteStyle}}">{{d.addNote}}</span>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{d.srcOn}}" hint-placeholder-val="{{ false }}">
+                      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; padding: 2px 4px; font-size: 12px; color: #5F6C80"><span>{{d.srcText}}</span><a href="{{d.srcHref}}" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; text-decoration: none">{{d.srcLink}}</a></div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{s.empty}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6C80; font-size: 13px">No other documents on this payment yet.</p></sc-if>
+                <sc-if value="{{s.isOther}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end">
+                    <label style="flex: 1 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Document type</span><select id="pay-xtype" value="{{s.xVal}}" onChange="{{s.pickX}}" disabled="{{s.off}}" style="height: 38px; padding: 0 10px; border: 1px solid #7C8799; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{s.xTypes}}" as="o" hint-placeholder-count="4"><option value="{{o.k}}">{{o.label}}</option></sc-for></select></label>
+                    <button type="button" id="pay-xup" class="hs" onClick="{{s.uploadX}}" disabled="{{s.off}}" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; white-space: nowrap"><dc-import name="Icon" glyph="upload" tone="brand" size="16" hint-size="16px,16px"></dc-import>Upload another document</button>
+                  </div>
+                </sc-if>
+              </section>
+            </sc-for>
+
+            <section style="padding: 18px 0; display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="link" tone="brand" size="20" hint-size="20px,20px"></dc-import><h3 style="margin: 0; font-size: 15px; font-weight: 600">Linked records</h3></div>
+              <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px"><dc-import name="Icon" glyph="{{rq.glyph}}" tone="brand" size="22" hint-size="22px,22px"></dc-import><h4 style="margin: 0; flex: 1; font-size: 14px; font-weight: 600">Request</h4><sc-if value="{{rq.pillOn}}" hint-placeholder-val="{{ true }}"><span class="{{rq.pillCls}}"><dc-import name="Icon" glyph="{{rq.pillGlyph}}" tone="{{rq.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{rq.pill}}</span></sc-if></div>
+                <div style="font-size: 13px; overflow-wrap: anywhere"><b>{{rq.head}}</b><div style="color: #46546A">{{rq.meta}}</div></div>
+                <sc-if value="{{rq.note}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 13px">{{rq.note}}</div></sc-if>
+                <sc-if value="{{rq.linksOn}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{rq.links}}" as="l" hint-placeholder-count="1"><a href="{{l.href}}" class="hs" style="display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">{{l.label}}</a></sc-for></div></sc-if>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px"><dc-import name="Icon" glyph="approval" tone="brand" size="22" hint-size="22px,22px"></dc-import><h4 style="margin: 0; flex: 1; font-size: 14px; font-weight: 600">Approval form</h4><span class="{{mk.cls}}"><dc-import name="Icon" glyph="{{mk.glyph}}" tone="{{mk.tone}}" size="14" hint-size="14px,14px"></dc-import>{{mk.text}}</span></div>
+                <sc-if value="{{ap.factsOn}}" hint-placeholder-val="{{ true }}">
+                  <dl style="margin: 0; display: grid; grid-template-columns: minmax(110px, auto) minmax(0, 1fr); gap: 4px 12px; font-size: 13px">
+                    <sc-for list="{{ap.facts}}" as="x" hint-placeholder-count="3"><dt style="color: #5F6C80">{{x.k}}</dt><dd style="margin: 0; overflow-wrap: anywhere">{{x.v}}</dd></sc-for>
+                  </dl>
+                </sc-if>
+                <sc-if value="{{ap.text}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; color: #46546A; font-size: 13px; max-width: 75ch">{{ap.text}}</p></sc-if>
+                <sc-if value="{{ap.warnOn}}" hint-placeholder-val="{{ false }}">
+                  <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid #F3D9A6; background: #FFFBF2; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #934100">{{ap.warnTitle}}</b><div style="color: #46546A">{{ap.warnText}}</div></div></div>
+                </sc-if>
+                <sc-if value="{{ap.actsOn}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                    <sc-for list="{{ap.acts}}" as="a" hint-placeholder-count="2">
+                      <sc-if value="{{a.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{a.href}}" class="{{a.cls}}" style="{{a.style}}"><dc-import name="Icon" glyph="{{a.glyph}}" tone="{{a.tone}}" size="16" hint-size="16px,16px"></dc-import>{{a.label}}</a></sc-if>
+                      <sc-if value="{{a.isBtn}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{a.id}}" class="{{a.cls}}" onClick="{{a.fn}}" aria-pressed="{{a.pressed}}" style="{{a.style}}"><dc-import name="Icon" glyph="{{a.glyph}}" tone="{{a.tone}}" size="16" hint-size="16px,16px"></dc-import>{{a.label}}</button></sc-if>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ap.phoneOn}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="phone" tone="muted" size="14" hint-size="14px,14px"></dc-import><span>On a phone, the marker opens the camera instead:</span><a href="MobileApprovalPhoto.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; text-decoration: none">photograph the signed form</a></div></sc-if>
+              </div>
+              <sc-if value="{{postedOn}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+                  <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="books" tone="brand" size="22" hint-size="22px,22px"></dc-import><h4 style="margin: 0; flex: 1; font-size: 14px; font-weight: 600">Voucher posted here</h4><a href="Books.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">Books</a></div>
+                  <div style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere">{{postedText}}</div>
+                  <div style="color: #5F6C80; font-size: 13px">{{postedNote}}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{inSql}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+                  <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="database" tone="brand" size="22" hint-size="22px,22px"></dc-import><h4 style="margin: 0; flex: 1; font-size: 14px; font-weight: 600">SQL Account</h4><sc-if value="{{noSql}}" hint-placeholder-val="{{ false }}"><a href="Sql.dc.html" style="font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">Find an SQL entry</a></sc-if></div>
+                  <sc-if value="{{hasSql}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere">{{sqlText}}</span><sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><button type="button" class="hs" onClick="{{unlink}}" disabled="{{saving}}" aria-label="Unlink {{sqlNo}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; flex: none">Unlink</button></sc-if></div>
+                    <sc-if value="{{sqlChOn}}" hint-placeholder-val="{{ false }}"><div style="color: #934100; font-size: 13px">{{sqlChText}}</div></sc-if>
+                    <div style="color: #5F6C80; font-size: 13px">Linked by mistake? Unlink puts the voucher back under SQL entries not linked, and the amount and paid date back to what they were.</div>
+                  </sc-if>
+                  <sc-if value="{{noSql}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 13px">No SQL voucher is linked to this payment.</div></sc-if>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid #E3E7ED; border-radius: 12px">
+                <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="bank" tone="brand" size="22" hint-size="22px,22px"></dc-import><h4 style="margin: 0; flex: 1; font-size: 14px; font-weight: 600">Bank statement</h4><a href="Bank.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">Bank and reconciliation</a></div>
+                <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px">
+                  <sc-for list="{{bankLines}}" as="b" hint-placeholder-count="1"><li style="display: flex; gap: 10px; font-size: 13px"><span style="flex: 1; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow-wrap: anywhere">{{b.text}}</span><span style="font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600">{{b.amt}}</span></li></sc-for>
+                </ul>
+                <sc-if value="{{sumOn}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 10px; padding-top: 6px; border-top: 1px dashed #D5DBE4; font-size: 13px"><span style="flex: 1">{{sumLabel}}</span><b style="font-variant-numeric: tabular-nums; white-space: nowrap">{{sumText}}</b></div></sc-if>
+                <sc-if value="{{overOn}}" hint-placeholder-val="{{ false }}"><div style="color: #934100; font-size: 13px">{{overText}}</div></sc-if>
+                <sc-if value="{{noBank}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 13px">Not matched to a bank statement line yet.</div></sc-if>
+              </div>
+            </section>
+          </div>
+
+          <form id="pay-form" onSubmit="{{submit}}" noValidate="{{ true }}" style="flex: 1 1 400px; min-width: 0; padding: 18px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-content: start">
+            <div style="display: flex; align-items: center; gap: 8px; grid-column: 1 / -1"><dc-import name="Icon" glyph="edit" tone="brand" size="20" hint-size="20px,20px"></dc-import><h3 style="margin: 0; font-size: 15px; font-weight: 600">Details</h3></div>
+            <sc-if value="{{refOn}}" hint-placeholder-val="{{ false }}">
+              <div id="pay-refused" role="alert" tabindex="-1" class="ex" style="grid-column: 1 / -1; display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F5C2BB; background: #FDF3F2"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; font-size: 13px"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A">{{refText}}</div></div></div>
+            </sc-if>
+            <sc-if value="{{keptOn}}" hint-placeholder-val="{{ false }}">
+              <div id="pay-kept-note" role="note" style="grid-column: 1 / -1; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F7; background: #F7F9FE; font-size: 13px"><dc-import name="Icon" glyph="books" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="flex: 1; min-width: 0"><b>{{keptTitle}}</b><div style="color: #46546A">{{keptText}}</div></div></div>
+            </sc-if>
+            <sc-if value="{{toPayOn}}" hint-placeholder-val="{{ false }}">
+              <div id="pay-topay-note" role="note" style="grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F7; background: #F7F9FE; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="flex: 1 1 280px; min-width: 0"><b>Paid on, Bank reference and Bank account are filled in on To pay</b><div style="color: #46546A">This payment comes from an approved request, so it is paid on To pay, which records them. Until then they are read only here.</div></div><a href="ToPay.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">Pay it on To pay</a></div>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="pay-f-amount" style="font-size: 13px; font-weight: 600; color: #46546A">Amount (RM)</label><input id="pay-f-amount" type="number" step="0.01" inputmode="decimal" value="{{f.amount}}" onInput="{{inAmount}}" disabled="{{lockF}}" aria-invalid="{{amtInv}}" aria-describedby="{{amtBy}}" style="{{amtStyle}}"><sc-if value="{{amtErrOn}}" hint-placeholder-val="{{ false }}"><span id="pay-f-amount-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{amtErr}}</span></sc-if></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="pay-f-paid" style="font-size: 13px; font-weight: 600; color: #46546A">Paid on</label><input id="pay-f-paid" type="date" value="{{f.paid}}" onInput="{{inPaid}}" disabled="{{payF}}" aria-invalid="{{paidInv}}" aria-describedby="{{paidBy}}" style="{{paidStyle}}"><sc-if value="{{paidErrOn}}" hint-placeholder-val="{{ false }}"><span id="pay-f-paid-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{paidErr}}</span></sc-if></div>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Bank reference</span><input id="pay-f-bank" type="text" value="{{f.bank}}" onInput="{{inBank}}" disabled="{{payF}}" aria-describedby="{{payBy}}" placeholder="From the bank slip" style="height: 40px; padding: 0 12px; border: 1px solid #7C8799; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">{{sqlLabel}}</span><input id="pay-f-sql" type="text" value="{{f.sql}}" onInput="{{inSql}}" disabled="{{lockF}}" readOnly="{{sqlRo}}" placeholder="{{sqlPh}}" style="{{sqlStyle}}"></label>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">e-Invoice UIN</span><input id="pay-f-einv" type="text" value="{{f.einv}}" onInput="{{inEinv}}" disabled="{{lockF}}" style="height: 40px; padding: 0 12px; border: 1px solid #7C8799; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+            <sc-if value="{{acctOk}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 6px"><label for="pay-f-acct" style="font-size: 13px; font-weight: 600; color: #46546A">Bank account</label><select id="pay-f-acct" value="{{f.acct}}" onChange="{{inAcct}}" disabled="{{payF}}" aria-describedby="{{acctBy}}" style="height: 40px; padding: 0 10px; border: 1px solid #7C8799; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{accts}}" as="o" hint-placeholder-count="2"><option value="{{o.k}}">{{o.label}}</option></sc-for></select><span id="pay-acct-hint" style="color: #5F6C80; font-size: 12px">{{acctHint}}</span></div></sc-if>
+            <sc-if value="{{acctNone}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Bank account</span><div style="min-height: 40px; box-sizing: border-box; padding: 8px 12px; border: 1px dashed #7C8799; border-radius: 10px; color: #46546A; font-size: 13px">No ringgit bank account is set up for AI. Add one under <a href="Setup.dc.html" style="font-weight: 600">Bank accounts in Setup</a></div></div></sc-if>
+            <sc-if value="{{moveOn}}" hint-placeholder-val="{{ false }}">
+              <div id="pay-acct-move" role="note" class="ex" style="grid-column: 1 / -1; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid #C9D7F7; background: #F7F9FE; font-size: 13px"><dc-import name="Icon" glyph="bank" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="flex: 1; min-width: 0"><b>{{moveTitle}}</b><div style="color: #46546A">{{moveText}}</div></div></div>
+            </sc-if>
+            <label style="display: flex; flex-direction: column; gap: 6px; grid-column: 1 / -1"><span style="font-size: 13px; font-weight: 600; color: #46546A">Notes</span><input id="pay-f-notes" type="text" value="{{f.notes}}" onInput="{{inNotes}}" disabled="{{lockF}}" placeholder="e.g. why it was paid late" style="height: 40px; padding: 0 12px; border: 1px solid #7C8799; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+            <sc-if value="{{partOn}}" hint-placeholder-val="{{ false }}">
+              <div style="{{partBox}}">
+                <b style="font-variant-numeric: tabular-nums">{{partTitle}}</b>
+                <p id="pay-part-note" style="{{partNoteStyle}}">{{partNote}}</p>
+                <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Why the rest isn't on the bank statement</span><input id="pay-f-diff" type="text" value="{{f.diff}}" onInput="{{inDiff}}" disabled="{{lockF}}" aria-describedby="pay-part-note" placeholder="e.g. balance paid in October" style="height: 40px; padding: 0 12px; border: 1px solid #7C8799; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"></label>
+              </div>
+            </sc-if>
+            <sc-if value="{{est}}" hint-placeholder-val="{{ true }}">
+              <label style="display: flex; align-items: center; gap: 10px; grid-column: 1 / -1; min-height: 32px; font-size: 13px; color: #46546A"><input id="pay-f-confirm" type="checkbox" checked="{{confirm}}" onChange="{{toggleConfirm}}" disabled="{{lockF}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">The amount above is the real figure, not an estimate</label>
+              <sc-if value="{{estShort}}" hint-placeholder-val="{{ false }}"><div style="grid-column: 1 / -1; color: #5F6C80; font-size: 13px">{{estNote}}</div></sc-if>
+            </sc-if>
+          </form>
+
+          <section style="flex: 1 1 100%; padding: 14px 0 0; border-top: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 10px">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 600"><button type="button" id="pay-hist-b" class="hs fr" onClick="{{histToggle}}" aria-expanded="{{histExp}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 10px 0 4px; border: 0; border-radius: 9px; background: transparent; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span class="{{histChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></span><dc-import name="Icon" glyph="history" tone="brand" size="20" hint-size="20px,20px"></dc-import>History<span style="color: #5F6C80; font-weight: 500; font-size: 13px">{{histCount}}</span></button></h3>
+            <sc-if value="{{histOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; gap: 10px">
+                <sc-if value="{{histEmpty}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #5F6C80; font-size: 13px">Nothing recorded yet.</p></sc-if>
+                <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+                  <sc-for list="{{hist}}" as="h" hint-placeholder-count="3">
+                    <li style="display: flex; gap: 12px">
+                      <div style="display: flex; flex-direction: column; align-items: center"><span style="{{h.dot}}"></span><span style="{{h.rail}}"></span></div>
+                      <div style="flex: 1; min-width: 0; padding-bottom: 14px; display: flex; flex-direction: column; gap: 3px">
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; font-size: 13px"><span style="font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: #5F6C80; font-size: 12px">{{h.at}}</span><b>{{h.op}}</b><span>{{h.title}}</span><span style="{{h.srcPill}}">{{h.src}}</span><span style="color: #46546A">{{h.who}}</span></div>
+                        <sc-if value="{{h.why}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px">Why: {{h.why}}</div></sc-if>
+                        <sc-if value="{{h.note}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; color: #5F6C80">{{h.note}}</div></sc-if>
+                        <sc-if value="{{h.hasCh}}" hint-placeholder-val="{{ false }}">
+                          <button type="button" class="ha" onClick="{{h.toggle}}" aria-expanded="{{h.exp}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 8px 0 2px; border: 0; border-radius: 8px; background: transparent; color: #2450B8; font: 600 12px Inter, sans-serif; cursor: pointer"><span class="{{h.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{h.chLabel}}</button>
+                          <sc-if value="{{h.open}}" hint-placeholder-val="{{ false }}">
+                            <table class="ex" style="border-collapse: collapse; font-size: 12px; max-width: 100%">
+                              <thead><tr style="text-align: left; color: #5F6C80"><th scope="col" style="padding: 4px 12px 4px 0; font-weight: 600">Field</th><th scope="col" style="padding: 4px 12px 4px 0; font-weight: 600">Before</th><th scope="col" style="padding: 4px 0; font-weight: 600">After</th></tr></thead>
+                              <tbody><sc-for list="{{h.ch}}" as="c" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><td style="padding: 4px 12px 4px 0; color: #46546A">{{c.f}}</td><td style="{{c.bStyle}}">{{c.b}}</td><td style="{{c.aStyle}}">{{c.a}}</td></tr></sc-for></tbody>
+                            </table>
+                          </sc-if>
+                        </sc-if>
+                      </div>
+                    </li>
+                  </sc-for>
+                </ol>
+                <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; font-size: 13px; text-decoration: none">Full history in the audit trail</a>
+              </div>
+            </sc-if>
+          </section>
+        </div>
+
+        <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: #FAFBFC">
+          <sc-if value="{{discard}}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="flex: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px"><b>Discard your changes?</b>
+              <div style="display: flex; gap: 8px">
+                <button type="button" id="pay-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+                <button type="button" onClick="{{discardNow}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{repostOn}}" hint-placeholder-val="{{ false }}">
+            <div role="alertdialog" aria-labelledby="pay-repost-q" aria-describedby="pay-repost-d" class="ex" style="flex: 1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px">
+              <div style="display: flex; gap: 10px; align-items: flex-start; flex: 1 1 360px; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="pay-repost-q">{{repostQ}}</b><div id="pay-repost-d" style="color: #46546A; font-size: 13px">{{repostD}}</div></div></div>
+              <div style="display: flex; gap: 8px">
+                <button type="button" id="pay-repost-no" class="hs" onClick="{{repostNo}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+                <button type="button" class="hb" onClick="{{repostYes}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">{{repostYesLabel}}</button>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><button type="button" id="pay-remove" onClick="{{rm}}" onBlur="{{rmBlur}}" disabled="{{saving}}" style="{{rmStyle}}">{{rmLabel}}</button></sc-if>
+            <span role="status" aria-live="polite" class="sr">{{rmLive}}</span>
+            <span id="pay-foot" style="{{footStyle}}">{{footText}}</span>
+            <div style="display: flex; gap: 8px; margin-left: auto">
+              <button type="button" class="hs" onClick="{{close}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{cancelLabel}}</button>
+              <sc-if value="{{canEdit}}" hint-placeholder-val="{{ true }}"><button type="submit" id="pay-save" form="pay-form" class="hb" disabled="{{saving}}" aria-busy="{{busy}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 128px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Saving…</sc-if><sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}">Save details</sc-if></button></sc-if>
+            </div>
+          </sc-if>
+        </div>
+        </div>
+        <div id="pay-toast-in" style="position: absolute; left: 0; right: 0; bottom: 84px; z-index: 6; pointer-events: none">
+          <div role="status" aria-live="polite" style="display: flex; justify-content: center; padding: 0 16px">
+            <sc-if value="{{toastOkIn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 560px; padding: 12px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); display: flex; align-items: center; gap: 12px"><span style="flex: 1; min-width: 0">{{toastMsg}}</span><sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="pay-undo" onClick="{{undo}}" onFocus="{{toastHold}}" style="flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="navOn" size="14" hint-size="14px,14px"></dc-import>Undo</button></sc-if></div></sc-if>
+          </div>
+          <div role="alert" style="display: flex; justify-content: center; padding: 0 16px">
+            <sc-if value="{{toastBadIn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 560px; padding: 12px 16px; border-radius: 12px; background: #B0190F; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); display: flex; align-items: flex-start; gap: 12px"><span style="flex: 1; min-width: 0">{{toastMsg}}</span><button type="button" onClick="{{toastDismiss}}" style="flex: none; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .6); background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer">Dismiss</button></div></sc-if>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </sc-if>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+    <sc-if value="{{toastOk}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" tabindex="0" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 560px; padding: 12px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); display: flex; align-items: center; gap: 12px"><span style="flex: 1; min-width: 0">{{toastMsg}}</span><sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="pay-undo" onClick="{{undo}}" style="flex: none; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="navOn" size="14" hint-size="14px,14px"></dc-import>Undo</button></sc-if></div></sc-if>
+  </div>
+  <div role="alert" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+    <sc-if value="{{toastBad}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" tabindex="0" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 560px; padding: 12px 16px; border-radius: 12px; background: #B0190F; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28); display: flex; align-items: flex-start; gap: 12px"><span style="flex: 1; min-width: 0">{{toastMsg}}</span><button type="button" onClick="{{toastDismiss}}" style="flex: none; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, .6); background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer">Dismiss</button></div></sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1480}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { open: true, closing: false, menu: null, drag: null, fresh: null, pillN: 0, xType: null, xTried: false, toast: null, ask: null, discard: false, rm: false,
+      saving: false, refused: null, repost: false, log: [],
+      ups: [], pick: null, viewer: null, vPage: 1, vZoom: '100', histOpen: false, histEx: {}, ...this.initFor('paid') };
+    this._ut = {};
+    this._uid = 0;
+  }
+  slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+  fmt(n) { return (Number(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  // Design samples. The Electricity bill ones are AISB (Kept in SQL Account) as before; the rest show one Approval marker
+  // reading each, a staff claim with its receipts from the claim, a Kept here payment with its voucher posted here, and a
+  // payment in a filed month. Names, codes and figures follow scope/samples.md (sections 10, 12 and 13).
+  samples() {
+    const bk = (d, a, t) => ({ d, a, t: t || 'IBG DR ELECTRICITY BILL | 4471092' });
+    const REQ = ['invoice', 'pv', 'bank'];
+    const BILL = { invoice: [['TNB bill October 2026.pdf', '184 KB', '6 Nov, 09:12']], approval: [['Approval - TNB bill.eml', '22 KB', '6 Nov, 09:14']] };
+    const NONE = { r: 'none' };
+    const REC = (co, on) => ({ glyph: 'recurring', head: 'Recurring · Electricity bill (TNB), monthly', meta: 'Planned on ' + (on || '1 Oct') + ' from ' + co + "'s Recurring set-up. Utility / telco payments need no approval.", links: [['Open Recurring', 'Recurring.dc.html']] });
+    const A = { co: 'AISB', inSql: true, name: 'Electricity bill', base: 'Electricity bill', typeLabel: 'Utility / telco', due: '5 Nov', payTo: 'TNB account 220014589031', files: BILL, acct: 'cur', ap: NONE, rq: REC('AISB'), group: 'e' };
+    const BILLRQ = (head, note, pill) => ({ glyph: 'payment', head, meta: 'No request behind it: added on Add payment.', note, pill: pill || null, links: [] });
+    const WM = 'Ong Wei Ming (Wei Ming)';
+    return {
+      // AISB's October Electricity bill as the register has it: paid 4 Nov with the paid date typed in (the November statement
+      // isn't imported, so no bank line), linked to PV2611-003 at version 1; SQL's version 2 gives 1,136.20.
+      paid: { ...A, label: 'Paid, linked', amount: 1163.2, planned: 1163.2, plannedEst: false, sql: 'PV2611-003', sqlShort: '4 Nov', bank: [], paid: '2026-11-04', paidText: '4 Nov 2026', req: REQ, cancel: '',
+        paidAt: '6 Nov, 09:14', paidCh: [['Paid date', '', '4 Nov 2026']], paidWhy: "The November bank statement isn't imported yet",
+        sqlCh: [['SQL voucher no.', '', 'PV2611-003'], ['Amount', 'RM 1,150.00', 'RM 1,163.20']], sqlChanged: 'PV2611-003 changed in SQL from 1,163.20 to 1,136.20 (version 2). Move the link on the SQL import page to follow it.',
+        origin: ['Planned from Recurring', '1 Oct, 08:00', 'Automatic', 'System', [['Amount', '', 'estimate RM 1,150.00'], ['Due date', '', '5 Nov 2026']]] },
+      estimate: { ...A, label: 'Estimate, bank line short', amount: 1000, planned: 1150, plannedEst: true, sql: '', sqlShort: '', bank: [bk('4 Nov', 1000)], paid: '2026-11-04', paidText: '4 Nov 2026', req: REQ, cancel: '' },
+      part: { ...A, label: 'Part paid, two bank lines', amount: 1150, planned: 1150, plannedEst: false, sql: '', sqlShort: '', bank: [bk('4 Nov', 600), bk('6 Nov', 250, 'IBG DR ELECTRICITY BILL | 0611093')], paid: '2026-11-04', paidText: '4 Nov 2026', req: REQ, cancel: '' },
+      over: { ...A, label: 'Bank lines more than the amount', amount: 1150, planned: 1150, plannedEst: false, sql: 'PV2611-003', sqlShort: '4 Nov', bank: [bk('4 Nov', 1150), bk('5 Nov', 50, 'IBG DR ELECTRICITY BILL | 0511020')], paid: '2026-11-04', paidText: '4 Nov 2026', req: REQ, cancel: '' },
+      unpaid: { ...A, label: 'Not paid yet', amount: 1150, planned: 1150, plannedEst: true, sql: '', sqlShort: '', bank: [], paid: '', paidText: 'Not paid yet', req: REQ, cancel: '', unpaid: true },
+      cancelled: { ...A, label: 'e-Invoice cancelled', amount: 1150, planned: 1150, plannedEst: false, sql: 'PV2611-003', sqlShort: '4 Nov', bank: [bk('4 Nov', 1150)], paid: '2026-11-04', paidText: '4 Nov 2026', req: ['invoice', 'pv', 'bank', 'einvoice'], cancel: 'CN2611-001',
+        note: 'State only: CN2611-001 is a made-up credit note for this reading, and the amount and bank line are made up with it; it is on no other board.' },
+      nosql: { ...A, label: 'Kept here (AI), not paid yet', co: 'AI', inSql: false, due: '7 Nov', payTo: 'TNB account 220087340112', files: {}, acct: '', amount: 1420, planned: 1420, plannedEst: false, sql: '', sqlShort: '', bank: [], paid: '', paidText: 'Not paid yet', req: ['invoice', 'bank'], cancel: '', unpaid: true, fixedFlag: 'waiting_statement', rq: REC('AI') },
+
+      claim: { group: 'a', label: 'Approved · staff claim from HR (CL-2610-004)', co: 'AISB', inSql: true, name: 'Oct 2026 Claims - Wei Ming', base: 'Claims Wei Ming', typeLabel: 'Staff claim', due: '14 Nov', payTo: 'CIMB ····8841 Ong Wei Ming', acct: 'cur',
+        amount: 486.5, planned: 486.5, plannedEst: false, sql: '', sqlShort: '', bank: [], paid: '', paidText: 'Not paid yet', req: ['claim', 'approval', 'pv', 'bank'], cancel: '', unpaid: true,
+        flag: { text: 'Past due', tone: 'bad', hint: 'Was due Sat 14 Nov and is not paid yet. It is approved on AF-2611-003 and waits in To pay; pay it there.' },
+        toPay: true,
+        files: { claim: [['Claims Wei Ming October 2026.pdf', '420 KB', '12 Nov, 17:30', 'CL-2610-004']] },
+        docMeta: { 'Claims Wei Ming October 2026.pdf': ['Claim form & receipts · CL-2610-004', '3 lines: parking and toll 6 Oct, client meals 14 Oct (RM 36.50 over the RM 150.00 limit), mileage 22 Oct', 'Total', 'RM 486.50'] },
+        // the form was uploaded on the claim before this payment existed, so its upload is in the claim's history, not here
+        ap: { r: 'ok', by: 'Tan Mei Ling', on: '12 Nov 2026',
+          form: { code: 'AF-2611-003', file: ['AF-2611-003 signed (paper scan).pdf', '1.4 MB', '13 Nov, 10:15'], title: 'Approval form AF-2611-003', sub: 'AISB Sdn Bhd · 3 claims · keyed check 7KQ-M4XP', total: 'RM 1,214.50', sign: 'Signed: Tan Mei Ling, 12 Nov 2026', short: 'signed 12 Nov by Tan Mei Ling' },
+          facts: [['Form', 'AF-2611-003 · 3 claims · RM 1,214.50'], ['Keyed check', '7KQ-M4XP · matches the claims as they are now'], ['Signed by', 'Tan Mei Ling · date on the form 12 Nov 2026'], ['Uploaded', 'Fri 13 Nov 2026 · Approver chosen by Aisha Rahman from a paper scan']],
+          text: 'Any one approver signing approves the form. The claim is locked now: changing its amount or lines sends it back to Draft and needs a new form.', acts: ['view', 'approvals'] },
+        rq: { glyph: 'claim', head: 'CL-2610-004 · Oct 2026 Claims - Wei Ming', meta: WM + ' · 3 lines · RM 486.50', pill: ['pl ok', 'check', 'ok', 'Approved'],
+          note: "A request's payment is paid from To pay, so the paid date and bank reference are entered there, not here.", links: [['Open the claim', 'HrClaim.dc.html'], ['Pay it on To pay', 'ToPay.dc.html']] },
+        origin: ['From claim CL-2610-004, approved on AF-2611-003', '13 Nov, 10:16', 'Automatic', 'System', [['Amount', '', 'RM 486.50'], ['Due date', '', '14 Nov 2026']]] },
+
+      waiting: { group: 'a', label: 'Waiting · consultant fee (AF-2611-004)', co: 'AISB', inSql: true, name: 'Consultant fee', base: 'Consultant fee', typeLabel: 'Consultant fee', due: '31 Oct', payTo: 'PBB 3197221045 Payroll Advisory PLT AISB-07', acct: 'cur',
+        amount: 3200, planned: 3200, plannedEst: false, sql: '', sqlShort: '', bank: [], paid: '', paidText: 'Not paid yet', req: REQ, cancel: '', unpaid: true, files: {},
+        flag: { text: 'Not on Oct statement', tone: 'bad', hint: 'The Oct bank statement is imported, but no line on it is linked to this payment. Link its line on the Bank and reconciliation page, or enter the paid date if it went out another way.' },
+        ap: { r: 'waiting', facts: [['Form', 'AF-2611-004 · Payroll Advisory PLT, PA-1010 · RM 3,200.00'], ['Printed', 'Mon 16 Nov 2026'], ['Approvers on it', 'Hassan Ismail, Tan Mei Ling, Rajesh Kumar']],
+          text: 'Waiting for the signed form. Approval never blocks paying: paid before the form is uploaded, it shows as Paid without approval on file until it is.', acts: ['upload', 'approvals'], phone: true },
+        rq: BILLRQ('Supplier bill PA-1010 · Payroll Advisory PLT', 'Needs approval was ticked, as it is by default for Consultant fee payments.', ['pl warn', 'clock', 'warn', 'Waiting for approval']),
+        origin: ['Added by hand', '1 Oct, 09:30', 'You', 'Aisha Rahman', [['Amount', '', 'RM 3,200.00'], ['Due date', '', '31 Oct 2026'], ['Needs approval', '', 'Yes']]] },
+
+      nofile: { group: 'a', label: 'Paid without approval on file · contractor', co: 'AISB', inSql: true, name: 'Contractor — field works', base: 'Field works', typeLabel: 'Other payment', due: '6 Oct', payTo: 'MBB 562100984410 Field Works Sdn Bhd FW-2026-03', acct: 'cur',
+        amount: 24000, planned: 24000, plannedEst: false, sql: 'PV2610-003', sqlShort: '6 Oct', ref: 'DUITNOW 0610771',
+        bank: [bk('6 Oct', 10000, 'DUITNOW TRF CONTRACTOR | FIELD WORKS | 0610771'), bk('6 Oct', 14000, 'DUITNOW TRF CONTRACTOR | FIELD WORKS | 0610772')], paid: '2026-10-06', paidText: '6 Oct 2026', req: REQ, cancel: '',
+        bankAt: ['3 Nov, 11:20', 'You', 'Paid in two transfers on 6 Oct'],
+        files: { invoice: [['Field Works invoice FW-0931.pdf', '310 KB', '6 Oct, 10:22']] },
+        ap: { r: 'nofile', facts: [['Paid', 'Tue 6 Oct 2026, entered by Aisha Rahman'], ['Approval form', 'None uploaded']],
+          text: 'It needs approval and was paid without an approved form on file. It stays on the Paid without approval on file list, the Overview card and the audit pack until a signed form is uploaded; then it moves to Approved after payment.', acts: ['upload', 'print'], phone: true },
+        rq: BILLRQ('Contract FW-2026-03 · Field Works Sdn Bhd', 'Needs approval was ticked, as it is by default for Other payment.'),
+        origin: ['Added by hand', '2 Oct, 09:00', 'Starting data', 'System', []] },
+
+      overappr: { group: 'a', label: 'Paid more than approved · Stationery Mart', co: 'AISB', inSql: true, name: 'Stationery Mart', base: 'Stationery Mart', typeLabel: 'Other payment', due: '30 Oct', payTo: 'Cheque 000214 to Stationery Mart', acct: 'cur',
+        amount: 1120, planned: 1120, plannedEst: false, sql: 'PV2610-022', sqlShort: '30 Oct', ref: 'CHQ 000214', bank: [], paid: '2026-10-30', paidText: '30 Oct 2026', paidBy: 'Entered by hand', req: REQ, cancel: '',
+        paidAt: '30 Oct, 14:18', paidCh: [['Paid date', '', '30 Oct 2026'], ['Bank reference', '', 'CHQ 000214']],
+        moreH: [['30 Oct, 14:16', 'Changed', 'You', 'Amount changed', [['Amount', 'RM 1,000.00', 'RM 1,120.00']], 'The invoice came to RM 1,120.00; RM 1,000.00 was approved on AF-2610-004']],
+        files: { invoice: [['Stationery Mart invoice SM-4471.pdf', '118 KB', '30 Oct, 14:20']], bank: [['Cheque 000214 copy.pdf', '64 KB', '30 Oct, 14:22']] },
+        ap: { r: 'over', over: 120, upAt: '27 Oct, 16:20',
+          form: { code: 'AF-2610-004', file: ['AF-2610-004 signed.pdf', '242 KB', '27 Oct, 16:20'], title: 'Approval form AF-2610-004', sub: 'AISB Sdn Bhd · Stationery Mart, quotation SQ-2210 · keyed check Z2R-6VNE', total: 'RM 1,000.00', sign: 'Signed: Tan Mei Ling, 27 Oct 2026', short: 'signed 27 Oct by Tan Mei Ling, for RM 1,000.00' },
+          facts: [['Form', 'AF-2610-004 · quotation SQ-2210 · RM 1,000.00'], ['Signed by', 'Tan Mei Ling · date on the form 27 Oct 2026'], ['Uploaded', 'Tue 27 Oct 2026 · Approver chosen by Aisha Rahman from a paper scan'], ['Paid', 'RM 1,120.00 on Fri 30 Oct: RM 120.00 more than approved']],
+          text: 'The RM 120.00 above the approved amount is on the Paid without approval on file list. Print a form for the difference and upload it once it is signed.', acts: ['view', 'printDiff', 'upload'], phone: true },
+        rq: BILLRQ('Quotation SQ-2210 · Stationery Mart', 'Approved at RM 1,000.00; the invoice came to RM 1,120.00.'),
+        origin: ['Added by hand', '26 Oct, 09:40', 'You', 'Aisha Rahman', [['Amount', '', 'RM 1,000.00'], ['Due date', '', '30 Oct 2026'], ['Needs approval', '', 'Yes']]] },
+
+      afterpay: { group: 'a', label: 'Approved after payment · office rental', co: 'AISB', inSql: true, name: 'Office rental', base: 'Office rental', typeLabel: 'Rental', due: '31 Oct', payTo: 'CIMB 8006447122 Menara Holdings Sdn Bhd T-14', acct: 'cur',
+        amount: 6500, planned: 6500, plannedEst: false, sql: 'PV2610-021', sqlShort: '30 Oct', ref: 'IBG 3010882', bank: [bk('30 Oct', 6500, 'IBG DR OFFICE RENTAL | 3010882')], paid: '2026-10-30', paidText: '30 Oct 2026', req: REQ, cancel: '',
+        files: { invoice: [['INV-1043 Office rental.pdf', '212 KB', '30 Oct, 11:02']], bank: [['Bank slip Office rental.pdf', '104 KB', '13 Nov, 10:42']] },
+        bankAt: ['3 Nov, 09:40', 'Import', ''],
+        moreH: [['14 Nov, 09:02', 'Changed', 'Outside this app', '', [['Description', 'Office rent', 'Office rental']], 'Corrected a description in DB Browser']],
+        ap: { r: 'ok', by: 'Hassan Ismail', on: '5 Nov 2026', after: true, upAt: '6 Nov, 10:05',
+          form: { code: 'AF-2611-002', file: ['AF-2611-002 signed.pdf', '286 KB', '6 Nov, 10:05'], title: 'Approval form AF-2611-002', sub: 'AISB Sdn Bhd · 2 recurring set-ups · keyed check M6D-4YQB', total: 'RM 6,500.00 a month and USD 1,200.00', sign: 'Signed: Hassan Ismail, 5 Nov 2026', short: 'signed 5 Nov by Hassan Ismail' },
+          facts: [['Form', 'AF-2611-002 · Office rental RM 6,500.00 a month; Cloud hosting USD 1,200.00'], ['Signed by', 'Hassan Ismail · date on the form 5 Nov 2026'], ['Uploaded', 'Fri 6 Nov 2026 · Approver chosen by Aisha Rahman from a paper scan'], ['Paid', 'Fri 30 Oct 2026, before the form was signed']],
+          text: 'Approved after payment: it left the Paid without approval on file list when the form was uploaded. The audit pack lists it under Approved after payment, with the paid, signed and upload dates.', acts: ['view', 'approvals'] },
+        rq: { glyph: 'recurring', head: 'Recurring · Office rental, monthly', meta: 'Approved once for the set-up on AF-2611-002, from October. A new form is needed only if the amount changes.', pill: null, links: [['Open Recurring', 'Recurring.dc.html']] },
+        origin: ['Planned from Recurring', '1 Oct, 08:00', 'Automatic', 'System', [['Amount', '', 'RM 6,500.00'], ['Due date', '', '31 Oct 2026']]] },
+
+      refused: { group: 'a', label: 'Paid, approval refused (CL-2609-002, state only)', note: 'State only: CL-2609-002 is a made-up row for this reading; it has no bank line or SQL voucher on the other boards.',
+        co: 'AISB', inSql: true, name: 'Sep 2026 Claims - Wei Ming', base: 'Claims Wei Ming', typeLabel: 'Staff claim', due: '30 Sep', payTo: 'CIMB ····8841 Ong Wei Ming', acct: 'cur',
+        amount: 95, planned: 95, plannedEst: false, sql: '', sqlShort: '', ref: '', bank: [], paid: '2026-09-30', paidText: '30 Sep 2026', paidAt: '30 Sep, 17:20', req: ['claim', 'approval', 'pv', 'bank'], cancel: '', before: true,
+        files: { claim: [['Parking receipts September.pdf', '118 KB', '28 Sep, 12:10', 'CL-2609-002']] },
+        docMeta: { 'Parking receipts September.pdf': ['Receipts · Parking and toll', 'September 2026 · claim CL-2609-002', 'Total', 'RM 95.00'] },
+        ap: { r: 'refused', facts: [['Not approved', 'Mon 2 Nov 2026 · reason "Personal travel"'], ['Paid', 'Wed 30 Sep 2026, entered by Aisha Rahman']],
+          text: 'It was paid before the approver refused it. It stays on the Overview card and in the audit pack until it is resolved: the money is paid back, a credit is recorded, or a director adds a note.', acts: ['claim'] },
+        rq: { glyph: 'claim', head: 'CL-2609-002 · Sep 2026 Claims - Wei Ming', meta: WM + ' · 1 line · RM 95.00', pill: ['pl bad', 'alert', 'bad', 'Paid, approval refused'], links: [['Open the claim', 'HrClaim.dc.html']] },
+        origin: ['Not approved', '2 Nov, 11:15', 'You', 'Aisha Rahman', [['Approval', 'Waiting', 'Not approved: Personal travel']], 'Changed'] },
+
+      samename: { group: 'a', label: 'Same-name warning (state only)', note: 'State only: "Rajesh Kumar & Co" is the made-up supplier for the same-name warning; this bill is on no other board.',
+        co: 'AISB', inSql: true, name: 'Company secretary fee', base: 'Company secretary fee', typeLabel: 'Consultant fee', due: '30 Nov', payTo: 'Rajesh Kumar & Co', acct: 'cur',
+        amount: 1800, planned: 1800, plannedEst: false, sql: '', sqlShort: '', bank: [], paid: '', paidText: 'Not paid yet', req: REQ, cancel: '', unpaid: true,
+        flag: { text: 'Not paid', tone: 'grey', hint: '' }, files: { invoice: [['Rajesh Kumar & Co invoice RK-0412.pdf', '138 KB', '17 Nov, 11:20']] },
+        ap: { r: 'waiting', facts: [['Approval form', 'Not printed yet: it is under To print on Approvals']], text: '',
+          warn: ['Same name as an approver', 'The payee, Rajesh Kumar & Co, shares a name with the approver Rajesh Kumar. If they are the same person, have Hassan Ismail or Tan Mei Ling sign the form. This is a warning only: nothing is blocked.'], acts: ['print'] },
+        rq: BILLRQ('Supplier bill RK-0412 · Rajesh Kumar & Co', 'Needs approval was ticked, as it is by default for Consultant fee payments.', ['pl warn', 'clock', 'warn', 'Waiting for approval']),
+        origin: ['Added by hand', '17 Nov, 11:18', 'You', 'Aisha Rahman', [['Amount', '', 'RM 1,800.00'], ['Due date', '', '30 Nov 2026'], ['Needs approval', '', 'Yes']]] },
+
+      kepthere: { group: 'k', label: 'Kept here (AI), voucher posted (state only)',
+        note: "State only: AI has no chart of accounts or ringgit account yet, so its vouchers aren't posted today. This is how a paid payment reads once AI posts its own. Try changing the amount (cancel and repost), or a September paid date (refused).",
+        co: 'AI', inSql: false, kept: true, name: 'Farm supplies', base: 'Farm supplies', typeLabel: 'Other payment', due: '20 Oct', payTo: 'Agro inputs · INV-7781', acct: 'aic', accts: [['aic', 'Maybank current']],
+        amount: 6750, planned: 6750, plannedEst: false, sql: 'AI-PV2610-001', sqlShort: '19 Oct', ref: 'IBG 1910442', bank: [], paid: '2026-10-19', paidText: '19 Oct 2026', paidAt: '19 Oct, 11:04', req: REQ, cancel: '',
+        paidCh: [['Paid date', '', '19 Oct 2026'], ['Payment voucher', '', 'AI-PV2610-001 posted']],
+        // a supplier bill always goes through its payable (scope sections 7 and 8): its voucher is Accounts payable / Bank, knocked off to the invoice
+        posted: ['Accounts payable', 'Knocked off to the supplier invoice for Agro inputs INV-7781 on Purchases.'],
+        files: { invoice: [['Agro inputs INV-7781.pdf', '204 KB', '19 Oct, 11:05']], bank: [['IBG slip 19 Oct.pdf', '82 KB', '19 Oct, 11:07']] },
+        // the form was uploaded on the supplier invoice before this payment reached To pay, so its upload is not in this payment's history
+        ap: { r: 'ok', by: 'Hassan Ismail', on: '16 Oct 2026',
+          form: { code: 'AF-2610-003', file: ['AF-2610-003 signed.pdf', '196 KB', '16 Oct, 14:02'], title: 'Approval form AF-2610-003', sub: 'Agrinexus International · Farm supplies, Agro inputs INV-7781 · keyed check P5X-8LCA', total: 'RM 6,750.00', sign: 'Digitally signed: Hassan Ismail, 16 Oct 2026', short: 'digitally signed 16 Oct by Hassan Ismail' },
+          facts: [['Form', 'AF-2610-003 · Agro inputs INV-7781 · RM 6,750.00'], ['Signed by', 'Hassan Ismail · digitally signed PDF, matched to the approvers automatically'], ['Uploaded', 'Fri 16 Oct 2026']],
+          text: 'AI has one approver, Hassan Ismail. He is not the payee here, so his signature approves it as usual.', acts: ['view', 'approvals'] },
+        rq: { glyph: 'inbox', head: 'Supplier invoice · Agro inputs INV-7781', meta: 'Recorded on Accounting › Purchases and posted when recorded: expense / Accounts payable, RM 6,750.00. Approved on AF-2610-003.', pill: ['pl info', 'books', 'brand', 'Recorded'],
+          note: 'A supplier bill always goes through its payable, so paying it posted AI-PV2610-001 as Accounts payable / Bank, knocked off to this invoice. Paying straight to an expense account is only for an Add payment with no request behind it.',
+          links: [['Open on Purchases', 'AccountingKeptHere.dc.html']] },
+        origin: ['From the supplier invoice for Agro inputs INV-7781, approved on AF-2610-003', '16 Oct, 14:03', 'Automatic', 'System', [['Amount', '', 'RM 6,750.00'], ['Due date', '', '20 Oct 2026']]] },
+
+      locked: { group: 'k', label: 'Filed month, read only (AI, September)', co: 'AI', inSql: false, name: 'Electricity bill', base: 'Electricity bill', typeLabel: 'Utility / telco', monthText: 'September 2026', due: '7 Sep', payTo: 'TNB account 220087340112', acct: '',
+        amount: 1396.8, planned: 1396.8, plannedEst: false, sql: '', sqlShort: '', ref: 'IBG 0509217', bank: [], paid: '2026-09-05', paidText: '5 Sep 2026', paidAt: '5 Sep, 10:10', req: ['invoice', 'bank'], cancel: '',
+        files: { invoice: [['TNB bill August 2026 farm meter.pdf', '176 KB', '5 Sep, 10:12']], bank: [['IBG slip 5 Sep.pdf', '80 KB', '5 Sep, 10:14']] }, ap: NONE, rq: REC('AI', '1 Sep'),
+        origin: ['Planned from Recurring', '1 Sep, 08:00', 'Automatic', 'System', []],
+        locked: ['September 2026 is filed for AI, so this payment is read only', 'Filed on 5 Oct. Nothing in a filed month changes. To correct it, reopen September on its Monthly checklist, then file it again.'],
+        note: 'State only: the amount is made up for this filed-month sample.' }
+    };
+  }
+  // The server's words for why a payment is flagged (hrp/db.py payment_flag)
+  flags() {
+    return {
+      waiting_sql: { text: 'Waiting for SQL record', tone: 'warn', hint: "Probably paid: the SQL entries imported go up to 12 Nov. Fetch SQL's latest listings on the SQL import page to record it." },
+      waiting_statement: { text: 'Waiting for Nov statement', tone: 'warn', hint: "Probably paid: the Nov bank statement isn't imported yet. Import it on the Bank and reconciliation page to confirm this payment." },
+      not_on_statement: { text: 'Not on Nov statement', tone: 'bad', hint: 'The Nov bank statement is imported, but no line on it is linked to this payment. Link its line on the Bank and reconciliation page, or enter the paid date if it went out another way.' },
+    };
+  }
+  initFor(key) {
+    const S = this.samples()[key];
+    const f = { amount: S.amount.toFixed(2), paid: S.paid, bank: S.ref !== undefined ? S.ref : S.bank.length ? 'IBG 4471092' : '', sql: S.sql, einv: '', acct: S.acct, notes: '', diff: '' };
+    const files = {};
+    for (const k in S.files) files[k] = S.files[k].slice();
+    return { sample: key, f, snap: { ...f }, confirm: false, estDone: false, sqlGone: false, flagKey: 'waiting_statement', files };
+  }
+  cur(sg) { const S = this.samples()[this.state.sample]; return { ...S, sql: (sg === undefined ? this.state.sqlGone : sg) ? '' : S.sql }; }
+  // Is anything in the form different from what is saved? (Compared with the loaded values, so typing a value and restoring it is not a change.)
+  dirty() { const s = this.state; return !!s.confirm || ['amount', 'paid', 'bank', 'sql', 'einv', 'acct', 'notes', 'diff'].some(k => s.f[k] !== s.snap[k]); }
+  setF(k, e) { this.setState({ f: { ...this.state.f, [k]: e && e.target ? e.target.value : '' }, refused: null }); }
+  tone(t) { return { grey: 'background:#EEF1F5;color:#46546A', warn: 'background:#FEF1D6;color:#934100', bad: 'background:#FDE8E6;color:#B0190F', ok: 'background:#E3F7EC;color:#0A6B3D', brand: 'background:#EAF0FD;color:#2450B8' }[t]; }
+  // a form on file fills the Approval box (Setup › Required documents)
+  formOnFile(S) { return !!(S.ap && S.ap.form && (S.ap.r === 'ok' || S.ap.r === 'over')); }
+  data(sg) {
+    const S = this.cur(sg);
+    const F = this.formOnFile(S) ? S.ap.form : null;
+    return {
+      DT: { invoice: ['Invoice / bill', 'Invoice'], pv: S.kept ? ['Payment voucher', 'PV'] : ['Payment Voucher (SQL)', 'PV'], bank: ['Bank receipt / transfer slip', 'Bank slip'], jv: ['Journal Voucher (SQL)', 'JV'],
+        or: ['Official Receipt (SQL)', 'OR'], einvoice: ['e-Invoice (MyInvois)', 'e-Invoice'], portal: ['Acknowledgement / portal bill', 'Acknowledgement'], claim: ['Claim form & receipts', 'Claim form'],
+        approval: ['Approval (signed / email)', 'Approval'], payroll: ['Payroll summary', 'Payroll summary'], payslip: ['Payslip', 'Payslips'], other: ['Other', 'Other'] },
+      REQ: S.req,
+      EV: { pv: S.sql ? (S.kept ? S.sql + ' posted here' : S.sql + ' (print from SQL)') : '', bank: S.bank.length ? 'on the ' + (S.bank[0].d.split(' ')[1]) + ' bank statement' + (S.bank.length > 1 ? ' (' + S.bank.length + ' lines)' : '') : '',
+        approval: F ? F.code + ', ' + F.short + ' · filled by the approved form on file' : '' },
+      F
+    };
+  }
+  fileList(k) { return this.state.files[k] || []; }
+  freeName(k, base) {
+    const have = this.fileList(k).map(f => f[0]).concat(this.state.ups.filter(u => u.k === k).map(u => u.name));
+    let n = base, i = 2;
+    while (have.indexOf(n) >= 0) n = base.replace(/(\.[^.]+)$/, ' (' + (i++) + ')$1');
+    return n;
+  }
+  missing(files, sg) { const { REQ, EV } = this.data(sg); const fl = files || this.state.files; return REQ.filter(k => !(fl[k] || []).length && !EV[k]).length; }
+  // Uploads: each file gets its own row with a progress bar, then a tick; a file that can't be added keeps its row in the
+  // bad colour with the reason and what to do (Retry, Upload anyway, or Dismiss).
+  queue(items, opt) {
+    const o = opt || {};
+    const okRe = /\.(pdf|png|jpe?g|xlsx|xls|ods|csv|docx?|txt|xml|eml|msg)$/i;
+    const add = items.map(raw => {
+      // a file with the same name is stored under a free name, as the app does (Invoice (2).pdf)
+      const it = { ...raw, name: this.freeName(raw.k, raw.name) };
+      const id = ++this._uid, m = it.name.match(/\.[^.]+$/);
+      let st = 'up', kind = '';
+      if (!okRe.test(it.name)) { st = 'fail'; kind = 'type'; }
+      else if ((it.bytes || 0) > 40 * 1024 * 1024) { st = 'fail'; kind = 'big'; }
+      return { id, k: it.k, name: it.name, ext: m ? m[0].toLowerCase() : '', size: it.size || '182 KB', pct: st === 'up' ? 6 : 0, st, kind, flaky: !!it.flaky, focus: !!o.focus };
+    });
+    this.setState({ ups: [...this.state.ups, ...add], drag: null, menu: null, pick: null, ...(o.extra || {}) });
+    for (const u of add) if (u.st === 'up') { clearTimeout(this._ut[u.id]); this._ut[u.id] = setTimeout(() => this.tickUp(u.id), 240); }
+    const bad = add.filter(u => u.st === 'fail').length;
+    if (bad) this.setState(this.toastPart(bad === 1 ? "1 file couldn't be added. Its row says why." : bad + " files couldn't be added. Their rows say why.", true));
+  }
+  setUp(id, patch) { this.setState({ ups: this.state.ups.map(u => (u.id === id ? { ...u, ...patch } : u)) }); }
+  tickUp(id) {
+    const u = this.state.ups.find(x => x.id === id);
+    if (!u || u.st !== 'up') return;
+    const pct = Math.min(100, u.pct + 34);
+    if (u.flaky && pct >= 60) { this.setUp(id, { st: 'fail', kind: 'net', pct: 60, flaky: false }); this.setState(this.toastPart(u.name + " wasn't added: the upload stopped before it finished.", true)); return; }
+    if (pct >= 100) { this.setUp(id, { pct: 100, st: 'ok' }); this._ut[id] = setTimeout(() => this.landUp(id), 700); return; }
+    this.setUp(id, { pct });
+    this._ut[id] = setTimeout(() => this.tickUp(id), 260);
+  }
+  landUp(id) {
+    const u = this.state.ups.find(x => x.id === id);
+    if (!u) return;
+    const files = { ...this.state.files, [u.k]: [...this.fileList(u.k), [u.name, u.size, 'just now']] };
+    const next = { ups: this.state.ups.filter(x => x.id !== id), files, fresh: u.k + '|' + u.name };
+    if (this.missing(files) !== this.missing()) next.pillN = this.state.pillN + 1;
+    if (u.focus) this._upFocus = ['pay-mb-' + this.slug(u.k + '|' + u.name)];
+    this.setState({ ...next, ...this.toastPart('Added ' + u.name) });
+  }
+  guess(name, keys) {
+    const t = String(name).toLowerCase();
+    const g = /payslip/.test(t) ? 'payslip' : /approval|\.eml$|\.msg$/.test(t) ? 'approval' : /claim/.test(t) ? 'claim' : /e-?invoice/.test(t) ? 'einvoice'
+      : /\bpv|voucher/.test(t) ? 'pv' : /slip|ibg|fpx|transfer|duitnow/.test(t) ? 'bank' : /ack|kwsp|perkeso|cp39|portal/.test(t) ? 'portal' : /bill|invoice|inv/.test(t) ? 'invoice' : 'other';
+    return keys.indexOf(g) >= 0 ? g : keys.indexOf('other') >= 0 ? 'other' : keys[0];
+  }
+  startToast(bad, long) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    if (bad) return;   // an error stays until it is dismissed (Dismiss, or Escape)
+    this._tt = setTimeout(() => {
+      if (!this.state.toast) return;
+      this.setState({ toast: { ...this.state.toast, out: true } });
+      this._to = setTimeout(() => { if (this.inToast()) this._upFocus = ['pay-save', 'pay-title']; this.setState({ toast: null }); }, 200);
+    }, long ? 8000 : 6000);
+  }
+  // is focus on the toast drawn inside the dialog? (when it goes, focus goes back to Save)
+  inToast() { const a = document.activeElement; return !!(a && a.closest && a.closest('#pay-toast-in')); }
+  // a toast that confirms a change carries Undo (States: saves and stops only, never a removal)
+  toastPart(msg, bad, undo) {
+    this.startToast(!!bad, !!undo);
+    return { toast: { msg, bad: !!bad, undo: undo || null, n: ((this.state.toast && this.state.toast.n) || 0) + 1 } };
+  }
+  // Close, Cancel, Escape and the backdrop ask first when the form has unsaved edits
+  requestClose() {
+    if (!this.state.open || this.state.closing || this.state.saving) return;
+    if (this.dirty()) { this.setState({ discard: true, repost: false, menu: null, ask: null, rm: false }); return; }
+    this.closeDrawer();
+  }
+  closeDrawer() {
+    if (!this.state.open || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true, menu: null, drag: null });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.open) this.setState({ open: false, closing: false, menu: null, drag: null, fresh: null, confirm: false, discard: false, repost: false, refused: null, ask: null, rm: false, viewer: null, pick: null, f: { ...this.state.snap } }); }
+  closeViewer() { if (!this.state.viewer) return; this._upFocus = [this.state.viewer.opener, 'pay-title']; this.setState({ viewer: null }); }
+  focusId(...ids) { for (const id of ids) { const n = document.getElementById(id); if (n) { n.focus({ preventScroll: true }); return true; } } return false; }
+  componentDidUpdate(pp, prev) {
+    const s = this.state;
+    if (!prev.open && s.open) { this.focusId('pay-title'); return; }
+    if (prev.open && !s.open) {
+      if (this._opener && this._opener.isConnected && this._opener !== document.body) this._opener.focus({ preventScroll: true });
+      else this.focusId('pay-reopen');
+      return;
+    }
+    if (s.discard && !prev.discard) { this.focusId('pay-keep'); return; }
+    if (s.repost && !prev.repost) { this.focusId('pay-repost-no'); return; }
+    if (s.refused && !prev.refused) { this.focusId('pay-refused'); return; }
+    if (s.ask && !prev.ask) { this.focusId('pay-ask-no'); return; }
+    if (s.viewer && (!prev.viewer || prev.viewer.name !== s.viewer.name)) { this.focusId('pay-v-title'); return; }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+    if (s.menu && s.menu !== prev.menu) this.focusId('pay-mi-' + this.slug(s.menu) + '-0');
+    else if (prev.menu && !s.menu && s.open && !s.closing) this.focusId('pay-mb-' + this.slug(prev.menu));
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._ts); for (const k in this._ut) clearTimeout(this._ut[k]); }
+  dlgKey(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault(); e.stopPropagation();
+      const st = this.state;
+      if (st.saving) return;
+      if (st.toast && st.toast.bad) { if (this.inToast()) this._upFocus = ['pay-save', 'pay-title']; this.setState({ toast: null }); }
+      else if (st.menu) this.setState({ menu: null });
+      else if (st.ask) { this._upFocus = ['pay-mb-' + this.slug(st.ask.key), 'pay-title']; this.setState({ ask: null }); }
+      else if (st.pick) { this._upFocus = ['pay-multi', 'pay-title']; this.setState({ pick: null }); }
+      else if (st.viewer) this.closeViewer();
+      else if (st.repost) { this._upFocus = ['pay-save', 'pay-title']; this.setState({ repost: false }); }
+      else if (st.discard) { this._upFocus = ['pay-title']; this.setState({ discard: false }); }
+      else if (st.rm) this.setState({ rm: false });
+      else this.requestClose();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+    const box = e.currentTarget;
+    const f = Array.from(box.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')).filter(n => n.getAttribute('tabindex') !== '-1');
+    if (!f.length) return;
+    const a = document.activeElement, i = f.indexOf(a);
+    if (e.shiftKey && (i === 0 || a === box || (a && a.id === 'pay-title'))) { e.preventDefault(); f[f.length - 1].focus(); }
+    else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+  }
+  monthOf(iso) { const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const p = String(iso || '').split('-'); return p.length === 3 ? M[+p[1] - 1] + ' ' + p[0] : ''; }
+  // A save the server refuses, with its reason (Kept here: nothing posts into a filed month). What was typed is kept.
+  refusal() {
+    const S = this.cur(), f = this.state.f;
+    if (S.kept && f.paid && f.paid < '2026-10-01') return { field: 'paid', text: 'September 2026 is filed for AI, so nothing can be posted into it. Keep a paid date in October 2026 or later, or reopen September on its Monthly checklist first.', err: 'September 2026 is filed for AI.' };
+    if (f.amount !== '' && !(Number(f.amount) > 0)) return { field: 'amount', text: 'The amount must be more than 0. To take a payment off, use Remove this payment instead.', err: 'Enter an amount more than 0.' };
+    return null;
+  }
+  // Save: Saving… on the button and the fields locked, then saved with Undo, or refused with the reason
+  doSave() {
+    const S = this.cur();
+    this._upFocus = ['pay-title'];
+    this.setState({ saving: true, repost: false, refused: null, discard: false });
+    clearTimeout(this._ts);
+    this._ts = setTimeout(() => {
+      const s = this.state;
+      if (!s.saving) return;
+      const why = this.refusal();
+      if (why) { this.setState({ saving: false, refused: why }); return; }
+      const LB = { amount: 'Amount', paid: 'Paid date', bank: 'Bank reference', sql: S.inSql ? 'SQL voucher no.' : S.kept ? 'Payment voucher' : 'Record ref', einv: 'e-Invoice UIN', acct: 'Bank account', notes: 'Notes', diff: 'Reason for the difference' };
+      const AC = S.accts || (S.inSql ? [['cur', 'Maybank current'], ['sav', 'Maybank savings']] : []), shown = (k, x) => (k === 'acct' ? (AC.find(a => a[0] === x) || [])[1] || x : x);
+      const ch = Object.keys(LB).filter(k => s.f[k] !== s.snap[k]).map(k => [LB[k], shown(k, s.snap[k]), shown(k, s.f[k])]).concat(s.confirm ? [['Estimate', 'Yes', 'No']] : []);
+      const reposted = !!S.kept && ['amount', 'paid', 'acct'].some(k => s.f[k] !== s.snap[k]);
+      const series = this.monthOf(s.f.paid) || 'October 2026';
+      const before = { f: { ...s.snap }, snap: { ...s.snap }, estDone: s.estDone };
+      const title = reposted ? S.sql + ' cancelled with a reversal; new voucher posted' : 'Details saved';
+      const msg = reposted ? 'Saved. ' + S.sql + " is cancelled with a reversal, and a new voucher is posted in " + series + "'s series." : 'Details saved';
+      const undo = () => {
+        this._upFocus = ['pay-save', 'pay-title'];
+        this.setState({ ...before, log: [{ op: 'Undone', title: reposted ? 'Undone: the new voucher is cancelled and the old figures are posted again' : 'Undone: details back as they were', ch: ch.map(c => [c[0], c[2], c[1]]) }, ...this.state.log],
+          ...this.toastPart(reposted ? 'Undone. The new voucher is cancelled and the old figures are posted again; each step is in the audit trail.' : 'Undone. The details are back as they were; the undo is a new entry in the audit trail.') });
+      };
+      this._upFocus = ['pay-save', 'pay-title'];
+      this.setState({ saving: false, snap: { ...s.f }, confirm: false, estDone: s.estDone || (s.confirm && this.samples()[s.sample].plannedEst), log: [{ op: 'Changed', title, ch }, ...s.log], ...this.toastPart(msg, false, undo) });
+    }, 900);
+  }
+  renderVals() {
+    const { DT, REQ, EV, F } = this.data();
+    const st = this.state;
+    const S = this.cur(), S0 = this.samples()[st.sample], fl = this.flags();
+    const ro = !!S0.locked, lockF = ro || st.saving;
+    // a request's payment is paid on To pay, which records its paid date, bank reference and account: here they are read only until then
+    const payLock = !!S0.toPay && !!S0.unpaid;
+    const off = lockF;   // uploads, menus and other changes wait while saving
+    const miss = this.missing();
+    const noop = () => {};
+    const dragOn = key => st.drag === key;
+    const sizeOf = b => (b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB');
+    const money = n => 'RM ' + this.fmt(n);
+    const base = S0.base;
+    const dropFns = (key, k) => (off ? { over: noop, leave: noop, drop: noop } : {
+      over: e => { if (e && e.preventDefault) e.preventDefault(); if (e && e.stopPropagation) e.stopPropagation(); if (this.state.drag !== key) this.setState({ drag: key }); },
+      leave: e => { const to = e && e.relatedTarget; if (to && e.currentTarget && e.currentTarget.contains && e.currentTarget.contains(to)) return; if (this.state.drag === key) this.setState({ drag: null }); },
+      drop: e => {
+        if (e && e.preventDefault) e.preventDefault(); if (e && e.stopPropagation) e.stopPropagation();
+        const fs = e && e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+        this.queue(fs.length ? fs.map(x => ({ name: x.name, k, bytes: x.size, size: sizeOf(x.size) })) : [{ name: this.freeName(k, DT[k][1] + ' - ' + base + '.pdf'), k }]);
+      }
+    });
+    // what the viewer shows for a document: a sample's own file, a claim receipt, or a signed approval form
+    const docOf = (name) => {
+      if (S0.ap && S0.ap.form && S0.ap.form.file[0] === name) { const G = S0.ap.form; return { title: G.title, sub: G.sub, totalLabel: 'Total', total: G.total, sign: G.sign, pages: 1 }; }
+      const m = (S0.docMeta || {})[name];
+      if (m) return { title: m[0], sub: m[1], totalLabel: m[2], total: m[3], sign: '', pages: 1 };
+      return { title: name.replace(/\.[^.]+$/, ''), sub: S0.name + ' · ' + S0.payTo, totalLabel: 'Amount due', total: money(S0.planned), sign: '', pages: 0 };
+    };
+    const openView = (file, label, opener, key, k) => {
+      if (st.viewer && st.viewer.name === file[0]) return this.closeViewer();
+      this.setState({ viewer: { name: file[0], size: file[1], when: file[2], label, opener, key, k, doc: docOf(file[0]), own: !file[3] && key !== 'form' }, vPage: 1, vZoom: '100', menu: null });
+    };
+    const NEED = { bank: 'Not uploaded. Matching its bank line ticks this too.', pv: S.kept ? 'Not posted yet. Paying posts it here.' : 'Not uploaded. Linking its SQL voucher ticks this too.', einvoice: S.inSql ? 'Not uploaded. A validated e-Invoice in SQL ticks this too.' : 'Not uploaded.',
+      approval: 'Not on file. An approved form uploaded on Approvals ticks this.' };
+    const mkDoc = k => {
+      const [label, short] = DT[k];
+      const files = this.fileList(k), ev = EV[k] || '';
+      const tk = k;
+      const addName = k === 'other' ? 'document' : label.split(' (')[0];
+      const fromReq = files.some(x => x[3]);
+      const mkRow = (kind, key, f) => {
+        const mk = this.slug(key), menuOpen = st.menu === key, drag = dragOn(key);
+        let mi = 0;
+        const closeMenu = () => { if (this.state.menu) this.setState({ menu: null }); };
+        const item = (lbl, danger, act) => ({ label: lbl, id: 'pay-mi-' + mk + '-' + (mi++), pick: () => { if (act) act(); else this.setState({ menu: null }); },
+          style: 'height:36px;padding:0 10px;border:0;border-radius:8px;background:transparent;text-align:left;font:500 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;color:' + (danger ? '#B0190F' : '#0F1A2B') });
+        const one = () => this.queue([{ name: this.freeName(k, short + ' - ' + base + '.pdf'), k }], { focus: true });
+        const nnName = () => this.freeName(k, short + ' - ' + base + '.pdf');
+        const askOn = !!st.ask && st.ask.key === key;
+        const askRep = !!st.ask && st.ask.act === 'replace';
+        const doReplace = () => {
+          const nn = nnName();
+          const list = this.fileList(k).filter(x => x[0] !== f[0]).concat([[nn, '182 KB', 'just now']]);
+          this._upFocus = ['pay-mb-' + this.slug(k + '|' + nn), 'pay-title'];
+          this.setState({ files: { ...this.state.files, [k]: list }, menu: null, ask: null, fresh: k + '|' + nn, ...this.toastPart('Replaced with ' + nn) });
+        };
+        const doRemove = () => {
+          const nf = { ...this.state.files, [k]: this.fileList(k).filter(x => x[0] !== f[0]) };
+          this._upFocus = ['pay-mb-' + this.slug(tk), 'pay-add-' + this.slug(tk), 'pay-up-' + this.slug(tk), 'pay-title'];
+          this.setState({ files: nf, menu: null, ask: null, ...(this.missing(nf) !== this.missing() ? { pillN: this.state.pillN + 1 } : {}), ...this.toastPart('Removed ' + f[0]) });
+        };
+        const askFor = act => () => this.setState({ menu: null, viewer: null, ask: { act, key, k } });
+        const fromClaim = kind === 'file' && f && f[3];
+        const note = drag ? 'Drop to add it as ' + label
+          : fromClaim ? 'From ' + f[3] + ' · ' + f[0] + ' · ' + f[1]
+          : kind === 'file' ? f[0] + ' · ' + f[1] + ' · uploaded ' + f[2]
+          : kind === 'need' ? NEED[k] || 'Not uploaded.' : ev;
+        const vf = kind === 'form' ? F.file : f;
+        const viewing = !!(st.viewer && vf && st.viewer.name === vf[0]);
+        const viewId = 'pay-vw-' + mk;
+        const isLink = kind === 'line' || kind === 'sql';
+        return { key, label, note, off,
+          noteStyle: 'font-size:13px;overflow-wrap:anywhere;color:' + (drag ? '#2450B8;font-weight:600' : kind === 'need' ? '#934100' : kind === 'file' ? '#46546A' : '#0A6B3D'),
+          need: kind === 'need' && !ro, isFile: kind === 'file' || kind === 'form', isLink, hasMenu: !ro && !fromClaim && kind !== 'need' && kind !== 'form',
+          fileName: vf ? vf[0] : '', menuName: f ? f[0] : label,
+          href: kind === 'line' ? 'Bank.dc.html' : S.kept ? 'Books.dc.html' : 'Sql.dc.html', linkLabel: kind === 'line' ? 'View line' : S.kept ? 'View voucher' : 'View in SQL',
+          upId: 'pay-up-' + this.slug(tk), viewId, viewing: viewing ? 'true' : 'false',
+          viewStyle: 'display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:9px;font:600 13px Inter,sans-serif;color:#0F1A2B;cursor:pointer;flex:none;' + (viewing ? 'border:1px solid #2450B8;background:#EAF0FD' : 'border:1px solid #D5DBE4;background:#FFFFFF'),
+          view: () => openView(vf, kind === 'form' ? 'Approval form' : label, viewId, kind === 'form' ? 'form' : key, k),
+          download: () => this.setState(this.toastPart('Downloading ' + (vf ? vf[0] : ''))),
+          upload: one,
+          menuOpen, expanded: menuOpen ? 'true' : 'false', mbId: 'pay-mb-' + mk,
+          toggleMenu: () => this.setState({ menu: menuOpen ? null : key }),
+          closeMenu,
+          menuBtnKey: e => {
+            if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;   // Enter and Space open it through the click
+            e.preventDefault();
+            if (menuOpen) this.focusId('pay-mi-' + mk + '-0'); else this.setState({ menu: key });
+          },
+          menuKey: e => {
+            const its = Array.from(e.currentTarget.querySelectorAll('[role="menuitem"]'));
+            const i = its.indexOf(document.activeElement);
+            if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); e.stopPropagation(); closeMenu(); return; }
+            if (!its.length) return;
+            const to = e.key === 'ArrowDown' ? (i + 1) % its.length : e.key === 'ArrowUp' ? (i <= 0 ? its.length - 1 : i - 1)
+              : e.key === 'Home' ? 0 : e.key === 'End' ? its.length - 1 : -1;
+            if (to < 0) return;
+            e.preventDefault(); e.stopPropagation();
+            its[to].focus();
+          },
+          askOn,
+          askText: askOn && f ? (askRep ? 'Replace "' + f[0] + '" with "' + nnName() + '"? The old file is taken out of the audit pack.' : 'Remove "' + f[0] + '"? It is taken off here and left out of the audit pack; the file itself is kept on this PC.') : '',
+          askNo: () => { this._upFocus = ['pay-mb-' + mk, 'pay-title']; this.setState({ ask: null }); },
+          askYes: () => { if (f) (askRep ? doReplace : doRemove)(); },
+          askYesLabel: askRep ? 'Replace' : 'Remove',
+          askYesStyle: 'height:34px;padding:0 12px;border-radius:9px;border:0;color:#FFFFFF;font:600 13px Inter,sans-serif;cursor:pointer;background:' + (askRep ? '#2450B8' : '#B0190F'),
+          why: kind === 'need' && k === 'einvoice' && S.cancel ? 'The e-Invoice on ' + S0.sql + ' was cancelled by ' + S.cancel + " (a refund or credit note), so it doesn't count. Upload the valid e-Invoice, or enter its UIN above if it is in SQL." : '',
+          menu: kind === 'file' ? [item('Replace file', false, askFor('replace')), item('Remove', true, askFor('remove'))] : [item('Upload a copy anyway', false, one)],
+          iconCls: st.fresh === key ? 'pop' : '',
+          glyph: kind === 'need' ? 'document' : kind === 'file' || kind === 'form' ? 'check' : kind === 'line' ? 'bank' : S.kept ? 'books' : 'database', tone: kind === 'need' ? 'warn' : 'ok',
+          row: 'display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;transition:background-color .24s cubic-bezier(.22,1,.36,1),border-color .24s cubic-bezier(.22,1,.36,1),box-shadow .12s ease-out;' +
+            (drag ? 'border:1px solid #2450B8;background:#F3F6FE;box-shadow:inset 0 0 0 1px #2450B8' : kind === 'need' ? 'border:1px solid #F3D9A6;background:#FFFBF2' : viewing ? 'border:1px solid #2450B8;background:#FFFFFF' : 'border:1px solid #E3E7ED;background:#FFFFFF'),
+          ...dropFns(key, k) };
+      };
+      const rows = files.length ? files.map(f => mkRow('file', tk + '|' + f[0], f))
+        : [mkRow(ev ? (k === 'bank' ? 'line' : k === 'approval' ? 'form' : 'sql') : 'need', tk, null)];
+      const addKey = tk + '|+', addDrag = dragOn(addKey);
+      const reqCode = fromReq ? files.find(x => x[3])[3] : '';
+      return { rows, off, canAdd: files.length > 0 && !fromReq && !ro, addId: 'pay-add-' + this.slug(tk), addLabel: 'Add another ' + addName,
+        add: () => this.queue([{ name: this.freeName(k, short + ' - ' + base + '.pdf'), k }], { focus: true }),
+        addNote: addDrag ? 'Drop to add it as ' + label : 'or drop files here',
+        addNoteStyle: 'font-size:12px;' + (addDrag ? 'color:#2450B8;font-weight:600' : 'color:#5F6C80'),
+        addRow: 'display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:4px 10px;border-radius:12px;transition:background-color .12s ease-out,border-color .12s ease-out;' +
+          (addDrag ? 'border:1.5px dashed #2450B8;background:#F3F6FE' : 'border:1.5px dashed #7C8799;background:#FAFBFC'),
+        srcOn: fromReq, srcText: 'The receipts are kept on ' + reqCode + ' and come with it; add or change them there.', srcLink: 'Open ' + reqCode, srcHref: 'HrClaim.dc.html',
+        ...dropFns(addKey, k) };
+    };
+    const extraKeys = Object.keys(DT).filter(k => REQ.indexOf(k) < 0 && (S.inSql || (k !== 'pv' && k !== 'jv' && k !== 'or')));   // the app's own types (statement, reconciliation, SQL export) are never offered
+    const allKeys = REQ.concat(extraKeys);
+    const withFiles = extraKeys.filter(k => this.fileList(k).length);
+    const xVal = st.xType && extraKeys.indexOf(st.xType) >= 0 ? st.xType : 'approval';
+    const UPST = { up: 'Uploading', ok: 'Added', fail: "Couldn't add" };
+    const WHY = { type: u => (u.ext || 'This file type') + " isn't accepted. Upload a PDF, image, Excel, Word or email file.", big: u => 'It is ' + u.size + '; a file can be up to 40 MB.',
+      dup: u => 'A file with this name is already on this payment as ' + DT[u.k][1] + '.', net: () => 'The upload stopped before it finished. Check the records folder can be reached, then try again.' };
+    const ups = st.ups.map(u => ({ off, name: u.name, as: 'as ' + DT[u.k][1], pct: String(u.pct), busy: u.st !== 'fail', iconCls: u.st === 'ok' ? 'pop' : '',
+      glyph: u.st === 'fail' ? 'alert' : u.st === 'ok' ? 'check' : 'upload', tone: u.st === 'fail' ? 'bad' : u.st === 'ok' ? 'ok' : 'brand',
+      stText: u.st === 'up' ? u.pct + '%' : UPST[u.st], stStyle: 'font-size:12px;font-weight:600;white-space:nowrap;color:' + (u.st === 'fail' ? '#B0190F' : u.st === 'ok' ? '#0A6B3D' : '#46546A'),
+      why: u.st === 'fail' ? WHY[u.kind](u) : '',
+      bar: 'height:100%;border-radius:99px;width:' + u.pct + '%;background:' + (u.st === 'ok' ? '#0E8A50' : '#2450B8'),
+      row: 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;' + (u.st === 'fail' ? 'border:1px solid #F2B8B0;background:#FFF5F4' : 'border:1px solid #E3E7ED;background:#FFFFFF'),
+      retry: u.st === 'fail' && u.kind === 'net', anyway: u.st === 'fail' && u.kind === 'dup', dismiss: u.st === 'fail',
+      retryFn: () => { this.setUp(u.id, { st: 'up', pct: 6, kind: '' }); clearTimeout(this._ut[u.id]); this._ut[u.id] = setTimeout(() => this.tickUp(u.id), 240); },
+      anywayFn: () => { this.setState({ ups: this.state.ups.filter(x => x.id !== u.id) }); this.queue([{ name: this.freeName(u.k, u.name), k: u.k, force: true }]); },
+      dismissFn: () => { this._upFocus = ['pay-multi', 'pay-title']; this.setState({ ups: this.state.ups.filter(x => x.id !== u.id) }); } }));
+    const optsAll = allKeys.map(k => ({ k, label: DT[k][0] }));
+    const pickList = (st.pick || []).map((x, i) => ({ off, name: x.name, size: x.size, type: x.k, selId: 'pay-pk-t-' + i, opts: optsAll,
+      set: e => { const v = e && e.target ? e.target.value : ''; if (!DT[v]) return; this.setState({ pick: this.state.pick.map((y, j) => (j === i ? { ...y, k: v } : y)) }); } }));
+    const multiSample = () => [{ name: 'TNB bill October 2026.pdf', size: '184 KB' }, { name: 'IBG slip 4 Nov.pdf', size: '88 KB', flaky: true }, { name: 'Approval - utilities November.eml', size: '24 KB' },
+      { name: 'Meter photos.zip', size: '3.4 MB' }, { name: 'Scan of all pages.pdf', size: '52 MB', bytes: 52 * 1048576 }].map(x => ({ ...x, k: this.guess(x.name, allKeys) }));
+    const secs = [
+      { off, title: 'Required documents', glyph: 'upload', docs: REQ.map(mkDoc), isOther: false, empty: false, xTypes: [], xVal: '', pickX: noop, uploadX: noop,
+        multiOn: !ro, multi: () => { this._upFocus = ['pay-pk-t-0']; this.setState({ pick: multiSample(), menu: null }); },
+        pickOn: !!st.pick, pick: pickList, pickGoLabel: 'Upload ' + pickList.length + ' file' + (pickList.length === 1 ? '' : 's'),
+        pickCancel: () => { this._upFocus = ['pay-multi', 'pay-title']; this.setState({ pick: null }); },
+        pickGo: () => this.queue((this.state.pick || []).map(x => ({ name: x.name, k: x.k, size: x.size, bytes: x.bytes || 0, flaky: !!x.flaky }))),
+        upsOn: ups.length > 0, ups,
+        note: ro ? 'Read only: the month is filed, so documents can be viewed and downloaded but not added, replaced or removed.'
+          : 'Drop files on a box, or click Upload. A file dropped on a box is added beside the ones already there; files dropped anywhere else ask which document each one is. Replace swaps one and Remove takes one off. A box ticked from ' + (S.inSql ? 'SQL, ' : S.kept ? 'the voucher posted here, ' : '') + 'the bank statement or an approved form needs no upload, but can still take a copy.' },
+      { off, title: 'Other documents', glyph: 'folder', docs: withFiles.map(mkDoc), isOther: !ro, empty: !withFiles.length, note: '', multiOn: false, multi: noop, pickOn: false, pick: [], pickGoLabel: '', pickCancel: noop, pickGo: noop, upsOn: false, ups: [],
+        xTypes: extraKeys.map(k => ({ k, label: DT[k][0] })), xVal,
+        pickX: e => this.setState({ xType: e && e.target ? e.target.value : null }),
+        uploadX: () => {
+          const short = DT[xVal][1];
+          const names = this.state.xTried ? [{ name: this.freeName(xVal, short + ' - ' + base + '.pdf'), k: xVal }]
+            : [{ name: this.freeName(xVal, short + ' 1.pdf'), k: xVal }, { name: this.freeName(xVal, short + ' 2.pdf'), k: xVal }, { name: 'scan.zip', k: xVal }];
+          this.queue(names, { focus: true, extra: { xTried: true } });
+        } }
+    ];
+    const have = REQ.length - miss;
+    const toast = st.toast;
+    const sn = st.snap, f = st.f;
+    const bankTotal = S.bank.reduce((t, x) => t + x.a, 0), hasBank = S.bank.length > 0;
+    const est = S0.plannedEst && !st.estDone;
+    const estShort = est && !S.sql && hasBank && S.planned - bankTotal > 0.01;   // the app's estimateShort
+    const amt = Number(sn.amount) || 0;
+    const gap = hasBank && !estShort ? amt - bankTotal : 0;
+    const noted = f.diff.trim() !== '';
+    const partOn = gap > 0.01, partOpen = partOn && !noted;
+    const found = money(bankTotal) + ' of ' + this.fmt(amt);
+    const done = miss === 0 && !partOpen;
+    const unpaid = !!S0.unpaid;
+    const flagKey = S0.fixedFlag || st.flagKey;
+    const flag = S0.flag ? S0.flag : unpaid ? fl[flagKey] : null;
+    let status, tone;
+    if (unpaid) { status = flag.text; tone = flag.tone; }
+    else if (partOpen) { status = 'Part paid · ' + found; tone = 'warn'; }
+    else if (done) { status = 'Complete'; tone = 'ok'; }
+    else { status = 'Paid · ' + miss + ' doc' + (miss > 1 ? 's' : '') + ' missing'; tone = 'warn'; }
+    const pillBase = 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;';
+    // The Approval marker: six readings, always in words (Foundations)
+    const ap = S0.ap || { r: 'none' };
+    const MK = { none: ['cp mute', 'approval', 'muted', 'Not needed'], waiting: ['cp warn', 'clock', 'warn', 'Waiting'],
+      ok: ['cp ok', 'check', 'ok', 'Approved by ' + ap.by + ', ' + ap.on + (ap.after ? ' (after payment)' : '')],
+      nofile: ['cp bad', 'alert', 'bad', 'Paid without approval on file'], over: ['cp bad', 'alert', 'bad', 'Paid more than approved (' + money(ap.over || 0) + ')'],
+      refused: ['cp bad', 'alert', 'bad', 'Paid, approval refused'] }[ap.r];
+    const mk = { cls: MK[0], glyph: MK[1], tone: MK[2], text: MK[3] };
+    const btn = (primary) => 'display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:9px;font:600 13px Inter,sans-serif;text-decoration:none;white-space:nowrap;cursor:pointer;box-sizing:border-box;' +
+      (primary ? 'border:0;background:#2450B8;color:#FFFFFF' : 'border:1px solid #D5DBE4;background:#FFFFFF;color:#0F1A2B');
+    const formViewing = !!(st.viewer && ap.form && st.viewer.name === ap.form.file[0]);
+    const ACT = {
+      // a toggle keeps one name; aria-pressed says whether the form is showing (pressing it again closes the preview)
+      view: { isBtn: true, id: 'pay-ap-view', label: 'View signed form', glyph: 'eye', fn: () => openView(ap.form.file, 'Approval form', 'pay-ap-view', 'form', 'approval') },
+      upload: { href: 'ApprovalUpload.dc.html', label: 'Upload the signed form', glyph: 'upload', primary: true },
+      print: { href: 'Approvals.dc.html', label: 'Print approval form', glyph: 'printer' },
+      printDiff: { href: 'Approvals.dc.html', label: 'Print a form for the ' + money(ap.over || 0), glyph: 'printer' },
+      approvals: { href: 'Approvals.dc.html', label: 'Open on Approvals', glyph: 'approval' },
+      claim: { href: 'HrClaim.dc.html', label: 'Open the claim', glyph: 'claim' } };
+    const acts = (ap.acts || []).map(k => { const a = ACT[k]; return { isLink: !a.isBtn, isBtn: !!a.isBtn, id: a.id || 'pay-ap-' + k, href: a.href || '', label: a.label, glyph: a.glyph, tone: a.primary ? 'white' : 'brand',
+      cls: a.primary ? 'hb' : 'hs', fn: a.fn || noop, pressed: a.isBtn ? (formViewing ? 'true' : 'false') : 'false', style: btn(a.primary) + (a.isBtn && formViewing ? ';border:1px solid #2450B8;background:#EAF0FD' : '') }; });
+    const apV = { facts: (ap.facts || [['Payment type', S0.typeLabel + ' payments need no approval (Setup › Payment types).']]).map(([k, v]) => ({ k, v })), text: ap.text || '',
+      warnOn: !!ap.warn, warnTitle: ap.warn ? ap.warn[0] : '', warnText: ap.warn ? ap.warn[1] : '', acts, phoneOn: !!ap.phone };
+    apV.factsOn = apV.facts.length > 0; apV.actsOn = acts.length > 0;
+    const rqS = S0.rq || { glyph: 'payment', head: '', meta: '', links: [] };
+    const rq = { glyph: rqS.glyph, head: rqS.head, meta: rqS.meta, note: rqS.note || '', pillOn: !!rqS.pill, pillCls: rqS.pill ? rqS.pill[0] : '', pillGlyph: rqS.pill ? rqS.pill[1] : 'check', pillTone: rqS.pill ? rqS.pill[2] : 'muted', pill: rqS.pill ? rqS.pill[3] : '',
+      links: (rqS.links || []).map(([label, href]) => ({ label, href })) };
+    rq.linksOn = rq.links.length > 0;
+    // History: who, how (source), why, and each field before and after; newest first. Events before the trail started are in "As it stood".
+    const AR = 'Aisha Rahman';
+    const MO = { Sep: '09', Oct: '10', Nov: '11' };
+    const when = s => { const m = String(s).match(/^(\d+) (\w+), (\d\d:\d\d)$/); return m ? { at: m[1] + ' ' + m[2] + ' 2026 ' + m[3], t: '2026-' + MO[m[2]] + '-' + ('0' + m[1]).slice(-2) + ' ' + m[3] } : { at: s, t: '0' }; };
+    const ev = (w, op, src, who, title, ch, why) => ({ ...when(w), op, src, who, title, why: why || '', note: '', ch: ch || [] });
+    const H = [];
+    st.log.forEach((x, i) => H.push({ at: 'Just now', t: '9999-' + (999 - i), op: x.op, src: 'You', who: AR, title: x.title, why: '', note: '', ch: x.ch }));
+    for (const k in st.files) for (const x of st.files[k]) if (x[2] === 'just now') H.push({ at: 'Just now', t: '9998', op: 'Added', src: 'You', who: AR, title: DT[k][1] + ' uploaded', why: '', note: '', ch: [['Document', '', x[0]]] });
+    if (S.sql && S.inSql && S0.sqlShort) H.push(ev('12 Nov, 16:04', 'Changed', 'Import', AR, 'SQL voucher linked', S0.sqlCh || [['SQL voucher no.', '', S.sql]]));
+    // when its bank line was matched, by import or by hand (the same times as the Payments register)
+    const BA = S0.bankAt || ['10 Nov, 09:15', 'Import', ''];
+    if (hasBank) H.push(ev(BA[0], 'Changed', BA[1], AR, S.bank.length > 1 ? 'Bank lines matched' : 'Bank line matched', [['Paid date', '', S.bank[0].d + ' 2026'], ['Paid date from', '', 'Bank line']], BA[2]));
+    if (S0.paid && !hasBank && (S0.paidAt || !(S0.inSql && S0.sqlShort))) H.push(ev(S0.paidAt || '17 Nov, 15:10', 'Changed', 'You', AR, 'Paid date entered', S0.paidCh || [['Paid date', '', S0.paidText]], S0.paidAt ? S0.paidWhy || '' : 'Paid at the counter; no bank line yet'));
+    if (ap.form && ap.upAt) H.push(ev(ap.upAt, 'Changed', 'You', AR, ap.form.code + ' uploaded and matched', [['Approval', ap.after ? 'Paid without approval on file' : 'Waiting', ap.r === 'over' ? 'Approved for ' + ap.form.total : mk.text]]));
+    for (const x of S0.moreH || []) H.push(ev(x[0], x[1], x[2], AR, x[3], x[4], x[5]));
+    for (const k in S0.files) for (const x of S0.files[k]) if (!x[3]) H.push(ev(x[2], 'Added', 'You', AR, DT[k][1] + ' uploaded', [['Document', '', x[0]]]));
+    const O = S0.origin || ['Planned from Recurring', '1 Oct, 08:00', 'Automatic', 'System', [['Amount', '', (S0.plannedEst ? 'estimate ' : '') + money(S0.planned)], ['Due date', '', S0.due + ' 2026']]];
+    const asStood = O[2] === 'Starting data';
+    H.push(ev(O[1], asStood ? 'As it stood' : O[5] || 'Added', O[2], O[3], asStood ? '' : O[0], O[4]));
+    const START = '2026-09-30 17:00';
+    const HS = H.filter(h => h.t >= START || h.op === 'As it stood').sort((a, b) => (a.t < b.t ? 1 : a.t > b.t ? -1 : 0));
+    // "As it stood" only for a payment that already existed when the audit trail started (never for one added later)
+    const existed = asStood || !!S0.before || when(O[1]).t < START;
+    if (existed && !HS.some(h => h.op === 'As it stood')) HS.push({ at: '30 Sep 2026 17:00', t: START, op: 'As it stood', src: 'Starting data', who: 'System', title: '', why: '', note: '', ch: [] });
+    for (const h of HS) if (h.op === 'As it stood') h.note = 'As it stood when the audit trail started.';
+    const hist = HS.map((h, i) => {
+      const open = !!st.histEx[i];
+      return { at: h.at, op: h.op, title: h.title, who: h.who, why: h.why, note: h.note, src: h.src,
+        srcPill: 'display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:99px;font-size:11px;font-weight:600;' + this.tone(h.src === 'You' ? 'brand' : 'grey'),
+        hasCh: h.ch.length > 0, open, exp: open ? 'true' : 'false', chev: open ? 'chev on' : 'chev', chLabel: (open ? 'Hide ' : 'Show ') + h.ch.length + ' field' + (h.ch.length > 1 ? 's' : '') + ' before and after',
+        toggle: () => this.setState({ histEx: { ...this.state.histEx, [i]: !open } }),
+        ch: h.ch.map(c => ({ f: c[0], b: c[1] || 'empty', a: c[2] || 'empty',
+          bStyle: 'padding:4px 12px 4px 0;' + (c[1] ? 'color:#0F1A2B;text-decoration:line-through;text-decoration-color:#7C8799' : 'color:#5F6C80;font-style:italic'),
+          aStyle: 'padding:4px 0;' + (c[2] ? 'color:#0F1A2B;font-weight:600' : 'color:#5F6C80;font-style:italic') })),
+        dot: 'width:10px;height:10px;border-radius:99px;margin-top:5px;flex:none;background:' + (h.op === 'As it stood' ? '#7C8799' : '#2450B8'),
+        rail: 'width:2px;flex:1;background:' + (i === HS.length - 1 ? 'transparent' : '#E3E7ED') };
+    });
+    const ACCTS = S0.accts || (S.inSql ? [['cur', 'Maybank current'], ['sav', 'Maybank savings']] : []);
+    const nameOf = k => (ACCTS.find(a => a[0] === k) || [])[1];
+    const acctName = nameOf(sn.acct);
+    const moved = !!(f.acct && sn.acct && f.acct !== sn.acct);
+    const repostKeys = ['amount', 'paid', 'acct'].filter(k => f[k] !== sn[k]);
+    // the document viewer, beside the dialog
+    const vw = st.viewer;
+    let v = { name: '', meta: '', shows: false, cant: false, lines: [], prev: noop, next: noop, close: noop, setZoom: noop, download: noop, replace: noop };
+    if (vw) {
+      const ext = (vw.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+      const kind = /\(password\)/i.test(vw.name) ? 'password' : /\.(eml|msg)$/.test(ext) ? 'email' : /\.(xlsx?|ods|csv)$/.test(ext) ? 'sheet' : /\.docx?$/.test(ext) ? 'word' : 'show';
+      const CANT = { password: ["This PDF has a password", "So it can't be shown here or printed in the audit pack. Download it to open it with the password, or replace it with a copy that has none."],
+        email: ["Emails can't be shown here", 'Download it and open it in your mail program.'], sheet: ["Spreadsheets can't be shown here", 'Download it and open it in Excel or a similar program.'],
+        word: ["Word documents can't be shown here", 'Download it and open it in Word.'] };
+      const D = vw.doc || docOf(vw.name);
+      const pages = D.pages || (/\.(png|jpe?g)$/.test(ext) ? 1 : 2), pg = Math.min(st.vPage, pages), z = +st.vZoom || 100, w = Math.round(380 * z / 100);
+      const widths = pg === 1 ? [92, 64, 80, 48, 88, 70, 56, 84] : [90, 76, 88, 60, 94, 72, 82, 66, 90, 54];
+      v = { name: vw.name, meta: vw.label + ' · ' + vw.size + ' · uploaded ' + vw.when, shows: kind === 'show', cant: kind !== 'show', canDl: true,
+        pageLabel: 'Page ' + pg + ' of ' + pages, atFirst: pg <= 1, atLast: pg >= pages, first: pg === 1, zoom: String(z),
+        pageCls: st.vPage % 2 ? 'swapA' : 'swapB',
+        page: 'width:' + w + 'px;min-height:' + Math.round(w * 1.414) + 'px;flex:none;box-sizing:border-box;padding:' + Math.round(w * 0.08) + 'px;background:#FFFFFF;border-radius:4px;box-shadow:0 2px 10px rgba(13,27,46,.14);font-size:' + Math.round(13 * z / 100) + 'px;color:#0F1A2B;display:flex;flex-direction:column;gap:' + Math.round(10 * z / 100) + 'px',
+        alt: 'Page ' + pg + ' of ' + vw.name, docTitle: D.title, docSub: D.sub, totalLabel: D.totalLabel, total: D.total, sign: D.sign, signOn: !!D.sign && pg === 1,
+        lines: widths.map(x => ({ style: 'height:' + Math.max(6, Math.round(8 * z / 100)) + 'px;border-radius:99px;background:#E3E7ED;width:' + x + '%' })),
+        cantTitle: kind !== 'show' ? CANT[kind][0] : '', cantText: kind !== 'show' ? CANT[kind][1] : '',
+        prev: () => this.setState({ vPage: Math.max(1, pg - 1) }), next: () => this.setState({ vPage: Math.min(pages, pg + 1) }),
+        setZoom: e => { const x = e && e.target ? e.target.value : '100'; if (['75', '100', '125', '150'].indexOf(x) >= 0) this.setState({ vZoom: x }); },
+        close: () => this.closeViewer(),
+        download: () => this.setState(this.toastPart('Downloading ' + vw.name)),
+        replace: () => { if (!vw.own || off) return; this._upFocus = ['pay-ask-no']; this.setState({ viewer: null, ask: { act: 'replace', key: vw.key, k: vw.k } }); } };
+    }
+    const refd = st.refused;
+    const SG = [['e', 'Electricity bill (AISB unless marked)'], ['a', 'Approval marker and requests (AISB)'], ['k', 'Kept here and filed months (AI)']];
+    const all = this.samples();
+    const pickKey = k => {
+      if (!all[k]) return;
+      for (const id in this._ut) clearTimeout(this._ut[id]);
+      clearTimeout(this._ts);
+      this.setState({ ...this.initFor(k), pillN: 0, menu: null, ask: null, fresh: null, drag: null, toast: null, discard: false, repost: false, refused: null, saving: false, rm: false, log: [], xType: null, xTried: false, ups: [], pick: null, viewer: null, histEx: {} });
+    };
+    const series = this.monthOf(f.paid) || 'October 2026';
+    const inDlg = st.open && !st.closing;
+    return {
+      open: st.open, closed: !st.open, title: S0.name,
+      sbCo: S0.co === 'AI' ? 'ai' : 'aisb', sbKind: S0.co === 'AI' ? 'here' : 'sqlPayroll', crumb: S0.co + (S0.monthText ? ' · ' + S0.monthText : '') + ' · ' + S0.name,
+      onTopCo: code => { const c = code === 'ai' ? 'AI' : code === 'aisb' ? 'AISB' : ''; if (c && c !== S0.co) pickKey(c === 'AI' ? 'nosql' : 'paid'); },
+      eyebrow: S0.co + ' · ' + S0.typeLabel + (S0.monthText ? ' · ' + S0.monthText : '') + ' · due ' + S0.due + ' 2026', payTo: S0.payTo,
+      sampleGroups: SG.map(([g, label]) => ({ label, opts: Object.keys(all).filter(k => all[k].group === g).map(k => ({ k, label: all[k].label })) })),
+      sampleNote: S0.note || '',
+      dimClass: st.closing ? 'dim-out' : 'dim-in',
+      dlgClass: st.closing ? 'dr-out' : 'dr-in',
+      dlgStyle: 'pointer-events:auto;position:relative;width:' + (vw ? 1360 : 1000) + 'px;max-width:100%;max-height:calc(100vh - 96px);background:#FFFFFF;border-radius:16px;box-shadow:0 24px 64px rgba(13,27,46,.32);overflow:hidden;display:flex;transition:width .24s cubic-bezier(.22,1,.36,1)',
+      vOn: !!vw, v,
+      dlgKey: e => this.dlgKey(e),
+      onPanelAnim: e => { if (st.closing && e.target === e.currentTarget) this.finishClose(); },
+      close: () => this.requestClose(),
+      submit: e => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (ro || st.saving) return;
+        if (!this.dirty()) { this.setState({ ...this.toastPart('Nothing has changed.') }); return; }
+        // Kept here: a posted voucher is never edited, so ask before cancelling and reposting it (a refusal needs no question)
+        if (S0.kept && repostKeys.length && !this.refusal()) { this.setState({ repost: true, discard: false }); return; }
+        this.doSave();
+      },
+      repostOn: !!st.repost && !st.discard,
+      repostQ: 'Cancel ' + S.sql + ' and post a new one?',
+      repostD: 'Changing the ' + repostKeys.map(k => ({ amount: 'amount', paid: 'paid date', acct: 'bank account' })[k]).join(' and ') + ' cancels voucher ' + S.sql + ' (it keeps its number, with a reversal) and posts a new one in ' + series + "'s series. The bank reconciliation is checked again.",
+      repostYesLabel: 'Cancel ' + S.sql + ' and post a new one',
+      repostNo: () => { this._upFocus = ['pay-save', 'pay-title']; this.setState({ repost: false }); },
+      repostYes: () => this.doSave(),
+      reopen: () => { this._opener = document.activeElement; clearTimeout(this._t); this.setState({ open: true, closing: false }); },
+      sample: st.sample, pickSample: e => pickKey(e && e.target ? e.target.value : ''),
+      flagPick: unpaid && !S0.fixedFlag && !S0.flag, flagKey: st.flagKey, pickFlag: e => { const k = e && e.target ? e.target.value : ''; if (this.flags()[k]) this.setState({ flagKey: k }); },
+      f, ro, lockF, off, canEdit: !ro, saving: !!st.saving, notSaving: !st.saving, busy: st.saving ? 'true' : 'false',
+      inAmount: e => this.setF('amount', e), inPaid: e => this.setF('paid', e), inBank: e => this.setF('bank', e), inSql: e => this.setF('sql', e), inEinv: e => this.setF('einv', e), inNotes: e => this.setF('notes', e), inAcct: e => this.setF('acct', e),
+      inDiff: e => {
+        const val = e && e.target ? e.target.value : '';
+        const flips = partOn && (val.trim() !== '') !== (this.state.f.diff.trim() !== '');
+        this.setState({ f: { ...this.state.f, diff: val }, ...(flips ? { pillN: this.state.pillN + 1 } : {}) });
+      },
+      refOn: !!refd, refText: refd ? refd.text : '',
+      paidErrOn: !!(refd && refd.field === 'paid' && refd.err), paidErr: refd ? refd.err : '', paidInv: refd && refd.field === 'paid' ? 'true' : 'false',
+      paidBy: [refd && refd.field === 'paid' ? 'pay-f-paid-err' : '', S0.kept ? 'pay-kept-note' : '', payLock ? 'pay-topay-note' : ''].filter(Boolean).join(' '),
+      paidStyle: 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;border:1px solid ' + (refd && refd.field === 'paid' ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#7C8799'),
+      amtBy: [refd && refd.field === 'amount' ? 'pay-f-amount-err' : '', S0.kept ? 'pay-kept-note' : ''].filter(Boolean).join(' '), amtInv: refd && refd.field === 'amount' ? 'true' : 'false',
+      amtErrOn: !!(refd && refd.field === 'amount' && refd.err), amtErr: refd && refd.field === 'amount' ? refd.err : '',
+      payF: lockF || payLock, toPayOn: payLock,
+      payBy: payLock ? 'pay-topay-note' : '',
+      amtStyle: 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;text-align:right;font-variant-numeric:tabular-nums;box-sizing:border-box;border:1px solid ' + (refd && refd.field === 'amount' ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#7C8799'),
+      keptOn: !!S0.kept, keptTitle: 'Kept here: ' + S.sql + ' is posted',
+      keptText: 'Posted vouchers are never edited. Changing the bank account, amount or paid date cancels ' + S.sql + ' (it keeps its number, with a reversal) and posts a new one, numbered in the month of its paid date. A paid date in a filed month is refused.',
+      est, estShort, confirm: st.confirm, estTitle: S.inSql ? 'Planned figure. The SQL voucher or bank line replaces it.' : 'Planned figure. The bank line replaces it.',
+      estNote: 'Estimated at ' + money(S.planned) + '; the bank lines linked so far add up to ' + money(bankTotal) + '. If more was sent, link the rest on the Bank and reconciliation page. If not, confirm the amount above; until then the budget counts the estimate.',
+      toggleConfirm: e => this.setState({ confirm: !!(e && e.target && e.target.checked) }),
+      amountText: money(amt),
+      amountNote: estShort ? 'Estimated ' + money(S.planned) : est ? 'Estimate' : partOn ? money(bankTotal) + ' on the bank statement' : 'Money out',
+      paidText: S0.paidText, paidNote: hasBank ? (S.bank.length > 1 ? 'From the first bank line' : 'From the bank line') : unpaid ? 'Not recorded yet' : S0.paidBy || 'Entered by hand',
+      acctText: acctName || 'Not set', acctNote: acctName ? (hasBank ? 'Its bank line is on this account' : 'Chosen by hand') : 'No RM account for ' + S0.co,
+      acctOk: ACCTS.length > 0, acctNone: !ACCTS.length, accts: ACCTS.map(([k, label]) => ({ k, label })),
+      acctHint: unpaid ? 'The account it will be paid from.' : 'The account it was paid from.', acctBy: 'pay-acct-hint' + (moved ? ' pay-acct-move' : '') + (payLock ? ' pay-topay-note' : ''),
+      moveOn: moved, moveTitle: 'Moving it from ' + nameOf(sn.acct) + ' to ' + nameOf(f.acct),
+      moveText: (hasBank ? 'Its line is on the ' + nameOf(sn.acct) + ' statement, so saving unlinks it there and looks for it on the ' + nameOf(f.acct) + ' statement instead. ' : '') + "Both accounts' reconciliations are checked again when you save." +
+        (S.inSql && S.sql ? ' SQL Account still has ' + S.sql + ' on ' + nameOf(sn.acct) + ': correct it there too.' : ''),
+      sqlLabel: S.inSql ? 'SQL PV / JV no.' : S.kept ? 'Payment voucher (posted here)' : 'Record ref', sqlPh: S.inSql ? 'e.g. PV2611-003' : 'Your own reference', sqlRo: !!S.kept,
+      sqlStyle: 'height:40px;padding:0 12px;border:1px solid #7C8799;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;' + (S.kept ? 'background:#F5F6F8' : ''),
+      partOn, partTitle: 'Part paid: ' + found,
+      partNote: noted ? 'The difference is noted, so this payment counts as paid.' : money(gap) + " isn't on the bank statement yet. Match the rest on the Bank and reconciliation page, or note why below.",
+      partNoteStyle: 'margin:0;font-size:13px;color:' + (noted ? '#0A6B3D' : '#934100'),
+      partBox: 'grid-column:1 / -1;display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:12px;' + (noted ? 'border:1px solid #BFE8D0;background:#F3FBF6' : 'border:1px solid #F3D9A6;background:#FFFBF2'),
+      flagOn: !unpaid && !!flag, flagText: flag ? flag.text : '', flagHint: flag ? flag.hint : '', flagStyle: pillBase + this.tone(flag ? flag.tone : 'grey'),
+      hintOn: !!(flag && flag.hint), hintText: flag ? flag.hint : '',
+      mk, ap: apV, rq,
+      lockOn: ro, lockTitle: S0.locked ? S0.locked[0] : '', lockText: S0.locked ? S0.locked[1] : '',
+      postedOn: !!S.kept && !!S.sql, postedText: S.sql + ' · posted ' + S0.sqlShort + ' · ' + money(S0.planned) + ' · ' + (S0.posted ? S0.posted[0] + ' / ' : '') + acctName,
+      postedNote: (S0.posted ? S0.posted[1] + ' ' : '') + "Numbered when it posted, in October 2026's series. Cancelled vouchers keep their number.",
+      inSql: S.inSql, hasSql: !!S.sql, noSql: !S.sql, sqlNo: S.sql, sqlChOn: !!S.sql && !!S0.sqlChanged, sqlChText: S0.sqlChanged || '',
+      sqlText: S.sql + ' · ' + S.sqlShort + ' · ' + money(S0.planned) + (S.cancel ? ' · e-Invoice cancelled by ' + S.cancel : ''),
+      unlink: () => {
+        if (this.state.saving) return;
+        const amount = S0.planned.toFixed(2);
+        this._upFocus = ['pay-up-pv', 'pay-title'];
+        this.setState({ sqlGone: true, fresh: 'pv', f: { ...this.state.f, sql: '', amount }, snap: { ...this.state.snap, sql: '', amount },
+          ...(this.missing(undefined, true) !== miss ? { pillN: st.pillN + 1 } : {}),
+          ...this.toastPart(S.sql + ' unlinked from ' + S0.name + "; it's back under SQL entries not linked") });
+      },
+      bankLines: S.bank.map(x => ({ text: x.d + ' · ' + x.t, amt: '−' + money(x.a) })), noBank: !hasBank,
+      sumOn: S.bank.length > 1 || partOn, sumLabel: S.bank.length > 1 ? 'The ' + S.bank.length + ' lines add up to' : 'The line adds up to', sumText: money(bankTotal) + ' of ' + this.fmt(amt),
+      overOn: hasBank && bankTotal - amt > 0.01, overText: 'The bank lines add up to ' + money(bankTotal) + ', ' + money(bankTotal - amt) + ' more than the amount.',
+      histOpen: st.histOpen, histExp: st.histOpen ? 'true' : 'false', histChev: st.histOpen ? 'chev on' : 'chev', histCount: '· ' + HS.length + ' steps', histEmpty: !HS.length,
+      histToggle: () => this.setState({ histOpen: !this.state.histOpen }), hist,
+      discard: st.discard, footOn: !st.discard && !st.repost,
+      footText: ro ? 'Read only: ' + (S0.monthText || 'the month') + ' is filed.' : st.saving ? '' : this.dirty() ? 'Unsaved changes' : '',
+      footStyle: 'font-size:13px;' + (ro ? 'color:#46546A' : 'color:#934100;font-weight:600'),
+      cancelLabel: ro ? 'Close' : 'Cancel',
+      keepEditing: () => { this._upFocus = ['pay-title']; this.setState({ discard: false }); },
+      discardNow: () => { this.setState({ discard: false }); this.closeDrawer(); },
+      rm: () => {
+        const any = Object.keys(this.state.files).some(k => this.fileList(k).length);
+        const fromReq = S0.rq && /^CL-/.test(S0.rq.head);
+        // Withdrawn means cancelled before payment, so only an unpaid claim can be withdrawn; a paid, refused one is resolved instead
+        if (fromReq && ap.r === 'refused') { this.setState({ rm: false, ...this.toastPart('This payment comes from ' + S0.rq.head.split(' · ')[0] + ", which was paid and then refused, so it can't be removed. Resolve it as the Approval form box says: the money is paid back, a credit is recorded, or a director adds a note.", true) }); return; }
+        if (fromReq) { this.setState({ rm: false, ...this.toastPart('This payment comes from ' + S0.rq.head.split(' · ')[0] + ", so it can't be removed here. Withdraw the claim on HR › Claims and advances instead.", true) }); return; }
+        if (S.kept && S.sql) { this.setState({ rm: false, ...this.toastPart(S.sql + " is posted for this payment, so it can't be removed. Posted vouchers are cancelled, never deleted: change the details to cancel and repost it.", true) }); return; }
+        if (any) { this.setState({ rm: false, ...this.toastPart("This payment has documents attached, so it can't be removed. If it was added by mistake, remove its documents first; the files are kept on this PC.", true) }); return; }
+        if (!this.state.rm) { this.setState({ rm: true }); return; }
+        let msg = 'Payment removed';
+        if (S.sql) msg += '; ' + S.sql + ' back under SQL entries not linked';
+        if (hasBank) msg += '; ' + S.bank.length + ' bank line' + (S.bank.length > 1 ? 's' : '') + ' back under lines to explain';
+        this.setState({ rm: false, ...this.toastPart(msg) });
+        this.closeDrawer();   // removing needs no discard prompt
+      },
+      rmBlur: () => { if (this.state.rm) this.setState({ rm: false }); },
+      rmLabel: st.rm ? 'Click again to remove' : 'Remove this payment',
+      rmLive: st.rm ? 'Click again to remove this payment.' : '',
+      rmStyle: 'height:40px;padding:0 ' + (st.rm ? '12px' : '4px') + ';border:0;border-radius:10px;color:#B0190F;font:600 14px Inter,sans-serif;cursor:pointer;background:' + (st.rm ? '#FDE8E6' : 'transparent'),
+      secs,
+      bodyOver: e => { if (e && e.preventDefault) e.preventDefault(); },
+      bodyDrop: e => {
+        if (e && e.preventDefault) e.preventDefault();
+        if (off) return;
+        const fs = e && e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
+        if (!fs.length) return this.setState({ drag: null });
+        this._upFocus = ['pay-pk-t-0'];
+        this.setState({ drag: null, pick: fs.map(x => ({ name: x.name, size: sizeOf(x.size), bytes: x.size, k: this.guess(x.name, allKeys) })) });
+      },
+      status,
+      pillCls: st.pillN ? (done ? 'ok' : 'swap') + (st.pillN % 2 ? 'A' : 'B') : '',
+      pill: pillBase + this.tone(tone),
+      docCount: have + ' of ' + REQ.length,
+      docBar: 'height:100%;border-radius:99px;width:' + Math.round(have / REQ.length * 100) + '%;background:' + (done ? '#0E8A50' : '#D98A0B'),
+      // While the dialog is open the toast is drawn inside it, so Undo and Dismiss are in its Tab order (right after Save)
+      // and not hidden by aria-modal; once it closes, the toast is drawn over the page.
+      toastOkIn: !!toast && !toast.bad && inDlg, toastBadIn: !!toast && toast.bad && inDlg,
+      toastOk: !!toast && !toast.bad && !inDlg, toastBad: !!toast && toast.bad && !inDlg, toastMsg: toast ? toast.msg : '', toastCls: toast && toast.out ? 'tOut' : toast && toast.n % 2 ? 'tA' : 'tB',
+      toastUndo: !!(toast && toast.undo), undo: () => { const u = this.state.toast && this.state.toast.undo; if (u) u(); },
+      toastDismiss: () => { clearTimeout(this._tt); clearTimeout(this._to); if (inDlg) this._upFocus = ['pay-save', 'pay-title']; this.setState({ toast: null }); },
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); if (this.state.toast && this.state.toast.out) this.setState({ toast: { ...this.state.toast, out: false } }); },
+      toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.bad, !!this.state.toast.undo); }
+    };
+  }
+}
+</script>
+</body>
+</html>

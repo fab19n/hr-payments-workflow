@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payroll · Statutory files · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.ht:hover{background:#F0F3F8}
+.hl:hover:not(:disabled){color:#1D419A !important}
+/* motion and focus base */
+.hb,.hs,.ht,.hl{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+#pf-ack:focus-visible + label{outline:2px solid #2450B8;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out both}
+.swapB{animation:swapB .12s ease-out both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.pl{animation:pulse .4s ease-out 1}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box;white-space:nowrap}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#F0FBF5;border-color:#BFE8D0;color:#0F1A2B}.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}.rb.info{background:#F3F6FE;border-color:#C9D7F7;color:#1D2F5C}
+.pf-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.pf-tbl th{position:sticky;top:0;z-index:1;background:#FAFBFC;text-align:left;padding:9px 10px;font-size:12px;font-weight:600;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.pf-tbl td{padding:8px 10px;border-top:1px solid #EEF1F5;vertical-align:top}
+.pf-tbl .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pf-tbl tr.tot td{background:#FAFBFC;border-top:1px solid #D5DBE4;font-weight:700}
+.pf-in{height:40px;padding:0 12px;border:1px solid #7B8798;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%}
+@media (max-width:760px){.pf-main{padding:24px 16px 48px !important}.pf-card{padding:16px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" month-offset="{{off}}" on-month="{{onMonth}}" hint-size="100%,64px"></dc-import>
+    <main class="pf-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+        <h1 id="pf-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payroll</h1>
+        <p style="margin: 0; color: #46546A; max-width: 760px">{{intro}}</p>
+      </div>
+
+      <div role="tablist" aria-label="Payroll pages" onKeyDown="{{tabKey}}" style="display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #D5DBE4">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+          <a href="{{t.href}}" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="{{t.ctl}}" tabindex="{{t.tabindex}}" class="ht" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</a>
+        </sc-for>
+      </div>
+
+      <div role="tabpanel" id="pf-panel" aria-labelledby="{{panelBy}}" style="display: flex; flex-direction: column; gap: 20px">
+
+        <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+            <span class="sr" role="status">Loading the statutory files</span>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+              <span class="sk" style="height: 22px; width: 36%"></span><span class="sk" style="height: 44px; width: 80%"></span><span class="sk" style="height: 10px; width: 50%"></span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px">
+              <span class="sk" style="flex: 1 1 300px; height: 300px; border-radius: 16px"></span><span class="sk" style="flex: 1 1 300px; height: 300px; border-radius: 16px"></span><span class="sk" style="flex: 1 1 300px; height: 300px; border-radius: 16px"></span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the statutory files</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 480px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was made, marked or changed.</p>
+            <button type="button" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showAi}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+            <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C9D7F7; font-size: 13px; color: #1D2F5C"><dc-import name="Icon" glyph="sliders" tone="brand" size="20" hint-size="20px,20px"></dc-import><span>Run, Totals, Statutory files, Leaver, Parallel run and Opening year to date aren't used for Agrinexus International, because “Runs payroll in this app” is off. <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="SetupCompanies.dc.html" style="color: #1D419A; font-weight: 600">Setup › Companies</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Setup › Companies</sc-if> turns it on.</span></div>
+            <p style="margin: 0; color: #46546A; font-size: 13px">Agrinexus International keeps submitting its contributions on the portals as today; the Monthly checklist lists each one. Its payroll workbook can still be checked before paying.</p>
+            <div><a href="PayrollCheck.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="verified" tone="white" size="16" hint-size="16px,16px"></dc-import>Open the Workbook check</a></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="statutory" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 id="pf-empty-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{emptyTitle}}</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 540px">{{emptyText}}</p>
+            <a href="PayrollRun.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="payroll" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{emptyLink}}</a>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showPage}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="pf-run-h" class="pf-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+            <div id="pf-run" class="{{runCls}}" style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; border-radius: 10px">
+              <h2 id="pf-run-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{runTitle}}</h2>
+              <sc-if value="{{notFiled}}" hint-placeholder-val="{{ true }}"><span class="cp info"><dc-import name="Icon" glyph="toPay" tone="brand" size="14" hint-size="14px,14px"></dc-import>Sent to pay</span></sc-if>
+              <sc-if value="{{filed}}" hint-placeholder-val="{{ false }}"><span class="{{filedPill}}"><dc-import name="Icon" glyph="verified" tone="ok" size="14" hint-size="14px,14px"></dc-import>Filed {{filedOn}}</span></sc-if>
+              <span class="cp info"><dc-import name="Icon" glyph="books" tone="brand" size="14" hint-size="14px,14px"></dc-import>Recorded</span>
+              <sc-if value="{{whatIf}}" hint-placeholder-val="{{ false }}"><span class="cp mute" title="A state drawn to show the design; the samples differ"><dc-import name="Icon" glyph="help" tone="muted" size="14" hint-size="14px,14px"></dc-import>What-if</span></sc-if>
+            </div>
+            <p style="margin: 0; color: #46546A; font-size: 13px">Made from the run approved by Hassan Ismail on 22 Oct 2026 (AF-2610-009, <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="Approvals.dc.html" style="font-weight: 600">Payments › Approvals</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Payments › Approvals</sc-if>). Its figures are frozen, so a file made again is the same file. The payments are on <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="ToPay.dc.html" style="font-weight: 600">Payments › To pay</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Payments › To pay</sc-if>.</p>
+            <div class="rb info"><dc-import name="Icon" glyph="upload" tone="brand" size="20" hint-size="20px,20px"></dc-import><span><b>A person uploads them.</b> The app makes each file in the authority's upload layout. Upload it on the portal yourself, then mark it uploaded here. The app never submits anything to KWSP, PERKESO or LHDN.</span></div>
+
+            <sc-if value="{{notFiled}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 13px"><span style="font-weight: 600">{{progressText}}</span><span style="color: #5F6C80">October 2026 is filed when all three are marked uploaded</span></div>
+                <div role="progressbar" aria-label="Files marked uploaded" aria-valuemin="0" aria-valuemax="3" aria-valuenow="{{doneN}}" style="height: 8px; border-radius: 99px; background: #EEF1F5; overflow: hidden"><div class="bar" style="{{barStyle}}"></div></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{filed}}" hint-placeholder-val="{{ true }}">
+              <div id="pf-filed" tabindex="-1" class="rb ok"><dc-import name="Icon" glyph="lock" tone="ok" size="20" hint-size="20px,20px"></dc-import><div style="display: flex; flex-direction: column; gap: 2px"><b style="color: #0A6B3D">October 2026 is filed.</b><span style="color: #46546A">All three files were marked uploaded by {{filedOn}}. The run, its payslips, totals and files are read only; a mistake is put right in the next run. The files can still be previewed and downloaded.</span><span style="color: #46546A">Filing records the files, not the payments: KWSP for October is still not paid (overdue since 15 Nov) and is in <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="ToPay.dc.html" style="font-weight: 600">To pay</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">To pay</sc-if>.</span></div></div>
+            </sc-if>
+          </section>
+
+          <section aria-labelledby="pf-month-h" style="display: flex; flex-direction: column; gap: 12px">
+            <h2 id="pf-month-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Monthly files · {{label}}</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+              <sc-for list="{{cards}}" as="c" hint-placeholder-count="3">
+                <article id="{{c.cardId}}" aria-labelledby="{{c.hId}}" class="{{c.cls}}" style="flex: 1 1 320px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box">
+                  <div style="display: flex; gap: 10px; align-items: flex-start; justify-content: space-between">
+                    <div style="display: flex; gap: 10px; align-items: flex-start; min-width: 0">
+                      <span style="width: 40px; height: 40px; flex: none; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="statutory" tone="brand" size="22" hint-size="22px,22px"></dc-import></span>
+                      <div style="min-width: 0"><h3 id="{{c.hId}}" style="margin: 0; font-size: 16px; font-weight: 600">{{c.title}}</h3><div style="color: #46546A; font-size: 13px">{{c.what}}</div></div>
+                    </div>
+                    <span class="{{c.stCls}}"><dc-import name="Icon" glyph="{{c.stGlyph}}" tone="{{c.stTone}}" size="14" hint-size="14px,14px"></dc-import>{{c.stText}}</span>
+                  </div>
+
+                  <dl style="margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; font-size: 13px">
+                    <sc-for list="{{c.lines}}" as="l" hint-placeholder-count="3"><dt style="color: #5F6C80">{{l.k}}</dt><dd style="margin: 0; text-align: right; font-variant-numeric: tabular-nums">{{l.v}}</dd></sc-for>
+                    <dt style="font-weight: 600; border-top: 1px solid #EEF1F5; padding-top: 4px">Total</dt><dd style="margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; border-top: 1px solid #EEF1F5; padding-top: 4px">{{c.total}}</dd>
+                  </dl>
+
+                  <div style="display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: #46546A">
+                    <span>{{c.count}} · employer no. <span class="mono">{{c.empNo}}</span></span>
+                    <span>Upload on {{c.portal}} · due {{c.due}}</span>
+                    <span style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">Payment: <span class="{{c.payCls}}">{{c.payText}}</span><sc-if value="{{c.late}}" hint-placeholder-val="{{ false }}"><span class="cp warn">Paid late</span></sc-if><sc-if value="{{c.payLinkOn}}" hint-placeholder-val="{{ true }}"><a href="{{c.payHref}}" style="font-weight: 600">{{c.payLink}}</a></sc-if></span>
+                  </div>
+
+                  <sc-if value="{{c.markedOn}}" hint-placeholder-val="{{ true }}">
+                    <div class="{{c.markCls}}" style="display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #F0FBF5; border: 1px solid #BFE8D0; font-size: 13px"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import><span>{{c.markText}}</span></div>
+                  </sc-if>
+                  <sc-if value="{{c.layoutBad}}" hint-placeholder-val="{{ false }}">
+                    <div id="{{c.badId}}" role="alert" tabindex="-1" class="ex rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #8E1A10">Format out of date: the portal refused this file's layout.</b><span style="color: #46546A">Marked by {{c.refBy}}, Wed 18 Nov 2026. Statutory file layouts change and the portals may refuse an old one. The app needs an update with {{c.auth}}'s new layout before this file can be made again; until then, key the figures into {{c.portal}} from the preview.</span><span><button type="button" class="hl" onClick="{{c.unrefuse}}" style="border: 0; background: transparent; padding: 0; min-height: 32px; color: #2450B8; font: 600 13px Inter, sans-serif; text-decoration: underline; cursor: pointer">The portal took it after all</button></span></div></div>
+                  </sc-if>
+                  <sc-if value="{{c.checkOn}}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size: 12px; color: #5F6C80">Marking it uploaded ticks “{{c.check}}” on the <sc-if value="{{c.full}}" hint-placeholder-val="{{ true }}"><a href="MonthlyChecklist.dc.html">Monthly checklist</a></sc-if><sc-if value="{{c.hrOnly}}" hint-placeholder-val="{{ false }}">Monthly checklist</sc-if>.</span>
+                  </sc-if>
+
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: auto">
+                    <button type="button" id="{{c.prevId}}" class="hs" onClick="{{c.preview}}" disabled="{{c.noFigures}}" aria-describedby="{{c.figBy}}" style="{{c.sBtn}}"><dc-import name="Icon" glyph="eye" tone="muted" size="16" hint-size="16px,16px"></dc-import>Preview</button>
+                    <button type="button" class="hs" onClick="{{c.download}}" disabled="{{c.dlOff}}" aria-describedby="{{c.dlBy}}" style="{{c.dlBtn}}"><dc-import name="Icon" glyph="download" tone="muted" size="16" hint-size="16px,16px"></dc-import>Download</button>
+                    <sc-if value="{{c.canMark}}" hint-placeholder-val="{{ true }}">
+                      <button type="button" id="{{c.markId}}" class="hb" onClick="{{c.mark}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="check" tone="white" size="16" hint-size="16px,16px"></dc-import>Mark uploaded</button>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{c.refuseOn}}" hint-placeholder-val="{{ true }}">
+                    <button type="button" class="hl" onClick="{{c.refuse}}" style="align-self: flex-start; border: 0; background: transparent; padding: 0; min-height: 32px; color: #46546A; font: 500 13px Inter, sans-serif; text-decoration: underline; cursor: pointer">The portal refused the layout?</button>
+                  </sc-if>
+                </article>
+              </sc-for>
+            </div>
+            <sc-if value="{{aina}}" hint-placeholder-val="{{ false }}">
+              <div id="pf-fig-note" role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Later, with logins: Nurul Aina has HR without Payroll figures.</b> She sees each file's state and can mark it uploaded. Previewing or downloading a file needs the Payroll figures right: the files hold everyone's pay and full IC numbers. Links to Payments, Setup and the audit trail are left out, as her menu has no such pages. An admin sets rights on Users and access.</span></div>
+            </sc-if>
+          </section>
+
+          <section aria-labelledby="pf-year-h" class="pf-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 24px; display: flex; flex-direction: column; gap: 4px">
+            <h2 id="pf-year-h" tabindex="-1" style="margin: 0 0 8px; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Yearly forms · 2026</h2>
+            <sc-for list="{{yearly}}" as="y" hint-placeholder-count="3">
+              <div style="border-top: 1px solid #EEF1F5; padding: 6px 0">
+                <button type="button" class="hs fr" aria-expanded="{{y.exp}}" onClick="{{y.toggle}}" style="width: 100%; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; min-height: 48px; padding: 6px 8px; border: 0; border-radius: 8px; background: transparent; text-align: left; font: 400 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">
+                  <span style="display: flex; gap: 8px; align-items: center; min-width: 0"><span class="{{y.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><span><b>{{y.name}}</b> <span style="color: #5F6C80">· {{y.sub}}</span></span></span>
+                  <span style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center"><span style="font-size: 13px; color: #46546A">Due {{y.next}}</span><span class="{{y.stCls}}">{{y.stText}}</span></span>
+                </button>
+                <sc-if value="{{y.open}}" hint-placeholder-val="{{ false }}">
+                  <div class="ex" style="padding: 4px 8px 10px 32px; font-size: 13px; color: #46546A; display: flex; flex-direction: column; gap: 6px">
+                    <span>{{y.why}}</span>
+                    <sc-if value="{{y.btnOn}}" hint-placeholder-val="{{ true }}"><span style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><button type="button" disabled="{{ true }}" aria-describedby="{{y.whyId}}" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #C3CAD5; background: #F7F8FA; font: 600 13px Inter, sans-serif; color: #5F6C80; cursor: not-allowed"><dc-import name="Icon" glyph="document" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{y.btn}}</button><span id="{{y.whyId}}">Not available yet</span></span></sc-if>
+                    <sc-if value="{{y.linkOn}}" hint-placeholder-val="{{ true }}"><span><a href="{{y.href}}" style="font-weight: 600">{{y.link}}</a></span></sc-if>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+            <span style="color: #5F6C80; font-size: 12px; padding-top: 6px">Due dates as at Nov 2026, kept with their dates on <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="SetupPayroll.dc.html">Setup › HR › Payroll settings</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Setup › HR › Payroll settings</sc-if>; check them each year.</span>
+          </section>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 980px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Statutory file layouts change, and a portal may refuse an old one: each layout is kept with the date it applies from, like the rates. On screen IC numbers show the last 4; the files themselves hold them in full, as the authorities need them, so each download is recorded in the <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="AuditTrail.dc.html">audit trail</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">audit trail</sc-if>. The amounts are the run's, as on <a href="PayrollTotals.dc.html">Totals</a>.</span></div>
+        </sc-if>
+      </div>
+    </main>
+
+    <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+      <div aria-hidden="true" class="{{dimCls}}" onClick="{{backdrop}}" style="position: fixed; inset: 0; z-index: 70; background: rgba(13, 27, 46, .42)"></div>
+      <div style="position: fixed; inset: 0; z-index: 71; display: flex; align-items: center; justify-content: center; padding: 24px 16px; pointer-events: none">
+        <div role="dialog" aria-modal="true" aria-labelledby="pf-dlg-title" aria-describedby="pf-dlg-sub" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" class="{{panelCls}}" style="{{panelStyle}}">
+          <div style="display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; padding: 18px 20px 12px; border-bottom: 1px solid #EEF1F5">
+            <div style="min-width: 0"><h2 id="pf-dlg-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 19px; font-weight: 600">{{dlgTitle}}</h2><div id="pf-dlg-sub" style="color: #46546A; font-size: 13px">{{dlgSub}}</div></div>
+            <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="flex: none; width: 36px; height: 36px; border: 0; border-radius: 10px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+          </div>
+
+          <sc-if value="{{isPreview}}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; overflow: auto; min-height: 0">
+              <div role="region" aria-label="File preview, scrolls" tabindex="0" class="fr" style="overflow: auto; max-height: 420px; border: 1px solid #E3E7ED; border-radius: 12px">
+                <table class="pf-tbl" style="{{pvMin}}">
+                  <caption class="sr">{{pvCaption}}</caption>
+                  <thead><tr><sc-for list="{{pvCols}}" as="h" hint-placeholder-count="6"><th scope="col" class="{{h.cls}}">{{h.t}}</th></sc-for></tr></thead>
+                  <tbody>
+                    <sc-for list="{{pvRows}}" as="row" hint-placeholder-count="8">
+                      <tr id="{{row.rid}}" tabindex="-1"><sc-for list="{{row.cells}}" as="cell" hint-placeholder-count="6"><td class="{{cell.cls}}">{{cell.v}}</td></sc-for></tr>
+                    </sc-for>
+                    <tr class="tot"><sc-for list="{{pvTot}}" as="cell" hint-placeholder-count="6"><td class="{{cell.cls}}">{{cell.v}}</td></sc-for></tr>
+                  </tbody>
+                </table>
+              </div>
+              <sc-if value="{{pvMoreOn}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap"><span role="status" style="font-size: 13px; color: #46546A">{{pvCount}}</span><button type="button" class="hs" onClick="{{pvMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Show 25 more</button></div>
+              </sc-if>
+              <sc-if value="{{pvManyNote}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">Many rows: a what-if of 140 members. Rows after S008 are stand-ins named by their staff number, so no new names are made up, and the total is the what-if's own. The header stays at the top while the rows scroll; the file always holds every row.</span></sc-if>
+              <span style="color: #5F6C80; font-size: 12px">{{pvNote}}</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 20px 16px; border-top: 1px solid #EEF1F5">
+              <button type="button" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Close</button>
+              <button type="button" class="hb" onClick="{{pvDownload}}" disabled="{{pvDlOff}}" style="{{pvDlStyle}}"><dc-import name="Icon" glyph="download" tone="white" size="16" hint-size="16px,16px"></dc-import>Download the file</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{isMark}}" hint-placeholder-val="{{ false }}">
+            <form id="pf-form" onSubmit="{{submit}}" noValidate="{{ true }}" aria-busy="{{saving}}" style="display: flex; flex-direction: column; min-height: 0">
+              <div style="padding: 14px 20px; display: flex; flex-direction: column; gap: 14px; overflow: auto">
+                <sc-if value="{{refusedOn}}" hint-placeholder-val="{{ false }}">
+                  <div id="pf-refused" role="alert" tabindex="-1" class="ex rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 2px"><b style="color: #8E1A10">Not saved.</b><span style="color: #46546A">{{refusedText}}</span></div></div>
+                </sc-if>
+                <div style="display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 14px; font-size: 13px; padding: 10px 12px; border-radius: 10px; background: #F7F8FA">
+                  <span style="color: #5F6C80">File</span><span>{{mk.what}}</span>
+                  <span style="color: #5F6C80">Portal</span><span>{{mk.portal}}</span>
+                  <span style="color: #5F6C80">Total</span><span style="font-variant-numeric: tabular-nums">{{mk.total}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label for="pf-date" style="font-size: 13px; font-weight: 600; color: #46546A">Uploaded on</label>
+                  <input id="pf-date" class="pf-in" type="date" min="2026-10-22" max="2026-11-18" value="{{fDate}}" onInput="{{onDate}}" disabled="{{saving}}" aria-invalid="{{dateInv}}" aria-describedby="{{dateBy}}" style="{{dateStyle}}">
+                  <span id="pf-date-hint" style="font-size: 12px; color: #5F6C80">The day you uploaded it on the portal. Today is Wed 18 Nov 2026.</span>
+                  <sc-if value="{{dateErrOn}}" hint-placeholder-val="{{ false }}"><span id="pf-date-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{dateErr}}</span></sc-if>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label for="pf-ref" style="font-size: 13px; font-weight: 600; color: #46546A">Portal reference <span style="font-weight: 400; color: #5F6C80">(optional)</span></label>
+                  <input id="pf-ref" class="pf-in" type="text" autoComplete="off" value="{{fRef}}" onInput="{{onRef}}" disabled="{{saving}}" aria-describedby="pf-ref-hint">
+                  <span id="pf-ref-hint" style="font-size: 12px; color: #5F6C80">The submission or acknowledgement number the portal shows.</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span id="pf-ack-l" style="font-size: 13px; font-weight: 600; color: #46546A">Portal acknowledgement <span style="font-weight: 400; color: #5F6C80">(optional, PDF or photo)</span></span>
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; min-height: 48px; padding: 6px 10px; border: 1px dashed #7C8799; border-radius: 10px; background: #F7F8FA; box-sizing: border-box">
+                    <input id="pf-ack" class="sr" type="file" accept=".pdf,.png,.jpg,.jpeg" onChange="{{onAck}}" disabled="{{saving}}" aria-labelledby="pf-ack-l pf-ack-name">
+                    <label for="pf-ack" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #778588; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; box-sizing: border-box"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Choose file</label>
+                    <span id="pf-ack-name" style="font-size: 13px; color: #5F6C80; overflow-wrap: anywhere">{{fAck}}</span>
+                  </div>
+                  <span style="font-size: 12px; color: #5F6C80">Filed on the payment as its portal document.</span>
+                </div>
+                <span style="font-size: 13px; color: #46546A">Marked by {{markBy}} · declared, not verified until logins exist.</span>
+                <sc-if value="{{lastOne}}" hint-placeholder-val="{{ false }}">
+                  <div class="rb warn"><dc-import name="Icon" glyph="lock" tone="warn" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 2px"><b style="color: #7A3500">This is the last of the three files: saving files October 2026.</b><span style="color: #46546A">Its run, payslips, totals and files become read only, and this can't be undone here. A mistake found later is put right in the next run. KWSP for October is still not paid; filing doesn't pay it.</span></div></div>
+                </sc-if>
+              </div>
+              <sc-if value="{{discardOn}}" hint-placeholder-val="{{ false }}">
+                <div role="alertdialog" aria-labelledby="pf-disc-h" aria-describedby="pf-disc-t" class="ex" style="margin: 0 20px 12px; padding: 12px 14px; border-radius: 12px; background: #FFFBF2; border: 1px solid #F3D9A6; display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between">
+                  <div><b id="pf-disc-h">Discard your changes?</b><div id="pf-disc-t" style="font-size: 13px; color: #46546A">The date, reference or acknowledgement you entered is not saved.</div></div>
+                  <div style="display: flex; gap: 8px"><button type="button" id="pf-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button><button type="button" class="hb" onClick="{{discard}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button></div>
+                </div>
+              </sc-if>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 20px 16px; border-top: 1px solid #EEF1F5">
+                <button type="button" class="hs" onClick="{{askClose}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                <button type="submit" id="pf-save" class="hb" disabled="{{saving}}" aria-busy="{{saving}}" style="{{saveStyle}}"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="check" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{saveLabel}}</button>
+              </div>
+            </form>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 80; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 660px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="{{toastTone}}" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="pf-undo" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"today","options":["today","filed","ready","preview","preview-many","mark-form","saving","refused","discard","one-uploaded","confirm-file","just-filed","format-out-of-date","yearly","no-payroll-figures","empty","loading","load-error","ai"],"section":"State to show"},"$preview":{"width":1440,"height":1720}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'today'); }
+  componentDidMount() {
+    const v = this.props.view || 'today';
+    if (this.state.toast) this.startToast(this.state.toast.undo ? 8000 : 6000);
+    if (this.state.saving) this.startSave();
+    if (this.state.dlg) this.focusId(v === 'refused' ? 'pf-refused' : v === 'discard' ? 'pf-keep' : 'pf-dlg-title');
+    else if (v === 'format-out-of-date') this.focusId('pf-bad-perkeso');
+    else if (v === 'yearly') this.focusId('pf-year-h');
+  }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._sv); clearTimeout(this._cl); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._sv); this.setState(this.initial(this.props.view || 'today')); return; }
+    if (prev && !prev.dlg && this.state.dlg) { this.focusId('pf-dlg-title'); return; }
+    if (prev && prev.dlg && !this.state.dlg) {
+      const o = this._opener; this._opener = null;
+      if (this._afterClose) { const ids = [].concat(this._afterClose); this._afterClose = null; for (const id of ids) if (this.focusId(id)) return; }
+      if (o && o.isConnected && o.focus && o !== document.body) { o.focus(); return; }
+      // a dialog a preset view opened has no opener: fall back to its card's button, then the run heading
+      const k = prev.dlg.f;
+      for (const id of [prev.dlg.kind === 'mark' ? 'pf-mark-' + k : 'pf-prev-' + k, 'pf-prev-' + k, 'pf-run-h']) if (this.focusId(id)) return;
+      return;
+    }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: false }); return true; } return false; }
+
+  // ---- sample data (samples.md sections 5 and 6); today is Wed 18 Nov 2026. Money in sen. ----
+  // [no, name, IC last 4, EPF wages (basic), EPF ee, SOCSO ee, EIS ee, PCB, EPF er, SOCSO er, EIS er]
+  people() {
+    return [
+      ['S001', 'Aisha Rahman', '3418', 860000, 94600, 2975, 1190, 108000, 103200, 10415, 1190],
+      ['S002', 'Ong Wei Ming', '5127', 780000, 85800, 2975, 1190, 118000, 93600, 10415, 1190],
+      ['S003', 'Nurul Aina binti Hashim', '2046', 700000, 77000, 2975, 1190, 70000, 84000, 10415, 1190],
+      ['S004', 'Mohd Hafiz bin Rosli', '7391', 570000, 62700, 2825, 1130, 56000, 68400, 9890, 1130],
+      ['S005', 'Nor Khadijah binti Omar', '6582', 550000, 60500, 2725, 1090, 34000, 66000, 9540, 1090],
+      ['S006', 'Wong Kah Seng', '1035', 780000, 85800, 2975, 1190, 100000, 93600, 10415, 1190],
+      ['S007', 'Goh Jia Hui', '4720', 340000, 37400, 1675, 665, 5500, 44200, 5860, 665],
+      ['S008', 'Nur Izzati binti Kamal', '8264', 280000, 30800, 1375, 545, 0, 36400, 4810, 545]
+    ].map(a => ({ no: a[0], name: a[1], ic: '••••••-••-' + a[2], wages: a[3], epf: a[4], socso: a[5], eis: a[6], pcb: a[7], erEpf: a[8], erSocso: a[9], erEis: a[10], l24: 0, zakat: 0 }));
+  }
+  // the many-rows what-if for the preview: stand-ins named by staff number (S009 and S010 are real, so from S011)
+  standIns() {
+    if (this._stand) return this._stand;
+    const out = [];
+    for (let i = 11; i <= 142; i++) {
+      const w = (2600 + ((i * 137) % 56) * 100) * 100, no = 'S' + String(i).padStart(3, '0');
+      out.push({ no, name: 'Stand-in ' + no, ic: '••••••-••-' + String(1000 + ((i * 373) % 9000)).slice(0, 4), wages: w, epf: Math.ceil(w * 0.11 / 100) * 100, erEpf: Math.ceil(w * (w <= 500000 ? 0.13 : 0.12) / 100) * 100,
+        socso: 0, erSocso: 0, eis: 0, erEis: 0, pcb: 0, l24: 0, zakat: 0 });
+    }
+    return (this._stand = out);
+  }
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  monthLabel(off) { return ['August 2026', 'September 2026', 'October 2026', 'November 2026'][off + 2]; }
+  dayText(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return '';
+    const d = new Date(+m[1], +m[2] - 1, +m[3]);
+    return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()] + ' ' + d.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()] + ' ' + d.getFullYear();
+  }
+  FILES() {
+    return {
+      epf: { title: 'EPF · KWSP', what: 'EPF contribution file (Form A data)', auth: 'KWSP', portal: 'KWSP i-Akaun (Employer)', empNo: '012345678', check: 'KWSP: submit contribution data' },
+      perkeso: { title: 'PERKESO', what: 'SOCSO, EIS and Lindung 24 Jam, in one file', auth: 'PERKESO', portal: 'the PERKESO ASSIST portal', empNo: 'E1234567891A', check: 'PERKESO: submit SOCSO, EIS and SKBBK' },
+      pcb: { title: 'LHDN · e-PCB Plus', what: 'PCB file for e-PCB Plus (formerly CP39)', auth: 'LHDN', portal: 'LHDN e-PCB Plus', empNo: 'E 9876543210', check: 'LHDN: submit PCB (e-PCB Plus)' }
+    };
+  }
+  initial(view) {
+    // today (Wed 18 Nov), as PayrollRun and the Monthly checklist draw it: all three files went up on Tue 3 Nov, so October
+    // is filed. Payments are separate: PCB paid 14 Nov, PERKESO 17 Nov, KWSP not paid (overdue since 15 Nov).
+    // The other views are the steps on the way there (two marked, one to go), on the same day.
+    const none = { epf: null, perkeso: null, pcb: null };
+    const two = { epf: null, perkeso: { on: '2026-11-03', by: 'Aisha Rahman', ref: '' }, pcb: { on: '2026-11-03', by: 'Aisha Rahman', ref: '' } };
+    const filed = { ...two, epf: { on: '2026-11-03', by: 'Aisha Rahman', ref: '' } };
+    const form = (f, date) => ({ f, date: date || '2026-11-18', ref: '', ack: '' });
+    const base = { view, co: 'AISB', off: 0, marks: filed, whatIf: false, bad: null, dlg: null, closing: false, form: null, dateErr: '', refused: '', saving: false, discardAsk: false, load: 'ok', aina: false, open: {}, pvShown: 25, toast: null, say: '', flash: null, flashN: 0 };
+    const set = {
+      filed: { marks: filed },
+      ready: { marks: none },
+      preview: { dlg: { kind: 'preview', f: 'epf' } },
+      'preview-many': { dlg: { kind: 'preview', f: 'epf', many: true } },
+      'mark-form': { marks: none, dlg: { kind: 'mark', f: 'pcb' }, form: form('pcb') },
+      saving: { marks: none, dlg: { kind: 'mark', f: 'pcb' }, form: { ...form('pcb', '2026-11-03'), ref: 'e-PCB Plus 2026-10' }, saving: true },
+      refused: { marks: none, dlg: { kind: 'mark', f: 'pcb' }, form: form('pcb', '2026-11-21'), dateErr: "The upload date can't be after today.", refused: "The upload date can't be after today, Wed 18 Nov 2026. Enter the day the file went up on the portal." },
+      discard: { marks: none, dlg: { kind: 'mark', f: 'pcb' }, form: { ...form('pcb', '2026-11-03'), ref: 'e-PCB Plus 2026-10' }, discardAsk: true },
+      'one-uploaded': { marks: { ...none, pcb: { on: '2026-11-03', by: 'Aisha Rahman', ref: '' } }, flash: 'pcb', flashN: 1,
+        toast: { msg: "e-PCB Plus file for October 2026 marked uploaded on Tue 3 Nov 2026. It ticks “LHDN: submit PCB (e-PCB Plus)” on the Monthly checklist.", undo: { marks: none }, glyph: 'check', tone: 'dok', n: 1 } },
+      'confirm-file': { marks: two, dlg: { kind: 'mark', f: 'epf' }, form: form('epf', '2026-11-03') },
+      'just-filed': { marks: filed, flash: 'run', flashN: 1,
+        toast: { msg: 'October 2026 filed: all three files are marked uploaded. Its run, payslips, totals and files are now read only.', glyph: 'lock', tone: 'dok', n: 1 } },
+      'format-out-of-date': { marks: { ...none, pcb: { on: '2026-11-03', by: 'Aisha Rahman', ref: '' } }, bad: 'perkeso', whatIf: true },
+      yearly: { open: { ea: true, forme: true } },
+      'no-payroll-figures': { aina: true },
+      empty: { off: 1 }, loading: { load: 'loading' }, 'load-error': { load: 'error' }, ai: { co: 'AI' }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo, glyph, tone) { this.startToast(undo ? 8000 : 6000); return { toast: { msg, undo: undo || null, glyph: glyph || 'check', tone: tone || 'dok', n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+
+  // dialogs: remember the opener, close by the animation, focus returns
+  openDlg(dlg, extra) {
+    this._opener = document.activeElement;
+    this.setState({ dlg, closing: false, discardAsk: false, refused: '', dateErr: '', saving: false, pvShown: 25, ...(extra || {}) });
+  }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._cl);
+    this._cl = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._cl); if (this.state.dlg) this.setState({ dlg: null, closing: false, form: null, discardAsk: false, refused: '', dateErr: '', saving: false }); }
+  dirty() {
+    const f = this.state.form;
+    return !!(f && (f.date !== '2026-11-18' || f.ref || f.ack));
+  }
+  askClose() {
+    const st = this.state;
+    if (!st.dlg || st.saving) return;
+    if (st.dlg.kind === 'mark' && this.dirty() && !st.discardAsk) { this._upFocus = ['pf-keep']; return this.setState({ discardAsk: true, say: 'Discard your changes?' }); }
+    this.closeDlg();
+  }
+  startSave() { clearTimeout(this._sv); this._sv = setTimeout(() => this.finishSave(), 1200); }
+  finishSave() {
+    const st = this.state;
+    if (!st.saving || !st.form) return;
+    const f = st.form.f, F = this.FILES()[f], before = st.marks;
+    const marks = { ...before, [f]: { on: st.form.date, by: st.aina ? 'Nurul Aina' : 'Aisha Rahman', ref: st.form.ref } };
+    const all = marks.epf && marks.perkeso && marks.pcb;
+    const msg = all ? 'October 2026 filed: all three files are marked uploaded. Its run, payslips, totals and files are now read only.'
+      : F.title + ' file for October 2026 marked uploaded on ' + this.dayText(st.form.date) + '. It ticks “' + F.check + '” on the Monthly checklist.';
+    this._afterClose = all ? ['pf-filed', 'pf-run-h'] : ['pf-prev-' + f, 'pf-run-h'];
+    this.setState({ saving: false, marks, bad: st.bad === f ? null : st.bad, flash: all ? 'run' : f, flashN: st.flashN + 1, say: msg,
+      ...this.toastPart(msg, all ? null : { marks: before }, all ? 'lock' : 'check', 'dok') });
+    this.closeDlg();
+  }
+  submit(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    const st = this.state, f = st.form;
+    if (!f || st.saving) return;
+    if (!f.date) { this._upFocus = ['pf-date']; return this.setState({ dateErr: 'Enter the day you uploaded the file.', refused: '', say: 'Enter the day you uploaded the file.' }); }
+    if (f.date > '2026-11-18') { this._upFocus = ['pf-refused']; return this.setState({ dateErr: "The upload date can't be after today.", refused: "The upload date can't be after today, Wed 18 Nov 2026. Enter the day the file went up on the portal." }); }
+    if (f.date < '2026-10-22') { this._upFocus = ['pf-refused']; return this.setState({ dateErr: "The file can't have gone up before the run was approved.", refused: "The file was made from the run approved on Thu 22 Oct 2026, so it can't have been uploaded on " + this.dayText(f.date) + '.' }); }
+    this.setState({ saving: true, refused: '', dateErr: '', discardAsk: false, say: 'Saving' });
+    this.startSave();
+  }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if ((c !== 'AISB' && c !== 'AI') || c === this.state.co) return;
+    this._upFocus = ['pf-h1'];
+    this.setState({ co: c, dlg: null, say: c === 'AI' ? "Statutory files aren't used for AI: it doesn't run payroll in this app" : "Showing AISB's statutory files" });
+  }
+  pickMonth(o) { if (o !== this.state.off) this.setState({ off: o, dlg: null, say: 'Showing ' + this.monthLabel(o) }); }
+
+  renderVals() {
+    const st = this.state, isAI = st.co === 'AI', label = this.monthLabel(st.off), F = n => this.fmt(n), FILES = this.FILES();
+    const hide = !!st.aina, H = n => (hide ? '•••' : F(n));
+
+    const TABS = [['Workbook check', 'PayrollCheck.dc.html', 'verified'], ['Run', 'PayrollRun.dc.html', 'payroll'], ['Totals', 'PayrollTotals.dc.html', 'sheet'],
+      ['Statutory files', 'PayrollFiles.dc.html', 'statutory'], ['Leaver', 'PayrollLeaver.dc.html', 'person'], ['Parallel run', 'PayrollParallel.dc.html', 'refresh'],
+      ['Opening year to date', 'PayrollOpeningYtd.dc.html', 'history']];
+    const selI = isAI ? 0 : 3;
+    const tabs = (isAI ? TABS.slice(0, 1) : TABS).map((t, i) => {
+      const on = i === selI;
+      return { id: 'pf-tab-' + i, label: t[0], href: t[1], glyph: t[2], sel: on ? 'true' : 'false', ctl: on ? 'pf-panel' : null, tabindex: on ? '0' : '-1', tone: on ? 'brand' : 'muted',
+        style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid ' + (on ? '#2450B8' : 'transparent') + ';border-radius:8px 8px 0 0;font:600 14px Inter,sans-serif;text-decoration:none;color:' + (on ? '#1D419A' : '#46546A') + ';box-sizing:border-box' };
+    });
+    const tabKey = ev => {
+      const ids = tabs.map(t => t.id), i = ids.indexOf(ev && ev.target && ev.target.id), n = ids.length;
+      if (i < 0) return;
+      const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i - 1 + n) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : null;
+      if (j === null) return;
+      if (ev.preventDefault) ev.preventDefault();
+      this.focusId(ids[j]);
+    };
+
+    const hasRun = st.off === 0;
+    const showLoading = !isAI && st.load === 'loading', showError = !isAI && st.load === 'error';
+    const showAi = isAI, showEmpty = !isAI && st.load === 'ok' && !hasRun, showPage = !isAI && st.load === 'ok' && hasRun;
+
+    // the month's figures, per file
+    const ps = this.people(), sum = k => ps.reduce((s, p) => s + p[k], 0);
+    const T = { epf: sum('epf'), erEpf: sum('erEpf'), socso: sum('socso'), erSocso: sum('erSocso'), eis: sum('eis'), erEis: sum('erEis'), l24: sum('l24'), pcb: sum('pcb'), zakat: sum('zakat') };
+    const totals = { epf: T.epf + T.erEpf, perkeso: T.socso + T.erSocso + T.eis + T.erEis + T.l24, pcb: T.pcb + T.zakat };
+    const lines = {
+      epf: [['Employee', T.epf], ['Employer', T.erEpf]],
+      perkeso: [['SOCSO', T.socso + T.erSocso], ['EIS', T.eis + T.erEis], ['Lindung 24 Jam', T.l24]],
+      pcb: [['PCB', T.pcb], ['Zakat', T.zakat]]
+    };
+    const counts = { epf: '8 members', perkeso: '8 people', pcb: '8 people, 7 with PCB' };
+    const pays = {
+      epf: { cls: 'cp bad', text: 'Not paid · overdue since 15 Nov', href: 'ToPay.dc.html', link: 'In To pay', late: false },
+      perkeso: { cls: 'cp ok', text: 'Paid 17 Nov · FPX 1711093', href: 'PaymentsRegister.dc.html', link: 'Payments register', late: true },
+      pcb: { cls: 'cp ok', text: 'Paid 14 Nov · FPX 1410228', href: 'PaymentsRegister.dc.html', link: 'Payments register', late: false }
+    };
+    const marks = st.marks, doneN = ['epf', 'perkeso', 'pcb'].filter(k => marks[k]).length, filed = doneN === 3;
+    const lastDate = filed ? ['epf', 'perkeso', 'pcb'].map(k => marks[k].on).sort().pop() : '';
+    const sBtn = off => 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;font:600 14px Inter,sans-serif;' + (off ? 'border:1px solid #C3CAD5;background:#F7F8FA;color:#5F6C80;cursor:not-allowed' : 'border:1px solid #778588;background:#FFFFFF;color:#0F1A2B;cursor:pointer');
+
+    const cards = ['epf', 'perkeso', 'pcb'].map(k => {
+      const f = FILES[k], m = marks[k], bad = st.bad === k, pay = pays[k];
+      const st3 = m ? (filed ? ['cp mute', 'lock', 'muted', 'Uploaded · locked'] : ['cp ok', 'check', 'ok', 'Uploaded']) : bad ? ['cp bad', 'alert', 'bad', 'Format out of date'] : ['cp info', 'document', 'brand', 'Ready'];
+      const dlOff = hide || bad;
+      return { key: k, cardId: 'pf-card-' + k, hId: 'pf-h-' + k, prevId: 'pf-prev-' + k, markId: 'pf-mark-' + k, badId: 'pf-bad-' + k,
+        cls: st.flash === k ? (st.flashN % 2 ? 'fa' : 'fb') : '',
+        title: f.title, what: f.what, auth: f.auth, portal: f.portal, empNo: f.empNo, check: f.check, count: counts[k], due: 'Sun 15 Nov 2026',
+        stCls: st3[0] + (m && st.flash === k ? ' pl' : ''), stGlyph: st3[1], stTone: st3[2], stText: st3[3],
+        lines: lines[k].map(([kk, v]) => ({ k: kk, v: H(v) })), total: H(totals[k]),
+        payCls: pay.cls, payText: pay.text, late: pay.late, payHref: pay.href, payLink: pay.link, payLinkOn: !hide, full: !hide, hrOnly: hide, refBy: hide ? 'Nurul Aina' : 'Aisha Rahman',
+        markedOn: !!m, markCls: st.flash === k ? 'rv' : '',
+        markText: m ? 'Marked uploaded on ' + this.dayText(m.on) + ' by ' + m.by + (m.ref ? ' · reference ' + m.ref : '') + ' (declared, not verified).' : '',
+        layoutBad: bad, checkOn: !m,
+        canMark: !m && !filed, refuseOn: !m && !bad && !filed,
+        noFigures: hide, figBy: hide ? 'pf-fig-note' : null, sBtn: sBtn(hide),
+        dlOff, dlBy: hide ? 'pf-fig-note' : bad ? 'pf-bad-' + k : null, dlBtn: sBtn(dlOff),
+        preview: () => this.openDlg({ kind: 'preview', f: k }),
+        download: () => { if (dlOff) return; this.setState({ say: 'Downloaded', ...this.toastPart('Downloaded the ' + f.title + ' file for ' + label + ': ' + counts[k] + ', RM ' + F(totals[k]) + '. Upload it on ' + f.portal + '; the app doesn\'t send it. The download is recorded in the audit trail.', null, 'download', 'dok') }); },
+        mark: () => this.openDlg({ kind: 'mark', f: k }, { form: { f: k, date: '2026-11-18', ref: '', ack: '' } }),
+        refuse: () => { const before = st.bad; this._upFocus = ['pf-bad-' + k]; this.setState({ bad: k, say: 'Marked: the portal refused the layout', ...this.toastPart(f.title + ' file marked as refused by the portal. Download is off until the app has the new layout.', { bad: before }, 'alert', 'dwarn') }); },
+        unrefuse: () => { this._upFocus = ['pf-card-' + k]; this.setState({ bad: null, say: 'Layout mark taken back', ...this.toastPart(f.title + ' file can be downloaded again.', { bad: k }, 'check', 'dok') }); }
+      };
+    });
+
+    // yearly forms (due dates as Setup › HR › Payroll settings)
+    const Y = [
+      { key: 'ea', name: 'EA form', sub: 'to each person, for 2026', next: 'Sun 28 Feb 2027', st: ['cp mute', 'Not available yet'], btn: 'Make the EA forms',
+        why: "Made from 2026's runs and the opening year to date, once December 2026's run is approved. AISB's runs start in December, so January to November come from the opening year to date.", link: 'Opening year to date', href: 'PayrollOpeningYtd.dc.html' },
+      { key: 'forme', name: 'Form E with CP8D', sub: 'to LHDN, for 2026', next: 'Wed 31 Mar 2027', st: ['cp mute', 'Not available yet'], btn: 'Make Form E and CP8D',
+        why: "Made with the EA forms, from the same year's figures. Due by 31 March; LHDN's e-filing grace period may apply.", link: 'Due dates on Setup › HR › Payroll settings', href: 'SetupPayroll.dc.html' },
+      { key: 'joiner', name: 'e-CP22 and CP22A', sub: 'joiner and leaver, later', next: 'Tue 1 Dec 2026', st: ['cp warn', 'Reminders'], btn: '',
+        why: 'The CP22A for Kah Seng (retiring on 31 Dec) is due Tue 1 Dec 2026, and the e-CP22 for Daniel (started on 3 Nov) is due Thu 3 Dec 2026 (filed through MyTax). For now they are reminders on the Monthly checklist; making their data from the staff record comes later.', link: 'Open the Monthly checklist', href: 'MonthlyChecklist.dc.html' }
+    ];
+    const yearly = Y.map(y => { const open = !!st.open[y.key]; return { name: y.name, sub: y.sub, next: y.next, stCls: y.st[0], stText: y.st[1], why: y.why, link: y.link, href: y.href,
+      btnOn: !!y.btn, btn: y.btn, linkOn: !hide || y.href.indexOf('Payroll') === 0, whyId: 'pf-y-' + y.key, open, exp: open ? 'true' : 'false', chev: open ? 'chev on' : 'chev',
+      toggle: () => this.setState({ open: { ...this.state.open, [y.key]: !this.state.open[y.key] } }) }; });
+
+    // the dialog
+    const d = st.dlg, isPreview = !!d && d.kind === 'preview', isMark = !!d && d.kind === 'mark';
+    const fk = d ? d.f : 'epf', FD = FILES[fk];
+    let pvCols = [], pvRows = [], pvTot = [], pvMin = 'min-width: 640px', pvCount = '', pvMoreOn = false;
+    if (isPreview) {
+      const pp = d.many ? ps.concat(this.standIns()) : ps;
+      const C = (v, r) => ({ v, cls: r ? 'r' : '' });
+      const shown = d.many ? pp.slice(0, st.pvShown) : pp;
+      const sumOf = k => pp.reduce((s, p) => s + p[k], 0);
+      if (fk === 'epf') {
+        pvCols = [['No.', 0], ['Name as on IC', 0], ['IC', 0], ['EPF wages', 1], ['Employee', 1], ['Employer', 1], ['Total', 1]];
+        pvRows = shown.map(p => [C(p.no), C(p.name), C(p.ic), C(F(p.wages), 1), C(F(p.epf), 1), C(F(p.erEpf), 1), C(F(p.epf + p.erEpf), 1)]);
+        pvTot = [C('Total'), C(pp.length + ' members'), C(''), C(F(sumOf('wages')), 1), C(F(sumOf('epf')), 1), C(F(sumOf('erEpf')), 1), C(F(sumOf('epf') + sumOf('erEpf')), 1)];
+        pvMin = 'min-width: 760px';
+      } else if (fk === 'perkeso') {
+        pvCols = [['No.', 0], ['Name as on IC', 0], ['IC', 0], ['Wages (up to 6,000.00)', 1], ['SOCSO employee', 1], ['SOCSO employer', 1], ['EIS employee', 1], ['EIS employer', 1], ['Lindung 24 Jam', 1]];
+        pvRows = shown.map(p => [C(p.no), C(p.name), C(p.ic), C(F(Math.min(p.wages, 600000)), 1), C(F(p.socso), 1), C(F(p.erSocso), 1), C(F(p.eis), 1), C(F(p.erEis), 1), C(F(p.l24), 1)]);
+        pvTot = [C('Total'), C(pp.length + ' people'), C(''), C(F(pp.reduce((s, p) => s + Math.min(p.wages, 600000), 0)), 1), C(F(sumOf('socso')), 1), C(F(sumOf('erSocso')), 1), C(F(sumOf('eis')), 1), C(F(sumOf('erEis')), 1), C(F(sumOf('l24')), 1)];
+        pvMin = 'min-width: 980px';
+      } else {
+        pvCols = [['No.', 0], ['Name as on IC', 0], ['IC', 0], ['PCB', 1], ['Zakat', 1]];
+        pvRows = shown.map(p => [C(p.no), C(p.name), C(p.ic), C(F(p.pcb), 1), C(F(p.zakat), 1)]);
+        pvTot = [C('Total'), C(pp.length + ' people'), C(''), C(F(sumOf('pcb')), 1), C(F(sumOf('zakat')), 1)];
+      }
+      pvRows = pvRows.map((cells, i) => ({ rid: 'pf-pv-' + i, cells }));
+      pvCols = pvCols.map(([t2, r]) => ({ t: t2, cls: r ? 'r' : '' }));
+      pvCount = 'Showing ' + shown.length + ' of ' + pp.length;
+      pvMoreOn = !!d.many && shown.length < pp.length;
+    }
+    const fm = st.form || { f: 'epf', date: '', ref: '', ack: '' };
+    const lastOne = isMark && doneN === 2 && !marks[fk];
+    const saving = !!st.saving, dateErr = st.dateErr || '';
+    const t = st.toast;
+
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: hide ? 'hrOnly' : 'full', tbUser: hide ? 'aina' : 'aisha',
+      off: st.off, say: st.say, label,
+      onTopCo: code => this.pickCo(code),
+      onMonth: o => this.pickMonth(o),
+      intro: isAI ? "Agrinexus International doesn't run payroll in this app, so HR › Payroll holds the Workbook check only."
+        : "The month's files for KWSP, PERKESO and LHDN, made from the run. A person uploads each one on the portal and marks it here; the month is filed when all three are marked. October 2026 is drawn as the example run: AISB's first run paid from this app is December 2026.",
+      tabs, tabKey, panelBy: isAI ? 'pf-tab-0' : 'pf-tab-3',
+      showLoading, showError, showAi, showEmpty, showPage,
+      retry: () => { this._upFocus = ['pf-run-h']; this.setState({ load: 'ok', say: 'Statutory files loaded' }); },
+      emptyTitle: st.off > 0 ? 'No files for ' + label + ' yet' : 'No run for ' + label + ' in this app',
+      emptyText: st.off > 0 ? 'The EPF, PERKESO and e-PCB Plus files are made from ' + label + "'s run once it is approved or sent to pay. Contributions for " + label + ' are due by Tue 15 Dec 2026.'
+        : 'The first month run in this app is December 2026. Earlier months were submitted on the portals by hand, as the Monthly checklist shows.',
+      emptyLink: st.off > 0 ? 'Open the ' + label.split(' ')[0] + ' run' : 'Open the October run',
+      runTitle: label + ' run · AISB', runCls: st.flash === 'run' ? (st.flashN % 2 ? 'fa' : 'fb') : '',
+      filed, notFiled: !filed, filedOn: filed ? this.dayText(lastDate).replace(/ 2026$/, '') : '', filedPill: 'cp ok' + (st.flash === 'run' ? ' pl' : ''),
+      doneN: String(doneN), progressText: doneN + ' of 3 marked uploaded',
+      barStyle: 'height:100%;border-radius:99px;background:#0E8A50;width:' + Math.round(doneN / 3 * 100) + '%',
+      cards, aina: hide, yearly, full: !hide, hrOnly: hide, whatIf: !!st.whatIf, markBy: hide ? 'Nurul Aina' : 'Aisha Rahman',
+
+      dlgOn: !!d, dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in',
+      panelStyle: 'pointer-events:auto;width:100%;max-width:' + (isPreview ? '1040px' : '560px') + ';max-height:calc(100vh - 48px);display:flex;flex-direction:column;background:#FFFFFF;border-radius:16px;box-shadow:0 24px 64px rgba(13,27,46,.32)',
+      onPanelAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      backdrop: () => this.askClose(),
+      askClose: () => this.askClose(),
+      dlgKey: e => {
+        if (!e) return;
+        if (e.key === 'Escape') { if (e.stopPropagation) e.stopPropagation(); if (this.state.discardAsk) { this._upFocus = ['pf-save']; return this.setState({ discardAsk: false }); } return this.askClose(); }
+        if (e.key !== 'Tab') return;
+        const root = e.currentTarget, list = root ? [].slice.call(root.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')) : [];
+        if (!list.length) return;
+        const first = list[0], last = list[list.length - 1], a = document.activeElement;
+        if (e.shiftKey && (a === first || a === root || (a && a.id === 'pf-dlg-title'))) { if (e.preventDefault) e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && a === last) { if (e.preventDefault) e.preventDefault(); first.focus(); }
+      },
+      dlgTitle: isPreview ? 'Preview · ' + FD.title + ' file · ' + label : isMark ? (lastOne ? 'Mark uploaded and file ' + label : 'Mark uploaded · ' + FD.title) : '',
+      dlgSub: isPreview ? FD.what + ' · upload on ' + FD.portal : isMark ? 'Record that you uploaded the ' + FD.title + ' file for ' + label + '. Nothing is sent from the app.' : '',
+      isPreview, isMark,
+      pvCols, pvRows, pvTot, pvMin, pvCount, pvMoreOn, pvManyNote: isPreview && !!d.many,
+      pvCaption: isPreview ? FD.what + ' for ' + label + ', one row per person, IC numbers masked' : '',
+      pvMore: () => { const first = st.pvShown; this._upFocus = ['pf-pv-' + first]; this.setState({ pvShown: st.pvShown + 25 }); },
+      pvNote: 'The file itself holds full IC and member numbers, as ' + FD.auth + ' needs them; this preview shows the last 4 only. Downloading it is recorded in the audit trail.',
+      pvDlOff: st.bad === fk || hide,
+      pvDlStyle: 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;' + (st.bad === fk || hide ? 'background:#8C9BB3;cursor:not-allowed' : 'background:#2450B8;cursor:pointer'),
+      pvDownload: () => { if (st.bad === fk || hide) return; this.setState({ say: 'Downloaded', ...this.toastPart('Downloaded the ' + FD.title + ' file for ' + label + '. Upload it on ' + FD.portal + '; the app doesn\'t send it. The download is recorded in the audit trail.', null, 'download', 'dok') }); },
+
+      mk: { what: FD.what, portal: FD.portal, total: 'RM ' + H(totals[fk]) },
+      fDate: fm.date, fRef: fm.ref, fAck: fm.ack || 'No file chosen',
+      onDate: ev => { const v = ev && ev.target ? ev.target.value : ''; this.setState({ form: { ...this.state.form, date: v }, dateErr: '', discardAsk: false }); },
+      onRef: ev => { const v = ev && ev.target ? ev.target.value : ''; this.setState({ form: { ...this.state.form, ref: v }, discardAsk: false }); },
+      onAck: ev => { const fl = ev && ev.target && ev.target.files && ev.target.files[0]; if (fl) this.setState({ form: { ...this.state.form, ack: fl.name }, discardAsk: false }); },
+      dateErrOn: !!dateErr, dateErr, dateInv: dateErr ? 'true' : 'false', dateBy: dateErr ? 'pf-date-hint pf-date-err' : 'pf-date-hint',
+      dateStyle: dateErr ? 'border-color:#B0190F' : '',
+      refusedOn: !!st.refused, refusedText: st.refused || '',
+      lastOne, saving, idle: !saving,
+      saveLabel: saving ? 'Saving…' : lastOne ? 'Mark uploaded and file October' : 'Mark uploaded',
+      saveStyle: 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:' + (saving ? 'progress;opacity:.85' : 'pointer'),
+      submit: ev => this.submit(ev),
+      discardOn: !!st.discardAsk,
+      keepEditing: () => { this._upFocus = ['pf-date']; this.setState({ discardAsk: false }); },
+      discard: () => this.closeDlg(),
+
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastGlyph: t ? t.glyph || 'check' : 'check', toastTone: t ? t.tone || 'dok' : 'dok',
+      toastCls: t ? (t.out ? 'tOut' : t.n % 2 ? 'tA' : 'tB') : '',
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); },
+      toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 8000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); clearTimeout(this._to); this.setState({ toast: null }); },
+      undo: () => {
+        const u = this.state.toast && this.state.toast.undo;
+        if (!u) return;
+        clearTimeout(this._tt); clearTimeout(this._to);
+        this._upFocus = ['pf-run-h'];
+        const back = 'bad' in u ? { bad: u.bad } : { marks: u.marks };
+        this.setState({ ...back, toast: null, flash: null, say: 'Taken back. The change and the undo are both kept in the audit trail.' });
+        this.setState(this.toastPart('Taken back. The change and the undo are both kept in the audit trail.', null, 'undo', 'dbrand'));
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

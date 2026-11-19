@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>HR · Staff Excel export · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hb,.hs{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;box-sizing:border-box}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sv{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:8px;background:#0F1A2B;color:#FFFFFF;font:600 11px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.spin{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="staff" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Staff" sub="Excel export" company="{{sbCo}}" allow-all="no" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1080px; box-sizing: border-box; padding: 24px 40px 64px; display: flex; flex-direction: column; gap: 18px">
+      <a href="HrStaff.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="16" hint-size="16px,16px"></dc-import>Staff</a>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR · {{coCode}}</span>
+        <h1 id="sx-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Staff Excel export</h1>
+        <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 680px">Choose who and which columns go in the file. IC, pay, religion and race are marked Sensitive and stay out unless you tick them. Every download is recorded in the audit trail with its columns.</p>
+      </div>
+
+      <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+        <div id="sx-refuse" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was downloaded</b><div style="color: #46546A; font-size: 13px">{{refuseTxt}}</div></div></div>
+      </sc-if>
+
+      <sc-if value="{{doneOn}}" hint-placeholder-val="{{ false }}">
+        <section id="sx-done" role="status" tabindex="-1" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 16px 18px; border-radius: 14px; background: #F0FBF5; border: 1px solid #BFE8D0">
+          <span style="width: 40px; height: 40px; border-radius: 12px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="check" tone="ok" size="22" hint-size="22px,22px"></dc-import></span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <b style="font-size: 15px">Downloaded {{fileName}}</b>
+            <span style="color: #25324A; font-size: 13px">{{doneTxt}}</span>
+            <span style="color: #46546A; font-size: 13px">Recorded in the audit trail: “{{trailTxt}}”.</span>
+            <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Open the audit trail</a>
+          </div>
+        </section>
+      </sc-if>
+
+      <section aria-labelledby="sx-who-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 id="sx-who-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Who</h2>
+        <div role="radiogroup" aria-labelledby="sx-who-h" style="display: flex; flex-wrap: wrap; gap: 8px">
+          <sc-for list="{{who}}" as="w" hint-placeholder-count="3">
+            <label for="{{w.id}}" style="{{w.style}}"><input id="{{w.id}}" type="radio" name="sx-who" checked="{{w.checked}}" onChange="{{w.pick}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">{{w.label}}<span style="color: #5F6C80; font-variant-numeric: tabular-nums">{{w.n}}</span></label>
+          </sc-for>
+        </div>
+        <span style="color: #5F6C80; font-size: 12px">One row per person, the staff list's order. A person who has left keeps their last day and reason in the file.</span>
+      </section>
+
+      <section aria-labelledby="sx-cols-h" aria-describedby="sx-cols-count" style="background: #FFFFFF; border: 1px solid {{colsBorder}}; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <h2 id="sx-cols-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Columns</h2>
+          <span id="sx-cols-count" role="status" aria-live="polite" style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{colsCount}}</span>
+          <div style="margin-left: auto; display: flex; gap: 8px">
+            <button type="button" class="hs" onClick="{{pickDefault}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">The usual columns</button>
+            <button type="button" class="hs" onClick="{{pickNone}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear all</button>
+          </div>
+        </div>
+        <sc-if value="{{noneErr}}" hint-placeholder-val="{{ false }}"><span id="sx-cols-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Choose at least one column.</span></sc-if>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 24px">
+          <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+            <fieldset aria-describedby="{{g.descId}}" style="border: 1px solid {{g.border}}; border-radius: 12px; margin: 0; padding: 12px 14px 14px; min-width: 0; background: {{g.bg}}; display: flex; flex-direction: column; gap: 6px">
+              <legend style="padding: 0 6px; display: flex; gap: 8px; align-items: center; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #46546A">{{g.title}}<sc-if value="{{g.sensOn}}" hint-placeholder-val="{{ false }}"><span class="sv" style="letter-spacing: 0; text-transform: none"><dc-import name="Icon" glyph="lock" tone="white" size="12" hint-size="12px,12px"></dc-import>Sensitive</span></sc-if></legend>
+              <span id="{{g.descId}}" style="color: #5F6C80; font-size: 12px">{{g.desc}}</span>
+              <sc-for list="{{g.cols}}" as="c" hint-placeholder-count="4">
+                <div style="display: flex; flex-direction: column">
+                  <label for="{{c.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 36px; font-size: 14px; color: {{c.color}}; cursor: pointer"><input id="{{c.id}}" type="checkbox" checked="{{c.checked}}" disabled="{{c.dis}}" onChange="{{c.toggle}}" aria-describedby="{{c.by}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">{{c.label}}<sc-if value="{{c.sensOn}}" hint-placeholder-val="{{ false }}"><span class="sv"><dc-import name="Icon" glyph="lock" tone="white" size="12" hint-size="12px,12px"></dc-import>Sensitive</span></sc-if></label>
+                  <sc-if value="{{c.noteOn}}" hint-placeholder-val="{{ false }}"><span id="{{c.noteId}}" style="display: flex; gap: 4px; align-items: center; margin: -4px 0 4px 28px; color: #5F6C80; font-size: 12px"><sc-if value="{{c.lockOn}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="lock" tone="muted" size="12" hint-size="12px,12px"></dc-import></sc-if>{{c.note}}</span></sc-if>
+                </div>
+              </sc-for>
+            </fieldset>
+          </sc-for>
+        </div>
+      </section>
+
+      <sc-if value="{{sensOn}}" hint-placeholder-val="{{ false }}">
+        <section role="note" aria-labelledby="sx-pdpa-h" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 14px; border: 1px solid #F0C98A; background: #FFF8EC; color: #25324A; font-size: 13px">
+          <div style="display: flex; gap: 10px; align-items: center"><span class="sv"><dc-import name="Icon" glyph="lock" tone="white" size="12" hint-size="12px,12px"></dc-import>Sensitive</span><h2 id="sx-pdpa-h" style="margin: 0; font-size: 15px; font-weight: 700">Personal data under the PDPA 2010</h2></div>
+          <span>{{sensChose}} Staff records are personal data, and religion is sensitive personal data. Take these columns only when you need them, keep the file where only the people who need it can open it, and delete it when you are done. The company, as data controller, must report a leak to the Personal Data Protection Commissioner within 72 hours.</span>
+          <sc-for list="{{sensNotes}}" as="n" hint-placeholder-count="1"><span style="display: flex; gap: 6px; align-items: flex-start; color: #46546A"><dc-import name="Icon" glyph="help" tone="muted" size="15" hint-size="15px,15px"></dc-import>{{n.t}}</span></sc-for>
+          <div style="display: flex; flex-direction: column; gap: 6px; max-width: 560px">
+            <label for="sx-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why do you need these columns?<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required · kept in the audit trail</span></label>
+            <input id="sx-why" type="text" value="{{why}}" onChange="{{onWhy}}" aria-required="true" aria-invalid="{{whyInv}}" aria-describedby="{{whyBy}}" autoComplete="off" placeholder="For example: the insurer's yearly staff list" style="{{whyStyle}}">
+            <sc-if value="{{whyErrOn}}" hint-placeholder-val="{{ false }}"><span id="sx-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you need the sensitive columns.</span></sc-if>
+          </div>
+        </section>
+      </sc-if>
+
+      <section aria-labelledby="sx-prev-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 14px 18px; border-bottom: 1px solid #EEF1F5">
+          <dc-import name="Icon" glyph="sheet" tone="ok" size="20" hint-size="20px,20px"></dc-import>
+          <h2 id="sx-prev-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">{{fileName}}</h2>
+          <span style="color: #5F6C80; font-size: 13px">{{fileSub}}</span>
+        </div>
+        <sc-if value="{{prevOn}}" hint-placeholder-val="{{ true }}">
+          <div class="{{prevCls}}" style="overflow-x: auto">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px">
+              <caption class="vh">The first rows of the file</caption>
+              <thead><tr style="text-align: left; background: #FAFBFC; color: #5F6C80"><sc-for list="{{prevHead}}" as="h" hint-placeholder-count="8"><th scope="col" style="padding: 8px 12px; font-weight: 600; white-space: nowrap">{{h.l}}</th></sc-for></tr></thead>
+              <tbody>
+                <sc-for list="{{prevRows}}" as="r" hint-placeholder-count="2">
+                  <tr style="border-top: 1px solid #EEF1F5"><sc-for list="{{r.cells}}" as="x" hint-placeholder-count="8"><td style="{{x.style}}">{{x.v}}</td></sc-for></tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <p style="margin: 0; padding: 10px 18px; border-top: 1px solid #EEF1F5; color: #5F6C80; font-size: 12px">{{prevCountTxt}} Pay cells show in the file only, not on this screen. IC and bank numbers keep the last 4 in the file too: the full IC is only on the staff record PDF.</p>
+        </sc-if>
+        <sc-if value="{{prevEmpty}}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; padding: 24px 18px; text-align: center; color: #46546A; font-size: 13px">{{prevEmptyTxt}}</p>
+        </sc-if>
+      </section>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding-top: 4px">
+        <span id="sx-foot" role="status" style="color: #5F6C80; font-size: 13px">{{footTxt}}</span>
+        <div style="display: flex; gap: 8px">
+          <a href="HrStaff.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box">Back to Staff</a>
+          <button type="button" id="sx-go" class="hb" onClick="{{download}}" aria-describedby="sx-foot" aria-busy="{{busyAria}}" aria-disabled="{{busyAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 170px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="download" tone="white" size="18" hint-size="18px,18px"></dc-import></sc-if>{{goLabel}}</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"default","options":["default","sensitive","sensitive-no-reason","none","downloading","done","no-pay","left","ai"],"section":"State"},"$preview":{"width":1440,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'default');
+  }
+  componentWillUnmount() { clearTimeout(this._st); }
+
+  // ---------- the columns (scope 5.1 and 9: IC, pay, religion and race are Sensitive and off by default) ----------
+  cols() {
+    return [
+      ['job', 'Job', 'The usual columns.', false, [['no', 'Staff no.', 1], ['pref', 'Preferred name', 1], ['full', 'Full name as on IC', 1], ['pos', 'Position', 1], ['dept', 'Department', 1], ['type', 'Employment type', 1], ['joined', 'Date joined', 1], ['status', 'Status', 1], ['prob', 'Probation ends', 0], ['contract', 'Contract ends', 0], ['last', 'Last day and reason', 0], ['reports', 'Reports to', 0], ['wemail', 'Work email', 0]]],
+      ['personal', 'Personal', 'Off unless needed.', false, [['dob', 'Date of birth', 0], ['gender', 'Gender', 0], ['nat', 'Nationality', 0], ['phone', 'Phone', 0], ['pemail', 'Personal email', 0], ['addr', 'Home address', 0], ['emerg', 'Emergency contact', 0]]],
+      ['stat', 'Statutory numbers', 'Last 4 only in the file.', false, [['epf', 'EPF (KWSP) no.', 0], ['socso', 'SOCSO (PERKESO) no.', 0], ['tin', 'Income tax no. (TIN)', 0]]],
+      ['sens', 'IC, pay, bank, race and religion', 'Off by default. Choosing any asks why, and the reason is kept in the audit trail.', true, [['ic', 'IC or passport no.', 0], ['basic', 'Basic salary', 0], ['allow', 'Fixed allowances', 0], ['bank', 'Bank account', 0], ['race', 'Race', 0], ['religion', 'Religion', 0]]]
+    ];
+  }
+  PAY() { return ['basic', 'allow', 'bank']; }
+  SENS() { return ['ic', 'basic', 'allow', 'bank', 'race', 'religion']; }
+  defaults() { const o = {}; this.cols().forEach(g => g[4].forEach(([k, , on]) => { o[k] = !!on; })); return o; }
+
+  init(view) {
+    const base = { co: 'AISB', user: 'aisha', who: 'in', sel: this.defaults(), why: '', tried: false, phase: 'idle', n: 0 };
+    const sens = { ...base.sel, ic: true, basic: true };
+    switch (view) {
+      case 'sensitive': return { ...base, sel: sens, why: 'Group insurance staff list for the insurer, renewal Tue 15 Dec' };
+      case 'sensitive-no-reason': return { ...base, sel: { ...base.sel, ic: true, religion: true }, tried: true };
+      case 'none': { const o = {}; Object.keys(base.sel).forEach(k => { o[k] = false; }); return { ...base, sel: o, tried: true }; }
+      case 'downloading': return { ...base, phase: 'busy' };
+      case 'done': return { ...base, sel: sens, why: 'Group insurance staff list for the insurer, renewal Tue 15 Dec', phase: 'done' };
+      case 'no-pay': return { ...base, user: 'aina' };
+      case 'left': return { ...base, who: 'left', sel: { ...base.sel, last: true } };
+      case 'ai': return { ...base, co: 'AI' };
+      default: return base;
+    }
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.view !== this.props.view) { clearTimeout(this._st); this.setState(this.init(this.props.view || 'default')); return; }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); }
+  }
+  chosen(st) {
+    const canPay = st.user !== 'aina';
+    return Object.keys(st.sel).filter(k => st.sel[k] && (canPay || !this.PAY().includes(k)));
+  }
+  people(co, who) {
+    const A = { AISB: { in: 9, left: 1, all: 10 }, AI: { in: 5, left: 0, all: 5 } }[co];
+    return A[who];
+  }
+  download() {
+    const st = this.state;
+    if (st.phase === 'busy') return;
+    const ch = this.chosen(st);
+    const sens = ch.filter(k => this.SENS().includes(k));
+    if (!ch.length) { this._focusId = 'sx-refuse'; this.setState({ tried: true, phase: 'idle' }); return; }
+    if (sens.length && !String(st.why).trim()) { this._focusId = 'sx-why'; this.setState({ tried: true, phase: 'idle' }); return; }
+    if (!this.people(st.co, st.who)) { this._focusId = 'sx-refuse'; this.setState({ tried: true, phase: 'idle' }); return; }
+    this.setState({ phase: 'busy', tried: false });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => { this._focusId = 'sx-done'; this.setState({ phase: 'done' }); }, 900);
+  }
+
+  renderVals() {
+    const st = this.state, co = st.co, canPay = st.user !== 'aina';
+    const ch = this.chosen(st);
+    const sensK = ch.filter(k => this.SENS().includes(k));
+    const nRows = this.people(co, st.who);
+    const LBL = {}; this.cols().forEach(g => g[4].forEach(([k, l]) => { LBL[k] = l; }));
+    const whyMissing = st.tried && sensK.length > 0 && !String(st.why).trim();
+    const noneErr = st.tried && ch.length === 0;
+    const noPeople = st.tried && ch.length > 0 && !nRows;
+    const set = (k, v) => { if (this.state.phase !== 'busy') this.setState({ sel: { ...this.state.sel, [k]: v }, phase: this.state.phase === 'done' ? 'idle' : this.state.phase, n: this.state.n + 1 }); };
+    const groups = this.cols().map(([key, title, desc, sens, list]) => ({ title, desc, descId: 'sx-g-' + key, sensOn: sens,
+      border: sens ? '#C9CED8' : '#E3E7ED', bg: sens ? '#F7F8FA' : '#FFFFFF',
+      cols: list.map(([k, label]) => {
+        const payLocked = !canPay && this.PAY().includes(k);
+        const note = payLocked ? 'Needs the Payroll figures right' : k === 'ic' ? 'Last 4 only, as everywhere but the staff record PDF' : k === 'bank' ? 'Last 4 only' : (k === 'race' || k === 'religion') ? 'Not recorded for anyone at ' + co : '';
+        return { id: 'sx-c-' + k, label, checked: !!st.sel[k] && !payLocked, dis: payLocked || st.phase === 'busy', sensOn: false, lockOn: payLocked,
+          noteOn: !!note, note, noteId: 'sx-c-' + k + '-n', by: note ? 'sx-c-' + k + '-n' : '', color: payLocked ? '#5F6C80' : '#0F1A2B',
+          toggle: e => set(k, !!(e && e.target && e.target.checked)) };
+      }) }));
+    const whoOpt = (k, label) => { const n = this.people(co, k); const on = st.who === k; return { id: 'sx-w-' + k, label, n: String(n), checked: on, pick: () => this.setState({ who: k, phase: this.state.phase === 'done' ? 'idle' : this.state.phase }),
+      style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out;border:1px solid ' + (on ? '#2450B8;background:#F3F6FE' : '#8792A2;background:#FFFFFF') }; };
+    const fileName = 'Staff list ' + co + ' 2026-11-18.xlsx';
+    const whoTxt = { in: 'in employment', left: nRows === 1 ? 'who has left' : 'who have left', all: '' }[st.who];
+    const nPeople = nRows + (nRows === 1 ? ' person' : ' people');
+    const stop = t => (/\.$/.test(t) ? t : t + '.');
+    const sensJoined = sensK.map(k => LBL[k]).join(', ').replace(/, ([^,]*)$/, ' and $1');
+    const SAMPLE = co === 'AI' ? [
+      { no: 'A001', pref: 'Faizal', full: 'Mohd Faizal bin Yusof', pos: 'Farm manager', dept: '—', type: 'Permanent', joined: '1 Apr 2020', status: 'In employment', ic: '••••••-••-6611', race: 'Not recorded', religion: 'Not recorded', last: '—' },
+      { no: 'A002', pref: 'Pei Shan', full: 'Chong Pei Shan', pos: 'Accounts assistant', dept: '—', type: 'Permanent', joined: '1 Oct 2021', status: 'In employment', ic: '••••••-••-2958', race: 'Not recorded', religion: 'Not recorded', last: '—' }
+    ] : st.who === 'left' ? [
+      { no: 'S010', pref: 'Kavitha', full: 'Kavitha Nair', pos: 'Marketing executive', dept: 'Marketing', type: 'Permanent', joined: '1 Jul 2023', status: 'Left', ic: '••••••-••-3306', race: 'Not recorded', religion: 'Not recorded', last: '31 Aug 2026, resigned' }
+    ] : [
+      { no: 'S001', pref: 'Aisha', full: 'Aisha Rahman', pos: 'HR and finance executive', dept: 'Finance and HR', type: 'Permanent', joined: '2 May 2019', status: 'In employment', ic: '••••••-••-3418', race: 'Not recorded', religion: 'Not recorded', last: '—' },
+      { no: 'S002', pref: 'Wei Ming', full: 'Ong Wei Ming', pos: 'Sales executive', dept: 'Sales', type: 'Permanent', joined: '1 Jun 2021', status: 'In employment', ic: '••••••-••-5127', race: 'Not recorded', religion: 'Not recorded', last: '—' }
+    ];
+    const cellStyle = (k) => 'padding:8px 12px;white-space:nowrap;' + (this.PAY().includes(k) || ['prob', 'contract', 'reports', 'wemail', 'dob', 'gender', 'nat', 'phone', 'pemail', 'addr', 'emerg', 'epf', 'socso', 'tin'].includes(k) ? 'color:#5F6C80;font-style:italic' : k === 'ic' ? 'font:600 12px ui-monospace,Consolas,monospace' : 'color:#25324A');
+    const cellOf = (r, k) => (this.PAY().includes(k) ? 'In the file' : r[k] !== undefined ? r[k] : 'In the file');
+    const shownK = ch.slice(0, 9);
+    const sensNotes = [];
+    if (sensK.includes('race') || sensK.includes('religion')) sensNotes.push({ t: 'No one at ' + co + ' has race or religion recorded, so those columns would be empty.' });
+    if (sensK.includes('ic')) sensNotes.push({ t: 'The IC column keeps the last 4 digits only. The full number is only on one person’s staff record PDF.' });
+    if (sensK.some(k => this.PAY().includes(k))) sensNotes.push({ t: 'Pay figures go in the file only because you have the Payroll figures right.' });
+    const busy = st.phase === 'busy';
+    const refuseTxt = noneErr ? 'Choose at least one column, then download again.' : noPeople ? 'No one has left ' + co + ', so the file would be empty. Choose In employment or Everyone.' : whyMissing ? 'You chose sensitive columns. Say why you need them; the reason is kept in the audit trail with the download.' : '';
+    return {
+      sbCo: co === 'AI' ? 'ai' : 'aisb', sbKind: co === 'AI' ? 'here' : 'sqlPayroll', sbAccess: canPay ? 'full' : 'hrOnly', tbUser: canPay ? 'aisha' : 'aina', coCode: co,
+      onTopCo: code => { const c = String(code || '').toUpperCase(); if (c === 'AISB' || c === 'AI') this.setState({ co: c, phase: 'idle', tried: false }); },
+      refuseOn: !!refuseTxt && st.phase !== 'done', refuseTxt,
+      who: [whoOpt('in', 'In employment'), whoOpt('left', 'Left'), whoOpt('all', 'Everyone')],
+      colsBorder: noneErr ? '#B0190F' : '#E3E7ED', noneErr,
+      colsCount: ch.length + (ch.length === 1 ? ' column' : ' columns') + (sensK.length ? ', ' + sensK.length + ' sensitive' : ', none sensitive'),
+      pickDefault: () => this.setState({ sel: this.defaults(), tried: false, phase: 'idle', n: this.state.n + 1 }),
+      pickNone: () => { const o = {}; Object.keys(this.state.sel).forEach(k => { o[k] = false; }); this.setState({ sel: o, phase: 'idle', n: this.state.n + 1 }); },
+      groups,
+      sensOn: sensK.length > 0, sensChose: stop('You chose ' + sensJoined), sensNotes,
+      why: st.why, onWhy: e => this.setState({ why: e && e.target ? e.target.value : '' }),
+      whyInv: whyMissing ? 'true' : 'false', whyErrOn: whyMissing, whyBy: whyMissing ? 'sx-why-err' : '',
+      whyStyle: 'height:40px;width:100%;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;border:1px solid ' + (whyMissing ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      fileName, fileSub: nPeople + (whoTxt ? ' ' + whoTxt : '') + ' · ' + ch.length + (ch.length === 1 ? ' column' : ' columns') + ' · an .xlsx with a header row',
+      prevOn: ch.length > 0 && nRows > 0, prevEmpty: ch.length === 0 || !nRows, prevCls: st.n % 2 ? 'swapA' : 'swapB', nRows,
+      prevEmptyTxt: ch.length === 0 ? 'No columns chosen yet.' : st.who === 'left' ? 'No one has left ' + co + ', so the file would have no rows. Choose In employment or Everyone.' : 'No one is on ' + co + '’s staff list yet.',
+      prevCountTxt: nRows === 1 ? 'The only row.' : nRows === 2 ? 'Both rows.' : 'The first 2 of ' + nRows + ' rows.',
+      prevHead: shownK.map(k => ({ l: LBL[k] })).concat(ch.length > 9 ? [{ l: '+' + (ch.length - 9) + ' more' }] : []),
+      prevRows: SAMPLE.slice(0, 2).map(r => ({ cells: shownK.map(k => ({ v: cellOf(r, k), style: cellStyle(k) })).concat(ch.length > 9 ? [{ v: '…', style: 'padding:8px 12px;color:#5F6C80' }] : []) })),
+      doneOn: st.phase === 'done',
+      doneTxt: stop(nPeople + ', ' + ch.length + (ch.length === 1 ? ' column' : ' columns') + (sensK.length ? ', including ' + sensJoined : '')) + ' It is in your Downloads folder.',
+      trailTxt: 'Read · staff list export, ' + co + ', ' + nPeople + ', ' + ch.length + (ch.length === 1 ? ' column' : ' columns') + (sensK.length ? '; Sensitive: ' + sensK.map(k => LBL[k]).join(', ') + '; reason: ' + String(st.why).trim() : ''),
+      footTxt: busy ? 'Making the file…' : st.phase === 'done' ? 'Change the choice to download another file.' : 'The file is made on this computer and goes to your Downloads folder.',
+      busy, idle: !busy, busyAria: busy ? 'true' : 'false', goLabel: busy ? 'Making the file…' : 'Download Excel',
+      download: () => this.download()
+    };
+  }
+}
+</script>
+</body>
+</html>

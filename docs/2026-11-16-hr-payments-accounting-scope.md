@@ -59,7 +59,16 @@ new shape now, or it would draw a shell without HR and have to be redone.
 | Users and access (17 Nov) | The redesign draws an **Admin › Users and access** page now: add a person, sign-in name, and six access rights (HR, Payroll figures, Payments, Accounting, Approver, Admin), plus how the menu looks for a user without HR access. It is built later, with hosting and logins; until then the app runs for one person as today. |
 | Phone upload (17 Nov) | Yes: a fifth phone screen to photograph a signed approval form; the code is read from its QR and HR confirms which approver signed (question 14). |
 | Language (17 Nov) | English only, on screens and on everything printed (payslips, approval forms, Month review). Wording can change later without a redesign. |
+| Payroll check (17 Nov, redesign questions) | Every company has the payroll workbook check; using it is up to the company. A company whose pay has no statutory deductions does not use it. HR › Payroll shows the check for every company; the run shows only where Setup › Companies has "Runs payroll in this app" on. |
+| Built for any company (17 Nov) | Nothing is fixed to the owner's company in the code: payroll, approvers and every HR setting are per-company settings, and the owner's company is simply the first to use them. |
+| Net salaries payable (17 Nov) | Follow the account the company's books use (420-000 Accruals in the owner's SQL books), chosen per company in Setup › Statutory accounts. |
+| Customers overdue (17 Nov) | Older than 30 days. |
+| Per company (17 Nov) | Approvers, leave policy, public holidays and claim types are set per company. |
+| Leave values (17 Nov) | The legal minimums are the entitlement. Anything above the legal days (leave recorded beyond them, or a Setup value set higher) shows a warning only and is never refused. Question 3 closed. |
+| Payslip password (17 Nov) | Agreed by the owner: the person's IC number without dashes by default (passport number for a foreign worker); HR may set a personal password on the staff record instead, stored encrypted and resettable. The email names the rule, never the password. |
 | Bank reconciliation statement (18 Nov) | A printed, signed reconciliation statement per bank account and month, in the standard layout, with Prepared by and Reviewed by; book entries where no money moved (such as a duplicated self-billed receipt and payment that cancel out) are listed as pairs with their reason, and the reason is kept with the sign-off so the auditor's copy needs nothing written by hand (section 8). |
+| Joiner reminders (19 Nov) | One merged reminder "Register {name} with KWSP and PERKESO" due 7 days after the start date, and "Stamp the contract of {name}", replacing the app's separate KWSP (7 days) and PERKESO (30 days) registration reminders and "Stamp {name}'s appointment letter". An app change, built with HR step 1. |
+| One Next up row per unpaid statutory payment (19 Nov) | When a statutory payment for the month is entered and still unpaid, Next up shows only its payment row ("Pay KWSP for October", marked overdue after the due date), not also the statutory check row. The check row (rule 14) shows only when there is no unpaid payment to point at, for example when the payment was made short or never entered. An app change (hrp/nextup.py). |
 | Placements (17 Nov) | SQL import, e-Invoices and printed invoices go under Accounting, e-Invoices and invoices with a page of their own; each company's month page splits into the Payments register and the Monthly checklist. |
 
 On screen, "stage 1" and "stage 2" are never shown. A stage 1 company is labelled **Kept in SQL Account**; a stage 2
@@ -67,9 +76,8 @@ company is labelled **Kept here**.
 
 ### Still open
 
-One question is still open (section 11): question 3's values (what the company gives above the legal leave
-minimums, and the carry-forward). It does not hold up the redesign: the leave policy screen is the same whatever the
-values. Everything else was answered on 17 November 2026.
+No question is open. Question 3 was answered on 17 November 2026 with the redesign questions (see the table above):
+the legal minimums are the entitlement, and anything above them is a warning only.
 
 ---
 
@@ -1068,15 +1076,15 @@ logins), benefits-in-kind valuation, foreign worker levy, submitting files direc
    carried forward, how much, and until when? *Partly answered, 17 November 2026:* the owner asked whether this is
    part of the setup. Yes: leave types, entitlements by years of service, carry-forward, half days and the public
    holiday calendar are all set in Setup › HR › Leave, pre-filled with the legal minimums and editable at any time with
-   the date a change applies from (section 5.2). **Still open: the values** the company gives above the minimum, and
-   the carry-forward (how many days, until when).
+   the date a change applies from (section 5.2). *Answered 17 November 2026:* the legal minimums stay the
+   entitlement; leave beyond the legal days, or a value set above the law, shows a warning only and is never refused.
 4. **State for public holidays.** *Answered 17 November 2026:* the office is in Kuchai Lama, so Wilayah Persekutuan
    Kuala Lumpur holidays apply, one location for the whole company (section 5.2).
 5. **HRDF.** *Answered 17 November 2026:* the company has 8 employees and the owner is not sure it is registered; the
    2026 books show no HRDF levy paid. At 8 Malaysian employees registration is optional (required from 10). Setup
    keeps an HRDF setting, off by default, with a note to confirm on HRD Corp's portal, and a warning when the
    Malaysian headcount reaches 10 (section 6).
-6. **Payroll for which companies.** *Answered 17 November 2026:* only the owner's main company.
+6. **Payroll for which companies.** *Answered 17 November 2026:* only the owner's main company for now, as a per-company setting ("Runs payroll in this app"), since the app is built for bigger companies too. The payroll workbook check is available to every company.
 7. **Payslips.** Printed and signed as today, or also emailed to each person as a password-protected PDF? *Answered 17 November 2026:* printed and signed, and also emailed as a password-protected PDF.
 8. **Bank payment list.** Which bank's bulk payment format should it produce (the company banks with Maybank today)? *Answered 17 November 2026:* Maybank's bulk payment file, if the company uses Maybank bulk payment (confirm when payroll is built).
 9. **Claims paid with salary.** *Answered 17 November 2026:* paid separately, after approval (section 5.4).

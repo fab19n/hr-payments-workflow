@@ -1,0 +1,1243 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bank and reconciliation · review · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:200px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* motion and focus base */
+.hb,.hs,.hr,.hg,.op{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.op:hover{border-color:#9DB3E8 !important}
+button:disabled{cursor:not-allowed}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+.tb:focus-visible{outline-color:#8DB0FA}
+[role="option"]:focus-visible{outline-offset:-2px}
+::placeholder{color:#5F6C80;opacity:1}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.rvfa{animation:rise .24s cubic-bezier(.22,1,.36,1) both,flashA .9s ease-out}
+.rvfb{animation:rise .24s cubic-bezier(.22,1,.36,1) both,flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.okA{animation:swapA .12s ease-out,pulse .4s ease-out}
+.okB{animation:swapB .12s ease-out,pulse .4s ease-out}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+@media print{.np{display:none !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="bank" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="Bank and reconciliation" sub="{{topSub}}" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div class="np" role="group" aria-label="Board sample: which statement to review" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px 12px; border: 1px dashed #C3CCD9; border-radius: 12px; color: #5F6C80; font-size: 12px">
+        <span>Board sample, not part of the app. Statement to review:</span>
+        <div style="display: flex; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px">
+          <sc-for list="{{acctBtns}}" as="b" hint-placeholder-count="2"><button type="button" aria-pressed="{{b.on}}" onClick="{{b.pick}}" style="{{b.style}}">{{b.label}}</button></sc-for>
+        </div>
+        <sc-if value="{{hasSampleNote}}" hint-placeholder-val="{{ false }}"><span style="flex: 1 1 100%; color: #46546A; font-size: 12px">{{sampleNote}}</span></sc-if>
+      </div>
+
+      <sc-if value="{{loadErr}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; background: #FFFFFF; border: 1px solid #F4C2BC; border-radius: 16px; padding: 22px">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="alert" tone="bad" size="24" hint-size="24px,24px"></dc-import></span>
+          <div style="flex: 1 1 320px; min-width: 0"><b style="font-size: 15px">Couldn't load this page.</b><div style="color: #46546A; font-size: 13px">Something went wrong (500). The statement lines and your choices on them are safe; try again in a moment.</div></div>
+          <a href="BankReview.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none"><dc-import name="Icon" glyph="refresh" tone="brand" size="16" hint-size="16px,16px"></dc-import>Try again</a>
+        </section>
+      </sc-if>
+      <sc-if value="{{loadOk}}" hint-placeholder-val="{{ true }}">
+      <section aria-label="Import statement" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 420px; min-width: 0">
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Bank and reconciliation</h1>
+          <p style="margin: 0; color: #46546A; max-width: 760px">Import each month's Maybank statement PDF. Every line is matched to a payment automatically where the payee and amount agree (split DuitNow transfers are added together). Then review the month: confirm what was matched, explain the rest, and sign it off once the books agree with the bank. A signed-off month is locked; reopening it needs a reason and the sign-off again.</p>
+        </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-end">
+          <label style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Account</span><select value="{{importAcct}}" style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><sc-for list="{{accOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.id}}">{{o.text}}</option></sc-for></select></label>
+          <div style="flex: 2 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <span id="br-file-cap" style="font-size: 13px; font-weight: 600; color: #46546A">Statement PDF</span>
+            <label class="fx" style="position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 40px; box-sizing: border-box; padding: 5px 12px 5px 6px; border-radius: 10px; cursor: pointer; border:1.5px dashed #5F6C80; background: #FAFBFC">
+              <span aria-hidden="true" style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 7px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; flex: none"><dc-import name="Icon" glyph="document" tone="brand" size="16" hint-size="16px,16px"></dc-import>Choose file</span>
+              <span id="br-file-name" style="flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; font-size: 13px; color: #5F6C80">No file chosen</span>
+              <input type="file" id="br-file" accept=".pdf" aria-labelledby="br-file-cap br-file-name" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer">
+            </label>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" class="hb" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 176px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="white" size="18" hint-size="18px,18px"></dc-import>Import statement</button>
+            <button type="button" class="hs" onClick="{{matchAgain}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 150px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="brand" size="18" hint-size="18px,18px"></dc-import>Match again</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="br-review" aria-labelledby="br-h2" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+            <span style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center"><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{acctLabel}}</span><span style="{{kindStyle}}"><dc-import name="Icon" glyph="{{kindGlyph}}" tone="{{kindTone}}" size="14" hint-size="14px,14px"></dc-import>{{kindText}}</span></span>
+            <h2 id="br-h2" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{title}}</h2>
+          </div>
+          <div class="np" style="display: flex; flex-wrap: wrap; gap: 8px">
+            <a href="Bank.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap">← Back to the year</a>
+            <a href="#br-review" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font-weight: 600; font-size: 13px; text-decoration: none; white-space: nowrap"><dc-import name="Icon" glyph="document" tone="brand" size="16" hint-size="16px,16px"></dc-import>Statement PDF</a>
+          </div>
+        </div>
+
+        <sc-if value="{{noStmt}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 22px; border: 1px dashed #5F6C80; border-radius: 14px; background: #FAFBFC">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="bank" tone="muted" size="26" hint-size="26px,26px"></dc-import></span>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="font-size: 16px">{{noStmtTitle}}</b><div style="color: #46546A; font-size: 13px">{{noStmtText}}</div></div>
+            <button type="button" class="hb" onClick="{{chooseStmt}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="white" size="18" hint-size="18px,18px"></dc-import>Choose the statement PDF</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+          <div role="status" aria-label="Loading the statement" style="display: flex; flex-direction: column; gap: 14px">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px"><span class="sk" style="height: 72px"></span><span class="sk" style="height: 72px"></span><span class="sk" style="height: 72px"></span><span class="sk" style="height: 72px"></span></div>
+            <span class="sk" style="height: 40px; width: 46%"></span>
+            <span class="sk" style="height: 96px"></span><span class="sk" style="height: 96px"></span><span class="sk" style="height: 96px; width: 72%"></span>
+            <span class="sr">Loading the statement lines</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{hasStmt}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 10px">
+          <div style="border: 1px solid #E3E7ED; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span class="{{swapCls}}" style="font: 600 20px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums">{{t1v}}</span><span class="{{swapCls}}" style="color: #5F6C80; font-size: 13px">{{t1l}}</span></div>
+          <div style="border: 1px solid #E3E7ED; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span class="{{swapCls}}" style="font: 600 20px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums">{{t2v}}</span><span style="color: #5F6C80; font-size: 13px">{{t2l}}</span></div>
+          <div style="border: 1px solid #E3E7ED; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font: 600 20px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums">{{t3v}}</span><span class="{{swapCls}}" style="color: #5F6C80; font-size: 13px">{{t3l}}</span></div>
+          <div style="border: 1px solid #E3E7ED; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="font: 600 20px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums">{{t4v}}</span><span style="color: #5F6C80; font-size: 13px">{{t4l}}</span></div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center"><span class="{{statusCls}}" style="{{statusStyle}}">{{statusText}}</span>
+          <sc-if value="{{hasChk}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 10px; border-radius: 99px; background: #E3F7EC; color: #0A6B3D; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>{{chkText}}</span></sc-if></div>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center">
+          <label class="fx" style="flex: 1 1 320px; max-width: 520px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; box-sizing: border-box; border:1px solid #5F6C80; border-radius: 10px; background: #FFFFFF"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search statement lines" aria-label="Search statement lines" style="flex: 1; min-width: 0; border: 0; outline: 0; font: 400 14px Inter, sans-serif; background: transparent; color: #0F1A2B"></label>
+          <span aria-live="polite" style="color: #5F6C80; font-size: 13px">{{countText}}</span>
+        </div>
+
+        <div class="np" style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center">
+          <span style="color: #5F6C80; font-size: 12px">Sort by</span>
+          <table style="border-collapse: collapse">
+            <thead><tr style="color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+              <th scope="col" aria-sort="{{hd.date.aria}}" style="padding: 0; font-weight: 600"><button type="button" id="br-sort-date" class="hg" onClick="{{hd.date.go}}" style="{{hd.date.style}}">Date<sc-if value="{{hd.date.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.date.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th>
+              <th scope="col" aria-sort="{{hd.desc.aria}}" style="padding: 0; font-weight: 600"><button type="button" id="br-sort-desc" class="hg" onClick="{{hd.desc.go}}" style="{{hd.desc.style}}">Description<sc-if value="{{hd.desc.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.desc.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th>
+              <th scope="col" aria-sort="{{hd.amount.aria}}" style="padding: 0; font-weight: 600"><button type="button" id="br-sort-amount" class="hg" onClick="{{hd.amount.go}}" style="{{hd.amount.style}}">Amount<sc-if value="{{hd.amount.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.amount.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th>
+              <th scope="col" aria-sort="{{hd.by.aria}}" style="padding: 0; font-weight: 600"><button type="button" id="br-sort-by" class="hg" onClick="{{hd.by.go}}" style="{{hd.by.style}}">Explained by<sc-if value="{{hd.by.up}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; transform: rotate(180deg)"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></span></sc-if><sc-if value="{{hd.by.down}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="chevronDown" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th>
+            </tr></thead>
+          </table>
+        </div>
+
+        <div id="br-open" style="display: flex; flex-direction: column; gap: 10px">
+          <sc-for list="{{openRows}}" as="r" hint-placeholder-count="5">
+            <div role="group" aria-label="{{r.aria}}" id="{{r.domId}}" class="{{r.cls}}" style="display: flex; flex-wrap: wrap; gap: 14px; padding: 14px; border: 1px solid #F1D9A8; border-left: 4px solid #D98B1C; border-radius: 12px; background: #FFFAF0">
+              <div style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 10px; background: #FFFFFF; border: 1px solid #F3E6CC">
+                <div style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline"><span style="font: 500 13px ui-monospace, Consolas, monospace">{{r.date}}</span><span style="font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{r.way}}</span></div>
+                <span style="{{r.amtStyle}}">{{r.amt}}</span>
+                <span style="font-size: 13px; overflow-wrap: anywhere">{{r.desc}}</span>
+                <span style="color: #5F6C80; font-size: 12px">{{r.balance}}</span>
+              </div>
+              <div style="flex: 1.25 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between">
+                  <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #FEF1D6; color: #934100">To explain</span>
+                  <button type="button" class="hs" id="{{r.moreId}}" aria-haspopup="dialog" onClick="{{r.more}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="more" tone="muted" size="16" hint-size="16px,16px"></dc-import>More options<span class="sr">{{r.srFor}}</span></button>
+                </div>
+                <select value="{{r.choice}}" onChange="{{r.pick}}" aria-label="What this bank line is" style="height: 40px; width: 100%; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 13px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B">
+                  <option value="">Choose what this is…</option>
+                  <sc-for list="{{r.groups}}" as="g" hint-placeholder-count="1"><optgroup label="{{g.label}}"><sc-for list="{{g.opts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></optgroup></sc-for>
+                  <option value="c">Create a payment for this line</option>
+                  <sc-for list="{{r.tail}}" as="tl" hint-placeholder-count="1"><option value="{{tl.v}}">{{tl.l}}</option></sc-for>
+                </select>
+                <sc-if value="{{r.isCreate}}" hint-placeholder-val="{{ false }}">
+                  <div class="ex" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 8px">
+                    <input type="text" maxlength="120" value="{{r.descVal}}" onChange="{{r.onDesc}}" placeholder="What was this payment for?" aria-label="Description of the payment to create" style="height: 38px; min-width: 0; padding: 0 10px; border:1px solid #5F6C80; border-radius: 9px; font: 400 13px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+                    <select value="{{r.cat}}" onChange="{{r.onCat}}" aria-label="Type of payment" style="height: 38px; min-width: 0; padding: 0 8px; border:1px solid #5F6C80; border-radius: 9px; font: 400 13px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{r.types}}" as="t" hint-placeholder-count="4"><option value="{{t.k}}">{{t.l}}</option></sc-for></select>
+                  </div>
+                </sc-if>
+                <sc-if value="{{r.isNone}}" hint-placeholder-val="{{ false }}">
+                  <input class="ex" type="text" maxlength="120" value="{{r.noteVal}}" onChange="{{r.onNote}}" placeholder="Reason, e.g. bank charges" aria-label="Reason no documents are needed" style="height: 38px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 9px; font: 400 13px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+                  <sc-if value="{{r.sqlHint}}" hint-placeholder-val="{{ false }}"><span class="ex" style="display: flex; gap: 6px; align-items: flex-start; color: #46546A; font-size: 12px"><dc-import name="Icon" glyph="database" tone="brand" size="14" hint-size="14px,14px"></dc-import>{{r.sqlHintText}}</span></sc-if>
+                </sc-if>
+                <sc-if value="{{r.isBook}}" hint-placeholder-val="{{ false }}">
+                  <div class="ex" style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 12px; border-radius: 10px; background: #F3F6FE; border: 1px solid #D6E2FB; font-size: 13px">
+                    <span style="flex: 1 1 220px; min-width: 0; color: #0F1A2B">{{r.bookText}}</span>
+                    <a href="BankBookLine.dc.html" class="hb" aria-label="{{r.bookAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; text-decoration: none; white-space: nowrap"><dc-import name="Icon" glyph="books" tone="white" size="16" hint-size="16px,16px"></dc-import>Book this line</a>
+                  </div>
+                </sc-if>
+                <sc-if value="{{r.tick}}" hint-placeholder-val="{{ false }}">
+                  <label class="ex" style="display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 9px; background: #FEF1D6; border: 1px solid #F0C77A; color: #6E3500; font-size: 13px; font-weight: 500"><input type="checkbox" checked="{{r.keep}}" onChange="{{r.onKeep}}" style="width: 17px; height: 17px; margin: 1px 0 0; accent-color: #A04A00; flex: none">{{r.tickText}}</label>
+                </sc-if>
+                <label style="{{r.selLbl}}"><input type="checkbox" checked="{{r.sel}}" disabled="{{r.selOff}}" onChange="{{r.onSel}}" style="width: 17px; height: 17px; margin: 0; accent-color: #2450B8">Select<span class="sr">{{r.srFor}}</span></label>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{openEmpty}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="padding: 18px; border: 1px dashed #D5DBE4; border-radius: 12px; text-align: center; color: #5F6C80">{{openEmptyText}}</div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{hasDone}}" hint-placeholder-val="{{ true }}">
+          <div id="br-mhead" class="{{mheadCls}}" style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 12px; background: #F7F8FA; border: 1px solid #EEF1F5">
+            <button type="button" id="br-mtoggle" class="hg" aria-expanded="{{mExpanded}}" aria-controls="br-mwrap" onClick="{{toggleMatched}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 8px; border-radius: 9px; border: 0; background: transparent; font: 600 14px Inter, sans-serif; color: #2450B8; text-decoration: underline; text-underline-offset: 3px; cursor: pointer"><span class="{{chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></span><span class="{{swapCls}}">{{mLabel}}</span></button>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+              <sc-if value="{{hasShort}}" hint-placeholder-val="{{ false }}"><span class="{{swapCls}}" style="display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #FEF1D6; color: #934100"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{shortText}}</span></sc-if>
+              <sc-if value="{{someUnconfirmed}}" hint-placeholder-val="{{ true }}"><span class="{{swapCls}}" style="color: #46546A; font-size: 13px">{{notConfText}}</span></sc-if>
+              <sc-if value="{{allConfirmed}}" hint-placeholder-val="{{ false }}"><span class="{{okCls}}" style="display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #E3F7EC; color: #0A6B3D"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>All confirmed</span></sc-if>
+              <button type="button" class="hs" disabled="{{confirmOff}}" onClick="{{confirmAll}}" style="{{confirmStyle}}">Confirm all matched</button>
+            </div>
+          </div>
+          <div id="br-mwrap">
+            <sc-if value="{{showMatched}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; gap: 10px">
+                <sc-for list="{{doneRows}}" as="r" hint-placeholder-count="4">
+                  <div role="group" aria-label="{{r.aria}}" id="{{r.domId}}" class="{{r.cls}}" style="display: flex; flex-wrap: wrap; gap: 14px; padding: 14px; border: 1px solid #E3E7ED; border-radius: 12px; background: #FFFFFF">
+                    <div style="flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 10px; background: #F7F8FA">
+                      <div style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline"><span style="font: 500 13px ui-monospace, Consolas, monospace">{{r.date}}</span><span style="font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{r.way}}</span></div>
+                      <span style="{{r.amtStyle}}">{{r.amt}}</span>
+                      <span style="font-size: 13px; overflow-wrap: anywhere">{{r.desc}}</span>
+                      <span style="color: #5F6C80; font-size: 12px">{{r.balance}}</span>
+                    </div>
+                    <div style="flex: 1.25 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+                      <div style="overflow-wrap: anywhere"><b>{{r.title}}</b> <span style="color: #5F6C80">{{r.sub}}</span></div>
+                      <sc-if value="{{r.hasChips}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{r.chips}}" as="c" hint-placeholder-count="1"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 7px; background: #F1F3F7; border: 1px solid #E3E7ED; color: #46546A; font: 600 12px ui-monospace, Consolas, monospace">{{c.t}}</span></sc-for></div></sc-if>
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                        <span class="{{r.pillCls}}" style="{{r.pillStyle}}">{{r.pill}}</span>
+                        <sc-if value="{{r.canUndo}}" hint-placeholder-val="{{ true }}"><button type="button" class="hg" id="{{r.undoId}}" onClick="{{r.undo}}" style="display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 9px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer">Undo<span class="sr">{{r.srFor}}</span></button></sc-if>
+                        <sc-if value="{{r.isLocked}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #EEF1F5; color: #46546A"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>Locked</span></sc-if>
+                      </div>
+                      <sc-if value="{{r.hasGap}}" hint-placeholder-val="{{ false }}">
+                        <div role="note" style="display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 9px; background: #FEF1D6; border: 1px solid #F0C77A; color: #6E3500; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import><span><b>Matched, but the amounts differ.</b> {{r.gapText}}</span></div>
+                      </sc-if>
+                      <sc-if value="{{r.hasSqlNote}}" hint-placeholder-val="{{ false }}">
+                        <div role="note" style="display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 9px; background: #FEF1D6; border: 1px solid #F0C77A; color: #6E3500; font-size: 13px"><dc-import name="Icon" glyph="database" tone="warn" size="16" hint-size="16px,16px"></dc-import><span><b>Enter this in SQL Account.</b> {{r.sqlNote}}</span></div>
+                      </sc-if>
+                      <sc-if value="{{r.tick}}" hint-placeholder-val="{{ false }}">
+                        <label style="display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border-radius: 9px; background: #FEF1D6; border: 1px solid #F0C77A; color: #6E3500; font-size: 13px; font-weight: 500"><input type="checkbox" checked="{{r.keep}}" onChange="{{r.onKeep}}" style="width: 17px; height: 17px; margin: 1px 0 0; accent-color: #A04A00; flex: none">{{r.tickText}}</label>
+                      </sc-if>
+                      <sc-if value="{{r.canUndo}}" hint-placeholder-val="{{ true }}"><label style="display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; min-height: 32px; font-size: 13px; font-weight: 600; color: #0F1A2B; cursor: pointer"><input type="checkbox" checked="{{r.sel}}" onChange="{{r.onSel}}" style="width: 17px; height: 17px; margin: 0; accent-color: #2450B8">Select<span class="sr">{{r.srFor}}</span></label></sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{doneEmpty}}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 18px; border: 1px dashed #D5DBE4; border-radius: 12px; text-align: center; color: #5F6C80">No matched line matches.</div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{hasPairs}}" hint-placeholder-val="{{ true }}">
+          <section id="br-nmm" aria-labelledby="br-nmm-h" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px 16px; border-radius: 12px; background: #F7F8FA; border: 1px solid #EEF1F5">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between">
+              <h3 id="br-nmm-h" style="margin: 0; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600"><dc-import name="Icon" glyph="link" tone="brand" size="18" hint-size="18px,18px"></dc-import>No money moved · {{pairCount}}</h3>
+              <span class="{{swapCls}}" style="{{pairSumStyle}}">{{pairSum}}</span>
+            </div>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">{{pairIntro}}</p>
+            <sc-for list="{{pairs}}" as="g" hint-placeholder-count="1">
+              <div role="group" aria-label="{{g.aria}}" id="{{g.domId}}" class="{{g.cls}}" style="{{g.style}}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between">
+                  <b style="font: 600 14px ui-monospace, Consolas, monospace; overflow-wrap: anywhere">{{g.title}}</b>
+                  <span style="display: inline-flex; flex-wrap: wrap; gap: 6px"><span style="{{g.netStyle}}"><dc-import name="Icon" glyph="{{g.netGlyph}}" tone="{{g.netTone}}" size="14" hint-size="14px,14px"></dc-import>{{g.net}}</span><span class="{{g.pillCls}}" style="{{g.pillStyle}}">{{g.pill}}</span></span>
+                </div>
+                <div style="overflow-x: auto">
+                  <table style="width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px">
+                    <caption class="sr">{{g.caption}}</caption>
+                    <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px; font-weight: 600">Document</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Date</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Money in</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Money out</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{g.docs}}" as="d" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><th scope="row" style="padding: 9px 12px; text-align: left; font: 600 13px ui-monospace, Consolas, monospace; white-space: nowrap">{{d.no}}</th><td style="padding: 9px 12px; white-space: nowrap; color: #46546A">{{d.date}}</td><td style="padding: 9px 12px">{{d.desc}}</td><td style="padding: 9px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; color: #0A6B3D">{{d.inn}}</td><td style="padding: 9px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{d.out}}</td></tr></sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <label style="display: flex; flex-direction: column; gap: 6px; max-width: 900px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Reason <span style="font-weight: 500; color: #5F6C80">Filled in from the documents; kept with the sign-off</span></span><input type="text" id="{{g.whyId}}" maxlength="200" value="{{g.why}}" onChange="{{g.onWhy}}" disabled="{{g.ro}}" aria-invalid="{{g.whyBad}}" aria-describedby="{{g.whyDesc}}" style="{{g.whyStyle}}"></label>
+                <sc-if value="{{g.hasErr}}" hint-placeholder-val="{{ false }}"><span id="{{g.errId}}" role="alert" class="ex" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{g.err}}</span></sc-if>
+                <sc-if value="{{g.notNil}}" hint-placeholder-val="{{ false }}"><div role="note" id="{{g.nilId}}" style="display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 9px; background: #FEF3F1; border: 1px solid #F4C2BC; color: #8E1A10; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import><span>{{g.nilText}}</span></div></sc-if>
+                <label style="{{g.tickLbl}}"><input type="checkbox" id="{{g.tickId}}" checked="{{g.ok}}" disabled="{{g.tickOff}}" aria-describedby="{{g.tickDesc}}" onChange="{{g.onTick}}" style="width: 17px; height: 17px; margin: 0; accent-color: #2450B8">Confirmed: no money moved</label>
+                <sc-if value="{{g.hasSql}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; display: flex; gap: 6px; align-items: flex-start; color: #46546A; font-size: 12px"><dc-import name="Icon" glyph="database" tone="brand" size="14" hint-size="14px,14px"></dc-import><span>{{g.sqlText}}</span></p></sc-if>
+              </div>
+            </sc-for>
+          </section>
+        </sc-if>
+
+        <div class="np" style="position: sticky; bottom: 12px; z-index: 4">
+          <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+            <div class="rv" style="position: absolute; right: 0; bottom: calc(100% + 10px); max-width: min(520px, 100%); box-sizing: border-box; display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; box-shadow: 0 10px 28px rgba(13,27,46,.22)">
+              <dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>
+              <span style="flex: 1; min-width: 0; font-size: 13px">{{toastText}}</span>
+              <sc-if value="{{toastHasUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="br-toast-undo" class="tb" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; flex: none"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{isLocked}}" hint-placeholder-val="{{ false }}">
+            <div id="br-locked" role="note" style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 14px 18px; background: #FFFFFF; border: 1px solid #C9D2DF; border-radius: 14px; box-shadow: 0 -6px 18px rgba(16,24,40,.10)">
+              <dc-import name="Icon" glyph="lock" tone="muted" size="20" hint-size="20px,20px"></dc-import>
+              <span style="flex: 1 1 320px; min-width: 0; font-size: 14px"><b>{{lockTitle}}</b> <span style="color: #46546A">Its lines can't be linked, explained, confirmed or undone. Reopen the month to change anything.</span></span>
+              <a href="Bank.dc.html" class="hs" aria-label="{{reopenAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; text-decoration: none; white-space: nowrap"><dc-import name="Icon" glyph="history" tone="brand" size="16" hint-size="16px,16px"></dc-import>Reopen month</a>
+            </div>
+          </sc-if>
+          <sc-if value="{{notLocked}}" hint-placeholder-val="{{ true }}">
+          <div id="br-bar" style="display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; padding: 14px 18px; background: #FFFFFF; border: 1px solid #2450B8; border-radius: 14px; box-shadow: 0 -6px 18px rgba(16,24,40,.10)">
+            <span style="font-size: 14px"><b class="{{swapCls}}">{{nSel}}</b> selected · <b class="{{swapCls}}">{{still}}</b> still to explain</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px">Difference after applying: <dc-import name="Icon" glyph="{{diffGlyph}}" tone="{{diffTone}}" size="16" hint-size="16px,16px"></dc-import><b style="{{diffAfterStyle}}">{{diffAfter}}</b></span>
+            <span style="flex: 1 1 0"></span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; font-weight: 600; cursor: pointer"><input type="checkbox" id="br-checked" checked="{{checked}}" onChange="{{onChecked}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">I've checked these rows</label>
+            <button type="button" id="br-apply" class="hb" disabled="{{applyOff}}" onClick="{{apply}}" style="{{applyStyle}}"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>{{applyLabel}}</button>
+            <sc-if value="{{hasRefusal}}" hint-placeholder-val="{{ false }}">
+              <div role="alert" class="ex" style="flex: 1 1 100%; display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #FEF3F1; border: 1px solid #F4C2BC; color: #8E1A10; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import><span>{{refusal}}</span></div>
+            </sc-if>
+            <p style="flex: 1 1 100%; margin: 0; color: #5F6C80; font-size: 12px">{{barNote}}</p>
+          </div>
+          </sc-if>
+        </div>
+
+        <section aria-label="Sign-off" style="display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid #EEF1F5">
+          <sc-if value="{{isSigned}}" hint-placeholder-val="{{ false }}">
+            <div class="rv" style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center">
+              <span class="{{signCls}}" style="display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 99px; font-size: 13px; font-weight: 600; white-space: nowrap; background: #E3F7EC; color: #0A6B3D"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>{{signedText}}</span>
+              <span style="display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 11px; border-radius: 99px; font-size: 13px; font-weight: 600; white-space: nowrap; background: #EEF1F5; color: #46546A"><dc-import name="Icon" glyph="lock" tone="muted" size="16" hint-size="16px,16px"></dc-import>Locked</span>
+              <a href="Bank.dc.html" id="br-undo-sign" class="hs" aria-label="{{reopenAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; text-decoration: none"><dc-import name="Icon" glyph="history" tone="brand" size="16" hint-size="16px,16px"></dc-import>Reopen month</a>
+            </div>
+            <sc-if value="{{hasSignNote}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-labelledby="br-note-h" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; max-width: 900px">
+                <b id="br-note-h" style="font-size: 13px">{{signNoteTitle}}</b>
+                <sc-for list="{{signNote}}" as="n" hint-placeholder-count="3"><p style="margin: 0; font-size: 13px; color: #0F1A2B; overflow-wrap: anywhere">{{n.t}}</p></sc-for>
+                <sc-if value="{{hasFreeNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; color: #0F1A2B; overflow-wrap: anywhere"><b>Note:</b> {{freeNoteText}}</p></sc-if>
+                <span style="color: #5F6C80; font-size: 12px">Written by the app at sign-off, as the month stood. It is printed on the reconciliation statement and in the audit pack; reopening the month keeps it in the audit trail.</span>
+              </div>
+            </sc-if>
+          </sc-if>
+          <sc-if value="{{notSigned}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center">
+              <button type="button" id="br-sign" class="hb" disabled="{{signOff}}" onClick="{{sign}}" style="{{signStyle}}"><dc-import name="Icon" glyph="verified" tone="white" size="18" hint-size="18px,18px"></dc-import>Mark reconciled</button>
+              <sc-if value="{{hasWhy}}" hint-placeholder-val="{{ true }}"><span class="{{swapCls}}" style="color: #46546A; font-size: 13px">{{whyText}}</span></sc-if>
+            </div>
+            <label style="display: flex; flex-direction: column; gap: 6px; max-width: 640px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Note for the sign-off <span style="font-weight: 500; color: #5F6C80">Optional</span></span><textarea id="br-free" rows="2" maxlength="500" value="{{freeNote}}" onChange="{{onFree}}" disabled="{{freeOff}}" aria-describedby="br-free-d" placeholder="Anything the reviewer should know" style="padding: 10px 12px; border: 1px solid #5F6C80; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; resize: vertical"></textarea></label>
+            <span id="br-free-d" style="color: #5F6C80; font-size: 12px; max-width: 760px">The app writes the rest of the note itself at sign-off: each confirmed pair with its reason, each line explained without documents, and anything left as a reconciling item.</span>
+          </sc-if>
+          <p style="margin: 0; color: #5F6C80; font-size: 12px">{{signFoot}}</p>
+        </section>
+        </sc-if>
+      </section>
+      </sc-if>
+    </main>
+  </div>
+
+  <sc-if value="{{exOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{exClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 56px 16px 24px; box-sizing: border-box; pointer-events: none">
+      <section class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="br-title" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onDlgAnim}}" style="pointer-events: auto; width: 760px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+        <div style="padding: 20px 24px 16px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; gap: 14px; align-items: flex-start">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="bank" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+              <span style="color: #5F6C80; font-size: 13px">{{exAcct}}</span>
+              <h2 id="br-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">Explain bank line</h2>
+            </div>
+            <button type="button" class="hs" onClick="{{exClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+          </div>
+          <div style="padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline"><span style="color: #5F6C80; font-size: 13px">{{exWhen}}</span><b style="font: 700 18px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums">{{exAmt}}</b></div>
+            <span style="font-size: 13px; overflow-wrap: anywhere">{{exDesc}}</span>
+            <span style="color: #5F6C80; font-size: 12px">{{exBal}}</span>
+          </div>
+        </div>
+
+        <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 18px 24px 22px; display: flex; flex-direction: column; gap: 14px">
+          <section aria-labelledby="br-c1" style="border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="link" tone="brand" size="20" hint-size="20px,20px"></dc-import><h3 id="br-c1" style="margin: 0; font-size: 15px; font-weight: 600">Link to existing payments</h3></div>
+            <p style="margin: 0; color: #5F6C80; font-size: 13px">Choose one payment, or several paid together under one bank reference (a bulk transfer, say). The running total below shows how close they come to the line's amount.</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center">
+              <label class="fx" style="flex: 1 1 260px; display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; box-sizing: border-box; border:1px solid #5F6C80; border-radius: 10px; background: #FFFFFF"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" id="br-ex-q" value="{{exQ}}" onChange="{{exOnQ}}" onKeyDown="{{exQKey}}" placeholder="Search by name or amount" aria-label="Search payments" aria-controls="br-ex-list" style="flex: 1; min-width: 0; border: 0; outline: 0; font: 400 14px Inter, sans-serif; background: transparent; color: #0F1A2B"></label>
+              <span aria-live="polite" style="color: #5F6C80; font-size: 13px">{{exCount}}</span>
+            </div>
+            <div id="br-ex-list" role="listbox" aria-label="Payments" aria-multiselectable="true" onKeyDown="{{exListKey}}" style="max-height: 340px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding: 2px">
+              <sc-for list="{{exList}}" as="o" hint-placeholder-count="3">
+                <div role="option" id="{{o.domId}}" tabindex="{{o.tab}}" aria-selected="{{o.on}}" onClick="{{o.pick}}" class="op" style="{{o.style}}">
+                  <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline"><span style="display: inline-flex; gap: 8px; align-items: baseline; min-width: 0"><span aria-hidden="true" style="{{o.boxStyle}}"><sc-if value="{{o.isOn}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="check" tone="white" size="12" hint-size="12px,12px"></dc-import></sc-if></span><b style="min-width: 0; overflow-wrap: anywhere">{{o.desc}}</b></span><span style="{{o.amtStyle}}">{{o.amt}}</span></div>
+                  <div style="color: #5F6C80; font-size: 12px">{{o.meta}}<sc-if value="{{o.isSugg}}" hint-placeholder-val="{{ false }}"> · <b style="color: #2450B8">Suggested</b>: {{o.why}}</sc-if><sc-if value="{{o.same}}" hint-placeholder-val="{{ false }}"> · <b style="color: #0F1A2B">Same amount</b></sc-if></div>
+                </div>
+              </sc-for>
+            </div>
+            <sc-if value="{{exEmpty}}" hint-placeholder-val="{{ false }}"><p class="ex" style="margin: 0; padding: 14px; border: 1px dashed #D5DBE4; border-radius: 10px; color: #5F6C80; font-size: 13px">No payment matches. Try a shorter search, or create a new payment below.</p></sc-if>
+            <label style="display: flex; align-items: center; gap: 10px; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{exAll}}" onChange="{{exOnAll}}" style="width: 17px; height: 17px; margin: 0; accent-color: #2450B8">Also show money the other way and payments already covered</label>
+            <div role="status" aria-live="polite" style="{{runStyle}}">
+              <span style="display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; font-variant-numeric: tabular-nums"><b>{{runCount}}</b><span>{{runTotal}}</span><b style="{{runLeftStyle}}">{{runLeft}}</b></span>
+              <sc-if value="{{runWarn}}" hint-placeholder-val="{{ false }}"><span style="display: flex; gap: 6px; align-items: flex-start; font-size: 12px; color: #6E3500"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{runWarnText}}</span></sc-if>
+            </div>
+            <sc-if value="{{runPriv}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; display: flex; gap: 6px; align-items: flex-start; color: #5F6C80; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>Net pay per person shows only to people with the Payroll figures right. Others see one row, "Net pay, October (8 people)", with the total.</p></sc-if>
+            <p style="margin: 0; color: #5F6C80; font-size: 12px">One payment can also be linked to several lines, e.g. a 25,000 fee sent as 5,000 + 10,000 + 10,000.</p>
+            <sc-if value="{{exHasErr}}" hint-placeholder-val="{{ false }}"><span role="alert" class="ex" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{exErr}}</span></sc-if>
+            <div><button type="button" class="hb" onClick="{{exLink}}" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 18px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="link" tone="white" size="16" hint-size="16px,16px"></dc-import>{{exLinkLabel}}</button></div>
+          </section>
+
+          <section aria-labelledby="br-c2" style="border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="plus" tone="brand" size="20" hint-size="20px,20px"></dc-import><h3 id="br-c2" style="margin: 0; font-size: 15px; font-weight: 600">Create a new payment for this line</h3></div>
+            <p style="margin: 0; color: #5F6C80; font-size: 13px">For one-off transactions such as web hosting, flights or receipts.</p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 10px">
+              <label style="display: flex; flex-direction: column; gap: 6px; min-width: 0"><span style="font-size: 13px; font-weight: 600; color: #46546A">Description</span><input type="text" id="br-ex-desc" value="{{exDescVal}}" onChange="{{exOnDesc}}" aria-invalid="{{exDescBad}}" style="{{exDescStyle}}"></label>
+              <label style="display: flex; flex-direction: column; gap: 6px; min-width: 0"><span style="font-size: 13px; font-weight: 600; color: #46546A">Type</span><select value="{{exCat}}" onChange="{{exOnCat}}" style="height: 40px; padding: 0 10px; border:1px solid #5F6C80; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><sc-for list="{{exTypes}}" as="t" hint-placeholder-count="4"><option value="{{t.k}}">{{t.l}}</option></sc-for></select></label>
+            </div>
+            <sc-if value="{{exHasErr2}}" hint-placeholder-val="{{ false }}"><span role="alert" class="ex" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{exErr2}}</span></sc-if>
+            <div><button type="button" class="hb" onClick="{{exCreate}}" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 18px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="16" hint-size="16px,16px"></dc-import>Create payment and link</button></div>
+          </section>
+
+          <sc-if value="{{exHere}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="br-c4" style="border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="books" tone="brand" size="20" hint-size="20px,20px"></dc-import><h3 id="br-c4" style="margin: 0; font-size: 15px; font-weight: 600">Book this line</h3></div>
+            <p style="margin: 0; color: #46546A; font-size: 13px">{{exBookText}}</p>
+            <div><a href="BankBookLine.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 18px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="books" tone="white" size="16" hint-size="16px,16px"></dc-import>Book this line</a></div>
+          </section>
+          </sc-if>
+          <sc-if value="{{exSql}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="br-c3" style="border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import><h3 id="br-c3" style="margin: 0; font-size: 15px; font-weight: 600">No documents needed</h3></div>
+            <p style="margin: 0; display: flex; gap: 6px; align-items: flex-start; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="database" tone="brand" size="16" hint-size="16px,16px"></dc-import>For a bank charge or bank profit, enter it in SQL Account too: this only explains the line here, and the books agree with the bank once SQL has it.</p>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Reason</span><input type="text" value="{{exNoteVal}}" onChange="{{exOnNote}}" placeholder="e.g. bank charges, own-account transfer" style="height: 40px; padding: 0 12px; border:1px solid #5F6C80; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"></label>
+            <div><button type="button" class="hs" onClick="{{exNone}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Mark as no documents needed</button></div>
+          </section>
+          </sc-if>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"october","options":["october","no-statement","loading","load-error","matched-open","ready-to-apply","after-apply","explain-open","explain-search-empty","explain-also","link-several","link-several-short","search","sorted","many-lines","savings","savings-ready","ai-charge","ai-signed","pair-confirmed","pair-not-nil","pair-ready","pair-signed"],"section":"State to show"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State to show"},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'october');
+    this._t = null; this._bt = null; this._tt = null; this._ft = null;
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._bt); clearTimeout(this._tt); clearTimeout(this._ft); }
+  // As the app's toast(): it hides itself after 2.5 s. Called after each set that raises a toast.
+  // A toast that carries Undo stays 8 s (States); the Undo puts the change back and says so.
+  armToast(long) { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: '', undo: null }), long ? 8000 : 2500); }
+  // The rise and flash run once: fresh rows lose their mark once the flash is over.
+  armFresh() { clearTimeout(this._ft); this._ft = setTimeout(() => this.setState({ fresh: {} }), 950); }
+  componentDidMount() { if (this.state.ex) this.focusId('br-title'); }
+
+  // Formats, as the app writes them: money() "RM 1,234.56", signedAmt "−1,234.56" / "+1,234.56", shortDate, fmtDate, monthName.
+  fmt(n) { const r = Math.round(n * 100) / 100; const a = Math.abs(r).toFixed(2).split('.'); return (r < 0 ? '-' : '') + a[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + a[1]; }
+  // A negative amount takes the minus sign in front, as the amount cells write it: "−USD 15.00".
+  money(n) { return (n < -0.004 ? '−' : '') + (this._cur || 'RM') + ' ' + this.fmt(Math.abs(n)); }
+  sgn(n) { return (n < 0 ? '−' : '+') + this.fmt(Math.abs(n)); }
+  dMon(iso) { return +iso.slice(8, 10) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+iso.slice(5, 7) - 1]; }
+  dMonY(iso) { return this.dMon(iso) + ' ' + iso.slice(0, 4); }
+  mName(ym) { return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][+ym.slice(5, 7) - 1] + ' ' + ym.slice(0, 4); }
+  pl(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+  dayCount(n) { return n + (n === 1 ? ' day' : ' days'); }
+  days(a, b) { const t = s => Date.UTC(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10)); return Math.round(Math.abs(t(a) - t(b)) / 864e5); }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+
+  // The sample statements (gaps.md section 3). Account A is the SQL cash book; account B counts payments recorded here.
+  // Account C is AI's Maybank FCA (Kept here, USD): two lines in for the Produce export, USD 5,000.00 of 8,400.00 received (samples section 16).
+  data(acct) {
+    if (acct === 'C') return {
+      label: 'Maybank FCA', month: '2026-10', opening: 12480, closing: 17480, sql: false, here: true, cur: 'USD', bookOpening: 12480, co: 'AI',
+      pays: [{ id: 'cProd', desc: 'Produce export', amount: 8400, received: 5000, dir: 'in', month: '2026-10', vouchers: [] }],
+      lines: [
+        { id: 1, date: '2026-10-28', desc: 'TT CR INWARD REMITTANCE', amount: 3000, balance: 15480, pay: 'cProd', nodocs: false, note: '', confirmed: '2026-11-03' },
+        { id: 2, date: '2026-10-30', desc: 'TT CR INWARD REMITTANCE', amount: 2000, balance: 17480, pay: 'cProd', nodocs: false, note: '', confirmed: '2026-11-03' }
+      ],
+      sugg: {}
+    };
+    if (acct === 'M') {
+      // Many lines: Maybank current May 2026, the 22 lines Bank and reconciliation lists for that month (opening 131,204.10, closing 120,000.00).
+      // May is before tracking began here (September 2026): SQL has no cash book listing for it, and its two service charges are already in SQL.
+      const raw = [[4, 'SERVICE CHARGE', -12], [5, 'IBG CR RENTAL TENANT', 2800], [20, 'IBG CR KLINIK SEHAT', 15800], [29, 'SERVICE CHARGE', -12],
+        ...Array.from({ length: 17 }, (_, i) => [6 + i, 'IBG DR FIELD WAGES', -1500]), [28, 'IBG DR TNB ELECTRICITY', -4280.10]].sort((x, y) => x[0] - y[0]);
+      let bal = 131204.10;
+      const lines = raw.map(([d, desc, amount], i) => {
+        bal = Math.round((bal + amount) * 100) / 100;
+        const chg = desc === 'SERVICE CHARGE';
+        return { id: i + 1, date: '2026-05-' + String(d).padStart(2, '0'), desc, amount, balance: bal, pay: null, nodocs: chg, note: chg ? 'Bank charge' : '', confirmed: null };
+      });
+      return { label: 'Maybank current', gl: '310-000', month: '2026-05', opening: 131204.10, closing: 120000, sql: true, bookClosing: null, before: true, pays: [], lines, sugg: {} };
+    }
+    if (acct === 'B') return {
+      label: 'Maybank savings', gl: '310-100', month: '2026-10', opening: 50000, closing: 58011.40, sql: false, bookOpening: 50000,
+      pays: [{ id: 'bDep', desc: 'Klinik Sehat · deposit', amount: 8000, dir: 'in', month: '2026-10', vouchers: [] }],
+      lines: [
+        { id: 1, date: '2026-10-15', desc: 'IBG CR KLINIK SEHAT DEPOSIT', amount: 8000, balance: 58000, pay: 'bDep', nodocs: false, note: '', confirmed: '2026-11-03' },
+        { id: 2, date: '2026-10-31', desc: 'PROFIT PAID', amount: 21.40, balance: 58021.40, pay: null, nodocs: true, note: 'Profit paid by the bank', confirmed: '2026-11-03' },
+        { id: 3, date: '2026-10-31', desc: 'SERVICE CHARGE', amount: -10, balance: 58011.40, pay: null, nodocs: true, note: 'Bank charge', confirmed: '2026-11-03' }
+      ],
+      sugg: {}
+    };
+    const v = (no, date) => [{ no, date }];
+    return {
+      label: 'Maybank current', gl: '310-000', month: '2026-10', opening: 92418.35, closing: 34314.15, sql: true, bookClosing: 33618.35,
+      // The review's payments: this account, September and October 2026, by due date.
+      pays: [
+        { id: 'aConsult', desc: 'Consultant fee — Payroll Advisory PLT', amount: 3200, dir: 'out', month: '2026-09', vouchers: v('PV2609-020', '2026-09-29') },
+        { id: 'aRent', desc: 'Rental received', amount: 2800, dir: 'in', month: '2026-10', vouchers: v('OR2610-001', '2026-10-02') },
+        { id: 'aCon', desc: 'Contractor — field works', amount: 24000, dir: 'out', month: '2026-10', vouchers: v('PV2610-003', '2026-10-06') },
+        { id: 'aKwsp', desc: 'KWSP · September', amount: 11180, dir: 'out', month: '2026-10', vouchers: v('PV2610-005', '2026-10-15') },
+        { id: 'aKlinik', desc: 'Fund receipt', amount: 45000, dir: 'in', month: '2026-10', vouchers: v('OR2610-006', '2026-10-20') },
+        { id: 'aSal', desc: 'Salaries — October', amount: 48600, dir: 'out', month: '2026-10', vouchers: v('PV2610-014', '2026-10-24') },
+        { id: 'aDir', desc: 'Director fee', amount: 12000, dir: 'out', month: '2026-10', vouchers: [] },
+        { id: 'aOffice', desc: 'Office rental', amount: 6500, dir: 'out', month: '2026-10', vouchers: v('PV2610-021', '2026-10-30') },
+        { id: 'aStat', desc: 'Stationery Mart (cheque 000214)', amount: 1120, dir: 'out', month: '2026-10', vouchers: v('PV2610-022', '2026-10-30') }
+      ],
+      lines: [
+        { id: 1, date: '2026-10-02', desc: 'IBG CR RENTAL TENANT', amount: 2800, balance: 95218.35, pay: 'aRent', nodocs: false, note: '', confirmed: '2026-11-03' },
+        { id: 2, date: '2026-10-06', desc: 'DUITNOW TRF CONTRACTOR | FIELD WORKS', amount: -10000, balance: 85218.35, pay: 'aCon', nodocs: false, note: '', confirmed: '2026-11-03' },
+        { id: 3, date: '2026-10-06', desc: 'DUITNOW TRF CONTRACTOR | FIELD WORKS', amount: -14000, balance: 71218.35, pay: 'aCon', nodocs: false, note: '', confirmed: '2026-11-03' },
+        { id: 4, date: '2026-10-08', desc: 'SERVICE CHARGE', amount: -48, balance: 71170.35, pay: null, nodocs: true, note: 'Bank charge', confirmed: null },
+        { id: 5, date: '2026-10-14', desc: 'IBG DR CONSULTANCY', amount: -3200, balance: 67970.35, pay: null, nodocs: false, note: '', confirmed: null },
+        { id: 6, date: '2026-10-15', desc: 'KWSP SEPT CONTRIBUTION', amount: -11180, balance: 56790.35, pay: 'aKwsp', nodocs: false, note: '', confirmed: null },
+        { id: 7, date: '2026-10-20', desc: 'IBG CR AGRINEXUS INTERNATIONAL', amount: 45000, balance: 101790.35, pay: 'aKlinik', nodocs: false, note: '', confirmed: null },
+        { id: 8, date: '2026-10-24', desc: 'PAYROLL BULK 8 ITEMS', amount: -48600, balance: 53190.35, pay: 'aSal', nodocs: false, note: '', confirmed: null },
+        { id: 9, date: '2026-10-24', desc: 'IBG DR DIRECTOR FEE', amount: -12000, balance: 41190.35, pay: 'aDir', nodocs: false, note: '', confirmed: '2026-11-03' },
+        { id: 10, date: '2026-10-27', desc: 'IBG DR 271026', amount: -150, balance: 41040.35, pay: null, nodocs: false, note: '', confirmed: null },
+        { id: 11, date: '2026-10-27', desc: 'REVERSAL IBG 271026', amount: 150, balance: 41190.35, pay: null, nodocs: false, note: '', confirmed: null },
+        { id: 12, date: '2026-10-29', desc: 'IBG DR WEB HOSTING | 291026', amount: -389, balance: 40801.35, pay: null, nodocs: false, note: '', confirmed: null },
+        { id: 13, date: '2026-10-30', desc: 'IBG DR OFFICE RENTAL', amount: -6500, balance: 34301.35, pay: 'aOffice', nodocs: false, note: '', confirmed: null },
+        { id: 14, date: '2026-10-31', desc: 'PROFIT PAID', amount: 12.80, balance: 34314.15, pay: null, nodocs: false, note: '', confirmed: null }
+      ],
+      // The server's suggestions per line (score 50 or more, best first); the reason is illustrative.
+      sugg: { 5: [{ pay: 'aConsult', why: 'Same amount, name close: Payroll Advisory PLT, 15 days from due' }] },
+      // Book entries where no money moved (scope section 8): SQL's cash book holds a bank charge keyed on 31 Oct and its reversal the same day,
+      // both on 310-000 (stage 1 section 21; the Sql page's "Probably a correction" pair). They count in the book totals (47,848.00 in, 103,448.00 out)
+      // but never touched the bank, so the totals check leaves them out. The reason is filled in from the documents and can be edited.
+      pairs: [{ id: 'pr1', docs: [{ no: 'CB2610-041', date: '2026-10-31', desc: 'Bank charges', amount: -48 }, { no: 'CB2610-044', date: '2026-10-31', desc: 'Reversal of CB2610-041', amount: 48 }],
+        why: 'Reversal: CB2610-044 reverses CB2610-041 (bank charges) the same day, both on 310-000; no money moved' }],
+      // In the books, not on the statement at 31 Oct (Bank and reconciliation): a reconciling item until the cheque clears.
+      recon: ['30 Oct PV2610-022 Stationery Mart, cheque 000214, −1,120.00, in the books, not on the bank yet']
+    };
+  }
+
+  // How much of a payment the lines cover. A line linked to a group of payments (one bulk debit) covers each of them in full.
+  linked(lines, payId, pays) {
+    return lines.reduce((a, l) => {
+      if (l.group && l.group.indexOf(payId) >= 0) { const p = (pays || []).find(q => q.id === payId); return a + (p ? p.amount : 0); }
+      return l.pay === payId && !l.group ? a + Math.abs(l.amount) : a;
+    }, 0);
+  }
+  isOpen(l) { return !l.pay && !l.nodocs; }
+  // Suggestions still offered: never the payment the line was undone from, never one already fully covered.
+  suggFor(st, D, l) {
+    if (!this.isOpen(l)) return [];
+    return (D.sugg[l.id] || []).filter(g => g.pay !== st.undone[l.id]).filter(g => {
+      const p = st.pays.find(q => q.id === g.pay);
+      return p && this.linked(st.lines, p.id, st.pays) < p.amount - 0.005;
+    }).slice(0, 3);
+  }
+  // date_gap: to the SQL voucher date nearest the line, else to a paid date typed by hand; dates from the bank or SQL don't count.
+  gapOf(l, p) {
+    if (!p) return null;
+    if (p.vouchers && p.vouchers.length) {
+      const near = p.vouchers.slice().sort((a, b) => this.days(a.date, l.date) - this.days(b.date, l.date))[0];
+      return { days: this.days(near.date, l.date), date: near.date, kind: 'voucher' };
+    }
+    if (p.typed) return { days: this.days(p.typed, l.date), date: p.typed, kind: 'payment' };
+    return null;
+  }
+  // Book closing: account A from the SQL cash book listing (fixed here); account B from the payments paid in the month
+  // plus the No documents needed lines, as they stand. A payment has a paid date in the month while a line pays it
+  // or a date was typed by hand; a date taken from the bank goes when its last line is undone (_after_unlink).
+  book(st) {
+    const D = this.data(st.acct);
+    if (D.sql) return st.bookOver != null ? st.bookOver : D.bookClosing;
+    const amt = p => (p.received != null ? p.received : p.amount);   // a part-paid payment counts what was received
+    const pays = st.pays.filter(p => p.typed || st.lines.some(l => l.pay === p.id || (l.group && l.group.indexOf(p.id) >= 0))).reduce((a, p) => a + (p.dir === 'in' ? amt(p) : -amt(p)), 0);
+    const nodocs = st.lines.filter(l => l.nodocs && !l.pay).reduce((a, l) => a + l.amount, 0);
+    return Math.round((D.bookOpening + pays + nodocs) * 100) / 100;
+  }
+
+  exInit(st, id, q, all) {
+    const l = st.lines.find(x => x.id === id) || st.lines[0];
+    const ch = st.choice[l.id] || '';
+    // sels: the payments ticked in the list (one or several); cur: the option that holds the tab stop.
+    const sel = ch.indexOf('p:') === 0 ? ch.slice(2) : null;
+    return { line: l.id, q: q || '', all: !!all, sels: sel ? [sel] : [], cur: sel, desc: '', cat: l.amount > 0 ? 'receipt' : 'other', note: '', err: '', err2: '' };
+  }
+
+  // Apply selected (recon apply): link, create or explain each open row, then confirm every row not yet confirmed
+  // (_confirm leaves an earlier confirmation and its date alone, and never confirms an open line). Resets selection,
+  // date ticks, "I've checked these rows" and typed text. `snap` holds the choices and typed text as they were at the
+  // click, as the app sends them in one request; edits made while it runs don't change what is applied.
+  applied(st, ids, snap) {
+    const D = this.data(st.acct), TODAY = '2026-11-18', v = snap || st;
+    let pays = st.pays.slice(), changed = false;
+    const c = { linked: 0, created: 0, explained: 0, confirmed: 0 };
+    const lines = st.lines.map(l => {
+      if (ids.indexOf(l.id) < 0) return l;
+      const n = { ...l };
+      if (this.isOpen(l)) {
+        const ch = v.choice[l.id] || '';
+        changed = true;
+        if (ch === 'c') {
+          const p = { id: 'new' + l.id, desc: (v.desc[l.id] || '').trim(), amount: Math.abs(l.amount), dir: l.amount > 0 ? 'in' : 'out', month: D.month,
+            vouchers: [], created: true, cat: v.cat[l.id] || (l.amount > 0 ? 'receipt' : 'other') };
+          pays = pays.concat([p]); n.pay = p.id; c.created++;
+        } else if (ch === 'n') { n.nodocs = true; n.note = (v.note[l.id] || '').trim(); c.explained++; }
+        else if (ch.indexOf('p:') === 0) { n.pay = ch.slice(2); c.linked++; }
+      }
+      if (!n.pay && !n.nodocs) return n;
+      if (!n.confirmed) { n.confirmed = TODAY; c.confirmed++; }
+      return n;
+    });
+    const choice = { ...st.choice };
+    ids.forEach(i => { delete choice[i]; });
+    return { c, patch: { lines, pays, choice, sel: {}, keep: {}, checked: false, desc: {}, cat: {}, note: {}, signed: changed ? null : st.signed } };
+  }
+  // Confirm all matched: every linked or explained line not yet confirmed, except those whose bank date differs.
+  confirmedAll(st) {
+    let n = 0, k = 0;
+    const ids = {};
+    const lines = st.lines.map(l => {
+      if (this.isOpen(l) || l.confirmed) return l;
+      const g = this.gapOf(l, l.pay ? st.pays.find(p => p.id === l.pay) : null);
+      if (g && g.days > 0) { k++; return l; }
+      n++; ids[l.id] = true;
+      return { ...l, confirmed: '2026-11-18' };
+    });
+    return { n, k, ids, patch: { lines, sel: {}, keep: {}, checked: false, desc: {}, cat: {}, note: {} } };
+  }
+
+  init(view, coIn) {
+    const co = coIn || (['ai-charge', 'ai-signed'].indexOf(view) >= 0 || (this.props && this.props.company === 'ai') ? 'AI' : 'AISB');
+    const acct = co === 'AI' ? 'C' : view === 'savings' || view === 'savings-ready' ? 'B' : view === 'many-lines' ? 'M' : 'A';
+    const D = this.data(acct);
+    const st = { view, acct, lines: D.lines.map(l => ({ ...l })), pays: D.pays.map(p => ({ ...p })), choice: {}, desc: {}, cat: {}, note: {}, sel: {}, keep: {},
+      checked: false, showMatched: ['matched-open', 'after-apply', 'savings', 'savings-ready', 'ai-signed'].indexOf(view) >= 0 || (co === 'AI' && view !== 'ai-charge'), q: view === 'search' ? 'contr' : '',
+      sort: view === 'sorted' ? { col: 'amount', dir: 1 } : null, co, none: view === 'no-statement', loading: view === 'loading', loadErr: view === 'load-error', undone: {},
+      // Maybank savings October was signed off on 3 Nov (as on Bank and reconciliation), so its review is locked.
+      // savings-ready shows the same month just before that sign-off: every line confirmed, no difference, Mark reconciled enabled.
+      signed: acct === 'B' && view !== 'savings-ready' ? '2026-11-03' : null, toast: '', undo: null, refusal: '', busy: false, closingBal: D.closing,
+      fresh: {}, flashN: 0, swapN: 0, headN: 0, ex: null, closing: false,
+      // No money moved: the account's pairs, each with its reason and its confirmation date; the sign-off note as kept at sign-off.
+      pairs: (D.pairs || []).map(p => ({ ...p, docs: p.docs.map(d => ({ ...d })), ok: null, err: '' })),
+      bookOver: null, freeNote: '', signNote: null, signFree: '', sampleNote: '' };
+    if (view === 'pair-confirmed') {
+      // The pair just ticked: the toast offers Undo (a static preview: no timer).
+      const before = st.pairs;
+      st.pairs = before.map(p => ({ ...p, ok: '2026-11-18' }));
+      st.toast = 'Pair confirmed: CB2610-041 and CB2610-044, no money moved.';
+      st.undo = { patch: { pairs: before }, msg: 'Undone. The pair is waiting to be confirmed.', focus: 'br-pair-tick-pr1' };
+    }
+    if (view === 'pair-not-nil') {
+      // State only: as if the reversal had been keyed in SQL as 45.00. The pair is 3.00 short of nil and SQL's book closing 3.00 lower.
+      st.pairs = st.pairs.map(p => ({ ...p, docs: p.docs.map(d => (d.no === 'CB2610-044' ? { ...d, amount: 45 } : d)) }));
+      st.bookOver = 33615.35;
+      st.sampleNote = "What-if, not in the shared data: as if CB2610-044 had been keyed in SQL as 45.00, not 48.00. The pair is RM 3.00 short of nil, so it can't be confirmed, and SQL's book closing is 3.00 lower.";
+    }
+    if (view === 'ai-signed') {
+      // AI's October just marked reconciled here: locked, and the toast offers Undo (a static preview: no timer).
+      st.signed = '2026-11-18'; st.toast = 'Marked as reconciled. October 2026 is locked for Maybank FCA.';
+      st.undo = { patch: { signed: null }, msg: 'Sign-off undone. October 2026 is open again; both changes are in the audit trail.' };
+    }
+    if (view === 'ai-charge') {
+      // State only (AI's October has no bank charge in the samples): a USD 15.00 service charge on 31 Oct, to be booked from the line.
+      st.lines.push({ id: 3, date: '2026-10-31', desc: 'SERVICE CHARGE', amount: -15, balance: 17465, pay: null, nodocs: false, note: '', confirmed: null });
+      st.closingBal = 17465; st.choice = { 3: 'b' };
+    }
+    if (view === 'link-several' || view === 'link-several-short') {
+      // State only: the October salary run sent to To pay as one payment per person (HR › Payroll), all paid under BULK 241026.
+      // The bank shows one debit, PAYROLL BULK 8 ITEMS 48,600.00, so that line is linked to the 8 payments at once. Nets: samples section 6.
+      const NET = [['S001', 'Aisha Rahman', 7732.35], ['S002', 'Ong Wei Ming', 8720.35], ['S003', 'Nurul Aina binti Hashim', 6288.35], ['S004', 'Mohd Hafiz bin Rosli', 7073.45],
+        ['S005', 'Nor Khadijah binti Omar', 5116.85], ['S006', 'Wong Kah Seng', 7348.25], ['S007', 'Goh Jia Hui', 3547.60], ['S008', 'Nur Izzati binti Kamal', 2772.80]];
+      st.pays = st.pays.filter(p => p.id !== 'aSal').concat(NET.map(([no, nm, amt]) => ({ id: 'n' + no, desc: 'Net pay, October · ' + no + ' ' + nm, amount: amt, dir: 'out', month: '2026-10', vouchers: [], net: true })));
+      st.lines = st.lines.map(l => (l.id === 8 ? { ...l, pay: null, confirmed: null } : l));
+      st.ex = this.exInit(st, 8, '', false);
+      const ids = NET.map(n => 'n' + n[0]);
+      st.ex.sels = view === 'link-several' ? ids : ids.filter(i => i !== 'nS007');   // the short match leaves out Jia Hui's 3,547.60
+      st.ex.cur = st.ex.sels[0];
+    }
+    // As openReview: each open line with suggestions starts on its best one.
+    st.lines.forEach(l => { const g = this.suggFor(st, D, l)[0]; if (g) st.choice[l.id] = 'p:' + g.pay; });
+    const APPLIED = ['after-apply', 'pair-ready', 'pair-signed'].indexOf(view) >= 0;
+    if (view === 'ready-to-apply' || APPLIED) {
+      Object.assign(st.choice, { 10: 'n', 11: 'n', 12: 'c', 14: 'c' });
+      st.note = { 10: 'Failed transfer, reversed the same day', 11: 'Failed transfer, reversed the same day' };
+      st.desc = { 12: 'Web hosting', 14: 'Profit paid by the bank' };
+      st.cat = { 12: 'other', 14: 'receipt' };
+      st.sel = { 5: true, 10: true, 11: true, 12: true, 14: true };
+      st.keep = { 5: true };
+      st.checked = true;
+    }
+    if (APPLIED) {
+      Object.assign(st, this.applied(st, [5, 10, 11, 12, 14]).patch);
+      const r = this.confirmedAll(st);
+      Object.assign(st, r.patch);
+      if (view === 'after-apply') st.toast = this.pl(r.n, 'line') + ' confirmed.';
+    }
+    if (view === 'pair-ready' || view === 'pair-signed') {
+      // State only: every line explained and confirmed, and SQL's cash book as if it agreed with the bank, so only the pair is left.
+      st.bookOver = 34314.15;
+      st.sampleNote = "What-if, not in the shared data: Maybank current, October 2026, as if every line were explained and confirmed and SQL's cash book agreed with the bank at 34,314.15. "
+        + (view === 'pair-ready' ? 'Only the No money moved pair is left before the sign-off.' : 'Then the pair was confirmed and the month signed off on 18 Nov with a note.');
+    }
+    if (view === 'pair-signed') {
+      st.pairs = st.pairs.map(p => ({ ...p, ok: '2026-11-18' }));
+      st.freeNote = 'The 8 Oct service charge is booked in SQL by JV2610-012.';
+      st.signed = '2026-11-18'; st.signFree = st.freeNote;
+      st.toast = 'Marked as reconciled. October 2026 is locked for Maybank current.';
+      st.undo = { patch: { signed: null, signNote: null, signFree: '' }, msg: 'Sign-off undone. October 2026 is open again; both changes and the note are in the audit trail.', focus: 'br-sign' };
+    }
+    // The sign-off note of a month already signed off, as the app wrote it at sign-off.
+    if (st.signed) st.signNote = this.noteOf(st);
+    if (view.indexOf('explain') === 0) st.ex = this.exInit(st, 5, view === 'explain-search-empty' ? 'hosting' : '', view === 'explain-also');
+    return st;
+  }
+
+  // The sign-off note, written by the app (scope section 8): each confirmed pair with its reason and amounts, each line explained
+  // without documents, and anything left as a reconciling item. The free note is kept beside it.
+  noteOf(st) {
+    const D = this.data(st.acct), cur = this._cur;
+    this._cur = D.cur || 'RM';
+    const pr = (st.pairs || []).filter(p => p.ok);
+    const nd = st.lines.filter(l => l.nodocs && !l.pay);
+    const rc = st.bookOver != null ? [] : (D.recon || []);
+    const out = [
+      pr.length ? 'No money moved: ' + pr.map(p => p.docs.map(d => d.no + ' ' + d.desc + ' ' + this.sgn(d.amount)).join(' and ') + ', net nil. Reason: ' + p.why.trim() + '.').join(' ') : 'No money moved: none.',
+      nd.length ? 'Explained without documents: ' + nd.map(l => this.dMon(l.date) + ' ' + l.desc.replace(/ \| /g, ' · ') + ' ' + this.sgn(l.amount) + (l.note ? ', ' + l.note : '')).join('; ') + '.' : 'Explained without documents: none.',
+      rc.length ? 'Reconciling items left: ' + rc.join('; ') + '.' : 'Reconciling items left: none.'
+    ];
+    this._cur = cur;
+    return out;
+  }
+
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.company !== this.props.company) { this.setState(this.init(this.state.view, this.props.company === 'ai' ? 'AI' : 'AISB')); return; }
+        if (prevProps && prevProps.view !== this.props.view) {
+      // The "State to show" tweak changed: start that state afresh.
+      clearTimeout(this._t); clearTimeout(this._bt); clearTimeout(this._tt); clearTimeout(this._ft); this._opener = null;
+      this.setState(this.init(this.props.view || 'october'));
+      return;
+    }
+    if (!prev) return;
+    const st = this.state;
+    if (!prev.ex && st.ex) { this.focusId('br-title'); return; }
+    if (prev.ex && !st.ex) {
+      const o = this._opener; this._opener = null;
+      const fb = this._fallback || ('br-more-' + prev.ex.line); this._fallback = null;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true });
+      else if (!this.focusId(fb)) this.focusId('br-mtoggle');
+      return;
+    }
+    // If the target is gone (an undone line the search now hides), fall back so focus never drops to <body>.
+    if (this._focus) { const id = this._focus; this._focus = null; if (!this.focusId(id) && !this.focusId('br-mtoggle')) this.focusId('br-sort-date'); }
+  }
+
+  closeEx() {
+    if (!this.state.ex || this.state.closing) return;
+    if (this.calm()) return this.finishEx();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishEx(), 400);   // only a safety net if animationend never arrives
+  }
+  finishEx() { clearTimeout(this._t); if (this.state.ex) this.setState({ ex: null, closing: false }); }
+
+  // A drawer action (link, create, no documents): the line moves to Matched as "Matched, not confirmed"; the dialog closes.
+  explain(id, how) {
+    const st = this.state, D = this.data(st.acct);
+    const l = st.lines.find(x => x.id === id);
+    if (!l || !st.ex || st.closing) return;
+    let pays = st.pays;
+    const n = { ...l, confirmed: null, group: null };
+    if (how.pays) { n.pay = how.pays[0]; n.group = how.pays.length > 1 ? how.pays.slice() : null; }
+    else if (how.pay) n.pay = how.pay;
+    else if (how.create) {
+      const p = { id: 'new' + id, desc: how.create.desc, amount: Math.abs(l.amount), dir: l.amount > 0 ? 'in' : 'out', month: D.month, vouchers: [], created: true, cat: how.create.cat };
+      pays = pays.concat([p]); n.pay = p.id;
+    } else { n.nodocs = true; n.note = how.nodocs; }
+    const drop = o => { const x = { ...o }; delete x[id]; return x; };
+    const calm = this.calm();
+    this._fallback = 'br-mtoggle';
+    this.setState({ lines: st.lines.map(x => (x.id === id ? n : x)), pays, choice: drop(st.choice), sel: drop(st.sel), keep: drop(st.keep), desc: drop(st.desc), note: drop(st.note), cat: drop(st.cat),
+      signed: null, toast: n.group ? 'Line linked to ' + n.group.length + ' payments.' : 'Line explained',
+      undo: { patch: { lines: st.lines, pays: st.pays }, msg: 'Undone. The line is waiting to be explained.', focus: 'br-more-' + id }, refusal: '', fresh: { [id]: true }, flashN: st.flashN + 1, swapN: st.swapN + 1, headN: st.headN + 1,
+      closing: !calm, ex: calm ? null : st.ex });
+    this.armToast(true); this.armFresh();
+    if (!calm) { clearTimeout(this._t); this._t = setTimeout(() => this.finishEx(), 400); }
+  }
+
+  // Undo on a matched or explained line: no confirm step; a payment made only from this line goes too.
+  undoLine(id) {
+    const st = this.state, D = this.data(st.acct);
+    const l = st.lines.find(x => x.id === id);
+    if (!l || this.isOpen(l) || st.busy) return;
+    const p = l.pay ? st.pays.find(q => q.id === l.pay) : null;
+    const removed = !!(p && p.created && !st.lines.some(x => x.pay === p.id && x.id !== id));
+    const lines = st.lines.map(x => (x.id === id ? { ...x, pay: null, group: null, nodocs: false, note: '', confirmed: null } : x));
+    const pays = removed ? st.pays.filter(q => q !== p) : st.pays;
+    const undone = { ...st.undone, [id]: p ? p.id : 0 };
+    const g = this.suggFor({ ...st, lines, pays, undone }, D, lines.find(x => x.id === id))[0];
+    const choice = { ...st.choice }, sel = { ...st.sel }, keep = { ...st.keep };
+    if (g) choice[id] = 'p:' + g.pay; else delete choice[id];
+    delete sel[id]; delete keep[id];
+    this._focus = 'br-more-' + id;
+    this.setState({ lines, pays, undone, choice, sel, keep, signed: null, refusal: '', undo: null,
+      toast: removed ? 'Undone. ' + p.desc + ' was created from the bank statement and had nothing else on it, so it was removed too.' : 'Undone. The line is waiting to be explained.',
+      fresh: { [id]: true }, flashN: st.flashN + 1, swapN: st.swapN + 1 });
+    this.armToast(); this.armFresh();
+  }
+
+  // Runs the apply with what was chosen at the click (snap). A row whose line changed state since (open vs explained) is left out.
+  finishApply(ids, snap) {
+    clearTimeout(this._bt);
+    const st = this.state;
+    if (!st.busy) return;
+    const todo = ids.filter(i => { const l = st.lines.find(x => x.id === i); return !!l && (!snap || this.isOpen(l) === !!snap.open[i]); });
+    const r = this.applied(st, todo, snap), c = r.c;
+    const fresh = {};
+    todo.forEach(i => { fresh[i] = true; });
+    this._focus = 'br-mtoggle';
+    this.setState({ ...r.patch, busy: false, refusal: '', fresh, flashN: st.flashN + 1, swapN: st.swapN + 1,
+      undo: { patch: { lines: st.lines, pays: st.pays, signed: st.signed }, msg: 'Undone. ' + (todo.length === 1 ? 'The row is' : 'The ' + todo.length + ' rows are') + ' back as they were.', focus: 'br-mtoggle' },
+      toast: 'Applied ' + this.pl(todo.length, 'row') + ': ' + c.linked + ' linked, ' + c.created + ' created, ' + c.explained + ' explained, ' + c.confirmed + ' confirmed.' });
+    this.armToast(true); this.armFresh();
+  }
+
+  renderVals() {
+    const s = this.state, set = x => this.setState(x);
+    const D = this.data(s.acct), TODAY = '2026-11-18';
+    this._cur = D.cur || 'RM';
+    const lines = s.lines, pays = s.pays;
+    const P = {};
+    pays.forEach(p => { P[p.id] = p; });
+    const linkedAmt = id => this.linked(lines, id, pays);
+    const here = !!D.here, coName = s.co === 'AI' ? 'AI' : 'AISB';
+    const isOpen = l => this.isOpen(l);
+    const opens = lines.filter(isOpen), dones = lines.filter(l => !isOpen(l));
+    const toConfirm = dones.filter(l => !l.confirmed).length;
+    // A month with no SQL cash book listing (before tracking began) has no book closing, so no difference either.
+    const book = this.book(s), noBook = book === null;
+    const diff = noBook ? null : Math.round((s.closingBal - book) * 100) / 100;
+    const zero = !noBook && Math.abs(diff) <= 0.005;
+    // A line linked to several payments whose total isn't the line's amount (a bulk debit linked short): it stays under
+    // "Matched, but the amounts differ" until the rest is linked, and the month can't be signed off.
+    const grpGap = l => (l.group ? Math.round((Math.abs(l.amount) - l.group.reduce((a, g) => a + (P[g] ? P[g].amount : 0), 0)) * 100) / 100 : 0);
+    const shorts = dones.filter(l => Math.abs(grpGap(l)) > 0.005);
+    let status = 'to_review';
+    if (s.signed) status = zero ? 'reconciled' : 'difference';
+    else if (!noBook && !zero && !opens.length && !toConfirm) status = 'difference';
+    const PILL = { ok: 'background:#E3F7EC;color:#0A6B3D', warn: 'background:#FEF1D6;color:#934100', bad: 'background:#FDE6E3;color:#B0190F', grey: 'background:#EEF1F5;color:#46546A' };
+    const pill = t => 'display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + PILL[t];
+    const STATUS = { to_review: ['To review', 'warn'], difference: ['Difference', 'bad'], reconciled: ['Reconciled', 'ok'] };
+    // No money moved (scope section 8): pairs of book entries that cancel out and never touched the bank. Sign-off is refused
+    // while a pair is unconfirmed, or while a pair's net is not nil (the remainder is then a difference to explain).
+    const prs = s.pairs || [];
+    const netOf = p => Math.round(p.docs.reduce((a, d) => a + d.amount, 0) * 100) / 100;
+    const nilOf = p => Math.abs(netOf(p)) <= 0.005;
+    const prBad = prs.filter(p => !nilOf(p)), prOpen = prs.filter(p => nilOf(p) && !p.ok);
+    const why = [];
+    if (opens.length) why.push(this.pl(opens.length, 'line') + ' to explain');
+    if (toConfirm) why.push(this.pl(toConfirm, 'line') + ' to confirm');
+    if (shorts.length) why.push(this.pl(shorts.length, 'line') + ' matched, but the amounts differ');
+    if (prBad.length) why.push(this.pl(prBad.length, 'pair') + ' under No money moved ' + (prBad.length === 1 ? "isn't" : "aren't") + ' nil (' + this.money(prBad.reduce((a, p) => a + Math.abs(netOf(p)), 0)) + ' left)');
+    if (prOpen.length) why.push(this.pl(prOpen.length, 'pair') + ' under No money moved to confirm');
+    if (noBook) why.push('SQL has no cash book listing for ' + this.mName(D.month) + ' (before tracking began here)');
+    else if (!zero) why.push('the books differ from the bank by ' + this.money(diff));
+    const canSign = !why.length;
+    const isSigned = status === 'reconciled';
+    const locked = isSigned;   // a signed-off month is locked: nothing on its lines changes until it is reopened on Bank and reconciliation
+    const swapCls = s.swapN ? (s.swapN % 2 ? 'swapA' : 'swapB') : '';
+    const flashCls = id => (s.fresh[id] ? (s.flashN % 2 ? 'rvfa' : 'rvfb') : '');
+
+    // Selection and the bottom bar
+    const selLines = lines.filter(l => s.sel[l.id]);
+    const nSel = selLines.length, sumSel = selLines.reduce((a, l) => a + l.amount, 0);
+    const still = opens.filter(l => !s.sel[l.id]).length;
+
+    // Search (bankText): every typed word somewhere in the row, any order, ignoring case.
+    const words = s.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const textOf = l => {
+      const p = l.pay && P[l.pay], a = Math.abs(l.amount), raw = a.toFixed(2), f = this.fmt(a);
+      const amt = l.amount < 0 ? ['-' + raw, '-' + f, '−' + f, raw, f] : [raw, f, '+' + raw, '+' + f];
+      return [this.dMonY(l.date), l.date, l.desc, amt.join(' '), 'MYR', p ? p.desc : '', l.note || '',
+        l.nodocs ? 'no documents needed' : p ? '' : 'not explained'].join(' ').toLowerCase();
+    };
+    const hit = l => words.every(w => textOf(l).indexOf(w) >= 0);
+
+    // One sort for both lists: up, then down, then back to statement order.
+    const KEYS = { date: l => l.date, desc: l => l.desc.toLowerCase(), amount: l => l.amount,
+      by: l => (l.group ? 'Linked to ' + l.group.length + ' payments' : l.pay && P[l.pay] ? P[l.pay].desc : l.nodocs ? 'No documents needed' : 'Not explained').toLowerCase() };
+    const srt = s.sort;
+    const order = list => (!srt ? list : list.slice().sort((a, b) => { const x = KEYS[srt.col](a), y = KEYS[srt.col](b); return (x < y ? -1 : x > y ? 1 : 0) * srt.dir; }));
+    // As the app's sortTh: the button is named by its column only, and aria-sort on the header gives the order.
+    const hd = {};
+    Object.keys(KEYS).forEach(col => {
+      const on = !!srt && srt.col === col;
+      hd[col] = { aria: on ? (srt.dir > 0 ? 'ascending' : 'descending') : 'none', up: on && srt.dir > 0, down: on && srt.dir < 0,
+        style: 'display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 8px;border:0;border-radius:8px;font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;' + (on ? 'background:#EAF0FD;color:#2450B8' : 'background:transparent;color:inherit'),
+        go: () => set({ sort: !on ? { col, dir: 1 } : srt.dir > 0 ? { col, dir: -1 } : null }) };
+    });
+
+    const TYPES_OUT = [['salary', 'Salary'], ['director', 'Director allowance'], ['consultant', 'Consultant fee'], ['statutory', 'Statutory (KWSP / PERKESO / LHDN)'],
+      ['utility', 'Utility / telco'], ['rental', 'Rental'], ['claim', 'Staff claim'], ['claim_overseas', 'Staff claim - overseas service (self-billed e-Invoice)'], ['transfer', 'Inter-company transfer'], ['other', 'Other payment']];
+    const TYPES_IN = [['receipt', 'Money received']];
+    const typesFor = amt => (amt > 0 ? TYPES_IN : TYPES_OUT).map(t => ({ k: t[0], l: t[1] }));
+    const bankSide = l => ({ date: this.dMonY(l.date), way: l.amount < 0 ? 'Money out' : 'Money in', amt: this.sgn(l.amount),
+      amtStyle: 'font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;' + (l.amount > 0 ? 'color:#0A6B3D' : 'color:#0F1A2B'),
+      desc: l.desc.replace(/ \| /g, ' · '), balance: 'Balance ' + this.money(l.balance),
+      aria: this.dMonY(l.date) + ', ' + (l.amount < 0 ? 'money out ' : 'money in ') + this.sgn(l.amount) + ', ' + l.desc.replace(/ \| /g, ' · '),
+      srFor: ' the line of ' + this.dMon(l.date) + ' (' + this.sgn(l.amount) + ')' });
+    const tickOf = (l, g) => ({ tick: !!(g && g.days > 0), tickText: g ? 'Bank date differs by ' + this.dayCount(g.days) + ': keep the ' + g.kind + ' date (' + this.dMon(g.date) + ')' : '',
+      keep: !!s.keep[l.id], onKeep: e => { if (!s.busy) set({ keep: { ...s.keep, [l.id]: !!e.target.checked }, refusal: '' }); } });
+    const optText = (q, w) => q.desc + ' · ' + (q.dir === 'in' ? '+' : '') + this.money(q.amount) + ' (' + this.mName(q.month) + ')' + (w ? ' · ' + w : '')
+      + (linkedAmt(q.id) > 0.005 ? ' · already linked ' + this.money(linkedAmt(q.id)) : '');
+
+    // Kept in SQL Account: a bank charge or bank profit explained here must still be entered in SQL (not posted from here),
+    // by direction and kind, on the account's own GL. Not for a month before tracking began: SQL has it already.
+    const sqlCo = !here && !D.before;
+    const entryOf = (l, note) => {
+      const t = ((note || '') + ' ' + l.desc).toLowerCase(), gl = D.gl + ' ' + D.label;
+      if (l.amount < 0 && t.indexOf('charge') >= 0) return 'Dr 900-010 Bank charges, Cr ' + gl;
+      if (l.amount > 0 && t.indexOf('profit') >= 0) return 'Dr ' + gl + ', Cr 650-000 Bank profit';
+      return '';
+    };
+    const openRow = l => {
+      const id = l.id, dir = l.amount > 0 ? 'in' : 'out';
+      const sug = this.suggFor(s, D, l), sIds = sug.map(g => g.pay);
+      const openP = pays.filter(q => sIds.indexOf(q.id) < 0 && q.dir === dir && linkedAmt(q.id) < q.amount - 0.005);
+      const groups = [];
+      if (sug.length) groups.push({ label: 'Suggested', opts: sug.map(g => ({ v: 'p:' + g.pay, l: optText(P[g.pay], g.why) })) });
+      if (openP.length) groups.push({ label: 'Open payments', opts: openP.map(q => ({ v: 'p:' + q.id, l: optText(q, '') })) });
+      const ch = s.choice[id] || '';
+      const cp = ch.indexOf('p:') === 0 ? P[ch.slice(2)] : null;
+      const drop = o => { const x = { ...o }; delete x[id]; return x; };
+      return { ...bankSide(l), ...tickOf(l, cp ? this.gapOf(l, cp) : null), id, domId: 'br-row-' + id, moreId: 'br-more-' + id, cls: flashCls(id), groups, choice: ch,
+        pick: e => { if (s.busy) return; const v = e.target.value; set({ choice: { ...s.choice, [id]: v }, sel: v ? s.sel : drop(s.sel), keep: drop(s.keep), desc: drop(s.desc), note: drop(s.note), cat: drop(s.cat), refusal: '' }); },
+        // The last choices: Kept in SQL Account explains a bank charge here (and it is entered in SQL); Kept here books the line as a voucher.
+        tail: here ? [{ v: 'b', l: dir === 'out' ? 'Book this line (payment voucher)' : 'Book this line (official receipt)' }] : [{ v: 'n', l: 'No documents needed (bank charge)' }],
+        isBook: ch === 'b', bookAria: 'Book the line of ' + this.dMon(l.date) + ' (' + this.sgn(l.amount) + ')',
+        bookText: (dir === 'out' ? 'Posts a payment voucher' : 'Posts an official receipt') + ' in ' + coName + "'s books from this line, dated " + this.dMonY(l.date) + '. You choose the account on the next page; Apply leaves this row alone.',
+        sqlHint: sqlCo && ch === 'n', sqlHintText: entryOf(l, s.note[id]) ? 'Enter it in SQL Account too (' + entryOf(l, s.note[id]) + '). This only explains the line here.'
+          : 'If it belongs in the books, enter it in SQL Account too. This only explains the line here.',
+        isCreate: ch === 'c', isNone: ch === 'n', descVal: s.desc[id] || '', noteVal: s.note[id] || '', cat: s.cat[id] || (dir === 'in' ? 'receipt' : 'other'), types: typesFor(l.amount),
+        onDesc: e => set({ desc: { ...s.desc, [id]: e.target.value }, refusal: '' }),
+        onNote: e => set({ note: { ...s.note, [id]: e.target.value }, refusal: '' }),
+        onCat: e => set({ cat: { ...s.cat, [id]: e.target.value } }),
+        sel: !!s.sel[id], selOff: !ch || ch === 'b', onSel: e => { if (!s.busy) set({ sel: { ...s.sel, [id]: !!e.target.checked }, refusal: '' }); },
+        selLbl: 'display:inline-flex;align-items:center;gap:8px;align-self:flex-start;min-height:32px;font-size:13px;font-weight:600;' + (ch && ch !== 'b' ? 'color:#0F1A2B;cursor:pointer' : 'color:#5F6C80;cursor:not-allowed'),
+        more: () => { if (s.ex || s.busy) return; this._opener = document.activeElement; clearTimeout(this._t); set({ ex: this.exInit(s, id, '', false), closing: false }); } };
+    };
+    const sqlNoteOf = l => {
+      if (!sqlCo || !l.nodocs) return '';
+      const e = entryOf(l, l.note);
+      if (!e) return '';
+      return (l.amount < 0 ? 'Bank charge of ' : 'Bank profit of ') + this.money(Math.abs(l.amount)) + ' on ' + this.dMonY(l.date) + ': ' + e + ". Explaining it here doesn't post it.";
+    };
+    const doneRow = l => {
+      const id = l.id, p = l.pay ? P[l.pay] : null, grp = l.group ? l.group.map(g => P[g]).filter(Boolean) : null;
+      const gTotal = grp ? grp.reduce((a, q) => a + q.amount, 0) : 0;
+      const sqlNote = sqlNoteOf(l), gap = grpGap(l);
+      return { ...bankSide(l), ...tickOf(l, p && !grp && !l.confirmed ? this.gapOf(l, p) : null), id, domId: 'br-row-' + id, undoId: 'br-undo-' + id, cls: flashCls(id),
+        title: grp ? 'Linked to ' + grp.length + ' payments' : p ? p.desc : 'No documents needed',
+        sub: grp ? this.money(gTotal) + ' together · ' + this.mName(p.month) : p ? (p.dir === 'in' ? '+' : '') + this.money(p.amount) + ' · ' + this.mName(p.month) + (p.received != null ? ' · ' + this.money(p.received) + ' received' : '') : (l.note || ''),
+        chips: grp ? grp.map(q => ({ t: q.desc.replace(/^Net pay, October · /, '') + ' · ' + this.fmt(q.amount) })) : p ? p.vouchers.map(v => ({ t: v.no + ' · ' + this.dMon(v.date) })) : [],
+        hasChips: !!(grp || (p && p.vouchers.length)),
+        canUndo: !locked, isLocked: locked, hasSqlNote: !!sqlNote, sqlNote,
+        hasGap: Math.abs(gap) > 0.005,
+        gapText: !grp ? '' : 'The ' + grp.length + ' payments come to ' + this.money(gTotal) + ', ' + (gap > 0 ? this.money(gap) + ' short of the line: undo, then link the rest with them.' : this.money(-gap) + ' over the line: undo, then link only the payments it paid.'),
+        pill: l.confirmed ? 'Confirmed ' + this.dMon(l.confirmed) : 'Matched, not confirmed', pillStyle: pill(l.confirmed ? 'ok' : 'warn'),
+        pillCls: s.fresh[id] && l.confirmed ? (s.flashN % 2 ? 'okA' : 'okB') : '',
+        undo: () => this.undoLine(id),
+        sel: !!s.sel[id], onSel: e => { if (!s.busy) set({ sel: { ...s.sel, [id]: !!e.target.checked }, refusal: '' }); } };
+    };
+    // The No money moved group: each pair together with its net, its reason (filled in, editable) and a tick to confirm it.
+    // The tick is refused without a reason, and off while the pair isn't nil or the month is locked. Each change offers Undo.
+    const setPair = (id, x) => set({ pairs: (this.state.pairs || []).map(p => (p.id === id ? { ...p, ...x } : p)) });
+    const pairRows = prs.map(p => {
+      const id = p.id, net = netOf(p), nil = nilOf(p), title = p.docs.map(d => d.no).join(' and ');
+      const tickId = 'br-pair-tick-' + id, whyId = 'br-pair-why-' + id, errId = 'br-pair-err-' + id, nilId = 'br-pair-nil-' + id;
+      const tickOff = locked || !nil;
+      return { domId: 'br-pair-' + id, cls: flashCls(id), title,
+        aria: 'Pair ' + title + ', ' + (nil ? 'net nil' : 'net ' + this.money(Math.abs(net)) + ', not nil') + ', ' + (p.ok ? 'confirmed' : 'not confirmed'),
+        style: 'display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:12px;background:#FFFFFF;'
+          + (p.ok ? 'border:1px solid #BFE8D0' : nil ? 'border:1px solid #F1D9A8;border-left:4px solid #D98B1C' : 'border:1px solid #F4C2BC;border-left:4px solid #C7372B'),
+        net: nil ? 'Net nil' : 'Net ' + this.money(Math.abs(net)) + ', not nil', netStyle: pill(nil ? 'ok' : 'bad'), netGlyph: nil ? 'check' : 'alert', netTone: nil ? 'ok' : 'bad',
+        pill: p.ok ? 'Confirmed ' + this.dMon(p.ok) : nil ? 'To confirm' : 'Not nil', pillStyle: pill(p.ok ? 'ok' : nil ? 'warn' : 'bad'),
+        pillCls: s.fresh[id] ? (s.flashN % 2 ? 'okA' : 'okB') : '',
+        caption: 'The book entries of the pair ' + title + ', with their amounts',
+        docs: p.docs.map(d => ({ no: d.no, date: this.dMon(d.date), desc: d.desc, inn: d.amount > 0 ? '+' + this.fmt(d.amount) : '', out: d.amount < 0 ? '−' + this.fmt(-d.amount) : '' })),
+        whyId, why: p.why, ro: locked, whyBad: p.err ? 'true' : 'false', whyDesc: p.err ? errId : '',
+        whyStyle: 'height:40px;width:100%;box-sizing:border-box;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;'
+          + (p.err ? 'border:1px solid #C7372B;background:#FFFBFA' : locked ? 'border:1px solid #C9D2DF;background:#F7F8FA' : 'border:1px solid #5F6C80;background:#FFFFFF'),
+        onWhy: e => { if (!locked) setPair(id, { why: e.target.value, err: '' }); },
+        hasErr: !!p.err, err: p.err, errId,
+        notNil: !nil, nilId,
+        nilText: "The two entries don't cancel: " + this.money(Math.abs(net)) + " is left. A pair that isn't nil can't be confirmed, and the remainder stays a difference to explain until the entry is corrected"
+          + (sqlCo ? ' in SQL Account.' : '.'),
+        tickId, ok: !!p.ok, tickOff, tickDesc: !nil ? nilId : '',
+        tickLbl: 'display:inline-flex;align-items:center;gap:8px;align-self:flex-start;min-height:32px;font-size:13px;font-weight:600;' + (tickOff ? 'color:#5F6C80;cursor:not-allowed' : 'color:#0F1A2B;cursor:pointer'),
+        onTick: e => {
+          if (tickOff || s.busy) return;
+          const on = !!(e && e.target && e.target.checked), before = this.state.pairs || [];
+          if (on && !(p.why || '').trim()) { this._focus = whyId; return setPair(id, { err: 'Give the pair a reason first: it is kept with the sign-off.' }); }
+          this._focus = tickId;
+          set({ pairs: before.map(q => (q.id === id ? { ...q, ok: on ? TODAY : null, err: '' } : q)), refusal: '', fresh: { [id]: true }, flashN: s.flashN + 1, swapN: s.swapN + 1,
+            toast: on ? 'Pair confirmed: ' + title + ', no money moved.' : 'Pair no longer confirmed: ' + title + '.',
+            undo: { patch: { pairs: before }, msg: on ? 'Undone. The pair is waiting to be confirmed.' : 'Undone. The pair is confirmed again.', focus: tickId } });
+          this.armToast(true); this.armFresh();
+        },
+        hasSql: sqlCo,
+        sqlText: "In SQL Account the pair stays in the books: tick both " + title + " as cleared in " + this.mName(D.month) + " in SQL's bank reconciliation, so its clearing report agrees." };
+    });
+
+    const openFound = order(opens.filter(hit)), doneFound = order(dones.filter(hit));
+
+    // Apply selected: the client checks, then the server's refusals, in its order; then a short busy state.
+    const apply = () => {
+      if (s.busy) return;
+      const chosen = lines.filter(l => s.sel[l.id]);
+      if (!chosen.length) return set({ refusal: 'Select at least one row.' });
+      for (const l of chosen) if (isOpen(l)) {
+        const ch = s.choice[l.id] || '';
+        if (ch === 'c' && !(s.desc[l.id] || '').trim()) return set({ refusal: 'Give the payment for the line of ' + this.dMon(l.date) + ' a description.' });
+        if (!ch) return set({ refusal: 'Choose what the line of ' + this.dMon(l.date) + ' is, or untick it.' });
+      }
+      if (!s.checked) { this._focus = 'br-checked'; return set({ refusal: 'Tick "I\'ve checked these rows" first.' }); }
+      for (const l of chosen) {
+        const ch = s.choice[l.id] || '';
+        const p = isOpen(l) ? (ch.indexOf('p:') === 0 ? P[ch.slice(2)] : null) : (l.pay ? P[l.pay] : null);
+        const g = this.gapOf(l, p);
+        if (g && g.days > 0 && !s.keep[l.id]) return set({ refusal: 'The bank date of ' + this.dMon(l.date) + ' (' + this.sgn(l.amount) + ') differs by ' + this.dayCount(g.days) + ' from the ' + g.kind + ' date, ' + this.dMon(g.date) + '. Tick "keep the ' + g.kind + ' date" on that row to apply it.' });
+      }
+      const ids = chosen.map(l => l.id);
+      // What the app sends at the click: each row's choice and typed text, and whether its line was open.
+      const snap = { choice: { ...s.choice }, desc: { ...s.desc }, note: { ...s.note }, cat: { ...s.cat }, open: {} };
+      chosen.forEach(l => { snap.open[l.id] = isOpen(l); });
+      set({ busy: true, refusal: '' });
+      clearTimeout(this._bt);
+      this._bt = setTimeout(() => this.finishApply(ids, snap), 500);
+    };
+
+    // The Explain dialog (built even while closed, from line 5 or the first open line, so its lists are always there).
+    const ex = s.ex || this.exInit(s, opens.length ? opens[0].id : lines[0].id, '', false);
+    const exL = lines.find(l => l.id === ex.line) || lines[0];
+    const lineAbs = Math.abs(exL.amount), exDir = exL.amount > 0 ? 'in' : 'out';
+    const exSug = this.suggFor(s, D, exL);
+    const score = p => { const i = exSug.map(g => g.pay).indexOf(p.id); return i < 0 ? 0 : 100 - i; };
+    const openOf = p => p.amount - linkedAmt(p.id);
+    const qw = ex.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const exPays = pays.filter(p => ex.all || (p.dir === exDir && openOf(p) > 0.005))
+      .filter(p => { const t = [p.desc, p.amount.toFixed(2), this.fmt(p.amount), openOf(p).toFixed(2), this.fmt(openOf(p)), p.month].join(' ').toLowerCase(); return qw.every(w => t.indexOf(w) >= 0); })
+      .sort((a, b) => (score(b) - score(a)) || (Math.abs(openOf(a) - lineAbs) - Math.abs(openOf(b) - lineAbs)));
+    // Several payments can be ticked: their open amounts add up to a running total against the line.
+    const sels = (ex.sels || []).filter(id => P[id]);
+    const curShown = exPays.some(p => p.id === ex.cur);
+    const runSum = Math.round(sels.reduce((a, id) => a + openOf(P[id]), 0) * 100) / 100;
+    const runGap = Math.round((lineAbs - runSum) * 100) / 100;
+    const setEx = x => { if (s.ex && !s.closing) set({ ex: { ...s.ex, ...x } }); };
+    const toggle = id => { const on = sels.indexOf(id) >= 0; setEx({ sels: on ? sels.filter(x => x !== id) : sels.concat([id]), cur: id, err: '' }); };
+    const exList = exPays.map((p, i) => {
+      const lk = linkedAmt(p.id), open = openOf(p), g = exSug.find(x => x.pay === p.id), on = sels.indexOf(p.id) >= 0;
+      return { domId: 'br-opt-' + p.id, desc: p.desc, amt: (p.dir === 'in' ? '+' : '') + this.money(p.amount),
+        amtStyle: 'font:600 13px ui-monospace,Consolas,monospace;white-space:nowrap;' + (p.dir === 'in' ? 'color:#0A6B3D' : 'color:#0F1A2B'),
+        meta: this.mName(p.month) + (lk > 0.005 ? ' · ' + this.money(open) + ' still open' : ''),
+        isSugg: !!g, why: g ? g.why : '', same: !g && Math.abs(open - lineAbs) < 0.005,
+        on: on ? 'true' : 'false', isOn: on, tab: ex.cur === p.id || (!curShown && i === 0) ? 0 : -1,
+        boxStyle: 'display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;border-radius:4px;box-sizing:border-box;align-self:center;' + (on ? 'background:#2450B8;border:1px solid #2450B8' : 'background:#FFFFFF;border:1px solid #5F6C80'),
+        style: 'display:flex;flex-direction:column;gap:3px;padding:10px 12px;border-radius:10px;cursor:pointer;' + (on ? 'border:1px solid #2450B8;background:#EAF0FD;box-shadow:inset 0 0 0 1px #2450B8' : 'border:1px solid #E3E7ED;background:#FFFFFF'),
+        pick: () => toggle(p.id) };
+    });
+    // Arrow keys move the tab stop; Space or Enter ticks or unticks the option that has it.
+    const moveTo = j => { const p = exPays[j]; if (!p) return; this._focus = 'br-opt-' + p.id; setEx({ cur: p.id }); };
+
+    return {
+      say: s.toast,
+      // Board sample: the statements of the company in the top bar (AISB: current and savings; AI: its FCA account).
+      acctBtns: (s.co === 'AI' ? [['C', 'Maybank FCA · October 2026', 'october']] : [['A', 'Maybank current · October 2026', 'october'], ['B', 'Maybank savings · October 2026', 'savings'], ['M', 'Maybank current · May 2026', 'many-lines']])
+        .map(([k, label, v]) => ({ label, on: s.acct === k ? 'true' : 'false', style: this.seg(s.acct === k), pick: () => { if (s.acct !== k) set(this.init(v, s.co)); } })),
+      kindText: D.sql || s.co === 'AISB' ? 'Kept in SQL Account' : 'Kept here', kindGlyph: here ? 'books' : 'database', kindTone: here ? 'muted' : 'brand',
+      kindStyle: 'display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box;'
+        + (here ? 'background:#EEF1F5;color:#46546A;border:1px solid #D5DBE4' : 'background:#EAF0FD;color:#2450B8;border:1px solid #D6E2FB'),
+      loadErr: !!s.loadErr, loadOk: !s.loadErr,
+      // The import card above the review stays as it is (board sample: the account follows the statement picked above).
+      sbCo: s.co === "AI" ? "ai" : "aisb", sbKind: s.co === "AI" ? "here" : "sqlPayroll",
+      onTopCo: code => { const c = String(code || '').toUpperCase(); if ((c === 'AISB' || c === 'AI') && c !== s.co) { clearTimeout(this._tt); set(this.init('october', c)); } },
+      coA: this.seg(s.co === 'AISB'), coB: this.seg(s.co === 'AI'), coAOn: s.co === 'AISB' ? 'true' : 'false', coBOn: s.co === 'AI' ? 'true' : 'false',
+      pickCoA: () => set({ co: 'AISB', none: false, loading: false }), pickCoB: () => set({ co: 'AI', none: false, loading: false }),
+      // No statement imported for the month (app.js notImported): the review has nothing to show until the PDF is imported.
+      noStmt: !s.loading && s.none, loading: !!s.loading, hasStmt: !s.loading && !s.none,
+      noStmtTitle: 'No statement imported for October 2026',
+      noStmtText: D.label + ' has no bank statement for this month yet. Choose the statement PDF above and import it, then the lines can be reviewed.',
+      chooseStmt: () => this.focusId('br-file'),
+      importAcct: s.acct === 'M' ? 'A' : s.acct, accOpts: s.co === 'AI' ? [{ id: 'C', text: 'Maybank FCA · 5141 2399 1186' }] : [{ id: 'A', text: 'Maybank current · 5141 2345 4417' }, { id: 'B', text: 'Maybank savings · 5141 2345 0932' }],
+      matchAgain: () => { set({ toast: '0 more bank lines matched; 0 marked as bank charges or own transfers', undo: null }); this.armToast(); },
+      topSub: this.mName(D.month) + ' review', acctLabel: D.label, title: this.mName(D.month) + ' statement · review',
+      swapCls,
+      t1v: String(lines.length), t1l: 'Bank lines · ' + opens.length + ' to explain',
+      t2v: noBook ? '—' : this.money(book), t2l: noBook ? 'Book closing · no SQL listing for ' + this.mName(D.month) : 'Book closing',
+      t3v: this.money(s.closingBal), t3l: 'Bank closing' + (noBook ? '' : ' · difference ' + this.money(diff)),
+      t4v: String(nSel), t4l: 'Selected · ' + this.money(sumSel),
+      hasChk: !!D.sql && !noBook, chkOk: !!D.sql && !noBook, chkText: D.sql ? "Agrees with SQL's bank account 310-000" : '',
+      statusText: STATUS[status][0], statusStyle: pill(STATUS[status][1]),
+      statusCls: s.swapN ? (status === 'reconciled' ? (s.swapN % 2 ? 'okA' : 'okB') : swapCls) : '',
+
+      q: s.q, onQ: e => set({ q: e.target.value }),
+      countText: (openFound.length + doneFound.length) + ' of ' + lines.length + ' shown',
+      hd,
+
+      openRows: openFound.map(openRow),
+      openEmpty: !openFound.length, openEmptyText: opens.length ? 'No open line matches.' : 'Nothing left to explain.',
+
+      hasDone: dones.length > 0,
+      mheadCls: s.headN ? (s.headN % 2 ? 'fa' : 'fb') : '',
+      mExpanded: s.showMatched ? 'true' : 'false', chevCls: s.showMatched ? 'chev on' : 'chev',
+      // While a search is on, the toggle says how many matched lines it finds.
+      mLabel: (words.length ? doneFound.length + ' of ' : '') + dones.length + ' matched · ' + (s.showMatched ? 'Hide' : 'Show'),
+      toggleMatched: () => set({ showMatched: !s.showMatched }),
+      hasShort: shorts.length > 0, shortText: 'Matched, but the amounts differ · ' + shorts.length,
+      someUnconfirmed: toConfirm > 0, allConfirmed: toConfirm === 0, notConfText: toConfirm + ' not confirmed yet',
+      okCls: s.swapN ? (s.swapN % 2 ? 'okA' : 'okB') : '',
+      confirmOff: toConfirm === 0 || locked,
+      confirmStyle: 'height:34px;padding:0 12px;border-radius:9px;border:1px solid #5F6C80;font:600 13px Inter,sans-serif;' + (toConfirm ? 'background:#FFFFFF;color:#0F1A2B;cursor:pointer' : 'background:#F4F6F9;color:#5F6C80'),
+      confirmAll: () => {
+        if (!toConfirm || s.busy || locked) return;
+        const r = this.confirmedAll(s);
+        if (!r.k) this._focus = 'br-mtoggle';   // the button is disabled once nothing is left to confirm
+        set({ ...r.patch, refusal: '', fresh: r.ids, flashN: s.flashN + 1, swapN: s.swapN + 1,
+          undo: { patch: { lines: s.lines }, msg: 'Undone. Those lines are matched, not confirmed, again.', focus: 'br-mtoggle' },
+          toast: this.pl(r.n, 'line') + ' confirmed' + (r.k ? '; ' + r.k + ' with a different date left for you to select and tick' : '') + '.' });
+        this.armToast(true); this.armFresh();
+      },
+      showMatched: s.showMatched, doneRows: doneFound.map(doneRow), doneEmpty: !doneFound.length,
+
+      hasPairs: prs.length > 0, pairCount: this.pl(prs.length, 'pair'), pairs: pairRows,
+      pairSum: prBad.length ? 'Not nil · ' + prBad.length : prOpen.length ? prOpen.length + ' to confirm' : 'All confirmed',
+      pairSumStyle: pill(prBad.length ? 'bad' : prOpen.length ? 'warn' : 'ok'),
+      pairIntro: 'Book entries on ' + D.gl + ' that cancel each other out and never touched the bank, such as a reversal, or a duplicated self-billed e-Invoice whose payment voucher was recorded twice and refunded by an official receipt. The reconciliation statement lists them as pairs and leaves them out of its totals check. Check each reason, then tick the pair. The sign-off waits until every pair is confirmed and nil.',
+      hasSampleNote: !!s.sampleNote, sampleNote: s.sampleNote,
+      hasSignNote: isSigned && !!s.signNote, signNote: (s.signNote || []).map(t => ({ t })), signNoteTitle: 'Sign-off note, as kept ' + (s.signed ? this.dMonY(s.signed) : ''),
+      hasFreeNote: isSigned && !!(s.signFree || '').trim(), freeNoteText: s.signFree || '',
+      freeNote: s.freeNote, onFree: e => set({ freeNote: e.target.value }), freeOff: !!s.busy,
+
+      hasToast: !!s.toast, toastText: s.toast, toastHasUndo: !!s.undo,
+      toastUndo: () => { const u = this.state.undo; if (!u) return; this._focus = u.focus || 'br-mtoggle'; set({ ...u.patch, toast: u.msg, undo: null, swapN: s.swapN + 1 }); clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: '' }), 2500); },
+      isLocked: locked, notLocked: !locked,
+      lockTitle: this.mName(D.month) + ' is marked reconciled and locked.',
+      reopenAria: 'Reopen ' + this.mName(D.month) + ' on Bank and reconciliation (it asks for a reason)',
+      barNote: here ? 'Applying only links, creates payments or explains lines here. Book this line posts its voucher on its own page.' : 'Applying only links, creates payments or explains lines here. Nothing is posted to SQL Account.',
+      signFoot: here ? "Marking a month reconciled locks it in this company's books here: payments dated in it can't change until it is reopened."
+        : 'Marking a month reconciled locks it here. Nothing is posted to SQL Account; a change in SQL after the sign-off asks you to confirm it again.',
+      signCls: s.swapN ? 'okA' : '',
+      nSel, still,
+      diffAfter: noBook ? '—' : this.money(diff), diffGlyph: zero ? 'check' : 'alert', diffTone: zero ? 'ok' : 'bad',
+      diffAfterStyle: 'font-variant-numeric:tabular-nums;' + (zero ? 'color:#0A6B3D' : 'color:#B0190F'),
+      checked: s.checked, onChecked: e => { if (!s.busy) set({ checked: !!e.target.checked, refusal: '' }); },
+      // As the app: the button is only disabled while the request runs; the label stays.
+      applyOff: !nSel || s.busy,
+      applyLabel: 'Apply selected (' + nSel + ')',
+      applyStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:190px;height:44px;padding:0 18px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;'
+        + (nSel && !s.busy ? 'background:#2450B8;cursor:pointer' : 'background:#9AAAC6;cursor:not-allowed'),
+      apply, hasRefusal: !!s.refusal, refusal: s.refusal,
+
+      isSigned, notSigned: !isSigned, signedText: 'Reconciled ' + (s.signed ? this.dMonY(s.signed) : ''),
+      signOff: !canSign, hasWhy: !canSign, whyText: 'Not ready: ' + why.join('; ') + '.',
+      signStyle: 'display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;' + (canSign ? 'background:#2450B8;cursor:pointer' : 'background:#9AAAC6;cursor:not-allowed'),
+      sign: () => {
+        if (!canSign) return;
+        this._focus = 'br-undo-sign';
+        // The app writes the sign-off note as the month stands, and keeps the free note beside it.
+        set({ signed: TODAY, signNote: this.noteOf(s), signFree: (s.freeNote || '').trim(),
+          toast: 'Marked as reconciled. ' + this.mName(D.month) + ' is locked for ' + D.label + '.', undo: { patch: { signed: null, signNote: null, signFree: '' }, msg: 'Sign-off undone. ' + this.mName(D.month) + ' is open again; both changes and the note are in the audit trail.', focus: 'br-sign' },
+          swapN: s.swapN + 1, sel: {}, keep: {}, checked: false, refusal: '' });
+        this.armToast(true);
+      },
+
+      exOn: !!s.ex, dimCls: s.closing ? 'dim-out' : 'dim-in', dlgCls: s.closing ? 'dr-out' : 'dr-in',
+      exClose: () => this.closeEx(),
+      onDlgAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishEx(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); this.closeEx(); return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!f.length) { e.preventDefault(); return; }
+        const first = f[0], last = f[f.length - 1], at = document.activeElement, inside = f.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      exAcct: D.label + ' · ' + this.mName(D.month),
+      exWhen: this.dMon(exL.date) + ' · ' + (exL.amount < 0 ? 'Money out' : 'Money in'),
+      exAmt: this.money(lineAbs), exDesc: exL.desc, exBal: 'Balance ' + this.money(exL.balance),
+      exQ: ex.q, exOnQ: e => setEx({ q: e.target.value }),
+      exQKey: e => { if (e.key === 'ArrowDown' && exPays.length) { e.preventDefault(); const p = exPays.find(x => x.id === ex.cur) || exPays[0]; this.focusId('br-opt-' + p.id); } },
+      exCount: this.pl(exPays.length, 'payment') + (qw.length ? ' found' : ', likeliest first'),
+      exList, exEmpty: !exPays.length,
+      exListKey: e => {
+        if (!exPays.length) return;
+        // Start from the option that has focus (the selection may be filtered out), else from the selection.
+        const fid = document.activeElement && document.activeElement.id;
+        let i = exPays.findIndex(p => 'br-opt-' + p.id === fid);
+        if (i < 0) i = exPays.findIndex(p => p.id === ex.cur);
+        if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); const p = exPays[Math.max(0, i)]; if (p) { this._focus = 'br-opt-' + p.id; toggle(p.id); } return; }
+        const j = e.key === 'ArrowDown' ? (i < 0 ? 0 : Math.min(exPays.length - 1, i + 1)) : e.key === 'ArrowUp' ? (i < 0 ? 0 : Math.max(0, i - 1))
+          : e.key === 'Home' ? 0 : e.key === 'End' ? exPays.length - 1 : null;
+        if (j === null) return;
+        e.preventDefault();
+        moveTo(j);
+      },
+      exAll: ex.all, exOnAll: e => setEx({ all: !!e.target.checked }),
+      exHasErr: !!ex.err, exErr: ex.err,
+      exLink: () => { if (!s.ex) return; if (!sels.length) return setEx({ err: 'Choose a payment from the list first.' }); this.explain(ex.line, { pays: sels }); },
+      exLinkLabel: sels.length === 0 ? 'Link' : sels.length === 1 ? 'Link 1 payment' : 'Link ' + sels.length + ' payments',
+      runCount: sels.length + ' selected', runTotal: this.money(runSum) + " of the line's " + this.money(lineAbs),
+      runLeft: !sels.length ? '' : Math.abs(runGap) <= 0.005 ? 'Adds up' : runGap > 0 ? this.money(runGap) + ' short' : this.money(-runGap) + ' over',
+      runLeftStyle: Math.abs(runGap) <= 0.005 ? 'color:#0A6B3D' : 'color:#934100',
+      runWarn: sels.length > 0 && Math.abs(runGap) > 0.005,
+      runWarnText: 'You can still link them: the line then shows under "Matched, but the amounts differ" on the month until the rest is linked.',
+      runStyle: 'display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:10px;font-size:13px;' + (sels.length && Math.abs(runGap) > 0.005 ? 'background:#FFFAF0;border:1px solid #F0C77A' : 'background:#F7F8FA;border:1px solid #E3E7ED'),
+      runPriv: sels.some(id => P[id] && P[id].net),
+      exHere: here, exSql: !here,
+      exBookText: (exL.amount < 0 ? 'Posts a payment voucher' : 'Posts an official receipt') + ' in ' + coName + "'s books from this line, dated " + this.dMonY(exL.date) + ', numbered when it is posted. You choose the account on the next page.',
+      exDescVal: ex.desc, exOnDesc: e => setEx({ desc: e.target.value, err2: '' }), exDescBad: ex.err2 ? 'true' : 'false',
+      exDescStyle: 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;' + (ex.err2 ? 'border:1px solid #C7372B;background:#FFFBFA' : 'border:1px solid #5F6C80;background:#FFFFFF'),
+      exCat: ex.cat, exOnCat: e => setEx({ cat: e.target.value }), exTypes: typesFor(exL.amount),
+      exHasErr2: !!ex.err2, exErr2: ex.err2,
+      exCreate: () => {
+        if (!s.ex) return;
+        if (!ex.desc.trim()) { this._focus = 'br-ex-desc'; return setEx({ err2: 'Give the payment a description.' }); }
+        this.explain(ex.line, { create: { desc: ex.desc.trim(), cat: ex.cat } });
+      },
+      exNoteVal: ex.note, exOnNote: e => setEx({ note: e.target.value }),
+      exNone: () => { if (!s.ex) return; this.explain(ex.line, { nodocs: ex.note.trim() }); }
+    };
+  }
+  seg(on) { return 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A'); }
+}
+</script>
+</body>
+</html>

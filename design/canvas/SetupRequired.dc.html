@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · Payment and document types · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hb:disabled:hover{background:#2450B8 !important}
+.hs:hover{background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD !important}
+.hd:hover{background:#FBEAE8 !important}
+.mx:hover{box-shadow:inset 0 0 0 2px #9DB4EA}
+/* motion and focus base */
+.hb,.hs,.hr,.hd,.sn,.nv,.nb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.mx{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.tb{transition:filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes riseB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{animation:spin .7s linear infinite}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.chev.on{transform:rotate(90deg)}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.rvB{animation:riseB .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="aisb" kind="sqlPayroll" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="{{pageName}}" company="aisb" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0"><dc-import name="SetupNav" active="{{navActive}}" kind="sql" payroll="true" hint-size="100%,820px"></dc-import></div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Payments and documents</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{h1}}</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 640px">{{lead}}</p>
+          </div>
+          <sc-if value="{{showList}}" hint-placeholder-val="{{ false }}"><button type="button" id="rq-add" class="hb" onClick="{{openAdd}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>{{addLabel}}</button></sc-if>
+        </div>
+
+        <div role="tablist" aria-label="Section" style="display: flex; gap: 24px; border-bottom: 1px solid #E3E7ED">
+          <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+            <button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="rq-panel" tabindex="{{t.tabindex}}" onClick="{{t.pick}}" onKeyDown="{{t.key}}" style="{{t.style}}">{{t.label}}<sc-if value="{{t.hasCount}}" hint-placeholder-val="{{ true }}"> <span style="font-weight: 500">{{t.count}}</span></sc-if></button>
+          </sc-for>
+        </div>
+
+        <div id="rq-panel" role="tabpanel" aria-labelledby="{{panelLabel}}" class="{{panelCls}}" style="display: flex; flex-direction: column; gap: 20px">
+
+        <sc-if value="{{loadingOn}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <span role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{loadingLabel}}</span>
+          <div style="display: flex; gap: 14px; padding: 14px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 10px; width: 10%; border-radius: 5px"></div></div>
+          <sc-for list="{{skRows}}" as="k" hint-placeholder-count="6"><div style="display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: {{k.a}}%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: {{k.b}}%; border-radius: 5px"></div></div></sc-for>
+        </section>
+        </sc-if>
+        <sc-if value="{{errorOn}}" hint-placeholder-val="{{ false }}">
+        <section style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 role="alert" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{errorTitle}}</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The setup records can't be reached right now. Check the connection, then try again. Nothing was changed.</p>
+          <button type="button" id="rq-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </section>
+        </sc-if>
+
+        <sc-if value="{{showList}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 720px">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</p>
+          <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+              <label class="fx" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; background: #FFFFFF; flex: 1 1 220px; max-width: 340px"><dc-import name="Icon" glyph="search" tone="muted" size="18" hint-size="18px,18px"></dc-import><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search {{plural}}</span><input type="search" id="rq-q" value="{{q}}" onChange="{{onQ}}" placeholder="Search {{plural}}" style="flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+              <span role="status" style="font-size: 13px; color: #46546A">{{shownText}}</span>
+              <span style="flex: 1"></span>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #46546A; min-height: 32px"><input type="checkbox" checked="{{showStopped}}" onChange="{{toggleStopped}}" style="width: 18px; height: 18px; accent-color: #2450B8">{{stoppedLabel}}</label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #46546A; min-height: 32px"><input type="checkbox" checked="{{showDeleted}}" onChange="{{toggleDeleted}}" style="width: 18px; height: 18px; accent-color: #2450B8">Show deleted</label>
+            </div>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 720px; border-collapse: collapse">
+                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                  <sc-for list="{{heads}}" as="h" hint-placeholder-count="5"><th scope="col" aria-sort="{{h.aria}}" style="padding: 0; font-weight: 600"><button type="button" class="hs fr" onClick="{{h.sort}}" style="display: inline-flex; align-items: center; gap: 6px; width: 100%; min-height: 40px; padding: 0 12px; border: 0; background: transparent; font: 600 12px Inter, sans-serif; text-transform: uppercase; letter-spacing: .05em; color: #5F6C80; cursor: pointer; text-align: left">{{h.label}}<sc-if value="{{h.sorted}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="{{h.glyph}}" tone="brand" size="14" hint-size="14px,14px"></dc-import></sc-if></button></th></sc-for>
+                </tr></thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+                    <tr class="{{r.cls}}" style="border-top: 1px solid #EEF1F5">
+                      <td style="padding: 10px 12px"><button type="button" id="{{r.id}}" class="fr" aria-haspopup="dialog" onClick="{{r.open}}" style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 32px; border: 0; background: transparent; padding: 0; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer; text-align: left">{{r.name}}<sc-if value="{{r.app}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; height: 20px; align-items: center; padding: 0 7px; border-radius: 6px; background: #EAF0FD; color: #1D419A; font-size: 11px; font-weight: 700">Used by the app</span></sc-if></button></td>
+                      <td style="padding: 10px 12px; font-family: ui-monospace, Consolas, monospace; font-size: 13px">{{r.key}}</td>
+                      <td style="padding: 10px 12px">{{r.c3}}</td>
+                      <td style="padding: 10px 12px">{{r.c4}}</td>
+                      <td style="padding: 10px 12px; font-variant-numeric: tabular-nums"><span title="{{r.usedTitle}}">{{r.used}}</span></td>
+                      <td style="padding: 10px 12px"><span style="{{r.pill}}">{{r.status}}</span></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}"><div class="ex" style="padding: 22px 18px; border-top: 1px solid #EEF1F5; color: #46546A; font-size: 14px">{{emptyText}}</div></sc-if>
+          </section>
+
+          <sc-if value="{{showDeleted}}" hint-placeholder-val="{{ false }}">
+          <section class="ex" aria-labelledby="rq-del-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="padding: 14px 18px; border-bottom: 1px solid #EEF1F5"><h2 id="rq-del-h" style="margin: 0; font-size: 15px; font-weight: 600">{{delHeading}}</h2></div>
+            <sc-if value="{{noDeleted}}" hint-placeholder-val="{{ false }}"><div style="padding: 18px; color: #46546A">None deleted.</div></sc-if>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 18px; font-weight: 600">Name</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Deleted</th><th scope="col" style="padding: 10px 12px; font-weight: 600">By</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Why</th><th scope="col" style="padding: 10px 18px; font-weight: 600">Put it back</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{delRows}}" as="d" hint-placeholder-count="2">
+                    <tr style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                      <td style="padding: 12px 18px; font-weight: 600">{{d.name}}</td>
+                      <td style="padding: 12px">{{d.when}}<div style="color: #5F6C80; font-size: 12px">{{d.entry}}</div></td>
+                      <td style="padding: 12px">{{d.by}}</td>
+                      <td style="padding: 12px">{{d.why}}</td>
+                      <td style="padding: 12px 18px"><div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><sc-if value="{{d.can}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{d.id}}" class="hs" aria-haspopup="dialog" onClick="{{d.open}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Put it back</button></sc-if><sc-if value="{{d.cant}}" hint-placeholder-val="{{ false }}"><span style="flex: 1 1 200px; color: #46546A; font-size: 13px">{{d.reason}}</span></sc-if><a href="AuditTrail.dc.html" style="font-weight: 600; font-size: 13px">History</a></div></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          </sc-if>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{showReq}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">For</span><select id="rq-scope" value="{{scope}}" disabled="{{saving}}" onChange="{{onScope}}" style="height: 40px; min-width: 180px; padding: 0 10px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="all">Every company</option><option value="aisb">AISB only</option><option value="ai">AI only</option></select></label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 12px; font-weight: 600; color: #46546A">From payroll month</span><select id="rq-month" value="{{month}}" disabled="{{saving}}" onChange="{{onMonth}}" aria-describedby="rq-month-note" style="height: 40px; min-width: 180px; padding: 0 10px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="sep">September 2026 (filed for AI)</option><option value="oct">October 2026</option><option value="nov">November 2026</option></select></label>
+          <span style="flex: 1"></span>
+          <button type="button" class="hs" disabled="{{noChanges}}" onClick="{{discard}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Discard</button>
+          <button type="button" id="rq-save" class="hb" onClick="{{save}}" disabled="{{saving}}" aria-busy="{{savingAria}}" aria-describedby="rq-impact" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span></sc-if>{{saveLabel}}</button>
+        </div>
+        <sc-if value="{{hasScopeNote}}" hint-placeholder-val="{{ false }}"><p class="ex" style="margin: 0; display: flex; gap: 8px; align-items: flex-start; padding: 10px 14px; border-radius: 10px; background: #F3F6FE; border: 1px solid #C9D7F6; color: #1D3A80; font-size: 13px; max-width: 760px"><dc-import name="Icon" glyph="help" tone="brand" size="16" hint-size="16px,16px"></dc-import><span>{{scopeNote}}</span></p></sc-if>
+        <p id="rq-month-note" style="margin: -4px 0 0; color: #46546A; font-size: 13px; max-width: 760px">{{monthNote}}</p>
+
+        <div id="rq-impact" role="status" style="display: flex; flex-direction: column; gap: 8px">
+          <sc-if value="{{dirty}}" hint-placeholder-val="{{ false }}"><div class="{{dirtyCls}}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #FFF4E5; color: #7A3A00; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="edit" tone="warn" size="16" hint-size="16px,16px"></dc-import><span>{{dirtyLabel}}</span><span style="font-weight: 500">{{impactText}}</span></div></sc-if>
+          <sc-if value="{{msg.show}}" hint-placeholder-val="{{ false }}"><div class="{{msg.cls}}" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #EEF1F5; color: #26364D; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="alert" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{msg.text}}</div></sc-if>
+          <sc-if value="{{result.show}}" hint-placeholder-val="{{ false }}"><div class="{{result.cls}}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 10px; background: #E3F7EC; color: #0A5C34; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import><span>{{result.text}}</span><span style="flex: 1"></span><button type="button" class="hs" onClick="{{result.dismiss}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Dismiss</button></div></sc-if>
+        </div>
+
+        <sc-if value="{{guard}}" hint-placeholder-val="{{ false }}"><div id="rq-guard" role="group" aria-label="Discard your changes?" class="ex" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; border: 1px solid #E2A36B; background: #FFF4E5; color: #7A3A00; font-size: 13px; font-weight: 600"><span style="flex: 1 1 240px">Discard your changes? {{dirtyLabel}} will be lost.</span><button type="button" id="rq-keep" class="hs" onClick="{{keepEditing}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button><button type="button" class="hd" onClick="{{discardLeave}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #B0190F; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #9A150C; cursor: pointer">Discard changes</button></div></sc-if>
+
+        <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="overflow-x: auto">
+            <table style="width: 100%; min-width: 1150px; border-collapse: collapse">
+              <thead>
+                <tr style="background: #FAFBFC; color: #5F6C80; font-size: 12px">
+                  <th scope="col" style="padding: 12px 18px; text-align: left; font-weight: 600; text-transform: uppercase; letter-spacing: .05em">Payment type</th>
+                  <sc-for list="{{cols}}" as="c" hint-placeholder-count="8"><th scope="col" style="padding: 12px 4px; font-weight: 600; text-align: center; width: 84px"><div style="display: flex; flex-direction: column; align-items: center; gap: 4px"><dc-import name="Icon" glyph="{{c.glyph}}" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>{{c.label}}</span><sc-if value="{{c.sql}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 5px; background: #EAF0FD; color: #1D419A; font-size: 10px; font-weight: 700; letter-spacing: .02em"><dc-import name="Icon" glyph="database" tone="brand" size="11" hint-size="11px,11px"></dc-import>from SQL</span></sc-if><sc-if value="{{c.form}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 5px; background: #EAF0FD; color: #1D419A; font-size: 10px; font-weight: 700; letter-spacing: .02em"><dc-import name="Icon" glyph="approval" tone="brand" size="11" hint-size="11px,11px"></dc-import>from form</span></sc-if><sc-if value="{{c.here}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 3px; height: 18px; padding: 0 6px; border-radius: 5px; background: #EAF0FD; color: #1D419A; font-size: 10px; font-weight: 700; letter-spacing: .02em"><dc-import name="Icon" glyph="books" tone="brand" size="11" hint-size="11px,11px"></dc-import>posted here</span></sc-if></div></th></sc-for>
+                  <th scope="col" style="padding: 12px 12px; text-align: left; font-weight: 600; text-transform: uppercase; letter-spacing: .05em">In force</th>
+                  <th scope="col" style="padding: 12px 12px; text-align: left; font-weight: 600; text-transform: uppercase; letter-spacing: .05em">{{forHead}}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{reqRows}}" as="r" hint-placeholder-count="9">
+                  <tr style="border-top: 1px solid #EEF1F5">
+                    <th scope="row" style="padding: 10px 18px; text-align: left; font-weight: 600"><div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="{{r.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import><div><span style="display: inline-flex; align-items: center; gap: 8px">{{r.label}}<sc-if value="{{r.stopped}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; height: 20px; align-items: center; padding: 0 7px; border-radius: 6px; background: #EEF1F5; color: #46546A; font-size: 11px; font-weight: 700">Stopped</span></sc-if><sc-if value="{{r.moneyIn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; height: 20px; align-items: center; padding: 0 7px; border-radius: 6px; background: #E3F7EC; color: #0A5C34; font-size: 11px; font-weight: 700">Money in</span></sc-if></span><div style="color: #5F6C80; font-size: 12px; font-weight: 400">{{r.count}}</div></div></div></th>
+                    <sc-for list="{{r.cells}}" as="x" hint-placeholder-count="8">
+                      <td style="padding: 8px 4px; text-align: center"><button type="button" class="mx" id="{{x.id}}" onClick="{{x.toggle}}" onKeyDown="{{x.key}}" aria-pressed="{{x.on}}" aria-disabled="{{x.dis}}" aria-label="{{x.aria}}" style="{{x.style}}"><sc-if value="{{x.isOn}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="check" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if><sc-if value="{{x.isForm}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="approval" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if><sc-if value="{{x.isPosted}}" hint-placeholder-val="{{ false }}"><span>Posted here</span></sc-if><sc-if value="{{x.changed}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border-radius: 99px; background: #B25000; border: 2px solid #FFFFFF"></span></sc-if></button></td>
+                    </sc-for>
+                    <td style="padding: 8px 12px; font-size: 13px"><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span>{{r.since}}</span><button type="button" class="hs fr" aria-expanded="{{r.histOpen}}" onClick="{{r.toggleHist}}" style="display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px 0 4px; border-radius: 8px; border: 0; background: transparent; font: 600 12px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{r.chevCls}}" style="display: inline-flex; transition: transform .18s cubic-bezier(.22,1,.36,1)"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>Earlier sets</button></div></td>
+                    <td style="padding: 8px 12px; font-size: 13px"><sc-if value="{{r.hasTag}}" hint-placeholder-val="{{ false }}"><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span style="{{r.tagStyle}}">{{r.tag}}</span><sc-if value="{{r.canFollow}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs fr" onClick="{{r.follow}}" style="min-height: 28px; padding: 0 8px; border-radius: 8px; border: 0; background: transparent; font: 600 12px Inter, sans-serif; color: #2450B8; cursor: pointer; text-align: left">Follow all companies again</button></sc-if></div></sc-if></td>
+                  </tr>
+                  <sc-if value="{{r.histOpen}}" hint-placeholder-val="{{ false }}">
+                  <tr><td colspan="12" class="ex" style="padding: 10px 18px 14px 48px; background: #FAFBFC; border-top: 1px solid #EEF1F5; font-size: 13px; color: #26364D"><b style="display: block; margin-bottom: 4px">Earlier sets for {{r.label}}</b><sc-for list="{{r.hist}}" as="h" hint-placeholder-count="2"><div style="padding: 2px 0">{{h.text}}</div></sc-for></td></tr>
+                  </sc-if>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 18px; padding: 12px 18px; border-top: 1px solid #EEF1F5; background: #FAFBFC; font-size: 12px; color: #46546A; align-items: center">
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 18px; height: 18px; border-radius: 5px; background: #2450B8; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="check" tone="white" size="12" hint-size="12px,12px"></dc-import></span>Required</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="database" tone="brand" size="14" hint-size="14px,14px"></dc-import>from SQL: this document is issued by SQL Account</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 99px; background: #B25000"></span>Changed, not saved yet</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><span style="width: 18px; height: 18px; border-radius: 5px; background: #2450B8; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="approval" tone="white" size="12" hint-size="12px,12px"></dc-import></span>Approval: filled by an approved form on file (Approvals), not uploaded by hand</span>
+            <span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="books" tone="brand" size="14" hint-size="14px,14px"></dc-import>PV: from SQL for a company Kept in SQL Account, posted here for one Kept here</span>
+            <span>Click a box to change it. Save applies each changed type from the month you picked.</span>
+          </div>
+        </section>
+        </div>
+        </sc-if>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<sc-if value="{{dlg.show}}" hint-placeholder-val="{{ false }}">
+  <div aria-hidden="true" class="{{dlg.dimCls}}" onClick="{{closeDlg}}" style="position: fixed; inset: 0; z-index: 60; background: rgba(13, 27, 46, .45); backdrop-filter: blur(3px)"></div>
+  <div style="position: fixed; inset: 0; z-index: 61; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+    <div role="dialog" aria-modal="true" aria-labelledby="rq-dlg-title" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" class="{{dlg.panelCls}}" style="pointer-events: auto; width: 600px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: auto; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #EEF1F5">
+        <h2 id="rq-dlg-title" tabindex="-1" style="margin: 0; flex: 1; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{dlg.title}}</h2>
+        <button type="button" class="hs" aria-label="Close" onClick="{{closeDlg}}" style="width: 36px; height: 36px; border-radius: 9px; border: 1px solid #8793A6; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+      </div>
+
+      <sc-if value="{{dlg.isForm}}" hint-placeholder-val="{{ true }}">
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: #46546A; font-size: 13px"><sc-if value="{{dlg.isApp}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; height: 22px; align-items: center; padding: 0 8px; border-radius: 6px; background: #EAF0FD; color: #1D419A; font-size: 11px; font-weight: 700">Used by the app</span></sc-if><span>{{dlg.usedText}}</span></div>
+        <sc-if value="{{dlg.isApp}}" hint-placeholder-val="{{ false }}"><div style="padding: 10px 12px; border-radius: 10px; background: #EAF0FD; color: #1D3F92; font-size: 13px">The app's own rules rely on this {{one}}, so it can't be deleted. You can change its name and notes.</div></sc-if>
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+          <sc-for list="{{fields}}" as="f" hint-placeholder-count="6">
+            <div style="{{f.span}}; display: flex; flex-direction: column; gap: 6px; min-width: 0">
+              <label for="{{f.fid}}" style="font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}</label>
+              <sc-if value="{{f.isText}}" hint-placeholder-val="{{ true }}"><input type="text" id="{{f.fid}}" value="{{f.value}}" disabled="{{f.locked}}" onChange="{{f.change}}" aria-invalid="{{f.invalid}}" aria-describedby="{{f.describedBy}}" style="height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"></sc-if>
+              <sc-if value="{{f.isNum}}" hint-placeholder-val="{{ false }}"><input type="number" id="{{f.fid}}" value="{{f.value}}" min="1" onChange="{{f.change}}" aria-invalid="{{f.invalid}}" aria-describedby="{{f.describedBy}}" style="height: 40px; width: 120px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"></sc-if>
+              <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}"><textarea id="{{f.fid}}" rows="3" onChange="{{f.change}}" aria-describedby="{{f.describedBy}}" style="padding: 10px 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; resize: vertical">{{f.value}}</textarea></sc-if>
+              <sc-if value="{{f.isSel}}" hint-placeholder-val="{{ false }}"><select id="{{f.fid}}" value="{{f.value}}" onChange="{{f.change}}" aria-describedby="{{f.describedBy}}" style="height: 40px; padding: 0 10px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><sc-for list="{{f.options}}" as="o" hint-placeholder-count="3"><option value="{{o.value}}">{{o.label}}</option></sc-for></select></sc-if>
+              <sc-if value="{{f.isSeg}}" hint-placeholder-val="{{ false }}"><div role="group" aria-label="{{f.label}}" style="display: inline-flex; align-self: flex-start; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px"><sc-for list="{{f.options}}" as="o" hint-placeholder-count="2"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></div></sc-if>
+              <sc-if value="{{f.isChk}}" hint-placeholder-val="{{ false }}"><label style="display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px"><input type="checkbox" id="{{f.fid}}" checked="{{f.checked}}" onChange="{{f.change}}" aria-describedby="{{f.describedBy}}" style="width: 18px; height: 18px; accent-color: #2450B8">{{f.checkLabel}}</label></sc-if>
+              <span id="{{f.hintId}}" style="{{f.hintStyle}}">{{f.hint}}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{dlg.discardOn}}" hint-placeholder-val="{{ false }}"><div role="group" aria-label="Discard your changes?" class="ex" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; border: 1px solid #E2A36B; background: #FFF4E5; color: #7A3A00; font-size: 13px; font-weight: 600"><span style="flex: 1 1 200px">Discard your changes?</span><button type="button" id="rq-dkeep" class="hs" onClick="{{dlg.keep}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button><button type="button" class="hd" onClick="{{dlg.discard}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #B0190F; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #9A150C; cursor: pointer">Discard changes</button></div></sc-if>
+
+        <sc-if value="{{step.on}}" hint-placeholder-val="{{ false }}">
+          <div class="ex" role="group" aria-labelledby="rq-why-h" style="padding: 14px; border-radius: 12px; border: 1px solid #D5DBE4; background: #FAFBFC; display: flex; flex-direction: column; gap: 8px">
+            <b id="rq-why-h">{{step.title}}</b>
+            <span style="color: #46546A; font-size: 13px">{{step.note}}</span>
+            <label for="rq-why" style="font-size: 13px; font-weight: 600; color: #46546A">Why?</label>
+            <input type="text" id="rq-why" value="{{step.why}}" onChange="{{step.onWhy}}" aria-invalid="{{step.invalid}}" aria-describedby="rq-why-err" placeholder="Kept in the audit trail with the change" style="height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+            <span id="rq-why-err" style="{{step.errStyle}}">{{step.err}}</span>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" class="{{step.btnCls}}" onClick="{{step.go}}" style="{{step.btnStyle}}">{{step.label}}</button><button type="button" class="hs" onClick="{{step.cancel}}" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button></div>
+          </div>
+        </sc-if>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 14px 20px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{dlg.canStop}}" hint-placeholder-val="{{ true }}"><button type="button" id="rq-step-stop" class="hs" onClick="{{dlg.stop}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Stop using</button></sc-if>
+        <sc-if value="{{dlg.canUse}}" hint-placeholder-val="{{ false }}"><button type="button" id="rq-step-use" class="hs" onClick="{{dlg.use}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Use again</button></sc-if>
+        <sc-if value="{{dlg.canDelete}}" hint-placeholder-val="{{ false }}"><button type="button" id="rq-step-del" class="hd" onClick="{{dlg.del}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #B0190F; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #9A150C; cursor: pointer">Delete</button></sc-if>
+        <span style="flex: 1"></span>
+        <button type="button" class="hs" onClick="{{closeDlg}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Close</button>
+        <button type="button" class="hb" onClick="{{dlg.save}}" disabled="{{dlg.saving}}" aria-busy="{{dlg.savingAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 130px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{dlg.saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span></sc-if>{{dlg.saveLabel}}</button>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{dlg.isBack}}" hint-placeholder-val="{{ false }}">
+      <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+        <div style="color: #26364D; font-size: 14px">{{back.who}}</div>
+        <div style="color: #26364D; font-size: 14px">{{back.comes}}</div>
+        <sc-if value="{{back.hasEffects}}" hint-placeholder-val="{{ false }}"><div style="padding: 12px 14px; border-radius: 12px; background: #EAF0FD; color: #1D3F92; font-size: 13px"><b>Putting it back also changes</b><sc-for list="{{back.effects}}" as="e" hint-placeholder-count="1"><div style="padding-top: 4px">{{e.text}}</div></sc-for></div></sc-if>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="rq-bwhy" style="font-size: 13px; font-weight: 600; color: #46546A">Why are you putting it back?</label><input type="text" id="rq-bwhy" value="{{back.why}}" onChange="{{back.onWhy}}" aria-invalid="{{back.invalid}}" aria-describedby="rq-bwhy-err" placeholder="Kept in the audit trail with the change" style="height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"><span id="rq-bwhy-err" style="{{back.errStyle}}">{{back.err}}</span></div>
+      </div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <button type="button" class="hs" onClick="{{closeDlg}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+        <button type="button" class="hb" onClick="{{back.go}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Put it back</button>
+      </div>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<div role="status" aria-live="polite" style="position: fixed; left: 24px; bottom: 24px; z-index: 70; font-family: Inter, system-ui, sans-serif">
+  <sc-if value="{{toast.show}}" hint-placeholder-val="{{ false }}"><div class="{{toast.cls}}" onAnimationEnd="{{toast.end}}" onMouseEnter="{{toast.hold}}" onMouseLeave="{{toast.release}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 6px 8px 6px 14px; border-radius: 12px; background: #0D1B2E; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .32)"><dc-import name="Icon" glyph="check" tone="white" size="16" hint-size="16px,16px"></dc-import><span>{{toast.text}}</span><sc-if value="{{toast.hasUndo}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toast.undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #8DB0FA; background: transparent; color: #CFE0FF; font: 600 13px Inter, sans-serif; cursor: pointer">Undo</button></sc-if><button type="button" aria-label="Dismiss" onClick="{{toast.close}}" style="width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="white" size="14" hint-size="14px,14px"></dc-import></button></div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1960},"tab":{"editor":"enum","default":"req","options":["req","types","docs"]},"view":{"editor":"enum","default":"normal","options":["normal","ai","saving","refused","dialog-saving","loading","error","many","empty","stopped-only"]}}'>
+class Component extends DCLogic {
+  // AI is the company with a filed month (September 2026, filed 5 Oct); AISB’s September is still open.
+  sepFiled() { return 'AI’s September 2026 is filed, and filed months never change. Choose October 2026 or later, or AISB only.'; }
+  constructor(p) {
+    super(p);
+    // One list: the rows of Setup › Payment types and Document types (SetupTypes.dc.html), with the same names, keys,
+    // Used by figures, stopped and deleted rows. Used by is the sum of what uses it; its title says what.
+    const sum = u => u.reduce((n, x) => n + x[1], 0);
+    const T = (key, name, plural, money, uses, status, sys, ld, day) => ({ id: 'pt-' + key, key, name, plural, money, uses, used: sum(uses), status, sys: !!sys, ld: ld || 'none', day: day || '', notes: '' });
+    const D = (key, name, one, plural, place, sql, uses, status, sys) => ({ id: 'dt-' + key, key, name, one, plural, place, sql, uses, used: sum(uses), status, sys: !!sys, notes: '' });
+    this.state = {
+      tab: p.tab || 'req', scope: p.view === 'ai' || p.view === 'refused' ? 'ai' : 'all', month: p.view === 'refused' ? 'sep' : 'oct', fol: {}, msg: '', msgN: 0, result: '', resultN: 0, guard: false,
+      q: '', sort: { col: '', dir: 0 }, stopped: false, deleted: false,
+      recs: {
+        types: [T('salary', 'Salary', 'salaries', 'out', [['payments', 264], ['recurring payments', 2], ['approval forms', 2], ['budget lines', 24], ['matching word rules', 2]], 'In use', true),
+          T('director', 'Director allowance', 'salaries', 'out', [['payments', 44], ['recurring payments', 1], ['approval forms', 1], ['budget lines', 12]], 'In use', true),
+          T('consultant', 'Consultant fee', 'consultant fees', 'out', [['payments', 26], ['recurring payments', 1], ['approval forms', 2], ['budget lines', 12]], 'In use'),
+          T('statutory', 'Statutory (KWSP / PERKESO / LHDN)', 'statutory', 'out', [['payments', 132], ['recurring payments', 5], ['budget lines', 36], ['checklist rules', 3], ['matching word rules', 3]], 'In use', true, 'next', 15),
+          T('utility', 'Utility / telco', '', 'out', [['payments', 58], ['recurring payments', 2], ['budget lines', 12]], 'In use'),
+          T('rental', 'Rental', '', 'out', [['payments', 22], ['recurring payments', 1], ['approval forms', 1], ['budget lines', 12]], 'In use'),
+          T('claim', 'Staff claim', 'claims', 'out', [['payments', 91], ['claims', 5], ['approval forms', 2], ['budget lines', 12]], 'In use', true),
+          T('advance', 'Salary advance', 'salary advances', 'out', [['advances', 3], ['approval forms', 2]], 'In use', true),
+          T('payroll_run', 'Payroll run', 'payroll runs', 'out', [], 'In use', true),
+          T('claim_overseas', 'Staff claim - overseas service (self-billed e-Invoice)', 'claims', 'out', [['payments', 9]], 'In use', true),
+          T('transfer', 'Inter-company transfer', 'transfers', 'out', [['payments', 14]], 'In use'),
+          T('receipt', 'Money received', 'receipts', 'in', [['payments', 38], ['recurring payments', 1], ['budget lines', 12]], 'In use', true),
+          T('other', 'Other payment', '', 'out', [['payments', 17], ['recurring payments', 2], ['approval forms', 3]], 'In use', true),
+          T('water_bill', 'Water bill', 'water bills', 'out', [['payments', 4]], 'In use'),
+          T('insurance', 'Insurance premium', '', 'out', [], 'In use'),
+          T('training', 'Training fee', 'training fees', 'out', [['payments', 2]], 'Stopped')].map(r => ({ ...r, appr: !['statutory', 'utility', 'receipt'].includes(r.key) })),
+        docs: [D('pv', 'Payment Voucher (SQL)', 'payment voucher', 'payment vouchers', 1, true, [['documents', 512], ['sets of required documents', 9]], 'In use', true),
+          D('jv', 'Journal Voucher (SQL)', 'journal voucher', 'journal vouchers', 2, true, [['documents', 40]], 'In use', true),
+          D('or', 'Official Receipt (SQL)', 'official receipt', 'official receipts', 3, true, [['documents', 38], ['sets of required documents', 1]], 'In use', true),
+          D('approval', 'Approval form (signed)', 'approval form', 'approval forms', 4, false, [['documents', 169], ['approval forms', 9], ['sets of required documents', 4]], 'In use', true),
+          D('invoice', 'Invoice / bill', 'invoice', 'invoices', 5, false, [['documents', 302], ['sets of required documents', 6]], 'In use', true),
+          D('claim', 'Claim form & receipts', 'claim form', 'claim forms', 6, false, [['documents', 91], ['sets of required documents', 2]], 'In use', true),
+          D('payroll', 'Payroll summary', 'payroll summary', 'payroll summaries', 7, false, [['documents', 24], ['checklist items', 1], ['Payroll check workbooks', 3]], 'In use', true),
+          D('payslip', 'Payslip', 'payslip', 'payslips', 8, false, [['documents', 308], ['sets of required documents', 2], ['joiner or leaver reminder rules', 1]], 'In use', true),
+          D('portal', 'Acknowledgement / portal bill', 'acknowledgement', 'acknowledgements', 9, false, [['documents', 132], ['sets of required documents', 1]], 'In use', true),
+          D('bank', 'Bank receipt / transfer slip', 'bank receipt', 'bank receipts', 10, false, [['documents', 488], ['sets of required documents', 11]], 'In use', true),
+          D('einvoice', 'e-Invoice (MyInvois)', 'e-Invoice', 'e-Invoices', 11, false, [['documents', 46], ['sets of required documents', 1]], 'In use', true),
+          D('statement', 'Bank statement', '', '', '', false, [['documents', 66], ['checklist items', 1]], 'In use', true),
+          D('recon', 'Bank reconciliation', '', '', '', false, [['documents', 22], ['checklist items', 1]], 'In use', true),
+          D('sqlexport', 'SQL Account export', '', '', '', false, [['documents', 30]], 'In use', true),
+          D('other', 'Other', '', '', 12, false, [['documents', 19]], 'In use', true),
+          D('tax_form', 'Tax form', 'tax form', 'tax forms', '', false, [], 'In use'),
+          D('month_review', 'Month review (signed)', 'month review', 'month reviews', 13, false, [['checklist items', 1], ['approval forms', 1]], 'In use', true),
+          D('tax_clearance', 'Tax clearance letter (LHDN)', 'tax clearance letter', 'tax clearance letters', 14, false, [['leaver reminders', 1]], 'In use', true),
+          D('quotation', 'Quotation', 'quotation', 'quotations', '', false, [['documents', 3]], 'Stopped')]
+      },
+      dels: {
+        types: [{ id: 'dl-donation', name: 'Donation', key: 'donation', when: '12 Oct 2026', entry: 1121, by: 'Aisha Rahman', why: 'Donations go under Other payment.', can: true, effects: [], rec: { ...T('donation', 'Donation', 'donations', 'out', [], 'In use'), appr: true } },
+          { id: 'dl-water', name: 'Water', key: 'water_bill', when: '1 Sep 2025', entry: 412, by: 'Aisha Rahman', why: 'Named wrongly; added again as Water bill.', can: false, reason: 'There is a payment type with the key "water_bill" now, so this one can\'t be put back.' }],
+        docs: [{ id: 'dl-permit', name: 'Work permit', key: 'work_permit', when: '8 Aug 2026', entry: 958, by: 'Aisha Rahman', why: 'Kept with the staff file instead.', can: true, effects: [], rec: D('work_permit', 'Work permit', 'work permit', 'work permits', '', false, [], 'In use') }]
+      },
+      sets: {
+        all: { salary: { d: { payslips: 1, approval: 1, slip: 1, pv: 1 }, since: 'Since October 2026' }, director: { d: { approval: 1, slip: 1, pv: 1 }, since: 'From the start' },
+          consultant: { d: { invoice: 1, approval: 1, slip: 1, pv: 1 }, since: 'Since October 2026' }, statutory: { d: { ack: 1, slip: 1 }, since: 'From the start' },
+          utility: { d: { invoice: 1, slip: 1, pv: 1 }, since: 'Since September 2026' }, rental: { d: { invoice: 1, approval: 1, slip: 1, pv: 1 }, since: 'Since October 2026' },
+          claim: { d: { claim: 1, approval: 1, slip: 1, pv: 1 }, since: 'Since October 2026' }, claim_overseas: { d: { claim: 1, approval: 1, slip: 1, pv: 1, einv: 1 }, since: 'Since October 2026' },
+          advance: { d: { approval: 1, slip: 1, pv: 1 }, since: 'Since October 2026' }, payroll_run: { d: { payslips: 1, approval: 1, slip: 1, pv: 1 }, since: 'Since October 2026' },
+          transfer: { d: { approval: 1, slip: 1 }, since: 'From the start' }, receipt: { d: { or: 1, einv: 1 }, since: 'From the start' },
+          other: { d: { invoice: 1, approval: 1, slip: 1 }, since: 'Since October 2026' }, water_bill: { d: { invoice: 1, approval: 1, slip: 1, pv: 1 }, since: 'Since October 2026' } },
+        aisb: { statutory: { d: { ack: 1, slip: 1, pv: 1 }, since: 'Since August 2026' } }, ai: {}
+      },
+      hist: {}, load: p.view === 'loading' ? 'loading' : p.view === 'error' ? 'error' : null, saving: p.view === 'saving', dsaving: false, dlg: null, closing: false, form: {}, orig: '', err: {}, step: null, why: '', whyErr: false, discard: false, back: null,
+      toast: null, toastN: 0, toastOut: false, flashId: '', flashN: 0
+    };
+    this.state.m = this.loadM(this.state.sets, p.view === 'ai' ? 'ai' : 'all');
+    if (p.view === 'many') { this.state.recs.types = [...this.state.recs.types, ...this.manyRecs('types')]; this.state.recs.docs = [...this.state.recs.docs, ...this.manyRecs('docs')]; }
+    if (p.view === 'refused') { this.state.m = { ...this.state.m, utility: { ...this.state.m.utility, approval: true } }; this.state.msg = this.sepFiled(); this.state.msgN = 1; }
+    if (p.view === 'dialog-saving') { const r = this.state.recs.types.find(x => x.id === 'pt-utility'); this.state.tab = 'types'; this.state.dlg = { mode: 'edit', id: r.id }; this.state.form = { ...r, plural: 'Utilities and telco' }; this.state.orig = JSON.stringify(r); this.state.dsaving = true; }
+  }
+  manyRecs(tab) {
+    const NAMES = tab === 'types' ? ['Insurance premium', 'Courier', 'Subscription', 'Licence fee', 'Audit fee', 'Legal fee', 'Repairs', 'Fuel', 'Cleaning', 'Security', 'Bank charges', 'Donation'] : ['Quotation', 'Delivery order', 'Purchase order', 'Insurance policy', 'Lease agreement', 'Warranty card', 'Customs form', 'Permit', 'Licence', 'Meeting minutes', 'Board resolution', 'Stamp duty receipt'];
+    const out = [];
+    for (let i = 0; i < 36; i++) {
+      const name = NAMES[i % 12] + (i < 12 ? '' : i < 24 ? ' (monthly)' : ' (annual)'), key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, ''), status = i % 11 === 10 ? 'Stopped' : 'In use';
+      out.push(tab === 'types'
+        ? { id: 'pt-' + key, key, name, plural: name + 's', money: 'out', uses: i % 3 ? [['payments', 2 + i]] : [], used: i % 3 ? 2 + i : 0, status, sys: false, ld: 'none', day: '', notes: '', appr: i % 4 !== 3 }
+        : { id: 'dt-' + key, key, name, one: name, plural: name + 's', place: 20 + i, sql: false, uses: i % 3 ? [['documents', 2 + i]] : [], used: i % 3 ? 2 + i : 0, status, sys: false, notes: '' });
+    }
+    return out;
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv); clearTimeout(this._sv2); clearTimeout(this._ld); }
+  tl() { return ['salary', 'director', 'consultant', 'statutory', 'utility', 'rental', 'claim', 'advance', 'payroll_run', 'claim_overseas', 'transfer', 'receipt', 'other', 'water_bill', 'insurance', 'training']; }
+  docsFor(sets, scope, t) {
+    const own = scope !== 'all' && sets[scope] && sets[scope][t];
+    if (own) return { d: own.d, since: own.since, own: true, same: false };
+    if (sets.all[t]) return { d: sets.all[t].d, since: sets.all[t].since, own: false, same: false };
+    return { d: sets.all.other.d, since: 'Same as Other', own: false, same: true };
+  }
+  loadM(sets, scope) { const m = {}; this.tl().forEach(t => { m[t] = { ...this.docsFor(sets, scope, t).d }; }); return m; }
+  cols() { return [['payslips', 'Payslips', 'users', false], ['invoice', 'Invoice', 'receipt', true], ['claim', 'Claim form', 'claim', false], ['approval', 'Approval', 'approval', false], ['slip', 'Bank slip', 'bank', false], ['ack', 'Acknowl.', 'check', false], ['or', 'OR', 'document', true], ['einv', 'e-Invoice', 'document', false], ['pv', 'PV', 'database', true]]; }
+  diff(m, base) {
+    const cells = {}; let n = 0;
+    this.tl().forEach(t => this.cols().forEach(([k]) => { const was = !!(base[t] || {})[k], now = !!(m[t] || {})[k]; if (was !== now) { cells[t + '.' + k] = now ? 'on' : 'off'; n++; } }));
+    return { cells, n };
+  }
+  impact(cells) {
+    const open = { salary: 12, director: 2, consultant: 3, statutory: 4, utility: 9, rental: 1, claim: 5, advance: 3, payroll_run: 0, claim_overseas: 0, transfer: 0, receipt: 5, other: 1, water_bill: 1, insurance: 0, training: 0 };
+    let miss = 0, done = 0;
+    Object.keys(cells).forEach(k => { const o = open[k.split('.')[0]] || 0; if (cells[k] === 'on') miss += Math.ceil(o / 3); else done += Math.floor(o / 3); });
+    return { miss, done };
+  }
+  baseM() { const b = {}; this.tl().forEach(t => { b[t] = this.docsFor(this.state.sets, this.state.scope, t).d; }); return b; }
+  nChanges() { const d = this.diff(this.state.m, this.baseM()); return d.n + Object.keys(this.state.fol).length; }
+  askLeave(apply) {
+    if (this.nChanges() > 0) { this._pending = apply; this.setState({ guard: true }); } else apply();
+  }
+  say(text) { this.setState({ msg: text, msgN: this.state.msgN + 1, result: '' }); }
+  toast(text, undo) {
+    clearTimeout(this._tt); this._undo = undo || null;
+    this.setState({ toast: { text, hasUndo: !!undo }, toastN: this.state.toastN + 1, toastOut: false });
+    this._tt = setTimeout(() => this.toastLeave(), 6000);
+  }
+  toastLeave() {
+    clearTimeout(this._tt);
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.toastGone();
+    this.setState({ toastOut: true });
+    this._tt = setTimeout(() => this.toastGone(), 400);
+  }
+  toastGone() { clearTimeout(this._tt); if (this.state.toast) this.setState({ toast: null, toastOut: false }); }
+  flash(id) { this.setState({ flashId: id, flashN: this.state.flashN + 1 }); }
+  recs(tab) { return this.state.recs[tab]; }
+  setRec(tab, id, patch) { this.setState({ recs: { ...this.state.recs, [tab]: this.state.recs[tab].map(r => (r.id === id ? { ...r, ...patch } : r)) } }); }
+  openDlg(mode, id, opener) {
+    const tab = this.state.tab;
+    this._opener = document.activeElement;
+    if (opener) { const o = document.getElementById(opener); if (o) this._opener = o; }
+    if (mode === 'putback') { this.setState({ dlg: { mode, id }, closing: false, back: { why: '', err: false }, step: null, discard: false }); return; }
+    const rec = mode === 'edit' ? this.recs(tab).find(r => r.id === id) : (tab === 'types' ? { key: '', name: '', plural: '', money: 'out', appr: true, ld: 'none', day: '', notes: '', sys: false, used: 0, status: 'In use' } : { key: '', name: '', one: '', plural: '', place: this.recs('docs').length + 1, sql: false, notes: '', sys: false, used: 0, status: 'In use' });
+    const form = { ...rec };
+    this.setState({ dlg: { mode, id: id || '' }, closing: false, form, orig: JSON.stringify(form), err: {}, step: null, why: '', whyErr: false, discard: false });
+  }
+  dirtyForm() { return !!this.state.dlg && this.state.dlg.mode !== 'putback' && JSON.stringify(this.state.form) !== this.state.orig; }
+  closeDlg(force) {
+    if (!this.state.dlg || this.state.closing) return;
+    if (force !== true && this.dirtyForm()) { this.setState({ discard: true }); return; }
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false, step: null, discard: false }); }
+  componentDidUpdate(pp, prev) {
+    const st = this.state;
+    if (st.dlg && !prev.dlg) { const h = document.getElementById('rq-dlg-title'); if (h) h.focus({ preventScroll: true }); }
+    else if (!st.dlg && prev.dlg) { if (this._opener && this._opener.isConnected) this._opener.focus(); }
+    if (st.step && !prev.step) { const w = document.getElementById('rq-why'); if (w) w.focus(); }
+    if (st.discard && !prev.discard) { const k = document.getElementById('rq-dkeep'); if (k) k.focus(); }
+    if (st.guard && !prev.guard) { const k = document.getElementById('rq-keep'); if (k) k.focus(); }
+  }
+  validate() {
+    const f = this.state.form, tab = this.state.tab, err = {}, one = tab === 'types' ? 'payment type' : 'document type';
+    if (!String(f.name || '').trim()) err.name = 'Give it a name.';
+    if (this.state.dlg.mode === 'add') {
+      const k = String(f.key || '').trim();
+      if (!k) err.key = 'Give it a key.';
+      else if (!/^[a-z0-9_]+$/.test(k)) err.key = 'Use lowercase letters, numbers and underscores, with no spaces.';
+      else if (this.recs(tab).some(r => r.key === k)) err.key = 'There is a ' + one + ' with the key "' + k + '" already.';
+    }
+    return err;
+  }
+  saveForm() {
+    const err = this.validate();
+    if (Object.keys(err).length) { this.setState({ err }); const first = Object.keys(err)[0]; const el = document.getElementById('rq-f-' + first); if (el) el.focus(); return; }
+    if (this.state.dsaving) return;
+    this.setState({ dsaving: true });
+    clearTimeout(this._sv2); this._sv2 = setTimeout(() => this.commitForm(), 650);
+  }
+  commitForm() {
+    const st = this.state;
+    if (!st.dlg || !st.dsaving) return;
+    const tab = st.tab, f = { ...st.form }, d = st.dlg;
+    if (d.mode === 'add') {
+      const rec = { ...f, id: (tab === 'types' ? 'pt-' : 'dt-') + f.key, used: 0, status: 'In use' };
+      this.setState({ dsaving: false, recs: { ...st.recs, [tab]: [...this.recs(tab), rec] }, dlg: { mode: 'edit', id: rec.id }, form: rec, orig: JSON.stringify(rec), err: {} });
+      this.toast(f.name + ' added', () => { const s2 = this.state; this.setState({ recs: { ...s2.recs, [tab]: s2.recs[tab].filter(r => r.id !== rec.id) }, dlg: null, closing: false, step: null, discard: false }); this.toast(f.name + ' removed again'); });
+      this.flash(rec.id);
+    } else {
+      const before = this.recs(tab).find(r => r.id === d.id);
+      this.setRec(tab, d.id, f); this.setState({ dsaving: false, orig: JSON.stringify(f), err: {} });
+      this.toast('Saved', () => { const s2 = this.state; this.setRec(tab, d.id, before); if (s2.dlg && s2.dlg.id === d.id) this.setState({ form: { ...before }, orig: JSON.stringify(before) }); this.flash(d.id); this.toast('Change undone'); });
+      this.flash(d.id);
+    }
+  }
+  askStep(kind) { this._stepOpener = 'rq-step-' + kind; this.setState({ step: { kind }, why: '', whyErr: false }); }
+  closeStep() { this.setState({ step: null }); setTimeout(() => { const b = document.getElementById(this._stepOpener || '') || document.getElementById('rq-f-name'); if (b) b.focus(); }, 0); }
+  keyTaken(tab, key) { return (this.state.recs[tab] || []).some(r => r.key === key); }
+  runStep() {
+    const st = this.state, kind = st.step.kind, tab = st.tab, id = st.dlg.id;
+    if (!String(st.why || '').trim()) { this.setState({ whyErr: true }); const w = document.getElementById('rq-why'); if (w) w.focus(); return; }
+    const rec = this.recs(tab).find(r => r.id === id); if (!rec) return;
+    if (kind === 'stop') {
+      this.setRec(tab, id, { status: 'Stopped' }); this.flash(id);
+      this.toast(rec.name + ' stopped', () => { this.setRec(tab, id, { status: 'In use' }); this.flash(id); this.toastGone(); });
+    } else if (kind === 'use') { this.setRec(tab, id, { status: 'In use' }); this.flash(id); this.toast(rec.name + ' in use again', () => { this.setRec(tab, id, { status: 'Stopped' }); this.flash(id); this.toast(rec.name + ' stopped again'); }); }
+    else {
+      const row = { id: 'dl-' + rec.key + '-' + (this._delN = (this._delN || 0) + 1), name: rec.name, key: rec.key, when: '18 Nov 2026', entry: 440, by: 'Aisha Rahman', why: st.why, can: true, effects: [], rec: { ...rec, status: 'In use' } };
+      this.setState({ recs: { ...st.recs, [tab]: st.recs[tab].filter(r => r.id !== id) }, dels: { ...st.dels, [tab]: [row, ...st.dels[tab]] } });
+      this.toast(rec.name + ' deleted', () => { const s2 = this.state; this.setState({ recs: { ...s2.recs, [tab]: [...s2.recs[tab], rec] }, dels: { ...s2.dels, [tab]: s2.dels[tab].filter(r => r.id !== row.id) } }); this.flash(id); this.toast(rec.name + ' back as it was'); });
+    }
+    this.setState({ step: null }); this.closeDlg(true);
+  }
+  putBack() {
+    const st = this.state, tab = st.tab;
+    if (!String((st.back || {}).why || '').trim()) { this.setState({ back: { ...st.back, err: true } }); const w = document.getElementById('rq-bwhy'); if (w) w.focus(); return; }
+    const row = st.dels[tab].find(r => r.id === st.dlg.id); if (!row) return;
+    if (this.keyTaken(tab, row.key)) { this.toast('Not put back: the key "' + row.key + '" is in use now.'); this.closeDlg(true); return; }
+    this.setState({ recs: { ...st.recs, [tab]: [...st.recs[tab], { ...row.rec, id: (tab === 'types' ? 'pt-' : 'dt-') + row.key }] }, dels: { ...st.dels, [tab]: st.dels[tab].filter(r => r.id !== row.id) } });
+    const nid = (tab === 'types' ? 'pt-' : 'dt-') + row.key;
+    this.toast(row.name + ' put back as #' + row.entry, () => { const s2 = this.state; this.setState({ recs: { ...s2.recs, [tab]: s2.recs[tab].filter(r => r.id !== nid) }, dels: { ...s2.dels, [tab]: [row, ...s2.dels[tab]] } }); this.toast(row.name + ' deleted again'); }); this.flash(nid);
+    this.closeDlg(true);
+  }
+  setField(k, v) { if (this.state.dsaving) return; this.setState({ form: { ...this.state.form, [k]: v }, err: { ...this.state.err, [k]: '' } }); }
+  save() {
+    const st = this.state, base = this.baseM(), d = this.diff(st.m, base), nf = Object.keys(st.fol).length;
+    if (st.saving) return;
+    if (st.month === 'sep' && st.scope !== 'aisb') return this.say(this.sepFiled());
+    if (d.n + nf === 0) return this.say(st.scope === 'ai' ? 'This company already follows the documents set for every company.' : 'Nothing changes: these are the documents already required from that month.');
+    this.setState({ saving: true, msg: '', result: '' });
+    clearTimeout(this._sv); this._sv = setTimeout(() => this.commitGrid(), 700);
+  }
+  commitGrid() {
+    const st = this.state, base = this.baseM(), d = this.diff(st.m, base);
+    if (!st.saving) return;
+    const label = { sep: 'September 2026', oct: 'October 2026', nov: 'November 2026' }[st.month];
+    const prev = { sets: st.sets, hist: st.hist, scope: st.scope };
+    const sets = { ...st.sets, all: { ...st.sets.all }, [st.scope]: { ...st.sets[st.scope] } };
+    const hist = { ...st.hist };
+    this.tl().forEach(t => {
+      const was = this.docsFor(st.sets, st.scope, t), changed = this.cols().some(([k]) => !!st.m[t][k] !== !!was.d[k]);
+      if (st.fol[t]) { delete sets[st.scope][t]; hist[t] = [...(hist[t] || []), { text: was.since + ' for ' + st.scope.toUpperCase() + ': own set ended, follows all companies again.' }]; }
+      else if (changed) {
+        hist[t] = [...(hist[t] || []), { text: was.since + ': ' + this.cols().filter(([k]) => was.d[k]).map(c => c[1]).join(', ') + '.' }];
+        sets[st.scope][t] = { d: { ...st.m[t] }, since: 'Since ' + label.replace(' 2026', '') + ' 2026' };
+      }
+    });
+    const im = this.impact(d.cells);
+    const text = 'Saved. ' + im.miss + ' open payment' + (im.miss === 1 ? '' : 's') + ' now miss a document; ' + im.done + (im.done === 1 ? ' is' : ' are') + ' now complete.';
+    this.setState({ sets, hist, fol: {}, saving: false, msg: '', result: text, resultN: st.resultN + 1, m: this.loadM(sets, st.scope) });
+    this.toast('Saved from ' + label, () => { const s2 = this.state; this.setState({ sets: prev.sets, hist: prev.hist, fol: {}, result: '', m: this.loadM(prev.sets, s2.scope) }); this.toast('Change undone'); });
+  }
+  renderVals() {
+    const st = this.state, tab = st.tab, isReq = tab === 'req', isList = !isReq;
+    const view = this.props.view || 'normal';
+    const cols = this.cols(), TL = this.tl();
+    const nameOf = {}; st.recs.types.forEach(r => { nameOf[r.key] = r.name; });
+    const glyphOf = { salary: 'users', director: 'person', consultant: 'person', statutory: 'vault', utility: 'receipt', rental: 'receipt', claim: 'claim', advance: 'advance', payroll_run: 'payroll', claim_overseas: 'claim', transfer: 'coins', receipt: 'coins', other: 'document', water_bill: 'receipt', insurance: 'document', training: 'document' };
+    const monthLabel = { sep: 'September 2026', oct: 'October 2026', nov: 'November 2026' }[st.month];
+
+    // tabs
+    const tabDefs = [['types', 'Payment types', String(st.recs.types.length)], ['docs', 'Document types', String(st.recs.docs.length)], ['req', 'Required documents', '']];
+    const tabIds = tabDefs.map(t => 'rq-tab-' + t[0]);
+    const goTab = k => this.askLeave(() => this.setState({ tab: k, q: '', stopped: false, deleted: false, sort: { col: '', dir: 0 }, msg: '', result: '' }));
+    const tabs = tabDefs.map(([k, label, count], i) => ({ id: 'rq-tab-' + k, label, count, hasCount: !!count, sel: k === tab ? 'true' : 'false', tabindex: k === tab ? '0' : '-1',
+      pick: () => { if (k !== tab) goTab(k); },
+      key: e => {
+        const n = tabDefs.length;
+        const to = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i + n - 1) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : null;
+        if (to === null) return;
+        e.preventDefault();
+        goTab(tabDefs[to][0]);
+        const el = document.getElementById(tabIds[to]); if (el) el.focus();
+      },
+      style: 'height: 44px; padding: 0 2px; border: 0; border-bottom: 2px solid ' + (k === tab ? '#2450B8' : 'transparent') + '; margin-bottom: -1px; background: transparent; font: 600 14px Inter, sans-serif; color: ' + (k === tab ? '#0F1A2B' : '#5F6C80') + '; cursor: pointer; transition: border-color .12s ease-out, color .12s ease-out' }));
+
+    // list tabs
+    const one = tab === 'types' ? 'payment type' : 'document type', plural = tab === 'types' ? 'payment types' : 'document types';
+    let all = (st.recs[tab] || []);
+    if (view === 'empty') all = []; else if (view === 'stopped-only') all = all.map(r => ({ ...r, status: 'Stopped' }));
+    const stoppedN = all.filter(r => r.status === 'Stopped').length;
+    const base = all.filter(r => st.stopped || r.status !== 'Stopped');
+    const q = String(st.q || '').trim().toLowerCase();
+    let shown = base.filter(r => !q || r.name.toLowerCase().includes(q) || r.key.toLowerCase().includes(q));
+    const usesTxt = r => ((r.uses && r.uses.length) ? r.uses.map(u => u[1] + ' ' + u[0]).join(', ') : r.used + (tab === 'types' ? ' payments' : ' documents'));
+    const c3 = r => (tab === 'types' ? (r.money === 'in' ? 'Money in' : 'Money out') : (r.sql ? 'From SQL' : 'No'));
+    const c4 = r => (tab === 'types' ? (r.appr ? 'Yes' : 'No') : String(r.place || '—'));
+    const val = (r, col) => (col === 'name' ? r.name : col === 'key' ? r.key : col === 'c3' ? c3(r) : col === 'c4' ? c4(r) : col === 'used' ? r.used : r.status);
+    if (st.sort.dir) shown = shown.slice().sort((a, b) => { const x = val(a, st.sort.col), y = val(b, st.sort.col); return (x > y ? 1 : x < y ? -1 : 0) * st.sort.dir; });
+    const headLabels = [['name', 'Name'], ['key', 'Key'], ['c3', tab === 'types' ? 'Money' : 'From SQL'], ['c4', tab === 'types' ? 'Needs approval' : 'Place in the pack'], ['used', 'Used by'], ['status', 'Status']];
+    const heads = headLabels.map(([col, label]) => {
+      const on = st.sort.col === col && st.sort.dir !== 0;
+      return { label, sorted: on, glyph: st.sort.dir === 1 ? 'arrowUp' : 'arrowDown', aria: on ? (st.sort.dir === 1 ? 'ascending' : 'descending') : 'none',
+        sort: () => { const s = st.sort; const dir = s.col !== col ? 1 : s.dir === 1 ? -1 : s.dir === -1 ? 0 : 1; this.setState({ sort: { col: dir ? col : '', dir } }); } };
+    });
+    const pill = s => 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:600;' + (s === 'Stopped' ? 'background:#EEF1F5;color:#46546A' : 'background:#E3F7EC;color:#0A5C34');
+    const rows = shown.map(r => ({ id: 'rq-row-' + r.id, name: r.name, key: r.key, c3: c3(r), c4: c4(r), used: String(r.used), usedTitle: r.used ? 'Used by ' + usesTxt(r) : 'Not used yet', status: r.status, pill: pill(r.status), app: r.sys,
+      cls: 'hr ' + (st.flashId === r.id ? (st.flashN % 2 ? 'fa' : 'fb') : ''), open: () => this.openDlg('edit', r.id, 'rq-row-' + r.id) }));
+    const noRows = rows.length === 0;
+    const emptyText = all.length === 0 ? 'None yet.' : base.length === 0 ? 'Only stopped ' + plural + ': tick Show stopped to see them.' : 'No ' + plural + ' match.';
+    const delsAll = view === 'empty' ? [] : (st.dels[tab] || []);
+    const delRows = delsAll.map(d => ({ id: 'rq-put-' + d.id, name: d.name, when: d.when, entry: 'Entry ' + d.entry, by: d.by, why: d.why, can: d.can && !this.keyTaken(tab, d.key), cant: !(d.can && !this.keyTaken(tab, d.key)), reason: d.can && this.keyTaken(tab, d.key) ? 'There is a ' + (tab === 'types' ? 'payment type' : 'document type') + ' with the key "' + d.key + '" now, so this one can\'t be put back.' : (d.reason || ''), open: () => this.openDlg('putback', d.id, 'rq-put-' + d.id) }));
+
+    // dialog
+    const dlgOn = !!st.dlg, mode = dlgOn ? st.dlg.mode : 'edit', isBack = dlgOn && mode === 'putback', isForm = dlgOn && !isBack;
+    const f = st.form || {};
+    const rec = dlgOn && mode === 'edit' ? (st.recs[tab] || []).find(r => r.id === st.dlg.id) : null;
+    const hid = k => 'rq-fh-' + k;
+    const mk = (k, label, kind, o) => {
+      const op = o || {}, err = (st.err || {})[k];
+      return { fid: 'rq-f-' + k, label, isText: kind === 'text', isNum: kind === 'num', isArea: kind === 'area', isSel: kind === 'sel', isSeg: kind === 'seg', isChk: kind === 'chk',
+        value: f[k] == null ? '' : String(f[k]), locked: !!op.locked || !!st.dsaving, checked: !!f[k], checkLabel: op.checkLabel || '', span: op.span || 'grid-column: auto',
+        change: e => this.setField(k, kind === 'chk' ? e.target.checked : e.target.value),
+        invalid: err ? 'true' : 'false', describedBy: hid(k), hintId: hid(k), hint: err || op.hint || '', hintStyle: err ? 'color:#B0190F;font-size:12px;font-weight:600' : 'color:#5F6C80;font-size:12px',
+        options: (op.options || []).map(([v, l]) => ({ value: v, label: l, on: String(f[k]) === v ? 'true' : 'false', pick: () => this.setField(k, v),
+          style: 'height:32px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' + (String(f[k]) === v ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') })) };
+    };
+    const fixed = mode === 'edit' ? { locked: true, hint: 'Fixed once added, because payments and documents refer to it.' } : { hint: 'Lowercase letters and numbers. It cannot be changed later.' };
+    const fields = !dlgOn ? [] : tab === 'types'
+      ? [mk('key', 'Key', 'text', fixed), mk('name', 'Name', 'text'), mk('plural', 'Several of them are called', 'text', { span: 'grid-column: 1 / -1' }),
+        mk('money', 'Money', 'seg', { options: [['out', 'Money out'], ['in', 'Money in']] }), mk('appr', 'Needs approval', 'chk', { checkLabel: 'Yes, a new payment of this type needs approval', hint: 'It is only the starting point on a payment, and approval never blocks a payment.' }), mk('ld', 'Legal deadline in', 'sel', { options: [['none', 'No legal deadline'], ['same', 'The same month'], ['next', 'The next month']] }),
+        mk('day', 'Legal deadline day', 'num', { hint: 'Day of that month. Leave empty when there is no deadline.' }), mk('notes', 'Notes', 'area', { span: 'grid-column: 1 / -1' })]
+      : [mk('key', 'Key', 'text', fixed), mk('name', 'Name', 'text'), mk('one', 'One of them is called', 'text'), mk('plural', 'Several of them are called', 'text'),
+        mk('place', 'Place in the audit pack', 'num', { hint: 'Documents are printed in this order.' }), mk('sql', 'Issued by SQL Account', 'chk', { checkLabel: 'Yes, SQL Account issues this document', hint: 'Shown as from SQL in the required documents grid.' }), mk('notes', 'Notes', 'area', { span: 'grid-column: 1 / -1' })];
+    const isApp = !!(rec && rec.sys);
+    const stopped = !!(rec && rec.status === 'Stopped');
+    const stepKind = st.step ? st.step.kind : 'stop';
+    const stepText = { stop: ['Stop using it', 'Hidden from new payments and Next up. Everything recorded stays.', 'Why are you stopping it?'], use: ['Use it again', 'It comes back in new payments and Next up.', 'Why are you using it again?'], del: ['Delete it', 'It is removed from the lists. You can put it back from Show deleted.', 'Why are you deleting it?'] }[stepKind];
+    const delBtn = stepKind === 'del';
+    const bk = isBack ? (st.dels[tab] || []).find(r => r.id === st.dlg.id) : null;
+    const dlg = { show: dlgOn, dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in', isForm, isBack,
+      title: isBack ? 'Put back ' + (bk ? bk.name : '') : mode === 'add' ? 'Add ' + one : (rec ? rec.name : ''),
+      isApp, usedText: mode === 'add' ? 'New ' + one + '.' : (rec ? (rec.used ? 'Used by ' + usesTxt(rec) + '. Stop using it instead of deleting it.' : 'Not used yet, so it can be deleted.') : ''),
+      canStop: mode === 'edit' && !stopped, canUse: mode === 'edit' && stopped, canDelete: mode === 'edit' && !!rec && !rec.sys && !rec.used,
+      saving: !!st.dsaving, savingAria: st.dsaving ? 'true' : 'false', saveLabel: st.dsaving ? 'Saving…' : mode === 'add' ? 'Add ' + one : 'Save changes', discardOn: st.discard,
+      save: () => this.saveForm(), stop: () => this.askStep('stop'), use: () => this.askStep('use'), del: () => this.askStep('del'),
+      keep: () => this.setState({ discard: false }), discard: () => this.closeDlg(true) };
+    const step = { on: !!st.step, title: stepText[2], label: stepText[0], note: stepText[1], why: st.why, invalid: st.whyErr ? 'true' : 'false', err: st.whyErr ? 'Say why you\'re making this change.' : '', errStyle: 'color:#B0190F;font-size:12px;font-weight:600',
+      onWhy: e => this.setState({ why: e.target.value, whyErr: false }), go: () => this.runStep(), cancel: () => this.closeStep(),
+      btnCls: delBtn ? 'hd' : 'hb', btnStyle: 'height:36px;padding:0 14px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;' + (delBtn ? 'border:1px solid #B0190F;background:#FFFFFF;color:#9A150C' : 'border:0;background:#2450B8;color:#FFFFFF') };
+    const back = { who: bk ? 'Deleted ' + bk.when + ' by ' + bk.by + '. Why: ' + bk.why : '', comes: bk ? 'It comes back as it was, as #' + bk.entry + '.' : '',
+      hasEffects: !!(bk && bk.effects && bk.effects.length), effects: ((bk && bk.effects) || []).map(t => ({ text: t })),
+      why: (st.back || {}).why || '', invalid: (st.back || {}).err ? 'true' : 'false', err: (st.back || {}).err ? 'Say why you\'re making this change.' : '', errStyle: 'color:#B0190F;font-size:12px;font-weight:600',
+      onWhy: e => this.setState({ back: { why: e.target.value, err: false } }), go: () => this.putBack() };
+
+    // required grid
+    const m = st.m, baseD = this.baseM(), d = this.diff(m, baseD), nch = d.n + Object.keys(st.fol).length;
+    const cellKey = (ri, ci) => e => {
+      const nr = TL.length, nc = cols.length;
+      let r = ri, c = ci;
+      if (e.key === 'ArrowRight') c = ci + 1; else if (e.key === 'ArrowLeft') c = ci - 1;
+      else if (e.key === 'ArrowDown') r = ri + 1; else if (e.key === 'ArrowUp') r = ri - 1;
+      else if (e.key === 'Home') c = 0; else if (e.key === 'End') c = nc - 1;
+      else return;
+      e.preventDefault();
+      if (r < 0 || r >= nr || c < 0 || c >= nc) return;
+      const el = document.getElementById('rq-c-' + r + '-' + c); if (el) el.focus();
+    };
+    const scopeName = st.scope.toUpperCase();
+    const reqRows = TL.map((t, ri) => {
+      const eff = this.docsFor(st.sets, st.scope, t), row = m[t] || {};
+      const n = cols.filter(([k]) => row[k]).length;
+      const rec2 = st.recs.types.find(r => r.key === t) || {};
+      const followed = !!st.fol[t];
+      const hist = (st.hist[t] || []).length ? st.hist[t] : (t === 'salary' ? [{ text: 'From the start: Payslips, Bank slip, PV.' }] : [{ text: 'No earlier sets: this set has been in force from the start.' }]);
+      const histOpen = !!(st.histOpen || {})[t];
+      return { label: nameOf[t], glyph: glyphOf[t], stopped: rec2.status === 'Stopped', moneyIn: rec2.money === 'in', count: n + (n === 1 ? ' document' : ' documents'),
+        since: followed ? 'Follows all companies' : eff.since, histOpen, hist, chevCls: histOpen ? 'chev on' : 'chev',
+        toggleHist: () => this.setState({ histOpen: { ...(this.state.histOpen || {}), [t]: !histOpen } }),
+        hasTag: st.scope !== 'all', tag: followed ? 'Follows all companies' : eff.own ? 'Its own set' : 'Follows all companies',
+        tagStyle: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;' + (!followed && eff.own ? 'background:#EAF0FD;color:#1D419A' : 'background:#EEF1F5;color:#46546A'),
+        canFollow: st.scope !== 'all' && eff.own && !followed, follow: () => !this.state.saving && this.setState({ fol: { ...this.state.fol, [t]: true }, m: { ...this.state.m, [t]: { ...this.docsFor(this.state.sets, 'all', t).d } }, msg: '', result: '' }),
+        cells: cols.map(([ck, cl], ci) => {
+          const on = !!row[ck], chg = !!d.cells[t + '.' + ck], posted = ck === 'pv' && st.scope === 'ai' && on, byForm = ck === 'approval' && on;
+          return { on: on ? 'true' : 'false', dis: st.saving ? 'true' : 'false', isOn: on && !posted && !byForm, isForm: byForm, isPosted: posted, changed: chg, id: 'rq-c-' + ri + '-' + ci, key: cellKey(ri, ci),
+            aria: nameOf[t] + ': ' + cl + ', ' + (on ? 'required' : 'not needed') + (byForm ? ', filled by an approved form on file' : '') + (posted ? ', posted here' : '') + (chg ? ', changed' : ''),
+            toggle: () => { if (this.state.saving) return; if (posted) { this.say('AI is kept here, so its voucher is posted here when a payment is paid. That box can' + '’t be unticked.'); return; } const mm = this.state.m; this.setState({ m: { ...mm, [t]: { ...mm[t], [ck]: !mm[t][ck] } }, msg: '', result: '' }); },
+            style: 'position:relative;height:34px;border-radius:9px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;padding:0;' + (posted ? 'width:60px;background:#EAF0FD;border:1px solid #9DB4EA;color:#1D419A;font:700 11px Inter,sans-serif' : 'width:34px;' + (on ? 'background:#2450B8;border:0' : 'background:#FFFFFF;border:1px solid #8793A6')) };
+        }) };
+    });
+    const im = this.impact(d.cells);
+    const impactText = d.n ? im.miss + ' open payment' + (im.miss === 1 ? '' : 's') + ' will miss a document, ' + im.done + (im.done === 1 ? ' will be' : ' will be') + ' complete.' : 'Nothing changes for open payments.';
+    const monthNote = st.month === 'sep' && st.scope !== 'aisb' ? this.sepFiled() : 'Applies from ' + monthLabel + '. It never reaches a filed month. ' + (st.scope === 'all' ? '' : scopeName + ' follows the documents set for all companies, unless it has its own set for a type.');
+    return {
+      pageName: isReq ? 'Required documents' : tab === 'types' ? 'Payment types' : 'Document types', navActive: isReq ? 'required' : tab === 'types' ? 'payment_types' : 'doc_types',
+      h1: isReq ? 'Required documents' : tab === 'types' ? 'Payment types' : 'Document types',
+      lead: isReq ? 'What each payment type needs before it counts as Complete. A change applies from the payroll month you pick and never reaches a filed month.' : tab === 'types' ? 'The kinds of payment you record. Each can be money out or money in, with a legal deadline if it has one.' : 'The documents you file against a payment, in the order they go in the audit pack.',
+      isList, isReq, showList: isList && !st.load, showReq: isReq && !st.load, loadingOn: st.load === 'loading', errorOn: st.load === 'error',
+      loadingLabel: 'Loading the ' + (isReq ? 'required documents' : plural), errorTitle: 'Couldn’t load the ' + (isReq ? 'required documents' : plural),
+      skRows: [[34, 16], [26, 12], [40, 18], [30, 14], [36, 16], [28, 12]].map(([a, b]) => ({ a, b })),
+      retry: () => { clearTimeout(this._ld); this.setState({ load: 'loading' }); this._ld = setTimeout(() => { this.setState({ load: null }); const b = document.getElementById(isReq ? 'rq-save' : 'rq-add'); if (b) b.focus(); }, 900); },
+      saving: !!st.saving, savingAria: st.saving ? 'true' : 'false',
+      hasScopeNote: isReq && st.scope !== 'all', scopeNote: st.scope === 'ai' ? 'AI is Kept here: its payment vouchers are posted by this app when a payment is paid, so the PV box is filled for it and can’t be unticked. Salaries are not run in the app for AI.' : 'AISB is Kept in SQL Account: its payment vouchers are issued by SQL Account and read in on the SQL import page.',
+      tabs, panelLabel: 'rq-tab-' + tab, panelCls: tab === 'types' ? 'ex' : tab === 'docs' ? 'ex' : 'ex',
+      addLabel: 'Add ' + one, plural, openAdd: () => this.openDlg('add', '', 'rq-add'),
+      q: st.q, onQ: e => this.setState({ q: e.target.value }), shownText: shown.length + ' of ' + base.length + ' shown',
+      showStopped: st.stopped, toggleStopped: e => this.setState({ stopped: e.target.checked }), stoppedLabel: 'Show stopped (' + stoppedN + ')',
+      showDeleted: st.deleted, toggleDeleted: e => this.setState({ deleted: e.target.checked }),
+      heads, rows, noRows, emptyText, delHeading: 'Deleted ' + plural, delRows, noDeleted: delRows.length === 0,
+      scope: st.scope, onScope: e => { if (this.state.saving) return; const v = e.target.value || 'all'; this.askLeave(() => this.setState({ scope: v, m: this.loadM(st.sets, v), fol: {}, msg: '', result: '' })); },
+      month: st.month, onMonth: e => { if (this.state.saving) return; this.setState({ month: e.target.value, msg: '' }); }, monthNote,
+      noChanges: nch === 0, discard: () => { if (this.state.saving) return; this.setState({ m: this.loadM(st.sets, st.scope), fol: {}, msg: '', result: '' }); },
+      saveLabel: st.saving ? 'Saving…' : 'Save from ' + monthLabel, save: () => this.save(),
+      dirty: nch > 0, dirtyLabel: nch + ' unsaved change' + (nch === 1 ? '' : 's'), dirtyCls: nch % 2 ? 'swapA' : 'swapB', impactText,
+      msg: { show: !!st.msg, text: st.msg, cls: st.msgN % 2 ? 'rv' : 'rvB' },
+      result: { show: !!st.result, text: st.result, cls: st.resultN % 2 ? 'rv' : 'rvB', dismiss: () => this.setState({ result: '' }) },
+      guard: st.guard, keepEditing: () => this.setState({ guard: false }), discardLeave: () => { const go = this._pending; this.setState({ guard: false, m: this.loadM(st.sets, st.scope), fol: {} }); if (go) go(); },
+      cols: cols.map(([key, label, glyph, sql]) => ({ key, label, glyph, sql: sql && (key !== 'pv' || st.scope !== 'ai'), form: key === 'approval', here: key === 'pv' && st.scope === 'ai' })), reqRows, forHead: st.scope === 'all' ? 'Companies' : 'For ' + scopeName,
+      one, dlg, fields, step, back,
+      closeDlg: () => this.closeDlg(),
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation();
+          if (this.state.step) { this.closeStep(); return; }
+          if (this.state.discard) { this.setState({ discard: false }); return; }
+          this.closeDlg(); return;
+        }
+        if (e.key !== 'Tab') return;
+        const box = e.currentTarget, list = box.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])');
+        if (!list.length) return;
+        const first = list[0], last = list[list.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      },
+      toast: { show: !!st.toast, text: st.toast ? st.toast.text : '', hasUndo: !!(st.toast && st.toast.hasUndo), cls: st.toastOut ? 'tOut' : (st.toastN % 2 ? 'rv' : 'rvB'),
+        end: e => { if (this.state.toastOut && e.target === e.currentTarget) this.toastGone(); }, close: () => this.toastLeave(),
+        hold: () => clearTimeout(this._tt), release: () => { clearTimeout(this._tt); this._tt = setTimeout(() => this.toastLeave(), 3000); },
+        undo: () => { if (this._undo) this._undo(); } }
+    };
+  }
+}
+</script>
+</body>
+</html>

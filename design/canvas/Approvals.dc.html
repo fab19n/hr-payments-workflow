@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Approvals · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+/* colours as tokens: light is the default, .dk swaps every one of them */
+.ap{--pg:#F5F6F8;--card:#FFFFFF;--line:#E3E7ED;--line2:#EEF1F5;--ctl:#7D8CA3;--head:#FAFBFC;--ink:#0F1A2B;--ink2:#46546A;--ink3:#5F6C80;--brand:#2450B8;--brandBg:#EAF0FD;--brandLine:#C9D7F7;--brandInk:#1D419A;--pri:#2450B8;--priHov:#1D419A;--hov:#F8FAFD;--hs:#F0F3F8;--sel:#F3F6FD;--okBg:#F0FBF5;--okLine:#BFE8D0;--okInk:#0A6B3D;--okChip:#E3F7EC;--okChipInk:#0A5A33;--badBg:#FFF4F2;--badLine:#F5C2BB;--badInk:#B0190F;--badChip:#FDE6E3;--badChipInk:#8E1A10;--warnBg:#FFFBF2;--warnLine:#F3D9A6;--warnInk:#8A4000;--warnChip:#FEF1D6;--warnChipInk:#7A3A00;--neuBg:#EEF1F5;--neuLine:#D5DBE4;--dim:rgba(15,26,43,.45);--ring:#2450B8;--dng:#B3261E;--dngHov:#8F1D17;--red:#C7372B}
+.ap.dk{--pg:#0B1220;--card:#0F1724;--line:#243044;--line2:#1B2638;--ctl:#66758C;--head:#131D2E;--ink:#E6EBF2;--ink2:#C3CCDA;--ink3:#9BA8BC;--brand:#8DB0FA;--brandBg:#1B2B4A;--brandLine:#2E4677;--brandInk:#A9C3FB;--pri:#3D68D8;--priHov:#2F58C4;--hov:#16213A;--hs:#1B2638;--sel:#14213A;--okBg:#0F2A1E;--okLine:#1E5A3D;--okInk:#5BD49A;--okChip:#14432E;--okChipInk:#8BE5B8;--badBg:#2A1618;--badLine:#6B2A2C;--badInk:#F58C80;--badChip:#4E2024;--badChipInk:#F9B1A8;--warnBg:#2A2012;--warnLine:#6B4E1A;--warnInk:#F2B35B;--warnChip:#4A3412;--warnChipInk:#F7C46C;--neuBg:#1B2638;--neuLine:#33415A;--dim:rgba(3,7,14,.66);--ring:#8DB0FA;--dng:#C9372C;--dngHov:#B02C22;--red:#C9372C}
+.ap a{color:var(--brand)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.eb{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.h1{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:30px;font-weight:600}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.mut{color:var(--ink3);font-size:13px}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.btn,.sec,.dng{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;box-sizing:border-box;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn{border:0;background:var(--pri);color:#FFFFFF}
+.ap a.btn{color:#FFFFFF}
+.btn:hover{background:var(--priHov)}
+.btn:disabled,.sec:disabled,.dng:disabled{opacity:.6;cursor:not-allowed}
+.sec{border:1px solid var(--ctl);background:var(--card);color:var(--ink)}
+.ap a.sec{color:var(--ink)}
+.sec:hover{background:var(--hs)}
+.dng{border:0;background:var(--dng);color:#FFFFFF}
+.dng:hover{background:var(--dngHov)}
+.sm{height:32px;padding:0 12px;font-size:13px;border-radius:9px}
+.lnk{border:0;background:transparent;color:var(--brand);font:600 13px Inter,sans-serif;text-decoration:underline;cursor:pointer;padding:0 2px;min-height:32px}
+.pl{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;box-sizing:border-box}
+.pl.g{background:var(--neuBg);color:var(--ink2)}
+.pl.o{background:var(--okChip);color:var(--okChipInk)}
+.pl.w{background:var(--warnChip);color:var(--warnChipInk)}
+.pl.b{background:var(--badChip);color:var(--badChipInk)}
+.pl.i{background:var(--brandBg);color:var(--brandInk)}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.cp.ok{background:var(--okChip);color:var(--okChipInk);border-color:var(--okLine)}
+.cp.warn{background:var(--warnChip);color:var(--warnChipInk);border-color:var(--warnLine)}
+.cp.bad{background:var(--badChip);color:var(--badChipInk);border-color:var(--badLine)}
+.cp.mute{background:var(--neuBg);color:var(--ink2);border-color:var(--neuLine)}
+.cp.info{background:var(--brandBg);color:var(--brandInk);border-color:var(--brandLine)}
+.wl{display:flex;gap:6px;align-items:flex-start;font-size:12px;font-weight:600;line-height:1.4}
+.wl.w{color:var(--warnInk)}
+.wl.b{color:var(--badInk)}
+.wl.o{color:var(--okInk)}
+.wl.m{color:var(--ink2);font-weight:500}
+.strip{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;font-size:13px;color:var(--ink2);background:var(--head);border:1px solid var(--line)}
+.strip.info{background:var(--brandBg);border-color:var(--brandLine);color:var(--ink)}
+.strip.warn{background:var(--warnBg);border-color:var(--warnLine);color:var(--ink)}
+.strip.bad{background:var(--badBg);border-color:var(--badLine);color:var(--ink)}
+.tbs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tb{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:var(--ink2);font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:border-color .12s ease-out,color .12s ease-out}
+.tb:hover{color:var(--ink)}
+.tb[aria-selected="true"]{border-bottom-color:var(--brand);color:var(--ink)}
+.cnt{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 7px;border-radius:99px;box-sizing:border-box;font:700 11px Inter,sans-serif;background:var(--neuBg);color:var(--ink2)}
+.cnt.on{background:var(--brandBg);color:var(--brandInk)}
+.cnt.red{background:var(--red);color:#FFFFFF}
+.tw{overflow-x:auto}
+.tbl{width:100%;min-width:760px;border-collapse:collapse;font-size:13px}
+.tbl th{padding:9px 12px;font-weight:600;font-size:12px;text-align:left;color:var(--ink3);background:var(--head);white-space:nowrap;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 12px;border-top:1px solid var(--line2);vertical-align:top;color:var(--ink)}
+.tbl .r{text-align:right}
+.tbl tr.sel td{background:var(--sel)}
+.hr:hover td{background:var(--hov)}
+.ckw{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;margin:-4px 0 0 -7px;border-radius:8px;cursor:pointer}
+.ckw:hover{background:var(--hs)}
+.ck{width:18px;height:18px;margin:0;accent-color:var(--pri);cursor:pointer}
+.bulk{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;padding:10px 16px;background:var(--brandBg);border-bottom:1px solid var(--brandLine);font-size:13px;color:var(--ink)}
+.frm{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.fh{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line2)}
+.code{margin:0;font:700 16px ui-monospace,Consolas,monospace;color:var(--ink)}
+.dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 20px;padding:12px 18px;font-size:13px}
+.dl b{display:block;font-size:12px;font-weight:600;color:var(--ink3)}
+.rq{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px 16px;align-items:center;padding:10px 18px;border-top:1px solid var(--line2);font-size:13px}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding:12px 18px;border-top:1px solid var(--line2)}
+.sgb{border:1px solid var(--ctl);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:13px}
+.sgb .x{text-decoration:line-through}
+.dsc{width:100%;display:flex;align-items:center;gap:8px;min-height:40px;padding:0 18px;border:0;border-top:1px solid var(--line2);background:var(--head);color:var(--ink);font:600 13px Inter,sans-serif;cursor:pointer;text-align:left}
+.dsc:hover{background:var(--hs)}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lb{font-size:13px;font-weight:600;color:var(--ink2)}
+.lb span{font-weight:500;color:var(--ink3)}
+.inp{height:40px;width:100%;box-sizing:border-box;min-width:0;padding:0 12px;border:1px solid var(--ctl);border-radius:10px;font:400 14px Inter,sans-serif;background:var(--card);color:var(--ink)}
+.inp[aria-invalid="true"]{border-color:var(--badInk);box-shadow:0 0 0 1px var(--badInk)}
+.err{display:flex;gap:6px;align-items:center;color:var(--badInk);font-size:13px;font-weight:600}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,var(--neuBg) 25%,var(--hov) 50%,var(--neuBg) 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.spin{display:inline-block;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.plate{width:44px;height:44px;flex:none;border-radius:12px;display:inline-flex;align-items:center;justify-content:center}
+.plate.bad{background:var(--badChip)}.plate.warn{background:var(--warnChip)}.plate.brand{background:var(--brandBg)}.plate.ok{background:var(--okChip)}
+/* motion and focus base */
+.btn,.sec,.dng,.lnk,.dsc,.hr td{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid var(--ring);outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes flashA{from{background-color:var(--brandBg)}}
+@keyframes flashB{from{background-color:var(--brandBg)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.fa,.fa td{animation:flashA .9s ease-out}
+.fb,.fb td{animation:flashB .9s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.to-in{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@media (max-width:760px){.ap-main{padding:24px 16px 48px !important}.rq{grid-template-columns:minmax(0,1fr) auto}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div class="{{rootCls}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--pg); font-family: Inter, system-ui, sans-serif; color: var(--ink); font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="approvals" company="{{sbCo}}" kind="{{sbKind}}" companies="{{nCos}}" theme="{{theme}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Payments" page="Approvals" company="{{sbCo}}" companies="{{nCos}}" theme="{{theme}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="ap-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 72px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+          <span class="eb">Payments</span>
+          <h1 id="ap-h1" tabindex="-1" class="h1">Approvals</h1>
+          <p style="margin: 0; color: var(--ink2); max-width: 720px">Print a form for the requests that need approval, upload it once it is signed, and see what was paid without one. Approval never stops a payment. <b>{{coLine}}</b></p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" id="ap-excel" class="sec" onClick="{{doExcel}}"><dc-import name="Icon" glyph="sheet" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+          <a href="ApprovalUpload.dc.html" class="btn"><dc-import name="Icon" glyph="upload" tone="white" size="18" hint-size="18px,18px"></dc-import>Upload a signed form</a>
+        </div>
+      </div>
+
+      <div class="strip">
+        <dc-import name="Icon" glyph="approval" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import>
+        <span style="flex: 1; min-width: 0">{{apprText}} <a href="SetupApprovers.dc.html" style="font-weight: 600">Setup › HR › Approvers</a></span>
+        <a href="ToPay.dc.html" style="font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; min-height: 24px">Approved requests are paid on To pay<dc-import name="Icon" glyph="arrow" tone="{{tn.brand}}" size="14" hint-size="14px,14px"></dc-import></a>
+      </div>
+
+      <sc-if value="{{snap}}" hint-placeholder-val="{{ false }}">
+        <div role="note" class="strip info"><dc-import name="Icon" glyph="clock" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import><span>Shown as on <b>Tue 17 Nov, 10:20</b>, before AF-2611-005 was printed. Print the form for the two selected requests to see them move to Waiting for approval.</span></div>
+      </sc-if>
+
+      <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+          <span class="sr" role="status">Loading approvals</span>
+          <div style="display: flex; gap: 18px; border-bottom: 1px solid var(--line); padding-bottom: 12px"><span class="sk" style="width: 90px; height: 20px"></span><span class="sk" style="width: 160px; height: 20px"></span><span class="sk" style="width: 90px; height: 20px"></span><span class="sk" style="width: 190px; height: 20px"></span><span class="sk" style="width: 220px; height: 20px"></span></div>
+          <div class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="width: 30%; height: 20px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span></div>
+          <div class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="width: 30%; height: 20px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="card rv" style="padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 280px; justify-content: center">
+          <span class="plate bad" style="width: 64px; height: 64px; border-radius: 20px"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 class="h2" style="font-size: 18px">Couldn't load approvals</h2>
+          <p style="margin: 0; color: var(--ink2); font-size: 13px; max-width: 460px">The app didn't answer. Nothing was changed. Forms you printed and uploaded are kept; try again in a moment.</p>
+          <button type="button" class="btn" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="18" hint-size="18px,18px"></dc-import>Try again</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showBody}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div role="tablist" aria-label="Approvals" class="tbs">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+              <button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="ap-panel" tabindex="{{t.ti}}" class="tb fr" onClick="{{t.pick}}" onKeyDown="{{t.key}}">{{t.label}}<span class="{{t.cntCls}}" aria-hidden="true">{{t.n}}</span><span class="sr">{{t.sr}}</span></button>
+            </sc-for>
+          </div>
+
+          <div role="tabpanel" id="ap-panel" aria-labelledby="{{panelBy}}" class="{{panelCls}}" style="display: flex; flex-direction: column; gap: 16px">
+
+            <sc-if value="{{hasFilter}}" hint-placeholder-val="{{ false }}">
+              <div class="strip info rv" role="status">
+                <dc-import name="Icon" glyph="filter" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import>
+                <span style="flex: 1; min-width: 0">{{filterText}}</span>
+                <button type="button" class="sec sm" onClick="{{clearFilter}}">{{filterClear}}</button>
+              </div>
+            </sc-if>
+
+            <!-- To print -->
+            <sc-if value="{{tabPrint}}" hint-placeholder-val="{{ false }}">
+              <div class="card" style="overflow: hidden">
+                <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+                  <h2 class="h2">To print</h2>
+                  <p class="mut" style="margin: 0">Requests and payments that need approval and have no form yet. Pick one or several: they go on one form, with the approvers of {{coCode}} printed on it.</p>
+                </div>
+                <sc-if value="{{noAppr}}" hint-placeholder-val="{{ false }}">
+                  <div id="ap-noappr" role="alert" aria-live="off" class="rv" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; padding: 14px 18px; background: var(--badBg); border-top: 1px solid var(--badLine); border-bottom: 1px solid var(--badLine)"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1 1 320px; min-width: 0"><b style="color: var(--badChipInk)">Approval forms can’t be printed</b><div style="color: var(--ink2); font-size: 13px">{{coCode}} has no approvers yet, so there is no one to print on the form. Approval forms can’t be printed until a company has an approver. Add the director who signs for {{coCode}}, then print again. Approval never blocks paying: these can still be paid from To pay, and then read Paid without approval on file.</div></div><a href="SetupApprovers.dc.html" class="sec sm" style="color: var(--badChipInk); border-color: var(--badLine); white-space: nowrap">Add an approver</a></div>
+                </sc-if>
+                <sc-if value="{{hasSel}}" hint-placeholder-val="{{ false }}">
+                  <div class="bulk rv" role="group" aria-label="Selected requests">
+                    <b style="flex: 1 1 auto">{{selText}}</b>
+                    <button type="button" id="ap-print-sel" class="btn sm" onClick="{{printSel}}" disabled="{{noAppr}}" aria-describedby="{{printDesc}}"><dc-import name="Icon" glyph="printer" tone="white" size="16" hint-size="16px,16px"></dc-import>{{printSelLabel}}</button>
+                    <button type="button" class="lnk" onClick="{{clearSel}}">Clear selection</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{printEmpty}}" hint-placeholder-val="{{ false }}">
+                  <div class="rv" style="padding: 32px 20px 36px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; border-top: 1px solid var(--line2)">
+                    <span class="plate ok" style="width: 56px; height: 56px; border-radius: 18px"><dc-import name="Icon" glyph="printer" tone="{{tn.ok}}" size="28" hint-size="28px,28px"></dc-import></span>
+                    <b style="font-size: 15px">Nothing to print</b>
+                    <span class="mut" style="max-width: 440px">Every request that needs approval is on a printed form. New claims, advances and bills that need approval appear here.</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{printAny}}" hint-placeholder-val="{{ true }}">
+                  <div class="tw">
+                    <table class="tbl">
+                      <caption class="sr">Requests to print, with their kind, notes and amount</caption>
+                      <thead><tr>
+                        <th scope="col" style="width: 40px"><label class="ckw"><input type="checkbox" class="ck" aria-label="Select every request to print" checked="{{allSel}}" onChange="{{toggleAll}}"></label></th>
+                        <th scope="col">Request</th><th scope="col">Kind</th><th scope="col">Notes</th><th scope="col" class="r">Amount (RM)</th><th scope="col"><span class="sr">Actions</span></th>
+                      </tr></thead>
+                      <tbody>
+                        <sc-for list="{{printRows}}" as="r" hint-placeholder-count="3">
+                          <tr class="{{r.rowCls}}">
+                            <td><label class="ckw"><input type="checkbox" class="ck" aria-label="{{r.selLabel}}" checked="{{r.checked}}" onChange="{{r.toggle}}"></label></td>
+                            <td><b>{{r.title}}</b><div class="mut">{{r.sub}}</div><sc-if value="{{r.hasCode}}" hint-placeholder-val="{{ true }}"><div class="mono mut" style="font-size: 12px">{{r.code}}</div></sc-if></td>
+                            <td><span class="{{r.kindCls}}"><dc-import name="Icon" glyph="{{r.kindGlyph}}" tone="{{r.kindTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.kind}}</span></td>
+                            <td style="max-width: 300px"><div style="display: flex; flex-direction: column; gap: 4px"><sc-for list="{{r.notes}}" as="n" hint-placeholder-count="1"><div class="{{n.cls}}"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.tone}}" size="14" hint-size="14px,14px"></dc-import><span>{{n.t}}</span></div></sc-for></div></td>
+                            <td class="r num">{{r.amt}}</td>
+                            <td class="r"><button type="button" class="sec sm" aria-label="{{r.printAria}}" onClick="{{r.printOne}}" disabled="{{r.noPrint}}" aria-describedby="{{r.printDesc}}"><dc-import name="Icon" glyph="printer" tone="{{r.tnMuted}}" size="16" hint-size="16px,16px"></dc-import>Print form</button></td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- Waiting for approval -->
+            <sc-if value="{{tabWait}}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{waitEmpty}}" hint-placeholder-val="{{ false }}">
+                <div class="card rv" style="padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+                  <span class="plate ok" style="width: 64px; height: 64px; border-radius: 20px"><dc-import name="Icon" glyph="approval" tone="{{tn.ok}}" size="34" hint-size="34px,34px"></dc-import></span>
+                  <h2 class="h2" style="font-size: 18px">Nothing waiting for approval</h2>
+                  <p style="margin: 0; color: var(--ink2); font-size: 13px; max-width: 460px">Every form that was printed for {{coCode}} has been signed. Print a form on To print when a request needs one.</p>
+                  <button type="button" class="sec" onClick="{{goPrint}}">Go to To print</button>
+                </div>
+              </sc-if>
+              <sc-for list="{{waitForms}}" as="f" hint-placeholder-count="2">
+                <section class="{{f.cls}}" aria-labelledby="{{f.hid}}">
+                  <div class="fh">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; min-width: 0">
+                      <h2 id="{{f.hid}}" class="code">{{f.code}}</h2>
+                      <span class="cp mute"><dc-import name="Icon" glyph="qr" tone="{{f.tnMuted}}" size="14" hint-size="14px,14px"></dc-import>Check <span class="mono">{{f.check}}</span></span>
+                      <span class="pl w"><dc-import name="Icon" glyph="clock" tone="{{f.tnWarn}}" size="14" hint-size="14px,14px"></dc-import>Waiting for a signature</span>
+                      <span class="mut">Printed {{f.printed}} · {{f.nText}} · <b class="num" style="color: var(--ink)">RM {{f.total}}</b></span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                      <a href="{{f.reprintHref}}" class="sec sm" aria-label="{{f.reprintAria}}"><dc-import name="Icon" glyph="printer" tone="{{f.tnMuted}}" size="16" hint-size="16px,16px"></dc-import>Print again</a>
+                      <a href="ApprovalUpload.dc.html" class="btn sm" aria-label="{{f.uploadAria}}"><dc-import name="Icon" glyph="upload" tone="white" size="16" hint-size="16px,16px"></dc-import>Upload signed form</a>
+                    </div>
+                  </div>
+                  <div style="padding: 10px 18px; font-size: 13px; color: var(--ink2)">Approvers on the form: {{f.approvers}}. Any one signature approves it.</div>
+                  <sc-for list="{{f.reqs}}" as="q" hint-placeholder-count="2">
+                    <div class="rq">
+                      <div style="min-width: 0; display: flex; flex-direction: column; gap: 3px">
+                        <div style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center"><b>{{q.title}}</b><span class="{{q.kindCls}}"><dc-import name="Icon" glyph="{{q.kindGlyph}}" tone="{{q.kindTone}}" size="14" hint-size="14px,14px"></dc-import>{{q.kind}}</span><span class="pl w"><dc-import name="Icon" glyph="clock" tone="{{q.tnWarn}}" size="14" hint-size="14px,14px"></dc-import>Waiting for approval</span></div>
+                        <span class="mut">{{q.sub}}</span>
+                        <sc-for list="{{q.notes}}" as="n" hint-placeholder-count="1"><div class="{{n.cls}}"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.tone}}" size="14" hint-size="14px,14px"></dc-import><span>{{n.t}}</span></div></sc-for>
+                      </div>
+                      <b class="num">{{q.amt}}</b>
+                      <div style="display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end">
+                        <button type="button" class="sec sm" aria-label="{{q.naAria}}" onClick="{{q.naOpen}}">{{q.naLabel}}</button>
+                        <sc-if value="{{q.canWd}}" hint-placeholder-val="{{ true }}"><button type="button" class="sec sm" aria-label="{{q.wdAria}}" onClick="{{q.wdOpen}}">Withdraw</button></sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                </section>
+              </sc-for>
+              <sc-if value="{{mrOn}}" hint-placeholder-val="{{ true }}">
+                <section class="frm" aria-labelledby="ap-mr-h">
+                  <div class="fh">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; min-width: 0">
+                      <h2 id="ap-mr-h" class="code">{{mrCode}}</h2>
+                      <span class="cp mute"><dc-import name="Icon" glyph="qr" tone="{{tn.muted}}" size="14" hint-size="14px,14px"></dc-import>Check <span class="mono">{{mrCheck}}</span></span>
+                      <span class="pl w"><dc-import name="Icon" glyph="clock" tone="{{tn.warn}}" size="14" hint-size="14px,14px"></dc-import>Waiting for upload</span>
+                      <span class="mut">Month review, October 2026 · printed {{mrPrinted}}</span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                      <a href="PrintMonthReview.dc.html" class="sec sm"><dc-import name="Icon" glyph="printer" tone="{{tn.muted}}" size="16" hint-size="16px,16px"></dc-import>Print again</a>
+                      <a href="ApprovalUpload.dc.html" class="btn sm"><dc-import name="Icon" glyph="upload" tone="white" size="16" hint-size="16px,16px"></dc-import>Upload signed sheet</a>
+                    </div>
+                  </div>
+                  <div style="padding: 10px 18px 14px; font-size: 13px; color: var(--ink2)">One approver signs the month's sheet: the register total, the 2 paid without approval, the approvals each approver gave, and the Maybank current reconciliation (not signed off yet). <a href="MonthlyChecklist.dc.html" style="font-weight: 600">Month reviewed</a> on the checklist ticks when it is on file.</div>
+                </section>
+              </sc-if>
+              <sc-if value="{{mrNone}}" hint-placeholder-val="{{ false }}">
+                <div class="strip"><dc-import name="Icon" glyph="document" tone="{{tn.muted}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1">The Month review for October 2026 (MR-2610-AI) isn't printed yet.</span><a href="PrintMonthReview.dc.html#ai" style="font-weight: 600; white-space: nowrap">Print the Month review</a></div>
+              </sc-if>
+            </sc-if>
+
+            <!-- Approved -->
+            <sc-if value="{{tabOk}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+                <label for="ap-q" class="fld" style="flex: 1 1 280px"><span class="lb">Find a form, request or approver</span><input id="ap-q" type="search" class="inp" autoComplete="off" value="{{q}}" onChange="{{onQ}}" placeholder="For example AF-2611-003 or Tan Mei Ling"></label>
+                <span role="status" class="mut" style="min-height: 40px; display: inline-flex; align-items: center">{{okCountText}}</span>
+                <a href="ToPay.dc.html#from-requests" style="font-weight: 600; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin-left: auto">Pay the approved requests on To pay<dc-import name="Icon" glyph="arrow" tone="{{tn.brand}}" size="14" hint-size="14px,14px"></dc-import></a>
+              </div>
+              <sc-if value="{{okEmpty}}" hint-placeholder-val="{{ false }}">
+                <div class="card rv" style="padding: 28px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+                  <dc-import name="Icon" glyph="approval" tone="{{tn.muted}}" size="28" hint-size="28px,28px"></dc-import>
+                  <b>No approved forms yet for {{coCode}}</b>
+                  <span class="mut">Signed forms appear here once they are uploaded.</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{okNoMatch}}" hint-placeholder-val="{{ false }}">
+                <div class="card rv" style="padding: 28px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+                  <dc-import name="Icon" glyph="search" tone="{{tn.muted}}" size="28" hint-size="28px,28px"></dc-import>
+                  <b>No approved form matches “{{q}}”</b>
+                  <span class="mut">Search looks at form codes, checks, requests and approvers.</span>
+                  <button type="button" class="sec sm" onClick="{{clearQ}}">Clear the search</button>
+                </div>
+              </sc-if>
+              <sc-for list="{{okForms}}" as="f" hint-placeholder-count="3">
+                <section class="{{f.cls}}" aria-labelledby="{{f.hid}}">
+                  <div class="fh">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; min-width: 0">
+                      <h2 id="{{f.hid}}" class="code">{{f.code}}</h2>
+                      <span class="cp mute"><dc-import name="Icon" glyph="qr" tone="{{f.tnMuted}}" size="14" hint-size="14px,14px"></dc-import>Check <span class="mono">{{f.check}}</span></span>
+                      <span class="cp ok"><dc-import name="Icon" glyph="check" tone="{{f.tnOk}}" size="14" hint-size="14px,14px"></dc-import>Approved by {{f.by}}, {{f.on}}</span>
+                    </div>
+                    <b class="num">RM {{f.total}}</b>
+                  </div>
+                  <div class="dl">
+                    <div><b>Printed</b>{{f.printed}}</div>
+                    <div><b>Date on the form</b>{{f.on}}</div>
+                    <div><b>Uploaded</b>{{f.up}}</div>
+                    <div><b>How it was signed</b>{{f.how}}</div>
+                  </div>
+                  <sc-for list="{{f.reqs}}" as="q" hint-placeholder-count="2">
+                    <div class="rq">
+                      <div style="min-width: 0"><b>{{q.title}}</b><div class="mut">{{q.sub}}</div></div>
+                      <span class="mut" style="text-align: right">{{q.state}}</span>
+                      <b class="num">{{q.amt}}</b>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{f.hasNotes}}" hint-placeholder-val="{{ false }}">
+                    <div style="padding: 10px 18px; border-top: 1px solid var(--line2); display: flex; flex-direction: column; gap: 6px">
+                      <sc-for list="{{f.notes}}" as="n" hint-placeholder-count="1"><div class="{{n.cls}}"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.tone}}" size="14" hint-size="14px,14px"></dc-import><span>{{n.t}}</span></div></sc-for>
+                    </div>
+                  </sc-if>
+                  <button type="button" class="dsc fr" aria-expanded="{{f.exp}}" onClick="{{f.toggle}}"><span class="{{f.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="{{f.tnMuted}}" size="16" hint-size="16px,16px"></dc-import></span>Approvers printed on the form ({{f.nSigners}})</button>
+                  <sc-if value="{{f.open}}" hint-placeholder-val="{{ false }}">
+                    <div class="sg ex">
+                      <sc-for list="{{f.signers}}" as="g" hint-placeholder-count="3">
+                        <div class="sgb"><b class="{{g.nameCls}}">{{g.name}}</b><span class="{{g.noteCls}}">{{g.note}}</span></div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </section>
+              </sc-for>
+              <sc-if value="{{manyOn}}" hint-placeholder-val="{{ false }}">
+                <div class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; background: var(--head)">
+                  <span role="status" class="mut">Showing 25 of 63 approved forms, newest first. The board draws 5 of the 25.</span>
+                  <button type="button" class="sec" onClick="{{showMore}}">Show 25 more</button>
+                </div>
+                <span class="mut">63 is an example count for the many-rows case. Excel always holds every form.</span>
+              </sc-if>
+            </sc-if>
+
+            <!-- Not approved and Withdrawn -->
+            <sc-if value="{{tabNo}}" hint-placeholder-val="{{ false }}">
+              <div class="card" style="overflow: hidden">
+                <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 4px">
+                  <h2 class="h2">Not approved and Withdrawn</h2>
+                  <p class="mut" style="margin: 0">Kept, never deleted, each with its reason. Nothing here is paid.</p>
+                </div>
+                <sc-if value="{{noEmpty}}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 28px 20px; border-top: 1px solid var(--line2); text-align: center" class="mut">No request of {{coCode}} was refused or withdrawn.</div>
+                </sc-if>
+                <sc-if value="{{noAny}}" hint-placeholder-val="{{ true }}">
+                  <div class="tw">
+                    <table class="tbl">
+                      <caption class="sr">Requests not approved or withdrawn</caption>
+                      <thead><tr><th scope="col">Request</th><th scope="col">Status</th><th scope="col">Reason</th><th scope="col" class="r">Amount (RM)</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{noRows}}" as="r" hint-placeholder-count="2">
+                          <tr class="{{r.rowCls}}">
+                            <td><b>{{r.title}}</b><div class="mut">{{r.sub}}</div></td>
+                            <td><span class="{{r.pillCls}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="14" hint-size="14px,14px"></dc-import>{{r.pill}}</span></td>
+                            <td>“{{r.reason}}”<div class="mut">{{r.by}}</div></td>
+                            <td class="r num">{{r.amt}}</td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+
+            <!-- Paid without approval on file -->
+            <sc-if value="{{tabPwa}}" hint-placeholder-val="{{ false }}">
+              <div class="strip"><dc-import name="Icon" glyph="help" tone="{{tn.muted}}" size="20" hint-size="20px,20px"></dc-import><span>Payments of <b>October 2026</b> that needed approval and have no approved form on file, or were paid above it. Approval never blocks a payment: this list is where it shows. The checklist item <a href="MonthlyChecklist.dc.html" style="font-weight: 600">Approvals on file for every payment</a> ticks itself when Still open is empty.</span></div>
+              <sc-if value="{{pwaNone}}" hint-placeholder-val="{{ false }}">
+                <div class="card rv" style="padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+                  <span class="plate ok" style="width: 64px; height: 64px; border-radius: 20px"><dc-import name="Icon" glyph="verified" tone="{{tn.ok}}" size="34" hint-size="34px,34px"></dc-import></span>
+                  <h2 class="h2" style="font-size: 18px">Nothing paid without approval in October 2026</h2>
+                  <p style="margin: 0; color: var(--ink2); font-size: 13px; max-width: 460px">Every {{coCode}} payment that needs approval has a form on file. The Overview card stays hidden while this list is empty.</p>
+                </div>
+              </sc-if>
+              <sc-if value="{{pwaAny}}" hint-placeholder-val="{{ true }}">
+                <section class="card" style="overflow: hidden" aria-labelledby="ap-pwa-open">
+                  <div style="padding: 16px 18px 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><h2 id="ap-pwa-open" class="h2">Still open</h2><span class="cnt red">{{pwaOpenN}}</span><span class="mut">Paid with no approved form, above the approved amount, or refused after payment.</span></div>
+                  <div class="tw">
+                    <table class="tbl">
+                      <caption class="sr">Paid without approval on file, still open</caption>
+                      <thead><tr><th scope="col">Payment</th><th scope="col">Paid</th><th scope="col">Entered by</th><th scope="col">Approval</th><th scope="col" class="r">Amount (RM)</th><th scope="col"><span class="sr">Actions</span></th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{pwaOpen}}" as="r" hint-placeholder-count="2">
+                          <tr class="{{r.rowCls}}">
+                            <td><b>{{r.name}}</b><div class="mut">{{r.sub}}</div></td>
+                            <td class="num">{{r.paid}}</td>
+                            <td>{{r.by}}<div class="mut" style="font-size: 12px">declared, not verified</div></td>
+                            <td><span class="cp bad"><dc-import name="Icon" glyph="alert" tone="{{r.tnBad}}" size="14" hint-size="14px,14px"></dc-import>{{r.mk}}</span><div class="mut" style="margin-top: 4px">{{r.mkSub}}</div></td>
+                            <td class="r num">{{r.amt}}</td>
+                            <td class="r"><div style="display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap">
+                              <sc-if value="{{r.canPrint}}" hint-placeholder-val="{{ true }}"><button type="button" class="sec sm" aria-label="{{r.printAria}}" onClick="{{r.printOne}}"><dc-import name="Icon" glyph="printer" tone="{{r.tnMuted}}" size="16" hint-size="16px,16px"></dc-import>{{r.printLabel}}</button></sc-if>
+                              <sc-if value="{{r.onForm}}" hint-placeholder-val="{{ false }}"><span class="pl w"><dc-import name="Icon" glyph="clock" tone="{{r.tnWarn}}" size="14" hint-size="14px,14px"></dc-import>{{r.onFormText}}</span></sc-if>
+                              <a href="Payment.dc.html" class="sec sm" aria-label="{{r.openAria}}">Open payment</a>
+                            </div></td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                  <sc-if value="{{pwaOptOn}}" hint-placeholder-val="{{ false }}"><p class="mut" style="margin: 0; padding: 10px 18px 14px; border-top: 1px solid var(--line2)">CL-2609-002 is an optional state-only row, drawn to show the Paid, approval refused reading. The sample count for October stays 2 without it.</p></sc-if>
+                </section>
+                <section class="card" style="overflow: hidden" aria-labelledby="ap-pwa-after">
+                  <div style="padding: 16px 18px 10px; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap"><h2 id="ap-pwa-after" class="h2">Approved after payment</h2><span class="cnt">{{pwaAfterN}}</span><span class="mut">The form came after the money went out. Both dates are kept, here, in the audit trail and in the audit pack.</span></div>
+                  <div class="tw">
+                    <table class="tbl">
+                      <caption class="sr">Approved after payment</caption>
+                      <thead><tr><th scope="col">Payment</th><th scope="col">Paid</th><th scope="col">Date on the form</th><th scope="col">Uploaded</th><th scope="col">Approval</th><th scope="col" class="r">Amount (RM)</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{pwaAfter}}" as="r" hint-placeholder-count="1">
+                          <tr class="{{r.rowCls}}">
+                            <td><b>{{r.name}}</b><div class="mut">{{r.sub}}</div></td>
+                            <td class="num">{{r.paid}}</td>
+                            <td class="num">{{r.formDate}}</td>
+                            <td class="num">{{r.up}}</td>
+                            <td><span class="cp ok"><dc-import name="Icon" glyph="check" tone="{{r.tnOk}}" size="14" hint-size="14px,14px"></dc-import>{{r.mk}}</span><div class="mut mono" style="margin-top: 4px; font-size: 12px">{{r.code}}</div></td>
+                            <td class="r num">{{r.amt}}</td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              </sc-if>
+            </sc-if>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <!-- dialogs: print form, not approved, withdraw -->
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dimCls}}" onClick="{{dlgBackdrop}}" style="position: fixed; inset: 0; z-index: 60; background: var(--dim)"></div>
+    <div role="dialog" aria-modal="true" aria-labelledby="ap-dlg-title" aria-describedby="ap-dlg-desc" tabindex="-1" class="{{dlgCls}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onDlgAnim}}" style="position: fixed; z-index: 61; top: 48px; left: 16px; right: 16px; margin: 0 auto; max-width: 620px; max-height: calc(100vh - 96px); overflow-y: auto; box-sizing: border-box; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.3); display: flex; flex-direction: column">
+      <div style="display: flex; gap: 12px; align-items: flex-start; padding: 18px 20px 12px">
+        <span class="{{dlgPlate}}"><dc-import name="Icon" glyph="{{dlgGlyph}}" tone="{{dlgTone}}" size="22" hint-size="22px,22px"></dc-import></span>
+        <div style="flex: 1; min-width: 0"><h2 id="ap-dlg-title" tabindex="-1" style="margin: 0; font-size: 17px; font-weight: 600">{{dlgTitle}}</h2><p id="ap-dlg-desc" style="margin: 4px 0 0; color: var(--ink2); font-size: 13px">{{dlgDesc}}</p></div>
+        <button type="button" class="sec" aria-label="Close" onClick="{{dlgCloseBtn}}" style="width: 36px; height: 36px; padding: 0; border-color: transparent"><dc-import name="Icon" glyph="close" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import></button>
+      </div>
+
+      <sc-if value="{{dlgRefused}}" hint-placeholder-val="{{ false }}">
+        <div id="ap-ref" role="alert" tabindex="-1" class="rv" style="display: flex; gap: 12px; align-items: flex-start; margin: 0 20px 4px; padding: 12px 14px; border-radius: 12px; background: var(--badBg); border: 1px solid var(--badLine)">
+          <dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="20" hint-size="20px,20px"></dc-import>
+          <div style="flex: 1; min-width: 0; font-size: 13px"><b style="color: var(--badInk)">Nothing was saved</b><div style="color: var(--ink2)">CL-2611-001 was changed on HR › Claims and advances after this list was loaded. Reload the list to see the change, then withdraw it again if it is still needed. Your reason is kept below.</div></div>
+          <button type="button" class="sec sm" onClick="{{reloadList}}">Reload the list</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{dlgPrint}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 4px 20px 16px; display: flex; flex-direction: column; gap: 14px">
+          <div style="border: 1px solid var(--line); border-radius: 12px; overflow: hidden">
+            <sc-for list="{{pItems}}" as="p" hint-placeholder-count="2">
+              <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 10px 14px; border-bottom: 1px solid var(--line2); font-size: 13px">
+                <div style="min-width: 0; display: flex; flex-direction: column; gap: 3px">
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center"><b>{{p.title}}</b><span class="{{p.kindCls}}"><dc-import name="Icon" glyph="{{p.kindGlyph}}" tone="{{p.kindTone}}" size="14" hint-size="14px,14px"></dc-import>{{p.kind}}</span></div>
+                  <span class="mut">{{p.sub}}</span>
+                  <sc-for list="{{p.notes}}" as="n" hint-placeholder-count="1"><div class="{{n.cls}}"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.tone}}" size="14" hint-size="14px,14px"></dc-import><span>{{n.t}}</span></div></sc-for>
+                </div>
+                <b class="num">{{p.amt}}</b>
+              </div>
+            </sc-for>
+            <div style="display: flex; justify-content: space-between; padding: 10px 14px; background: var(--head); font-size: 14px"><b>Total</b><b class="num">RM {{pTotal}}</b></div>
+          </div>
+          <div class="fld">
+            <span class="lb">Approvers printed on the form ({{coCode}}, today)</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px">
+              <sc-for list="{{pSigners}}" as="g" hint-placeholder-count="3"><div class="sgb"><b class="{{g.nameCls}}">{{g.name}}</b><span class="{{g.noteCls}}">{{g.note}}</span></div></sc-for>
+            </div>
+            <span style="font-size: 13px; font-weight: 600">Any one signature approves this form.</span>
+          </div>
+          <sc-if value="{{pWarnOn}}" hint-placeholder-val="{{ false }}">
+            <div class="strip warn" role="note"><dc-import name="Icon" glyph="alert" tone="{{tn.warn}}" size="20" hint-size="20px,20px"></dc-import><span>{{pWarn}} This is a warning only: you can still print.</span></div>
+          </sc-if>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; font-size: 13px; color: var(--ink2)">
+            <span class="cp mute"><dc-import name="Icon" glyph="person" tone="{{tn.muted}}" size="14" hint-size="14px,14px"></dc-import>Prepared by Aisha Rahman · declared, not verified</span>
+            <a href="{{pFormHref}}" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px; min-height: 32px">See the printed form<dc-import name="Icon" glyph="external" tone="{{tn.brand}}" size="14" hint-size="14px,14px"></dc-import></a>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 20px 18px; border-top: 1px solid var(--line2)">
+          <button type="button" class="sec" onClick="{{dlgCloseBtn}}">Cancel</button>
+          <button type="button" id="ap-print-go" class="btn" onClick="{{doPrint}}" disabled="{{pBusy}}" aria-busy="{{pBusyAria}}" style="min-width: 150px"><sc-if value="{{pBusy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{pIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="printer" tone="white" size="18" hint-size="18px,18px"></dc-import></sc-if>{{pBtn}}</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{dlgReason}}" hint-placeholder-val="{{ false }}">
+        <div style="padding: 4px 20px 16px; display: flex; flex-direction: column; gap: 14px">
+          <div style="padding: 10px 12px; border-radius: 10px; background: var(--head); border: 1px solid var(--line); font-size: 13px; color: var(--ink2)">{{rNote}}</div>
+          <sc-if value="{{rAskBy}}" hint-placeholder-val="{{ false }}">
+            <div class="fld">
+              <label for="ap-by" class="lb">Who refused it? <span>Required · declared, not verified</span></label>
+              <select id="ap-by" class="inp" value="{{rBy}}" onChange="{{onBy}}" aria-required="true" aria-invalid="{{rByInv}}" aria-describedby="{{rByDesc}}" disabled="{{rBusy}}">
+                <option value="">Choose the approver</option>
+                <sc-for list="{{rByOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.v}}</option></sc-for>
+              </select>
+              <sc-if value="{{rByErr}}" hint-placeholder-val="{{ false }}"><span id="ap-by-err" class="err"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>Choose the approver who refused it.</span></sc-if>
+            </div>
+          </sc-if>
+          <div class="fld">
+            <label for="ap-reason" class="lb">Why are you making this change? <span>Required</span></label>
+            <input id="ap-reason" type="text" class="inp" value="{{rReason}}" onChange="{{onReason}}" placeholder="{{rPh}}" autoComplete="off" aria-required="true" aria-invalid="{{rInv}}" aria-describedby="{{rDesc}}" disabled="{{rBusy}}">
+            <sc-if value="{{rErr}}" hint-placeholder-val="{{ false }}"><span id="ap-reason-err" class="err"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+          </div>
+          <div id="ap-r-close" style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--ink3)"><dc-import name="Icon" glyph="{{rCg}}" tone="{{tn.muted}}" size="16" hint-size="16px,16px"></dc-import>{{rClosing}}</div>
+        </div>
+        <sc-if value="{{discardOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ap-dc-t" aria-describedby="ap-dc-d" class="rv" style="margin: 0 20px 14px; padding: 14px; border-radius: 12px; background: var(--warnBg); border: 1px solid var(--warnLine); display: flex; flex-direction: column; gap: 10px">
+            <div><b id="ap-dc-t">Discard your changes?</b><div id="ap-dc-d" style="font-size: 13px; color: var(--ink2)">The reason you typed isn't saved. {{rWhat}} stays as it is.</div></div>
+            <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap"><button type="button" id="ap-dc-keep" class="sec" onClick="{{keepEditing}}">Keep editing</button><button type="button" class="dng" onClick="{{discardGo}}">Discard</button></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{rFoot}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 20px 18px; border-top: 1px solid var(--line2)">
+            <button type="button" class="sec" onClick="{{dlgCloseBtn}}" disabled="{{rBusy}}">Cancel</button>
+            <button type="button" id="ap-r-go" class="{{rOkCls}}" onClick="{{doReason}}" disabled="{{rBusy}}" aria-busy="{{rBusyAria}}" style="min-width: 170px"><sc-if value="{{rBusy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{rOk}}</button>
+          </div>
+        </sc-if>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" class="to-in" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastRelease}}" onFocus="{{toastHold}}" onBlur="{{toastRelease}}" onKeyDown="{{toastKey}}" style="position: fixed; left: 16px; right: 16px; bottom: 24px; margin: 0 auto; max-width: 460px; z-index: 70; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; border: 1px solid #33415A; box-shadow: 0 12px 32px rgba(0,0,0,.3); font-size: 14px">
+      <dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import>
+      <span style="flex: 1">{{toastMsg}}</span>
+      <sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #8DB0FA; font: 700 14px Inter, sans-serif; cursor: pointer; text-decoration: underline">Undo</button></sc-if>
+      <button type="button" aria-label="Dismiss" onClick="{{toastClose}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"waiting","options":["waiting","to-print","print-batch","print-single","approved","payee","not-approved","not-approved-done","withdraw","withdraw-saving","withdraw-refused","withdraw-discard","withdrawn-done","paid-without","paid-refused","after-payment","from-overview","hr-requests","same-name","self-approved","empty","loading","error","many","excel","no-approvers"],"section":"State to show"},"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the state: Approvals.dc.html#from-overview, #hr-requests, #paid-without, #to-print or
+    // #no-approvers. It applies on first load, over the default state (as PrintHrLists does).
+    let v = (p && p.view) || 'waiting', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'waiting' && ['from-overview', 'hr-requests', 'paid-without', 'to-print', 'no-approvers'].includes(h)) v = h;
+    this.state = this.fresh(v);
+  }
+  componentDidMount() { if (this.state.dlg) this.focusId('ap-dlg-title'); }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._ct); clearTimeout(this._st); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._tt); clearTimeout(this._ct); clearTimeout(this._st); this._opener = null; this.setState(this.fresh(this.props.view || 'waiting')); return; }
+    if (!prev) return;
+    const n = this.state;
+    if (!prev.dlg && n.dlg) this.focusId('ap-dlg-title');
+    if (prev.dlg && !n.dlg) this.focusBack();
+    if (!prev.discard && n.discard) this.focusId('ap-dc-keep');
+    if (prev.discard && !n.discard && n.dlg) this.focusId('ap-reason');
+    if (prev.dlg && n.dlg && !prev.dlg.refused && n.dlg.refused) this.focusId('ap-ref');
+    if (this._tabFocus && prev.tab !== n.tab) { this._tabFocus = false; this.focusId('ap-tab-' + n.tab); }
+  }
+  focusId(id) { const el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); }
+  focusBack() { const o = this._opener; this._opener = null; if (o && o.isConnected) o.focus({ preventScroll: true }); else this.focusId('ap-h1'); }
+
+  // ---- sample data (scope/samples.md sections 10 to 13) ---------------------------------------------------------
+  data() {
+    const REQ = {
+      'CL-2611-001': { co: 'AISB', code: 'CL-2611-001', kind: 'Claim', hr: true, title: 'Kah Seng · Phone', sub: 'October bill', amt: 145, long: 'Kah Seng, Phone, RM 145.00', carry: 'Kah Seng’s claim', what: 'Claim CL-2611-001', wdTitle: 'Withdraw claim CL-2611-001?' },
+      'SA-2611-002': { co: 'AISB', code: 'SA-2611-002', kind: 'Salary advance', hr: true, title: 'Daniel · Salary advance', sub: 'RM 1,000.00 a month, Dec 2026 to Mar 2027', amt: 4000, warn: 'More than one month’s pay. The figure shows on HR › Claims and advances, only to users who see payroll figures.', long: 'Daniel, salary advance, RM 4,000.00', carry: 'Daniel’s advance', what: 'Advance SA-2611-002', wdTitle: 'Withdraw advance SA-2611-002?' },
+      'PA-1010': { co: 'AISB', code: 'PA-1010', kind: 'Supplier bill', title: 'Consultant fee · Payroll Advisory PLT', sub: 'Supplier bill · due Sat 31 Oct', amt: 3200, long: 'Consultant fee, Payroll Advisory PLT, PA-1010, RM 3,200.00', carry: 'the Consultant fee', what: 'The Consultant fee', wdTitle: 'Withdraw the Consultant fee?' },
+      contractor: { co: 'AISB', code: '', kind: 'Payment', paid: true, paidOn: 'Tue 6 Oct', title: 'Contractor — field works', sub: 'Paid Tue 6 Oct · entered by Aisha Rahman', amt: 24000, info: 'Paid without a form. Once the signed form is on file it moves to Approved after payment.', long: 'Contractor — field works, RM 24,000.00', carry: 'the contractor payment', what: 'The payment', wdTitle: '' },
+      stationery: { co: 'AISB', code: 'PV2610-022', kind: 'Payment', paid: true, paidOn: 'Fri 30 Oct', title: 'Stationery Mart · above the approved amount', sub: 'Paid RM 1,120.00 on Fri 30 Oct · AF-2610-004 approved RM 1,000.00', amt: 120, info: 'The form covers the RM 120.00 paid above AF-2610-004.', long: 'Stationery Mart, RM 120.00 above AF-2610-004', carry: 'the Stationery Mart difference', what: 'The payment', wdTitle: '' },
+      rkco: { co: 'AISB', code: '', kind: 'Supplier bill', title: 'Legal fee · Rajesh Kumar & Co', sub: 'Due Mon 30 Nov', amt: 1800, warn: 'Same name as the approver Rajesh Kumar', long: 'Legal fee, Rajesh Kumar & Co, RM 1,800.00', carry: 'the legal fee', what: 'The legal fee', wdTitle: 'Withdraw the legal fee?' },
+      // AIP has no approvers yet (samples: "None yet"). This bill is drawn for the no-approvers state only; it is one of
+      // AIP's 2 To pay items, which samples leaves undrawn, and it is not in any Overview count.
+      aip: { co: 'AIP', code: '', kind: 'Supplier bill', title: 'Estate upkeep · drain clearing', sub: 'Supplier bill · due Mon 30 Nov', amt: 2150, long: 'Estate upkeep, drain clearing, RM 2,150.00', carry: 'the upkeep bill', what: 'The upkeep bill', wdTitle: 'Withdraw the upkeep bill?' },
+      hic: { co: 'AI', code: '', kind: 'Claim', hr: true, title: 'Hassan Ismail · Mileage', sub: 'Mileage to the farm', amt: 640, warn: 'The payee is AI’s only approver, so it can only be Self-approved', info: 'Shown once AI has claim types (Setup › HR › Claim types). AI has none yet: it has no chart of accounts.', long: 'Hassan Ismail, mileage, RM 640.00', carry: 'Hassan Ismail’s claim', what: 'The claim', wdTitle: 'Withdraw Hassan Ismail’s claim?' }
+    };
+    const APPROVERS = { AISB: ['Hassan Ismail', 'Tan Mei Ling', 'Rajesh Kumar'], AI: ['Hassan Ismail'], AIP: [] };
+    const sg = (name, note, x, signed) => ({ name, note, nameCls: x ? 'x' : '', noteCls: signed ? 'wl o' : x ? 'wl b' : 'mut' });
+    const three = (who, on) => APPROVERS.AISB.map(n => n === who ? sg(n, 'Signed ' + on, false, true) : sg(n, 'Didn’t sign'));
+    const OK = {
+      AISB: [
+        { code: 'AF-2611-003', check: '7KQ-M4XP', printed: 'Wed 11 Nov', by: 'Tan Mei Ling', on: '12 Nov 2026', up: 'Fri 13 Nov', how: 'Approver chosen by Aisha Rahman from a paper scan', total: '1,214.50',
+          reqs: [['CL-2610-004 · Wei Ming · Claim', 'Oct 2026 Claims - Wei Ming', 'In To pay, past due', '486.50'], ['CL-2610-005 · Aina · Claim', 'Mileage, parking and toll, stationery', 'In To pay', '408.00'], ['CL-2610-007 · Jia Hui · Claim', 'Event materials', 'In To pay', '320.00']], notes: [], signers: three('Tan Mei Ling', '12 Nov 2026') },
+        { code: 'AF-2611-002', check: 'M6D-4YQB', printed: 'Wed 4 Nov', by: 'Hassan Ismail', on: '5 Nov 2026', up: 'Fri 6 Nov', how: 'Approver chosen by Aisha Rahman from a paper scan', total: '6,500.00 a month and USD 1,200.00',
+          reqs: [['Office rental', 'Recurring set-up, from October', 'Paid Fri 30 Oct', '6,500.00 a month'], ['Cloud hosting', 'Annual plan', 'In To pay', 'USD 1,200.00']], notes: [['o', 'check', 'Office rental was paid on Fri 30 Oct, before the form was signed: Approved after payment.']], signers: three('Hassan Ismail', '5 Nov 2026') },
+        { code: 'AF-2611-001', check: 'C8W-3JTP', printed: 'Mon 2 Nov', by: 'Rajesh Kumar', on: '3 Nov 2026', up: 'Tue 3 Nov', how: 'Digitally signed PDF · matched automatically', total: '1,500.00',
+          reqs: [['SA-2611-001 · Hafiz · Salary advance', 'RM 500.00 a month, Nov 2026 to Jan 2027', 'In To pay', '1,500.00']], notes: [], signers: three('Rajesh Kumar', '3 Nov 2026') },
+        { code: 'AF-2610-004', check: 'Z2R-6VNE', printed: 'Mon 26 Oct', by: 'Tan Mei Ling', on: '27 Oct 2026', up: 'Tue 27 Oct', how: 'Approver chosen by Aisha Rahman from a paper scan', total: '1,000.00',
+          reqs: [['Stationery Mart', 'Quotation SQ-2210', 'Paid 1,120.00 on Fri 30 Oct', '1,000.00']], notes: [['b', 'alert', 'Paid more than approved (RM 120.00). The RM 120.00 is on Paid without approval on file.']], signers: three('Tan Mei Ling', '27 Oct 2026') },
+        { code: 'AF-2610-001', check: 'H3T-9QWD', printed: 'Thu 1 Oct', by: 'Rajesh Kumar', on: '1 Oct 2026', up: 'Fri 2 Oct', how: 'Approver chosen by Aisha Rahman from a paper scan', total: '60,600.00 a month',
+          reqs: [['Salaries — staff', 'Recurring set-up · totals only on the form', 'Paid Sat 24 Oct', '48,600.00 a month'], ['Director fee', 'Recurring set-up · payee Hassan Ismail', 'Paid Sat 24 Oct', '12,000.00 a month']],
+          notes: [['w', 'alert', 'The approver is the payee: Hassan Ismail is paid the Director fee, so his signature line was struck on the form and another approver signed.']],
+          signers: [sg('Hassan Ismail', 'Can’t sign: payee', true), sg('Tan Mei Ling', 'Didn’t sign'), sg('Rajesh Kumar', 'Signed 1 Oct 2026', false, true)] }
+      ],
+      AI: [
+        { code: 'AF-2611-006', check: 'J2V-8PMS', printed: 'Mon 16 Nov', by: 'Hassan Ismail', on: '17 Nov 2026', up: 'Tue 17 Nov', how: 'Digitally signed PDF · matched automatically', total: '2,500.00',
+          reqs: [['Consultant — farm audit (quarterly)', 'Due Mon 30 Nov', 'In To pay', '2,500.00']], notes: [], signers: [sg('Hassan Ismail', 'Signed 17 Nov 2026', false, true)] },
+        { code: 'AF-2610-003', check: 'P5X-8LCA', printed: 'Thu 15 Oct', by: 'Hassan Ismail', on: '16 Oct 2026', up: 'Fri 16 Oct', how: 'Digitally signed PDF · matched automatically', total: '6,750.00',
+          reqs: [['Farm supplies · Agro inputs', 'Invoice INV-7781', 'Paid 19 Oct', '6,750.00']], notes: [], signers: [sg('Hassan Ismail', 'Signed 16 Oct 2026', false, true)] },
+        { code: 'AF-2610-002', check: 'B7M-2KRN', printed: 'Thu 1 Oct', by: 'Hassan Ismail', on: '1 Oct 2026', up: 'Fri 2 Oct', how: 'Digitally signed PDF · matched automatically', total: '21,300.00 a month',
+          reqs: [['Salaries — staff', 'Recurring set-up · 5 people', 'Paid in October', '21,300.00 a month']], notes: [], signers: [sg('Hassan Ismail', 'Signed 1 Oct 2026', false, true)] }
+      ],
+      AIP: []
+    };
+    const WD = { AISB: [{ id: 'CL-2610-006', title: 'Wei Ming · Parking and toll', sub: 'Claim CL-2610-006', amt: '120.00', kind: 'wd', reason: 'Entered twice', by: 'Withdrawn by Aisha Rahman, before it was printed' }], AI: [], AIP: [] };
+    const PWA = {
+      AISB: {
+        open: [
+          { id: 'contractor', name: 'Contractor — field works', sub: 'Contract FW-2026-03', paid: 'Tue 6 Oct', by: 'Aisha Rahman', mk: 'Paid without approval on file', mkSub: 'No form was printed for it.', amt: '24,000.00' },
+          { id: 'stationery', name: 'Stationery Mart', sub: 'PV2610-022 · cheque 000214', paid: 'Fri 30 Oct', by: 'Aisha Rahman', mk: 'Paid more than approved (RM 120.00)', mkSub: 'Approved RM 1,000.00 on AF-2610-004.', amt: '1,120.00' },
+          { id: 'CL-2609-002', opt: true, name: 'CL-2609-002 · Wei Ming · Claim', sub: 'September claim, paid before it was refused', paid: 'October', by: 'Aisha Rahman', mk: 'Paid, approval refused', mkSub: 'Refused Mon 2 Nov: “Personal travel”. Open until the money is got back, a credit or a note from a director.', amt: '95.00' }
+        ],
+        after: [{ name: 'Office rental', sub: 'Lot 12 office', paid: 'Fri 30 Oct', formDate: '5 Nov 2026', up: 'Fri 6 Nov', mk: 'Approved by Hassan Ismail, 5 Nov 2026 (after payment)', code: 'AF-2611-002', amt: '6,500.00' }]
+      },
+      AI: { open: [], after: [] },
+      AIP: { open: [], after: [] }
+    };
+    return { REQ, APPROVERS, OK, WD, PWA };
+  }
+
+  fresh(view) {
+    const V = view;
+    const snap = V === 'to-print' || V === 'print-batch';
+    const co = V === 'empty' || V === 'self-approved' ? 'AI' : V === 'no-approvers' ? 'AIP' : 'AISB';
+    const rs = { 'CL-2611-001': 'wait', 'SA-2611-002': 'wait', 'PA-1010': 'wait', contractor: 'print', stationery: 'print', rkco: null, hic: null, aip: 'print' };
+    const forms = { AISB: [{ code: 'AF-2611-004', check: 'T9F-5HRG', printed: 'Mon 16 Nov', ids: ['PA-1010'] }, { code: 'AF-2611-005', check: 'W4N-7ZKC', printed: 'Tue 17 Nov', ids: ['CL-2611-001', 'SA-2611-002'] }], AI: [], AIP: [] };
+    if (snap) { rs['CL-2611-001'] = 'print'; rs['SA-2611-002'] = 'print'; forms.AISB = forms.AISB.slice(0, 1); }
+    if (V === 'same-name') rs.rkco = 'print';
+    if (V === 'self-approved') rs.hic = 'print';
+    const info = {};
+    if (V === 'not-approved-done') { rs['PA-1010'] = 'na'; info['PA-1010'] = { reason: 'Fee not agreed', by: 'Refused by Hassan Ismail, as declared by Aisha Rahman, Wed 18 Nov' }; }
+    if (V === 'withdrawn-done') { rs['CL-2611-001'] = 'wd'; info['CL-2611-001'] = { reason: 'Entered by mistake', by: 'Withdrawn by Aisha Rahman, Wed 18 Nov' }; }
+    const TAB = { 'to-print': 'print', 'print-batch': 'print', 'print-single': 'print', 'same-name': 'print', 'self-approved': 'print', approved: 'ok', payee: 'ok', many: 'ok', 'not-approved-done': 'no', 'withdrawn-done': 'no', 'paid-without': 'pwa', 'paid-refused': 'pwa', 'after-payment': 'pwa', 'from-overview': 'pwa', 'no-approvers': 'print' };
+    const sel = {};
+    if (snap) { sel['CL-2611-001'] = true; sel['SA-2611-002'] = true; }
+    const D = (kind, ids, extra) => Object.assign({ kind, ids, reason: '', by: '', errs: {}, saving: false, refused: false }, extra || {});
+    let dlg = null;
+    if (V === 'print-batch') dlg = D('print', ['CL-2611-001', 'SA-2611-002']);
+    if (V === 'print-single') dlg = D('print', ['contractor']);
+    if (V === 'same-name') dlg = D('print', ['rkco']);
+    if (V === 'self-approved') dlg = D('print', ['hic']);
+    if (V === 'not-approved') dlg = D('na', ['PA-1010']);
+    if (V === 'withdraw' || V === 'withdraw-saving' || V === 'withdraw-refused' || V === 'withdraw-discard') dlg = D('wd', ['CL-2611-001'], { reason: V === 'withdraw' ? '' : 'Entered by mistake', saving: V === 'withdraw-saving', refused: V === 'withdraw-refused' });
+    let toast = null;
+    const RQ = this.data().REQ;
+    if (V === 'not-approved-done') toast = { msg: 'Marked as not approved: ' + RQ['PA-1010'].long + '.', undo: { ids: ['PA-1010'], to: 'wait' } };
+    if (V === 'withdrawn-done') toast = { msg: 'Withdrawn: ' + RQ['CL-2611-001'].long + '. It stays in the list as Withdrawn.', undo: { ids: ['CL-2611-001'], to: 'wait' } };
+    if (V === 'excel') toast = { msg: 'Excel file ready: Approval forms AISB.xlsx. 7 forms and 1 Month review, with who signed, the date on the form, the upload date and the requests each covers.', undo: null };
+    const flashKey = V === 'from-overview' ? 'open' : V === 'paid-refused' ? 'pr' : V === 'after-payment' ? 'after' : V === 'payee' ? 'AF-2610-001' : V === 'hr-requests' ? 'hr' : null;
+    return { co, rs, forms, info, tab: TAB[V] || 'wait', sel, dlg, closing: false, discard: V === 'withdraw-discard', toast,
+      filter: V === 'hr-requests' ? 'hr' : V === 'from-overview' ? 'ov' : null, exp: V === 'payee' ? { 'AF-2610-001': true } : {},
+      flash: { key: flashKey, n: 0 }, showRefused: V === 'paid-refused', many: V === 'many', loading: V === 'loading', failed: V === 'error', snap, q: '', say: '', seq: 0, nextNo: 7 };
+  }
+
+  // ---- toast, dialog ------------------------------------------------------------------------------------------
+  showToast(msg, undo) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg, undo: undo || null } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+  }
+  openDlg(ev, dlg) {
+    this._opener = (ev && ev.currentTarget) || null;
+    this.setState({ dlg: Object.assign({ reason: '', by: '', errs: {}, saving: false, refused: false }, dlg), closing: false, discard: false });
+  }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true, discard: false });
+    clearTimeout(this._ct);
+    this._ct = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._ct); if (this.state.dlg) this.setState({ dlg: null, closing: false, discard: false }); }
+  requestClose() {
+    const d = this.state.dlg; if (!d || this.state.closing) return;
+    if (d.saving) return;
+    if (d.kind !== 'print' && (String(d.reason || '').trim() || d.by)) { this.setState({ discard: true }); return; }
+    this.closeDlg();
+  }
+  setDlg(patch) { const d = this.state.dlg; if (d) this.setState({ dlg: Object.assign({}, d, patch) }); }
+
+  finishPrint(ids) {
+    const s = this.state, co = s.co;
+    const exact = !!s.snap && ids.length === 2 && ids.indexOf('CL-2611-001') >= 0 && ids.indexOf('SA-2611-002') >= 0;
+    const code = exact ? 'AF-2611-005' : 'AF-2611-' + String(s.nextNo).padStart(3, '0');
+    const CHECKS = ['R8J-2VKD', 'K3P-7MWT', 'D6H-2QXF', 'F9L-4ZRA', 'V2C-8NJE'];
+    const check = exact ? 'W4N-7ZKC' : CHECKS[(s.nextNo - 7) % CHECKS.length];
+    const rs = Object.assign({}, s.rs); ids.forEach(id => { rs[id] = 'wait'; });
+    const forms = Object.assign({}, s.forms); forms[co] = forms[co].concat([{ code, check, printed: s.snap ? 'Tue 17 Nov' : 'Wed 18 Nov', ids: ids.slice(), fresh: true }]);
+    const sel = Object.assign({}, s.sel); ids.forEach(id => { delete sel[id]; });
+    this.setState({ rs, forms, sel, snap: exact ? false : s.snap, nextNo: exact ? s.nextNo : s.nextNo + 1, flash: { key: code, n: s.flash.n + 1 }, say: 'Printed ' + code });
+    this.finishClose();
+    const D = this.data().REQ, tot = ids.reduce((a, id) => a + D[id].amt, 0);
+    this.showToast('Printed ' + code + ' · ' + check + ' for ' + (ids.length === 1 ? D[ids[0]].title : ids.length + ' requests') + ', RM ' + this.f2(tot) + '. It is under Waiting for approval.', { print: true, ids: ids.slice(), code });
+  }
+  finishReason() {
+    const s = this.state, d = s.dlg; if (!d) return;
+    const id = d.ids[0], D = this.data().REQ[id];
+    const pr = d.kind === 'na' && !!D.paid;
+    const rs = Object.assign({}, s.rs); rs[id] = pr ? 'pr' : d.kind;
+    const info = Object.assign({}, s.info);
+    info[id] = { reason: String(d.reason).trim(), by: d.kind === 'na' ? 'Refused by ' + d.by + ', as declared by Aisha Rahman, Wed 18 Nov' : 'Withdrawn by Aisha Rahman, Wed 18 Nov' };
+    this.setState({ rs, info, flash: { key: (pr ? 'pr-' : 'no-') + id, n: s.flash.n + 1 }, say: pr ? 'Marked as Paid, approval refused' : d.kind === 'na' ? 'Marked as not approved' : 'Withdrawn' });
+    this.finishClose();
+    if (pr) this.showToast('Marked as Paid, approval refused: ' + D.long + '. It stays on Paid without approval on file until it is resolved.', { ids: [id], to: 'wait' });
+    else if (d.kind === 'na') this.showToast('Marked as not approved: ' + D.long + '.', { ids: [id], to: 'wait' });
+    else this.showToast('Withdrawn: ' + D.long + '. It stays in the list as Withdrawn.', { ids: [id], to: 'wait' });
+  }
+  f2(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+  renderVals() {
+    const s = this.state, P = this.props;
+    const dark = (P.theme ?? 'light') === 'dark';
+    const tn = dark ? { brand: 'dbrand', muted: 'dmuted', ok: 'dok', warn: 'dwarn', bad: 'dbad' } : { brand: 'brand', muted: 'muted', ok: 'ok', warn: 'warn', bad: 'bad' };
+    const f2 = n => this.f2(n);
+    const { REQ, APPROVERS, OK, WD, PWA } = this.data();
+    const co = s.co, isAI = co === 'AI', isAIP = co === 'AIP';
+    const noAppr = !(APPROVERS[co] || []).length;
+    const flashCls = 'f' + (s.flash.n % 2 ? 'b' : 'a');
+    const KIND = { Claim: ['pl i', 'claim', tn.brand], 'Salary advance': ['pl i', 'advance', tn.brand], 'Supplier bill': ['pl g', 'receipt', tn.muted], Payment: ['pl g', 'payment', tn.muted] };
+    const notesOf = r => { const n = []; if (r.warn) n.push({ t: r.warn, cls: 'wl w', glyph: 'alert', tone: tn.warn }); if (r.info) n.push({ t: r.info, cls: 'wl m', glyph: 'help', tone: tn.muted }); return n; };
+    const kindOf = r => { const k = KIND[r.kind] || KIND.Payment; return { kindCls: k[0], kindGlyph: k[1], kindTone: k[2], kind: r.kind }; };
+    const ids = Object.keys(REQ).filter(id => REQ[id].co === co);
+    const inSt = st => ids.filter(id => s.rs[id] === st);
+
+    // to print
+    const printIds = inSt('print');
+    const selIds = printIds.filter(id => s.sel[id]);
+    const selTot = selIds.reduce((a, id) => a + REQ[id].amt, 0);
+    const printRows = printIds.map(id => {
+      const r = REQ[id];
+      return Object.assign({ id, title: r.title, sub: r.sub, code: r.code, hasCode: !!r.code, amt: f2(r.amt), notes: notesOf(r), checked: !!s.sel[id],
+        selLabel: 'Select ' + r.title, rowCls: 'hr' + (s.sel[id] ? ' sel' : ''), tnMuted: tn.muted, printAria: 'Print a form for ' + r.title,
+        noPrint: noAppr, printDesc: noAppr ? 'ap-noappr' : null,
+        toggle: () => { const sel = Object.assign({}, this.state.sel); if (sel[id]) delete sel[id]; else sel[id] = true; this.setState({ sel }); },
+        printOne: e => { if (!noAppr) this.openDlg(e, { kind: 'print', ids: [id] }); } }, kindOf(r));
+    });
+
+    // waiting
+    const hrOnly = s.filter === 'hr' && s.tab === 'wait';
+    const waitAll = inSt('wait');
+    const waitForms = (s.forms[co] || []).map(f => {
+      const live = f.ids.filter(id => s.rs[id] === 'wait' && (!hrOnly || REQ[id].hr));
+      const tot = live.reduce((a, id) => a + REQ[id].amt, 0);
+      return { code: f.code, check: f.check, printed: f.printed, hid: 'ap-w-' + f.code, cls: 'frm' + (s.flash.key === f.code || (s.flash.key === 'hr' && hrOnly) ? ' ' + flashCls : ''),
+        nText: live.length === 1 ? '1 request' : live.length + ' requests', total: f2(tot), approvers: APPROVERS[co].join(', '),
+        tnMuted: tn.muted, tnWarn: tn.warn, reprintAria: 'Print ' + f.code + ' again', reprintHref: 'PrintApprovalForm.dc.html' + ({ 'AF-2611-005': '#claim-advance' }[f.code] || ''), uploadAria: 'Upload the signed ' + f.code,
+        reqs: live.map(id => {
+          const r = REQ[id];
+          return Object.assign({ title: r.title, sub: (r.code ? r.code + ' · ' : '') + r.sub, amt: f2(r.amt), notes: notesOf(r).filter(n => n.cls !== 'wl m'), tnWarn: tn.warn,
+            naLabel: r.paid ? 'Approval refused' : 'Not approved', canWd: !r.paid,
+            naAria: r.paid ? 'Mark ' + r.title + ' as Paid, approval refused' : 'Mark ' + r.title + ' as not approved', wdAria: 'Withdraw ' + r.title,
+            naOpen: e => this.openDlg(e, { kind: 'na', ids: [id] }), wdOpen: e => this.openDlg(e, { kind: 'wd', ids: [id] }) }, kindOf(r));
+        }) };
+    }).filter(f => f.reqs.length);
+
+    // approved
+    const qq = String(s.q || '').trim().toLowerCase();
+    const okAll = OK[co] || [];
+    const okMatch = okAll.filter(f => !qq || [f.code, f.check, f.by, f.how].concat(f.reqs.map(r => r[0] + ' ' + r[1])).join(' ').toLowerCase().indexOf(qq) >= 0);
+    const okForms = okMatch.map(f => {
+      const open = !!s.exp[f.code];
+      return { code: f.code, check: f.check, by: f.by, on: f.on, printed: f.printed, up: f.up, how: f.how, total: f.total, hid: 'ap-ok-' + f.code,
+        cls: 'frm' + (s.flash.key === f.code ? ' ' + flashCls : ''), tnMuted: tn.muted, tnOk: tn.ok,
+        reqs: f.reqs.map(r => ({ title: r[0], sub: r[1], state: r[2], amt: r[3] })),
+        notes: f.notes.map(n => ({ cls: 'wl ' + n[0], glyph: n[1], tone: n[0] === 'o' ? tn.ok : n[0] === 'b' ? tn.bad : tn.warn, t: n[2] })), hasNotes: f.notes.length > 0,
+        signers: f.signers, nSigners: f.signers.length, open, exp: open ? 'true' : 'false', chev: open ? 'chev on' : 'chev',
+        toggle: () => { const exp = Object.assign({}, this.state.exp); exp[f.code] = !exp[f.code]; this.setState({ exp }); } };
+    });
+    const okReqN = okAll.reduce((a, f) => a + f.reqs.length, 0);
+
+    // not approved and withdrawn
+    const noDyn = ids.filter(id => s.rs[id] === 'na' || s.rs[id] === 'wd').map(id => {
+      const r = REQ[id], na = s.rs[id] === 'na', inf = s.info[id] || { reason: '', by: '' };
+      return { title: r.title, sub: (r.code ? r.code + ' · ' : '') + r.kind, amt: f2(r.amt), pill: na ? 'Not approved' : 'Withdrawn', pillCls: na ? 'pl b' : 'pl g', glyph: na ? 'close' : 'undo', tone: na ? tn.bad : tn.muted, reason: inf.reason, by: inf.by,
+        rowCls: s.flash.key === 'no-' + id ? flashCls : '' };
+    });
+    const noRows = noDyn.concat((WD[co] || []).map(w => ({ title: w.title, sub: w.sub, amt: w.amt, pill: 'Withdrawn', pillCls: 'pl g', glyph: 'undo', tone: tn.muted, reason: w.reason, by: w.by, rowCls: '' })));
+
+    // paid without approval
+    const pw = PWA[co];
+    const pwaOpen = pw.open.filter(r => !r.opt || s.showRefused).map(r => {
+      const st = s.rs[r.id], form = (s.forms[co] || []).find(f => f.ids.indexOf(r.id) >= 0);
+      const refusedNow = st === 'pr', inf = s.info[r.id] || { reason: '', by: '' };
+      return Object.assign({}, r, refusedNow ? { mk: 'Paid, approval refused', mkSub: inf.by + ': “' + inf.reason + '”.' } : {}, { tnBad: tn.bad, tnMuted: tn.muted, tnWarn: tn.warn, rowCls: s.flash.key === 'open' || s.flash.key === 'pr-' + r.id || (r.opt && s.flash.key === 'pr') ? flashCls : '',
+        canPrint: st === 'print', onForm: st === 'wait', onFormText: form ? 'On ' + form.code + ', waiting' : 'Waiting',
+        printLabel: r.id === 'stationery' ? 'Print a form for RM 120.00' : 'Print a form', printAria: 'Print an approval form for ' + r.name, openAria: 'Open the payment ' + r.name,
+        printOne: e => { if (this.state.rs[r.id] === 'print') this.openDlg(e, { kind: 'print', ids: [r.id] }); } });
+    });
+    const pwaAfter = pw.after.map(r => Object.assign({}, r, { tnOk: tn.ok, rowCls: s.flash.key === 'after' ? flashCls : '' }));
+
+    // tabs
+    const manyView = s.many && !qq;
+    const counts = { print: printIds.length, wait: waitAll.length, ok: manyView ? 63 : okReqN, no: noRows.length, pwa: pwaOpen.length };
+    const T = [['print', 'To print'], ['wait', 'Waiting for approval'], ['ok', 'Approved'], ['no', 'Not approved and Withdrawn'], ['pwa', 'Paid without approval on file']];
+    const order = T.map(t => t[0]);
+    const pickTab = (k, focus) => { if (focus) this._tabFocus = true; this.setState({ tab: k, filter: null, seq: this.state.seq + 1, say: T[order.indexOf(k)][1] }); };
+    const tabs = T.map(([k, label]) => {
+      const n = counts[k];
+      const cntCls = 'cnt' + (k === 'pwa' && n ? ' red' : k === 'wait' && n ? ' on' : '');
+      const sr = k === 'wait' ? (n + ' waiting for approval') : k === 'pwa' ? (n + ' still open') : k === 'ok' ? (n + (manyView ? ' forms' : ' requests')) : (n + ' items');
+      return { k, id: 'ap-tab-' + k, label, n, cntCls, sr: ', ' + sr, sel: s.tab === k ? 'true' : 'false', ti: s.tab === k ? '0' : '-1',
+        pick: () => pickTab(k, false),
+        key: e => {
+          const i = order.indexOf(k); let j = -1;
+          if (e.key === 'ArrowRight') j = (i + 1) % order.length; else if (e.key === 'ArrowLeft') j = (i + order.length - 1) % order.length; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = order.length - 1;
+          if (j < 0) return; if (e.preventDefault) e.preventDefault(); pickTab(order[j], true);
+        } };
+    });
+
+    // dialog
+    const d = s.dlg, dlgOn = !!d, isPrint = !!d && d.kind === 'print', isReason = !!d && d.kind !== 'print';
+    let dlgTitle = '', dlgDesc = '', dlgGlyph = 'printer', dlgTone = tn.brand, dlgPlate = 'plate brand';
+    let pItems = [], pTotal = '0.00', pSigners = [], pWarn = '', pFormHref = 'PrintApprovalForm.dc.html';
+    let rNote = '', rClosing = '', rCg = 'undo', rOk = '', rOkCls = 'btn', rPh = '', rWhat = '';
+    if (isPrint) {
+      const its = d.ids.filter(id => REQ[id]);
+      pItems = its.map(id => Object.assign({ title: REQ[id].title, sub: (REQ[id].code ? REQ[id].code + ' · ' : '') + REQ[id].sub, amt: f2(REQ[id].amt), notes: notesOf(REQ[id]) }, kindOf(REQ[id])));
+      pTotal = f2(its.reduce((a, id) => a + REQ[id].amt, 0));
+      dlgTitle = its.length > 1 ? 'Print approval form for ' + its.length + ' requests' : 'Print approval form';
+      dlgDesc = (its.length > 1 ? 'These ' + its.length + ' requests go on one form.' : 'This request goes on a form of its own.') + ' The form gets its code, keyed check and QR when you press Print form.';
+      const rk = its.indexOf('rkco') >= 0, hc = its.indexOf('hic') >= 0;
+      // See the printed form opens the state drawn for this choice: AF-2611-005 for the claim and the advance, the
+      // mixed form when the fee goes with them, Hassan Ismail's own claim at AI; otherwise the single-request form.
+      const has = id => its.indexOf(id) >= 0, hrPair = has('CL-2611-001') && has('SA-2611-002');
+      pFormHref = 'PrintApprovalForm.dc.html' + (hc ? '#one-self' : hrPair && has('PA-1010') && its.length === 3 ? '#mixed' : hrPair && its.length === 2 ? '#claim-advance' : '');
+      pSigners = APPROVERS[co].map(n => {
+        if (rk && n === 'Rajesh Kumar') return { name: n, note: 'Same name as the payee: check it isn’t him', nameCls: '', noteCls: 'wl w' };
+        if (hc && n === 'Hassan Ismail') return { name: n, note: 'The payee: his signature reads Self-approved', nameCls: '', noteCls: 'wl w' };
+        return { name: n, note: 'Signature and date', nameCls: '', noteCls: 'mut' };
+      });
+      if (rk) pWarn = 'Rajesh Kumar & Co has the same name as the approver Rajesh Kumar. If he is the payee he can’t sign for it: Hassan Ismail or Tan Mei Ling should.';
+      if (hc) pWarn = 'Hassan Ismail is AI’s only approver and the payee of this claim. If he signs, it reads Self-approved and is listed in the audit pack. A second approver in Setup › HR › Approvers avoids this.';
+    }
+    if (isReason) {
+      const id = d.ids[0], r = REQ[id] || REQ['PA-1010'];
+      const form = (s.forms[co] || []).find(f => f.ids.indexOf(id) >= 0) || { code: 'its form', printed: '', ids: [id] };
+      const others = form.ids.filter(x => x !== id && s.rs[x] === 'wait').map(x => REQ[x].carry);
+      const printedShort = String(form.printed).replace(/^\w+ /, '');
+      rWhat = r.what;
+      if (d.kind === 'na' && r.paid) {
+        dlgTitle = 'Mark this payment as Paid, approval refused?'; dlgGlyph = 'approval'; dlgTone = tn.bad; dlgPlate = 'plate bad';
+        dlgDesc = r.long + '. It was paid on ' + r.paidOn + ', then printed on ' + form.code + ' on ' + printedShort + '. The form has not been signed.';
+        rNote = 'The money has already gone out. It leaves Waiting for approval and stays on Paid without approval on file as Paid, approval refused, with your reason, until it is resolved by getting the money back, a credit or a note from a director. The audit pack lists it too.';
+        rClosing = 'You can put it back to Waiting for approval. Undo stays on the toast for a few seconds.'; rCg = 'undo';
+        rOk = d.saving ? 'Saving…' : 'Mark approval refused'; rOkCls = 'dng'; rPh = 'Not agreed before it was paid';
+      } else if (d.kind === 'na') {
+        dlgTitle = 'Mark this request as not approved?'; dlgGlyph = 'approval'; dlgTone = tn.bad; dlgPlate = 'plate bad';
+        dlgDesc = r.long + '. It was printed on ' + form.code + ' on ' + printedShort + ' and has not been signed.';
+        rNote = 'It leaves Waiting for approval and stays out of To pay. It is listed under Not approved, with your reason.';
+        rClosing = 'You can put it back to Waiting for approval. Undo stays on the toast for a few seconds.'; rCg = 'undo';
+        rOk = d.saving ? 'Saving…' : 'Mark not approved'; rOkCls = 'dng'; rPh = 'Fee not agreed';
+      } else {
+        dlgTitle = r.wdTitle || 'Withdraw this request?'; dlgGlyph = 'close'; dlgTone = tn.warn; dlgPlate = 'plate warn';
+        dlgDesc = r.long + '. It is waiting for approval on ' + form.code + ' and has not been paid.';
+        rNote = 'It stays in the list as Withdrawn, with your reason.' + (others.length ? ' ' + form.code + ' still carries ' + others.join(' and ') + '.' : '');
+        rClosing = 'A withdrawn request can’t be approved or paid. Enter a new one if it is still needed.'; rCg = 'alert';
+        rOk = d.saving ? 'Saving…' : 'Withdraw request'; rOkCls = 'btn'; rPh = 'Entered by mistake';
+      }
+    }
+    const errs = (d && d.errs) || {};
+    const dlgKey = e => {
+      if (e.key === 'Escape') { if (e.stopPropagation) e.stopPropagation(); if (this.state.discard) { this.setState({ discard: false }); return; } this.requestClose(); return; }
+      if (e.key !== 'Tab') return;
+      const f = e.currentTarget && e.currentTarget.querySelectorAll ? e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])') : [];
+      if (!f || !f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+
+    const t = s.toast;
+    const coLine = isAIP ? 'AIP · Agrinexus Plantations · Kept here' : isAI ? 'AI · Agrinexus International · Kept here' : 'AISB · AISB Sdn Bhd · Kept in SQL Account';
+    const apprText = isAIP ? 'Approvers for AIP: None yet. Approval forms can’t be printed until AIP has an approver.' : isAI ? 'Approver for AI: Hassan Ismail. With one approver, a request he is paid by can only be Self-approved.' : 'Approvers for AISB: Hassan Ismail, Tan Mei Ling and Rajesh Kumar. Any one signature approves a form.';
+    const filterText = s.filter === 'hr' ? 'HR requests only, opened from the Overview card Requests waiting. Showing ' + waitAll.filter(id => REQ[id].hr).length + ' of ' + waitAll.length + ' waiting for approval.'
+      : s.filter === 'ov' ? 'Opened from the Overview card Paid without approval on file: AISB, October 2026.' : '';
+    const showBody = !s.loading && !s.failed;
+    const hasMr = co === 'AISB';
+
+    return {
+      theme: dark ? 'dark' : 'light', rootCls: 'ap' + (dark ? ' dk' : ''), tn, say: s.say,
+      sbCo: isAIP ? 'aip' : isAI ? 'ai' : 'aisb', sbKind: isAI || isAIP ? 'here' : 'sqlPayroll', nCos: isAIP ? 'four' : 'two', coLine, coCode: co, apprText, snap: s.snap,
+      onTopCo: code => { const v = String(code).toUpperCase(); if (v === 'AISB' || v === 'AI' || v === 'AIP') { if (v !== this.state.co) this.setState({ co: v, sel: {}, filter: null, exp: {}, q: '', snap: false, tab: v === 'AIP' ? 'print' : this.state.tab, say: 'Showing approvals for ' + v }); } else this.showToast('Only AISB, AI and AIP have sample figures in this mock.'); },
+      doExcel: () => this.showToast('Excel file ready: Approval forms ' + co + '.xlsx. ' + (isAIP ? 'no forms yet' : isAI ? '3 forms' : (OK.AISB.length + (this.state.forms.AISB || []).length) + ' forms and 1 Month review') + ', with who signed, the date on the form, the upload date and the requests each covers.'),
+      showLoading: s.loading, showError: s.failed, showBody,
+      retry: () => this.setState({ failed: false, loading: false, say: 'Approvals loaded' }),
+      tabs, panelBy: 'ap-tab-' + s.tab, panelCls: s.seq % 2 ? 'swapB' : 'swapA',
+      hasFilter: !!s.filter && ((s.filter === 'hr' && s.tab === 'wait') || (s.filter === 'ov' && s.tab === 'pwa')), filterText,
+      filterClear: s.filter === 'hr' ? 'Show all ' + waitAll.length : 'Clear', clearFilter: () => this.setState({ filter: null, say: 'Filter cleared' }),
+      tabPrint: s.tab === 'print', tabWait: s.tab === 'wait', tabOk: s.tab === 'ok', tabNo: s.tab === 'no', tabPwa: s.tab === 'pwa',
+      // to print
+      printRows, printAny: printRows.length > 0, printEmpty: printRows.length === 0, noAppr, printDesc: noAppr ? 'ap-noappr' : null,
+      allSel: printIds.length > 0 && selIds.length === printIds.length,
+      toggleAll: () => { const all = printIds.length > 0 && printIds.every(id => this.state.sel[id]); const sel = {}; if (!all) printIds.forEach(id => { sel[id] = true; }); this.setState({ sel }); },
+      hasSel: selIds.length > 0, selText: selIds.length + ' selected · RM ' + f2(selTot),
+      printSelLabel: 'Print approval form for ' + (selIds.length === 1 ? '1 request' : selIds.length + ' requests') + ' · RM ' + f2(selTot),
+      printSel: e => { if (noAppr) return; const ids2 = printIds.filter(id => this.state.sel[id]); if (ids2.length) this.openDlg(e, { kind: 'print', ids: ids2 }); },
+      clearSel: () => this.setState({ sel: {} }),
+      // waiting
+      waitForms, waitEmpty: waitForms.length === 0 && !hasMr, goPrint: () => { this._tabFocus = true; this.setState({ tab: 'print', seq: s.seq + 1 }); },
+      mrOn: hasMr && !hrOnly, mrNone: isAI, mrCode: 'MR-2610-AISB', mrCheck: 'N5B-2RWH', mrPrinted: 'Tue 17 Nov',
+      // approved
+      q: s.q, onQ: e => this.setState({ q: e.target.value }), clearQ: () => this.setState({ q: '' }),
+      okForms, okNoMatch: !!qq && okForms.length === 0, okEmpty: !qq && okAll.length === 0,
+      okCountText: qq ? 'Showing ' + okForms.length + ' of ' + okAll.length + ' forms matching' : (manyView ? '63 approved forms' : okAll.length + ' forms, ' + okReqN + ' requests approved'),
+      manyOn: s.many && !qq, showMore: () => this.showToast('25 more forms added below. Focus moves to the first new one.'),
+      // not approved and withdrawn
+      noRows, noAny: noRows.length > 0, noEmpty: noRows.length === 0,
+      // paid without approval
+      pwaOpen, pwaAfter, pwaOptOn: pwaOpen.some(r => r.opt), pwaOpenN: pwaOpen.length, pwaAfterN: pwaAfter.length, pwaAny: pwaOpen.length + pwaAfter.length > 0, pwaNone: pwaOpen.length + pwaAfter.length === 0,
+      // dialog
+      dlgOn, dlgCls: s.closing ? 'dr-out' : 'dr-in', dimCls: s.closing ? 'dim-out' : 'dim-in',
+      dlgTitle, dlgDesc, dlgGlyph, dlgTone, dlgPlate, dlgKey,
+      dlgBackdrop: () => this.requestClose(), dlgCloseBtn: () => this.requestClose(),
+      onDlgAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgRefused: !!d && !!d.refused,
+      reloadList: () => this.setDlg({ refused: false }),
+      dlgPrint: isPrint, pItems, pTotal, pSigners, pWarn, pWarnOn: !!pWarn, pFormHref,
+      pBusy: isPrint && !!d.saving, pIdle: !(isPrint && d.saving), pBusyAria: isPrint && d.saving ? 'true' : 'false', pBtn: isPrint && d.saving ? 'Printing…' : 'Print form',
+      doPrint: () => {
+        const dd = this.state.dlg; if (!dd || dd.saving) return;
+        this.setDlg({ saving: true });
+        clearTimeout(this._st); this._st = setTimeout(() => this.finishPrint(dd.ids), 700);
+      },
+      dlgReason: isReason, rNote, rClosing, rCg, rOk, rOkCls, rPh, rWhat,
+      rAskBy: isReason && d.kind === 'na', rBy: d ? d.by : '', rByOpts: APPROVERS[co].map(v => ({ v })),
+      rByErr: !!errs.by, rByInv: errs.by ? 'true' : 'false', rByDesc: errs.by ? 'ap-by-err' : 'ap-r-close',
+      onBy: e => { const dd = this.state.dlg; if (dd) this.setDlg({ by: e.target.value, errs: Object.assign({}, dd.errs, { by: false }) }); },
+      rReason: d ? d.reason : '', rErr: !!errs.reason, rInv: errs.reason ? 'true' : 'false', rDesc: errs.reason ? 'ap-reason-err ap-r-close' : 'ap-r-close',
+      onReason: e => { const dd = this.state.dlg; if (dd) this.setDlg({ reason: e.target.value, errs: Object.assign({}, dd.errs, { reason: false }) }); },
+      rBusy: !!d && !!d.saving, rBusyAria: d && d.saving ? 'true' : 'false', rFoot: !s.discard,
+      doReason: () => {
+        const dd = this.state.dlg; if (!dd || dd.saving) return;
+        const e2 = { reason: !String(dd.reason || '').trim(), by: dd.kind === 'na' && !dd.by };
+        if (e2.reason || e2.by) { this.setDlg({ errs: e2, refused: false }); this.setState({ say: 'Check the fields marked in red' }); this.focusId(e2.by ? 'ap-by' : 'ap-reason'); return; }
+        this.setDlg({ saving: true, refused: false, errs: {} });
+        clearTimeout(this._st); this._st = setTimeout(() => this.finishReason(), 700);
+      },
+      discardOn: !!s.discard, keepEditing: () => this.setState({ discard: false }), discardGo: () => { this.setState({ discard: false }); this.closeDlg(); },
+      // toast
+      hasToast: !!t, toastMsg: t ? t.msg : '', toastUndoOn: !!(t && t.undo),
+      toastUndo: () => {
+        const u = this.state.toast && this.state.toast.undo; if (!u) return;
+        clearTimeout(this._tt);
+        const rs = Object.assign({}, this.state.rs);
+        if (u.print) {
+          u.ids.forEach(id => { rs[id] = 'print'; });
+          const forms = Object.assign({}, this.state.forms); forms[this.state.co] = forms[this.state.co].filter(f => f.code !== u.code);
+          this.setState({ rs, forms, toast: { msg: u.code + ' cancelled. Its requests are back on To print. The code isn’t used again.', undo: null }, say: 'Undone' });
+        } else {
+          u.ids.forEach(id => { rs[id] = u.to; });
+          this.setState({ rs, toast: { msg: 'Put back to Waiting for approval.', undo: null }, say: 'Undone' });
+        }
+        this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+      },
+      toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); },
+      toastKey: e => { if (e.key === 'Escape') { clearTimeout(this._tt); this.setState({ toast: null }); } },
+      toastHold: () => clearTimeout(this._tt),
+      toastRelease: () => { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 6000); }
+    };
+  }
+}
+</script>
+</body>
+</html>

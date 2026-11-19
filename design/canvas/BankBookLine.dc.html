@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Book a statement line · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+button:disabled{cursor:not-allowed}
+::placeholder{color:#5F6C80;opacity:1}
+.hb,.hs,.hg{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.tb:focus-visible{outline-color:#8DB0FA}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ok{animation:rise .24s cubic-bezier(.22,1,.36,1) both,pulse .4s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="bank" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="Bank and reconciliation" sub="Book a statement line" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1080px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="BankReview.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="16" hint-size="16px,16px"></dc-import>Back to the October 2026 review</a>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Book a statement line</h1>
+        <p style="margin: 0; color: #46546A; max-width: 760px">A line that is only on the statement, such as a bank charge or bank profit, is booked from the line itself after checking it. Money out posts a payment voucher, money in an official receipt. It is numbered when it is posted, linked to the line, and never edited afterwards.</p>
+      </div>
+
+      <sc-if value="{{isSqlCo}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="bl-sql-h" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="database" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="bl-sql-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Book a statement line is for companies kept here</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">AISB is Kept in SQL Account. Explain the line as a bank charge on the review, enter it in SQL Account (Dr 900-010 Bank charges, Cr 310-000 Maybank current), then fetch SQL again so the books agree with the bank.</p>
+          <a href="BankReview.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">Go to the October 2026 review</a>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isHere}}" hint-placeholder-val="{{ true }}">
+        <div class="np" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px dashed #C3CCD9; border-radius: 12px; color: #5F6C80; font-size: 12px"><dc-import name="Icon" glyph="help" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>{{sampleNote}}</span></div>
+
+        <sc-if value="{{hasRefused}}" hint-placeholder-val="{{ false }}">
+          <div id="bl-ref" role="alert" tabindex="-1" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-start; padding: 14px 18px; border-radius: 14px; background: #FEF3F1; border: 1px solid #F4C2BC">
+            <dc-import name="Icon" glyph="{{refGlyph}}" tone="bad" size="22" hint-size="22px,22px"></dc-import>
+            <div style="flex: 1 1 360px; min-width: 0"><b style="color: #8E1A10">Nothing was posted</b><div style="color: #46546A; font-size: 13px">{{refText}}</div></div>
+            <a href="{{refHref}}" class="hs" style="display: inline-flex; align-items: center; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; text-decoration: none; white-space: nowrap">{{refBtn}}</a>
+          </div>
+        </sc-if>
+
+        <section aria-labelledby="bl-line-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 22px; display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: flex-start">
+          <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <span style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center"><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">AI · Maybank FCA · 5141 2399 1186</span><span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 8px; background: #EEF1F5; color: #46546A; border: 1px solid #D5DBE4; font: 600 12px Inter, sans-serif; white-space: nowrap; box-sizing: border-box"><dc-import name="Icon" glyph="books" tone="muted" size="14" hint-size="14px,14px"></dc-import>Kept here</span></span>
+            <h2 id="bl-line-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{lineTitle}}</h2>
+            <span style="color: #46546A; font-size: 13px">{{lineMeta}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px">
+            <b style="font: 700 22px ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; {{amtTone}}">{{lineAmt}}</b>
+            <span style="color: #5F6C80; font-size: 12px">{{lineBal}}</span>
+          </div>
+        </section>
+
+        <sc-if value="{{isPosted}}" hint-placeholder-val="{{ false }}">
+          <section id="bl-done" tabindex="-1" aria-labelledby="bl-done-h" class="ok" style="background: #FFFFFF; border: 1px solid #BFE8D0; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; gap: 12px; align-items: center">
+              <span style="width: 44px; height: 44px; border-radius: 12px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="check" tone="ok" size="24" hint-size="24px,24px"></dc-import></span>
+              <div style="flex: 1; min-width: 0"><h2 id="bl-done-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{doneTitle}}</h2><span style="color: #46546A; font-size: 13px">{{doneMeta}}</span></div>
+            </div>
+            <div style="overflow-x: auto"><table style="width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px">
+              <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{doneCaption}}</caption>
+              <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Credit</th></tr></thead>
+              <tbody><sc-for list="{{voucher}}" as="v" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><th scope="row" style="padding: 10px 12px; text-align: left; font-weight: 500">{{v.acct}}</th><td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{v.dr}}</td><td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{v.cr}}</td></tr></sc-for></tbody>
+            </table></div>
+            <p style="margin: 0; display: flex; gap: 6px; align-items: flex-start; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{doneNote}}</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <a href="BankReview.dc.html" id="bl-back" class="hb" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: none">Back to the review</a>
+              <a href="Bank.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">The month on Bank and reconciliation</a>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isForm}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="bl-form-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; justify-content: space-between">
+              <h2 id="bl-form-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{formTitle}}</h2>
+              <span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 99px; background: #EAF0FD; color: #1D419A; font-size: 12px; font-weight: 600; white-space: nowrap">{{seriesPill}}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 14px 16px">
+              <label style="display: flex; flex-direction: column; gap: 6px; min-width: 0"><span style="font-size: 13px; font-weight: 600; color: #46546A">{{acctLabel}} <span style="font-weight: 500; color: #5F6C80">Required</span></span>
+                <select id="bl-acct" value="{{acct}}" onChange="{{onAcct}}" disabled="{{busy}}" aria-required="true" aria-invalid="{{acctBad}}" aria-describedby="{{acctDesc}}" style="{{acctStyle}}"><option value="">{{acctPh}}</option><sc-for list="{{accts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 6px; min-width: 0"><span style="font-size: 13px; font-weight: 600; color: #46546A">Description</span>
+                <input type="text" id="bl-desc" maxlength="120" value="{{desc}}" onChange="{{onDesc}}" readonly="{{busy}}" style="height: 40px; box-sizing: border-box; padding: 0 12px; border:1px solid #5F6C80; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+              </label>
+              <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0"><span id="bl-date-l" style="font-size: 13px; font-weight: 600; color: #46546A">Date</span>
+                <span aria-labelledby="bl-date-l" style="display: flex; align-items: center; min-height: 40px; padding: 0 12px; box-sizing: border-box; border-radius: 10px; background: #F7F8FA; border: 1px solid #E3E7ED; color: #0F1A2B">{{dateText}}</span>
+                <span style="color: #5F6C80; font-size: 12px">The line's date. It sets the month and the number series.</span>
+              </div>
+              <label style="display: flex; flex-direction: column; gap: 6px; min-width: 0"><span style="font-size: 13px; font-weight: 600; color: #46546A">Rate on {{dateText}} (USD 1 = RM) <span style="font-weight: 500; color: #5F6C80">Required</span></span>
+                <input type="text" id="bl-rate" inputmode="decimal" autocomplete="off" value="{{rate}}" onChange="{{onRate}}" readonly="{{busy}}" aria-required="true" aria-invalid="{{rateBad}}" aria-describedby="{{rateDesc}}" placeholder="e.g. 4.2200" style="{{rateStyle}}">
+                <span id="bl-rate-h" style="color: #5F6C80; font-size: 12px">{{rmText}}</span>
+              </label>
+            </div>
+            <sc-if value="{{hasAcctErr}}" hint-placeholder-val="{{ false }}"><span id="bl-acct-err" role="alert" style="display: flex; gap: 6px; align-items: center; margin-top: -6px; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{acctErr}}</span></sc-if>
+            <sc-if value="{{hasRateErr}}" hint-placeholder-val="{{ false }}"><span id="bl-rate-err" role="alert" style="display: flex; gap: 6px; align-items: center; margin-top: -6px; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Type the rate as a number, e.g. 4.2200.</span></sc-if>
+
+            <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; justify-content: space-between; padding: 10px 14px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><b style="font-size: 13px">{{previewTitle}}</b><span style="color: #5F6C80; font-size: 12px">Numbered when it is posted</span></div>
+              <div style="overflow-x: auto"><table style="width: 100%; min-width: 520px; border-collapse: collapse; font-size: 13px">
+                <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{previewTitle}}, account lines</caption>
+                <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 14px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 14px 8px 12px; font-weight: 600; text-align: right">Credit</th></tr></thead>
+                <tbody><sc-for list="{{voucher}}" as="v" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><th scope="row" style="{{v.acctStyle}}">{{v.acct}}</th><td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{v.dr}}</td><td style="padding: 10px 14px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{v.cr}}</td></tr></sc-for></tbody>
+              </table></div>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center">
+              <button type="button" id="bl-post" class="{{postCls}}" disabled="{{busy}}" aria-busy="{{busyAttr}}" onClick="{{post}}" style="{{postStyle}}"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{postLabel}}</button>
+              <sc-if value="{{cancelIsLink}}" hint-placeholder-val="{{ true }}"><a href="BankReview.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">Cancel</a></sc-if>
+              <sc-if value="{{cancelIsBtn}}" hint-placeholder-val="{{ false }}"><button type="button" id="bl-cancel" class="hs" disabled="{{busy}}" aria-haspopup="dialog" onClick="{{cancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">Cancel</button></sc-if>
+              <span style="flex: 1 1 260px; min-width: 0; color: #5F6C80; font-size: 12px">A posted voucher is never edited. To correct it, cancel it: it keeps its number and a reversal is posted.</span>
+            </div>
+          </section>
+        </sc-if>
+      </sc-if>
+    </main>
+  </div>
+
+  <sc-if value="{{discOn}}" hint-placeholder-val="{{ false }}">
+    <div class="dim-in" onClick="{{discKeep}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13,27,46,.42)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 96px 16px 24px; box-sizing: border-box; pointer-events: none">
+      <section role="alertdialog" aria-modal="true" aria-labelledby="bl-disc-h" aria-describedby="bl-disc-d" tabindex="-1" class="dr-in" onKeyDown="{{discKey}}" style="pointer-events: auto; width: 460px; max-width: 100%; box-sizing: border-box; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13,27,46,.32); padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 12px; align-items: flex-start">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="edit" tone="warn" size="22" hint-size="22px,22px"></dc-import></span>
+          <div style="flex: 1; min-width: 0"><h2 id="bl-disc-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Discard your changes?</h2><p id="bl-disc-d" style="margin: 4px 0 0; color: #46546A; font-size: 13px">You chose an account and a rate for the line of {{dateShort}}. Leaving now loses them, and nothing is posted.</p></div>
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="alert" tone="muted" size="16" hint-size="16px,16px"></dc-import>Discarded changes can't be recovered. The line stays to explain.</div>
+        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+          <button type="button" id="bl-disc-keep" class="hs" onClick="{{discKeep}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+          <a href="BankReview.dc.html" class="hb" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: none">Discard</a>
+        </div>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"money-out","options":["money-out","money-in","missing-account","posting","posted","refused-locked","refused-no-account","discard","kept-in-sql"],"section":"State to show"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'money-out');
+    this.t = null;
+  }
+  // The line to book (AI, Kept here, Maybank FCA, October 2026). State only: AI's October statement has no such line in the samples
+  // (its money out is USD 0.00), and AI has no chart of accounts yet, so the default for AI today is the no-counter-account refusal.
+  // The posting states show it once AI's chart has Bank charges and Bank profit. PV2610-009 is the review's number; OR2610-003 is a made-up next receipt.
+  lines() {
+    return {
+      out: { date: '31 Oct 2026', short: '31 Oct', desc: 'SERVICE CHARGE', amount: -15, balance: 17465, kind: 'pv', acct: 'chg', descDef: 'Service charge, Maybank FCA, October 2026', no: 'PV2610-009' },
+      in: { date: '31 Oct 2026', short: '31 Oct', desc: 'PROFIT PAID', amount: 2.5, balance: 17482.5, kind: 'or', acct: 'prof', descDef: 'Bank profit, Maybank FCA, October 2026', no: 'OR2610-003' }
+    };
+  }
+  init(view) {
+    const L = this.lines(), dir = view === 'money-in' ? 'in' : 'out', l = L[dir];
+    const s = { view, dir, co: view === 'kept-in-sql' ? 'AISB' : 'AI', acct: l.acct, desc: l.descDef, rate: '4.2200', busy: false, posted: false, refused: null, err: '', rateErr: false,
+      noChart: view === 'refused-no-account', disc: view === 'discard', dirty: view === 'discard', say: '' };
+    if (view === 'missing-account') { s.acct = ''; s.err = 'Choose the account to book this line to.'; }
+    if (view === 'posting') s.busy = true;
+    if (view === 'posted') s.posted = true;
+    if (view === 'refused-locked') s.refused = 'locked';
+    if (view === 'refused-no-account') { s.acct = ''; s.refused = 'chart'; s.err = 'There are no accounts to choose from yet.'; }
+    return s;
+  }
+  componentWillUnmount() { clearTimeout(this.t); }
+  componentDidMount() { this.focusFor(this.state); }
+  focusFor(s) { this._focus = s.disc ? 'bl-disc-keep' : s.refused ? 'bl-ref' : s.posted ? 'bl-done' : null; this.componentDidUpdate(this.props, this.state); }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps !== this.props && prevProps.view !== this.props.view) { clearTimeout(this.t); const s = this.init(this.props.view || 'money-out'); this.setState(s); this.focusFor(s); return; }
+    if (this._focus && typeof document !== 'undefined') { const id = this._focus; this._focus = null; const el = document.getElementById(id); if (el && el.focus) el.focus(); }
+  }
+  renderVals() {
+    const s = this.state, set = x => this.setState(x);
+    const L = this.lines(), l = L[s.dir], pv = l.kind === 'pv';
+    const fmt = n => Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const r4 = String(s.rate || '').replace(/,/g, '').trim();
+    const rate = /^\d+(\.\d+)?$/.test(r4) ? Number(r4) : NaN;
+    const rm = isNaN(rate) ? null : Math.round(Math.abs(l.amount) * rate * 100) / 100;
+    const ACCTS = s.noChart ? [] : [{ v: 'chg', l: 'Bank charges' }, { v: 'prof', l: 'Bank profit' }];
+    const acctName = (ACCTS.find(a => a.v === s.acct) || {}).l || '';
+    const usd = 'USD ' + fmt(l.amount) + (rm != null ? ' (RM ' + fmt(rm) + ')' : '');
+    const counter = acctName || 'Account not chosen';
+    const voucher = pv
+      ? [{ acct: counter, dr: usd, cr: '' }, { acct: 'Maybank FCA', dr: '', cr: usd }]
+      : [{ acct: 'Maybank FCA', dr: usd, cr: '' }, { acct: counter, dr: '', cr: usd }];
+    voucher.forEach(v => { v.acctStyle = 'padding:10px 14px;text-align:left;font-weight:500;' + (v.acct === 'Account not chosen' ? 'color:#5F6C80;font-style:italic' : 'color:#0F1A2B'); });
+    const accErr = s.err, accBad = !!accErr;
+    const inSt = bad => 'height:40px;box-sizing:border-box;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;' + (bad ? 'border:1px solid #C7372B;background:#FFFBFA' : 'border:1px solid #5F6C80;background:#FFFFFF');
+    const docName = pv ? 'payment voucher' : 'official receipt';
+    const post = () => {
+      if (s.busy || s.posted) return;
+      if (s.noChart) { this._focus = 'bl-ref'; return set({ refused: 'chart', err: 'There are no accounts to choose from yet.' }); }
+      if (!s.acct) { this._focus = 'bl-acct'; return set({ err: 'Choose the account to book this line to.', refused: null }); }
+      if (isNaN(rate) || rate <= 0) { this._focus = 'bl-rate'; return set({ rateErr: true, refused: null }); }
+      // The server refuses a posting into a month that is marked reconciled (locked); in this board that is the refused-locked state.
+      if (s.view === 'refused-locked') { this._focus = 'bl-ref'; return set({ refused: 'locked' }); }
+      set({ busy: true, refused: null, err: '', rateErr: false, say: 'Posting the ' + docName });
+      clearTimeout(this.t);
+      this.t = setTimeout(() => { this._focus = 'bl-done'; this.setState({ busy: false, posted: true, dirty: false, say: 'Booked · ' + l.no }); }, 900);
+    };
+    const REF = {
+      locked: { glyph: 'lock', text: 'October 2026 is marked reconciled for Maybank FCA and locked, so nothing can be posted into it. Reopen the month on Bank and reconciliation, then book this line. What you chose is kept.', href: 'Bank.dc.html', btn: 'Go to Bank and reconciliation' },
+      chart: { glyph: 'alert', text: "AI has no chart of accounts yet, so there is no account to book this line to. Add the accounts in Admin › Setup › Chart of accounts, then come back to this line.", href: 'SetupChart.dc.html', btn: 'Go to Chart of accounts' }
+    };
+    const ref = s.refused ? REF[s.refused] : null;
+    return {
+      say: s.say, sbCo: s.co === 'AI' ? 'ai' : 'aisb', sbKind: s.co === 'AI' ? 'here' : 'sqlPayroll',
+      onTopCo: code => { const c = String(code || '').toUpperCase(); if (c === 'AISB' || c === 'AI') { clearTimeout(this.t); set({ ...this.init(c === 'AI' ? 'money-out' : 'kept-in-sql') }); } },
+      isSqlCo: s.co !== 'AI', isHere: s.co === 'AI',
+      sampleNote: 'Board sample, not part of the app. AI has no chart of accounts yet, and its October statement has no line to book, so the line and the accounts here are state only. Today AI would get the no-account refusal.',
+      lineTitle: l.desc, lineMeta: l.date + ' · ' + (pv ? 'Money out' : 'Money in') + ' · on the statement, not in the books · ' + (s.view === 'refused-locked' ? 'October 2026 marked reconciled (locked)' : 'October 2026 to review'),
+      lineAmt: (l.amount < 0 ? '−' : '+') + 'USD ' + fmt(l.amount), amtTone: l.amount > 0 ? 'color:#0A6B3D' : 'color:#0F1A2B', lineBal: 'Balance USD ' + fmt(l.balance),
+      hasRefused: !!ref, refGlyph: ref ? ref.glyph : 'alert', refText: ref ? ref.text : '', refHref: ref ? ref.href : 'Bank.dc.html', refBtn: ref ? ref.btn : '',
+      isPosted: s.posted, isForm: !s.posted,
+      doneTitle: 'Booked · ' + l.no, doneMeta: (pv ? 'Payment voucher' : 'Official receipt') + ' dated ' + l.date + ', posted 18 Nov 2026 and linked to the line of ' + l.short + '. The line is explained.',
+      doneCaption: l.no + ', account lines', doneNote: l.no + " is never edited. To correct it, cancel it: it keeps its number and a reversal is posted. A posting isn't undone from a toast.",
+      formTitle: pv ? 'Payment voucher from this line' : 'Official receipt from this line', seriesPill: pv ? 'PV series · October 2026' : 'OR series · October 2026',
+      acctLabel: pv ? 'Debit account (what the money went on)' : 'Credit account (what the money is for)', acct: s.acct, accts: ACCTS,
+      acctPh: s.noChart ? 'No accounts yet' : 'Choose an account…',
+      onAcct: e => set({ acct: e.target.value, err: '', refused: s.refused === 'chart' ? null : s.refused, dirty: true }),
+      acctBad: accBad ? 'true' : 'false', acctDesc: accBad ? 'bl-acct-err' : '', hasAcctErr: accBad, acctErr: accErr, acctStyle: 'width:100%;' + inSt(accBad),
+      desc: s.desc, onDesc: e => set({ desc: e.target.value, dirty: true }),
+      dateText: l.date, dateShort: l.short,
+      rate: s.rate, onRate: e => set({ rate: e.target.value, rateErr: false, dirty: true }),
+      rateBad: s.rateErr ? 'true' : 'false', rateDesc: s.rateErr ? 'bl-rate-err bl-rate-h' : 'bl-rate-h', hasRateErr: s.rateErr, rateStyle: 'width:100%;' + inSt(s.rateErr),
+      rmText: rm != null ? 'USD ' + fmt(l.amount) + ' is RM ' + fmt(rm) + ' in the books.' : 'The books hold the amount in RM at this rate.',
+      previewTitle: (pv ? 'Payment voucher' : 'Official receipt') + ' · preview', voucher,
+      busy: s.busy, busyAttr: s.busy ? 'true' : 'false', post,
+      postLabel: s.busy ? 'Posting…' : pv ? 'Post payment voucher' : 'Post official receipt', postCls: s.busy ? '' : 'hb',
+      postStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:200px;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;' + (s.busy ? 'background:#9AAAC6;cursor:not-allowed' : 'background:#2450B8;cursor:pointer'),
+      cancelIsLink: !s.dirty, cancelIsBtn: !!s.dirty,
+      cancel: () => { if (s.busy) return; this._focus = 'bl-disc-keep'; set({ disc: true }); },
+      discOn: !!s.disc,
+      discKeep: () => { this._focus = 'bl-cancel'; set({ disc: false }); },
+      discKey: e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this._focus = 'bl-cancel'; set({ disc: false }); return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href]'));
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1], at = document.activeElement, inside = f.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

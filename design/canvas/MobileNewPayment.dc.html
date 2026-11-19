@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile · New payment · AISB</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+/* motion and focus base */
+.mn-b{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.mn-b:active{filter:brightness(.94)}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:none}}
+@keyframes sheetOut{from{transform:none}to{transform:translateY(100%)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.spin{display:inline-block;width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.sh-in{animation:sheetIn .24s cubic-bezier(.22,1,.36,1) both}
+.sh-out{animation:sheetOut .18s cubic-bezier(.4,0,1,1) both}
+input:disabled,select:disabled{background:#F5F6F8 !important;color:#5F6C80 !important}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; overflow: hidden">
+  <div inert="{{dlgOn}}" style="position: absolute; inset: 0; display: flex; flex-direction: column">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #FFFFFF; border-bottom: 1px solid #E3E7ED">
+      <a href="MobileCompany.dc.html" aria-label="Back to AISB" style="width: 44px; height: 44px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="22" hint-size="22px,22px"></dc-import></a>
+      <div style="min-width: 0"><span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #2450B8">AISB</span><h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">October 2026</h1></div>
+    </div>
+    <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 16px 16px 96px; display: flex; flex-direction: column; gap: 10px">
+      <span style="color: #5F6C80; font-size: 13px">Payments · {{payCount}}. Tap one to upload its documents.</span>
+      <sc-for list="{{rows}}" as="p" hint-placeholder-count="4">
+        <a id="{{p.rowId}}" href="MobilePayment.dc.html" class="{{p.rowCls}}" style="display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 14px; border: 1px solid #E3E7ED; background: #FFFFFF; color: #0F1A2B; text-decoration: none">
+          <div style="display: flex; justify-content: space-between; gap: 10px; align-items: baseline"><b style="min-width: 0">{{p.name}}</b><b style="{{p.amtStyle}}">{{p.amount}}</b></div>
+          <div style="color: #5F6C80; font-size: 12px">{{p.type}} · {{p.group}}</div>
+          <div><span style="{{p.pill}}">{{p.status}}</span></div>
+          <sc-if value="{{p.hasHint}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{p.hint}}</div></sc-if>
+        </a>
+      </sc-for>
+    </div>
+    <button type="button" id="mn-add" class="mn-b" onClick="{{openNew}}" aria-haspopup="dialog" style="position: absolute; right: 16px; bottom: 20px; display: inline-flex; align-items: center; gap: 8px; height: 52px; padding: 0 20px; border-radius: 99px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 15px Inter, sans-serif; cursor: pointer; box-shadow: 0 8px 24px rgba(36, 80, 184, .35)"><dc-import name="Icon" glyph="plus" tone="white" size="20" hint-size="20px,20px"></dc-import>Add a payment</button>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: absolute; left: 16px; right: 16px; bottom: 84px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>{{toastText}}<button type="button" onClick="{{toastDismiss}}" style="min-width: 44px; min-height: 44px; margin: -10px -16px -10px 0; padding: 0 16px; border: 0; background: transparent; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: underline; cursor: pointer">Dismiss</button></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ true }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: absolute; inset: 0; z-index: 40; background: rgba(13, 27, 46, .5)"></div>
+    <form id="mn-sheet" class="{{sheetCls}}" role="dialog" aria-modal="true" aria-labelledby="mn-title" aria-describedby="mn-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{submit}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onSheetAnim}}" style="position: absolute; z-index: 41; left: 0; right: 0; bottom: 0; height: 780px; margin: 0; background: #FFFFFF; border-radius: 22px 22px 0 0; display: flex; flex-direction: column; overflow: hidden">
+      <div aria-hidden="true" style="display: flex; justify-content: center; padding: 10px 0 4px"><span style="width: 40px; height: 5px; border-radius: 99px; background: #D5DBE4"></span></div>
+      <div style="display: flex; align-items: flex-start; gap: 12px; padding: 8px 16px 14px; border-bottom: 1px solid #EEF1F5">
+        <span style="width: 44px; height: 44px; border-radius: 13px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="payment" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="color: #5F6C80; font-size: 12px">{{eyebrow}}</span><h2 id="mn-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">New payment</h2><span id="mn-sub" style="color: #46546A; font-size: 12px">For ad hoc payments, claims and receipts in October 2026.</span></div>
+        <button type="button" onClick="{{askClose}}" aria-label="Close" disabled="{{saving}}" style="width: 44px; height: 44px; border: 0; border-radius: 12px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="22" hint-size="22px,22px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{summaryOn}}" hint-placeholder-val="{{ false }}">
+          <div id="mn-summary" role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{summaryTitle}}</b> {{summaryList}}</span></div>
+        </sc-if>
+
+        <sc-if value="{{fromOv}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="mn-co" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Company <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <select id="mn-co" value="{{fCo.val}}" onChange="{{fCo.change}}" required="{{ true }}" aria-required="true" aria-invalid="{{fCo.inv}}" aria-describedby="{{fCo.by}}" disabled="{{saving}}" style="{{fCo.style}}">
+              <sc-for list="{{coOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.k}}" disabled="{{o.dis}}">{{o.label}}</option></sc-for>
+            </select>
+            <sc-if value="{{fCo.errOn}}" hint-placeholder-val="{{ false }}"><span id="mn-co-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fCo.err}}</span></sc-if>
+            <span id="mn-co-hint" style="color: #5F6C80; font-size: 12px">A payment belongs to one company's month. Its bank accounts follow.</span>
+          </div>
+        </sc-if>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="mn-desc" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Description <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+          <input id="mn-desc" type="text" value="{{fDesc.val}}" onChange="{{fDesc.change}}" placeholder="e.g. Oct 2026 Claims - Wei Ming" required="{{ true }}" aria-required="true" aria-invalid="{{fDesc.inv}}" aria-describedby="{{fDesc.by}}" disabled="{{saving}}" autoComplete="off" style="{{fDesc.style}}">
+          <sc-if value="{{fDesc.errOn}}" hint-placeholder-val="{{ false }}"><span id="mn-desc-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fDesc.err}}</span></sc-if>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span id="mn-dir-l" style="font-size: 13px; font-weight: 600; color: #46546A">Money</span>
+          <div role="group" aria-labelledby="mn-dir-l" style="display: flex; gap: 4px; padding: 4px; background: #F1F3F7; border-radius: 12px">
+            <sc-for list="{{dirs}}" as="m" hint-placeholder-count="2">
+              <button type="button" id="{{m.id}}" aria-pressed="{{m.pressed}}" onClick="{{m.pick}}" disabled="{{m.dis}}" style="{{m.style}}"><dc-import name="Icon" glyph="{{m.glyph}}" tone="{{m.tone}}" size="16" hint-size="16px,16px"></dc-import>{{m.label}}</button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="mn-type" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Type <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+          <select id="mn-type" value="{{fType.val}}" onChange="{{fType.change}}" required="{{ true }}" aria-required="true" aria-invalid="{{fType.inv}}" aria-describedby="{{fType.by}}" disabled="{{saving}}" style="{{fType.style}}">
+            <sc-for list="{{typeOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.k}}">{{o.label}}</option></sc-for>
+          </select>
+          <sc-if value="{{fType.errOn}}" hint-placeholder-val="{{ false }}"><span id="mn-type-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fType.err}}</span></sc-if>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="mn-amt" style="font-size: 13px; font-weight: 600; color: #46546A">Amount ({{cur}})</label>
+          <div class="fx" style="{{fAmt.style}}"><span aria-hidden="true" style="color: #5F6C80; font-weight: 600">{{cur}}</span><input id="mn-amt" type="text" inputMode="decimal" value="{{fAmt.val}}" onChange="{{fAmt.change}}" placeholder="0.00" aria-invalid="{{fAmt.inv}}" aria-describedby="{{fAmt.by}}" disabled="{{saving}}" autoComplete="off" style="flex: 1; min-width: 0; height: 44px; border: 0; padding: 0; background: transparent; font: 400 16px Inter, sans-serif; color: #0F1A2B; text-align: right; font-variant-numeric: tabular-nums"></div>
+          <sc-if value="{{fAmt.errOn}}" hint-placeholder-val="{{ false }}"><span id="mn-amt-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fAmt.err}}</span></sc-if>
+          <span id="mn-amt-hint" style="color: #5F6C80; font-size: 12px">Leave blank if you don't know it yet.</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="mn-due" style="font-size: 13px; font-weight: 600; color: #46546A">Due date</label>
+          <input id="mn-due" type="date" value="{{fDue.val}}" onChange="{{fDue.change}}" aria-describedby="mn-due-hint" disabled="{{saving}}" style="{{fDue.style}}">
+          <span id="mn-due-hint" style="color: #5F6C80; font-size: 12px">Blank means today, 18 Nov.</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="mn-acct" style="font-size: 13px; font-weight: 600; color: #46546A">Bank account</label>
+          <select id="mn-acct" value="{{fAcct.val}}" onChange="{{fAcct.change}}" aria-invalid="{{fAcct.inv}}" aria-describedby="{{fAcct.by}}" disabled="{{acctOff}}" style="{{fAcct.style}}">
+            <sc-for list="{{acctOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.k}}" disabled="{{o.dis}}">{{o.label}}</option></sc-for>
+          </select>
+          <sc-if value="{{fAcct.errOn}}" hint-placeholder-val="{{ false }}"><span id="mn-acct-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fAcct.err}}</span></sc-if>
+          <span id="mn-acct-hint" style="color: #5F6C80; font-size: 12px">{{acctHint}}</span>
+        </div>
+      </div>
+
+      <div style="padding: 12px 16px 20px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="mn-discard-q" aria-describedby="mn-discard-d" class="ex" style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="mn-discard-q">Discard this payment?</b><div id="mn-discard-d" style="color: #5F6C80; font-size: 12px">What you typed is not kept.</div></div></div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+              <button type="button" id="mn-keep" class="mn-b" onClick="{{keepEditing}}" style="height: 48px; border-radius: 12px; border: 1px solid #8593A8; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="mn-discard" class="mn-b" onClick="{{discard}}" style="height: 48px; border-radius: 12px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 15px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <span id="mn-foot" style="color: #5F6C80; font-size: 13px">{{footNote}}</span>
+            <div style="display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px">
+              <button type="button" id="mn-cancel" class="mn-b" onClick="{{askClose}}" disabled="{{saving}}" style="height: 52px; border-radius: 14px; border: 1px solid #8593A8; background: #FFFFFF; font: 600 15px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+              <button type="submit" id="mn-submit" class="mn-b" aria-disabled="{{addAria}}" aria-busy="{{busy}}" aria-describedby="mn-foot" disabled="{{saving}}" style="{{addStyle}}"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Adding…</sc-if><sc-if value="{{notSaving}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="plus" tone="{{addTone}}" size="18" hint-size="18px,18px"></dc-import>Add payment</sc-if></button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"money-out","options":["money-out","money-in","filled","errors","saving","added","from-overview"],"section":"State"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'money-out');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  // the app's payment types, their direction (AISB is kept in SQL)
+  types() {
+    return [
+      ['salary', 'Salary', 'out'], ['director', 'Director allowance', 'out'], ['consultant', 'Consultant fee', 'out'],
+      ['statutory', 'Statutory (KWSP / PERKESO / LHDN)', 'out'], ['utility', 'Utility / telco', 'out'], ['rental', 'Rental', 'out'],
+      ['claim', 'Staff claim', 'out'], ['claim_overseas', 'Staff claim - overseas service (self-billed e-Invoice)', 'out'],
+      ['transfer', 'Inter-company transfer', 'out'], ['other', 'Other payment', 'out'], ['receipt', 'Money received', 'in']
+    ].map(([k, label, dir]) => ({ k, label, dir }));
+  }
+  type(k) { return this.types().find(t => t.k === k) || null; }
+  accts(co) {
+    return ({ AISB: [{ k: 'mc', label: 'Maybank current', cash: true }, { k: 'ms', label: 'Maybank savings' }],
+      AI: [{ k: 'cc', label: 'CIMB current', cash: true }] })[co] || [];
+  }
+  defAcct(co) { const a = this.accts(co); const c = a.find(x => x.cash) || a[0]; return c ? c.k : ''; }
+  blank(co) { return { co, desc: '', dir: 'out', type: 'claim', amt: '', due: '', acct: this.defAcct(co) }; }
+  filled() { return { co: 'AISB', desc: 'Oct 2026 Claims - Wei Ming', dir: 'out', type: 'claim', amt: '486.30', due: '2026-11-15', acct: 'mc' }; }
+  init(view) {
+    const base = { open: true, closing: false, fromOv: false, f: this.blank('AISB'), tried: false, saving: false, confirm: false,
+      pending: null, added: [], flashN: 0, toast: null, toastLeaving: false };
+    if (view === 'money-in') return { ...base, f: { ...base.f, dir: 'in', type: 'receipt' } };
+    if (view === 'filled') return { ...base, f: this.filled() };
+    if (view === 'errors') return { ...base, f: { ...this.filled(), desc: '', amt: '486.3o' }, tried: true };
+    if (view === 'saving') return { ...base, f: this.filled(), saving: true };
+    if (view === 'added') return { ...base, open: false, added: [this.rowFrom(this.filled())], flashN: 1, toast: 'Payment added' };
+    if (view === 'from-overview') return { ...base, fromOv: true, f: this.blank('') };
+    return base;
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  num(s) {
+    const t = String(s || '').trim().replace(/^RM\s*/i, '');
+    if (!/^-?(\d{1,3}(,\d{3})+|\d*)(\.\d*)?$/.test(t) || !/\d/.test(t)) return null;
+    return Math.round(parseFloat(t.replace(/,/g, '')) * 100) / 100;
+  }
+  errors(f, fromOv) {
+    const e = {};
+    if (fromOv && !f.co) e.co = 'Choose a company.';
+    if (!f.desc.trim()) e.desc = 'Give the payment a description.';
+    if (!this.type(f.type)) e.type = 'Choose one of the payment types in use.';
+    if (f.amt.trim() && this.num(f.amt) === null) e.amt = 'Write the amount as a number, like 486.30.';
+    if (f.co && this.accts(f.co).length && !this.accts(f.co).some(a => a.k === f.acct)) e.acct = 'That bank account isn’t one of ' + (f.co === 'AI' ? 'Agrinexus International' : f.co === 'AISB' ? 'AISB' : 'this company') + '’s accounts. Choose one of ' + f.co + '’s own accounts.';
+    return e;
+  }
+  dirty() {
+    const f = this.state.f;
+    return !!(f.desc.trim() || f.amt.trim() || f.due || (this.state.fromOv && f.co));
+  }
+  fmt(iso) {
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const [, m, d] = String(iso).split('-');
+    return m ? parseInt(d, 10) + ' ' + M[parseInt(m, 10) - 1] : '';
+  }
+  // the row the server would add: unpaid, flagged from its due date (today is 18 Nov; October's statements are imported, SQL entries up to 12 Nov)
+  rowFrom(f) {
+    const t = this.type(f.type) || this.type('other');
+    const TODAY = '2026-11-18', LEGAL = '2026-11-15', SQLTO = '2026-11-12';
+    const due = f.due || TODAY, inflow = t.dir === 'in';
+    const n = this.num(f.amt);
+    const MON = this.fmt(due).split(' ')[1] || '', sql = f.co !== 'AI', legal = t.k === 'statutory' ? ' Legal deadline 15 Nov.' : '';
+    let status, tone, hint = '';
+    const prob = inflow ? 'Probably received' : 'Probably paid', other = inflow ? 'enter the date it was received if it came in another way' : 'enter the paid date if it went out another way';
+    if (due > TODAY) { status = inflow ? 'Not received yet' : 'Not paid'; tone = 'grey'; hint = legal.trim(); }
+    else if (due === TODAY) { status = 'Due today'; tone = 'warn'; hint = (inflow ? 'Expected today: enter the date it was received once it is in.' : 'Pay it today, or enter the paid date once it has gone out.') + legal; }
+    else if (t.k === 'statutory' && TODAY > LEGAL) { status = 'Past legal deadline (15 Nov)'; tone = 'bad'; hint = 'Not recorded as paid by the legal deadline of 15 Nov. Pay it now, or link its bank line or SQL voucher if it was paid; a late-payment charge may follow.'; }
+    else if (due < '2026-11-01') { status = 'Not on ' + MON + ' statement'; tone = 'bad'; hint = 'The ' + MON + ' bank statement is imported, but no line on it is linked to this payment. Link its line on the Bank statements page, or ' + other + '.' + legal; }
+    else if (sql && due > SQLTO) { status = 'Waiting for SQL record'; tone = 'warn'; hint = prob + ': the SQL entries imported go up to 12 Nov. Paste the latest SQL listing to record it, or ' + other + '.' + legal; }
+    else { status = 'Waiting for ' + MON + ' statement'; tone = 'warn'; hint = prob + ': the ' + MON + ' bank statement isn’t imported yet. Import it on the Bank statements page to confirm this payment, or ' + other + '.' + legal; }
+    return { due, g: 'Due ' + this.fmt(due), name: f.desc.trim(), sub: f.co === 'AI' ? 'Agrinexus International' : '', type: t.label,
+      inflow, val: n === null ? 0 : n,
+      amount: n === null ? '—' : (inflow ? '+' : '') + n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      status, t: tone, hint, isNew: true };
+  }
+  openNew() {
+    this._opener = document.activeElement;
+    clearTimeout(this._t); clearTimeout(this._ts);
+    this.setState({ open: true, closing: false, fromOv: false, f: this.blank('AISB'), tried: false, saving: false, confirm: false, pending: null });
+  }
+  askClose() {
+    if (!this.state.open || this.state.closing || this.state.saving) return;
+    if (this.state.confirm) return;
+    if (this.dirty()) { this._confirmFrom = document.activeElement; this.setState({ confirm: true }); return; }
+    this.closeSheet();
+  }
+  closeSheet() {
+    if (!this.state.open || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.open) return;
+    const row = this.state.pending;
+    const next = { open: false, closing: false, confirm: false, saving: false, tried: false, pending: null };
+    if (row) {
+      Object.assign(next, { added: [...this.state.added.map(r => ({ ...r, isNew: false })), row], flashN: this.state.flashN + 1, toast: 'Payment added', toastLeaving: false });
+      this.toastTimer();
+    }
+    this.setState(next);
+  }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  submit(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.open || st.saving || st.closing || st.confirm) return;
+    const errs = this.errors(st.f, st.fromOv);
+    const order = ['co', 'desc', 'type', 'amt', 'acct'].filter(k => errs[k]);
+    if (order.length) { this._focusId = 'mn-' + order[0]; this.setState({ tried: true }); return; }
+    this.setState({ saving: true });
+    this.focusId('mn-title');   // keep focus inside the sheet when the controls disable
+    clearTimeout(this._ts);
+    this._ts = setTimeout(() => {
+      if (!this.state.saving) return;
+      this.setState({ pending: this.rowFrom(this.state.f) });
+      this.closeSheet();
+    }, 900);
+  }
+  setF(patch) { this.setState({ f: { ...this.state.f, ...patch } }); }
+  setDir(d) {
+    const f = this.state.f, cur = this.type(f.type);
+    if (f.dir === d) return;
+    // the app's pairTypeDir: keep the type if it goes that way, else the one-off default (Staff claim), else that way's default
+    const keep = cur && cur.dir === d ? cur.k : this.type('claim').dir === d ? 'claim' : d === 'in' ? 'receipt' : 'other';
+    this.setState({ f: { ...f, dir: d, type: keep } });
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      clearTimeout(this._t); clearTimeout(this._ts); clearTimeout(this._tt);
+      const nx = this.init(this.props.view || 'money-out');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (!prev.open && st.open) { this.focusId('mn-title'); return; }
+    if (prev.open && !st.open) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true });
+      else this.focusId('mn-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('mn-keep'); return; }
+    if (prev.confirm && !st.confirm && st.open && !st.closing) {
+      const o = this._confirmFrom;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('mn-cancel');
+    }
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._ts); clearTimeout(this._tt); }
+  renderVals() {
+    const st = this.state, f = st.f;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', warn: 'background:#FEF1D6;color:#934100',
+      bad: 'background:#FDE6E3;color:#B0190F', grey: 'background:#EEF1F5;color:#46546A' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;' + P[t];
+    const money = v => v.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // the month list: the same sample payments as the Company board, plus any payment added here
+    const base = [
+      { due: '2026-10-24', name: 'Salaries — staff', type: 'Salary', val: 48600, status: 'Complete', t: 'ok' },
+      { due: '2026-10-31', name: 'Consultant fee', type: 'Consultant fee', val: 3200, status: 'Not on Oct statement', t: 'bad' },
+      { due: '2026-11-05', name: 'Electricity bill', type: 'Utility / telco', val: 1163.2, status: 'Waiting for Nov statement', t: 'warn', hint: 'Probably paid: the Nov bank statement isn’t imported yet. Import it on the Bank statements page to confirm this payment.' },
+      { due: '2026-11-15', name: 'KWSP (EPF)', type: 'Statutory', val: 11240, status: 'Past legal deadline (15 Nov)', t: 'bad', hint: 'Not recorded as paid by the legal deadline of 15 Nov. Pay it now, or link its bank line or SQL voucher if it was paid; a late-payment charge may follow.' }
+    ];
+    const mine = st.added.filter(r => !r.sub);   // a payment added for another company is not on AISB's page
+    const all = [...base.map(p => ({ ...p, amount: money(p.val), hint: p.hint || '', isNew: false })), ...mine]
+      .map((p, i) => ({ ...p, i })).sort((a, b) => (a.due < b.due ? -1 : a.due > b.due ? 1 : a.i - b.i));
+    const rows = all.map(p => ({ name: p.name, type: p.type, group: 'due ' + this.fmt(p.due), amount: p.amount, status: p.status, hint: p.hint || '', hasHint: !!p.hint,
+      rowId: p.isNew ? 'mn-row-new' : 'mn-row-' + p.i,
+      rowCls: 'mn-b' + (p.isNew && st.flashN ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+      amtStyle: 'white-space:nowrap;font-variant-numeric:tabular-nums;' + (p.inflow ? 'color:#0A6B3D' : ''), pill: pill(p.t) }));
+
+    // the form
+    const shown = st.tried ? this.errors(f, st.fromOv) : {};
+    const errs = this.errors(f, st.fromOv);
+    const valid = !Object.keys(errs).length;
+    const ctl = 'height:48px;padding:0 12px;border-radius:12px;font:400 16px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;';
+    const field = (k, hintId, change, extra) => ({
+      val: f[k], err: shown[k] || '', errOn: !!shown[k], inv: shown[k] ? 'true' : 'false',
+      by: [shown[k] ? 'mn-' + k + '-err' : '', hintId].filter(Boolean).join(' '),
+      style: ctl + (extra || '') + 'border:1px solid ' + (shown[k] ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8593A8'),
+      change });
+    const val = e => (e && e.target ? e.target.value : '');
+    const t = this.type(f.type);
+    const coAccts = this.accts(f.co);
+    const fCo = field('co', 'mn-co-hint', e => { const co = val(e); this.setF({ co, acct: this.defAcct(co) }); });
+    const fDesc = field('desc', '', e => this.setF({ desc: val(e) }));
+    const fType = field('type', '', e => { const k = val(e), ty = this.type(k); if (ty) this.setState({ f: { ...this.state.f, type: k, dir: ty.dir } }); });
+    const fAmt = field('amt', 'mn-amt-hint', e => this.setF({ amt: val(e) }), 'display:flex;align-items:center;gap:8px;height:52px;');
+    const fDue = field('due', 'mn-due-hint', e => this.setF({ due: val(e) }));
+    const fAcct = field('acct', 'mn-acct-hint', e => this.setF({ acct: val(e) }));
+    const DIRS = [['out', 'Paid out', 'arrow'], ['in', 'Received', 'coins']];
+    const dirs = DIRS.map(([k, label, glyph]) => {
+      const on = f.dir === k;
+      return { id: 'mn-dir-' + k, label, glyph, tone: on ? 'brand' : 'muted', pressed: on ? 'true' : 'false', dis: !!st.saving,
+        pick: () => this.setDir(k),
+        style: 'flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 10px;border-radius:9px;border:2px solid ' + (on ? '#2450B8' : 'transparent') + ';font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' +
+          (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') };
+    });
+    const typeOpts = this.types().filter(x => x.dir === f.dir).map(x => ({ k: x.k, label: x.label }));
+    const coOpts = [{ k: '', label: 'Choose a company', dis: true }, { k: 'AISB', label: 'AISB', dis: false }, { k: 'AI', label: 'Agrinexus International', dis: false }];
+    const acctOpts = coAccts.length ? coAccts.map(a => ({ k: a.k, label: a.label, dis: false })) : [{ k: '', label: 'Choose a company first', dis: true }];
+    const missing = [];
+    if (errs.co) missing.push('Company');
+    if (errs.desc) missing.push('Description');
+    if (errs.type) missing.push('Type');
+    if (errs.amt) missing.push('A valid amount');
+    if (errs.acct && !errs.co) missing.push('Bank account');
+    const badN = Object.keys(shown).length;
+    const labelOf = { co: 'Company', desc: 'Description', type: 'Type', amt: 'Amount', acct: 'Bank account' };
+    const coName = f.co === 'AI' ? 'Agrinexus International' : f.co === 'AISB' ? 'AISB' : '';
+    const close = () => this.askClose();
+
+    return {
+      rows,
+      payCount: rows.length,
+      openNew: () => this.openNew(),
+      dlgOn: !!st.open,
+      dimCls: st.closing ? 'dim-out' : 'dim-in',
+      sheetCls: st.closing ? 'sh-out' : 'sh-in',
+      eyebrow: st.fromOv ? 'From the Overview' + (coName ? ' · ' + coName : '') + ' · October 2026' : 'AISB · October 2026',
+      fromOv: !!st.fromOv,
+      saving: !!st.saving, notSaving: !st.saving, busy: st.saving ? 'true' : 'false',
+      fCo, fDesc, fType, fAmt, fDue, fAcct, coOpts, acctOpts, typeOpts, dirs,
+      acctOff: !!st.saving || !coAccts.length,
+      acctHint: !coAccts.length ? 'The bank accounts show once a company is chosen.' : f.dir === 'in' ? 'The account the money comes into.' : 'The account the money goes out from.',
+      cur: 'RM',
+      summaryOn: badN > 0,
+      summaryTitle: badN === 1 ? '1 field needs a fix.' : badN + ' fields need a fix.',
+      summaryList: Object.keys(labelOf).filter(k => shown[k]).map(k => labelOf[k]).join(', ') + '.',
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      footNote: st.saving ? 'Adding the payment to October 2026…' : valid ? 'It is added as not ' + (f.dir === 'in' ? 'received' : 'paid') + ' yet.' + (f.co === 'AI' && st.fromOv ? ' It is on Agrinexus International’s page.' : '') : badN || !missing.length ? 'Fix the fields above, then add it.' : 'Still needed: ' + missing.join(', ') + '.',
+      addAria: valid ? 'false' : 'true',
+      addTone: valid ? 'white' : 'muted',
+      addStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding:0 16px;border-radius:14px;border:0;font:600 15px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out;' +
+        (st.saving ? 'background:#2450B8;color:#FFFFFF;cursor:progress' : valid ? 'background:#2450B8;color:#FFFFFF' : 'background:#E3E7ED;color:#46546A'),
+      submit: e => this.submit(e),
+      askClose: close,
+      keepEditing: () => this.setState({ confirm: false }),
+      discard: () => { this.setState({ confirm: false }); this.closeSheet(); },
+      onSheetAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); e.preventDefault();
+          if (this.state.confirm) this.setState({ confirm: false });   // Escape on the question keeps the payment
+          else this.askClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement;
+        const inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      toastOn: !!st.toast,
+      toastText: st.toast || '',
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastDismiss: () => { clearTimeout(this._tt); this.setState({ toastLeaving: true }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

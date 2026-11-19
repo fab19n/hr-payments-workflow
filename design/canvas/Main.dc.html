@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Overview · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD !important}
+.hp:hover{filter:brightness(.96)}
+.kp:hover{border-color:#C9D3E2 !important}
+/* motion and focus base */
+.hb,.hs,.hr,.hp,.kp,.nv,.nb,.ovc,.ctr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes tickA{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes tickB{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes monthNa{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes monthNb{from{opacity:0;transform:translateX(8px)}to{opacity:1;transform:none}}
+@keyframes monthPa{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+@keyframes monthPb{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1),background-color .32s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.tkA{display:inline-block;animation:tickA .15s cubic-bezier(.22,1,.36,1) both}
+.tkB{display:inline-block;animation:tickB .15s cubic-bezier(.22,1,.36,1) both}
+.mfNa{animation:monthNa .15s cubic-bezier(.22,1,.36,1) both}
+.mfNb{animation:monthNb .15s cubic-bezier(.22,1,.36,1) both}
+.mfPa{animation:monthPa .15s cubic-bezier(.22,1,.36,1) both}
+.mfPb{animation:monthPb .15s cubic-bezier(.22,1,.36,1) both}
+.sk{background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFC 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;border-radius:12px}
+/* ov cards */
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.rh{margin:0;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#5F6C80}
+.sub{color:#5F6C80;font-size:12px}
+.cp{display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp.info{background:#EAF0FD;color:#2450B8;border-color:#C9D7F7}
+.cp.mute{background:#EEF1F5;color:#46546A;border-color:#D5DBE4}
+.pl{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:99px;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.pl.warn{background:#FEF1D6;color:#934100}
+.ovc{position:relative;display:flex;flex-direction:column;gap:10px;min-width:0;background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:14px 16px;box-sizing:border-box}
+.ovc.lk:hover{background:#F7F8FA;border-color:#C9D2E0}
+.ovl{color:inherit;text-decoration:none}
+.ovl:hover{color:inherit}
+.ovl::after{content:"";position:absolute;inset:0;border-radius:16px}
+.ovl:focus-visible{outline:none}
+.ovl:focus-visible::after{outline:2px solid #2450B8;outline-offset:-2px}
+.ctr{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;gap:2px;min-height:32px;min-width:0;padding:8px 10px;border-radius:12px;border:1px solid #E3E7ED;background:#FFFFFF;color:inherit;text-decoration:none;box-sizing:border-box}
+.ctr:hover{background:#F0F3F8;border-color:#C9D2E0;color:inherit}
+.ctr:focus-visible{outline-offset:-2px}
+.tg{position:relative;z-index:1}
+/* calm cards (Payments, Accounting, HR): title, one headline, one note, a line per company, one link and an info tip */
+.ovg{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:16px;align-items:stretch}
+.ovc.cm{gap:12px;height:100%}
+.ovt{display:flex;align-items:center;gap:8px;min-width:0}
+.ovtt{margin:0;flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tday{flex:none;display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:99px;background:#EEF1F5;color:#46546A;font:500 12px Inter,sans-serif}
+.ovb{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ovh{font-size:20px;font-weight:500;line-height:28px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ovn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ove{font-size:14px;line-height:20px;color:#46546A}
+.ovw{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:#934100;white-space:nowrap}
+.ovk{display:flex;flex-direction:column;gap:4px;padding-top:10px;border-top:1px solid #EEF1F5}
+.ovr{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px;white-space:nowrap}
+.ovco{font-size:12px;font-weight:600;color:#46546A}
+.ovf{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
+.ovo{display:inline-flex;align-items:center;gap:4px;min-height:32px;font-size:13px;font-weight:600;color:#2450B8;text-decoration:none}
+.ovo:hover{color:#1D419A;text-decoration:underline}
+.ovo::after{content:"";position:absolute;inset:0;border-radius:16px}
+.ovo:focus-visible{outline:none}
+.ovo:focus-visible::after{outline:2px solid #2450B8;outline-offset:-2px}
+.tip{position:relative;z-index:1;flex:none;margin-right:-6px}
+.tipb{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:0;border-radius:8px;background:transparent;cursor:pointer;transition:background-color .12s ease-out}
+.tipb:hover{background:#EEF1F5}
+.tt{position:absolute;right:0;bottom:calc(100% + 4px);z-index:6;width:240px;box-sizing:border-box;padding:10px 12px;border-radius:10px;background:#0F1A2B;color:#FFFFFF;font:400 12px/1.45 Inter,sans-serif;white-space:normal;text-align:left;box-shadow:0 10px 28px rgba(13,27,46,.22);opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .18s cubic-bezier(.22,1,.36,1),transform .18s cubic-bezier(.22,1,.36,1),visibility 0s linear .18s}
+.tip:hover .tt,.tipb:focus+.tt,.tt.on{opacity:1;visibility:visible;transform:none;transition-delay:0s}
+.tt.off{opacity:0 !important;visibility:hidden !important}
+/* end ov cards */
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="overview" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" companies="{{coMode}}" trail="{{trail}}" todo="{{sbTodo}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Overview" page="Overview" company="{{topCo}}" allow-all="{{topAll}}" companies="{{topCos}}" user="{{topUser}}" trail="{{trail}}" month-offset="{{off}}" on-month="{{setMonth}}" on-company="{{setCompany}}" dark-href="DarkOverview.dc.html" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+
+      <sc-if value="{{trailAttn}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="rv" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 18px; border-radius: 14px; background: #FDE6E3; border: 1px solid #F3B9B2; color: #8E1A10">
+          <dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import>
+          <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column"><b>The audit trail needs attention</b><span style="color: #5C1A14">2 changes were made to the records outside this app.</span></div>
+          <a href="AuditTrail.dc.html" class="hb" style="display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 9px; background: #8E1A10; color: #fff; font-weight: 600; font-size: 13px; text-decoration: none">Open the audit trail</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{rolloverOn}}" hint-placeholder-val="{{ true }}">
+        <div role="status" class="rv" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 14px 18px; border-radius: 14px; background: #EAF0FD; border: 1px solid #C9D7F6; color: #1D419A">
+          <dc-import name="Icon" glyph="calendar" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+          <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column"><b>{{rollTitle}}</b><span style="color: #2F3F5C">You are looking at October, which is still open: {{octLeft}} left.</span></div>
+          <div style="display: flex; gap: 8px">
+            <button type="button" class="hb" onClick="{{goNext}}" style="height: 36px; padding: 0 14px; border: 0; border-radius: 9px; background: #2450B8; color: #fff; font: 600 13px Inter, sans-serif; cursor: pointer">Go to November</button>
+            <button type="button" class="hs" onClick="{{dismissRollover}}" style="height: 36px; padding: 0 14px; border-radius: 9px; border: 1px solid #B7C6EA; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; cursor: pointer">Dismiss</button>
+          </div>
+        </div>
+      </sc-if>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Wednesday 18 November 2026 · Payroll month</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 32px; font-weight: 600; letter-spacing: -.01em">{{title}}</h1>
+          <p style="margin: 0; color: #46546A; max-width: 640px">{{lead}}</p>
+        </div>
+        <sc-if value="{{hasCompany}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <a href="Budget.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="budget" tone="brand" size="18" hint-size="18px,18px"></dc-import>Open budget</a>
+          <a href="NewPayment.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #fff; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a payment</a>
+        </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{firstRun}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ov-first-h" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 22px">
+          <div style="display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; justify-content: space-between">
+            <div style="flex: 1 1 360px; min-width: 0"><h2 id="ov-first-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">Add your first company</h2><p style="margin: 6px 0 0; color: #46546A; max-width: 560px">There is no company yet, so there is nothing to work out. Start with one of these.</p></div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <a href="Setup.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D5DBE4; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="upload" tone="brand" size="18" hint-size="18px,18px"></dc-import>Import a setup file</a>
+              <a href="SetupCompanies.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #fff; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add your first company</a>
+            </div>
+          </div>
+          <div style="border-top: 1px solid #EEF1F5; padding-top: 18px; display: flex; flex-direction: column; gap: 12px">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 600; color: #46546A">What comes next</h3>
+            <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px">
+              <sc-for list="{{nextSteps}}" as="s" hint-placeholder-count="4">
+                <li style="display: flex; gap: 12px; align-items: flex-start; padding: 14px; border: 1px solid #E3E7ED; border-radius: 12px"><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 99px; background: #EAF0FD; color: #1D419A; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex: none">{{s.n}}</span><div><b>{{s.title}}</b><div style="color: #5F6C80; font-size: 13px">{{s.text}}</div></div></li>
+              </sc-for>
+            </ol>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{hasCompany}}" hint-placeholder-val="{{ true }}">
+
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+        <section aria-labelledby="ov-next-h" style="flex: 2 1 560px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid #EEF1F5">
+            <div style="display: flex; align-items: center; gap: 12px; min-width: 0">
+              <span style="width: 40px; height: 40px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="sparkflag" tone="brand" size="22" hint-size="22px,22px"></dc-import></span>
+              <div style="min-width: 0"><h2 id="ov-next-h" tabindex="-1" style="margin: 0; outline: none; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Next up <span style="font-family: Inter, sans-serif; font-size: 14px; font-weight: 500; color: #5F6C80">· Wed 18 Nov</span></h2><span style="color: #5F6C80; font-size: 13px">Things to do, worked out from your records, most urgent first</span></div>
+            </div>
+            <span style="display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #46546A"><span class="{{whoChip}}">{{whoCode}}</span><span>{{whoNote}}</span></span>
+          </div>
+
+          <div id="ov-next" style="{{listStyle}}">
+            <sc-if value="{{nextLoading}}" hint-placeholder-val="{{ false }}">
+              <div aria-busy="true" style="display: flex; flex-direction: column; gap: 12px; padding: 18px 22px"><span class="vh">Loading Next up</span><div class="sk" style="height: 44px"></div><div class="sk" style="height: 44px"></div><div class="sk" style="height: 44px"></div><div class="sk" style="height: 44px"></div></div>
+            </sc-if>
+            <sc-if value="{{nextRows}}" hint-placeholder-val="{{ true }}">
+              <div>
+                <sc-for list="{{rowsHead}}" as="r" hint-placeholder-count="5">
+                  <a href="{{r.href}}" class="hr fr" title="{{r.dueTitle}}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid #EEF1F5; color: #0F1A2B; text-decoration: none">
+                    <span style="{{r.tile}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                    <span style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{r.title}}</span><span style="color: #5F6C80; font-size: 13px">{{r.meta}}</span></span>
+                    <sc-if value="{{r.hasDue}}" hint-placeholder-val="{{ true }}"><span style="{{r.pill}}">{{r.due}}</span></sc-if>
+                    <span style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; font-weight: 600; font-size: 13px; white-space: nowrap">{{r.verb}}<dc-import name="Icon" glyph="arrow" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>
+                  </a>
+                </sc-for>
+              </div>
+              <div style="{{moreStyle}}">
+                <div style="overflow: hidden; min-height: 0">
+                  <sc-for list="{{rowsMore}}" as="r" hint-placeholder-count="3">
+                    <a href="{{r.href}}" class="hr fr" title="{{r.dueTitle}}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 14px 22px; border-bottom: 1px solid #EEF1F5; color: #0F1A2B; text-decoration: none">
+                      <span style="{{r.tile}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                      <span style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{r.title}}</span><span style="color: #5F6C80; font-size: 13px">{{r.meta}}</span></span>
+                      <sc-if value="{{r.hasDue}}" hint-placeholder-val="{{ true }}"><span style="{{r.pill}}">{{r.due}}</span></sc-if>
+                      <span style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; font-weight: 600; font-size: 13px; white-space: nowrap">{{r.verb}}<dc-import name="Icon" glyph="arrow" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>
+                    </a>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+            <sc-if value="{{caughtUp}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; gap: 14px; align-items: center; padding: 22px; border-bottom: 1px solid #EEF1F5">
+                <span style="width: 40px; height: 40px; border-radius: 12px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="check" tone="ok" size="22" hint-size="22px,22px"></dc-import></span>
+                <div style="min-width: 0"><b>{{caughtTitle}}</b><div style="color: #5F6C80; font-size: 13px">Next due {{nextDue}}</div></div>
+              </div>
+            </sc-if>
+            <sc-if value="{{nextError}}" hint-placeholder-val="{{ false }}">
+              <div role="alert" class="ex" style="display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: center; padding: 18px 22px; border-bottom: 1px solid #EEF1F5; background: #FFF4F2">
+                <dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import>
+                <div style="flex: 1 1 280px; min-width: 0"><b style="color: #8E1A10">Couldn't work out what to do next</b><div style="color: #46546A; font-size: 13px">The records didn't answer: Database is locked. The rest of the page still works.</div></div>
+                <button type="button" class="hs" onClick="{{retryNext}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Try again</button>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 22px; background: #FAFBFC">
+            <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; color: #5F6C80; font-size: 13px; min-width: 0">
+              <sc-if value="{{hasOlder}}" hint-placeholder-val="{{ true }}">
+                <span>Older months still open:</span>
+                <sc-for list="{{older}}" as="o" hint-placeholder-count="1">
+                  <a href="{{o.href}}" title="{{o.tip}}" style="display: inline-flex; align-items: center; min-height: 32px; padding: 0 4px; font-weight: 600; font-size: 13px">{{o.label}}</a>
+                </sc-for>
+              </sc-if>
+            </span>
+            <sc-if value="{{canMore}}" hint-placeholder-val="{{ true }}">
+              <button type="button" class="hs" onClick="{{toggleAll}}" aria-expanded="{{allAttr}}" aria-controls="ov-next" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #D5DBE4; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreWord}} <span class="{{tickCls}}">{{moreCount}}</span></button>
+            </sc-if>
+          </div>
+        </section>
+
+        <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 24px">
+          <section aria-labelledby="ov-steps-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 16px">
+            <div><h2 id="ov-steps-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">The four steps of a payment</h2><span style="color: #5F6C80; font-size: 12px">Approval never blocks paying.</span></div>
+            <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column">
+              <li style="display: flex; gap: 12px">
+                <div style="display: flex; flex-direction: column; align-items: center"><span style="width: 28px; height: 28px; border-radius: 99px; background: #F1F3F7; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="claim" tone="muted" size="16" hint-size="16px,16px"></dc-import></span><span style="width: 2px; flex: 1; background: #E3E7ED; min-height: 14px"></span></div>
+                <div style="padding-bottom: 12px"><b>1 Request</b><div style="color: #5F6C80; font-size: 13px">A claim, advance or salary run from HR, or a supplier bill.</div></div>
+              </li>
+              <li style="display: flex; gap: 12px">
+                <div style="display: flex; flex-direction: column; align-items: center"><span style="width: 28px; height: 28px; border-radius: 99px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="approval" tone="warn" size="16" hint-size="16px,16px"></dc-import></span><span style="width: 2px; flex: 1; background: #E3E7ED; min-height: 14px"></span></div>
+                <div style="padding-bottom: 12px"><b>2 Approve</b><div style="color: #5F6C80; font-size: 13px">A director signs the printed form; it is uploaded on Approvals.</div></div>
+              </li>
+              <li style="display: flex; gap: 12px">
+                <div style="display: flex; flex-direction: column; align-items: center"><span style="width: 28px; height: 28px; border-radius: 99px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="toPay" tone="brand" size="16" hint-size="16px,16px"></dc-import></span><span style="width: 2px; flex: 1; background: #E3E7ED; min-height: 14px"></span></div>
+                <div style="padding-bottom: 12px"><b>3 Pay</b><div style="color: #5F6C80; font-size: 13px">From To pay, with the paid date, bank reference and account.</div></div>
+              </li>
+              <li style="display: flex; gap: 12px">
+                <div style="display: flex; flex-direction: column; align-items: center"><span style="width: 28px; height: 28px; border-radius: 99px; background: #E3F7EC; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import></span></div>
+                <div><b>4 Record and reconcile</b><div style="color: #5F6C80; font-size: 13px">Linked to its SQL voucher or posted here, and matched to the bank line.</div></div>
+              </li>
+            </ol>
+          </section>
+
+          <section aria-labelledby="ov-act-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 16px 22px; border-bottom: 1px solid #EEF1F5">
+              <div><h2 id="ov-act-h" tabindex="-1" style="margin: 0; outline: none; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Recent activity</h2><span style="color: #5F6C80; font-size: 12px">From the audit trail, newest first · no pay or personal details</span></div>
+              <sc-if value="{{canTrail}}" hint-placeholder-val="{{ true }}"><a href="AuditTrail.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; padding: 0 6px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none">Audit trail</a></sc-if>
+            </div>
+            <sc-if value="{{actLoading}}" hint-placeholder-val="{{ false }}">
+              <div aria-busy="true" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 22px"><span class="vh">Loading recent activity</span><div class="sk" style="height: 38px"></div><div class="sk" style="height: 38px"></div><div class="sk" style="height: 38px"></div><div class="sk" style="height: 38px"></div></div>
+            </sc-if>
+            <sc-if value="{{actError}}" hint-placeholder-val="{{ false }}">
+              <div role="alert" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; padding: 16px 22px; background: #FFF4F2">
+                <dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import>
+                <div style="flex: 1 1 180px; min-width: 0"><b style="color: #8E1A10">Couldn't load recent activity</b><div style="color: #46546A; font-size: 13px">The audit trail didn't answer: Database is locked. The rest of the page still works.</div></div>
+                <button type="button" class="hs" onClick="{{retryAct}}" style="height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Try again</button>
+              </div>
+            </sc-if>
+            <sc-if value="{{actEmpty}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 12px; align-items: center; padding: 18px 22px"><dc-import name="Icon" glyph="trail" tone="muted" size="18" hint-size="18px,18px"></dc-import><span style="color: #46546A; font-size: 13px">{{actEmptyText}}</span></div>
+            </sc-if>
+            <sc-if value="{{actList}}" hint-placeholder-val="{{ true }}">
+            <ul style="margin: 0; padding: 8px 0; list-style: none; display: flex; flex-direction: column">
+              <sc-for list="{{acts}}" as="a" hint-placeholder-count="5">
+                <li style="display: flex; gap: 12px; padding: 10px 22px"><dc-import name="Icon" glyph="{{a.glyph}}" tone="{{a.tone}}" size="18" hint-size="18px,18px"></dc-import><div style="flex: 1; min-width: 0"><div>{{a.text}}</div><span style="color: #5F6C80; font-size: 12px">{{a.who}}</span></div></li>
+              </sc-for>
+            </ul>
+            </sc-if>
+          </section>
+        </div>
+      </div>
+
+      <sc-if value="{{cardsLoading}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" role="status" style="display: flex; flex-direction: column; gap: 16px">
+          <span class="vh">Loading {{monthLabel}}</span>
+          <div class="sk" style="height: 150px"></div>
+          <div class="ovg"><div class="sk" style="height: 200px"></div><div class="sk" style="height: 200px"></div><div class="sk" style="height: 200px"></div><div class="sk" style="height: 200px"></div></div>
+          <div class="ovg"><div class="sk" style="height: 200px"></div><div class="sk" style="height: 200px"></div><div class="sk" style="height: 200px"></div><div class="sk" style="height: 200px"></div></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{cardsOn}}" hint-placeholder-val="{{ true }}">
+      <div class="{{mvCls}}" style="{{cardsStyle}}">
+        <sc-for list="{{attnRows}}" as="row" hint-placeholder-count="1">
+          <section aria-label="{{row.title}}" style="display: flex; flex-direction: column; gap: 12px">
+            <sc-if value="{{row.hasTitle}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px"><h2 id="{{row.hid}}" class="rh">{{row.title}}</h2><span class="sub">{{row.note}}</span></div></sc-if>
+            <div style="{{row.grid}}">
+              <sc-for list="{{row.cards}}" as="c" hint-placeholder-count="4">
+                <div class="{{c.cls}}" style="{{c.style}}">
+                  <div style="display: flex; align-items: center; gap: 10px; min-width: 0">
+                    <span aria-hidden="true" style="{{c.tile}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.iconTone}}" size="20" hint-size="20px,20px"></dc-import></span>
+                    <h3 id="{{c.headId}}" tabindex="-1" style="margin: 0; flex: 1; min-width: 0; font-size: 14px; font-weight: 700"><sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{c.href}}" id="{{c.linkId}}" class="ovl" title="{{c.tip}}">{{c.title}}<span class="vh">{{c.opens}}</span></a></sc-if><sc-if value="{{c.noLink}}" hint-placeholder-val="{{ false }}">{{c.title}}</sc-if></h3>
+                    <span class="sub" style="white-space: nowrap">{{c.when}}</span>
+                  </div>
+
+                  <sc-if value="{{c.isLoading}}" hint-placeholder-val="{{ false }}">
+                    <div aria-busy="true" style="display: flex; flex-direction: column; gap: 8px"><span class="vh">Loading {{c.title}}</span><div class="sk" style="height: 18px"></div><div class="sk" style="height: 18px; width: 70%"></div></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isFailed}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+                      <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #B0190F; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+                      <button type="button" id="{{c.retryId}}" class="hs tg" onClick="{{c.retry}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isEmpty}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #46546A">{{c.emptyText}}</span><sc-if value="{{c.hasEmptyNote}}" hint-placeholder-val="{{ false }}"><span class="sub">{{c.emptyNote}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.hasBlocks}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px">
+                      <sc-for list="{{c.blocks}}" as="b" hint-placeholder-count="2">
+                        <div style="{{b.style}}">
+                          <sc-if value="{{b.hasHead}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><span class="{{b.chip}}">{{b.code}}</span><span class="sub">{{b.kind}}</span></span></sc-if>
+                          <sc-if value="{{b.isEmpty}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{b.empty}}</span></sc-if>
+                          <sc-if value="{{b.hasBig}}" hint-placeholder-val="{{ false }}"><span style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap"><b style="{{b.bigStyle}}">{{b.big}}</b><span style="font-size: 13px; color: #46546A">{{b.unit}}</span></span></sc-if>
+                          <sc-if value="{{b.hasBar}}" hint-placeholder-val="{{ false }}"><div style="height: 6px; border-radius: 99px; background: #EEF1F5; overflow: hidden"><div class="bar" role="progressbar" aria-label="{{b.barLabel}}" aria-valuenow="{{b.pct}}" aria-valuemin="0" aria-valuemax="100" style="{{b.bar}}"></div></div></sc-if>
+                          <sc-for list="{{b.rows}}" as="r" hint-placeholder-count="2">
+                            <span style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; font-size: 13px"><span style="color: #46546A; min-width: 0">{{r.label}}</span><b style="{{r.vstyle}}">{{r.value}}</b></span>
+                          </sc-for>
+                          <sc-if value="{{b.hasCounters}}" hint-placeholder-val="{{ false }}">
+                            <div style="{{b.cgrid}}">
+                              <sc-for list="{{b.counters}}" as="k" hint-placeholder-count="5">
+                                <a href="{{k.href}}" id="{{k.id}}" class="ctr" aria-label="{{k.sr}}" title="{{k.tip}}"><span style="{{k.fig}}">{{k.n}}</span><span style="font-size: 12px; color: #46546A">{{k.label}}</span></a>
+                              </sc-for>
+                            </div>
+                          </sc-if>
+                          <sc-if value="{{b.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sub">{{b.note}}</span></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isStale}}" hint-placeholder-val="{{ false }}"><span class="pl warn" style="align-self: flex-start"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{c.stale}}</span></sc-if>
+
+                  <span style="margin-top: auto; display: flex; align-items: center; gap: 6px; padding-top: 8px; border-top: 1px solid #EEF1F5; font-size: 12px; color: #46546A"><span style="flex: 1; min-width: 0">{{c.foot}}</span><sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></sc-if></span>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+        <sc-for list="{{rows}}" as="row" hint-placeholder-count="3">
+          <section aria-labelledby="{{row.hid}}" style="display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px"><h2 id="{{row.hid}}" class="rh">{{row.head}}</h2><sc-if value="{{row.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sub">{{row.note}}</span></sc-if></div>
+            <div class="ovg">
+              <sc-for list="{{row.cards}}" as="c" hint-placeholder-count="4">
+                <div class="{{c.cls}}">
+                  <div class="ovt">
+                    <span aria-hidden="true" style="{{c.tile}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.iconTone}}" size="16" hint-size="16px,16px"></dc-import></span>
+                    <h3 id="{{c.headId}}" tabindex="-1" class="ovtt">{{c.title}}</h3>
+                    <sc-if value="{{c.isToday}}" hint-placeholder-val="{{ false }}"><span class="tday">Today</span></sc-if>
+                  </div>
+
+                  <sc-if value="{{c.isLoading}}" hint-placeholder-val="{{ false }}">
+                    <div aria-busy="true" style="display: flex; flex-direction: column; gap: 8px"><span class="vh">Loading {{c.title}}</span><div class="sk" style="height: 26px; width: 60%"></div><div class="sk" style="height: 16px"></div></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isFailed}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; flex-direction: column; gap: 10px; align-items: flex-start">
+                      <span role="alert" style="display: flex; gap: 6px; align-items: center; font-size: 13px; color: #B0190F; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>Could not load, try again</span>
+                      <button type="button" id="{{c.retryId}}" class="hs tg" onClick="{{c.retry}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #7B8798; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="refresh" tone="muted" size="16" hint-size="16px,16px"></dc-import>Try again</span></button>
+                    </div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isEmpty}}" hint-placeholder-val="{{ false }}">
+                    <div class="ovb"><span class="ove">{{c.emptyText}}</span><sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sub ovn">{{c.note}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.hasHead}}" hint-placeholder-val="{{ true }}">
+                    <div class="ovb"><b class="ovh" style="{{c.headStyle}}">{{c.head}}</b><sc-if value="{{c.hasNote}}" hint-placeholder-val="{{ true }}"><span class="sub ovn">{{c.note}}</span></sc-if></div>
+                  </sc-if>
+
+                  <sc-if value="{{c.isStale}}" hint-placeholder-val="{{ false }}"><span class="ovw"><dc-import name="Icon" glyph="clock" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{c.stale}}</span></sc-if>
+
+                  <sc-if value="{{c.hasLines}}" hint-placeholder-val="{{ true }}">
+                    <div class="ovk">
+                      <sc-for list="{{c.lines}}" as="l" hint-placeholder-count="2">
+                        <span class="ovr"><span class="ovco">{{l.code}}</span><b style="{{l.vstyle}}">{{l.value}}</b></span>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+
+                  <div class="ovf">
+                    <sc-if value="{{c.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{c.href}}" id="{{c.linkId}}" class="ovo" title="{{c.tip}}">{{c.open}}<span class="vh">{{c.linkSr}}</span><span aria-hidden="true">›</span></a></sc-if>
+                    <sc-if value="{{c.noLink}}" hint-placeholder-val="{{ false }}"><span class="sub">{{c.foot}}</span></sc-if>
+                    <sc-if value="{{c.hasTip}}" hint-placeholder-val="{{ true }}">
+                      <span class="tip" onMouseLeave="{{c.tipReset}}">
+                        <button type="button" class="tipb" aria-label="{{c.tipLabel}}" aria-describedby="{{c.tipId}}" onClick="{{c.tipToggle}}" onKeyDown="{{c.tipKey}}" onBlur="{{c.tipReset}}"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                        <span role="tooltip" id="{{c.tipId}}" class="{{c.tipCls}}">{{c.source}}</span>
+                      </span>
+                    </sc-if>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </section>
+        </sc-for>
+      </div>
+      </sc-if>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"default","options":["default","caught-up","nothing-recent","error","loading","first-run"]},"companies":{"editor":"enum","default":"two","options":["two","one","four"]},"company":{"editor":"enum","default":"all","options":["all","aisb","ai"]},"user":{"editor":"enum","default":"aisha","options":["aisha","marcus"]},"cards":{"editor":"enum","default":"normal","options":["normal","one-fails","out-of-date"]},"trail":{"editor":"enum","default":"ok","options":["ok","attention"]},"month":{"editor":"enum","default":"october","options":["october","september","november","august"]},"rollover":{"editor":"boolean","default":true},"activity":{"editor":"enum","default":"normal","options":["normal","fails"]},"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const q = p || {};
+    const start = { october: 0, september: -1, november: 1, august: -2 }[q.month || 'october'];
+    const mode = q.companies || 'two';
+    const co = mode === 'one' ? 'aisb' : (q.company || 'all');
+    this.state = { co, all: false, fade: false, v: 0, off: start || 0, loading: false, mv: 0, dir: 1, gone: false, fixed: false, retried: {}, cardBusy: null, actFixed: false, actBusy: false, tipOn: null, tipOff: null };
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._f); clearTimeout(this._c); clearTimeout(this._a); }
+  componentDidUpdate(prevProps, prev) {
+    if (prev && !prev.fixed && this.state.fixed) { const h = document.getElementById('ov-next-h'); if (h && h.focus) h.focus({ preventScroll: true }); }
+    // After Try again on a card, focus goes to that card's link once it has loaded; a card with no single link
+    // (Needs attention) takes its first counter, else its heading. A flag, not a busy-to-idle
+    // test: under reduced motion the two updates are batched into one and the change would never be seen.
+    if (this._focusCard && !this.state.cardBusy) {
+      const id = this._focusCard; this._focusCard = null;
+      const l = ['ov-card-' + id, 'ov-card-' + id + '-0-0', 'ov-head-' + id].map(x => document.getElementById(x)).find(Boolean);
+      if (l && l.focus) l.focus({ preventScroll: true });
+    }
+    // after Try again on Recent activity, focus goes to its heading once the list is back
+    if (this._focusAct && !this.state.actBusy) { this._focusAct = false; const h = document.getElementById('ov-act-h'); if (h && h.focus) h.focus({ preventScroll: true }); }
+  }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  setMonth(o) {
+    if (o === this.state.off) return;
+    clearTimeout(this._t);
+    if (this.calm()) { this.setState({ off: o, loading: false, mv: this.state.mv + 1, dir: o > this.state.off ? 1 : -1 }); return; }
+    // a short skeleton, about 300ms, then the month's cards; Next up does not follow the month
+    this.setState({ off: o, loading: true, mv: this.state.mv + 1, dir: o > this.state.off ? 1 : -1 });
+    this._t = setTimeout(() => this.setState({ loading: false }), 320);
+  }
+  setCompany(c) {
+    if (!c || c === this.state.co) return;
+    clearTimeout(this._f);
+    const done = () => this.setState(s => ({ co: c, fade: false, v: s.v + 1 }));
+    if (this.calm()) return done();
+    this.setState({ fade: true });            // Next up and the cards fade out (100ms), then in (140ms) for the new company
+    this._f = setTimeout(done, 100);
+  }
+  retryCard(id) {
+    clearTimeout(this._c);
+    const done = () => { this._focusCard = id; this.setState(s => ({ retried: { ...s.retried, [id]: true }, cardBusy: null })); };
+    if (this.calm()) return done();          // reduced motion: no skeleton, the card is back at once
+    this.setState({ cardBusy: id });
+    this._c = setTimeout(done, 320);
+  }
+  retryActivity() {
+    clearTimeout(this._a);
+    const done = () => { this._focusAct = true; this.setState({ actFixed: true, actBusy: false }); };
+    if (this.calm()) return done();
+    this.setState({ actBusy: true });
+    this._a = setTimeout(done, 320);
+  }
+  renderVals() {
+    const DARK = false;
+    const view = this.props.view ?? 'default';
+    const mode = this.props.companies ?? 'two';
+    const attention = (this.props.trail ?? 'ok') === 'attention';
+    const marcus = (this.props.user ?? 'aisha') === 'marcus';
+    const cardMode = this.props.cards ?? 'normal';
+    const S = this.state, off = S.off;
+    const firstRun = view === 'first-run';
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const monthLabel = (() => { const idx = 2026 * 12 + 9 + off; return months[idx % 12] + ' ' + Math.floor(idx / 12); })();
+    const m = { '0': 'oct', '-1': 'sep', '1': 'nov', '-2': 'aug' }[String(off)] || (off > 1 ? 'later' : 'before');
+
+    // ---- theme tokens used by the generated styles (the dark twin, DarkOverview.dc.html, sets DARK) ----
+    const K = DARK
+      ? { ink: '#E6EBF2', ink2: '#B4BFCE', ink3: '#8E9BB0', bad: '#F58C80', warn: '#F2B35B', ok: '#5BD49A', surface: '#121A27', line: '#243044', brandBar: '#3D6BE0', okBar: '#3FBF83',
+          wash: { brand: '#1B2A4A', bad: '#33171A', warn: '#2E2210', muted: '#1E2838', ok: '#10291E' }, washInk: { bad: '#F58C80', warn: '#F2B35B', muted: '#B4BFCE' } }
+      : { ink: '#0F1A2B', ink2: '#46546A', ink3: '#5F6C80', bad: '#B0190F', warn: '#934100', ok: '#0A6B3D', surface: '#FFFFFF', line: '#E3E7ED', brandBar: '#2450B8', okBar: '#0E8A50',
+          wash: { brand: '#EAF0FD', bad: '#FDE6E3', warn: '#FEF1D6', muted: '#EEF1F5', ok: '#E3F7EC' }, washInk: { bad: '#B0190F', warn: '#934100', muted: '#46546A' } };
+    const tone = t => (DARK && t !== 'white' ? 'd' + t : t);
+    // Dark boards exist for the Overview, the Payments register and Bank only; other links open the light board.
+    const DMAP = { 'PaymentsRegister.dc.html': 'DarkCompany.dc.html', 'Bank.dc.html': 'DarkBank.dc.html' };
+    const H = href => (DARK ? (DMAP[href] || href) : href);
+    const tip = href => (DARK && !DMAP[href] ? 'Light version only in this mock' : '');
+
+    // ---- companies, the company chosen in the top bar's switcher, and who is looking ----
+    // novSet: November 2026 is set up (samples section 1: AISB only, 18 Nov 09:05). sqlTo: SQL data fetched, journal to
+    // that day (a Kept in SQL Account company with nothing fetched has none). Cards branch on these and on kind, never on the code.
+    const CO = {
+      aisb: { code: 'AISB', kind: 'sql', label: 'Kept in SQL Account', sb: 'sqlPayroll', novSet: true, sqlTo: '17 Nov' },
+      ai: { code: 'AI', kind: 'here', label: 'Kept here', sb: 'here', novSet: false, sqlTo: '' },
+      ail: { code: 'AIL', kind: 'sql', label: 'Kept in SQL Account', sb: 'sql', novSet: false, sqlTo: '' },
+      aip: { code: 'AIP', kind: 'here', label: 'Kept here', sb: 'here', novSet: false, sqlTo: '' }
+    };
+    const inUse = firstRun ? [] : mode === 'one' ? ['aisb'] : mode === 'four' ? ['aisb', 'ai', 'ail', 'aip'] : ['aisb', 'ai'];
+    let co = mode === 'one' ? 'aisb' : S.co;
+    if (co !== 'all' && !inUse.includes(co)) co = 'all';
+    const isAll = co === 'all';
+    const cos = isAll ? inUse : [co];
+    const many = inUse.length > 1;
+    const can = need => !need || (need === 'hr' ? !marcus : need === 'admin' ? !marcus : true);
+
+    // ---- Next up: samples.md section 14. Same list as the sidebar's badges (Sidebar.dc.html); one badge rule. ----
+    // The top bar's company switcher is the only company filter (no in-page company control).
+    // One row per unpaid statutory payment (owner, 19 Nov): October's KWSP is entered and unpaid, so only "Pay KWSP for
+    // October" shows; rule 14's Statutory payables row shows only when there is no unpaid payment (paid short, never entered).
+    const T = {
+      bad: { tile: K.wash.bad, pill: 'background:' + K.wash.bad + ';color:' + K.washInk.bad },
+      warn: { tile: K.wash.warn, pill: 'background:' + K.wash.warn + ';color:' + K.washInk.warn },
+      muted: { tile: K.wash.muted, pill: 'background:' + K.wash.muted + ';color:' + K.washInk.muted }
+    };
+    const REG = 'PaymentsRegister.dc.html', CHK = 'MonthlyChecklist.dc.html';
+    // Date rule: days are counted only within a week either side of today (Wed 18 Nov); otherwise the date. Hover shows the exact date.
+    let todo = [
+      { id: 'consultant', co: 'aisb', need: null, oct: true, tone: 'bad', glyph: 'alert', title: 'Consultant fee not on the October statement', meta: 'AISB · Payments register · RM 3,200.00', due: 'Overdue 31 Oct', exact: 'Due Saturday 31 October 2026', href: REG, verb: 'Open payment' },
+      { id: 'kwspaisb', co: 'aisb', need: null, oct: true, tone: 'bad', glyph: 'toPay', title: 'Pay KWSP for October', meta: 'AISB · To pay · RM 11,240.00 · legal deadline 15 Nov', due: 'Overdue 15 Nov', exact: 'Legal deadline Sunday 15 November 2026', href: 'ToPay.dc.html', verb: 'Open payment' },
+      { id: 'kwsp', co: 'ai', need: null, oct: true, tone: 'bad', glyph: 'toPay', title: 'Pay KWSP for October', meta: 'AI · To pay · RM 4,478.00 · legal deadline 15 Nov', due: 'Overdue 15 Nov', exact: 'Legal deadline Sunday 15 November 2026', href: 'ToPay.dc.html#kept-here', verb: 'Open payment' },
+      { id: 'sqlbooks', co: 'aisb', need: null, oct: false, tone: 'bad', glyph: 'checklist', title: 'Sep AISB: SQL books agree with SQL Account', meta: 'AISB · Monthly checklist · September', due: 'Overdue 15 Oct', exact: 'Due Thursday 15 October 2026', href: CHK, verb: 'Show item' },
+      { id: 'payroll', co: 'aisb', need: 'hr', oct: false, tone: 'bad', glyph: 'payroll', title: 'Nov AISB: the payroll check found 3 things to fix before paying', meta: 'AISB · HR › Payroll', due: '', exact: 'No due date: fix these before paying November', href: 'PayrollCheck.dc.html', verb: 'Go' },
+      { id: 'explain', co: 'aisb', need: null, oct: true, tone: 'warn', glyph: 'inbox', title: 'Explain 5 bank lines on Maybank current', meta: 'AISB · Accounting › Bank and reconciliation', due: 'Today 18 Nov', exact: 'Due Wednesday 18 November 2026', href: 'BankReview.dc.html', verb: 'Explain 5 lines' },
+      { id: 'balance', co: 'all', need: null, oct: false, tone: 'warn', glyph: 'budget', title: 'Enter the bank balance for the November budget', meta: many ? 'Payments › Budget · all companies' : 'Payments › Budget', due: 'Due 20 Nov', exact: 'Due Friday 20 November 2026', href: 'Budget.dc.html', verb: 'Enter balance' },
+      { id: 'sql', co: 'aisb', need: null, oct: true, tone: 'warn', glyph: 'database', title: 'Fetch SQL\x27s Oct and Nov Payment Voucher listings on the SQL import page: 4 payments not recorded; 1 SQL entry not linked yet; 1 voucher changed in SQL (move the link on the SQL page)', meta: 'AISB · Accounting › SQL import', due: 'Due 21 Nov', exact: 'Due Saturday 21 November 2026', href: 'Sql.dc.html', verb: 'Fetch from SQL exports' },
+      { id: 'pack', co: 'ai', need: 'admin', oct: true, tone: 'muted', glyph: 'pack', title: 'Build and file the October audit pack', meta: 'AI · Admin › Audit pack', due: 'Due 30 Nov', exact: 'Due Monday 30 November 2026', href: 'AuditPack.dc.html', verb: 'Open audit pack' },
+      { id: 'probation', co: 'aisb', need: 'hr', oct: false, tone: 'muted', glyph: 'reminder', title: 'A probation ends on 30 Nov: confirm or extend it', meta: 'AISB · HR › Staff › Calendar and reminders', due: 'Due 30 Nov', exact: 'Due Monday 30 November 2026', href: 'HrCalendar.dc.html', verb: 'Open reminder' },
+      { id: 'cp22a', co: 'aisb', need: null, oct: false, tone: 'muted', glyph: 'staff', title: 'CP22A for Kah Seng', meta: 'AISB · Monthly checklist · Leaver reminder', due: 'Due 1 Dec', exact: 'Due Tuesday 1 December 2026', href: CHK, verb: 'Open checklist' },
+      { id: 'ecp22', co: 'aisb', need: null, oct: false, tone: 'muted', glyph: 'staff', title: 'e-CP22 for Daniel', meta: 'AISB · Monthly checklist · Joiner reminder', due: 'Due 3 Dec', exact: 'Due Thursday 3 December 2026', href: CHK, verb: 'Open checklist' },
+      { id: 'permit', co: 'ai', need: 'hr', oct: false, tone: 'muted', glyph: 'reminder', title: 'A work permit expires on 10 Jan 2027', meta: 'AI · HR › Staff › Calendar and reminders', due: 'Due 10 Jan', exact: 'Due Sunday 10 January 2027', href: 'HrCalendar.dc.html', verb: 'Open reminder' },
+      { id: 'backup', co: 'all', need: 'admin', oct: false, tone: 'muted', glyph: 'vault', title: 'Last backup: 11 Nov, 7 days ago', meta: 'Admin › Backup', due: '', exact: '', href: 'Backup.dc.html', verb: 'Open backup' }
+    ];
+    if (attention) todo = [{ id: 'trail', co: 'all', need: 'admin', oct: false, tone: 'bad', glyph: 'trail', title: 'Review the changes made outside the app', meta: 'Admin › Audit trail · 2 changes', due: 'Needs attention', exact: 'Open the audit trail to review them', href: 'AuditTrail.dc.html', verb: 'Open audit trail' }].concat(todo);
+    todo = todo.filter(t => (t.co === 'all' || inUse.includes(t.co)) && can(t.need));
+    const shownAll = todo.filter(t => isAll || t.co === co || t.co === 'all');
+    const total = shownAll.length;
+    const rowOf = t => ({ ...t, href: H(t.href), tone: tone(t.tone), hasDue: !!t.due, dueTitle: [t.exact, tip(t.href)].filter(Boolean).join('. '),
+      tile: 'width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + T[t.tone].tile,
+      pill: 'display:inline-flex;align-items:center;height:26px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + T[t.tone].pill });
+    const LIM = 7;
+    const rowsHead = shownAll.slice(0, LIM).map(rowOf), rowsMore = shownAll.slice(LIM).map(rowOf);
+    const nextLoading = view === 'loading';
+    const stateRows = view === 'default' || (view === 'error' && S.fixed);
+    const emptyState = view === 'caught-up' || view === 'nothing-recent';
+    const nextError = view === 'error' && !S.fixed;
+    const older = (view === 'default' || view === 'nothing-recent') && !firstRun && cos.includes('aisb')
+      ? [{ label: 'September' + (many && isAll ? ' (AISB)' : ''), href: H(REG), tip: tip(REG) }] : [];
+    const canMore = stateRows && total > LIM;
+    // the rollover banner names the companies whose November is set up, and counts only their October rows
+    const novCos = cos.filter(c => CO[c].novSet);
+    const octLeft = shownAll.filter(t => t.oct && novCos.includes(t.co)).length;
+    const octThings = octLeft + (octLeft === 1 ? ' thing' : ' things');
+
+    // ---- Recent activity: from the audit trail, with HR and payroll-check events, never a pay figure or a person's detail ----
+    const ACTS = [
+      { co: 'aisb', need: 'hr', glyph: 'payroll', tone: 'bad', text: 'Payroll check for November 2026: 3 things to fix before paying, 2 to check; 10 notes', who: 'Aisha Rahman · AISB · today 09:20' },
+      { co: 'aisb', need: null, glyph: 'calendar', tone: 'brand', text: 'Aisha Rahman set up November 2026', who: 'AISB · today 09:05' },
+      { co: 'aisb', need: 'hr', glyph: 'approval', tone: 'brand', text: 'Aisha Rahman printed approval form AF-2611-005 for 2 HR requests', who: 'AISB · 17 Nov' },
+      { co: 'ai', need: null, glyph: 'approval', tone: 'ok', text: 'Aisha Rahman uploaded approval form AF-2611-006, digitally signed', who: 'AI · 17 Nov' },
+      { co: 'aisb', need: null, glyph: 'upload', tone: 'brand', text: 'Aisha Rahman uploaded Bank slip to Office rental', who: 'AISB · 13 Nov 10:42' },
+      { co: 'aisb', need: 'hr', glyph: 'claim', tone: 'ok', text: 'Approval form AF-2611-003 uploaded: 3 claims approved', who: 'Aisha Rahman · AISB · 13 Nov' },
+      { co: 'aisb', need: null, glyph: 'database', tone: 'brand', text: 'Aisha Rahman imported a SQL listing, 24 vouchers linked', who: 'AISB · 12 Nov' },
+      { co: 'all', need: 'admin', glyph: 'vault', tone: 'ok', text: 'Encrypted backup made and checked (automatic)', who: '11 Nov' },
+      { co: 'aisb', need: null, glyph: 'bank', tone: 'brand', text: 'Aisha Rahman imported the October statement, 14 lines, 8 matched', who: 'AISB · Maybank current · 3 Nov 09:40' }
+    ];
+    if (attention) ACTS.unshift({ co: 'all', need: 'admin', glyph: 'alert', tone: 'bad', text: '2 changes were made to the records outside this app', who: 'Found by the check · today 08:00' });
+    const acts = ACTS.filter(a => can(a.need) && (a.co === 'all' || cos.includes(a.co))).slice(0, 6).map(a => ({ ...a, tone: tone(a.tone) }));
+    // its own states (States patterns): loading with the page, could not load with Try again, and empty after the filters
+    const actLoading = view === 'loading' || S.actBusy;
+    const actError = !actLoading && (this.props.activity ?? 'normal') === 'fails' && !S.actFixed;
+    const actEmpty = !actLoading && !actError && !acts.length;
+
+    // ---- the four rows of Overview cards: samples.md section 16. Each card opens its page for the same company and month. ----
+    const MONEY = 'font-variant-numeric:tabular-nums;';
+    const vs = t => MONEY + 'font-weight:600;color:' + ({ bad: K.bad, warn: K.warn, ok: K.ok, muted: K.ink3 }[t] || K.ink);
+    const R = (label, value, t) => ({ label, value, vstyle: vs(t) });
+    const NAMES = { oct: 'October', sep: 'September', nov: 'November', aug: 'August' };
+    const notSet = { empty: 'No checklist for this month yet' };
+    // SQL cards: the date of the SQL data for the Kept in SQL Account companies shown, and the sentence for one with nothing fetched
+    const sqlShown = (cos.map(c => CO[c]).find(x => x.kind === 'sql' && x.sqlTo) || {}).sqlTo || '';
+    const noSql = 'Nothing fetched from SQL yet';
+    // Each card gives, for one company, either { empty } or what to draw; null hides that company's line.
+    const NA_V = { oct: { aisb: [3, 0, 2, 5, 4], ai: [1, 1, 0, 0] }, sep: { aisb: [0, 0, 2, 0, 0] }, aug: { aisb: [0, 0, 1, 0, 0] } };
+    const NA_L = [['Past due', REG, 'bad'], ['Part paid', REG, 'warn'], ['Documents missing', CHK + '#missing-documents', 'warn'], ['Lines to explain', 'BankReview.dc.html', 'warn'], ['Not in SQL', 'Sql.dc.html', 'warn']];
+    const counters = (vals, labels) => vals.map((n, i) => ({ n: String(n), label: labels[i][0], href: H(labels[i][1]), tip: tip(labels[i][1]),
+      sr: labels[i][0] + ', ' + (n ? n : 'none') + '. Opens its list',
+      fig: 'font-size:20px;font-weight:700;' + MONEY + 'color:' + (n ? ({ bad: K.bad, warn: K.warn }[labels[i][2]] || K.ink) : K.ink3) }));
+    const CARDS = {
+      attention: { title: 'Needs attention', glyph: 'alert', tone: 'bad', follows: true, href: null, empty: 'Nothing needs attention',
+        foot: () => 'Each number opens its list, filtered', counters: true,
+        get: c => { const v = ((NA_V[m] || {})[c]) || (CO[c].kind === 'sql' ? [0, 0, 0, 0, 0] : [0, 0, 0, 0]); return { counters: counters(v, NA_L), zero: v.every(n => !n) }; } },
+    };
+
+    const failing = cardMode === 'one-fails' && !S.retried.bank ? 'bank' : null;
+    const card = id => {
+      const d = CARDS[id];
+      const per = cos.map(c => ({ c, v: d.get(c) })).filter(x => x.v !== null);
+      if (d.hideZero && !per.length) return null;                     // Paid without approval on file: hidden at zero
+      const allEmpty = per.every(x => x.v.empty || x.v.zero);
+      // All companies with different empty sentences (AISB's November budget, AI not set up): one block each, not one sentence
+      const mixed = isAll && per.length > 1 && new Set(per.map(x => x.v.empty || '')).size > 1;
+      const busy = S.cardBusy === id, failed = failing === id && !busy;
+      const empty = !busy && !failed && allEmpty && !mixed;
+      const stale = d.sql && cardMode === 'out-of-date' && !!sqlShown && !failed && !busy;
+      const blocks = (empty || failed || busy) ? [] : per.map(({ c, v }, i) => {
+        const b = { hasHead: isAll, code: CO[c].code, chip: 'cp ' + (CO[c].kind === 'sql' ? 'info' : 'mute'), kind: CO[c].label,
+          isEmpty: !!v.empty, empty: v.empty || '', hasBig: !!v.big, big: v.big || '', unit: v.unit || '',
+          bigStyle: (v.bigSmall ? 'font-size:15px;font-weight:700;' : 'font-family:\'Space Grotesk\',Inter,sans-serif;font-size:' + (isAll ? 20 : 26) + 'px;font-weight:600;') + MONEY + 'color:' + ({ bad: K.bad, muted: K.ink3 }[v.bigTone] || K.ink),
+          hasBar: v.pct !== undefined, pct: v.pct || 0, barLabel: v.barLabel || '', bar: 'width:' + (v.pct || 0) + '%;height:100%;border-radius:99px;background:' + (v.pct === 100 ? K.okBar : K.brandBar),
+          rows: v.empty ? [] : (v.rows || []), hasCounters: !!v.counters && !v.empty, counters: (v.counters || []).map((k, j) => ({ ...k, id: 'ov-card-' + id + '-' + i + '-' + j })),
+          cgrid: 'display:grid;grid-template-columns:repeat(auto-fit,minmax(' + (id === 'requests' ? 150 : 120) + 'px,1fr));gap:8px',
+          hasNote: !!v.note, note: v.note || '',
+          style: 'display:flex;flex-direction:column;gap:6px;min-width:0' + (isAll && i ? ';padding-top:10px;border-top:1px solid ' + K.line : '') };
+        return b;
+      });
+      // All companies: a total line where the samples give one
+      if (!empty && !failed && !busy && isAll && per.length > 1) {
+        const totalBlock = rows => ({ hasHead: false, code: '', chip: '', kind: '', isEmpty: false, empty: '', hasBig: false, big: '', unit: '', bigStyle: '', hasBar: false, pct: 0, barLabel: '', bar: '',
+          rows, hasCounters: false, counters: [], cgrid: '', hasNote: false, note: '', style: 'display:flex;flex-direction:column;gap:6px;padding-top:10px;border-top:1px solid ' + K.line });
+        if (id === 'budget' && per.some(x => x.v.funds)) {
+          const sum = per.reduce((s, x) => s + (x.v.funds ? Number(x.v.funds.replace(/[^\d.]/g, '')) : 0), 0);
+          blocks.push(totalBlock([R('Funds to request, all companies', 'RM ' + sum.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','))]));
+        }
+        if (id === 'headcount') {
+          const t = per.reduce((s, x) => (x.v.count ? s.map((n, j) => n + x.v.count[j]) : s), [0, 0, 0]);
+          blocks.push(totalBlock([R('All companies', t[0] + ' in employment · ' + t[1] + ' joiner' + (t[1] === 1 ? '' : 's') + ' · ' + t[2] + ' leavers')]));
+        }
+      }
+      const isLink = !!d.href && !failed;
+      const firstEmpty = (per.find(x => x.v.empty) || {}).v || {};
+      const emptyText = d.counters ? d.empty : (per.length === 1 ? firstEmpty.empty : (per.every(x => x.v.empty === firstEmpty.empty) ? firstEmpty.empty : d.empty)) || d.empty;
+      const tTone = failed ? 'bad' : empty ? 'muted' : d.tone;
+      return {
+        id, title: d.title, glyph: d.glyph, iconTone: tone(tTone), when: d.follows ? monthLabel : d.when,
+        tile: 'width:32px;height:32px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + K.wash[tTone],
+        isLink, noLink: !isLink, href: isLink ? H(d.href) : '', tip: isLink ? tip(d.href) : '', opens: d.opens || '',
+        cls: 'ovc' + (isLink ? ' lk' : ''), style: 'height:100%',
+        isLoading: busy, isFailed: failed, retry: () => this.retryCard(id), retryId: 'ov-retry-' + id, linkId: 'ov-card-' + id, headId: 'ov-head-' + id,
+        isEmpty: empty, emptyText, hasEmptyNote: empty && per.length === 1 && !!firstEmpty.note, emptyNote: firstEmpty.note || '',
+        hasBlocks: blocks.length > 0, blocks,
+        isStale: stale, stale: id === 'pl' ? 'SQL data runs to 12 Nov, fetch again' : 'as at 12 Nov, fetch again',
+        foot: failed ? 'The other cards are not affected' : d.foot()
+      };
+    };
+    const grid = n => 'display:grid;grid-template-columns:repeat(auto-fit,minmax(' + n + 'px,1fr));gap:16px;align-items:stretch';
+    // Needs attention keeps its own card: five counters, each opening its list.
+    const attnRows = [{ hid: 'ov-row-attention', hasTitle: false, title: 'Needs attention', note: '', grid: grid(320), cards: [card('attention')] }];
+
+    // ---- the Payments, Accounting and HR rows: samples.md section 16, one calm card each. Title, one headline, one note,
+    // with All companies a line per company, then one link and an info tip saying where the figures come from.
+    // A card gives, per company, { empty, short } when there is nothing to show (short is its line with All companies),
+    // or { u, n, head, line, note }: u is the unit, so a total is drawn only when every company shown has the same one
+    // (else the main company's figure, its code in the note); zero marks a company with none. Never branches on the code.
+    const sqlDate = cardMode === 'out-of-date' ? '12 Nov' : sqlShown;
+    const r0 = n => String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const r2 = n => Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const C2 = {
+      checklist: { title: 'Checklist', glyph: 'checklist', tone: 'brand', href: CHK, open: 'Open checklist', where: ', Payments, Monthly checklist', empty: 'No checklist for this month yet',
+        src: () => 'Items ticked on the Monthly checklist for ' + monthLabel + ', out of that month’s total.',
+        get: c => {
+          // From October the two built-in items (Approvals on file for every payment, Month reviewed) join every company's
+          // checklist (samples D13): AIL and AIP have nothing paid without approval, so the approvals item ticks itself.
+          // AISB November (set up 18 Nov 09:05): the 27 items plus the three joiner tasks for Daniel, Register Daniel with KWSP and PERKESO done 10 Nov.
+          const D = { oct: { aisb: [18, 27], ai: [15, 22], ail: [10, 14], aip: [12, 18] }, sep: { aisb: [23, 25], ai: [20, 20, 'filed 5 Oct'], ail: [12, 12], aip: [15, 15] }, nov: { aisb: [1, 30] } };
+          const d = (D[m] || {})[c];
+          if (!d) return { empty: 'No checklist for this month yet', short: 'No checklist yet', note: m === 'aug' ? 'Tracked from September 2026' : '' };
+          return { u: 'items', n: d[0], t: d[1], head: d[0] + ' of ' + d[1], line: d[0] + ' of ' + d[1], note: d[1] - d[0] ? (d[1] - d[0]) + ' still to do' : 'All done' + (d[2] ? ', ' + d[2] : '') };
+        },
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), t = L.reduce((s, x) => s + (x.t || 0), 0); return t ? { head: n + ' of ' + t, note: t - n ? (t - n) + ' still to do' : 'All done' } : { head: n + ' ticked', note: '' }; } },
+      due: { title: 'Due and overdue', glyph: 'clock', tone: 'warn', today: true, href: 'ToPay.dc.html#from-due', open: 'Open To pay', where: ', Payments, To pay', empty: 'Nothing due',
+        src: () => 'From To pay, as at today: what is overdue, and what falls due in the next 7 days.',
+        get: c => ({ aisb: { u: 'n', n: 2, n2: 4, head: '2 overdue', headTone: 'bad', line: 'RM 11,726.50 overdue', lineTone: 'bad', note: '4 due in the next 7 days', bit: 'AISB: 2 overdue, RM 11,726.50; 4 due in the next 7 days, RM 2,228.00 and USD 1,200.00.' },
+          ai: { u: 'n', n: 1, n2: 0, head: '1 overdue', headTone: 'bad', line: 'RM 4,478.00 overdue', lineTone: 'bad', note: 'nothing due in the next 7 days', bit: 'AI: 1 overdue, RM 4,478.00; nothing due in the next 7 days.' } }[c]
+          || { u: 'n', n: 0, n2: 0, zero: true, head: '0 overdue', headTone: 'muted', line: 'None', note: 'nothing due in the next 7 days' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), n2 = L.reduce((s, x) => s + x.n2, 0); return { head: n + ' overdue', headTone: n ? 'bad' : 'muted', note: n2 ? n2 + ' due in the next 7 days' : 'nothing due in the next 7 days' }; } },
+      funds: { title: 'Funds to request', glyph: 'budget', tone: 'brand', href: 'Budget.dc.html', open: 'Open Budget', where: ', Payments, Budget', empty: 'No checklist for this month yet',
+        src: () => (m === 'oct' ? 'From the Budget as at 19 Oct' : 'From the Budget') + ': what is still to pay for ' + monthLabel + ', less the bank balance entered.',
+        get: c => {
+          // null: no RM balance entered (AI has only Maybank FCA, in USD). It counts as none in the All companies total,
+          // which is then the total of the companies with a balance; its line reads Balance not entered.
+          const F = { oct: { aisb: 37132.75, ai: null, ail: 6420, aip: 9880 }, sep: { aisb: 31200, ai: null, ail: 5980, aip: 9100 } }[m] || {};
+          const B = m === 'oct' ? { aisb: 'AISB: still to pay RM 93,923.10, less RM 56,790.35 in the bank on 19 Oct.' } : {};
+          if (F[c] === null) return { empty: 'Enter the bank balance to see funds to request', short: 'Balance not entered', asZero: true };
+          if (F[c] !== undefined) return { u: 'RM', n: F[c], head: 'RM ' + r0(F[c]), line: 'RM ' + r2(F[c]), note: 'to cover what’s still to pay', bit: B[c] };
+          if (m === 'nov' && CO[c].novSet) return { empty: 'Enter the bank balance to see funds to request', short: 'Balance not entered' };
+          return { empty: 'No checklist for this month yet', short: 'Not set up' };
+        },
+        sum: L => ({ head: 'RM ' + r0(L.reduce((s, x) => s + x.n, 0)), note: 'to cover what’s still to pay' }) },
+      unapproved: { title: 'Paid without approval on file', glyph: 'approval', tone: 'bad', href: 'Approvals.dc.html#from-overview', open: 'Open Approvals', where: ', Payments, Approvals, filtered to these payments', empty: 'None', hideZero: true,
+        src: () => 'Payments made with no approved form on file, including paid more than approved.',
+        get: c => (m === 'oct' && c === 'aisb' ? { u: 'n', n: 2, amt: 25120, head: '2 payments', headTone: 'bad', line: '2', lineTone: 'bad', note: 'RM 25,120.00 paid', bit: 'AISB: Contractor — field works, RM 24,000.00; Stationery Mart, RM 1,120.00, RM 120.00 above approval.' }
+          : { u: 'n', n: 0, amt: 0, zero: true, head: '0 payments', line: 'None', note: '' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), a = L.reduce((s, x) => s + x.amt, 0); return { head: n + (n === 1 ? ' payment' : ' payments'), headTone: 'bad', note: 'RM ' + r2(a) + ' paid' }; } },
+      bank: { title: 'Bank', glyph: 'bank', tone: 'brand', href: 'Bank.dc.html', open: 'Open bank', where: ', Accounting, Bank and reconciliation', empty: 'No statement imported for ' + monthLabel,
+        src: () => 'Balances at the latest statement line; in and out are the month’s bank lines.',
+        get: c => {
+          // [currency, balance across the company's accounts, in, out, the accounts and statement dates]
+          const D = { oct: { aisb: ['RM', 92325.55, 55984.20, 106077.00, 'AISB: Maybank current RM 34,314.15 and Maybank savings RM 58,011.40, statements to 31 Oct.'], ai: ['USD', 17480.00, 5000.00, 0, 'AI: Maybank FCA USD 17,480.00, statement to 30 Oct.'] },
+            sep: { aisb: ['RM', 92418.35, 12000.00, 15581.65, 'AISB: Maybank current, statement to 30 Sep.'], ai: ['USD', 12480.00, 0, 0, 'AI: Maybank FCA, statement to 30 Sep.'] }, aug: { aisb: ['RM', 96000.00, 38500.00, 43939.60, 'AISB: Maybank current, statement to 31 Aug.'] } };
+          const d = (D[m] || {})[c];
+          if (!d) return { empty: 'No statement imported for ' + monthLabel, short: 'No statement' };
+          return { u: d[0], n: d[1], inn: d[2], out: d[3], head: d[0] + ' ' + r0(d[1]), line: d[0] + ' ' + r2(d[1]), note: 'in ' + d[0] + ' ' + r0(d[2]) + ' · out ' + d[0] + ' ' + r0(d[3]), bit: d[4] };
+        },
+        sum: L => { const u = L[0].u, s = k => L.reduce((t, x) => t + x[k], 0); return { head: u + ' ' + r0(s('n')), note: 'in ' + u + ' ' + r0(s('inn')) + ' · out ' + u + ' ' + r0(s('out')) }; } },
+      pl: { title: 'Profit or loss', glyph: 'chart', tone: 'brand', href: 'BooksStatements.dc.html', open: 'Open Books', where: ', Accounting, Books, Profit and loss', empty: 'No books yet', sql: true,
+        src: () => (sqlShown ? 'From SQL’s books, journal to ' + sqlDate + '.' : 'From the books.'),
+        get: c => {
+          if (CO[c].kind === 'here') return { empty: 'No books yet', short: 'No books yet' };
+          if (!CO[c].sqlTo) return { empty: noSql, short: 'Nothing fetched' };
+          if (m === 'oct') return { u: 'RM', n: -103852.70, head: 'Loss RM 103,853', headTone: 'bad', line: 'Loss RM 103,852.70', lineTone: 'bad', note: 'Loss RM 885,816 year to date' };
+          if (m === 'sep') return { u: 'RM', n: 0, head: '—', headTone: 'muted', line: '—', lineTone: 'muted', note: 'Loss RM 781,964 Jan to Sep', bit: 'The books kept start on 1 Oct 2026.' };
+          if (m === 'nov') return { u: 'RM', n: 0, head: '—', headTone: 'muted', line: '—', lineTone: 'muted', note: 'Loss RM 885,816 year to 31 Oct', bit: 'Trial balance as at 31 Oct.' };
+          return { empty: 'No books before 1 Oct 2026', short: 'Before 1 Oct' };
+        },
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0); return { head: (n < 0 ? 'Loss RM ' : 'Profit RM ') + r0(n), headTone: n < 0 ? 'bad' : '', note: L[0].note }; } },
+      customers: { title: 'Customers overdue', glyph: 'users', tone: 'brand', today: true, href: 'BooksParties.dc.html#customers-overdue', open: 'Open customers', where: ', Accounting, Customers and suppliers, customers overdue', empty: 'No balances', sql: true,
+        src: () => (sqlShown ? 'As at ' + sqlDate + ', from SQL. ' : '') + 'Balances older than 30 days.',
+        get: c => (CO[c].kind === 'sql' && !CO[c].sqlTo ? { empty: noSql, short: 'Nothing fetched' }
+          : { aisb: { u: 'RM', n: 8500, k: 1, head: 'RM 8,500', headTone: 'bad', line: 'RM 8,500.00', lineTone: 'bad', note: '1 balance over 30 days', bit: 'AISB: brought forward on 300-000, not split by customer.' } }[c]
+          || { u: 'RM', n: 0, k: 0, zero: true, head: 'RM 0', headTone: 'muted', line: 'None', note: 'no balances over 30 days' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), k = L.reduce((s, x) => s + x.k, 0); return { head: 'RM ' + r0(n), headTone: n ? 'bad' : 'muted', note: k + (k === 1 ? ' balance' : ' balances') + ' over 30 days' }; } },
+      suppliers: { title: 'Suppliers due', glyph: 'inbox', tone: 'brand', today: true, href: 'BooksParties.dc.html#suppliers-due', open: 'Open suppliers', where: ', Accounting, Customers and suppliers, suppliers', empty: 'No balances', sql: true,
+        src: () => (sqlShown ? 'As at ' + sqlDate + ', from SQL. ' : '') + 'Bills overdue, and bills due in the next 14 days.',
+        get: c => (CO[c].kind === 'sql' && !CO[c].sqlTo ? { empty: noSql, short: 'Nothing fetched' }
+          : { aisb: { u: 'RM', n: 4050, d14: 0, head: 'RM 4,050 overdue', headTone: 'bad', line: 'RM 4,050.00 overdue', lineTone: 'bad', note: 'none due in the next 14 days', bit: 'AISB: 2 bills overdue, PI2607-019 and PI2610-013.' } }[c]
+          || { u: 'RM', n: 0, d14: 0, zero: true, head: 'RM 0 overdue', headTone: 'muted', line: 'None', note: 'none due in the next 14 days' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), d = L.reduce((s, x) => s + x.d14, 0); return { head: 'RM ' + r0(n) + ' overdue', headTone: n ? 'bad' : 'muted', note: d ? 'RM ' + r0(d) + ' due in the next 14 days' : 'none due in the next 14 days' }; } },
+      leave: { title: 'On leave', glyph: 'leave', tone: 'brand', href: 'HrLeave.dc.html#calendar', open: 'Open leave', where: ', HR, Leave, team calendar', empty: 'Add your staff to see this',
+        src: () => 'From Leave, for today and this week. The type of leave is never shown.',
+        get: c => ({ aisb: { u: 'p', n: 2, wk: 3, names: ['Aina', 'Khadijah'], head: '2 on leave', line: '2 on leave', note: 'Aina, Khadijah · 3 this week' },
+          ai: { u: 'p', n: 0, wk: 0, names: [], head: '0 on leave', headTone: 'muted', line: 'None', lineTone: 'muted', note: 'No one this week' } }[c]
+          || { empty: 'Add your staff to see this', short: 'No staff yet', asZero: true }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), w = L.reduce((s, x) => s + x.wk, 0), names = [].concat(...L.map(x => x.names)); return { head: n + ' on leave', headTone: n ? '' : 'muted', note: (names.length ? names.join(', ') : 'No one today') + ' · ' + w + ' this week' }; } },
+      dates: { title: 'Dates coming up', glyph: 'reminder', tone: 'brand', href: 'HrCalendar.dc.html#coming-up', open: 'Open calendar', where: ', HR, Staff, Calendar and reminders, filtered', empty: 'Add your staff to see this',
+        src: () => 'Probation, contract, passport and permit dates in the next 60 days, and November’s birthdays and work anniversaries. No names; a birthday is the day and month only, never an age or a year of birth.',
+        get: c => ({ aisb: { u: 'd', n: 2, bd: 1, head: '2 in the next 60 days', line: '2 dates', note: 'and 1 birthday or anniversary in Nov' },
+          ai: { u: 'd', n: 1, bd: 1, head: '1 in the next 60 days', line: '1 date', note: 'and 1 birthday or anniversary in Nov' } }[c]
+          || { empty: 'Add your staff to see this', short: 'No staff yet', asZero: true }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), b = L.reduce((s, x) => s + x.bd, 0); return { head: n + ' in the next 60 days', note: 'and ' + (b ? b + (b === 1 ? ' birthday or anniversary' : ' birthdays or anniversaries') : 'no birthdays or anniversaries') + ' in Nov' }; } },
+      headcount: { title: 'Headcount', glyph: 'staff', tone: 'brand', href: 'HrStaff.dc.html', open: 'Open staff', where: ', HR, Staff', empty: 'Add your staff to see this',
+        src: () => 'From Staff, as at today: people in employment, and joiners and leavers this month.',
+        get: c => ({ aisb: { u: 'p', n: 9, j: 1, l: 0, head: '9 in employment', line: '9', note: '1 joiner and 0 leavers this month' },
+          ai: { u: 'p', n: 5, j: 0, l: 0, head: '5 in employment', line: '5', note: '0 joiners and 0 leavers this month' } }[c]
+          || { empty: 'Add your staff to see this', short: 'No staff yet', asZero: true }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), j = L.reduce((s, x) => s + x.j, 0), l = L.reduce((s, x) => s + x.l, 0); return { head: n + ' in employment', note: j + (j === 1 ? ' joiner' : ' joiners') + ' and ' + l + (l === 1 ? ' leaver' : ' leavers') + ' this month' }; } },
+      requests: { title: 'Requests waiting', glyph: 'claim', tone: 'brand', href: 'Approvals.dc.html#hr-requests', open: 'Open Approvals', where: ', Payments, Approvals', empty: 'Nothing waiting',
+        src: () => 'Claims, advances and salary runs: waiting for approval on Approvals, and approved but not yet paid on To pay.',
+        get: c => ({ aisb: { u: 'r', n: 6, a: 2, p: 4, head: '6 waiting', line: '6 waiting', note: '2 to approve · 4 approved, to pay' } }[c]
+          || { u: 'r', n: 0, a: 0, p: 0, zero: true, head: '0 waiting', line: 'None', note: '' }),
+        sum: L => { const n = L.reduce((s, x) => s + x.n, 0), a = L.reduce((s, x) => s + x.a, 0), p = L.reduce((s, x) => s + x.p, 0); return { head: n + ' waiting', note: a + ' to approve · ' + p + ' approved, to pay' }; } }
+    };
+    const STALE2 = { pl: 'SQL data runs to 12 Nov, fetch again', customers: 'as at 12 Nov, fetch again', suppliers: 'as at 12 Nov, fetch again' };
+    const card2 = id => {
+      const d = C2[id];
+      const per = cos.map(c => ({ c, v: d.get(c) }));
+      const none = per.every(x => x.v.empty || x.v.zero);
+      if (d.hideZero && none) return null;                     // Paid without approval on file: hidden at zero
+      const busy = S.cardBusy === id, failed = failing === id && !busy, shown = !busy && !failed;
+      const empty = shown && none;
+      const many2 = per.length > 1;
+      const live = per.filter(x => !x.v.empty);
+      const agree = live.length > 0 && per.every(x => !x.v.empty || x.v.asZero) && new Set(live.map(x => x.v.u)).size === 1;   // a company with no staff yet counts as none
+      const main = live.find(x => !x.v.zero) || live[0];
+      let head = '', note = '', headTone = '';
+      if (shown && !empty) {
+        if (many2 && agree) { const s = d.sum(live.map(x => x.v)); head = s.head; note = s.note || ''; headTone = s.headTone || ''; }
+        else { head = main.v.head; headTone = main.v.headTone || ''; note = main.v.note || ''; if (many2) note = CO[main.c].code + (note ? ' · ' + note : ' only'); }
+      }
+      const sentences = [...new Set(per.map(x => x.v.empty || d.empty))];
+      const emptyText = sentences.length === 1 ? sentences[0] : (per[0] && per[0].v.empty) || d.empty;
+      if (empty && !many2) note = (per[0] && per[0].v.empty && per[0].v.note) || '';   // only an empty sentence's own note, never a zero line's
+      // the company lines: All companies only; for an empty card only when the companies' sentences differ
+      const hasLines = shown && many2 && (!empty || sentences.length > 1);
+      const lines = hasLines ? per.map(({ c, v }) => ({ code: CO[c].code, value: v.empty ? v.short : v.line,
+        vstyle: 'font-variant-numeric:tabular-nums;font-weight:600;color:' + (v.empty || v.zero || v.lineTone === 'muted' ? K.ink3 : v.lineTone === 'bad' ? K.bad : K.ink) })) : [];
+      const stale = !!d.sql && cardMode === 'out-of-date' && !!sqlShown && shown;
+      const isLink = !failed;
+      const tTone = failed ? 'bad' : empty ? 'muted' : d.tone;
+      return {
+        id, title: d.title, glyph: d.glyph, iconTone: tone(tTone), isToday: !!d.today,
+        tile: 'width:24px;height:24px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + K.wash[tTone],
+        cls: 'ovc cm' + (isLink ? ' lk' : ''),
+        isLoading: busy, isFailed: failed, retry: () => this.retryCard(id), retryId: 'ov-retry-' + id, linkId: 'ov-card-' + id, headId: 'ov-head-' + id,
+        isEmpty: empty, emptyText, hasHead: shown && !empty, head, headStyle: 'color:' + (headTone === 'bad' ? K.bad : headTone === 'muted' ? K.ink3 : K.ink), hasNote: shown && !!note, note,
+        isStale: stale, stale: STALE2[id] || '',
+        hasLines, lines,
+        isLink, noLink: !isLink, href: isLink ? H(d.href) : '', tip: isLink ? tip(d.href) : '', open: d.open, linkSr: d.where, foot: failed ? 'The other cards are not affected' : '',
+        hasTip: shown, tipId: 'ov-tip-' + id, tipLabel: 'Where the figures come from: ' + d.title,
+        source: [d.src()].concat(per.map(x => x.v.bit).filter(Boolean)).join(' '),
+        tipCls: 'tt' + (S.tipOn === id ? ' on' : '') + (S.tipOff === id ? ' off' : ''),
+        tipToggle: () => this.setState(s => ({ tipOn: s.tipOn === id ? null : id, tipOff: null })),
+        tipKey: e => { if (e && e.key === 'Escape') this.setState({ tipOn: null, tipOff: id }); },
+        tipReset: () => { if (this.state.tipOn === id || this.state.tipOff === id) this.setState({ tipOn: null, tipOff: null }); }
+      };
+    };
+    const rows = [
+      { key: 'payments', head: 'Payments · ' + monthLabel, note: '', ids: ['checklist', 'due', 'funds', 'unapproved'], hr: false },
+      { key: 'accounting', head: 'Accounting · ' + monthLabel + ', balances as at today', note: '', ids: ['bank', 'pl', 'customers', 'suppliers'], hr: false },
+      { key: 'hr', head: 'HR · today', note: 'Only for people with the HR right · no pay, IC, leave type or medical detail', ids: ['leave', 'dates', 'headcount', 'requests'], hr: true }
+    ].filter(r => !(r.hr && marcus)).map(r => ({ hid: 'ov-row-' + r.key, head: r.head, hasNote: !!r.note, note: r.note, cards: r.ids.map(card2).filter(Boolean) }));
+
+    const dismissed = S.gone || this.props.rollover === false;
+    const loadingCards = S.loading || view === 'loading';
+    const whoAll = isAll;
+    return {
+      coMode: firstRun ? 'none' : mode, sbCo: firstRun ? 'all' : co, sbKind: isAll ? 'sqlPayroll' : CO[co].sb, sbAccess: marcus ? 'noHrNoAdmin' : 'full',
+      topCo: firstRun ? 'none' : co, topAll: firstRun || mode === 'one' ? 'no' : 'yes', topCos: mode === 'one' ? 'one' : mode === 'four' ? 'four' : 'two', topUser: marcus ? 'marcus' : 'aisha',
+      trail: attention ? 'attention' : 'ok', off,
+      setMonth: o => this.setMonth(o), setCompany: c => this.setCompany(c),
+      hasCompany: !firstRun, firstRun,
+      title: firstRun ? 'Welcome to HR Payments' : monthLabel + ' cycle',
+      lead: firstRun ? 'Records stay on this PC. Nothing is sent anywhere.' : "The month's checklist and payments, including bills and statutory payments paid early in " + months[(2026 * 12 + 10 + off) % 12] + '.',
+      monthLabel,
+      whoChip: whoAll ? 'cp mute' : 'cp ' + (CO[co].kind === 'sql' ? 'info' : 'mute'), whoCode: whoAll ? 'All companies' : CO[co].code,
+      whoNote: whoAll ? 'Pick one company with the company button above' : CO[co].label + ' · the company button above changes it',
+      cardsLoading: loadingCards && !firstRun, cardsOn: !loadingCards && !firstRun, attnRows, rows,
+      cardsStyle: 'display:flex;flex-direction:column;gap:28px;' + 'transition:opacity ' + (S.fade ? '.1s' : '.14s') + ' ease-out;opacity:' + (S.fade ? 0 : 1),
+      mvCls: loadingCards || !S.mv ? '' : (S.dir > 0 ? (S.mv % 2 ? 'mfNa' : 'mfNb') : (S.mv % 2 ? 'mfPa' : 'mfPb')),
+      // the audit trail is an Admin page: no banner and no link to it for someone without Admin (Marcus Teoh)
+      trailAttn: attention && !firstRun && can('admin'), canTrail: can('admin'),
+      // shown only when a company on view has November set up (AISB); never for AI, AIL or AIP alone
+      rolloverOn: !dismissed && off === 0 && !firstRun && !emptyState && !nextError && !nextLoading && octLeft > 0 && novCos.length > 0,
+      rollTitle: novCos.length === cos.length ? 'November has started' : novCos.map(c => CO[c].code).join(' and ') + '’s November is set up', sbTodo: (emptyState || nextError || firstRun) ? 'none' : 'list', octLeft: octThings,
+      goNext: () => this.setMonth(1), dismissRollover: () => this.setState({ gone: true }),
+      nextSteps: [
+        { n: '1', title: 'A bank account', text: 'Add the account each company pays from.' },
+        { n: '2', title: 'Recurring payments', text: 'Rent, salaries and statutory payments that repeat.' },
+        { n: '3', title: 'Set up the month', text: 'Adds the checklist and the recurring payments.' },
+        { n: '4', title: 'A first backup', text: 'An encrypted copy, kept somewhere else.' }
+      ],
+      listStyle: 'transition:opacity ' + (S.fade ? '.1s' : '.14s') + ' ease-out;opacity:' + (S.fade ? 0 : 1),
+      nextLoading, nextRows: stateRows && !nextLoading, rowsHead, rowsMore,
+      moreStyle: 'display:grid;grid-template-rows:' + (S.all ? '1fr' : '0fr') + ';opacity:' + (S.all ? 1 : 0) + ';visibility:' + (S.all ? 'visible' : 'hidden') + ';transition:grid-template-rows .2s cubic-bezier(.22,1,.36,1),opacity .2s ease-out,visibility 0s linear ' + (S.all ? '0s' : '.2s'),
+      caughtUp: emptyState, caughtTitle: view === 'nothing-recent' ? 'Nothing due in the recent months' : 'All caught up',
+      nextDue: '3 Dec · e-CP22 for Daniel',
+      nextError, retryNext: () => this.setState({ fixed: true }),
+      hasOlder: older.length > 0, older,
+      canMore, moreWord: S.all ? 'Show fewer' : 'Show all', moreCount: S.all ? '' : String(total),
+      toggleAll: () => this.setState({ all: !S.all, v: S.v + 1 }), allAttr: S.all ? 'true' : 'false',
+      tickCls: S.v % 2 ? 'tkA' : 'tkB',
+      acts, actLoading, actError, actEmpty, actList: !actLoading && !actError && acts.length > 0,
+      actEmptyText: 'No activity for ' + (isAll && many ? 'these companies' : cos.length ? CO[cos[0]].code : 'this company') + ' yet',
+      retryAct: () => this.retryActivity()
+    };
+  }
+}
+</script>
+</body>
+</html>

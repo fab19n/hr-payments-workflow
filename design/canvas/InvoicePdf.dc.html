@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Printed invoice</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg,.pl{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+.pl:hover{background:#EAF0FD !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="einvoices" company="aisb" kind="sqlPayroll" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="e-Invoices" sub="Printed invoice" company="aisb" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="MyInvois.dc.html" class="hg" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 4px; margin: -6px 0 4px -4px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>e-Invoices</a>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">AISB · Kept in SQL Account</span>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Printed invoice</h1>
+        <p style="margin: 0; color: #46546A; max-width: 760px">What opens when you press a PDF in the Print column of e-Invoices: a customer invoice, debit note or credit note, or a self-billed invoice, laid out as SQL Account prints it, on US Letter. The same document goes into the month's zip, made by <b style="color: #0F1A2B">All of the month</b>.</p>
+      </div>
+
+      <div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C7D6F7">
+        <span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="lock" tone="brand" size="20" hint-size="20px,20px"></dc-import></span>
+        <p style="margin: 0; color: #0F1A2B; max-width: 920px"><b>The layout is SQL's own and is not restyled.</b> Every text sits where SQL prints it, in SQL's fonts and sizes, so a printed copy matches what SQL Account produces. Only the frame around the page and the notes beside it belong to this app: nothing on the paper follows this app's look. A line too long for its place shrinks to half SQL's size, and past that its end is cut off and the cut is noted.</p>
+      </div>
+
+      <div role="group" aria-label="State to show" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%">
+        <sc-for list="{{states}}" as="s" hint-placeholder-count="11"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+        <section aria-labelledby="ip-lead-h" class="rv" style="flex: 2 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <h2 id="ip-lead-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{leadTitle}}</h2>
+          <p style="margin: 0; color: #46546A">{{leadText}}</p>
+          <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="5"><dt style="color: #5F6C80; font-weight: 600">{{f.k}}</dt><dd style="margin: 0; color: #0F1A2B; min-width: 0; overflow-wrap: anywhere">{{f.v}}</dd></sc-for>
+          </dl>
+        </section>
+
+        <section aria-labelledby="ip-set-h" style="flex: 1 1 340px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <h2 id="ip-set-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Print settings</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px"><b style="color: #0F1A2B">Print settings still missing</b> (invoices print without them):</p>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+            <sc-for list="{{missing}}" as="m" hint-placeholder-count="3"><li>{{m.t}}</li></sc-for>
+          </ul>
+          <div style="margin-top: auto"><a href="SetupCompanies.dc.html" style="display: inline-flex; align-items: center; height: 40px; font-weight: 600; font-size: 13px; text-decoration: none">Open Setup › Companies</a></div>
+        </section>
+      </div>
+
+      <sc-if value="{{hasNotes}}" hint-placeholder-val="{{ true }}">
+        <section aria-labelledby="ip-notes-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><h2 id="ip-notes-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{notesTitle}}</h2></div>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">{{notesLead}}</p>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #0F1A2B">
+            <sc-for list="{{notes}}" as="n" hint-placeholder-count="2"><li style="overflow-wrap: anywhere">{{n.t}}</li></sc-for>
+          </ul>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isLook}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="ip-fonts-h" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 20px 22px 12px; display: flex; flex-direction: column; gap: 8px">
+            <h2 id="ip-fonts-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Fonts</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 920px"><b style="color: #0F1A2B">Fonts:</b> SQL's font Tahoma (most of the invoice's words) isn't on this computer (or its file is damaged), so invoices print it in DejaVu Sans, a free look-alike on this computer, never larger than SQL's size.</p>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 920px">SQL's font Tahoma Bold (the title, the document number and Total) isn't on this computer (or its file is damaged), so invoices print it in DejaVu Sans Bold, a free look-alike on this computer, never larger than SQL's size.</p>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 920px">To print exactly as SQL does, install tahoma.ttf, tahomabd.ttf on this computer from a Windows computer's Fonts folder, or put licensed copies of them in a folder outside the records folder and name that folder in HRP_FONT_DIR.</p>
+            <p style="margin: 0; color: #5F6C80; font-size: 12px; max-width: 920px">The table lists all seven of SQL's fonts. On this computer only the two Tahoma rows apply; a hosted server with no Windows fonts would print a sentence for each of the seven.</p>
+          </div>
+          <div style="overflow-x: auto; border-top: 1px solid #EEF1F5">
+            <table style="width: 100%; min-width: 560px; border-collapse: collapse">
+              <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">SQL's fonts and what prints when one is missing</caption>
+              <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">SQL font</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Used for</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">If missing, prints in</th></tr></thead>
+              <tbody>
+                <sc-for list="{{fonts}}" as="x" hint-placeholder-count="7"><tr class="hr" style="border-top: 1px solid #F1F3F7"><td style="padding: 10px 12px 10px 22px; font-weight: 600">{{x.name}}</td><td style="padding: 10px 12px; color: #46546A">{{x.use}}</td><td style="padding: 10px 22px 10px 12px; color: #46546A">{{x.alt}}</td></tr></sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isPaper}}" hint-placeholder-val="{{ true }}">
+        <section aria-labelledby="ip-paper-h" style="background: #E9ECF1; border: 1px solid #DDE2EA; border-radius: 16px; padding: 20px 24px 28px; overflow-x: auto">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 16px">
+            <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+            <h2 id="ip-paper-h" style="margin: 0; font-size: 14px; font-weight: 600">{{fileName}}</h2>
+            <span style="color: #46546A; font-size: 13px">{{pageCount}} · US Letter, 215.9 × 279.4 mm · opens in a new tab</span>
+            <span style="{{chipStyle}}">{{chipText}}</span>
+          </div>
+          <div style="display: flex; gap: 28px; width: max-content; margin: 0 auto">
+            <sc-for list="{{pages}}" as="pg" hint-placeholder-count="1">
+              <div role="img" aria-label="{{pg.aria}}" style="position: relative; flex: none; width: 215.9mm; height: 279.4mm; background: #FFFFFF; color: #000000; overflow: hidden; box-shadow: 0 1px 3px rgba(16,24,40,.22), 0 10px 28px rgba(16,24,40,.14)">
+                <sc-for list="{{pg.items}}" as="i" hint-placeholder-count="60"><div style="{{i.style}}">{{i.t}}</div></sc-for>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section aria-labelledby="ip-states-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 20px 22px 12px; display: flex; flex-direction: column; gap: 6px">
+            <h2 id="ip-states-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">The e-Invoice block, bottom right of the last page</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">It follows what MyInvois says about the document. The page shown above is the highlighted row.</p>
+          </div>
+          <div style="overflow-x: auto; border-top: 1px solid #EEF1F5">
+            <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+              <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">What the e-Invoice block prints for each state</caption>
+              <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">State</th><th scope="col" style="padding: 10px 12px; font-weight: 600">When</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">What prints</th></tr></thead>
+              <tbody>
+                <sc-for list="{{einStates}}" as="e" hint-placeholder-count="5"><tr style="{{e.style}}"><td style="padding: 11px 12px 11px 22px; font-weight: 600; white-space: nowrap">{{e.name}}</td><td style="padding: 11px 12px; color: #46546A">{{e.when}}</td><td style="padding: 11px 22px 11px 12px; color: #0F1A2B">{{e.prints}}</td></tr></sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isTabs}}" hint-placeholder-val="{{ false }}">
+        <section class="rv" aria-labelledby="ip-tabs-h" style="display: flex; flex-direction: column; gap: 14px">
+          <h2 id="ip-tabs-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 19px; font-weight: 600">What opens in the new tab when a document can't be printed</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="2">
+              <div style="flex: 1 1 460px; min-width: 0; border: 1px solid #C9D0DB; border-radius: 12px; overflow: hidden; background: #FFFFFF">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 12px; background: #E9ECF1; border-bottom: 1px solid #DDE2EA">
+                  <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 14px; border-radius: 8px 8px 0 0; background: #FFFFFF; font-size: 13px; font-weight: 600">Not printed</span>
+                  <span style="flex: 1 1 200px; min-width: 0; font: 400 12px ui-monospace, Consolas, monospace; color: #46546A; overflow-wrap: anywhere">{{t.url}}</span>
+                </div>
+                <div style="padding: 28px 24px 40px; min-height: 150px; background: #FFFFFF; color: #000000; font-family: 'Times New Roman', Times, serif; font-size: 16px; line-height: 1.4">{{t.text}}</div>
+                <div style="padding: 10px 14px; border-top: 1px solid #EEF1F5; background: #FAFBFC; color: #46546A; font-size: 12px">{{t.why}}</div>
+              </div>
+            </sc-for>
+          </div>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">The page is plain on purpose: it holds only the sentence, and nothing is saved or audited. Only a successful open adds an <b>Opened file</b> event to the audit trail.</p>
+          <section aria-labelledby="ip-refs-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+            <h3 id="ip-refs-h" style="margin: 0; font-size: 15px; font-weight: 600">The other reasons a document isn't printed</h3>
+            <p style="margin: 0; color: #46546A; font-size: 13px">Invented cases: IV2611-014 and PV2611-019 are not in the sample books, and the dates and amounts are examples.</p>
+            <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+              <sc-for list="{{reasons}}" as="r" hint-placeholder-count="6"><li style="overflow-wrap: anywhere">{{r.t}}</li></sc-for>
+            </ul>
+          </section>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isZip}}" hint-placeholder-val="{{ false }}">
+        <section class="rv" aria-labelledby="ip-zip-h" style="display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+            <div style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 16px 22px; border-bottom: 1px solid #EEF1F5">
+                <dc-import name="Icon" glyph="archive" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+                <h2 id="ip-zip-h" style="flex: 1 1 260px; margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">AISB Invoices 2026-10.zip</h2>
+                <span style="color: #46546A; font-size: 13px">3 files, one PDF per document</span>
+              </div>
+              <ul style="margin: 0; padding: 0; list-style: none">
+                <sc-for list="{{zipFiles}}" as="z" hint-placeholder-count="3"><li style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 12px 22px; border-top: 1px solid #F1F3F7"><dc-import name="Icon" glyph="document" tone="muted" size="18" hint-size="18px,18px"></dc-import><span style="font-weight: 600; font-family: ui-monospace, Consolas, monospace; font-size: 13px">{{z.name}}</span><span style="color: #46546A; font-size: 13px">{{z.what}}</span></li></sc-for>
+              </ul>
+            </div>
+            <div style="flex: 1 1 380px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+              <h3 style="margin: 0; font-size: 15px; font-weight: 600">Where it comes from</h3>
+              <p style="margin: 0; color: #46546A; font-size: 13px">On e-Invoices, above the Issued and Self-billed tables: <b style="color: #0F1A2B">Print</b> and <b style="color: #0F1A2B">All of the month</b>, for the month chosen. The button shows only when that tab has documents in the month:</p>
+              <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px">
+                <sc-for list="{{zipLinks}}" as="l" hint-placeholder-count="2"><li style="color: #46546A"><a href="MyInvois.dc.html" style="font-weight: 600">{{l.label}}</a> {{l.note}}</li></sc-for>
+              </ul>
+              <p style="margin: 0; color: #46546A; font-size: 13px">Each PDF is named by document number and name, like the single PDF; a repeated name gets " (2)". Opening the zip adds an <b style="color: #0F1A2B">Opened file</b> event (invoices) to the audit trail.</p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+            <section aria-labelledby="ip-np-h" style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+              <h3 id="ip-np-h" style="margin: 0; font-size: 15px; font-weight: 600">Not printed.txt</h3>
+              <p style="margin: 0; color: #46546A; font-size: 13px">Added to the zip only when a document of the month couldn't be printed. October's three documents all print, so the October zip has no such file. Example of how it reads, with an invented document, IV2610-040:</p>
+              <pre style="margin: 0; padding: 12px 14px; border-radius: 10px; background: #F5F6F8; border: 1px solid #E3E7ED; font: 400 12px/1.5 ui-monospace, Consolas, monospace; color: #0F1A2B; white-space: pre-wrap; overflow-wrap: anywhere">{{notPrinted}}</pre>
+            </section>
+            <section aria-labelledby="ip-cut-h" style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+              <h3 id="ip-cut-h" style="margin: 0; font-size: 15px; font-weight: 600">Text cut short.txt</h3>
+              <p style="margin: 0; color: #46546A; font-size: 13px">Added only when a line was too long for its place even at half SQL's size. It lists the lines whose end was cut off. Example, with an invented document, IV2610-041:</p>
+              <pre style="margin: 0; padding: 12px 14px; border-radius: 10px; background: #F5F6F8; border: 1px solid #E3E7ED; font: 400 12px/1.5 ui-monospace, Consolas, monospace; color: #0F1A2B; white-space: pre-wrap; overflow-wrap: anywhere">{{cutShort}}</pre>
+            </section>
+          </div>
+
+          <section aria-labelledby="ip-none-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+            <h3 id="ip-none-h" style="margin: 0; font-size: 15px; font-weight: 600">A month with nothing to print</h3>
+            <p style="margin: 0; color: #46546A; font-size: 13px">No file is made, and e-Invoices shows no All of the month button. If the zip's address is opened for such a month anyway (an old bookmark), the same plain page as above opens, here for self-billed invoices in October:</p>
+            <div style="max-width: 720px; border: 1px solid #C9D0DB; border-radius: 12px; overflow: hidden; background: #FFFFFF">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 12px; background: #E9ECF1; border-bottom: 1px solid #DDE2EA">
+                <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 14px; border-radius: 8px 8px 0 0; background: #FFFFFF; font-size: 13px; font-weight: 600">Not printed</span>
+                <span style="flex: 1 1 200px; min-width: 0; font: 400 12px ui-monospace, Consolas, monospace; color: #46546A; overflow-wrap: anywhere">/api/invoices/month.zip?kind=self_billed&amp;month=2026-10</span>
+              </div>
+              <div style="padding: 28px 24px 40px; min-height: 110px; background: #FFFFFF; color: #000000; font-family: 'Times New Roman', Times, serif; font-size: 16px; line-height: 1.4">AISB has no payment vouchers with a self-billed e-Invoice in October 2026 in the SQL documents fetched.</div>
+            </div>
+          </section>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"customer-valid","options":["customer-valid","self-billed-usd","credit-note","cancelled","not-validated","no-long-id","settings-missing","two-pages","look-alike","refused-tab","zip"],"section":"State to show"},"$preview":{"width":1440,"height":2500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { stage: (p && p.view) || 'customer-valid', say: '', swap: 0 };
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) this.setState({ stage: this.props.view || 'customer-valid', say: '' });
+  }
+  renderVals() {
+    const stage = this.state.stage;
+    const PW = 215.9, PT = 0.3528;
+    const look = stage === 'look-alike';
+    // Look-alike state: only Tahoma and Tahoma Bold are missing, so only they print in DejaVu Sans; Times, Trebuchet and Segoe stay SQL's.
+    const FAM = { tahoma: look ? "'DejaVu Sans', Verdana, sans-serif" : "Tahoma, Verdana, sans-serif", times: "'Times New Roman', Times, serif", trebuchet: "'Trebuchet MS', Tahoma, sans-serif", segoe: "'Segoe UI', Tahoma, sans-serif" };
+    // The code draws a look-alike at SQL's size times min(1, SQL's width of its reference text / the look-alike's), once per font.
+    // DejaVu Sans is wider than Tahoma, so its words are drawn a little smaller (0.93 here stands for that measured ratio); fonts found keep 1.
+    const SCALE = { tahoma: look ? 0.93 : 1, times: 1, trebuchet: 1, segoe: 1 };
+
+    // Stand-in identifiers for the sample: the same 26-letter UUIDs as the MyInvois board (its seed is the row's place, from 1).
+    const A = 'ABCDEFGHJKMNPQRSTVWXYZ0123456789';
+    const gen = (n, seed) => { let x = seed * 7919 + 13, o = ''; for (let i = 0; i < n; i++) { x = (Math.imul(x, 1103515245) + 12345) & 0x7fffffff; o += A[(x >>> 16) % A.length]; } return o; };
+    const share = (uuid, long) => 'https://myinvois.hasil.gov.my/' + uuid + '/share/' + long;
+
+    // A stand-in QR code: a 41 x 41 pattern (version 6, the size a share link of about 103 characters takes) with the three finder squares, drawn as one SVG path (not a scannable code).
+    const qrUri = text => {
+      const n = 41, m = [];
+      for (let y = 0; y < n; y++) { m.push([]); for (let x = 0; x < n; x++) m[y].push(0); }
+      let h = 7;
+      for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) % 2147483647;
+      for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { h = (h * 1103515245 + 12345) % 2147483648; m[y][x] = (h >> 8) % 2; }
+      const finder = (ox, oy) => {
+        for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+          const x = ox + dx, y = oy + dy;
+          if (x < 0 || y < 0 || x >= n || y >= n) continue;
+          const ring = dx === -1 || dy === -1 || dx === 7 || dy === 7 ? 0 : (dx === 0 || dy === 0 || dx === 6 || dy === 6) ? 1 : (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4) ? 1 : 0;
+          m[y][x] = ring;
+        }
+      };
+      finder(0, 0); finder(n - 7, 0); finder(0, n - 7);
+      for (let i = 8; i < n - 8; i++) { m[6][i] = i % 2 === 0 ? 1 : 0; m[i][6] = i % 2 === 0 ? 1 : 0; }
+      let d = '';
+      for (let y = 0; y < n; y++) { let x = 0; while (x < n) { if (m[y][x]) { const s = x; while (x < n && m[y][x]) x++; d += 'M' + s + ' ' + y + 'h' + (x - s) + 'v1h-' + (x - s) + 'z'; } else x++; } }
+      const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 41 41' shape-rendering='crispEdges'><path fill='#000' d='" + d + "'/></svg>";
+      return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+    };
+    // A stand-in logo for AISB: a blue square with a white mark.
+    const logoUri = 'url("data:image/svg+xml,' + encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 96'><rect width='100' height='96' rx='14' fill='#1D419A'/><path d='M22 72 L50 20 L78 72 Z' fill='none' stroke='#FFFFFF' stroke-width='9' stroke-linejoin='round'/><path d='M36 56 H64' stroke='#FFFFFF' stroke-width='9' stroke-linecap='round'/></svg>") + '")';
+
+    // The address block of a customer in Setup, as the PDF prints it.
+    const OFFICE = { name: 'Office tenant (Unit 3A)', addr: ['Unit 3A, Lot 12, Jalan Teknologi 3/1', 'Kota Damansara', '47810 Petaling Jaya, Selangor'], attn: 'Accounts department', tin: '' };
+    const TENANT = { name: 'Tenant', addr: ['Block A, Lot 12, Jalan Teknologi 3/1', 'Kota Damansara', '47810 Petaling Jaya, Selangor'], attn: 'Accounts department', tin: '' };
+    const AGRI = { name: 'AGRINEXUS INTERNATIONAL', addr: [], attn: '', tin: '' };
+
+    const u = { 'IV2610-014': gen(26, 6), 'CN2609-002': gen(26, 2), 'IV2609-022': gen(26, 4), 'IV2611-005': gen(26, 10), 'PV2611-007': gen(26, 12), 'IV2610-009': gen(26, 40), 'IV2610-099': gen(26, 41) };
+    const longId = gen(40, 106);
+
+    const DOCS = {
+      'customer-valid': {
+        kind: 'customer', title: 'Invoice', party: OFFICE, no: 'IV2610-014', date: '01/10/2026', account: '300-U001', terms: '30 Days', cur: 'MYR',
+        lines: [['600-000', 'Office rental October, Unit 3A', '1,800.00']], total: '1,800.00', words: 'Malaysian Ringgit : ONE THOUSAND EIGHT HUNDRED ONLY',
+        bank: true, logo: true, ein: { state: 'valid', uuid: u['IV2610-014'], link: share(u['IV2610-014'], longId), on: 'Validated on 01/10/2026 11:19:44' }
+      },
+      'self-billed-usd': {
+        kind: 'self_billed', title: 'Self-billed Invoice', label: 'Supplier', party: { name: 'Brightline Software Pte Ltd', addr: [], attn: '', tin: 'EI00000000030' }, buyer: 'AISB Sdn Bhd (TIN No: C 2345678901)',
+        no: 'PV2611-007', date: '06/11/2026', account: '', terms: '', cur: 'USD',
+        lines: [['900-600', 'Cloud software subscription October', '63.83'], ['900-600', 'Cloud software subscription October', '36.17']], total: '100.00', words: 'US Dollar : ONE HUNDRED ONLY', paid: 'Paid as MYR 470.00 by PV2611-007',
+        bank: false, logo: true, ein: { state: 'valid', uuid: u['PV2611-007'], link: share(u['PV2611-007'], gen(40, 112)), on: 'Validated on 06/11/2026 14:19:44' }
+      },
+      'credit-note': {
+        kind: 'customer', title: 'Credit Note', party: AGRI, no: 'CN2609-002', date: '10/09/2026', account: '300-A001', terms: '', cur: 'MYR',
+        lines: [['610-000', 'Credit note: Management fee August', '4,500.00']], total: '4,500.00', words: 'Malaysian Ringgit : FOUR THOUSAND FIVE HUNDRED ONLY',
+        bank: false, logo: true, ein: { state: 'valid', uuid: u['CN2609-002'], link: share(u['CN2609-002'], gen(40, 102)), on: 'Validated on 10/09/2026 09:40:05' }
+      },
+      'cancelled': {
+        kind: 'customer', title: 'Invoice', party: OFFICE, no: 'IV2610-009', date: '05/10/2026', account: '300-U001', terms: '30 Days', cur: 'MYR',
+        lines: [['900-400', 'Utilities recharge October, Unit 3A', '238.40']], total: '238.40', words: 'Malaysian Ringgit : TWO HUNDRED AND THIRTY EIGHT AND CENTS FORTY ONLY',
+        bank: true, logo: true, ein: { state: 'cancelled', uuid: u['IV2610-009'] }
+      },
+      'not-validated': {
+        kind: 'customer', title: 'Invoice', party: OFFICE, no: 'IV2611-005', date: '02/11/2026', account: '300-U001', terms: '30 Days', cur: 'MYR',
+        lines: [['900-400', 'Utilities recharge November, Unit 3A', '245.60']], total: '245.60', words: 'Malaysian Ringgit : TWO HUNDRED AND FORTY FIVE AND CENTS SIXTY ONLY',
+        bank: true, logo: true, ein: { state: 'pending', uuid: u['IV2611-005'], status: 'Submitted' }
+      },
+      'no-long-id': {
+        kind: 'customer', title: 'Invoice', party: AGRI, no: 'IV2609-022', date: '30/09/2026', account: '300-A001', terms: '', cur: 'MYR',
+        lines: [['610-000', 'Management fee September', '4,500.00']], total: '4,500.00', words: 'Malaysian Ringgit : FOUR THOUSAND FIVE HUNDRED ONLY',
+        bank: true, logo: true, ein: { state: 'no_link', uuid: u['IV2609-022'], on: 'Validated on 30/09/2026 16:45:02' }
+      },
+      'settings-missing': {
+        kind: 'customer', title: 'Invoice', party: OFFICE, no: 'IV2610-014', date: '01/10/2026', account: '300-U001', terms: '30 Days', cur: 'MYR',
+        lines: [['600-000', 'Office rental October, Unit 3A', '1,800.00']], total: '1,800.00', words: 'Malaysian Ringgit : ONE THOUSAND EIGHT HUNDRED ONLY',
+        bank: false, logo: false, ein: { state: 'valid', uuid: u['IV2610-014'], link: share(u['IV2610-014'], longId), on: 'Validated on 01/10/2026 11:19:44' }
+      },
+      'two-pages': {
+        kind: 'customer', title: 'Invoice', party: TENANT, no: 'IV2610-099', date: '31/10/2026', account: '300-T001', terms: '30 Days', cur: 'MYR',
+        lines: Array.from({ length: 34 }, (_, i) => ['600-000', 'Car park bay ' + (i + 1) + ', October 2026', '100.00']), total: '3,400.00', words: 'Malaysian Ringgit : THREE THOUSAND FOUR HUNDRED ONLY',
+        bank: true, logo: true, ein: null
+      }
+    };
+    DOCS['look-alike'] = DOCS['customer-valid'];
+    const isPaper = !['refused-tab', 'zip'].includes(stage);
+    const d = DOCS[stage] || DOCS['customer-valid'];
+
+    // -- one printed page: every piece of text at SQL's own place (mm from the top left, baselines), as an absolutely placed div.
+    const page = (n, total, rows, first, last) => {
+      const items = [];
+      const put = (key, pt, x, base, text, al, bold, col) => {
+        const fs = pt * PT * SCALE[key];
+        let s = 'position:absolute;white-space:nowrap;line-height:1;font-size:' + fs.toFixed(3) + 'mm;top:' + (base - 0.86 * fs).toFixed(2) + 'mm;font-family:' + FAM[key] + ';color:' + (col || '#000000') + ';';
+        if (bold) s += 'font-weight:700;';
+        if (al === 'R') s += 'right:' + (PW - x).toFixed(2) + 'mm;text-align:right;';
+        else if (al === 'C') s += 'left:' + x.toFixed(2) + 'mm;transform:translateX(-50%);';
+        else s += 'left:' + x.toFixed(2) + 'mm;';
+        items.push({ style: s, t: text });
+      };
+      const hrule = (x1, x2, y) => items.push({ style: 'position:absolute;background:#000000;left:' + x1 + 'mm;top:' + y + 'mm;width:' + (x2 - x1).toFixed(2) + 'mm;height:0.265mm', t: '' });
+      const vrule = (x, y1, y2) => items.push({ style: 'position:absolute;background:#000000;left:' + x + 'mm;top:' + y1 + 'mm;width:0.265mm;height:' + (y2 - y1).toFixed(2) + 'mm', t: '' });
+
+      // header, on every page
+      if (d.logo) items.push({ style: 'position:absolute;left:10.66mm;top:7.46mm;width:26.32mm;height:25.4mm;background:' + logoUri + ' center/contain no-repeat', t: '' });
+      put('times', 15.86, 121.4, 12.84, 'AISB Sdn Bhd', 'C', true);
+      put('times', 7.99, 121.4, 16.62, '(201901023456 (1331234-K))  (TIN No: C 2345678901)', 'C');
+      put('times', 7.99, 121.4, 19.8, 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor', 'C');
+      put('times', 7.99, 121.4, 22.99, 'Phone: 03-6150 2200   |   email: accounts@aisb.example   |   www.aisb.example', 'C');
+      put('tahoma', 12, 107.72, 37.04, d.title, 'C', true);
+
+      // who it is to, at the left
+      const label = (d.label || 'To') + '  :';
+      const px = d.label ? 31.6 : 21.23;
+      put('tahoma', 10, 11.19, 41.48, label);
+      const texts = [d.party.name].concat(d.party.addr);
+      if (d.kind === 'self_billed' && d.party.tin) texts.push('TIN : ' + d.party.tin);
+      texts.forEach((t, k) => put('tahoma', 10, px, 41.48 + k * 4.04, t));
+      let y = Math.max(61.69, 41.48 + (texts.length - 1) * 4.04 + 8.08);
+      if (d.party.attn) { put('tahoma', 10, 11.19, y, 'Attn : ' + d.party.attn); y += 4.04; }
+      if (d.buyer) put('tahoma', 10, 11.19, y, 'Buyer : ' + d.buyer);
+
+      // number, date, account and terms, at the right
+      put('tahoma', 10, 167.52, 41.48, 'Doc No.  :', 'R', true);
+      put('tahoma', 9, 170.62, 41.16, d.no, 'L', true);
+      put('tahoma', 10, 166.27, 46.58, 'Date   :', 'R');
+      put('tahoma', 10, 170.62, 46.58, d.date);
+      put('tahoma', 10, 166.27, 51.58, 'Account  :', 'R');
+      put('tahoma', 10, 170.62, 51.58, d.account);
+      put('tahoma', 10, 166.27, 56.57, 'Terms  :', 'R');
+      put('tahoma', 10, 170.62, 56.57, d.terms);
+
+      // the table: its rules and headings, then the rows
+      hrule(10.66, 205.57, 68.06); hrule(10.66, 205.57, 73.14);
+      vrule(36.98, 68.06, 73.14); vrule(170.1, 68.06, 73.14);
+      put('tahoma', 9, 11.19, 71.69, 'G/L CODE');
+      put('tahoma', 9, 103.16, 71.69, 'DESCRIPTION', 'C');
+      put('tahoma', 9, 205.05, 71.69, 'Amount(' + d.cur + ')', 'R');
+      rows.forEach((r, k) => {
+        const base = 77.14 + k * 4.5;
+        put('tahoma', 9, 11.19, base, r[0]);
+        put('tahoma', 9, 36.74, base, r[1]);
+        put('trebuchet', 9, 205.05, base, r[2], 'R');
+      });
+
+      // the foot rule, on every page
+      hrule(11.03, 205.57, 212.69);
+      if (!last) put('tahoma', 8, 205.05, 210.99, 'Continued on page ' + (n + 1) + ' of ' + total, 'R');
+      if (total > 1) put('tahoma', 7, 205.05, 277.6, 'Page ' + n + ' of ' + total, 'R');
+
+      if (last) {
+        put('tahoma', 10, 11.56, 216.2, d.words);
+        put('tahoma', 10, 169.59, 216.2, 'Total :', 'R', true);
+        put('trebuchet', 10, 205.05, 216.2, d.total, 'R');
+        if (d.paid) put('tahoma', 7, 205.05, 220.24, d.paid, 'R');
+        if (d.bank) {
+          put('tahoma', 10, 11.56, 223.2, 'All payments to be made to :');
+          put('segoe', 6.91, 11.45, 227.17, 'AISB Sdn Bhd', 'L', true);
+          [['Bank', 'Maybank'], ['Bank Address', 'Maybank Kota Damansara, 47810 Petaling Jaya, Selangor'], ['Account No', '5141 2345 4417'], ['Bank Transfer Code', 'MBBEMYKL']].forEach((b, k) => {
+            const base = [230.4, 233.62, 236.84, 240.07][k];
+            put('segoe', 6.91, 11.45, base, b[0] + ' :', 'L', false, '#464646');
+            put('segoe', 6.91, 11.45 + 2.2 + b[0].length * 1.28, base, b[1], 'L', true);
+          });
+        }
+        hrule(12.03, 75.36, 271.93);
+        put('tahoma', 10, 12.56, 275.45, 'For AISB Sdn Bhd');
+        const e = d.ein;
+        if (e) {
+          const cap = 5.5 * 0.8 * PT;
+          let ey = 243.69 + 20 + 2.0 + cap;
+          let lines;
+          if (e.state === 'valid') {
+            items.push({ style: 'position:absolute;left:181.91mm;top:243.69mm;width:20mm;height:20mm;background:' + qrUri(e.link) + ' center/100% 100% no-repeat', t: '' });
+            lines = ['e-Invoice UUID: ' + e.uuid, e.on];
+          } else if (e.state === 'cancelled') {
+            put('tahoma', 10, 201.91, 255.19, 'e-Invoice cancelled', 'R', true, '#AA0000');
+            lines = ['e-Invoice UUID: ' + e.uuid, 'Cancelled on MyInvois: this e-Invoice is no longer valid.'];
+          } else if (e.state === 'no_link') {
+            lines = ['e-Invoice UUID: ' + e.uuid, e.on, "QR code not printed: MyInvois's Long ID for it wasn't read."];
+          } else {
+            lines = ['e-Invoice UUID: ' + e.uuid, 'Not validated on MyInvois (' + e.status + '): no QR code.'];
+          }
+          lines.forEach(t => { put('tahoma', 5.5, 201.91, ey, t, 'R'); ey += 2.4; });
+        }
+      }
+      return { items, aria: 'Printed ' + d.title.toLowerCase() + ' ' + d.no + ', page ' + n + ' of ' + total + (last ? ', total ' + d.cur + ' ' + d.total : ', continued on the next page') };
+    };
+
+    let pages = [];
+    if (isPaper) {
+      if (stage === 'two-pages') pages = [page(1, 2, d.lines.slice(0, 29), true, false), page(2, 2, d.lines.slice(29), false, true)];
+      else pages = [page(1, 1, d.lines, true, true)];
+    }
+
+    // -- the notes beside the page, per state
+    const FILEOF = { 'customer-valid': 'IV2610-014 Office tenant (Unit 3A).pdf', 'self-billed-usd': 'PV2611-007 Brightline Software Pte Ltd.pdf', 'credit-note': 'CN2609-002 AGRINEXUS INTERNATIONAL.pdf', 'cancelled': 'IV2610-009 Office tenant (Unit 3A).pdf', 'not-validated': 'IV2611-005 Office tenant (Unit 3A).pdf', 'no-long-id': 'IV2609-022 AGRINEXUS INTERNATIONAL.pdf', 'settings-missing': 'IV2610-014 Office tenant (Unit 3A).pdf', 'two-pages': 'IV2610-099 Tenant.pdf', 'look-alike': 'IV2610-014 Office tenant (Unit 3A).pdf' };
+    const SIGN = 'No signature: upload it under Printed invoices in Setup › Companies › AISB.';
+    const LEAD = {
+      'customer-valid': ['Customer invoice, validated', 'IV2610-014 is validated on MyInvois and its Long ID was read, so a QR code to its MyInvois page prints, with the UUID and when it was validated. The bank block prints because a bank account is chosen for invoices.', [['Document', 'IV2610-014 · 1 Oct 2026 · 1,800.00'], ['File name', 'IV2610-014 Office tenant (Unit 3A).pdf'], ['Opened from', 'Invoice PDF, in the Print column of e-Invoices (Issued tab)'], ['Audit trail', 'Opened file · invoice · 18 Nov 2026'], ['Print settings', 'Logo uploaded, no signature yet: the space above the rule stays empty']]],
+      'self-billed-usd': ['Self-billed invoice in US dollars', 'The voucher PV2611-007 pays a supplier that did not invoice AISB, so AISB issued a self-billed e-Invoice. It reads Supplier, the supplier\'s TIN and the Buyer. Its lines are SQL\'s two ringgit lines converted at the voucher\'s single rate, and the line under the total says what was paid.', [['Document', 'PV2611-007 · 6 Nov 2026 · USD 100.00 (MYR 470.00 from the bank)'], ['File name', 'PV2611-007 Brightline Software Pte Ltd.pdf'], ['Lines', 'MYR 300.00 and MYR 170.00 print as USD 63.83 and USD 36.17; rounding sen go to the lines that lost most, so they add to USD 100.00'], ['No bank block', 'A self-billed invoice never prints payment details'], ['Account and terms', 'Blank: the supplier is not in Setup › Customers and suppliers, so SQL\'s voucher gives no code, address or terms']]],
+      'credit-note': ['Credit note', 'CN2609-002 takes back IV2609-015. Its lines and total print as positive figures, and a credit note never carries the bank block. Its e-Invoice is validated, so it has a QR code like an invoice.', [['Document', 'CN2609-002 · 10 Sep 2026 · 4,500.00'], ['File name', 'CN2609-002 AGRINEXUS INTERNATIONAL.pdf'], ['No address or terms', '300-A001 is not in Setup › Customers and suppliers, so only the name SQL printed shows. Add it there to print its address, attention and terms'], ['Ref line', 'A credit note\'s Ref is in the code but no listing carries it today, so it is never printed']]],
+      'cancelled': ['Cancelled e-Invoice', 'The e-Invoice of this invoice was cancelled on MyInvois. The invoice still prints, with no QR code, and says in red that it is no longer valid. Drawn state: IV2610-009 is not one of the October documents kept.', [['Document', 'IV2610-009 · 5 Oct 2026 · 238.40 (drawn state)'], ['File name', 'IV2610-009 Office tenant (Unit 3A).pdf'], ['e-Invoice block', 'In red bold: e-Invoice cancelled, then the UUID and why']]],
+      'not-validated': ['e-Invoice not validated', 'MyInvois holds IV2611-005 as Submitted, not validated, so there is no QR code. The same block reads the same for Invalid and Rejected, with that word in the brackets.', [['Document', 'IV2611-005 · 2 Nov 2026 · 245.60'], ['File name', 'IV2611-005 Office tenant (Unit 3A).pdf'], ['e-Invoice block', 'UUID, then "Not validated on MyInvois (Submitted): no QR code."']]],
+      'no-long-id': ['Validated, but no Long ID read', 'MyInvois validated IV2609-022, but the copy of its screen that was read has no Long ID column, so the share link is unknown and no QR code can print. The UUID and the validation time still print.', [['Document', 'IV2609-022 · 30 Sep 2026 · 4,500.00'], ['File name', 'IV2609-022 AGRINEXUS INTERNATIONAL.pdf'], ['To fix', 'Copy SQL\'s MyInvois Transaction screen with its Long ID column, fetch it, then print again']]],
+      'settings-missing': ['Print settings missing', 'The same invoice as the first one, for a company with no logo, no bank account chosen and no signature. Each gap just prints as nothing: no logo, no bank block, and "For AISB Sdn Bhd" sits under the empty signature space. Drawn state: today AISB has its logo and bank account.', [['Document', 'IV2610-014 · 1 Oct 2026 · 1,800.00'], ['Logo', 'Left out; the header text stays centred in the same place'], ['Bank block', 'Left out whole when no bank account is chosen'], ['Under the signature', 'Empty setting: "For" and the company name, as SQL prints it']]],
+      'two-pages': ['A document that needs two pages', 'Every page repeats the header, the table headings and the document\'s details. The page that is not the last says where it goes on, and every page says its number. The total, payment details, signature and e-Invoice block are on the last page only. A row too long for a page is split. Drawn state: no October document has 34 lines.', [['Document', 'IV2610-099 · 31 Oct 2026 · 3,400.00 (drawn state)'], ['File name', 'IV2610-099 Tenant.pdf'], ['Page 1', 'Continued on page 2 of 2, and Page 1 of 2'], ['e-Invoice', 'None read for it, so nothing prints in that corner']]],
+      'look-alike': ['Printed in look-alike fonts', 'This computer lacks SQL\'s Tahoma and Tahoma Bold, so the words in them print in DejaVu Sans, a free look-alike. It is wider than Tahoma, so it is drawn at SQL\'s size times how much narrower Tahoma is, never larger. Times New Roman, Trebuchet MS and Segoe UI are found and print as SQL\'s. Every position stays SQL\'s.', [['Document', 'IV2610-014 · 1 Oct 2026 · 1,800.00'], ['What changed', 'Only the Tahoma words: other letter shapes, drawn a little smaller; nothing moves'], ['Where it is told', 'The Fonts note in the print settings above the Print column on e-Invoices, and in Setup › Companies']]]
+    };
+    const lead = LEAD[stage] || ['', '', []];
+    const NOTES = {
+      'customer-valid': [], 'credit-note': [],
+      'self-billed-usd': ['The e-Invoice is in USD: its lines print SQL\'s ringgit lines at the voucher\'s rate (USD 100.00 for MYR 470.00).'],
+      'cancelled': ['e-Invoice ' + u['IV2610-009'] + ' was cancelled on MyInvois: the invoice prints with no QR code and says so.'],
+      'not-validated': ['e-Invoice ' + u['IV2611-005'] + ' is Submitted on MyInvois, not validated, so it prints without a QR code.'],
+      'no-long-id': ['e-Invoice ' + u['IV2609-022'] + ' has no Long ID in the MyInvois copies read, so its QR code can\'t be printed. Copy SQL\'s MyInvois Transaction screen with its Long ID column and fetch it, then print again.'],
+      'settings-missing': [], 'look-alike': [],
+      'two-pages': ['SQL shows e-Invoice ' + gen(26, 41) + ' on IV2610-099, but no copy of SQL\'s MyInvois Transaction screen read here has it, so it prints without its QR code. Fetch a copy of MyInvois to add it.']
+    };
+    const notes = (NOTES[stage] || []).map(t => ({ t }));
+    const missing = (stage === 'settings-missing'
+      ? ['No logo: upload it under Printed invoices in Setup › Companies › AISB.', SIGN, 'No bank account chosen for All payments to be made to: choose one as Bank account on invoices in Setup › Companies › AISB.']
+      : [SIGN]).map(t => ({ t }));
+
+    const CUR = d.ein ? d.ein.state : 'none';
+    const einStates = [
+      ['valid', 'Valid', 'MyInvois validated it and its Long ID is known', 'A 20 mm QR code (clickable, to the MyInvois page), then the UUID and "Validated on" the date and time'],
+      ['no_link', 'No link', 'Validated, but the Long ID wasn\'t read', 'No QR code. The UUID, the validation time and "QR code not printed: MyInvois\'s Long ID for it wasn\'t read."'],
+      ['cancelled', 'Cancelled', 'Cancelled on MyInvois', 'In red bold "e-Invoice cancelled", the UUID and "Cancelled on MyInvois: this e-Invoice is no longer valid."'],
+      ['pending', 'Not validated', 'Submitted, Invalid or Rejected', 'The UUID and "Not validated on MyInvois (status): no QR code."'],
+      ['none', 'None', 'No MyInvois row for the document', 'Nothing prints in that corner, and a note is kept (see the notes above)']
+    ].map(r => ({ name: r[1], when: r[2], prints: r[3], style: 'border-top: 1px solid #F1F3F7;' + (r[0] === CUR ? 'background:#EAF0FD' : '') }));
+
+    const tabs = [
+      { url: '/api/invoices/…pdf', text: 'JV2610-006 isn\'t a customer invoice, debit note or credit note, or a payment voucher with a self-billed e-Invoice, so it has no invoice to print.', why: 'JV2610-006, the director fee journal: a journal has no customer.' },
+      { url: '/api/invoices/…pdf', text: 'SQL\'s account lines of IV2611-014 haven\'t been fetched. Fetch SQL\'s GL Journal of Transaction covering 18/11/2026 to print this invoice.', why: 'Invented case: IV2611-014 is dated 18 Nov, after the journal kept ends (17 Nov), so its lines are not in it and there is nothing to print from.' }
+    ];
+    const reasons = [
+      'IV2611-014: SQL\'s account lines under this number are dated 17/11/2026, not this invoice\'s date (18/11/2026), so it isn\'t printed with another document\'s lines. If its date was changed in SQL, fetch the invoice listing again; if the number was used again, check it in SQL.',
+      'IV2611-014: SQL\'s account lines don\'t show which line is the customer\'s (its listing has no customer code). Fetch the listing again, then print it.',
+      'IV2611-014: SQL\'s account lines put 1,800.00 on the customer\'s account 300-U001, but SQL\'s listing says 1,850.00. Fetch the listing and the GL Journal of Transaction covering 18/11/2026 again so they agree, then print it.',
+      'IV2611-014: SQL\'s account lines don\'t balance (the lines come to 1,750.00, the customer\'s account to 1,800.00). Fetch SQL\'s GL Journal of Transaction covering 18/11/2026 to print this invoice.',
+      'PV2611-019: the e-Invoice is in USD (USD 250.00), but the voucher\'s lines other than the bank come to MYR 0.00, so they can\'t be printed at the voucher\'s rate. Check the voucher in SQL, fetch its GL Journal of Transaction again, then print it.',
+      'PV2611-008 was confirmed as deleted in SQL, so it isn\'t printed. (A document no longer in the records says: This SQL document is no longer in the records.)'
+    ].map(t => ({ t }));
+    const zipFiles = [
+      { name: 'IV2610-014 Office tenant (Unit 3A).pdf', what: 'Invoice · Office tenant (Unit 3A) · 1,800.00' },
+      { name: 'IV2610-031 Tenant.pdf', what: 'Invoice · Tenant · 2,800.00 · taken back by credit note CN2611-002' },
+      { name: 'IV2610-033 AGRINEXUS INTERNATIONAL.pdf', what: 'Invoice · AGRINEXUS INTERNATIONAL · 4,500.00' }
+    ];
+    const zipLinks = [
+      { label: 'All of the month, Issued tab, October 2026', note: 'makes AISB Invoices 2026-10.zip.' },
+      { label: 'All of the month, Self-billed tab, November 2026', note: 'makes AISB Self-billed invoices 2026-11.zip. October has none, so the Self-billed tab shows no button for October.' }
+    ];
+    const fonts = [
+      ['Times New Roman', 'Registration, address and phone lines', 'Liberation Serif, else the PDF maker\'s Times'],
+      ['Times New Roman Bold', 'Company name', 'Liberation Serif Bold, else Times Bold'],
+      ['Tahoma', 'Most words', 'DejaVu Sans, else Helvetica'],
+      ['Tahoma Bold', 'Title, document number, Total', 'DejaVu Sans Bold, else Helvetica Bold'],
+      ['Trebuchet MS', 'Amounts', 'DejaVu Sans, else Helvetica'],
+      ['Segoe UI', 'Bank details\' labels', 'DejaVu Sans, else Helvetica'],
+      ['Segoe UI Bold', 'Bank details', 'DejaVu Sans Bold, else Helvetica Bold']
+    ].map(r => ({ name: r[0], use: r[1], alt: r[2] }));
+
+    const LABELS = [['customer-valid', 'Customer invoice'], ['self-billed-usd', 'Self-billed, USD'], ['credit-note', 'Credit note'], ['cancelled', 'Cancelled'], ['not-validated', 'Not validated'], ['no-long-id', 'No Long ID'], ['settings-missing', 'Settings missing'], ['two-pages', 'Two pages'], ['look-alike', 'Look-alike fonts'], ['refused-tab', 'Not printed'], ['zip', 'Month zip']];
+    const btn = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const states = LABELS.map(([k, label]) => ({ label, pressed: stage === k ? 'true' : 'false', style: btn(stage === k), pick: () => this.setState({ stage: k, swap: this.state.swap + 1, say: label + ' shown.' }) }));
+
+    const CHIP = (bg, fg) => 'display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const chip = { 'valid': ['Valid e-Invoice', CHIP('#E3F7EC', '#0A6B3D')], 'no_link': ['No QR code: Long ID not read', CHIP('#FEF1D6', '#7A4300')], 'cancelled': ['e-Invoice cancelled', CHIP('#FDE6E3', '#B0190F')], 'pending': ['Not validated', CHIP('#FEF1D6', '#7A4300')], 'none': ['No e-Invoice read', CHIP('#EEF1F5', '#46546A')] }[CUR];
+
+    const leadIsRefused = stage === 'refused-tab', leadIsZip = stage === 'zip';
+    const leadTitle = leadIsRefused ? 'A document that can\'t be printed' : leadIsZip ? 'A month of invoices in one file' : lead[0];
+    const leadText = leadIsRefused
+      ? 'When a document has nothing to print from, its PDF in the Print column opens a small page that says why, and nothing is saved. The reasons are plain sentences that name the document and what to fetch.'
+      : leadIsZip ? 'Every customer invoice, debit note and credit note of a month, or every self-billed invoice, as one zip. October has three customer documents and no self-billed invoice.' : lead[1];
+    const facts = leadIsRefused ? [{ k: 'Opened from', v: 'Invoice PDF in the Print column of e-Invoices, on a document that has no invoice to print' }, { k: 'Audit trail', v: 'Nothing is added: only a successful open is' }] : leadIsZip ? [{ k: 'File', v: 'AISB Invoices 2026-10.zip' }, { k: 'Documents', v: 'IV2610-014, IV2610-031 and IV2610-033' }, { k: 'Print month', v: 'October 2026 (selected)' }] : lead[2].map(x => ({ k: x[0], v: x[1] }));
+
+    return {
+      say: this.state.say,
+      states, leadTitle, leadText, facts, missing,
+      hasNotes: notes.length > 0, notes,
+      notesTitle: 'Notes the app holds for this document',
+      notesLead: 'These come from the print check, which the app already makes for every document. Nothing shows them today. They would sit on a warning marker beside the PDF in the Print column of e-Invoices, opening on hover or when expanded.',
+      isLook: look, fonts,
+      isPaper, pages, fileName: FILEOF[stage] || '', pageCount: pages.length === 2 ? '2 pages' : '1 page',
+      chipText: chip[0], chipStyle: chip[1], einStates,
+      isTabs: leadIsRefused, tabs, reasons,
+      isZip: leadIsZip, zipFiles, zipLinks,
+      notPrinted: 'These documents were not printed:\n\nIV2610-040: SQL\'s account lines of IV2610-040 haven\'t been fetched. Fetch SQL\'s GL Journal of Transaction covering 28/10/2026 to print this invoice.',
+      cutShort: 'These invoices were printed with a line too long for its place, its end cut off:\n\nIV2610-041: A line\'s description is too long for its place on the invoice, even at half SQL\'s size, so its end is cut off (it prints up to "...Unit 3A, car park bays 1 to 40"): shorten it in SQL.'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · Move setup · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.sn:hover{background:#F0F3F8 !important}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+/* motion and focus base */
+.hb,.hs,.sn,.nv,.nb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.spin{display:inline-block;width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="aisb" kind="sqlPayroll" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="Move setup" company="aisb" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0">
+        <dc-import name="SetupNav" active="move" kind="sql" payroll="true" hint-size="100%,900px"></dc-import>
+      </div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">General</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Move setup</h1>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 680px">Save this install’s setup as a file, to start another install with it. Each file saved is noted in the audit trail.</p>
+        </div>
+
+        <section aria-labelledby="mv-exp-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="download" tone="brand" size="22" hint-size="22px,22px"></dc-import><h2 id="mv-exp-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Export</h2></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))">
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px; border-right: 1px solid #EEF1F5">
+              <div style="display: flex; align-items: center; gap: 10px"><span style="width: 40px; height: 40px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="copy" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><h3 style="margin: 0; font-size: 16px; font-weight: 600">Template</h3></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px">The rules only: payment types, document types and the documents each needs, a starter checklist, the joiner and leaver reminders, the matching words and the general settings. No company, bank account, customer, supplier or person.</p>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="mv-from" style="font-size: 13px; font-weight: 600; color: #46546A">Starter checklist</label>
+                <select id="mv-from" value="{{from}}" onChange="{{onFrom}}" aria-describedby="mv-from-hint" style="height: 40px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 10px; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B">
+                  <option value="">The one new companies get here</option>
+                  <option value="AISB">AISB · AISB Sdn Bhd’s checklist</option>
+                  <option value="AI">AI · Agrinexus International’s checklist</option>
+                </select>
+                <span id="mv-from-hint" style="color: #5F6C80; font-size: 12px">Companies added in the other install start with it.</span>
+              </div>
+              <div style="margin-top: auto"><button type="button" id="mv-template" class="hb" onClick="{{exportTemplate}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="download" tone="white" size="18" hint-size="18px,18px"></dc-import>Export template</button></div>
+            </div>
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: center; gap: 10px"><span style="width: 40px; height: 40px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="archive" tone="brand" size="22" hint-size="22px,22px"></dc-import></span><h3 style="margin: 0; font-size: 16px; font-weight: 600">Everything</h3></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px">The template, plus the companies, their bank accounts with the account numbers, charts of accounts, statutory accounts, customers and suppliers, each company’s checklist, what its printed invoices need (address, bank details, logo and signature), the printed company names confirmed, and each company’s HR settings: leave types and policy, public holidays, claim types and payroll settings. Keep the file safe.</p>
+              <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer"><input type="checkbox" checked="{{payees}}" onChange="{{togglePayees}}" aria-describedby="{{payeesBy}}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #2450B8; flex: none"><span>Include recurring payments (staff names, amounts, bank details)</span></label>
+              <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer"><input type="checkbox" checked="{{apprs}}" onChange="{{toggleApprs}}" aria-describedby="{{apprsBy}}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #2450B8; flex: none"><span>Include approvers (the names on Setup › HR › Approvers, for each company)</span></label>
+              <sc-if value="{{personal}}" hint-placeholder-val="{{ false }}">
+                <div id="mv-warn" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>The file then holds personal data</b> ({{personalWhat}}). Keep it as safe as a backup and delete it once it has been imported.</span></div>
+              </sc-if>
+              <div id="mv-never" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Never in the file:</b> staff records, with their leave, claims, advances and payroll, and the secret behind the approval forms’ keyed check. The other install makes its own secret, so a form printed here can’t be matched there.</span></div>
+              <div style="margin-top: auto"><button type="button" id="mv-full" class="hb" onClick="{{exportFull}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="download" tone="white" size="18" hint-size="18px,18px"></dc-import>Export everything</button></div>
+            </div>
+          </div>
+        </section>
+
+        <section aria-labelledby="mv-imp-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="upload" tone="brand" size="22" hint-size="22px,22px"></dc-import><h2 id="mv-imp-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Import a setup file</h2></div>
+          <div style="padding: 20px; display: flex; flex-direction: column; gap: 16px">
+
+            <sc-if value="{{blocked}}" hint-placeholder-val="{{ true }}">
+              <div class="{{blockCls}}" style="display: flex; gap: 14px; align-items: flex-start">
+                <span style="width: 40px; height: 40px; border-radius: 12px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="lock" tone="muted" size="22" hint-size="22px,22px"></dc-import></span>
+                <div style="display: flex; flex-direction: column; gap: 8px">
+                  <b style="font-size: 15px">Not for this install</b>
+                  <p style="margin: 0; color: #46546A">A setup file is imported only into new records, before any company is added. These hold {{holding}}.</p>
+                  <p style="margin: 0; color: #5F6C80; font-size: 13px">To start another install from this one, export above and import the file there.</p>
+                  <sc-if value="{{justImported}}" hint-placeholder-val="{{ false }}"><a href="SetupCompanies.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="company" tone="brand" size="16" hint-size="16px,16px"></dc-import>See the companies it added</a></sc-if>
+                </div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; color: #46546A; max-width: 760px">For a new install, before any company is added. A template’s rules are added to the app’s own; everything also adds its companies and what belongs to them. Each row is checked as Setup checks it, and nothing is saved unless every row passes.</p>
+              <sc-if value="{{refusedOn}}" hint-placeholder-val="{{ false }}">
+                <div role="alert" class="rv" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{refusedFile}} can’t be imported.</b> {{refused}} Nothing was added.</span></div>
+              </sc-if>
+              <sc-if value="{{noFile}}" hint-placeholder-val="{{ true }}">
+                <div><button type="button" id="mv-pick" class="hb" onClick="{{pick}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="folder" tone="white" size="18" hint-size="18px,18px"></dc-import>{{pickLabel}}</button></div>
+              </sc-if>
+              <sc-if value="{{fileOn}}" hint-placeholder-val="{{ false }}">
+                <section aria-labelledby="mv-file-h" class="rv" style="display: flex; flex-direction: column; gap: 14px; padding: 16px; border-radius: 14px; border: 1px solid #E3E7ED; background: #FAFBFC">
+                  <div style="display: flex; gap: 12px; align-items: center"><dc-import name="Icon" glyph="document" tone="brand" size="24" hint-size="24px,24px"></dc-import><div style="display: flex; flex-direction: column"><h3 id="mv-file-h" tabindex="-1" style="margin: 0; font-size: 15px; font-weight: 600; font-family: ui-monospace, Consolas, monospace">{{fileName}}</h3><span style="color: #46546A; font-size: 13px">Everything, saved {{fileMade}}. Importing it adds or changes:</span></div></div>
+                  <div style="overflow-x: auto; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 10px">
+                    <table style="width: 100%; min-width: 420px; border-collapse: collapse; font-size: 13px">
+                      <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; background: #FAFBFC"><th scope="col" style="padding: 8px 14px; font-weight: 600">What</th><th scope="col" style="padding: 8px 14px; font-weight: 600; text-align: right">How many</th></tr></thead>
+                      <tbody><sc-for list="{{counts}}" as="c" hint-placeholder-count="8"><tr style="border-top: 1px solid #EEF1F5"><td style="padding: 8px 14px">{{c.what}}</td><td style="padding: 8px 14px; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600">{{c.n}}</td></tr></sc-for></tbody>
+                    </table>
+                  </div>
+                  <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; color: #46546A; font-size: 13px">
+                    <sc-for list="{{notes}}" as="n" hint-placeholder-count="3">
+                      <li style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.tone}}" size="16" hint-size="16px,16px"></dc-import><span>{{n.txt}}</span></li>
+                    </sc-for>
+                  </ul>
+                  <sc-if value="{{whyOff}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; gap: 8px">
+                      <button type="button" id="mv-import" class="hb" onClick="{{startImport}}" aria-expanded="false" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="upload" tone="white" size="18" hint-size="18px,18px"></dc-import>Import</button>
+                      <button type="button" class="hs" onClick="{{cancelFile}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{whyOn}}" hint-placeholder-val="{{ false }}">
+                    <div role="group" aria-labelledby="mv-why-l" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE">
+                      <label id="mv-why-l" for="mv-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+                      <input id="mv-why" type="text" value="{{whyText}}" onChange="{{onWhy}}" onKeyDown="{{whyKey}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{whyInv}}" aria-describedby="{{whyBy}}" disabled="{{busy}}" placeholder="Kept in the audit trail with the import" style="{{whyStyle}}">
+                      <sc-if value="{{whyErr}}" hint-placeholder-val="{{ false }}"><span id="mv-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+                      <div style="display: flex; gap: 8px; justify-content: flex-end">
+                        <button type="button" id="mv-why-cancel" class="hs" onClick="{{whyCancel}}" disabled="{{busy}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                        <button type="button" id="mv-why-go" class="hb" onClick="{{importGo}}" aria-busy="{{busyAria}}" disabled="{{busy}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 120px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span>Importing…</sc-if><sc-if value="{{notBusy}}" hint-placeholder-val="{{ true }}">Import it</sc-if></button>
+                      </div>
+                    </div>
+                  </sc-if>
+                </section>
+              </sc-if>
+            </sc-if>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" role="{{toastRole}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="{{toastStyle}}"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="white" size="18" hint-size="18px,18px"></dc-import>{{toastText}}</div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"export","options":["export","export-personal","export-approvers","new-install","chosen","chosen-left-out","import-why","import-why-error","importing","imported","bad-file","refused","refused-logo","refused-bank","refused-name"],"section":"State"},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'export');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._ti); }
+  // Move setup (static/app.js setupMove / movePick / moveImport; hrp/setupfile.py). This install holds companies, so
+  // its import is refused; the "new install" states show the import on records that hold no company yet.
+  // New work: the Everything description also names statutory accounts, print settings and printed company names
+  // (app.js setupMove still lists only the companies, bank accounts, charts, customers and suppliers, and checklists).
+  init(view) {
+    const base = { from: '', payees: false, apprs: false, empty: false, file: false, refused: '', why: false, whyText: '', whyErr: false, busy: false, imported: false, leftOut: false, toast: null, toastLeaving: false, n: 0 };
+    switch (view) {
+      case 'export-personal': return { ...base, payees: true };
+      case 'export-approvers': return { ...base, apprs: true };
+      case 'new-install': return { ...base, empty: true };
+      case 'chosen': return { ...base, empty: true, file: true };
+      // state-only variant: a file made on 13 Nov, in the six minutes AISB's HRDF statutory account (430-400, not in the chart) was
+      // live (SetupStatutory: added 11:24, deleted 11:30). It is left out, said. The four statutory accounts and the printed
+      // company name came on 18 Nov, so this file has none (the app lists only rows with a count).
+      case 'chosen-left-out': return { ...base, empty: true, file: true, leftOut: true };
+      case 'import-why': return { ...base, empty: true, file: true, why: true };
+      case 'import-why-error': return { ...base, empty: true, file: true, why: true, whyErr: true };
+      case 'importing': return { ...base, empty: true, file: true, why: true, whyText: 'Starting the new office install from head office’s setup.', busy: true };
+      case 'imported': return { ...base, imported: true, toast: { text: 'Setup imported' } };
+      case 'bad-file': return { ...base, empty: true, toast: { text: 'That file can’t be read as a setup file.', bad: true } };
+      case 'refused': return { ...base, empty: true, refused: 'This setup file was made by a newer version of the app (records at update 41; these are at update 38). Update this app first.' };
+      case 'refused-logo': return { ...base, empty: true, refused: 'Company AISB: Logo: the image isn’t the one exported (its fingerprint doesn’t match). Export the setup again.' };
+      case 'refused-bank': return { ...base, empty: true, refused: 'Company AISB: Bank account on invoices: the file has no bank account Maybank current (5141 2345 4417) for this company.' };
+      case 'refused-name': return { ...base, empty: true, refused: 'Printed company name AGRINEXUS INTERNATIONAL of AISB: it already matches company AI, so there is nothing to confirm.' };
+      default: return base;
+    }
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      clearTimeout(this._tt); clearTimeout(this._ti);
+      const nx = this.init(this.props.view || 'export');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); }
+  }
+  toast(text, bad) { clearTimeout(this._tt); this.setState({ toast: { text, bad: !!bad }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  importGo() {
+    const st = this.state;
+    if (!st.file || st.busy) return;
+    if (!st.whyText.trim()) { this._focusId = 'mv-why'; this.setState({ whyErr: true }); return; }
+    this.setState({ busy: true });
+    clearTimeout(this._ti);
+    this._ti = setTimeout(() => {
+      if (!this.state.busy) return;
+      this._focusId = 'mv-imp-h';
+      this.setState({ busy: false, empty: false, file: false, why: false, whyText: '', imported: true, n: this.state.n + 1 });
+      this.toast('Setup imported');
+    }, 900);
+  }
+  renderVals() {
+    const st = this.state;
+    const ctl = 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;';
+    const COUNTS = [['General settings', 8], ['Payment types', 15], ['Document types', 18], ['Starter checklist items', 7], ['Companies', 2], ['Printed company names', 1], ['Bank accounts', 5], ['GL accounts', 40], ['Statutory accounts', 5], ['Customers and suppliers', 9],
+      ['Checklist items', 48], ['Sets of required documents', 14], ['Joiner and leaver reminders', 7], ['Payment type guesses', 5], ['Salary words', 2], ['SQL filing words', 4], ['Recurring payments', 15],
+      ['Leave policies', 2], ['Public holiday calendars', 2], ['Claim types', 6], ['Payroll settings', 1], ['Approvers', 4]];
+    const holding = st.imported
+      ? '2 companies, 5 bank accounts, 15 recurring payments, 9 customers and suppliers, 40 GL accounts, 5 statutory accounts, 48 checklist items and their HR settings'
+      : '2 companies, 5 bank accounts, 15 recurring payments, 9 customers and suppliers, 40 GL accounts, 5 statutory accounts, 48 checklist items, 15 staff records, 12 months set up, 201 payments, 450 documents and 26 book openings';
+    // setupfile.py preview notes, in its order: the starter checklist, then what the file holds (bank numbers, then recurring
+    // payments only when the file was made with them), then what was left out when it was made. The sample file holds them.
+    const fileHasPayees = COUNTS.some(([what, n]) => what === 'Recurring payments' && n > 0);
+    const fileHasApprs = COUNTS.some(([what, n]) => what === 'Approvers' && n > 0);
+    const notes = [
+      { glyph: 'help', tone: 'brand', txt: 'Companies added later start with the file’s starter checklist.' },
+      { glyph: 'lock', tone: 'warn', txt: 'The file holds: Bank account numbers, and the companies’ registration, tax and employer numbers.' },
+      ...(fileHasPayees ? [{ glyph: 'lock', tone: 'warn', txt: 'The file holds: Recurring payments: staff names, amounts and bank details. This is personal data.' }] : []),
+      ...(fileHasApprs ? [{ glyph: 'lock', tone: 'warn', txt: 'The file holds: Approvers’ names for each company. This is personal data.' }] : []),
+      { glyph: 'eyeOff', tone: 'muted', txt: 'Not in the file: staff records, and the secret behind the approval forms’ keyed check. This install makes its own secret when it prints its first approval form.' },
+      ...(st.leftOut ? [{ glyph: 'alert', tone: 'warn', txt: 'Left out of the file when it was made: Statutory account HRDF of AISB: its account 430-400 isn’t in the company’s chart of accounts. Add it to the chart in Setup and export again, or add the statutory account again after importing.' }] : [])
+    ];
+    return {
+      notes,
+      from: st.from, onFrom: e => this.setState({ from: e && e.target ? e.target.value : '' }),
+      payees: !!st.payees, payeesBy: st.payees ? 'mv-warn' : '',
+      togglePayees: () => this.setState({ payees: !this.state.payees }),
+      apprs: !!st.apprs, apprsBy: st.apprs ? 'mv-warn' : '',
+      toggleApprs: () => this.setState({ apprs: !this.state.apprs }),
+      personal: !!(st.payees || st.apprs),
+      personalWhat: [st.payees ? 'staff names, amounts and bank details' : '', st.apprs ? 'approvers’ names' : ''].filter(Boolean).join('; '),
+      exportTemplate: () => this.toast('setup-template-2026-11-18.json is downloading. It is noted in the audit trail.'),
+      exportFull: () => this.toast('setup-everything-2026-11-18.json is downloading' + (this.state.payees && this.state.apprs ? ', with recurring payments and approvers' : this.state.payees ? ', with recurring payments' : this.state.apprs ? ', with approvers' : '') + '. It is noted in the audit trail.'),
+      blocked: !st.empty, empty: !!st.empty, holding, justImported: !!st.imported, blockCls: st.n ? (st.n % 2 ? 'swapA' : 'swapB') : '',
+      refusedOn: !!st.refused, refused: st.refused, refusedFile: 'setup-everything-2026-11-18.json',
+      noFile: !st.file, fileOn: !!st.file, pickLabel: st.refused ? 'Choose another file…' : 'Choose a setup file…',
+      pick: () => { this._focusId = 'mv-file-h'; this.setState({ file: true, refused: '', why: false, whyErr: false }); },
+      cancelFile: () => { this._focusId = 'mv-pick'; this.setState({ file: false, why: false, whyText: '', whyErr: false }); },
+      counts: COUNTS.filter(([what]) => !(st.leftOut && (what === 'Statutory accounts' || what === 'Printed company names'))).map(([what, n]) => ({ what, n })),
+      fileName: st.leftOut ? 'setup-everything-2026-11-13.json' : 'setup-everything-2026-11-18.json', fileMade: st.leftOut ? '13 Nov 2026' : '18 Nov 2026',
+      whyOn: !!st.why, whyOff: !st.why,
+      startImport: () => { this._focusId = 'mv-why'; this.setState({ why: true, whyErr: false }); },
+      whyText: st.whyText, whyErr: !!st.whyErr, whyInv: st.whyErr ? 'true' : 'false', whyBy: st.whyErr ? 'mv-why-err' : '',
+      whyStyle: ctl + 'border:1px solid ' + (st.whyErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onWhy: e => this.setState({ whyText: e && e.target ? e.target.value : '', whyErr: false }),
+      whyKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.importGo(); } else if (e.key === 'Escape') { e.preventDefault(); this._focusId = 'mv-import'; this.setState({ why: false, whyText: '', whyErr: false }); } },
+      whyCancel: () => { this._focusId = 'mv-import'; this.setState({ why: false, whyText: '', whyErr: false }); },
+      importGo: () => this.importGo(),
+      busy: !!st.busy, notBusy: !st.busy, busyAria: st.busy ? 'true' : 'false',
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastRole: st.toast && st.toast.bad ? 'alert' : 'status',
+      toastGlyph: st.toast && st.toast.bad ? 'alert' : 'check',
+      toastStyle: 'pointer-events:auto;display:inline-flex;align-items:center;gap:10px;min-height:44px;max-width:640px;padding:10px 16px;box-sizing:border-box;border-radius:12px;color:#FFFFFF;font-weight:600;box-shadow:0 12px 32px rgba(13,27,46,.28);background:' + (st.toast && st.toast.bad ? '#8F140C' : '#0F1A2B'),
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

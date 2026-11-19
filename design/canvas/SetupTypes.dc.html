@@ -1,0 +1,1053 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · Payment and document types · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:not(.on):hover{background:#F8FAFD !important}
+.sn:hover{background:#F0F3F8 !important}
+.th:hover{color:#0F1A2B !important}
+input:focus,select:focus,textarea:focus{outline:2px solid #2450B8;outline-offset:-1px}
+input[readonly],select:disabled{background:#F5F6F8 !important;color:#46546A !important}
+/* motion and focus base */
+.hb,.hs,.hd,.hr,.sn,.nv,.nb,.th{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{animation:spin .7s linear infinite}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="aisb" kind="sqlPayroll" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="{{topPage}}" company="aisb" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0">
+        <dc-import name="SetupNav" active="{{navActive}}" kind="sql" payroll="true" same-board="payment_types,doc_types" pick-section="{{navPick}}" hint-size="100%,900px"></dc-import>
+      </div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Payments and documents</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{pageTitle}}</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 640px">{{pageHelp}}</p>
+          </div>
+          <sc-if value="{{hasCo}}" hint-placeholder-val="{{ true }}">
+            <button type="button" id="ty-add" class="hb" onClick="{{openNew}}" disabled="{{addOff}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>{{addLabel}}</button>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{hasCo}}" hint-placeholder-val="{{ true }}">
+          <div role="tablist" aria-label="Payment and document types" style="display: flex; gap: 4px; border-bottom: 1px solid #E3E7ED">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="2"><button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="ty-panel" tabindex="{{t.ti}}" onClick="{{t.pick}}" onKeyDown="{{t.key}}" class="fr" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="18" hint-size="18px,18px"></dc-import>{{t.label}}<span style="color: #5F6C80; font-weight: 500">{{t.n}}</span></button></sc-for>
+          </div>
+          <sc-if value="{{loadingOn}}" hint-placeholder-val="{{ false }}">
+            <section id="ty-panel" role="tabpanel" aria-labelledby="{{tabBy}}" aria-busy="true" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <span role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Loading {{plural}}</span>
+              <div style="display: flex; gap: 14px; padding: 14px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 10px; width: 10%; border-radius: 5px"></div></div>
+              <div style="display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 34%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 16%; border-radius: 5px"></div></div><div style="display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 26%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 12%; border-radius: 5px"></div></div><div style="display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 40%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 18%; border-radius: 5px"></div></div><div style="display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 30%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 14%; border-radius: 5px"></div></div><div style="display: flex; gap: 14px; padding: 16px 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 12px; width: 36%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: 16%; border-radius: 5px"></div></div>
+            </section>
+          </sc-if>
+          <sc-if value="{{errorOn}}" hint-placeholder-val="{{ false }}">
+            <section id="ty-panel" role="tabpanel" aria-labelledby="{{tabBy}}" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+              <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+              <h2 id="ty-err-h" tabindex="-1" role="alert" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the {{plural}}</h2>
+              <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The setup records can't be reached right now. Check the connection, then try again. Nothing was changed.</p>
+              <button type="button" id="ty-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+            </section>
+          </sc-if>
+          <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+          <section id="ty-panel" role="tabpanel" aria-labelledby="{{tabBy}}" class="{{panelCls}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+              <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 220px; max-width: 320px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="{{searchLabel}}" aria-label="{{searchLabel}}" aria-describedby="ty-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+              <span id="ty-count" aria-live="polite" style="color: #5F6C80; font-size: 13px; font-variant-numeric: tabular-nums">{{countTxt}}</span>
+              <div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 16px; align-items: center">
+                <label style="display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{showStopped}}" onChange="{{toggleStopped}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Show stopped ({{nStopped}})</label>
+                <label style="display: flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: #46546A; cursor: pointer"><input type="checkbox" checked="{{showDeleted}}" onChange="{{toggleDeleted}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8">Show deleted</label>
+              </div>
+            </div>
+            <p style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</p>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+                <thead>
+                  <tr style="background: #FAFBFC; text-align: left">
+                    <sc-for list="{{heads}}" as="h" hint-placeholder-count="6"><th scope="col" aria-sort="{{h.sort}}" style="{{h.thStyle}}"><button type="button" class="th" onClick="{{h.click}}" style="{{h.btnStyle}}">{{h.label}}<dc-import name="Icon" glyph="{{h.glyph}}" tone="{{h.tone}}" size="14" hint-size="14px,14px"></dc-import></button></th></sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+                    <tr class="{{r.cls}}" onClick="{{r.open}}" style="{{r.rowStyle}}">
+                      <td style="padding: 12px 18px"><button type="button" id="{{r.id}}" onKeyDown="{{r.key}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; font: 600 14px Inter, sans-serif; color: inherit; cursor: pointer; text-align: left">{{r.name}}</button><div style="color: #5F6C80; font-size: 12px">{{r.sub}}</div></td>
+                      <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="3"><td style="{{c.style}}">{{c.txt}}</td></sc-for>
+                      <td style="padding: 12px; text-align: right"><b style="font-variant-numeric: tabular-nums">{{r.usedN}}</b><div style="color: #5F6C80; font-size: 12px; max-width: 200px; margin-left: auto">{{r.usedTxt}}</div></td>
+                      <td style="padding: 12px 18px"><div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center"><span class="{{r.pillCls}}" style="{{r.pill}}">{{r.statusTxt}}</span><sc-if value="{{r.sysOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; border: 1px solid #C9D7F6; background: #FFFFFF; color: #2450B8; font-size: 12px; font-weight: 600; white-space: nowrap">Used by the app</span></sc-if></div></td>
+                    </tr>
+                  </sc-for>
+                  <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+                    <tr><td colspan="7" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="{{emptyGlyph}}" tone="muted" size="28" hint-size="28px,28px"></dc-import><span>{{emptyTxt}}</span><sc-if value="{{emptyLinkOn}}" hint-placeholder-val="{{ false }}"><a href="{{emptyLinkHref}}" style="font-size: 13px; font-weight: 600">{{emptyLinkTxt}}</a></sc-if><sc-if value="{{emptyBtnOn}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{emptyAct}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{emptyBtn}}</button></sc-if></div></td></tr>
+                  </sc-if>
+                </tbody>
+              </table>
+            </div>
+          </section>
+          </sc-if>
+
+          <sc-if value="{{showDeleted}}" hint-placeholder-val="{{ false }}">
+            <section id="ty-del" aria-labelledby="ty-del-h" class="ex" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+              <div style="padding: 16px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 4px">
+                <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="trash" tone="muted" size="20" hint-size="20px,20px"></dc-import><h2 id="ty-del-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{delHeading}}</h2></div>
+                <p style="margin: 0; color: #5F6C80; font-size: 13px">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</p>
+              </div>
+              <div style="overflow-x: auto">
+                <table style="width: 100%; min-width: 760px; border-collapse: collapse">
+                  <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 18px; font-weight: 600">Name</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Deleted</th><th scope="col" style="padding: 10px 12px; font-weight: 600">By</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Why</th><th scope="col" style="padding: 10px 18px; font-weight: 600"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Actions</span></th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{delRows}}" as="d" hint-placeholder-count="2">
+                      <tr class="{{d.cls}}" style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                        <td style="padding: 12px 18px; font-weight: 600">{{d.name}}</td>
+                        <td style="padding: 12px; white-space: nowrap">{{d.at}}<div style="color: #5F6C80; font-size: 12px">Entry {{d.entry}}</div></td>
+                        <td style="padding: 12px">{{d.by}}</td>
+                        <td style="padding: 12px; color: #46546A; max-width: 260px">{{d.why}}</td>
+                        <td style="padding: 12px 18px"><div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end"><sc-if value="{{d.can}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{d.putId}}" class="hs" onClick="{{d.put}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="brand" size="16" hint-size="16px,16px"></dc-import>Put it back</button></sc-if><button type="button" id="{{d.histId}}" class="hs" onClick="{{d.hist}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="history" tone="muted" size="16" hint-size="16px,16px"></dc-import>History</button></div><sc-if value="{{d.problemOn}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; max-width: 320px; margin-left: auto; color: #934100; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="warn" size="14" hint-size="14px,14px"></dc-import><span>Can't be put back: {{d.problem}}</span></div></sc-if></td>
+                      </tr>
+                    </sc-for>
+                    <sc-if value="{{delEmpty}}" hint-placeholder-val="{{ false }}"><tr><td colspan="5" style="padding: 24px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5">None deleted.</td></tr></sc-if>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </sc-if>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 560px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 48px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ty-title" aria-describedby="ty-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 720px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dEyebrow}}</span>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px"><h2 id="ty-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2><sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}"><span class="{{dPillCls}}" style="{{dPill}}">{{dPillTxt}}</span></sc-if><sc-if value="{{dSysOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; border: 1px solid #C9D7F6; background: #FFFFFF; color: #2450B8; font-size: 12px; font-weight: 600">Used by the app</span></sc-if></div>
+          <span id="ty-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 20px">
+        <sc-if value="{{dNotesOn}}" hint-placeholder-val="{{ false }}">
+          <div class="{{dNotesCls}}" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 4px"><sc-for list="{{dNotes}}" as="n" hint-placeholder-count="1"><span>{{n.txt}}</span></sc-for></div></div>
+        </sc-if>
+        <sc-if value="{{saveRefuseOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ty-save-refused" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>Not saved.</b> {{saveRefuse}} Nothing was changed.</span></div>
+        </sc-if>
+        <sc-if value="{{sumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>{{sumTitle}}</b> {{sumList}}</span></div>
+        </sc-if>
+
+        <sc-for list="{{dGroups}}" as="g" hint-placeholder-count="3">
+          <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+            <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{g.label}}</legend>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <sc-for list="{{g.fields}}" as="f" hint-placeholder-count="4">
+                <div style="{{f.wrap}}">
+                  <sc-if value="{{f.isBool}}" hint-placeholder-val="{{ false }}">
+                    <label for="{{f.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 32px; font-size: 13px; font-weight: 600; color: #46546A; cursor: pointer"><input id="{{f.id}}" type="checkbox" checked="{{f.checked}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-describedby="{{f.by}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">{{f.label}}<sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                  </sc-if>
+                  <sc-if value="{{f.notBool}}" hint-placeholder-val="{{ true }}">
+                    <label for="{{f.id}}" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}<sc-if value="{{f.req}}" hint-placeholder-val="{{ false }}"><span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></sc-if><sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Can't be changed</span></sc-if></label>
+                    <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><input id="{{f.id}}" type="{{f.type}}" value="{{f.val}}" onChange="{{f.change}}" readOnly="{{f.ro}}" maxLength="{{f.max}}" aria-required="{{f.reqAria}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" autoComplete="off" style="{{f.style}}"></sc-if>
+                    <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><select id="{{f.id}}" value="{{f.val}}" onChange="{{f.change}}" disabled="{{f.dis}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" style="{{f.style}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></sc-if>
+                    <sc-if value="{{f.isArea}}" hint-placeholder-val="{{ false }}"><textarea id="{{f.id}}" rows="3" value="{{f.val}}" onChange="{{f.change}}" aria-describedby="{{f.by}}" style="{{f.style}}"></textarea></sc-if>
+                  </sc-if>
+                  <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{f.err}}</span></sc-if>
+                  <sc-if value="{{f.hintOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.hintId}}" style="color: #5F6C80; font-size: 12px">{{f.hint}}</span></sc-if>
+                  <sc-if value="{{f.lockOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.lockId}}" style="display: flex; gap: 6px; align-items: flex-start; padding: 8px 10px; border-radius: 8px; background: #F5F6F8; color: #46546A; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import><span>{{f.lock}}</span></span></sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </fieldset>
+        </sc-for>
+
+        <sc-if value="{{dIsEdit}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="ty-used-h" style="display: flex; flex-direction: column; gap: 8px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <h3 id="ty-used-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Where used</h3>
+            <sc-if value="{{dUsedAny}}" hint-placeholder-val="{{ true }}"><ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{dUsed}}" as="u" hint-placeholder-count="3"><li style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; background: #F5F6F8; color: #0F1A2B; font-size: 13px"><b style="font-variant-numeric: tabular-nums">{{u.n}}</b>{{u.what}}</li></sc-for></ul></sc-if>
+            <sc-if value="{{dUsedNone}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Not used anywhere yet.</span></sc-if>
+          </section>
+
+          <section aria-labelledby="ty-act-h" style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <h3 id="ty-act-h" style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">In use</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <sc-if value="{{canStop}}" hint-placeholder-val="{{ true }}"><button type="button" id="ty-act-stop" class="hs" onClick="{{actStop}}" aria-expanded="{{stopExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import>Stop using</button></sc-if>
+              <sc-if value="{{canUse}}" hint-placeholder-val="{{ false }}"><button type="button" id="ty-act-use" class="hs" onClick="{{actUse}}" aria-expanded="{{useExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="brand" size="18" hint-size="18px,18px"></dc-import>Use again</button></sc-if>
+              <sc-if value="{{canDelete}}" hint-placeholder-val="{{ false }}"><button type="button" id="ty-act-delete" onClick="{{actDelete}}" aria-expanded="{{delExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #D0645A; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer"><dc-import name="Icon" glyph="trash" tone="bad" size="18" hint-size="18px,18px"></dc-import>Delete</button></sc-if>
+              <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{extraId}}" class="hs" onClick="{{extraAct}}" aria-expanded="{{extraExp}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="{{extraGlyph}}" tone="muted" size="18" hint-size="18px,18px"></dc-import>{{extraLabel}}</button></sc-if>
+            </div>
+            <span style="color: #5F6C80; font-size: 12px">{{actNote}}</span>
+            <sc-if value="{{extraOn}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{extraNote}}</span></sc-if>
+
+            <sc-if value="{{whyOn}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-labelledby="ty-why-l" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 1px solid {{whyBorder}}; background: {{whyBg}}">
+                <span style="display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #0F1A2B"><dc-import name="Icon" glyph="{{whyGlyph}}" tone="{{whyTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{whyNote}}</span></span>
+                <label id="ty-why-l" for="ty-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you making this change? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+                <input id="ty-why" type="text" value="{{whyText}}" onChange="{{onWhy}}" onKeyDown="{{whyKey}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{whyInv}}" aria-describedby="{{whyBy}}" placeholder="Kept in the audit trail with the change" style="{{whyStyle}}">
+                <sc-if value="{{whyErr}}" hint-placeholder-val="{{ false }}"><span id="ty-why-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+                <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}"><span id="ty-why-refused" role="alert" tabindex="-1" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import><span>{{refuseText}} Nothing was changed.</span></span></sc-if>
+                <div style="display: flex; gap: 8px; justify-content: flex-end">
+                  <button type="button" id="ty-why-cancel" class="hs" onClick="{{whyCancel}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+                  <button type="button" id="ty-why-go" class="{{whyGoCls}}" onClick="{{whyGo}}" style="{{whyGoStyle}}">{{whyLabel}}</button>
+                </div>
+              </div>
+            </sc-if>
+          </section>
+
+          <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 18px; border-top: 1px solid #EEF1F5">
+            <button type="button" class="fr" onClick="{{histToggle}}" aria-expanded="{{histExp}}" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{histChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{histCount}}</span></button>
+            <sc-if value="{{histOpen}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" style="display: flex; flex-direction: column; gap: 12px">
+                <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+                  <sc-for list="{{hist}}" as="h" hint-placeholder-count="3">
+                    <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                      <span aria-hidden="true" style="{{h.dot}}"></span>
+                      <div style="display: flex; flex-direction: column; gap: 4px">
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="{{h.srcStyle}}">{{h.src}}</span><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                        <sc-if value="{{h.whyOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">Why: {{h.why}}</span></sc-if>
+                        <sc-if value="{{h.noteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{h.note}}</span></sc-if>
+                        <sc-if value="{{h.diffOn}}" hint-placeholder-val="{{ false }}">
+                          <button type="button" onClick="{{h.toggle}}" aria-expanded="{{h.exp}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 8px 0 4px; border: 0; border-radius: 8px; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{h.chev}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="14" hint-size="14px,14px"></dc-import></span>{{h.diffLabel}}</button>
+                          <sc-if value="{{h.open}}" hint-placeholder-val="{{ false }}">
+                            <table class="ex" style="border-collapse: collapse; font-size: 13px; width: 100%; max-width: 520px">
+                              <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px"><th scope="col" style="padding: 6px 10px 6px 0; font-weight: 600">Field</th><th scope="col" style="padding: 6px 10px; font-weight: 600">{{h.beforeLabel}}</th><th scope="col" style="padding: 6px 0 6px 10px; font-weight: 600">{{h.afterLabel}}</th></tr></thead>
+                              <tbody><sc-for list="{{h.rows}}" as="x" hint-placeholder-count="2"><tr style="border-top: 1px solid #EEF1F5"><td style="padding: 6px 10px 6px 0; color: #46546A">{{x.f}}</td><td style="padding: 6px 10px; color: #8F140C; text-decoration: line-through; text-decoration-color: rgba(143,20,12,.4)">{{x.b}}</td><td style="padding: 6px 0 6px 10px; color: #0A6B3D; font-weight: 600">{{x.a}}</td></tr></sc-for></tbody>
+                            </table>
+                          </sc-if>
+                        </sc-if>
+                      </div>
+                    </li>
+                  </sc-for>
+                </ol>
+                <sc-if value="{{histEmpty}}" hint-placeholder-val="{{ false }}"><span style="color: #46546A; font-size: 13px">Nothing recorded yet.</span></sc-if>
+                <a href="AuditTrail.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="trail" tone="brand" size="16" hint-size="16px,16px"></dc-import>Open in the audit trail</a>
+              </div>
+            </sc-if>
+          </section>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ty-discard-q" aria-describedby="ty-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ty-discard-q">Discard your changes?</b><div id="ty-discard-d" style="color: #5F6C80; font-size: 12px">{{discardDetail}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ty-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="ty-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="ty-foot" class="{{footCls}}" style="{{footStyle}}"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ty-cancel" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{closeLabel}}</button>
+              <button type="submit" id="ty-save" class="hb" disabled="{{saving}}" aria-busy="{{savingAria}}" aria-describedby="ty-foot" style="min-width: 112px; justify-content: center; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span></sc-if><sc-if value="{{dIsNewIdle}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="plus" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{saveLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{pbOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 64px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <div class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="ty-pb-title" aria-describedby="ty-pb-sub" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 600px; max-width: 100%; max-height: 100%; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: {{pbTile}}; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{pbGlyph}}" tone="{{pbTone}}" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{pbEyebrow}}</span>
+          <h2 id="ty-pb-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{pbTitle}}</h2>
+          <span id="ty-pb-sub" style="color: #46546A; font-size: 13px">{{pbSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 16px">
+        <sc-if value="{{pbRefused}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="lock" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>This can't be put back.</b> {{pbRefusal}} Nothing was changed.</span></div>
+        </sc-if>
+        <sc-if value="{{pbPreview}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+            <span>{{pbDeletedLine}}</span>
+            <span style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="undo" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{pbBackLine}}</span></span>
+            <sc-for list="{{pbNotes}}" as="n" hint-placeholder-count="1"><span style="display: flex; gap: 8px; align-items: flex-start; color: #46546A"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{n.txt}}</span></span></sc-for>
+          </div>
+          <div style="padding: 12px 14px; border-radius: 12px; background: #F5F6F8; color: #46546A; font-size: 13px">{{pbEffect}}</div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="ty-pb-why" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Why are you putting it back? <span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+            <input id="ty-pb-why" type="text" value="{{pbText}}" onChange="{{onPbWhy}}" maxLength="500" autoComplete="off" aria-required="true" aria-invalid="{{pbInv}}" aria-describedby="{{pbBy}}" placeholder="Kept in the audit trail with the change" style="{{pbStyle}}">
+            <sc-if value="{{pbErr}}" hint-placeholder-val="{{ false }}"><span id="ty-pb-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+          </div>
+        </sc-if>
+        <section style="display: flex; flex-direction: column; gap: 10px; padding-top: 14px; border-top: 1px solid #EEF1F5">
+          <button type="button" class="fr" onClick="{{pbHistToggle}}" aria-expanded="{{pbHistExp}}" style="display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: transparent; font: 700 12px Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #46546A; cursor: pointer; text-align: left"><span class="{{pbHistChev}}"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>History<span style="font-weight: 500; letter-spacing: 0; text-transform: none; color: #5F6C80">· {{pbHistCount}}</span></button>
+          <sc-if value="{{pbHistOpen}}" hint-placeholder-val="{{ false }}">
+            <ol class="ex" style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 14px">
+              <sc-for list="{{pbHist}}" as="h" hint-placeholder-count="2">
+                <li style="display: grid; grid-template-columns: 12px minmax(0, 1fr); gap: 12px">
+                  <span aria-hidden="true" style="{{h.dot}}"></span>
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><b style="font-size: 14px">{{h.op}}</b><span style="{{h.srcStyle}}">{{h.src}}</span><span style="font-size: 13px">{{h.who}}</span><span style="color: #5F6C80; font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{h.when}}</span></div>
+                    <sc-if value="{{h.whyOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">Why: {{h.why}}</span></sc-if>
+                    <sc-if value="{{h.noteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #46546A">{{h.note}}</span></sc-if>
+                  </div>
+                </li>
+              </sc-for>
+            </ol>
+          </sc-if>
+        </section>
+      </div>
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ty-pbd-q" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><b id="ty-pbd-q">Discard your changes?</b></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ty-pb-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="ty-pb-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: flex-end">
+            <button type="button" id="ty-pb-cancel" class="hs" onClick="{{askClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{pbCloseLabel}}</button>
+            <sc-if value="{{pbPreview}}" hint-placeholder-val="{{ true }}"><button type="button" id="ty-pb-go" class="hb" onClick="{{pbGo}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Put it back</button></sc-if>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","search","new","new-errors","edit-app-type","edit-advance","edit","dirty","discard","saving","save-refused","saved","stop","stopped","delete","history","deleted","put-back","put-back-refused","loading","error","many","empty","doc-list","doc-edit","doc-approval","doc-month-review","doc-new","doc-saving","doc-stop-refused","doc-delete","doc-deleted","doc-loading","doc-error","doc-many","doc-empty"],"section":"State"},"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'list');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv); clearTimeout(this._ld); }
+
+  // ---------- this section: Setup › Payment types and Document types, two tabs of one board ----------
+  // (hrp/masters.py KINDS.payment_types and KINDS.doc_types; rulebook.py SYSTEM_TYPES, UNSTOPPABLE_TYPES, STOPPABLE_DOCS)
+  cfg(t) {
+    const tab = t || (this.state && this.state.co) || 'payment_types';
+    if (tab === 'doc_types') return {
+      pre: 'ty', section: 'Document types', defCo: 'doc_types', label: 'Document type', lower: 'document type', plural: 'document types', nameKey: 'label', perEntity: false, glyph: 'document', emptyLink: null,
+      delName: v => v.label,
+      stopNote: 'Stopped: not offered for uploads or required documents. Documents of this type keep it.',
+      useNote: 'In use again: offered for uploads and required documents.',
+      delNote: 'It goes from the list. Show deleted keeps it for you, and it can be put back from there with its history.',
+      groups: [
+        ['The type', [
+          { k: 'key', l: 'Key', t: 'code', req: true, max: 20, hint: 'Short, lower case: tax_form. Stored file names begin with it, so it can’t change once added.' },
+          { k: 'label', l: 'Name', req: true },
+          { k: 'singular', l: 'One of them is called', hint: 'In Next up and the audit pack: 1 tax form.' },
+          { k: 'plural', l: 'Several of them are called', hint: '3 tax forms.' }]],
+        ['Audit pack and SQL Account', [
+          { k: 'pack_order', l: 'Place in the audit pack', t: 'number', hint: 'Lower comes first. Empty: after the others.' },
+          { k: 'from_sql', l: 'Issued by SQL Account', t: 'bool', hint: 'Not asked for from a company that is Kept here.' }]],
+        ['Notes', [{ k: 'notes', l: 'Notes', t: 'area', wide: true }]]
+      ],
+      heads: [['name', 'Name'], ['key', 'Key'], ['sql', 'From SQL'], ['pack', 'Place in the pack', true], ['used', 'Used by', true], ['status', 'Status']],
+      blank: { key: '', label: '', singular: '', plural: '', pack_order: '', from_sql: 0, notes: '' }
+    };
+    return {
+      pre: 'ty', section: 'Payment types', defCo: 'payment_types', label: 'Payment type', lower: 'payment type', plural: 'payment types', nameKey: 'label', perEntity: false, glyph: 'payment', emptyLink: null,
+      delName: v => v.label,
+      stopNote: 'Stopped: not offered for new payments or recurring payments. Payments of this type keep it.',
+      useNote: 'In use again: offered for new payments and recurring payments.',
+      delNote: 'It goes from the list. Show deleted keeps it for you, and it can be put back from there with its history.',
+      groups: [
+        ['The type', [
+          { k: 'key', l: 'Key', t: 'code', req: true, max: 20, hint: 'Short, lower case: water_bill. Records refer to it, so it can’t change once added.' },
+          { k: 'direction', l: 'Money', t: 'select', req: true, opts: [['out', 'Money out (a payment)'], ['in', 'Money in (received)']] },
+          { k: 'label', l: 'Name', req: true, wide: true },
+          { k: 'plural', l: 'Several of them are called', wide: true, hint: 'In Next up: Pay 8 AISB bills. Empty: bills.' }]],
+        ['Legal deadline', [
+          { k: 'legal_due_offset', l: 'Legal deadline in', t: 'select', opts: [['', 'No legal deadline'], ['0', 'The payroll month'], ['1', 'The month after']], hint: 'For payments with a legal deadline, like statutory ones.' },
+          { k: 'legal_due_day', l: 'Legal deadline day', t: 'number', hint: 'A day from 1 to 31.' }]],
+        ['Approval', [{ k: 'approval', l: 'Needs approval', t: 'bool', wide: true, hint: 'A new payment of this type starts with Needs approval ticked, and can be changed on the payment. Approval never blocks a payment: one paid without it shows on Approvals until a signed form is on file.' }]],
+        ['Notes', [{ k: 'notes', l: 'Notes', t: 'area', wide: true }]]
+      ],
+      heads: [['name', 'Name'], ['key', 'Key'], ['dir', 'Money'], ['deadline', 'Legal deadline'], ['approval', 'Needs approval'], ['used', 'Used by', true], ['status', 'Status']],
+      blank: { key: '', direction: 'out', label: '', plural: '', legal_due_offset: '', legal_due_day: '', approval: 1, notes: '' }
+    };
+  }
+  deadline(v) {
+    if (v.legal_due_offset === '' || v.legal_due_offset == null || !v.legal_due_day) return '';
+    return 'Day ' + v.legal_due_day + (String(v.legal_due_offset) === '1' ? ', the month after' : ', the payroll month');
+  }
+  rowOf(r) {
+    const v = r.vals;
+    if (this.state.co === 'doc_types') return { name: v.label, sub: v.plural ? 'Several: ' + v.plural : '',
+      cells: [v.key, v.from_sql ? 'Yes' : '—', v.pack_order === '' || v.pack_order == null ? '—' : String(v.pack_order)],
+      sort: { name: v.label, key: v.key, sql: v.from_sql ? 'a' : 'b', pack: v.pack_order === '' ? 99 : +v.pack_order },
+      text: [v.label, v.key, v.singular, v.plural, v.from_sql ? 'sql' : ''].join(' ') };
+    return { name: v.label, sub: v.plural ? 'Several: ' + v.plural : '',
+      cells: [v.key, v.direction === 'in' ? 'Money in' : 'Money out', this.deadline(v) || '—', +v.approval ? 'Yes' : 'No'],
+      sort: { name: v.label, key: v.key, dir: v.direction, deadline: this.deadline(v) || 'zz', approval: +v.approval ? 'a' : 'b' },
+      text: [v.label, v.key, v.plural, v.direction === 'in' ? 'money in' : 'money out', this.deadline(v)].join(' ') };
+  }
+  manyRows(K, from) {
+    const NAMES = K === 'doc_types'
+      ? ['Quotation', 'Delivery order', 'Purchase order', 'Insurance policy', 'Lease agreement', 'Warranty card', 'Customs form', 'Permit', 'Licence', 'Meeting minutes', 'Board resolution', 'Stamp duty receipt']
+      : ['Insurance premium', 'Courier', 'Subscription', 'Licence fee', 'Audit fee', 'Legal fee', 'Repairs', 'Fuel', 'Cleaning', 'Security', 'Bank charges', 'Donation'];
+    const out = [];
+    for (let i = 0; i < 36; i++) {
+      const nm = NAMES[i % NAMES.length] + (i < NAMES.length ? '' : i < 2 * NAMES.length ? ' (monthly)' : ' (annual)'), key = nm.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 20);
+      const hist = [{ when: '5 Mar 2026, 09:10', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }];
+      out.push(K === 'doc_types'
+        ? { id: 200 + from + i, status: i % 11 === 10 ? 'stopped' : 'live', vals: { key, label: nm, singular: nm.toLowerCase(), plural: '', pack_order: '', from_sql: 0, notes: '' }, used: i % 3 ? [['documents', 2 + i]] : [], locked: { key: 'Records refer to it by this key, so it can’t change once added.' }, notes: [], hist, canStop: true }
+        : { id: 200 + from + i, status: i % 11 === 10 ? 'stopped' : 'live', vals: { key, direction: 'out', label: nm, plural: '', legal_due_offset: '', legal_due_day: '', notes: '', approval: i % 4 === 3 ? 0 : 1 }, used: i % 3 ? [['payments', 2 + i]] : [], locked: { key: 'Records refer to it by this key, so it can’t change once added.' }, notes: [], hist });
+    }
+    return out;
+  }
+  // the states the State tweak shows
+  viewState(view, base0, recs, del) {
+    const K = view.startsWith('doc-') ? 'doc_types' : 'payment_types', base = { ...base0, co: K }, c = this.cfg(K);
+    const edit = (id, extra) => { const r = recs[K].find(x => x.id === id); return { ...base, dlg: { id, isNew: false }, form: { ...r.vals }, loaded: { ...r.vals }, ...extra }; };
+    const neu = extra => ({ ...base, dlg: { id: null, isNew: true }, form: { ...c.blank }, loaded: { ...c.blank }, ...extra });
+    const putOn = (rid, extra) => ({ ...base, deleted: true, put: { rid, mode: 'put' }, ...extra });
+    switch (view) {
+      case 'search': return { ...base, q: 'claim' };
+      case 'new': return neu({});
+      case 'new-errors': return neu({ tried: true, form: { ...c.blank, key: '9_bill', label: 'Water bill', legal_due_offset: '1' } });
+      case 'edit-app-type': return edit(4, {});
+      case 'edit-advance': return edit(17, {});
+      case 'saving': { const s = edit(12, { saving: true }); s.form = { ...s.form, approval: 1, plural: 'water bills and sewerage' }; return s; }
+      case 'save-refused': { const s = edit(12, { saveRefuse: 'This payment type was changed in another window at 10:12, after you opened it. Close this and open it again to see that change, then make yours again.' }); s.form = { ...s.form, approval: 1 }; return s; }
+      case 'loading': case 'doc-loading': return { ...base, load: 'loading' };
+      case 'error': case 'doc-error': return { ...base, load: 'error' };
+      case 'empty': case 'doc-empty': return { ...base, recs: { ...recs, [K]: [] }, del: { ...del, [K]: [] } };
+      case 'many': case 'doc-many': return { ...base, recs: { ...recs, [K]: [...recs[K], ...this.manyRows(K, recs[K].length)] } };
+      case 'doc-approval': return edit(104, {});
+      case 'doc-month-review': return edit(120, {});
+      case 'doc-saving': { const s = edit(108, { saving: true }); s.form = { ...s.form, pack_order: '9' }; return s; }
+      case 'edit': return edit(12, {});
+      case 'dirty': { const s = edit(12, {}); s.form = { ...s.form, plural: 'water bills and sewerage' }; return s; }
+      case 'discard': { const s = edit(12, { confirm: true }); s.form = { ...s.form, plural: 'water bills and sewerage' }; return s; }
+      case 'saved': return edit(12, { toast: { text: 'Saved', undo: true } });
+      case 'stop': return edit(12, { why: 'stop', whyText: 'Water is on the utility bill from December.' });
+      case 'doc-stop-refused': { const r = recs[K].find(x => x.id === 107); return edit(107, { why: 'stop', whyText: 'The workbook is kept on HR › Payroll › Workbook check instead.', refuse: r.stopBlock }); }
+      case 'stopped': {
+        const s = edit(12, { pillN: 1, toast: { text: 'Stopped. Its history stays.', undo: true }, undo: { id: 12, co: K } });
+        s.recs = { ...recs, [K]: recs[K].map(r => (r.id === 12 ? { ...r, status: 'stopped' } : r)) };
+        return s;
+      }
+      case 'delete': return edit(13, { why: 'delete' });
+      case 'history': return edit(12, { histOpen: true, histExp: { 0: true } });
+      case 'deleted': return { ...base, deleted: true };
+      case 'put-back': return putOn('d1', {});
+      case 'put-back-refused': return putOn('d2', {});
+      case 'doc-list': return base;
+      case 'doc-edit': return edit(108, {});
+      case 'doc-new': return neu({});
+      case 'doc-delete': return edit(116, { why: 'delete' });
+      case 'doc-deleted': return { ...base, deleted: true };
+      default: return base;
+    }
+  }
+  errors(f) {
+    const e = {}, doc = this.state.co === 'doc_types', me = this.state.dlg ? this.state.dlg.id : null;
+    for (const x of this.fields()) if (x.req && !String(f[x.k] ?? '').trim()) e[x.k] = 'This can’t be empty.';
+    const key = String(f.key || '').trim();
+    if (!e.key && !/^[a-z][a-z0-9_]{1,19}$/.test(key.toLowerCase())) e.key = 'Lower-case letters, digits and _ only, 2 to 20 characters, starting with a letter.';
+    else if (!e.key && this.list().some(r => r.id !== me && r.vals.key === key)) e.key = 'There is already a ' + (doc ? 'document' : 'payment') + ' type with the key ' + key + '.';
+    if (!doc) {
+      const off = String(f.legal_due_offset ?? ''), day = String(f.legal_due_day ?? '').trim();
+      if ((off === '') !== (day === '')) e[off === '' ? 'legal_due_offset' : 'legal_due_day'] = 'Give both the month and the day, or neither.';
+      else if (day && !(+day >= 1 && +day <= 31 && Number.isInteger(+day))) e.legal_due_day = 'A day from 1 to 31.';
+    } else if (String(f.pack_order ?? '').trim() && !Number.isInteger(+f.pack_order)) e.pack_order = 'Give a whole number.';
+    return e;
+  }
+  clean(f) { return { ...f, key: String(f.key || '').trim() }; }
+  extra() { return null; }
+  // the tabs, and the Setup menu lit on the tab showing
+  more() {
+    const st = this.state, tab = st.co;
+    const pick = k => { const s = this.state; if (k !== s.co && !s.dlg && !s.put) this.setState({ co: k, q: '', sort: null, panelN: (s.panelN || 0) + 1 }); };
+    const T = [['payment_types', 'Payment types', 'payment'], ['doc_types', 'Document types', 'document']];
+    return {
+      topPage: tab === 'doc_types' ? 'Document types' : 'Payment types',
+      navActive: tab, navPick: k => pick(k),
+      pageHelp: tab === 'doc_types' ? 'The kinds of document uploaded for payments, approvals and checklist items, and where the audit pack files them. The app’s own types (including Approval form, Month review and Tax clearance letter) can’t be deleted.'
+        : 'The kinds of payment a month holds, which way the money goes, any legal deadline, and whether a payment of that type needs approval to start with. The app’s own types (including Staff claim, Salary advance and Payroll run) can’t be deleted; add one for any other kind of payment.',
+      searchLabel: 'Search ' + this.cfg().plural,
+      tabBy: 'ty-tab-' + tab, panelCls: st.panelN ? (st.panelN % 2 ? 'swapA' : 'swapB') : '',
+      tabs: T.map(([k, label, glyph], i) => {
+        const on = k === tab;
+        return { id: 'ty-tab-' + k, label, glyph, tone: on ? 'brand' : 'muted', n: (st.recs[k] || []).length, sel: on ? 'true' : 'false', ti: on ? 0 : -1,
+          pick: () => pick(k),
+          key: e => {
+            const to = e.key === 'ArrowRight' || e.key === 'ArrowLeft' ? 1 - i : e.key === 'Home' ? 0 : e.key === 'End' ? 1 : null;
+            if (to === null) return;
+            e.preventDefault();
+            this._focusId = 'ty-tab-' + T[to][0];
+            pick(T[to][0]);
+          },
+          style: 'display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;margin-bottom:-1px;border:0;border-bottom:2px solid ' + (on ? '#2450B8' : 'transparent') + ';background:transparent;font:600 14px Inter,sans-serif;cursor:pointer;transition:border-color .12s ease-out,color .12s ease-out;' + (on ? 'color:#0F1A2B' : 'color:#46546A') };
+      })
+    };
+  }
+  companyList() { return [['AISB', 'AISB'], ['AI', 'Agrinexus International']]; }
+  records() {
+    const KEY = 'Records refer to it by this key, so it can’t change once added.';
+    const OUT = 'The app relies on this type being money out.', IN = 'The app relies on this type being money in.';
+    const USED = 'Payments of this type are money out, so it can’t change once it has any.';
+    const FILED = 'Filed months judged their payments of this type by this deadline, so it can’t change once one is filed. Reopen the filed months first if it really must.';
+    const seed = { when: '6 Jan 2025, 08:02', op: 'As it stood', src: 'Starting data', who: '', note: 'As it stood when the audit trail started.' };
+    const p = (id, key, label, plural, dir, used, more) => ({ id, status: 'live', vals: { key, direction: dir, label, plural, legal_due_offset: '', legal_due_day: '', notes: '' }, used, locked: { key: KEY, direction: USED }, notes: [], hist: [seed], ...(more || {}) });
+    const app = (dir, stoppable) => ({ system: true, canStop: !!stoppable, locked: { key: KEY, direction: dir === 'in' ? IN : OUT } });
+    const pay = [
+      p(1, 'salary', 'Salary', 'salaries', 'out', [['payments', 264], ['recurring payments', 2], ['approval forms', 2], ['budget lines', 24], ['matching word rules', 2]], app('out')),
+      p(2, 'director', 'Director allowance', 'salaries', 'out', [['payments', 44], ['recurring payments', 1], ['approval forms', 1], ['budget lines', 12]], app('out')),
+      p(3, 'consultant', 'Consultant fee', 'consultant fees', 'out', [['payments', 26], ['recurring payments', 1], ['approval forms', 2], ['budget lines', 12]]),
+      p(4, 'statutory', 'Statutory (KWSP / PERKESO / LHDN)', 'statutory', 'out', [['payments', 132], ['recurring payments', 5], ['budget lines', 36], ['checklist rules', 3], ['matching word rules', 3]],
+        { system: true, canStop: false, locked: { key: KEY, direction: OUT, legal_due_offset: FILED, legal_due_day: FILED } }),
+      p(5, 'utility', 'Utility / telco', '', 'out', [['payments', 58], ['recurring payments', 2], ['budget lines', 12]]),
+      p(6, 'rental', 'Rental', '', 'out', [['payments', 22], ['recurring payments', 1], ['approval forms', 1], ['budget lines', 12]]),
+      p(7, 'claim', 'Staff claim', 'claims', 'out', [['payments', 91], ['claims', 5], ['approval forms', 2], ['budget lines', 12]], app('out')),
+      p(17, 'advance', 'Salary advance', 'salary advances', 'out', [['advances', 3], ['approval forms', 2]], app('out')),
+      p(18, 'payroll_run', 'Payroll run', 'payroll runs', 'out', [], app('out')),
+      p(8, 'claim_overseas', 'Staff claim - overseas service (self-billed e-Invoice)', 'claims', 'out', [['payments', 9]], app('out', true)),
+      p(9, 'transfer', 'Inter-company transfer', 'transfers', 'out', [['payments', 14]]),
+      p(10, 'receipt', 'Money received', 'receipts', 'in', [['payments', 38], ['recurring payments', 1], ['budget lines', 12]], app('in')),
+      p(11, 'other', 'Other payment', '', 'out', [['payments', 17], ['recurring payments', 2], ['approval forms', 3]], app('out')),
+      p(12, 'water_bill', 'Water bill', 'water bills', 'out', [['payments', 4]],
+        { hist: [{ when: '4 Mar 2026, 10:12', op: 'Changed', src: 'In the app', who: 'Aisha Rahman', rows: [['Several of them are called', '—', 'water bills']] },
+          { when: '2 Sep 2025, 09:30', op: 'Added', src: 'In the app', who: 'Aisha Rahman', why: 'Water was paid under Utility / telco until now.', added: true, rows: [['Key', '', 'water_bill'], ['Name', '', 'Water bill'], ['Money', '', 'Money out (a payment)']] }] }),
+      p(13, 'insurance', 'Insurance premium', '', 'out', [], { locked: { key: KEY }, hist: [{ when: '16 Nov 2026, 15:02', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true, rows: [['Key', '', 'insurance'], ['Name', '', 'Insurance premium']] }] }),
+      p(14, 'training', 'Training fee', 'training fees', 'out', [['payments', 2]], { status: 'stopped', hist: [{ when: '1 Jul 2026, 12:00', op: 'Stopped', src: 'In the app', who: 'Aisha Rahman', why: 'Training is paid as a staff claim now.', rows: [['In use', 'Yes', 'No']] }, seed] })
+    ];
+    pay[3].vals.legal_due_offset = '1'; pay[3].vals.legal_due_day = '15';
+    // "Needs approval" default per type: statutory, utility and money in need none; every other type does (never blocks a payment)
+    pay.forEach(r => { r.vals.approval = ['statutory', 'utility', 'receipt'].includes(r.vals.key) ? 0 : 1; });
+    pay.find(r => r.id === 17).notes = ['Money advanced to a person and taken back from their pay. Added on HR › Claims and advances; it appears here so its approval default can be set.'];
+    pay.find(r => r.id === 18).notes = ['The month’s salary run, approved once on a printed form (HR › Payroll). It is the payment a run makes in To pay.'];
+    pay.find(r => r.id === 7).notes = ['Claims entered on HR › Claims and advances are paid as this type. Claim types (Setup › HR) say which expense account each claim goes to.'];
+    const RELY = 'The app relies on this.';
+    const d = (id, key, label, singular, plural, pack, sql, used, more) => ({ id, status: 'live', system: true, canStop: false,
+      vals: { key, label, singular, plural, pack_order: pack, from_sql: sql, notes: '' }, used, locked: { key: KEY, from_sql: RELY }, notes: [], hist: [seed], ...(more || {}) });
+    const SETB = n => 'It is still required for ' + n + ' sets of required documents. Take it off their required documents first.';
+    const CHKB = 'The Payroll check files its workbook under this type, and the monthly checklist asks for it, so it can’t be stopped yet.';
+    const can = { canStop: true };
+    const docs = [
+      d(101, 'pv', 'Payment Voucher (SQL)', 'payment voucher', 'payment vouchers', '1', 1, [['documents', 512], ['sets of required documents', 9]]),
+      d(102, 'jv', 'Journal Voucher (SQL)', 'journal voucher', 'journal vouchers', '2', 1, [['documents', 40]]),
+      d(103, 'or', 'Official Receipt (SQL)', 'official receipt', 'official receipts', '3', 1, [['documents', 38], ['sets of required documents', 1]]),
+      d(104, 'approval', 'Approval form (signed)', 'approval form', 'approval forms', '4', 0, [['documents', 169], ['approval forms', 9], ['sets of required documents', 4]], { notes: ['The Approval box of a required-documents set is filled by an approved form on file (Approvals). Approvals from before October 2026, kept as emails and scans, stay under this type.'] }),
+      d(105, 'invoice', 'Invoice / bill', 'invoice', 'invoices', '5', 0, [['documents', 302], ['sets of required documents', 6]]),
+      d(106, 'claim', 'Claim form & receipts', 'claim form', 'claim forms', '6', 0, [['documents', 91], ['sets of required documents', 2]], { canStop: true, stopBlock: SETB(2) }),
+      d(107, 'payroll', 'Payroll summary', 'payroll summary', 'payroll summaries', '7', 0, [['documents', 24], ['checklist items', 1], ['Payroll check workbooks', 3]], { canStop: true, stopBlock: CHKB, notes: ['The Payroll check files the checked workbook here. It is the item "Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB" on the Monthly checklist.'] }),
+      d(108, 'payslip', 'Payslip', 'payslip', 'payslips', '8', 0, [['documents', 308], ['sets of required documents', 2], ['joiner or leaver reminder rules', 1]], { canStop: true, stopBlock: SETB(2) }),
+      d(109, 'portal', 'Acknowledgement / portal bill', 'acknowledgement', 'acknowledgements', '9', 0, [['documents', 132], ['sets of required documents', 1]], { canStop: true, stopBlock: SETB(1) }),
+      d(110, 'bank', 'Bank receipt / transfer slip', 'bank receipt', 'bank receipts', '10', 0, [['documents', 488], ['sets of required documents', 11]]),
+      d(111, 'einvoice', 'e-Invoice (MyInvois)', 'e-Invoice', 'e-Invoices', '11', 0, [['documents', 46], ['sets of required documents', 1]]),
+      d(112, 'statement', 'Bank statement', '', '', '', 0, [['documents', 66], ['checklist items', 1]]),
+      d(113, 'recon', 'Bank reconciliation', '', '', '', 0, [['documents', 22], ['checklist items', 1]]),
+      d(114, 'sqlexport', 'SQL Account export', '', '', '', 0, [['documents', 30]]),
+      d(115, 'other', 'Other', '', '', '12', 0, [['documents', 19]]),
+      d(116, 'tax_form', 'Tax form', 'tax form', 'tax forms', '', 0, [], { system: false, canStop: true, locked: { key: KEY }, hist: [{ when: '17 Nov 2026, 09:20', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true, rows: [['Key', '', 'tax_form'], ['Name', '', 'Tax form']] }] }),
+      d(120, 'month_review', 'Month review (signed)', 'month review', 'month reviews', '13', 0, [['checklist items', 1], ['approval forms', 1]], { notes: ['The printed Month review, signed by one approver and uploaded on Approvals. The checklist item "Month reviewed" ticks when it is on file.'] }),
+      d(121, 'tax_clearance', 'Tax clearance letter (LHDN)', 'tax clearance letter', 'tax clearance letters', '14', 0, [['leaver reminders', 1]], { notes: ['The letter LHDN sends after a CP22A or CP21. Until it is on file, the leaver’s final payment shows "Hold until tax clearance" in To pay.'] }),
+      d(117, 'quotation', 'Quotation', 'quotation', 'quotations', '', 0, [['documents', 3]], { system: false, canStop: true, status: 'stopped', locked: { key: KEY, from_sql: 'Documents and rules of this type are filed by it, so it can’t change once used.' }, notes: [] })
+    ];
+    docs[7].hist = [{ when: '9 Sep 2026, 14:44', op: 'Changed', src: 'In the app', who: 'Aisha Rahman', why: 'Payslips come before the bank slip in the pack.', rows: [['Place in the audit pack', '10', '8']] }, seed];
+    return { payment_types: pay, doc_types: docs };
+  }
+  deletedRows() {
+    return {
+      payment_types: [
+        { rid: 'd1', id: 15, co: 'payment_types', name: 'Donation', at: '12 Oct 2026, 15:40', entry: 1121, by: 'Aisha Rahman', why: 'Donations go under Other payment.', same: true, notes: [],
+          vals: { key: 'donation', direction: 'out', label: 'Donation', plural: 'donations', legal_due_offset: '', legal_due_day: '', approval: 1, notes: '' },
+          hist: [{ when: '12 Oct 2026, 15:40', op: 'Removed', src: 'In the app', who: 'Aisha Rahman', why: 'Donations go under Other payment.', removed: true }, { when: '10 Oct 2026, 11:15', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }] },
+        { rid: 'd2', id: 16, co: 'payment_types', name: 'Water', at: '1 Sep 2025, 17:20', entry: 412, by: 'Aisha Rahman', why: 'Named wrongly; added again as Water bill.', same: true, notes: [],
+          problem: 'There is a payment type with the key water_bill now, so this one can’t be put back.',
+          vals: { key: 'water_bill', direction: 'out', label: 'Water', plural: '', legal_due_offset: '', legal_due_day: '', approval: 1, notes: '' },
+          hist: [{ when: '1 Sep 2025, 17:20', op: 'Removed', src: 'In the app', who: 'Aisha Rahman', why: 'Named wrongly; added again as Water bill.', removed: true }, { when: '1 Sep 2025, 17:02', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }] }
+      ],
+      doc_types: [
+        { rid: 'd3', id: 118, co: 'doc_types', name: 'Work permit', at: '8 Aug 2026, 10:05', entry: 958, by: 'Aisha Rahman', why: 'Kept with the staff file instead.', same: true, notes: [],
+          vals: { key: 'work_permit', label: 'Work permit', singular: 'work permit', plural: 'work permits', pack_order: '', from_sql: 0, notes: '' },
+          hist: [{ when: '8 Aug 2026, 10:05', op: 'Removed', src: 'In the app', who: 'Aisha Rahman', why: 'Kept with the staff file instead.', removed: true }, { when: '2 Aug 2026, 09:00', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }] }
+      ]
+    };
+  }
+
+  // ---------- the shared Setup record pattern (same on every Setup list board) ----------
+  fields() { return this.cfg().groups.flatMap(g => g[1]); }
+  init(view) {
+    const recs = this.records(), del = this.deletedRows();
+    const base = { co: this.cfg().defCo, q: '', sort: null, stopped: false, deleted: false, noCo: false, recs, del,
+      dlg: null, put: null, closing: false, form: null, loaded: null, tried: false, why: null, whyText: '', whyErr: false,
+      confirm: false, footMsg: '', footN: 0, histOpen: false, histExp: {}, notesN: 0, pillN: 0,
+      pbText: '', pbErr: false, pbHist: false, load: null, saving: false, saveRefuse: '', toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0 };
+    return this.viewState(view, base, recs, del);
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.companies !== this.props.companies)) {
+      clearTimeout(this._t); clearTimeout(this._tt);
+      const nx = this.init(this.props.view || 'list');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state, p = this.cfg().pre;
+    const open = !!(st.dlg || st.put), was = !!(prev.dlg || prev.put);
+    if (open && !was) { this.focusId(st.dlg ? p + '-title' : p + '-pb-title'); return; }
+    if (!open && was) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId(p + '-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId(p + (st.put ? '-pb-keep' : '-keep')); return; }
+    if (prev.confirm && !st.confirm && open && !st.closing) this.focusId(p + (st.put ? '-pb-cancel' : '-cancel'));
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+  list(co) { return (this.state.recs[co || this.state.co] || []); }
+  rec(id) { return this.list().find(r => r.id === id) || null; }
+  setRec(id, fn) { const st = this.state; this.setState({ recs: { ...st.recs, [st.co]: this.list().map(r => (r.id === id ? fn(r) : r)) } }); }
+  dirty() {
+    const st = this.state;
+    if (st.put) return !!st.pbText.trim();
+    if (!st.dlg) return false;
+    return JSON.stringify(st.form) !== JSON.stringify(st.loaded) || !!st.whyText.trim();
+  }
+  openRec(id) {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const r = this.rec(id);
+    if (!r) return;
+    clearTimeout(this._t);
+    this.setState({ dlg: { id, isNew: false }, put: null, closing: false, form: { ...r.vals }, loaded: { ...r.vals }, tried: false, why: null, whyText: '', whyErr: false, confirm: false, footMsg: '', histOpen: false, histExp: {}, notesN: 0 });
+  }
+  openNew() {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    const b = { ...this.cfg().blank };
+    clearTimeout(this._t);
+    this.setState({ dlg: { id: null, isNew: true }, put: null, closing: false, form: b, loaded: { ...b }, tried: false, why: null, whyText: '', whyErr: false, confirm: false, footMsg: '', histOpen: false, histExp: {} });
+  }
+  openPut(rid, mode) {
+    if (this.state.dlg || this.state.put) return;
+    this._opener = document.activeElement;
+    clearTimeout(this._t);
+    this.setState({ put: { rid, mode }, dlg: null, closing: false, pbText: '', pbErr: false, pbHist: mode === 'hist', confirm: false });
+  }
+  askClose() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDrawer();
+  }
+  closeDrawer() {
+    const st = this.state;
+    if (!(st.dlg || st.put) || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    const st = this.state;
+    if (!(st.dlg || st.put)) return;
+    const next = { dlg: null, put: null, closing: false, confirm: false, why: null, whyText: '', whyErr: false, pbText: '', pbErr: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = st.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  toast(text, extra, undoFn) { clearTimeout(this._tt); this._undoFn = undoFn || null; this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state, c = this.cfg();
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    const errs = this.errors(st.form), first = this.fields().find(x => errs[x.k]);
+    if (first) { this._focusId = c.pre + '-f-' + first.k; this.setState({ tried: true, saveRefuse: '' }); return; }
+    if (!st.dlg.isNew && JSON.stringify(st.form) === JSON.stringify(st.loaded)) { this.setState({ footMsg: 'Nothing has changed.', footN: st.footN + 1 }); return; }
+    // saving takes the button for a moment (the fields lock), then the change is kept
+    this.setState({ saving: true, saveRefuse: '', footMsg: '' });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => this.commitSave(), 700);
+  }
+  commitSave() {
+    const st = this.state, c = this.cfg();
+    if (!st.dlg || !st.saving) return;
+    const vals = this.clean(st.form);
+    if (st.dlg.isNew) {
+      const id = 100 + st.footN + Object.values(st.recs).flat().length;
+      const r = { id, status: 'live', vals, used: [], locked: { key: 'Records refer to it by this key, so it can’t change once added.' }, notes: [], hist: [{ when: '18 Nov 2026, 10:15', op: 'Added', src: 'In the app', who: 'Aisha Rahman', added: true }] };
+      this._changed = id;
+      this.setState({ saving: false, recs: { ...st.recs, [st.co]: [...this.list(), r] }, dlg: { id, isNew: false }, form: { ...vals }, loaded: { ...vals }, tried: false, footMsg: '', notesN: st.notesN + 1 });
+      this.toast(c.label + ' added', { undo: true }, () => {
+        const s2 = this.state;
+        this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).filter(x => x.id !== id) }, dlg: null, closing: false, confirm: false, why: null });
+        this.toast(c.label + ' removed again');
+      });
+      return;
+    }
+    const id = st.dlg.id, before = this.rec(id);
+    this._changed = id;
+    this.setRec(id, r => ({ ...r, vals, hist: [{ when: '18 Nov 2026, 10:15', op: 'Changed', src: 'In the app', who: 'Aisha Rahman',
+      rows: this.fields().filter(x => JSON.stringify(st.form[x.k]) !== JSON.stringify(st.loaded[x.k])).map(x => [x.l, this.shown(x, st.loaded[x.k]), this.shown(x, st.form[x.k])]) }, ...r.hist] }));
+    this.setState({ saving: false, form: { ...vals }, loaded: { ...vals }, footMsg: '', tried: false, notesN: st.notesN + 1 });
+    this.toast('Saved', { undo: true }, () => {
+      const s2 = this.state;
+      this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).map(r => (r.id === id ? before : r)) }, form: s2.dlg && s2.dlg.id === id ? { ...before.vals } : s2.form, loaded: s2.dlg && s2.dlg.id === id ? { ...before.vals } : s2.loaded, flashId: id, flashN: s2.flashN + 1 });
+      this.toast('Change undone');
+    });
+  }
+  shown(x, v) { if (x.t === 'bool') return v ? 'Yes' : 'No'; if (x.opts) { const o = x.opts.find(p => String(p[0]) === String(v)); return o ? o[1] : '—'; } return v === '' || v == null ? '—' : String(v); }
+  startWhy(act) {
+    const st = this.state;
+    if (st.why === act) return this.setState({ why: null, whyText: '', whyErr: false });
+    this._focusId = this.cfg().pre + '-why';
+    this.setState({ why: act, whyText: '', whyErr: false, refuse: '' });
+  }
+  whyGo() {
+    const st = this.state, c = this.cfg(), act = st.why, reason = st.whyText.trim();
+    if (!act || !st.dlg) return;
+    if (!reason) { this._focusId = c.pre + '-why'; this.setState({ whyErr: true }); return; }
+    const id = st.dlg.id, r = this.rec(id);
+    if (!r) return;
+    if (act === 'stop' && r.stopBlock) { this._focusId = c.pre + '-why-refused'; this.setState({ refuse: r.stopBlock }); return; }
+    if (!['stop', 'use', 'delete'].includes(act)) { const x = this.extra(r); if (x && x.go) x.go(reason); return; }
+    const step = { when: '18 Nov 2026, 10:16', src: 'In the app', who: 'Aisha Rahman', why: reason };
+    if (act === 'delete') {
+      const d = { rid: 'n' + id, id, co: st.co, name: c.delName ? c.delName(r.vals) : r.vals[c.nameKey], at: '18 Nov 2026, 10:16', entry: 1231, by: 'Aisha Rahman', why: reason, same: true, notes: [], vals: { ...r.vals },
+        hist: [{ ...step, op: 'Removed', removed: true }, ...r.hist] };
+      this.setState({ dlg: { ...st.dlg, title: r.vals[c.nameKey] }, recs: { ...st.recs, [st.co]: this.list().filter(x => x.id !== id) }, del: { ...st.del, [st.co]: [d, ...(st.del[st.co] || [])] }, why: null, whyText: '', whyErr: false });
+      this._opener = document.getElementById(c.pre + '-add');
+      this.closeDrawer();
+      this.toast(c.label + ' deleted', { undo: true }, () => {
+        const s2 = this.state;
+        this.setState({ recs: { ...s2.recs, [st.co]: [...(s2.recs[st.co] || []), r] }, del: { ...s2.del, [st.co]: (s2.del[st.co] || []).filter(x => x.rid !== d.rid) }, flashId: id, flashN: s2.flashN + 1 });
+        this.toast(c.label + ' back as it was');
+      });
+      return;
+    }
+    const stop = act === 'stop';
+    this._changed = id;
+    this._focusId = c.pre + (stop ? '-act-use' : '-act-stop');
+    this.setRec(id, x => ({ ...x, status: stop ? 'stopped' : 'live', hist: [{ ...step, op: stop ? 'Stopped' : 'In use again', rows: [['In use', stop ? 'Yes' : 'No', stop ? 'No' : 'Yes']] }, ...x.hist] }));
+    this.setState({ why: null, whyText: '', whyErr: false, pillN: st.pillN + 1, undo: stop ? { id, co: st.co } : null });
+    this.toast(stop ? 'Stopped. Its history stays.' : 'In use again', { undo: true }, stop ? null : () => {
+      const s2 = this.state;
+      this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).map(x => (x.id === id ? r : x)) }, undo: null, pillN: s2.pillN + 1, flashId: id, flashN: s2.flashN + 1 });
+      this.toast('Stopped again. Its history stays.');
+    });
+  }
+  undoStop() {
+    const u = this.state.undo;
+    if (!u) return;
+    const st = this.state;
+    this.setState({ recs: { ...st.recs, [u.co]: (st.recs[u.co] || []).map(r => (r.id === u.id ? { ...r, status: 'live', hist: r.hist.slice(1) } : r)) }, undo: null, pillN: st.pillN + 1, flashId: u.id, flashN: st.flashN + 1 });
+    this.toast('In use again');
+  }
+  pbGo() {
+    const st = this.state, c = this.cfg();
+    if (!st.put || st.put.refused) return;
+    const d = (st.del[st.co] || []).find(x => x.rid === st.put.rid);
+    if (!d) return;
+    if (!st.pbText.trim()) { this._focusId = c.pre + '-pb-why'; this.setState({ pbErr: true }); return; }
+    const id = d.same ? d.id : d.newId;
+    const r = { id, status: 'live', vals: { ...d.vals }, used: [], locked: { key: 'Records refer to it by this key, so it can’t change once added.' }, notes: [], hist: [{ when: '18 Nov 2026, 10:20', op: 'Put back', src: 'In the app', who: 'Aisha Rahman', why: st.pbText.trim(), note: 'From entry ' + d.entry + (d.same ? ', with the same number.' : ', as #' + id + '.') }, ...d.hist] };
+    this._changed = id;
+    this.setState({ recs: { ...st.recs, [st.co]: [...this.list(), r] }, del: { ...st.del, [st.co]: st.del[st.co].filter(x => x.rid !== d.rid) }, pbText: '', pbErr: false });
+    this._opener = document.getElementById(c.pre + '-add');
+    this.closeDrawer();
+    this.toast(d.name + ' put back' + (d.same ? '' : ' as #' + id), { undo: true }, () => {
+      const s2 = this.state;
+      this.setState({ recs: { ...s2.recs, [st.co]: (s2.recs[st.co] || []).filter(x => x.id !== id) }, del: { ...s2.del, [st.co]: [d, ...(s2.del[st.co] || [])] } });
+      this.toast(d.name + ' deleted again');
+    });
+  }
+  histItems(list, prefix, expanded, toggle) {
+    const SRC = { 'In the app': 'background:#EAF0FD;color:#2450B8', 'Starting data': 'background:#EEF1F5;color:#46546A', 'Import': 'background:#EEF1F5;color:#46546A' };
+    return (list || []).map((h, i) => {
+      const rows = (h.rows || []).map(([f, b, a]) => ({ f, b: b === '' ? '—' : b, a: a === '' ? '—' : a }));
+      const open = !!(expanded && expanded[i]);
+      return { op: h.op, src: h.src, who: h.who || '', when: h.when, why: h.why || '', whyOn: !!h.why, note: h.note || '', noteOn: !!h.note,
+        srcStyle: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;' + (SRC[h.src] || SRC['Starting data']),
+        dot: 'width:10px;height:10px;margin-top:5px;border-radius:99px;box-sizing:border-box;' + (h.op === 'Put back' ? 'background:#2450B8' : h.removed ? 'background:#FFFFFF;border:2px solid #B0190F' : h.op === 'As it stood' ? 'background:#FFFFFF;border:2px solid #8792A2' : 'background:#0A6B3D'),
+        diffOn: rows.length > 0, rows, open, exp: open ? 'true' : 'false', chev: open ? 'chev on' : 'chev',
+        diffLabel: open ? 'Hide what changed' : (h.removed ? 'Show what was removed' : h.added ? 'Show what was added' : 'Show what changed'),
+        beforeLabel: h.added ? '' : 'Before', afterLabel: h.removed ? '' : 'After',
+        toggle: () => toggle(i) };
+    });
+  }
+  renderVals() {
+    const st = this.state, c = this.cfg(), p = c.pre;
+    const P = { ok: 'background:#E3F7EC;color:#0A6B3D', grey: 'background:#EEF1F5;color:#46546A' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const cos = this.companyList();
+    const coName = c.perEntity ? (cos.find(x => x[0] === st.co) || cos[0])[0] : '';
+    const all = this.list();
+    const used = r => r.used.reduce((n, u) => n + u[1], 0);
+    const usedTxt = r => r.used.map(u => u[1] + ' ' + u[0]).join(', ');
+    const nStopped = all.filter(r => r.status === 'stopped').length;
+    const visible = all.filter(r => st.stopped || r.status !== 'stopped');
+    const q = st.q.trim().toLowerCase();
+    let shown = visible.filter(r => !q || (this.rowOf(r).text + ' ' + usedTxt(r) + ' ' + (r.status === 'stopped' ? 'stopped' : 'in use')).toLowerCase().includes(q));
+    if (st.sort) {
+      const { col, dir } = st.sort;
+      const key = r => col === 'used' ? used(r) : col === 'status' ? r.status : String(this.rowOf(r).sort[col] || '').toLowerCase();
+      shown = shown.slice().sort((a, b) => { const x = key(a), y = key(b); return (x < y ? -1 : x > y ? 1 : 0) * dir; });
+    }
+    const heads = c.heads.map(([k, label, num], i) => {
+      const on = st.sort && st.sort.col === k, dir = on ? st.sort.dir : 0;
+      return { label, sort: on ? (dir > 0 ? 'ascending' : 'descending') : 'none',
+        glyph: on ? (dir > 0 ? 'arrowUp' : 'arrowDown') : 'sort', tone: on ? 'brand' : 'muted',
+        thStyle: 'padding:4px ' + (i === 0 ? '12px 4px 12px' : i === c.heads.length - 1 ? '12px 4px 6px' : '6px') + ';font-weight:600;' + (num ? 'text-align:right' : ''),
+        btnStyle: 'display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 6px;border:0;border-radius:6px;background:transparent;font:600 12px Inter,sans-serif;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;' + (on ? 'color:#0F1A2B' : 'color:#5F6C80') + (num ? ';flex-direction:row-reverse' : ''),
+        click: () => { const s = this.state.sort; this.setState({ sort: !s || s.col !== k ? { col: k, dir: 1 } : s.dir > 0 ? { col: k, dir: -1 } : null }); } };
+    });
+    const rows = shown.map((r, k) => {
+      const v = this.rowOf(r), stopped = r.status === 'stopped', flash = st.flashId === r.id && st.flashN;
+      return { id: p + '-row-' + r.id, name: v.name, sub: v.sub,
+        cells: v.cells.map(t => ({ txt: t, style: 'padding:12px 12px;' + (stopped ? 'color:#5F6C80' : '') })),
+        usedN: used(r), usedTxt: used(r) ? usedTxt(r) : 'Not used yet',
+        statusTxt: stopped ? 'Stopped' : 'In use', pill: pill(stopped ? 'grey' : 'ok'), sysOn: !!r.system,
+        pillCls: st.flashId === r.id && st.pillN ? (st.pillN % 2 ? 'swapA' : 'swapB') : '',
+        cls: 'hr' + (flash ? (st.flashN % 2 ? ' fa' : ' fb') : ''),
+        rowStyle: 'border-top:1px solid #EEF1F5;cursor:pointer;' + (stopped ? 'color:#46546A' : ''),
+        open: () => this.openRec(r.id),
+        key: e => {
+          const to = e.key === 'ArrowDown' ? k + 1 : e.key === 'ArrowUp' ? k - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? shown.length - 1 : null;
+          if (to === null || to < 0 || to >= shown.length) return;
+          e.preventDefault();
+          this.focusId(p + '-row-' + shown[to].id);
+        } };
+    });
+    const emptyKind = shown.length ? '' : !all.length ? 'none' : !visible.length ? 'stopped' : 'match';
+    const delList = st.del[st.co] || [];
+    const delRows = delList.map(d => ({ name: d.name, at: d.at, entry: d.entry, by: d.by, why: d.why, can: !d.problem, problemOn: !!d.problem, problem: d.problem || '',
+      putId: p + '-put-' + d.rid, histId: p + '-dh-' + d.rid, cls: 'hr',
+      put: () => this.openPut(d.rid, 'put'), hist: () => this.openPut(d.rid, 'hist') }));
+
+    // the record dialog
+    const dlg = st.dlg, r = dlg && !dlg.isNew ? this.rec(dlg.id) : null;
+    const errsAll = dlg ? this.errors(st.form) : {};
+    const errs = st.tried ? errsAll : {};
+    const ctl = 'height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%;transition:border-color .12s ease-out;';
+    const dGroups = !dlg ? [] : c.groups.map(([label, fs], gi) => ({ label, fields: fs.map(x => {
+      const t = x.t || 'text', lock = r && r.locked[x.k] ? r.locked[x.k] : '', err = errs[x.k] || '';
+      const id = p + '-f-' + x.k, val = st.form[x.k];
+      const by = [err ? id + '-err' : '', x.hint ? id + '-hint' : '', lock ? id + '-lock' : ''].filter(Boolean).join(' ');
+      return { id, label: x.l, req: !!x.req && !lock, reqAria: x.req && !lock ? 'true' : 'false',
+        isBool: t === 'bool', notBool: t !== 'bool', isInput: ['text', 'code', 'month', 'number'].includes(t), isSelect: t === 'select', isArea: t === 'area',
+        type: t === 'month' ? 'month' : t === 'number' ? 'number' : 'text', max: x.max || 200,
+        val: val == null ? '' : String(val), checked: !!val, ro: !!lock || st.saving, dis: !!lock || st.saving,
+        opts: (x.opts || []).map(([v, l]) => ({ v: String(v), l })),
+        hintOn: !!x.hint, hint: x.hint || '', hintId: id + '-hint', lockOn: !!lock, lock, lockId: id + '-lock',
+        errOn: !!err, err, errId: id + '-err', inv: err ? 'true' : 'false', by,
+        wrap: 'display:flex;flex-direction:column;gap:6px;min-width:0;' + (x.wide || t === 'area' ? 'grid-column:1 / -1' : ''),
+        style: ctl + (t === 'code' ? 'font-family:ui-monospace,Consolas,monospace;' : '') + (t === 'area' ? 'height:auto;min-height:76px;padding:10px 12px;resize:vertical;' : '') + (t === 'select' ? 'padding:0 10px;' : '') +
+          'border:1px solid ' + (err ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : lock ? '#D5DBE4' : '#8792A2'),
+        change: e => {
+          if (lock || this.state.saving) return;
+          const tv = e && e.target ? (t === 'bool' ? (e.target.checked ? 1 : 0) : e.target.value) : '';
+          this.setState({ form: { ...this.state.form, [x.k]: tv }, footMsg: '' });
+        } };
+    }) }));
+    const stopped = r && r.status === 'stopped';
+    const nUsed = r ? used(r) : 0;
+    const badN = Object.keys(errs).length;
+    const ex = r ? this.extra(r) : null;
+    const whyMeta = { stop: ['Stop using it', c.stopNote, 'eyeOff', 'muted', '#D5DBE4', '#FAFBFC', false], use: ['Use it again', c.useNote, 'eye', 'brand', '#C9D7F6', '#F3F6FE', false], delete: ['Delete it', c.delNote, 'trash', 'bad', '#F4C7C1', '#FFF6F5', true] }[st.why] || (ex && st.why === ex.act ? ex.why : null) || ['', '', 'help', 'muted', '#D5DBE4', '#FFFFFF', false];
+    const notes = r ? [...(stopped ? [c.stopNote] : []), ...r.notes] : [];
+    const dirty = this.dirty();
+
+    // the put back dialog
+    const put = st.put, d = put ? delList.find(x => x.rid === put.rid) : null;
+    const refused = put && put.refused ? put.refused : (d && d.problem ? d.problem : '');
+    const pbPreview = !!(put && put.mode === 'put' && !refused);
+
+    return { ...this.more(),
+      pageTitle: st.noCo || !c.perEntity ? c.section : c.section + ' · ' + coName,
+      listHeading: c.perEntity ? c.section + ' of ' + coName : 'All ' + c.plural,
+      noCo: !!st.noCo, hasCo: !st.noCo, plural: c.plural,
+      loadingOn: st.load === 'loading', errorOn: st.load === 'error', listOn: !st.load, addOff: !!st.load,
+      retry: () => { clearTimeout(this._ld); this.setState({ load: 'loading' }); this._ld = setTimeout(() => { this._focusId = p + '-add'; this.setState({ load: null }); }, 900); },
+      saving: !!st.saving, savingAria: st.saving ? 'true' : 'false', dIsNewIdle: !!(dlg && dlg.isNew) && !st.saving,
+      saveRefuseOn: !!st.saveRefuse, saveRefuse: st.saveRefuse || '',
+      coSeg: c.perEntity && cos.length > 1 && cos.length < 4, coSelect: c.perEntity && cos.length >= 4, coOne: c.perEntity && cos.length === 1, co: st.co,
+      cos: cos.map(([code, name]) => ({ code, optLabel: code + ' · ' + name, pressed: code === st.co ? 'true' : 'false',
+        pick: () => this.setState({ co: code }),
+        style: 'height:32px;padding:0 12px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;' + (code === st.co ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') })),
+      coChange: e => { const v = e && e.target ? e.target.value : ''; if (v) this.setState({ co: v }); },
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '' }),
+      countTxt: shown.length + ' of ' + all.length + ' shown',
+      showStopped: !!st.stopped, nStopped, toggleStopped: () => this.setState({ stopped: !this.state.stopped }),
+      showDeleted: !!st.deleted, toggleDeleted: () => this.setState({ deleted: !this.state.deleted }),
+      heads, rows,
+      emptyOn: !!emptyKind, emptyGlyph: emptyKind === 'match' ? 'search' : emptyKind === 'stopped' ? 'eyeOff' : c.glyph,
+      emptyTxt: emptyKind === 'none' ? 'None yet.' : emptyKind === 'stopped' ? 'Only stopped ' + c.plural + ': tick Show stopped to see them.' : 'No ' + c.plural + ' match.',
+      emptyBtnOn: emptyKind === 'match' || emptyKind === 'stopped' || emptyKind === 'none',
+      emptyBtn: emptyKind === 'match' ? 'Clear the search' : emptyKind === 'stopped' ? 'Show stopped' : 'Add ' + c.lower,
+      emptyAct: () => { if (emptyKind === 'match') this.setState({ q: '' }); else if (emptyKind === 'stopped') this.setState({ stopped: true }); else this.openNew(); },
+      delHeading: 'Deleted ' + c.plural, delRows, delEmpty: !delList.length,
+      openNew: () => this.openNew(),
+      addLabel: 'Add ' + c.lower, dGlyph: c.glyph,
+      emptyLinkOn: emptyKind === 'none' && !!c.emptyLink, emptyLinkHref: c.emptyLink ? c.emptyLink[0] : '', emptyLinkTxt: c.emptyLink ? c.emptyLink[1] : '',
+
+      anyDlg: !!(dlg || put),
+      dlgOn: !!dlg, pbOn: !!put,
+      dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      dEyebrow: c.perEntity ? c.label + ' · ' + coName : c.label,
+      dTitle: !dlg ? '' : dlg.isNew ? 'New ' + c.lower : (r ? r.vals[c.nameKey] || '(no name)' : dlg.title || ''),
+      dSub: !dlg ? '' : dlg.isNew ? 'Fill in what you know; the rest can be added later. Nothing is kept until you add it.' : 'Changes are kept in the audit trail with your name.',
+      dIsNew: !!(dlg && dlg.isNew), dIsEdit: !!r,
+      dPillTxt: stopped ? 'Stopped' : 'In use', dPill: pill(stopped ? 'grey' : 'ok'), dPillCls: st.pillN ? (st.pillN % 2 ? 'swapA' : 'swapB') : '',
+      dNotesOn: notes.length > 0, dNotes: notes.map(txt => ({ txt })), dNotesCls: st.notesN ? (st.notesN % 2 ? 'swapA' : 'swapB') : '',
+      sumOn: badN > 0, sumTitle: badN === 1 ? '1 field needs a fix.' : badN + ' fields need a fix.',
+      sumList: this.fields().filter(x => errs[x.k]).map(x => x.l).join(', ') + '.',
+      dGroups,
+      dUsedAny: nUsed > 0, dUsedNone: !!r && !nUsed, dUsed: r ? r.used.map(([what, n]) => ({ n, what })) : [],
+      canStop: !!r && !stopped && r.canStop !== false, canUse: !!r && stopped, canDelete: !!r && !nUsed && !r.system, dSysOn: !!(r && r.system),
+      stopExp: st.why === 'stop' ? 'true' : 'false', useExp: st.why === 'use' ? 'true' : 'false', delExp: st.why === 'delete' ? 'true' : 'false',
+      actNote: !r ? '' : r.system ? (r.canStop === false ? 'The app relies on this ' + c.lower + ', so it can’t be stopped or deleted.' : 'The app’s own rules rely on this ' + c.lower + ', so it can’t be deleted. It can be stopped.') : nUsed ? 'Delete is offered only for a ' + c.lower + ' not used anywhere yet. Stop using it instead: its history stays.' : 'Not used anywhere yet, so it can still be deleted.',
+      extraOn: !!ex, extraId: ex ? p + '-act-' + ex.act : '', extraLabel: ex ? ex.label : '', extraGlyph: ex ? ex.glyph : 'help', extraNote: ex ? ex.note : '',
+      extraExp: ex && st.why === ex.act ? 'true' : 'false', extraAct: () => { if (ex) { if (ex.click) ex.click(); else this.startWhy(ex.act); } },
+      actStop: () => this.startWhy('stop'), actUse: () => this.startWhy('use'), actDelete: () => this.startWhy('delete'),
+      whyOn: !!st.why, whyLabel: whyMeta[0], whyNote: whyMeta[1], whyGlyph: whyMeta[2], whyTone: whyMeta[3], whyBorder: whyMeta[4], whyBg: whyMeta[5],
+      whyGoCls: whyMeta[6] ? 'hd' : 'hb',
+      whyGoStyle: 'height:40px;padding:0 16px;border-radius:10px;border:0;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:pointer;' + (whyMeta[6] ? 'background:#B0190F' : 'background:#2450B8'),
+      refuseOn: !!st.refuse, refuseText: st.refuse || '', whyText: st.whyText, whyErr: !!st.whyErr, whyInv: st.whyErr ? 'true' : 'false', whyBy: st.whyErr ? p + '-why-err' : '',
+      whyStyle: ctl + 'border:1px solid ' + (st.whyErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onWhy: e => this.setState({ whyText: e && e.target ? e.target.value : '', whyErr: false, refuse: '' }),
+      whyKey: e => { if (e.key === 'Enter') { e.preventDefault(); this.whyGo(); } },
+      whyGo: () => this.whyGo(),
+      whyCancel: () => { const was = this.state.why; this._focusId = p + '-act-' + was; this.setState({ why: null, whyText: '', whyErr: false, refuse: '' }); },
+      histOpen: !!st.histOpen, histExp: st.histOpen ? 'true' : 'false', histChev: st.histOpen ? 'chev on' : 'chev',
+      histCount: r ? (r.hist.length === 1 ? '1 step' : r.hist.length + ' steps') : '',
+      histToggle: () => this.setState({ histOpen: !this.state.histOpen }),
+      hist: r && st.histOpen ? this.histItems(r.hist, p, st.histExp, i => this.setState({ histExp: { ...this.state.histExp, [i]: !this.state.histExp[i] } })) : [],
+      histEmpty: !!r && !r.hist.length,
+      confirmOn: !!st.confirm, footOn: !st.confirm,
+      discardDetail: st.put ? 'The reason you typed is not kept.' : 'What you changed here is not kept.',
+      footDirty: dirty && !st.footMsg,
+      footNote: st.footMsg ? st.footMsg : !dlg ? '' : dlg.isNew ? (badN ? 'Fix the fields above, then add it.' : 'It is added as in use.') : dirty ? 'Unsaved changes' : 'Saved changes are kept in the audit trail.',
+      footCls: st.footN ? (st.footN % 2 ? 'swapA' : 'swapB') : '',
+      footStyle: 'display:inline-flex;align-items:center;gap:8px;font-size:13px;' + (dirty && !st.footMsg ? 'color:#934100;font-weight:600' : 'color:#5F6C80'),
+      closeLabel: dlg && dlg.isNew ? 'Cancel' : 'Close',
+      saveLabel: st.saving ? 'Saving…' : dlg && dlg.isNew ? 'Add ' + c.lower : 'Save',
+      save: e => this.save(e),
+      askClose: () => this.askClose(),
+      keepEditing: () => this.setState({ confirm: false }),
+      discard: () => { this.setState({ confirm: false }); this.closeDrawer(); },
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') {
+          e.stopPropagation(); e.preventDefault();
+          const s = this.state;
+          if (s.confirm) this.setState({ confirm: false });
+          else if (s.why) { this._focusId = p + '-act-' + s.why; this.setState({ why: null, whyText: '', whyErr: false }); }   // Escape in the reason box closes only that box
+          else this.askClose();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+
+      pbEyebrow: put && put.mode === 'hist' ? 'History · deleted ' + c.lower : 'Put back · ' + c.label,
+      pbTitle: d ? d.name : '', pbTile: refused && put && put.mode === 'put' ? '#FEF1D6' : '#EAF0FD',
+      pbGlyph: put && put.mode === 'hist' ? 'history' : refused ? 'lock' : 'undo', pbTone: refused && put && put.mode === 'put' ? 'warn' : 'brand',
+      pbSub: !d ? '' : 'Deleted ' + d.at + ' by ' + d.by + ', in entry ' + d.entry + '.',
+      pbRefused: !!(put && put.mode === 'put' && refused), pbRefusal: refused, pbPreview,
+      pbDeletedLine: d ? d.name + ' was deleted ' + d.at + ' by ' + d.by + ', in entry ' + d.entry + '. Why: ' + d.why : '',
+      pbBackLine: !d ? '' : 'It comes back as it was when it was deleted, ' + (d.same ? 'with the same number.' : 'as #' + d.newId + '.'),
+      pbNotes: d && pbPreview ? (d.notes || []).map(txt => ({ txt })) : [],
+      pbEffect: 'Nothing in the months already set up changes.',
+      pbText: st.pbText, pbErr: !!st.pbErr, pbInv: st.pbErr ? 'true' : 'false', pbBy: st.pbErr ? p + '-pb-err' : '',
+      pbStyle: ctl + 'border:1px solid ' + (st.pbErr ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2'),
+      onPbWhy: e => this.setState({ pbText: e && e.target ? e.target.value : '', pbErr: false }),
+      pbGo: () => this.pbGo(),
+      pbCloseLabel: pbPreview ? 'Cancel' : 'Close',
+      pbHistOpen: !!st.pbHist, pbHistExp: st.pbHist ? 'true' : 'false', pbHistChev: st.pbHist ? 'chev on' : 'chev',
+      pbHistCount: d ? (d.hist.length === 1 ? '1 step' : d.hist.length + ' steps') : '',
+      pbHistToggle: () => this.setState({ pbHist: !this.state.pbHist }),
+      pbHist: d && st.pbHist ? this.histItems(d.hist, p + '-pb', {}, () => {}) : [],
+
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo),
+      toastUndo: () => { const f = this._undoFn; this._undoFn = null; if (f) f(); else this.undoStop(); },
+      toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

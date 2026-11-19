@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Side menu · three company kinds and access</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+.nv:focus-visible,.nb:focus-visible,.sbh:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<main style="min-height: 100vh; box-sizing: border-box; padding: 40px; background: {{k.bg}}; color: {{k.ink}}; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column; gap: 32px; transition: background-color .2s ease-out, color .2s ease-out">
+  <header style="display: flex; flex-direction: column; gap: 8px; max-width: 920px">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: {{k.ink2}}">Foundations &amp; shared</span>
+    <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; line-height: 34px; font-weight: 600">Side menu · three company kinds and access</h1>
+    <p style="margin: 0; color: {{k.ink2}}">One menu for every company. What it shows comes from two company settings, <b style="color: {{k.ink}}">Kept in SQL Account</b> or <b style="color: {{k.ink}}">Kept here</b>, and <b style="color: {{k.ink}}">Runs payroll in this app</b>, and from the rights of the person using it. Companies have left the menu: the switcher in the top bar picks one. Sample day: Wednesday 18 November 2026, October 2026 open.</p>
+  </header>
+
+  <sc-if value="{{isAll}}" hint-placeholder-val="{{ true }}">
+    <section aria-labelledby="sm-kinds-h" style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h2 id="sm-kinds-h" style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600">Company kinds and access</h2>
+        <p style="margin: 0; color: {{k.ink2}}">Every group open, so each case shows all its items. Badges are the sample world's (samples section 15).</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">AISB · AISB Sdn Bhd</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">Kept in SQL Account</span><span style="{{k.chipLine}}">Runs payroll in this app</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">Aisha Rahman: HR, Payroll figures, Payments, Accounting, Admin. 22 rows. Payroll holds every tab: Workbook check, Run, Totals, Statutory files, Leaver, Parallel run, Opening YTD. Payroll 1: the November check found 3 things to fix.</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="sqlPayroll" company="aisb" access="full" fold="open" active="overview" theme="{{theme}}" hint-size="264px,1186px"></dc-import></div>
+        </div>
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">AIL · Agrinexus Logistics</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">Kept in SQL Account</span><span style="{{k.chipLine}}">No payroll run</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">The same 22 rows as AISB. Payroll shows for every company: here it holds the Workbook check only ("No check yet"). Approvals 1 and To pay 2 stay blue: nothing is overdue.</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="sql" company="ail" access="full" fold="open" active="overview" theme="{{theme}}" hint-size="264px,1186px"></dc-import></div>
+        </div>
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">AI · Agrinexus International</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">Kept here</span><span style="{{k.chipLine}}">No payroll run</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">25 rows. No SQL import. Accounting gains a quiet Kept here group: Sales, Purchases, Journals, Period close. Payroll holds the Workbook check only. To pay 2 is red: KWSP for October is overdue.</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="here" company="ai" access="full" fold="open" active="overview" theme="{{theme}}" hint-size="264px,1326px"></dc-import></div>
+        </div>
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">AISB as Marcus Teoh</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">Payments, Accounting</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">Outside accountant. No HR right: no HR group, and HR rows leave his counts (Overview 8, not 11). No Admin right: no Admin group, so no Users and access. 13 rows.</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="sqlPayroll" company="aisb" access="noHrNoAdmin" fold="open" active="overview" theme="{{theme}}" hint-size="264px,1020px"></dc-import></div>
+        </div>
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">AISB as Nurul Aina</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">HR only</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">5 rows: Overview and HR. No Payroll figures right, so Payroll opens without pay amounts. Approvals and To pay are Payments pages and don't show. Overview 2: the probation reminder and the payroll check.</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="sqlPayroll" company="aisb" access="hrOnly" fold="open" active="overview" theme="{{theme}}" hint-size="264px,1020px"></dc-import></div>
+        </div>
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">AISB, menu fully open</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chipLine}}">For comparison</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">24 rows: Calendar and reminders and Salary advances as their own items. The menu folds them into tabs of Staff and of Claims and advances; the probation row then counts on Staff.</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="sqlPayroll" company="aisb" access="full" merged="no" fold="open" active="overview" theme="{{theme}}" hint-size="264px,1262px"></dc-import></div>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="sm-where-h" style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h2 id="sm-where-h" style="margin: 0; font-size: 18px; line-height: 24px; font-weight: 600">The page you are on, folding and badges</h2>
+        <p style="margin: 0; color: {{k.ink2}}">As the boards show it: the menu fits the 1020px it is given. Groups that don't hold the page fold from the bottom up, and a folded heading keeps its count.</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">HR › Payroll</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">AISB</span><span style="{{k.chipLine}}">Kept in SQL Account</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">The current page: a lighter row with an edge and a white icon, read out as the current page. Admin folds to fit and keeps its 1 (Backup).</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="sqlPayroll" company="aisb" access="full" active="payroll" theme="{{theme}}" hint-size="264px,1020px"></dc-import></div>
+        </div>
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">Payments › To pay</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">AISB</span><span style="{{k.chipLine}}">Kept in SQL Account</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">To pay 6 is red: KWSP for October and Wei Ming's October claim are overdue. Approvals 3 stays blue: forms waiting are a count, never overdue.</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="sqlPayroll" company="aisb" access="full" active="topay" theme="{{theme}}" hint-size="264px,1020px"></dc-import></div>
+        </div>
+        <div style="width: 264px; display: flex; flex-direction: column; gap: 12px">
+          <div style="min-height: 200px; display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 15px; line-height: 20px">Accounting › Sales</b>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">AI</span><span style="{{k.chipLine}}">Kept here</span></div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">A Kept here page. Accounting stays open because the page is in it; Admin, then HR fold until the menu fits. HR keeps its 1 (the work permit reminder).</span>
+          </div>
+          <div style="border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}"><dc-import name="Sidebar" kind="here" company="ai" access="full" active="sales" theme="{{theme}}" hint-size="264px,1020px"></dc-import></div>
+        </div>
+
+        <div style="flex: 1 1 420px; min-width: 0; max-width: 816px; display: flex; flex-direction: column; gap: 16px">
+          <div style="border-radius: 14px; background: {{k.card}}; border: 1px solid {{k.line}}; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+            <h3 style="margin: 0; font-size: 15px; line-height: 20px; font-weight: 600">Badges, normal and overdue</h3>
+            <div style="border-radius: 12px; background: {{k.nav}}; padding: 10px; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{badges}}" as="b" hint-placeholder-count="7">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+                  <div style="width: 236px; height: 36px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 0 10px; border-radius: 9px; color: #B8C4D6; font-weight: 500; flex: none">
+                    <dc-import name="Icon" glyph="{{b.glyph}}" tone="nav" size="20" hint-size="20px,20px"></dc-import><span style="{{b.labelSt}}">{{b.label}}</span>
+                    <span style="{{b.pill}}"><sc-if value="{{b.over}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="alert" tone="white" size="12" hint-size="12px,12px"></dc-import></sc-if><span aria-hidden="true">{{b.n}}</span></span>
+                  </div>
+                  <span style="flex: 1 1 200px; min-width: 0; font-size: 13px; line-height: 18px; color: #C9D3E2">{{b.why}} <span style="color: #93A4BF">Read out: "{{b.sr}}".</span></span>
+                </div>
+              </sc-for>
+            </div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">One badge rule: a number is how many Next up rows belong to that item, blue; red with the alert mark when at least one of them is overdue. Approvals and To pay count their items instead. "Pay KWSP for October" is a Next up row whose place is To pay: it is inside the 6, never added to it.</span>
+          </div>
+
+          <div style="border-radius: 14px; background: {{k.card}}; border: 1px solid {{k.line}}; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+            <h3 style="margin: 0; font-size: 15px; line-height: 20px; font-weight: 600">Menu rules</h3>
+            <sc-for list="{{rules}}" as="r" hint-placeholder-count="6">
+              <div style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="20" hint-size="20px,20px"></dc-import><span style="{{r.textSt}}"><b style="{{r.headSt}}">{{r.head}}</b> {{r.text}}</span></div>
+            </sc-for>
+          </div>
+
+          <div style="border-radius: 14px; background: {{k.card}}; border: 1px solid {{k.line}}; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+            <h3 style="margin: 0; font-size: 15px; line-height: 20px; font-weight: 600">Old menu keys still work</h3>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">The boards drawn before this menu keep their attributes until they move. Each old key lands on its new place:</span>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px">
+              <sc-for list="{{keys}}" as="m" hint-placeholder-count="6">
+                <span style="{{m.st}}"><span style="{{m.code}}">{{m.old}}</span> → {{m.now}}</span>
+              </sc-for>
+            </div>
+            <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">Folded menu: two new keys, for pages that are tabs in the folded menu, light the item that holds them.</span>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px">
+              <sc-for list="{{foldKeys}}" as="m" hint-placeholder-count="2">
+                <span style="{{m.st}}"><span style="{{m.code}}">{{m.old}}</span> → {{m.now}}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{isOne}}" hint-placeholder-val="{{ false }}">
+    <section aria-labelledby="sm-one-h" class="rv" style="display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+      <div style="zoom: 1.25; width: 264px; border-radius: 14px; overflow: hidden; box-shadow: {{k.shadow}}; flex: none"><dc-import name="Sidebar" kind="{{one.kind}}" company="{{one.company}}" access="{{one.access}}" merged="{{one.merged}}" fold="{{one.fold}}" active="{{one.active}}" theme="{{theme}}" hint-size="264px,1326px"></dc-import></div>
+      <div style="flex: 1 1 360px; min-width: 0; max-width: 560px; display: flex; flex-direction: column; gap: 12px">
+        <h2 id="sm-one-h" style="margin: 0; font-size: 22px; line-height: 28px; font-weight: 600">{{one.title}}</h2>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px"><span style="{{k.chip}}">{{one.chip}}</span><span style="{{k.chipLine}}">{{one.chip2}}</span></div>
+        <p style="margin: 0; font-size: 15px; line-height: 22px; color: {{k.ink2}}">{{one.text}}</p>
+        <span style="font-size: 13px; line-height: 18px; color: {{k.ink2}}">Pick another case, or All cases, in the view tweak. Group headings open and fold on click, Enter or Space.</span>
+      </div>
+    </section>
+  </sc-if>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"all","options":["all","aisb","ail","ai","marcus","nurul","open","hr","payments","accounting"]},"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1784,"height":3240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const view = this.props.view ?? 'all';
+    const theme = (this.props.theme ?? 'light') === 'dark' ? 'dark' : 'light';
+    const dark = theme === 'dark';
+    const chipBase = 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:600;box-sizing:border-box;';
+    const k = dark
+      ? { bg: '#0B111C', card: '#121A27', line: '#243044', ink: '#E6EBF2', ink2: '#B4BFCE', nav: '#070C15', tone: 'dbrand',
+          shadow: '0 0 0 1px #243044', chip: chipBase + 'background:#1B2B4A;color:#C9D8F8',
+          chipLine: chipBase + 'border:1px solid #3A4A66;color:#B4BFCE', code: 'font-family:ui-monospace,Consolas,monospace;font-size:12px;padding:1px 6px;border-radius:6px;background:#172133;color:#E6EBF2' }
+      : { bg: '#F5F6F8', card: '#FFFFFF', line: '#E3E7EE', ink: '#0F1A2B', ink2: '#5F6C80', nav: '#0D1B2E', tone: 'brand',
+          shadow: '0 1px 2px rgba(15,26,43,.08), 0 8px 24px rgba(15,26,43,.08)', chip: chipBase + 'background:#EAF0FD;color:#1D3F94',
+          chipLine: chipBase + 'border:1px solid #7A879B;color:#465366', code: 'font-family:ui-monospace,Consolas,monospace;font-size:12px;padding:1px 6px;border-radius:6px;background:#EEF1F5;color:#0F1A2B' };
+
+    const pill = over => 'position:relative;min-width:20px;height:20px;padding:0 7px;box-sizing:border-box;border-radius:99px;gap:3px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex:none;' + (over ? 'background:#C7372B;color:#FFFFFF' : 'background:#22375A;color:#D6E2FB');
+    const B = (glyph, label, n, over, sr, why, head) => ({ glyph, label, n: String(n), over, sr, why, pill: pill(over),
+      labelSt: 'flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' + (head ? 'font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#8C9DB8' : '') });
+    const badges = [
+      B('budget', 'Budget', 1, false, '1 to do', 'One Next up row: enter the bank balance for the November budget.'),
+      B('checklist', 'Monthly checklist', 3, true, '3 to do, 1 overdue', 'Three rows; the September SQL books check was due 15 Oct.'),
+      B('approval', 'Approvals', 3, false, '3 waiting for approval', 'A count: two HR requests and the consultant fee wait for a signed form.'),
+      B('toPay', 'To pay', 6, true, '6 to pay, 2 overdue', 'A count, red: KWSP for October and Wei Ming’s October claim are past due.'),
+      B('toPay', 'To pay', 2, false, '2 to pay', 'AIL: two items, none overdue, so blue.'),
+      B('chevronRight', 'Admin', 1, false, '1 to do', 'A folded group keeps the count of its rows (Backup).', true),
+      B('chevronRight', 'Payments', 14, true, '3 waiting for approval; 6 to pay, 2 overdue; 5 to do, 2 overdue', 'AISB, folded: Approvals 3 and To pay 6 plus its other 5 rows. Pay KWSP for October is inside the 6, not added again.', true)
+    ];
+    const rules = [
+      { glyph: 'payroll', head: 'Payroll shows for every company.', text: 'Its Workbook check tab is always there; the run tabs only where Runs payroll in this app is on.' },
+      { glyph: 'database', head: 'SQL import only for Kept in SQL Account.', text: 'A Kept here company gets the Kept here group instead: Sales, Purchases, Journals, Period close.' },
+      { glyph: 'access', head: 'Users and access only with the Admin right.', text: 'Without HR there is no HR group; without Admin no Admin group. Counts leave with the rows.' },
+      { glyph: 'company', head: 'Companies left the menu.', text: 'The company switcher in the top bar picks one; the Overview can also show All companies.' },
+      { glyph: 'chevronRight', head: 'Folded to fit.', text: 'Calendar and reminders is a tab of Staff; Salary advances a tab of Claims and advances. Groups fold when the menu is too tall.' },
+      { glyph: 'person', head: 'Your name moved to the top bar.', text: 'The user menu there shows your access and Sign out.' }
+    ];
+    const keys = [
+      { old: 'aisb, ai, ail, aip', now: 'Payments › Payments register' }, { old: 'sql', now: 'Accounting › SQL import' },
+      { old: 'bank', now: 'Accounting › Bank and reconciliation' }, { old: 'books', now: 'Accounting › Books' },
+      { old: 'budget', now: 'Payments › Budget' }, { old: 'recurring', now: 'Payments › Recurring' },
+      { old: 'pack', now: 'Admin › Audit pack' }, { old: 'trail', now: 'Admin › Audit trail' },
+      { old: 'backup', now: 'Admin › Backup' }, { old: 'setup', now: 'Admin › Setup' },
+      { old: 'companies="none"', now: 'no badges; Add your first company is in the company switcher' }
+    ];
+    // Not old keys: calendar and advances are new, for the menu fully open (merged="no").
+    const foldKeys = [
+      { old: 'calendar', now: 'lights HR › Staff' }, { old: 'advances', now: 'lights HR › Claims and advances' }
+    ];
+
+    const C = {
+      aisb: { kind: 'sqlPayroll', company: 'aisb', access: 'full', merged: 'yes', fold: 'open', active: 'overview', title: 'AISB · AISB Sdn Bhd', chip: 'Kept in SQL Account', chip2: 'Runs payroll in this app',
+        text: 'Aisha Rahman: HR, Payroll figures, Payments, Accounting, Admin. 22 rows. Payroll holds every tab: Workbook check, Run, Totals, Statutory files, Leaver, Parallel run, Opening YTD. Payroll 1: the November check found 3 things to fix.' },
+      ail: { kind: 'sql', company: 'ail', access: 'full', merged: 'yes', fold: 'open', active: 'overview', title: 'AIL · Agrinexus Logistics', chip: 'Kept in SQL Account', chip2: 'No payroll run',
+        text: 'The same 22 rows as AISB. Payroll shows for every company: here it holds the Workbook check only ("No check yet"). Approvals 1 and To pay 2 stay blue: nothing is overdue.' },
+      ai: { kind: 'here', company: 'ai', access: 'full', merged: 'yes', fold: 'open', active: 'overview', title: 'AI · Agrinexus International', chip: 'Kept here', chip2: 'No payroll run',
+        text: '25 rows. No SQL import. Accounting gains a quiet Kept here group: Sales, Purchases, Journals, Period close. Payroll holds the Workbook check only. To pay 2 is red: KWSP for October is overdue.' },
+      marcus: { kind: 'sqlPayroll', company: 'aisb', access: 'noHrNoAdmin', merged: 'yes', fold: 'open', active: 'overview', title: 'AISB as Marcus Teoh', chip: 'Payments, Accounting', chip2: 'Outside accountant',
+        text: 'No HR right: no HR group, and HR rows leave his counts (Overview 8, not 11). No Admin right: no Admin group, so no Users and access. 13 rows.' },
+      nurul: { kind: 'sqlPayroll', company: 'aisb', access: 'hrOnly', merged: 'yes', fold: 'open', active: 'overview', title: 'AISB as Nurul Aina', chip: 'HR only', chip2: 'No Payroll figures',
+        text: '5 rows: Overview and HR. Payroll opens without pay amounts. Approvals and To pay are Payments pages and don’t show. Overview 2: the probation reminder and the payroll check.' },
+      open: { kind: 'sqlPayroll', company: 'aisb', access: 'full', merged: 'no', fold: 'open', active: 'overview', title: 'AISB, menu fully open', chip: 'AISB', chip2: 'For comparison',
+        text: '24 rows: Calendar and reminders and Salary advances as their own items. The menu folds them into tabs of Staff and of Claims and advances; the probation row then counts on Staff.' },
+      hr: { kind: 'sqlPayroll', company: 'aisb', access: 'full', merged: 'yes', fold: 'auto', active: 'payroll', title: 'HR › Payroll', chip: 'AISB', chip2: 'Kept in SQL Account',
+        text: 'The current page: a lighter row with an edge and a white icon, read out as the current page. Admin folds to fit and keeps its 1 (Backup).' },
+      payments: { kind: 'sqlPayroll', company: 'aisb', access: 'full', merged: 'yes', fold: 'auto', active: 'topay', title: 'Payments › To pay', chip: 'AISB', chip2: 'Kept in SQL Account',
+        text: 'To pay 6 is red: KWSP for October and Wei Ming’s October claim are overdue. Approvals 3 stays blue: forms waiting are a count, never overdue.' },
+      accounting: { kind: 'here', company: 'ai', access: 'full', merged: 'yes', fold: 'auto', active: 'sales', title: 'Accounting › Sales', chip: 'AI', chip2: 'Kept here',
+        text: 'A Kept here page. Accounting stays open because the page is in it; Admin, then HR fold until the menu fits. HR keeps its 1 (the work permit reminder).' }
+    };
+    rules.forEach(r => { r.tone = k.tone; r.textSt = 'flex:1;min-width:0;font-size:13px;line-height:20px;color:' + k.ink2; r.headSt = 'font-weight:600;color:' + k.ink; });
+    keys.concat(foldKeys).forEach(m => { m.code = k.code; m.st = 'font-size:13px;line-height:18px;color:' + k.ink2; });
+    const isAll = !C[view];
+    const one = C[view] || C.aisb;
+    return { k, theme, isAll, isOne: !isAll, one, badges, rules, keys, foldKeys };
+  }
+}
+</script>
+</body>
+</html>

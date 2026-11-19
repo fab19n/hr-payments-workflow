@@ -1,0 +1,894 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Customers and suppliers · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hr,.hg,.sg,.lk{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+.sg:hover:not([aria-pressed="true"]){background:#F4F6F9 !important;color:#0F1A2B !important}
+.lk{color:#2450B8;text-decoration:underline;text-underline-offset:3px;border-radius:4px}
+.lk:hover{color:#1D419A}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.tb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+h2[tabindex="-1"]:focus{outline:none}
+::placeholder{color:#5F6C80;opacity:1}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .18s cubic-bezier(.22,1,.36,1)}
+.swapB{animation:swapB .18s cubic-bezier(.22,1,.36,1)}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.spd{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(36,80,184,.25);border-top-color:#2450B8;animation:spin .7s linear infinite;flex:none}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="parties" kind="{{sbKind}}" company="{{sbCompany}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="Customers and suppliers" company="{{sbCompany}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 420px; min-width: 0">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Accounting</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Customers and suppliers</h1>
+          <p style="margin: 0; color: #46546A; max-width: 820px">{{intro}}</p>
+        </div>
+      </div>
+
+      <section aria-label="Period" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 22px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end">
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">From</span><input type="date" id="bk-from" value="{{fromVal}}" onChange="{{setFrom}}" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">To</span><input type="date" id="bk-to" value="{{toVal}}" onChange="{{setTo}}" style="height: 40px; box-sizing: border-box; padding: 0 12px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 400 14px Inter, sans-serif; color: #0F1A2B"></label>
+          <button type="button" id="bk-show" class="hb" onClick="{{show}}" disabled="{{busy}}" aria-busy="{{showBusyAttr}}" style="min-width: 132px; height: 40px; padding: 0 18px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{showBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{showLabel}}</button>
+          <button type="button" id="bk-fy" class="hs" onClick="{{fyToDate}}" disabled="{{busy}}" aria-busy="{{fyBusyAttr}}" style="min-width: 232px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><sc-if value="{{fyBusy}}" hint-placeholder-val="{{ false }}"><span class="spd" aria-hidden="true"></span></sc-if>{{fyLabel}}</button>
+          <span style="flex: 1 1 0"></span>
+          <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}"><a href="#" id="bk-excel" class="hg" onClick="{{excel}}" title="This report as an Excel file, for the dates and options shown" style="display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 12px; border-radius: 10px; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="sheet" tone="brand" size="18" hint-size="18px,18px"></dc-import>Excel</a></sc-if>
+        </div>
+        <sc-if value="{{xlErr}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FEF3F1; border: 1px solid #F4C2BC">
+            <dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="color: #8E1A10">The Excel file couldn't be made</b><div style="color: #46546A; font-size: 13px">The server stopped with an error, so nothing was downloaded. The report on the page is as it was. Try again; if it keeps happening, restart the app.</div><div style="color: #5F6C80; font-size: 12px; margin-top: 4px">New work: today the Excel link opens the server's error as a raw JSON page.</div></div>
+            <button type="button" class="hg" aria-label="Dismiss this message" onClick="{{xlClose}}" style="width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+          </div>
+        </sc-if>
+      </section>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <section aria-busy="true" aria-label="Loading the report" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 14px">
+          <span style="color: #46546A">Loading…</span>
+          <span class="sk" style="height: 22px; width: 340px; max-width: 100%"></span>
+          <span class="sk" style="height: 14px; width: 560px; max-width: 100%"></span>
+          <span class="sk" style="height: 160px; width: 100%"></span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px; display: flex; gap: 10px; align-items: flex-start">
+          <dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span style="color: #934100; font-weight: 600">{{errText}}</span>
+            <sc-if value="{{errBack}}" hint-placeholder-val="{{ false }}"><span><button type="button" class="hs" onClick="{{back}}" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; cursor: pointer">{{backLabel}}</button></span></sc-if>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isFail}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 560px">{{failText}}</p>
+          <button type="button" id="bp-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isNoBal}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="bp-nb-h" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="users" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="bp-nb-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No balances</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 580px">{{noBalText}}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+            <a href="AccountingKeptHere.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">Sales and Purchases</a>
+            <a href="SetupParties.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none">Customers and suppliers in Setup</a>
+          </div>
+          <span style="color: #5F6C80; font-size: 12px; max-width: 580px">New work: today the page shows a grey Nothing listed banner and a note that repeats it. Invoices and receipts are posted on Sales and Purchases once the books are kept here.</span>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isReport}}" hint-placeholder-val="{{ true }}">
+        <section id="bk-panel" aria-labelledby="bp-h2" class="{{swapCls}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 20px 22px 16px; display: flex; flex-direction: column; gap: 14px">
+
+            <sc-if value="{{hasBanner}}" hint-placeholder-val="{{ true }}">
+              <div style="{{bnStyle}}">
+                <dc-import name="Icon" glyph="{{bnGlyph}}" tone="{{bnTone}}" size="22" hint-size="22px,22px"></dc-import>
+                <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <b style="{{bnTitleStyle}}">{{bnTitle}}</b>
+                  <span style="color: #46546A; font-size: 13px; max-width: 980px">{{bnText}}</span>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center">
+              <h2 id="bp-h2" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600; display: inline-flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline"><sc-if value="{{hasH2Code}}" hint-placeholder-val="{{ false }}"><span style="font-family: ui-monospace, Consolas, monospace; font-size: 18px">{{h2Code}}</span></sc-if><span>{{h2}}</span></h2>
+              <sc-if value="{{hasH2Pill}}" hint-placeholder-val="{{ false }}"><span title="{{h2PillTitle}}" style="display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600; white-space: nowrap">Not in Setup</span></sc-if>
+              <span style="flex: 1 1 0"></span>
+              <sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+                <div role="group" aria-label="Customers or suppliers" style="display: flex; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px">
+                  <sc-for list="{{sides}}" as="sd" hint-placeholder-count="2"><button type="button" id="{{sd.id}}" class="sg" aria-pressed="{{sd.pressed}}" onClick="{{sd.pick}}" style="{{sd.style}}">{{sd.label}}</button></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{isStmt}}" hint-placeholder-val="{{ false }}"><button type="button" id="bp-back" class="hs" onClick="{{back}}" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; cursor: pointer">{{backLabel}}</button></sc-if>
+            </div>
+
+            <sc-if value="{{hasFilter}}" hint-placeholder-val="{{ false }}">
+              <div role="status" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #F3F6FE; border: 1px solid #C9D7F6">
+                <dc-import name="Icon" glyph="filter" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+                <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="color: #1D3A80">{{fTitle}}</b><span style="color: #46546A; font-size: 13px">{{fText}}</span></div>
+                <button type="button" id="bp-fclear" class="hs" onClick="{{fClear}}" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; color: #0F1A2B; font: 600 13px Inter, sans-serif; cursor: pointer">{{fClearLabel}}</button>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 8px">
+                <sc-for list="{{topNotes}}" as="tn" hint-placeholder-count="2"><p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{tn.text}}</p></sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{hasLead}}" hint-placeholder-val="{{ false }}">
+              <p style="margin: 0; color: #46546A; font-size: 13px">{{leadA}}<a href="{{ctlHref}}" class="lk" title="{{ctlTitle}}" style="font: 600 13px ui-monospace, Consolas, monospace">{{ctlCode}}</a> {{leadB}}</p>
+            </sc-if>
+          </div>
+
+          <sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+            <div style="padding: 0 22px 18px; display: flex; flex-direction: column; gap: 18px">
+              <sc-for list="{{cards}}" as="c" hint-placeholder-count="1">
+                <div class="rv" style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 14px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5">
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 600; display: inline-flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline"><a href="{{c.href}}" class="lk" title="{{c.hrefTitle}}" style="font: 600 15px ui-monospace, Consolas, monospace">{{c.code}}</a><span>{{c.name}}</span></h3>
+                    <span style="flex: 1 1 0"></span>
+                    <span style="{{c.pillStyle}}">{{c.pillText}}</span>
+                  </div>
+                  <div style="overflow-x: auto">
+                    <table style="width: 100%; min-width: 1120px; border-collapse: collapse">
+                      <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{c.caption}}</caption>
+                      <thead><tr style="background: #FFFFFF; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                        <th scope="col" style="padding: 10px 12px 10px 18px; font-weight: 600">Code</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600">Name</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Opening</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Invoiced</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">{{c.paidHead}}</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Other</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Closing</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right; background: #F5F6F8">Current</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right; background: #F5F6F8">31-60 days</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right; background: #F5F6F8">61-90 days</th>
+                        <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right; background: #F5F6F8">Over 90 days</th>
+                        <sc-if value="{{c.hasBf}}" hint-placeholder-val="{{ true }}"><th scope="col" style="padding: 10px 18px 10px 12px; font-weight: 600; text-align: right; background: #F5F6F8">Brought forward</th></sc-if>
+                      </tr></thead>
+                      <tbody>
+                        <sc-for list="{{c.rows}}" as="r" hint-placeholder-count="5">
+                          <tr class="hr" style="border-top: 1px solid #F1F3F7">
+                            <td style="padding: 10px 12px 10px 18px; vertical-align: top; white-space: nowrap"><button type="button" id="{{r.rid}}" class="lk" title="{{r.title}}" onClick="{{r.pick}}" style="border: 0; background: transparent; padding: 2px; font: 600 13px ui-monospace, Consolas, monospace; cursor: pointer">{{r.code}}</button></td>
+                            <td style="padding: 10px 12px; vertical-align: top; min-width: 220px">
+                              <span style="{{r.nameStyle}}">{{r.name}}</span><sc-if value="{{r.nis}}" hint-placeholder-val="{{ false }}"> <span title="{{r.nisTitle}}" style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600; white-space: nowrap; vertical-align: 1px">Not in Setup</span></sc-if>
+                              <sc-if value="{{r.hasNote}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px; max-width: 360px">{{r.note}}</div></sc-if>
+                            </td>
+                            <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top">{{r.open}}</td>
+                            <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top">{{r.inv}}</td>
+                            <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top">{{r.paid}}</td>
+                            <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top">{{r.other}}</td>
+                            <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; font-weight: 700">{{r.close}}</td>
+                            <sc-if value="{{r.isAge}}" hint-placeholder-val="{{ true }}">
+                              <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; background: #F8F9FB">{{r.cur}}</td>
+                              <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; background: #F8F9FB">{{r.a31}}</td>
+                              <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; background: #F8F9FB">{{r.a61}}</td>
+                              <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; background: #F8F9FB">{{r.a90}}</td>
+                              <sc-if value="{{r.hasBf}}" hint-placeholder-val="{{ true }}"><td style="padding: 10px 18px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; background: #F8F9FB">{{r.bf}}</td></sc-if>
+                            </sc-if>
+                            <sc-if value="{{r.isCredit}}" hint-placeholder-val="{{ false }}">
+                              <td colspan="{{r.ageSpan}}" style="padding: 10px 18px 10px 12px; vertical-align: top; background: #F8F9FB"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 10px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600; white-space: nowrap">In credit</span> <span style="color: #5F6C80; font-size: 12px">paid in advance or overpaid</span></td>
+                            </sc-if>
+                            <sc-if value="{{r.isNoAge}}" hint-placeholder-val="{{ false }}">
+                              <td colspan="{{r.ageSpan}}" style="padding: 10px 18px 10px 12px; vertical-align: top; background: #F8F9FB; color: #5F6C80">—</td>
+                            </sc-if>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                      <tfoot>
+                        <tr style="border-top: 2px solid #E3E7ED; background: #FAFBFC; font-weight: 700">
+                          <td colspan="2" style="padding: 12px 12px 12px 18px">{{c.totLabel}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.open}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.inv}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.paid}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.other}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.close}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.cur}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.a31}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.a61}}</td>
+                          <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.a90}}</td>
+                          <sc-if value="{{c.hasBf}}" hint-placeholder-val="{{ true }}"><td style="padding: 12px 18px 12px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tot.bf}}</td></sc-if>
+                        </tr>
+                        <sc-if value="{{c.hasTb}}" hint-placeholder-val="{{ true }}">
+                        <tr style="border-top: 1px solid #EEF1F5; background: #FFFFFF; color: #46546A">
+                          <td colspan="2" style="padding: 10px 12px 10px 18px">{{c.tb.label}}</td>
+                          <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{c.tb.open}}</td>
+                          <td colspan="3" style="padding: 10px 12px; text-align: center; white-space: nowrap">{{c.tb.moved}}</td>
+                          <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600">{{c.tb.close}}</td>
+                          <td colspan="{{c.tb.span}}" style="padding: 10px 18px 10px 12px; color: #5F6C80">{{c.tb.credit}}</td>
+                        </tr>
+                        </sc-if>
+                      </tfoot>
+                    </table>
+                  </div>
+                  <sc-if value="{{c.hasMore}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+                      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                        <span role="status" style="font-size: 13px; color: #46546A">{{c.moreText}}</span>
+                        <sc-if value="{{c.hasPageNote}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #5F6C80"><b>Design note</b> (not app text): {{c.pageNote}}</span></sc-if>
+                      </div>
+                      <sc-if value="{{c.moreBtn}}" hint-placeholder-val="{{ true }}"><button type="button" id="bp-more" class="hs" onClick="{{c.showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #5F6C80; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{c.moreLabel}}</button></sc-if>
+                    </div>
+                  </sc-if>
+                  <p style="margin: 0; padding: 12px 18px 14px; color: #46546A; font-size: 13px; border-top: 1px solid #EEF1F5">{{c.note}}</p>
+                </div>
+              </sc-for>
+              <sc-for list="{{botNotes}}" as="bn2" hint-placeholder-count="2">
+                <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{bn2.text}}</p>
+              </sc-for>
+
+              <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}">
+              <aside aria-label="What the Excel link gives" class="{{xlCls}}" style="border: 1px dashed #C9D2DF; border-radius: 12px; padding: 12px 14px; background: #FAFBFC; display: flex; flex-direction: column; gap: 6px">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import><b style="font-size: 13px; overflow-wrap: anywhere">{{xlName}}</b><span style="color: #5F6C80; font-size: 12px">· the file the Excel link gives for this view, sheet "{{xlSheet}}"</span></div>
+                <sc-for list="{{xlRows}}" as="x" hint-placeholder-count="3">
+                  <div style="display: flex; gap: 10px; font-size: 13px"><span style="flex: none; width: 48px; color: #5F6C80">Row {{x.n}}</span><span style="color: #46546A; overflow-wrap: anywhere">{{x.text}}</span></div>
+                </sc-for>
+                <span style="color: #5F6C80; font-size: 12px">{{xlAfter}}</span>
+              </aside>
+              </sc-if>
+              <sc-for list="{{newNotes}}" as="nn" hint-placeholder-count="1"><p style="margin: 0; color: #5F6C80; font-size: 12px; max-width: 1000px">New work: {{nn.text}}</p></sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{isStmt}}" hint-placeholder-val="{{ false }}">
+            <div style="border-top: 1px solid #EEF1F5; overflow-x: auto">
+              <table style="width: 100%; min-width: 900px; border-collapse: collapse">
+                <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{st.caption}}</caption>
+                <thead><tr style="text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                  <th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600; width: 72px">Date</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600; width: 120px">Doc No</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600; width: 90px">Book</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600">Description</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Debit</th>
+                  <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Credit</th>
+                  <th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600; text-align: right">Balance</th>
+                </tr></thead>
+                <tbody>
+                  <tr style="border-top: 1px solid #EEF1F5; background: #F7F8FA">
+                    <td style="padding: 10px 12px 10px 22px; color: #46546A; white-space: nowrap">{{st.openDate}}</td><td></td><td></td>
+                    <td style="padding: 10px 12px">Opening balance</td>
+                    <td></td><td></td>
+                    <td style="padding: 10px 22px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 600">{{st.openBal}}</td>
+                  </tr>
+                  <sc-for list="{{st.rows}}" as="r" hint-placeholder-count="3">
+                    <tr class="hr" style="border-top: 1px solid #F1F3F7">
+                      <td style="padding: 10px 12px 10px 22px; color: #46546A; white-space: nowrap">{{r.date}}</td>
+                      <td style="padding: 8px 12px; white-space: nowrap"><button type="button" id="{{r.btnId}}" class="lk" aria-expanded="{{r.exp}}" title="{{r.title}}" onClick="{{r.toggle}}" style="border: 0; background: transparent; padding: 2px; font: 600 13px ui-monospace, Consolas, monospace; cursor: pointer">{{r.no}}</button></td>
+                      <td style="padding: 10px 12px; color: #46546A">{{r.book}}</td>
+                      <td style="padding: 10px 12px">{{r.desc}}</td>
+                      <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.dr}}</td>
+                      <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.cr}}</td>
+                      <td style="padding: 10px 22px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.bal}}</td>
+                    </tr>
+                    <sc-if value="{{r.isOpen}}" hint-placeholder-val="{{ false }}">
+                      <tr>
+                        <td colspan="7" style="padding: 0">
+                          <div class="ex" role="region" aria-labelledby="{{r.btnId}}" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 22px 16px; background: #F7F8FA; border-top: 1px solid #E3E7ED; box-shadow: inset 3px 0 0 #2450B8">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; justify-content: space-between">
+                              <b style="display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center"><span style="font-family: ui-monospace, Consolas, monospace">{{r.doc.no}}</span><sc-if value="{{r.doc.hasLabel}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80; font-weight: 500">· {{r.doc.label}}</span></sc-if></b>
+                              <span style="color: #5F6C80; font-size: 12px">{{r.doc.src}}</span>
+                            </div>
+                            <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px; background: #FFFFFF">
+                              <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{r.doc.caption}}</caption>
+                                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                                  <th scope="col" style="padding: 8px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th>
+                                  <th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Credit</th>
+                                </tr></thead>
+                                <tbody>
+                                  <sc-for list="{{r.doc.lines}}" as="l" hint-placeholder-count="2">
+                                    <tr style="{{l.trStyle}}">
+                                      <td style="padding: 8px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{l.code}}</span> {{l.name}}<sc-if value="{{l.bank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">Bank</span></sc-if></td>
+                                      <td style="padding: 8px 12px; color: #46546A">{{l.desc}}</td>
+                                      <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{l.dr}}</td>
+                                      <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{l.cr}}</td>
+                                    </tr>
+                                  </sc-for>
+                                  <tr style="border-top: 2px solid #E3E7ED; font-weight: 700"><td colspan="2" style="padding: 8px 12px">Total</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.doc.totDr}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.doc.totCr}}</td></tr>
+                                </tbody>
+                              </table>
+                            </div>
+                            <span style="display: inline-flex; gap: 6px; align-items: center; color: #0A6B3D; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>{{r.doc.check}}</span>
+                            <sc-if value="{{r.doc.hasOlder}}" hint-placeholder-val="{{ false }}">
+                              <details open="{{r.doc.olderOpen}}" style="display: flex; flex-direction: column; gap: 8px">
+                                <summary style="color: #46546A; font-size: 13px; font-weight: 600; padding: 4px 0">Earlier versions ({{r.doc.olderN}})</summary>
+                                <sc-for list="{{r.doc.older}}" as="ov" hint-placeholder-count="1">
+                                  <div class="ex" style="display: flex; flex-direction: column; gap: 6px; margin-top: 6px">
+                                    <span style="color: #5F6C80; font-size: 12px">{{ov.src}}</span>
+                                    <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px; background: #FFFFFF">
+                                      <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                        <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{ov.caption}}</caption>
+                                        <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                                          <th scope="col" style="padding: 8px 12px; font-weight: 600">Account</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th>
+                                          <th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Debit</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Credit</th>
+                                        </tr></thead>
+                                        <tbody>
+                                          <sc-for list="{{ov.lines}}" as="ol" hint-placeholder-count="2">
+                                            <tr style="{{ol.trStyle}}">
+                                              <td style="padding: 8px 12px"><span style="font-family: ui-monospace, Consolas, monospace">{{ol.code}}</span> {{ol.name}}<sc-if value="{{ol.bank}}" hint-placeholder-val="{{ false }}"> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">Bank</span></sc-if></td>
+                                              <td style="padding: 8px 12px; color: #46546A">{{ol.desc}}</td>
+                                              <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ol.dr}}</td>
+                                              <td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ol.cr}}</td>
+                                            </tr>
+                                          </sc-for>
+                                          <tr style="border-top: 2px solid #E3E7ED; font-weight: 700"><td colspan="2" style="padding: 8px 12px">Total</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ov.totDr}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{ov.totCr}}</td></tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                </sc-for>
+                              </details>
+                            </sc-if>
+                          </div>
+                        </td>
+                      </tr>
+                    </sc-if>
+                  </sc-for>
+                  <tr style="border-top: 2px solid #E3E7ED; font-weight: 700">
+                    <td style="padding: 12px 12px 12px 22px; color: #46546A; font-weight: 400; white-space: nowrap">{{st.closeDate}}</td><td></td><td></td>
+                    <td style="padding: 12px">Closing balance</td>
+                    <td></td><td></td>
+                    <td style="padding: 12px 22px 12px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{st.closeBal}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="padding: 18px 22px 8px; display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #EEF1F5">
+              <h3 style="margin: 0; font-size: 16px; font-weight: 600">{{st.openH3}}</h3>
+              <sc-if value="{{st.hasPills}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                  <sc-for list="{{st.pills}}" as="pl" hint-placeholder-count="4"><span style="display: inline-flex; align-items: center; height: 26px; padding: 0 12px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 13px; font-weight: 600; white-space: nowrap">{{pl.text}}</span></sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{st.hasItems}}" hint-placeholder-val="{{ true }}">
+                <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 10px">
+                  <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px">
+                    <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{st.openCaption}}</caption>
+                    <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+                      <th scope="col" style="padding: 9px 12px; font-weight: 600">Date</th><th scope="col" style="padding: 9px 12px; font-weight: 600">Doc No</th><th scope="col" style="padding: 9px 12px; font-weight: 600">Description</th>
+                      <th scope="col" style="padding: 9px 12px; font-weight: 600; text-align: right">Invoice</th><th scope="col" style="padding: 9px 12px; font-weight: 600; text-align: right">Still open</th>
+                      <th scope="col" style="padding: 9px 12px; font-weight: 600; text-align: right">Days</th><th scope="col" style="padding: 9px 12px; font-weight: 600">Age</th>
+                    </tr></thead>
+                    <tbody>
+                      <sc-for list="{{st.items}}" as="it" hint-placeholder-count="2">
+                        <tr style="border-top: 1px solid #F1F3F7">
+                          <td style="padding: 9px 12px; white-space: nowrap; vertical-align: top">{{it.date}}</td>
+                          <td style="padding: 9px 12px; white-space: nowrap; vertical-align: top"><sc-if value="{{it.isBtn}}" hint-placeholder-val="{{ true }}"><button type="button" class="lk" aria-expanded="{{it.exp}}" title="{{it.title}}" onClick="{{it.toggle}}" style="border: 0; background: transparent; padding: 2px; font: 600 13px ui-monospace, Consolas, monospace; cursor: pointer">{{it.no}}</button></sc-if><sc-if value="{{it.isTxt}}" hint-placeholder-val="{{ false }}"><span style="font-family: ui-monospace, Consolas, monospace">{{it.no}}</span></sc-if></td>
+                          <td style="padding: 9px 12px; color: #46546A; vertical-align: top">{{it.desc}}</td>
+                          <td style="padding: 9px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top">{{it.inv}}</td>
+                          <td style="padding: 9px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; font-weight: 600">{{it.open}}</td>
+                          <td style="padding: 9px 12px; text-align: right; font-variant-numeric: tabular-nums; vertical-align: top">{{it.days}}</td>
+                          <td style="padding: 9px 12px; white-space: nowrap; vertical-align: top">{{it.age}}</td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+              </sc-if>
+              <sc-if value="{{st.hasOpenText}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #46546A; font-size: 13px">{{st.openText}}</p></sc-if>
+            </div>
+
+            <div style="padding: 10px 22px 20px; display: flex; flex-direction: column; gap: 10px">
+              <sc-for list="{{st.notes}}" as="sn" hint-placeholder-count="2"><p style="margin: 0; color: #46546A; font-size: 13px; max-width: 1000px">{{sn.text}}</p></sc-for>
+              <p style="margin: 0; color: #5F6C80; font-size: 12px">The Excel link is hidden on a statement: it gives the list, not one customer or supplier.</p>
+              <sc-for list="{{newNotes}}" as="sw" hint-placeholder-count="1"><p style="margin: 0; color: #5F6C80; font-size: 12px; max-width: 1000px">New work: {{sw.text}}</p></sc-for>
+            </div>
+          </sc-if>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"customers","options":["customers","suppliers","to-17-nov","customers-overdue","suppliers-due","many-rows","cant-check","doesnt-tie","statement","statement-tenant","statement-credit","statement-control","statement-supplier","statement-changed","company-ai","loading","error","error-code","could-not-load","excel-error"],"section":"State to show"},"$preview":{"width":1440,"height":2300}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the state: BooksParties.dc.html#customers-overdue, #suppliers-due (the Overview cards) or any
+    // other state name below. It applies on first load, over the default state.
+    let v = (p && p.view) || 'customers', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'customers' && ['suppliers', 'to-17-nov', 'customers-overdue', 'suppliers-due', 'many-rows', 'cant-check', 'doesnt-tie', 'statement', 'statement-tenant', 'statement-credit', 'statement-control', 'statement-supplier', 'statement-changed', 'company-ai', 'loading', 'error', 'error-code', 'could-not-load', 'excel-error'].includes(h)) v = h;
+    this.state = this.initial(v);
+    this.timer = null;
+  }
+  componentWillUnmount() { clearTimeout(this.timer); }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) {
+      // The "State to show" tweak changed: start that state afresh.
+      clearTimeout(this.timer);
+      this.setState(this.initial(this.props.view || 'customers'));
+      return;
+    }
+    if (this._focus) {
+      const id = this._focus; this._focus = null;
+      const el = document.getElementById(id);
+      if (el && el.focus) el.focus({ preventScroll: true });
+    }
+  }
+
+  // ---------- The shared sample: stage1/samples.md sections 2-8 and 13. The same documents sit on Books, BooksLedger and BooksStatements. ----------
+  data() {
+    if (this._d) return this._d;
+    const S = x => Math.round(x * 100);
+    const NEW = { file: 'GL Journal Oct-Nov.xlsx', read: '2026-11-18 10:42' }, OLD = { file: 'GL Journal Nov.xlsx', read: '2026-11-12 16:04' };
+    const L = ls => ls.map(([code, dr, cr]) => ({ code, dr: S(dr || 0), cr: S(cr || 0) }));
+    const doc = (no, iso, book, desc, lines, src, older) => ({ no, iso, book, desc, src: src || NEW, v: older ? 2 : 1, older: older || null, lines: L(lines) });
+    // The documents that touch a customer's or a supplier's code (their account lines, as kept from SQL's GL Journal of Transaction).
+    const DOCS = {};
+    [
+      doc('IV2610-014', '2026-10-01', 'sales', 'Office rental October, Unit 3A', [['300-U001', 1800], ['600-000', 0, 1800]]),
+      doc('OR2610-001', '2026-10-02', 'bank', 'Rental received September', [['310-000', 2800], ['300-T001', 0, 2800]]),
+      doc('PI2610-011', '2026-10-30', 'purchase', 'Office rental October', [['900-300', 6500], ['400-R001', 0, 6500]]),
+      doc('PI2610-013', '2026-10-30', 'purchase', 'Payroll advisory October', [['900-900', 3200], ['400-P004', 0, 3200]]),
+      doc('PV2610-021', '2026-10-30', 'bank', 'Office rental October', [['400-R001', 6500], ['310-000', 0, 6500]]),
+      doc('IV2610-031', '2026-10-31', 'sales', 'Rent October, Block A', [['300-T001', 2800], ['600-000', 0, 2800]]),
+      doc('IV2610-033', '2026-10-31', 'sales', 'Management fee October', [['300-A001', 4500], ['610-000', 0, 4500]]),
+      doc('PI2610-012', '2026-10-31', 'purchase', 'Electricity October', [['900-400', 1136.20], ['400-E012', 0, 1136.20]]),
+      doc('IV2611-002', '2026-11-02', 'sales', 'Office rental November, Unit 3A', [['300-U001', 1800], ['600-000', 0, 1800]], OLD),
+      doc('IV2611-005', '2026-11-02', 'sales', 'Utilities recharge November, Unit 3A', [['300-U001', 245.60], ['900-400', 0, 245.60]], OLD),
+      doc('OR2611-001', '2026-11-03', 'bank', 'Rental received October', [['310-000', 2800], ['300-T001', 0, 2800]], OLD),
+      doc('PV2611-003', '2026-11-04', 'bank', 'Electricity October', [['400-E012', 1136.20], ['310-000', 0, 1136.20]], NEW,
+        [{ v: 1, iso: '2026-11-04', src: OLD, lines: L([['400-E012', 1163.20], ['310-000', 0, 1163.20]]) }]),
+      doc('OR2611-002', '2026-11-05', 'bank', 'Rental received October, Unit 3A', [['310-000', 1800], ['300-U001', 0, 1800]], OLD),
+      doc('CN2611-002', '2026-11-10', 'other', 'Credit note: Rent October, Block A', [['600-000', 2800], ['300-T001', 0, 2800]], OLD)
+    ].forEach(d => { DOCS[d.no] = d; });
+    // Setup › Customers and suppliers. 300-A001 is kept out of Setup on purpose, so it is named from what SQL printed.
+    const PARTY = {
+      '300-A001': { name: 'AGRINEXUS INTERNATIONAL', from: 'printed', ctl: '300-000', side: 'customers' },
+      '300-T001': { name: 'Tenant', from: 'party', ctl: '300-000', side: 'customers' },
+      '300-U001': { name: 'Office tenant (Unit 3A)', from: 'party', ctl: '300-000', side: 'customers' },
+      '400-E012': { name: 'Electricity supplier', from: 'party', ctl: '400-000', side: 'suppliers' },
+      '400-P004': { name: 'Payroll advisor', from: 'party', ctl: '400-000', side: 'suppliers' },
+      '400-R001': { name: 'Office landlord', from: 'party', ctl: '400-000', side: 'suppliers' },
+      // In Setup with no lines kept: listed (Opening —, closing 0.00) only while the opening is unknown, as receivables.figures keeps a row whose opening is None.
+      '400-A001': { name: 'Agrinexus International', from: 'party', ctl: '400-000', side: 'suppliers' },
+      '400-B002': { name: 'Bina Jaya Sdn Bhd', from: 'party', ctl: '400-000', side: 'suppliers' },
+      '400-C003': { name: 'Old cleaning contractor', from: 'party', ctl: '400-000', side: 'suppliers' }
+    };
+    // Control accounts and the openings kept at 1 Oct 2026 (SQL's trial balance), as what is owed.
+    const CTL = { '300-000': { name: 'Trade debtors', side: 'customers', open: S(8500) }, '400-000': { name: 'Trade creditors', side: 'suppliers', open: S(850) } };
+    const ENTRIES = [];
+    Object.keys(DOCS).forEach(no => DOCS[no].lines.forEach(l => { if (PARTY[l.code]) ENTRIES.push({ code: l.code, iso: DOCS[no].iso, no, book: DOCS[no].book, desc: DOCS[no].desc, dr: l.dr, cr: l.cr }); }));
+    ENTRIES.sort((a, b) => (a.iso < b.iso ? -1 : a.iso > b.iso ? 1 : a.no < b.no ? -1 : a.no > b.no ? 1 : 0));
+    const NAMES = { '300-A001': 'AGRINEXUS INTERNATIONAL', '300-T001': 'Tenant', '300-U001': 'Office tenant (Unit 3A)', '400-E012': 'Electricity supplier', '400-P004': 'Payroll advisor', '400-R001': 'Office landlord',
+      '310-000': 'Maybank current', '600-000': 'Rental income', '610-000': 'Management fees', '900-300': 'Office rental', '900-400': 'Utilities', '900-900': 'Professional fees' };
+    // What each company keeps: AISB's lines are SQL's (openings at 1 Oct 2026 and the journal); AI is kept here and has posted nothing yet.
+    const BOOKS = { AISB: { entries: ENTRIES, open: { '300-000': CTL['300-000'].open, '400-000': CTL['400-000'].open } }, AI: { entries: [], open: {} } };
+    this._d = { DOCS, PARTY, CTL, ENTRIES, BOOKS, NAMES, START: '2026-10-01', COVER: ['2026-10-01', '2026-11-17'], DEFAULT_TO: { AISB: '2026-11-17', AI: '2026-11-18' },
+      BOOK: { bank: 'Bank', general: 'General', sales: 'Sales', purchase: 'Purchase', other: 'Other' },
+      BOOK_LABEL: { bank: 'the Bank Journal', general: 'the General Journal', sales: 'the Sales Journal', purchase: 'the Purchase Journal', other: null },
+      CO: { AISB: { code: 'AISB', name: 'AISB Sdn Bhd', sql: true }, AI: { code: 'AI', name: 'Agrinexus International', sql: false } } };
+    return this._d;
+  }
+
+  // Formats, as the app writes them: money 1,234.56 (sen in), balances x Dr / x Cr, dates 1 Oct 2026, 01/10/2026 and 1 Oct.
+  fmt(sen) {
+    const neg = sen < 0, v = Math.abs(sen);
+    return (neg ? '-' : '') + String(Math.floor(v / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + String(v % 100).padStart(2, '0');
+  }
+  rmPlain(n) { return n === null || n === undefined ? '—' : this.fmt(n); }
+  rmCell(n) { return n ? this.fmt(n) : ''; }
+  drCr(n) { return n === null || n === undefined ? '—' : n === 0 ? '0.00' : this.fmt(Math.abs(n)) + (n > 0 ? ' Dr' : ' Cr'); }
+  fsAmt(n) { return n === null || n === undefined ? '—' : n < 0 ? '(' + this.fmt(-n) + ')' : this.fmt(n); }
+  fmtDate(iso) { const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const [y, m, d] = iso.split('-'); return Number(d) + ' ' + M[Number(m) - 1] + ' ' + y; }
+  longDate(iso) { const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const [y, m, d] = iso.split('-'); return Number(d) + ' ' + M[Number(m) - 1] + ' ' + y; }
+  shortDate(iso) { return this.fmtDate(iso).split(' ').slice(0, 2).join(' '); }
+  dmy(iso) { const [y, m, d] = iso.split('-'); return d + '/' + m + '/' + y; }
+  fileDate(iso) { const [y, m, d] = iso.split('-'); return d + '-' + m + '-' + y; }
+  days(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 86400000); }
+
+  // The period a report shows: the dates given, else To = the last day SQL's reports kept reach (today for AI) and From = the financial year start before it.
+  period(co, from, to) {
+    const D = this.data();
+    const t = to || D.DEFAULT_TO[co];
+    const f = from || (t.slice(0, 4) + '-01-01');
+    return { from: f, to: t };
+  }
+
+  // Who owes what (hrp/receivables.py): each code's opening, what the sales or purchase book added, what the bank book took off, the rest, the closing, and the
+  // ageing at the To date (each receipt, payment, credit note or journal settles the oldest invoice still open first; invoices are aged by their own date).
+  // Openings: only the 1 Oct 2026 ones are kept (SQL's trial balance), so a From date before 1 Oct leaves the openings unknown. A code has no opening of its own: it sits inside the control account's.
+  // Closings stay known whenever an opening on or before To is kept (B.closing from 1 Oct), so only Opening, the tie and the ageing go blank before 1 Oct.
+  calc(co, side, from, to, variant) {
+    const D = this.data(), cust = side === 'customers';
+    const ctlCode = cust ? '300-000' : '400-000', CTL = D.CTL[ctlCode];
+    const out = { ctlCode, ctlName: CTL.name, rows: [], listed: false, tb: null, ties: null, text: '', notIn: [], unknown: [] };
+    // a company kept here keeps every opening itself; one kept in SQL Account knows them only from the day SQL's trial balance was read (1 Oct)
+    const Bk = D.BOOKS[co] || { entries: [], open: {} }, ctlOpen = Bk.open[ctlCode] || 0, sqlCo = D.CO[co].sql;
+    const openKnown = !sqlCo || from >= D.START, closeKnown = !sqlCo || to >= D.START;
+    const owed = e => (cust ? e.dr - e.cr : e.cr - e.dr);
+    const bucket = n => (n <= 30 ? 0 : n <= 60 ? 1 : n <= 90 ? 2 : 3);
+    const aged = (es, bf) => {
+      const items = []; let credit = 0;
+      if (bf > 0) items.push({ iso: from, no: '', desc: '', amt: bf, open: bf, bf: true });
+      es.forEach(e => {
+        const d = owed(e);
+        if (d > 0) { const a = Math.min(credit, d); credit -= a; if (d - a > 0) items.push({ iso: e.iso, no: e.no, desc: e.desc, amt: d, open: d - a }); }
+        else if (d < 0) { let s = -d; items.forEach(it => { if (s > 0 && it.open > 0) { const t = Math.min(it.open, s); it.open -= t; s -= t; } }); credit += s; }
+      });
+      const open = items.filter(it => it.open > 0).map(it => Object.assign({}, it, { days: it.bf ? this.days(it.iso, to) : this.days(it.iso, to) }));
+      const b = [0, 0, 0, 0]; let bfSum = 0;
+      open.forEach(it => { if (it.bf) bfSum += it.open; else b[bucket(it.days)] += it.open; });
+      return { open, credit, b, bf: bfSum };
+    };
+    out.aged = aged;
+    const all = Bk.entries.filter(e => D.PARTY[e.code].side === side && e.iso <= to);
+    // the control account's own row
+    out.rows.push({ code: ctlCode, isCtl: true, name: '', from: 'ctl', open: openKnown ? ctlOpen : null, inv: 0, paid: 0, other: 0, close: closeKnown ? ctlOpen : null, age: openKnown ? aged([], ctlOpen) : null });
+    Object.keys(D.PARTY).filter(k => D.PARTY[k].side === side).sort().forEach(code => {
+      const es = all.filter(e => e.code === code);
+      const open = openKnown ? es.filter(e => e.iso < from).reduce((a, e) => a + owed(e), 0) : null;
+      let inv = 0, paid = 0, other = 0;
+      es.filter(e => e.iso >= from).forEach(e => {
+        const d = owed(e);
+        if (e.book === 'sales' || e.book === 'purchase') { if (d > 0) inv += d; else other += d; } else if (e.book === 'bank') paid += -d; else other += d;
+      });
+      const close = closeKnown ? es.reduce((a, e) => a + owed(e), 0) : null;
+      if (open === null || open || inv || paid || other || close) out.rows.push({ code, isCtl: false, name: D.PARTY[code].name, from: D.PARTY[code].from, open, inv, paid, other, close, age: openKnown ? aged(es, 0) : null });
+    });
+    out.listed = out.rows.some(r => !r.isCtl) || out.rows[0].open === null || !!out.rows[0].open;
+    if (!out.listed) { out.rows = []; return out; }
+    out.rows.forEach(r => { r.credit = r.close !== null && r.close < 0; if (r.open === null) out.unknown.push(r.code); if (r.from === 'printed') out.notIn.push(r.code); });
+    // totals
+    const sum = k => (out.rows.some(r => r[k] === null) ? null : out.rows.reduce((a, r) => a + r[k], 0));
+    const ok = out.rows.filter(r => r.age && !r.credit);
+    out.tot = { open: sum('open'), inv: out.rows.reduce((a, r) => a + r.inv, 0), paid: out.rows.reduce((a, r) => a + r.paid, 0), other: out.rows.reduce((a, r) => a + r.other, 0), close: sum('close'),
+      age: openKnown ? [0, 1, 2, 3].map(i => ok.reduce((a, r) => a + r.age.b[i], 0)) : null, bf: openKnown ? ok.reduce((a, r) => a + r.age.bf, 0) : null };
+    out.credit = out.rows.filter(r => r.credit).reduce((a, r) => a - r.close, 0);
+    // the control account in the trial balance (customers and suppliers added into it)
+    const moved = all.filter(e => e.iso >= from).reduce((a, e) => a + owed(e), 0) + (variant === 'notie' && !cust ? 20000 : 0);
+    const tbOpen = openKnown ? ctlOpen + all.filter(e => e.iso < from).reduce((a, e) => a + owed(e), 0) : null;
+    const tbClose = closeKnown ? ctlOpen + all.reduce((a, e) => a + owed(e), 0) + (variant === 'notie' && !cust ? 20000 : 0) : null;
+    out.tb = { open: tbOpen, moved, close: tbClose };
+    out.ties = openKnown ? (out.tot.open === tbOpen && out.tot.close === tbClose) : null;
+    const lab = cust ? 'customers' : 'suppliers';
+    if (out.ties === true) out.text = ctlCode + ' ' + CTL.name + ': the ' + lab + ' add up to the control account in the trial balance, ' + this.fmt(tbOpen) + ' at the start and ' + this.fmt(tbClose) + ' at the end.';
+    else if (out.ties === false) {
+      const m1 = out.tot.close - out.tot.open, c1 = out.tot.close;
+      out.text = ctlCode + ' ' + CTL.name + ": the " + lab + " don't add up to the control account in the trial balance: the period's movement here is " + this.fmt(m1) + ", the trial balance's " + this.fmt(moved)
+        + ' (a difference of ' + this.fmt(m1 - moved) + '); the closing here is ' + this.fmt(c1) + ", the trial balance's " + this.fmt(tbClose) + ' (a difference of ' + this.fmt(c1 - tbClose)
+        + "). The trial balance adds a code into the control account that isn't listed here; see the Trial balance tab with customers and suppliers added in.";
+    } else out.text = ctlCode + ' ' + CTL.name + ": can't be checked against the trial balance, as no opening balance is kept for " + out.unknown.join(', ') + '.';
+    return out;
+  }
+
+  // One customer's or supplier's statement (receivables.statement). code may be a control account itself.
+  stmt(code, from, to, co) {
+    const D = this.data(), P = D.PARTY[code], isCtl = !!D.CTL[code];
+    const Bk = D.BOOKS[co] || { entries: [], open: {} }, sqlCo = D.CO[co].sql, ctlOpen = isCtl ? Bk.open[code] || 0 : 0;
+    if (!P && !isCtl) return null;
+    const side = isCtl ? D.CTL[code].side : P.side, cust = side === 'customers';
+    const openKnown = !sqlCo || from >= D.START;
+    const owed = e => (cust ? e.dr - e.cr : e.cr - e.dr);
+    const es = isCtl ? [] : Bk.entries.filter(e => e.code === code && e.iso <= to);
+    const open = isCtl ? (openKnown ? ctlOpen : null) : (openKnown ? es.filter(e => e.iso < from).reduce((a, e) => a + owed(e), 0) : null);
+    const lines = es.filter(e => e.iso >= from);
+    let bal = open === null ? 0 : open;
+    const rows = lines.map(e => { bal += owed(e); return { e, bal: cust ? bal : -bal }; });
+    // The closing and the ageing run from the first opening kept (1 Oct), whatever the From date (receivables.statement).
+    const closeKnown = !sqlCo || to >= D.START;
+    const close = closeKnown ? ctlOpen + es.reduce((a, e) => a + owed(e), 0) : null;
+    const A = closeKnown ? this.calc(co, side, D.START, to).aged(es, ctlOpen) : null;
+    return { code, isCtl, side, cust, P, ctl: isCtl ? code : P.ctl, ctlName: D.CTL[isCtl ? code : P.ctl].name, open, openSigned: open === null ? null : (cust ? open : -open), rows, close, closeSigned: close === null ? null : (cust ? close : -close), A };
+  }
+
+  docView(no) {
+    const D = this.data(), d = D.DOCS[no];
+    if (!d) return null;
+    const rm = n => (n ? 'RM ' + this.fmt(n) : '');
+    const lineRows = ls => ls.map(l => {
+      const bank = l.code === '310-000';
+      return { code: l.code, name: D.NAMES[l.code] || '', bank, desc: d.desc, dr: rm(l.dr), cr: rm(l.cr), trStyle: 'border-top: 1px solid #F1F3F7;' + (bank ? ' background: #F3F6FE' : '') };
+    });
+    const sum = (ls, k) => 'RM ' + this.fmt(ls.reduce((s, l) => s + l[k], 0));
+    const src = (v, iso, sr) => 'Version ' + v + ', ' + this.longDate(iso) + ", from SQL's GL Journal of Transaction (" + sr.file + '), read ' + sr.read;
+    return { no: d.no, label: D.BOOK_LABEL[d.book] || '', hasLabel: !!D.BOOK_LABEL[d.book], src: src(d.v, d.iso, d.src), caption: 'The account lines of ' + d.no,
+      lines: lineRows(d.lines), totDr: sum(d.lines, 'dr'), totCr: sum(d.lines, 'cr'), check: 'The lines balance and agree with the listing.',
+      hasOlder: !!(d.older && d.older.length), olderN: d.older ? d.older.length : 0,
+      older: (d.older || []).map(ov => ({ src: src(ov.v, ov.iso, ov.src), caption: 'Version ' + ov.v + ' of ' + d.no, lines: lineRows(ov.lines), totDr: sum(ov.lines, 'dr'), totCr: sum(ov.lines, 'cr') })) };
+  }
+
+  initial(view) {
+    const s = { co: 'AISB', from: '2026-10-01', to: '2026-10-31', side: 'customers', party: null, open: null, variant: null, olderOpen: false, busy: false, busyBy: null, err: '', errBack: false, xlErr: false, xlN: 0, swapN: 0, say: '', filter: null, fail: false, page: 25, limit: 25 };
+    if (view === 'suppliers') s.side = 'suppliers';
+    // From the Overview's cards: as at the day SQL's journal kept reaches (17 Nov), from the first opening kept (1 Oct), so the ageing is known
+    if (view === 'customers-overdue') { s.to = '2026-11-17'; s.filter = 'overdue'; }
+    if (view === 'suppliers-due') { s.side = 'suppliers'; s.to = '2026-11-17'; s.filter = 'due'; }
+    // the many-rows pattern, drawn with 2 rows a page because the samples hold 4 customers (the page shows 25)
+    if (view === 'many-rows') { s.to = '2026-11-17'; s.page = 2; s.limit = 2; }
+    if (view === 'could-not-load') s.fail = true;
+    if (view === 'to-17-nov') s.to = '2026-11-17';
+    if (view === 'cant-check') { s.from = null; s.to = null; }
+    if (view === 'doesnt-tie') { s.side = 'suppliers'; s.variant = 'notie'; }
+    if (view === 'statement') { s.party = '300-A001'; s.open = 'IV2610-033'; }
+    if (view === 'statement-tenant') s.party = '300-T001';
+    if (view === 'statement-credit') { s.party = '300-T001'; s.to = '2026-11-17'; s.open = 'CN2611-002'; }
+    if (view === 'statement-control') s.party = '300-000';
+    if (view === 'statement-supplier') { s.side = 'suppliers'; s.party = '400-P004'; }
+    if (view === 'statement-changed') { s.side = 'suppliers'; s.party = '400-E012'; s.to = '2026-11-17'; s.open = 'PV2611-003'; s.olderOpen = true; }
+    if (view === 'company-ai') { s.co = 'AI'; s.from = null; s.to = null; }
+    if (view === 'loading') { s.busy = true; s.busyBy = 'show'; }   // a static preview: it holds Loading…
+    if (view === 'excel-error') s.xlErr = true;
+    const per = this.period(s.co, s.from, s.to);
+    s.fromVal = per.from; s.toVal = per.to;
+    if (view === 'error') { s.fromVal = '2026-11-30'; s.toVal = '2026-10-31'; s.err = 'The From date is after the To date.'; }
+    if (view === 'error-code') { s.party = '300-Z999'; s.err = "300-Z999 isn't a customer's or supplier's code under a debtor or creditor control account."; s.errBack = true; }
+    return s;
+  }
+
+  // Show (or a company switch, or This financial year to date): Loading…, then the report for those dates, written back into the inputs.
+  // by: the button that started it ('show' or 'fy'), which shows the busy state and gets focus back once it is enabled again.
+  run(next, by) {
+    clearTimeout(this.timer);
+    this.setState({ busy: true, busyBy: by || null, err: '', errBack: false, xlErr: false, fail: false, say: 'Loading…' });
+    this.timer = setTimeout(() => {
+      const s = Object.assign({}, this.state, next);
+      const per = this.period(s.co, s.from, s.to);
+      if (by) this._focus = by === 'fy' ? 'bk-fy' : 'bk-show';
+      if (per.from > per.to) {
+        this.setState(Object.assign({}, next, { busy: false, busyBy: null, err: 'The From date is after the To date.', errBack: false, say: 'The From date is after the To date.' }));
+        return;
+      }
+      this.setState(Object.assign({}, next, { busy: false, busyBy: null, limit: this.state.page || 25, fromVal: per.from, toVal: per.to, swapN: (this.state.swapN || 0) + 1,
+        say: (s.side === 'customers' ? 'Customers' : 'Suppliers') + ', ' + this.fmtDate(per.from) + ' to ' + this.fmtDate(per.to) + ' shown.' }));
+    }, 450);
+  }
+
+  renderVals() {
+    const s = this.state, D = this.data(), set = x => this.setState(x);
+    const co = s.co, C = D.CO[co], isSql = C.sql;
+    const per = this.period(co, s.from, s.to);
+    const cust = s.side === 'customers';
+    const Side = cust ? 'Customers' : 'Suppliers', side1 = cust ? 'customer' : 'supplier';
+
+    // ---- shell ----
+    const seg = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;white-space:nowrap;box-sizing:border-box;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;'
+      + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const sbCompany = co === 'AISB' ? 'aisb' : 'ai', sbKind = co === 'AISB' ? 'sqlPayroll' : 'here';
+    // the top-bar switcher replaced the in-page AISB / AI control and picks the company the same way
+    const onTopCo = code => { const k = code === 'aisb' ? 'AISB' : code === 'ai' ? 'AI' : null; if (k && k !== this.state.co) this.run({ co: k, from: null, to: null, party: null, open: null, variant: null, filter: null }); };
+    // its own page in the Accounting menu (no Books tab strip); the Overview's Customers overdue and Suppliers due cards open it filtered
+    const intro = "Who owes the company and whom it owes: each customer's and supplier's balance, aged at the To date, and a statement for each. "
+      + (isSql ? "Worked out from the openings SQL printed and the account lines of SQL's GL Journal of Transaction; nothing on this page can be changed." : 'Worked out from what is posted here; nothing on this page can be changed.');
+    // a company kept here with nothing posted has no balances (the Overview's two cards read the same): worked out from what it keeps for these dates, as Books does
+    const Lc = this.calc(co, s.side, per.from, per.to, s.variant);
+    const noBal = !isSql && !Lc.listed && !this.calc(co, cust ? 'suppliers' : 'customers', per.from, per.to).listed;
+    const showing = !s.busy && !s.err && !s.fail;
+    const isStmt = !!s.party && !noBal && showing;
+    const isList = showing && !isStmt && !noBal;
+    const busyBy = s.busy ? s.busyBy : null;
+    const backLabel = 'All ' + (cust ? 'customers' : 'suppliers');
+    const back = () => { this._focus = 'bp-side-' + this.state.side; set({ party: null, open: null, err: '', errBack: false, swapN: (this.state.swapN || 0) + 1, say: 'All ' + (this.state.side === 'customers' ? 'customers' : 'suppliers') + ' shown.' }); };
+    const pickParty = code => () => { this._focus = 'bp-h2'; set({ party: code, open: null, swapN: (this.state.swapN || 0) + 1, say: 'Statement of ' + code + ' shown.' }); };
+
+    // ---- the list ----
+    const PILL = { ok: 'background:#E3F7EC;color:#0A6B3D', bad: 'background:#FDE6E3;color:#B0190F', grey: 'background:#EEF1F5;color:#46546A' };
+    const pillBase = 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;';
+    const bf = Lc.listed && Lc.tot && Lc.tot.bf;
+    const ageSpan = bf ? 5 : 4;
+    const BN = {
+      ok: ['background:#F0FBF5;border:1px solid #BFE8D0', 'verified', 'ok', '#0A6B3D'],
+      warn: ['background:#FFFBF2;border:1px solid #F3D9A6', 'alert', 'warn', '#934100'],
+      grey: ['background:#F7F8FA;border:1px solid #E3E7ED', 'help', 'muted', '#0F1A2B']
+    };
+    let bn = null;
+    if (!Lc.listed) bn = { t: 'grey', title: 'Nothing listed', text: 'No ' + side1 + ' balance is kept for these dates.' };
+    else if (Lc.ties === true) bn = { t: 'ok', title: 'Ties to the control accounts', text: 'Every control account ties: the ' + s.side + ' listed add up to their control accounts in the trial balance.' };
+    else if (Lc.ties === false) bn = { t: 'warn', title: "Doesn't tie to the control accounts", text: 'Not every control account ties to the trial balance: ' + Lc.text };
+    else bn = { t: 'grey', title: 'Not fully checked', text: 'Not every control account can be checked: ' + Lc.text };
+    const bnx = BN[bn.t];
+    const owedWord = cust ? 'what the customer owes the company' : 'what the company owes the supplier';
+    const topNotes = Lc.listed ? [
+      { text: 'Each amount is what is owed: ' + owedWord + "; a figure in brackets is the other way round. Invoiced is what the " + (cust ? 'sales' : 'purchase') + ' book added, ' + (cust ? 'received' : 'paid')
+        + ' what the bank book took off, other everything else (credit notes, journals). The ageing is at ' + this.fmtDate(per.to) + '.' },
+      { text: "SQL's exports don't say which receipt or payment settled which invoice, so each receipt, payment, credit note or journal is taken to settle the oldest invoice still open first. SQL's exports carry no due dates either, so invoices are aged by their own date: current is within 30 days of it. An opening balance with no invoices kept behind it is aged as brought forward." }
+    ] : [];
+    const NOTE_OPEN = "No opening balance of {c} is kept: fetch SQL's trial balance (with a From date) or its GL ledger for the start of the period, or a period after one.";
+    // ---- the filter the Overview cards open with (owner, 17 Nov: customers overdue = older than 30 days; a supplier invoice is due on its own date, as Setup holds no terms) ----
+    const filt = Lc.listed && s.filter && ((s.filter === 'overdue' && cust) || (s.filter === 'due' && !cust)) ? s.filter : null;
+    const lateOf = r => {
+      if (!r.age || r.credit) return 0;
+      if (filt === 'overdue') return r.age.b[1] + r.age.b[2] + r.age.b[3] + r.age.bf;
+      // overdue = past its date (samples D4.15): an invoice dated on the To date is due that day, not overdue
+      return r.age.open.filter(it => it.iso < per.to).reduce((a2, it) => a2 + it.open, 0);
+    };
+    // due in the next 14 days: open invoices whose date (their due date, with no terms in Setup) falls from the To date to 14 days after it
+    const dueBy = new Date(Date.parse(per.to + 'T00:00:00Z') + 14 * 86400000).toISOString().slice(0, 10);
+    const soonOf = r => (filt !== 'due' || !r.age || r.credit ? 0 : r.age.open.filter(it => it.iso >= per.to && it.iso <= dueBy).reduce((a2, it) => a2 + it.open, 0));
+    const matched = filt ? Lc.rows.filter(r => lateOf(r) + soonOf(r) > 0) : Lc.rows;
+    const lateSum = matched.reduce((a2, r) => a2 + lateOf(r), 0), lateN = matched.filter(r => lateOf(r) > 0).length;
+    const soonSum = matched.reduce((a2, r) => a2 + soonOf(r), 0), soonN = matched.filter(r => soonOf(r) > 0).length;
+    const lim = Math.max(s.limit || 25, 1), shownRows = matched.slice(0, lim);
+    const sumOf = (k, rs) => (rs.some(r => r[k] === null) ? null : rs.reduce((a2, r) => a2 + r[k], 0));
+    const okRows = matched.filter(r => r.age && !r.credit);
+    const T = !filt ? Lc.tot : Lc.listed ? { open: sumOf('open', matched), inv: sumOf('inv', matched), paid: sumOf('paid', matched), other: sumOf('other', matched), close: sumOf('close', matched),
+      age: [0, 1, 2, 3].map(i => okRows.reduce((a2, r) => a2 + r.age.b[i], 0)), bf: okRows.reduce((a2, r) => a2 + r.age.bf, 0) } : null;
+    const fWord = cust ? 'customers' : 'suppliers';
+    const cards = Lc.listed ? [{
+      code: Lc.ctlCode, name: Lc.ctlName, href: 'BooksLedger.dc.html#' + Lc.ctlCode, hrefTitle: 'Open the ledger of ' + Lc.ctlCode,
+      caption: Side + ' under ' + Lc.ctlCode + ' ' + Lc.ctlName + (filt ? (filt === 'overdue' ? ', overdue only' : ', due and overdue only') : ''),
+      pillText: Lc.ties === true ? 'Ties to the trial balance' : Lc.ties === false ? "Doesn't tie" : "Can't be checked", pillStyle: pillBase + PILL[Lc.ties === true ? 'ok' : Lc.ties === false ? 'bad' : 'grey'],
+      paidHead: cust ? 'Received' : 'Paid', hasBf: !!bf,
+      rows: shownRows.map((r, ri) => {
+        const noAge = !r.age, credit = !!r.credit;
+        return { code: r.code, rid: 'bp-row-' + ri, title: 'Open the statement of ' + r.code, pick: pickParty(r.code),
+          name: r.isCtl ? 'Held on the control account itself, not split by ' + side1 : r.name, nameStyle: r.isCtl ? 'color:#46546A' : '',
+          nis: r.from === 'printed', nisTitle: 'Not in Setup › Customers and suppliers: named as SQL printed it',
+          hasNote: r.open === null || !!filt, note: r.open === null ? NOTE_OPEN.replace('{c}', r.code) : filt === 'overdue' ? 'Older than 30 days: ' + this.fmt(lateOf(r)) : filt ? [lateOf(r) ? 'Overdue: ' + this.fmt(lateOf(r)) : '', soonOf(r) ? 'Due by ' + this.fmtDate(dueBy) + ': ' + this.fmt(soonOf(r)) : ''].filter(Boolean).join('; ') : '',
+          open: this.fsAmt(r.open), inv: this.rmCell(r.inv), paid: this.rmCell(r.paid), other: r.other ? this.fsAmt(r.other) : '', close: this.fsAmt(r.close),
+          isAge: !noAge && !credit, isCredit: !noAge && credit, isNoAge: noAge, ageSpan: String(ageSpan), hasBf: !!bf,
+          cur: noAge || credit ? '' : this.rmCell(r.age.b[0]), a31: noAge || credit ? '' : this.rmCell(r.age.b[1]), a61: noAge || credit ? '' : this.rmCell(r.age.b[2]), a90: noAge || credit ? '' : this.rmCell(r.age.b[3]),
+          bf: noAge || credit ? '' : this.rmCell(r.age.bf) };
+      }),
+      totLabel: filt ? 'Total of those shown' : 'Total',
+      tot: { open: this.fsAmt(T.open), inv: this.rmPlain(T.inv), paid: this.rmCell(T.paid) || '0.00', other: this.fsAmt(T.other), close: this.fsAmt(T.close),
+        cur: T.age ? this.rmPlain(T.age[0]) : '—', a31: T.age ? this.rmPlain(T.age[1]) : '—', a61: T.age ? this.rmPlain(T.age[2]) : '—', a90: T.age ? this.rmPlain(T.age[3]) : '—', bf: T.bf === null ? '—' : this.rmPlain(T.bf) },
+      hasTb: !filt,
+      tb: { label: Lc.ctlCode + ' in the trial balance', open: this.fsAmt(Lc.tb.open), moved: Lc.tb.moved === null ? '—' : 'Moved ' + this.fmt(Lc.tb.moved), close: this.fsAmt(Lc.tb.close),
+        span: String(ageSpan), credit: Lc.credit ? 'In credit: ' + this.fmt(Lc.credit) : '' },
+      // many rows (the States pattern): 25 at a time; the totals and the check always count every row
+      hasMore: matched.length > lim || (s.page || 25) < 25, moreBtn: matched.length > lim,
+      moreText: (matched.length > lim ? 'Showing ' + lim + ' of ' : 'Showing all ') + matched.length + ' ' + (matched.length === 1 ? side1 : fWord),
+      hasPageNote: (s.page || 25) < 25, pageNote: 'the board shows ' + (s.page || 25) + ' a page, as the samples hold 4 customers; the app shows 25.',
+      moreLabel: 'Show ' + Math.min(s.page || 25, Math.max(matched.length - lim, 0)) + ' more',
+      showMore: () => { this._focus = 'bp-row-' + lim; set({ limit: lim + (this.state.page || 25), say: 'Showing ' + Math.min(lim + (this.state.page || 25), matched.length) + ' of ' + matched.length + ' ' + fWord + '.' }); },
+      note: filt ? 'The check against the trial balance counts every ' + side1 + ', not only those shown. ' + Lc.text : Lc.text
+    }] : [];
+    const botNotes = [];
+    if (Lc.notIn.length) botNotes.push({ text: 'Not in Setup › Customers and suppliers, so named from the chart or the name SQL printed: ' + Lc.notIn.join(', ') + '.' });
+    if (isSql && Lc.listed && (per.from < D.COVER[0] || per.to > D.COVER[1])) botNotes.push({ text: 'The GL Journal of Transaction reads kept cover ' + this.dmy(D.COVER[0]) + '-' + this.dmy(D.COVER[1]) + ', not all of ' + this.dmy(per.from) + '-' + this.dmy(per.to)
+      + ': lines dated outside them are missing here. Fetch the journal for the whole period.' });
+    const sides = ['customers', 'suppliers'].map(k => ({ id: 'bp-side-' + k, label: k === 'customers' ? 'Customers' : 'Suppliers', pressed: k === s.side ? 'true' : 'false', style: seg(k === s.side),
+      pick: () => { if (k !== this.state.side) { this._focus = 'bp-side-' + k; set({ side: k, party: null, open: null, filter: null, limit: this.state.page || 25, variant: k === 'suppliers' ? this.state.variant : null, swapN: (this.state.swapN || 0) + 1, say: (k === 'customers' ? 'Customers' : 'Suppliers') + ' shown.' }); } } }));
+
+    // ---- the statement ----
+    let st = { caption: '', openDate: '', openBal: '', closeDate: '', closeBal: '', rows: [], openH3: '', hasPills: false, pills: [], hasItems: false, items: [], openCaption: '', hasOpenText: false, openText: '', notes: [] };
+    let h2 = Side + ', ' + this.fmtDate(per.from) + ' to ' + this.fmtDate(per.to), h2Code = '', hasH2Code = false, hasH2Pill = false, h2PillTitle = '';
+    let hasLead = false, leadA = '', leadB = '', ctlCode = '', ctlTitle = '';
+    let stErr = '';
+    if (isStmt) {
+      const X = this.stmt(s.party, per.from, per.to, co);
+      if (!X) stErr = s.party + " isn't a customer's or supplier's code under a debtor or creditor control account.";
+      else {
+        const cx = X.cust;
+        h2 = X.isCtl ? D.CTL[X.code].name : X.P.name; h2Code = X.code; hasH2Code = true;
+        hasH2Pill = !X.isCtl && X.P.from === 'printed'; h2PillTitle = 'Not in Setup › Customers and suppliers';
+        ctlCode = X.ctl; ctlTitle = 'Open the ledger of ' + X.ctl;
+        const ow = X.close === null ? 'unknown' : X.close < 0 ? this.fmt(-X.close) + ' in credit (paid in advance or overpaid)' : X.close === 0 ? 'nothing' : this.fmt(X.close);
+        hasLead = !X.isCtl; leadA = (cx ? 'Customer' : 'Supplier') + ' under '; leadB = X.ctlName + '. ' + (cx ? 'Owed by them' : 'Owed to them') + ' at ' + this.fmtDate(per.to) + ': ' + ow + '.';
+        const bfMsg = iso => 'Brought forward at ' + this.dmy(iso) + ', with no invoices kept behind it';
+        const rowIdx = no => X.rows.findIndex(r => r.e.no === no);
+        const toggleDoc = key => () => set({ open: this.state.open === key ? null : key, olderOpen: false, say: this.state.open === key ? 'Lines of ' + key + ' closed.' : 'Lines of ' + key + ' shown below its row.' });
+        st = {
+          caption: 'Statement of ' + X.code + ', ' + this.fmtDate(per.from) + ' to ' + this.fmtDate(per.to), openDate: this.shortDate(per.from), openBal: this.drCr(X.openSigned), closeDate: this.shortDate(per.to), closeBal: this.drCr(X.closeSigned),
+          rows: X.rows.map((r, i) => {
+            const key = r.e.no, isOpen = s.open === key, isDoc = !!D.DOCS[key];
+            return { date: this.shortDate(r.e.iso), no: r.e.no, btnId: 'bp-doc-' + i, exp: isOpen ? 'true' : 'false', title: 'Show the lines of ' + r.e.no, book: D.BOOK[r.e.book], desc: r.e.desc,
+              dr: this.rmCell(r.e.dr), cr: this.rmCell(r.e.cr), bal: this.drCr(r.bal), isOpen: isOpen && isDoc,
+              doc: isOpen && isDoc ? Object.assign(this.docView(key), { olderOpen: !!s.olderOpen }) : { no: '', label: '', hasLabel: false, src: '', caption: '', lines: [], totDr: '', totCr: '', check: '', hasOlder: false, olderN: 0, older: [], olderOpen: false },
+              toggle: toggleDoc(key) };
+          }),
+          openH3: 'Still open at ' + this.fmtDate(per.to),
+          hasPills: !!X.A && X.close !== null && X.close >= 0, pills: !X.A ? [] : [['Current', 0], ['31-60 days', 1], ['61-90 days', 2], ['Over 90 days', 3]].map(([l, i]) => ({ text: l + ': ' + this.fmt(X.A.b[i]) }))
+            .concat(X.A.bf ? [{ text: 'Brought forward: ' + this.fmt(X.A.bf) }] : []),
+          hasItems: !!X.A && X.close > 0 && X.A.open.length > 0, openCaption: 'Invoices still open for ' + X.code,
+          items: !X.A ? [] : X.A.open.map(it => ({ date: this.shortDate(it.iso), no: it.no, desc: it.bf ? bfMsg(it.iso) : it.desc, inv: this.fmt(it.amt), open: this.fmt(it.open), days: String(it.days),
+            isBtn: !it.bf && rowIdx(it.no) >= 0, isTxt: !it.bf && rowIdx(it.no) < 0, exp: s.open === it.no ? 'true' : 'false', title: 'Show the lines of ' + it.no, toggle: toggleDoc(it.no),
+            age: it.bf ? 'Brought forward' : ['Current', '31-60 days', '61-90 days', 'Over 90 days'][it.days <= 30 ? 0 : it.days <= 60 ? 1 : it.days <= 90 ? 2 : 3] })),
+          hasOpenText: X.close !== null && X.close <= 0, openText: X.close < 0 ? 'In credit, so nothing is aged.' : 'Nothing is open.',
+          notes: []
+        };
+        if (X.open === null) st.notes.push({ text: NOTE_OPEN.replace('{c}', X.code) + ' The running balance starts from 0.' });
+        st.notes.push({ text: "SQL's exports don't say which receipt or payment settled which invoice, so each receipt, payment, credit note or journal is taken to settle the oldest invoice still open first. SQL's exports carry no due dates either, so invoices are aged by their own date: current is within 30 days of it. An opening balance with no invoices kept behind it is aged as brought forward." });
+        if (X.isCtl) st.notes.push({ text: 'What ' + X.code + " holds itself: an opening SQL printed for it that isn't split by " + (cx ? 'customer' : 'supplier') + ', and anything posted to it directly.' });
+        if (X.code === '300-T001' && per.to < '2026-11-01') st.notes.push({ text: "Why October's rent reads 0.00 here: the September rent paid on 2 Oct is counted against the October invoice, because its September invoice sits inside the control account's own 8,500.00 opening. A customer's code is counted only from the control account's first opening." });
+        if (X.code === '300-T001' && per.to >= '2026-11-10') st.notes.push({ text: "5,600.00 in credit: the receipts of 2 Oct (September rent) and 3 Nov (October rent) are both on this code, and the credit note of 10 Nov takes back the October invoice. The September invoice they pay sits in 300-000's own 8,500.00 brought forward, so 2,800.00 of this credit is offset there; the Tenant is really in credit 2,800.00 until the October invoice is issued again." });
+      }
+    }
+    // ---- what changes in the draw, said once ----
+    const newNotes = [];
+    if (isList && !Lc.listed) newNotes.push({ text: 'the screen and the file say "Nothing listed" once, not twice (today the banner and a note repeat the sentence, and the note adds a hint to fetch from SQL even for a company kept here).' });
+    if (isList && Lc.listed && Lc.tot.age === null) newNotes.push({ text: 'while no opening is kept for the From date, the ageing totals read "—", as the rows do. Today they read 0.00.' });
+    if (isStmt && s.party === '300-T001' && per.to >= '2026-11-10') newNotes.push({ text: "match a customer's receipts against the invoices held in the control account's opening (here the September invoice inside 300-000's 8,500.00), so a receipt for one of them isn't shown as credit on the customer's own code." });
+    if (isStmt && !!D.CTL[s.party]) newNotes.push({ text: "the control account's own statement drops the \"Customer under " + s.party + "\" line the app shows today; its closing row already says what is owed." });
+    const errText = s.err || stErr;
+    const errBack = (!!s.err && s.errBack) || !!stErr;
+
+    // ---- what the Excel link gives (booksexcel.parties) ----
+    const xlRows = [
+      { n: 1, text: C.name + ' (' + C.code + ')' },
+      { n: 2, text: Side + ', ' + this.dmy(per.from) + ' to ' + this.dmy(per.to) + ' (ageing at ' + this.dmy(per.to) + ')' },
+      { n: 3, text: (isSql ? 'Mirrored from SQL Account, read 18/11/2026' : "Kept here: this company's books are entered in this app") + '. Exported 18/11/2026 11:05.' }
+    ];
+    const xlAfter = 'Headings on row 5: Code, Name, Opening, Invoiced, ' + (cust ? 'Received' : 'Paid') + ', Other, Closing, Current, 31-60 days, 61-90 days, Over 90 days, Brought forward, Note. All five ageing columns always appear in the file, though the screen shows Brought forward only when something is brought forward. '
+      + 'Each control account has a bold row, its rows, a bold Total row (with "In credit: x" in Note) and a row for the control account in the trial balance. "Customers and suppliers" in one file when both sides are chosen. The download is written into the audit trail as a "books export".';
+    const xlName = C.code + ' ' + Side + ' to ' + this.fileDate(per.to) + '.xlsx';
+
+    return {
+      say: s.say, coCode: C.code, intro, sbCompany, sbKind, onTopCo,
+      fromVal: s.fromVal || '', toVal: s.toVal || '',
+      setFrom: e => set({ fromVal: (e && e.target && e.target.value) || '' }),
+      setTo: e => set({ toVal: (e && e.target && e.target.value) || '' }),
+      show: () => this.run({ from: this.state.fromVal || null, to: this.state.toVal || null }, 'show'),
+      fyToDate: () => this.run({ from: null, to: null }, 'fy'),
+      busy: !!s.busy, showBusy: busyBy === 'show', showBusyAttr: busyBy === 'show' ? 'true' : 'false', showLabel: busyBy === 'show' ? 'Showing…' : 'Show',
+      fyBusy: busyBy === 'fy', fyBusyAttr: busyBy === 'fy' ? 'true' : 'false', fyLabel: busyBy === 'fy' ? 'Showing…' : 'This financial year to date',
+      excelOn: isList && !!Lc.listed && !noBal,
+      excel: e => { if (e && e.preventDefault) e.preventDefault(); set({ xlN: (this.state.xlN || 0) + 1, say: 'Excel file: ' + xlName }); },
+      xlErr: !!s.xlErr && showing, xlClose: () => { this._focus = 'bk-excel'; set({ xlErr: false }); },
+      isLoading: !!s.busy, isError: !s.busy && !!errText, errText, errBack, back, backLabel, isReport: showing && !stErr && !noBal,
+      isFail: !s.busy && !!s.fail, failText: "The balances couldn't be worked out: the server stopped with an error. Nothing was changed. Try again; if it keeps happening, restart the app.",
+      retry: () => this.run({}, 'show'),
+      isNoBal: showing && noBal, noBalText: C.name + " is kept here, and nothing is posted in its books yet, so no customer owes it anything and it owes no supplier. Balances start with the first invoice or receipt posted here.",
+      hasFilter: isList && !!filt, fClearLabel: 'Show all ' + fWord,
+      fTitle: filt === 'overdue' ? 'Customers overdue: older than 30 days' : 'Suppliers due: overdue and due in the next 14 days',
+      fText: !filt ? '' : filt === 'overdue'
+        ? 'As at ' + this.fmtDate(per.to) + ", as the Overview's Customers overdue card counts them: " + matched.length + (matched.length === 1 ? ' balance, ' : ' balances, ') + this.fmt(lateSum) + '. Customers with nothing older than 30 days are hidden.'
+        : 'As at ' + this.fmtDate(per.to) + ", as the Overview's Suppliers due card counts them: overdue " + this.fmt(lateSum) + ' (' + lateN + (lateN === 1 ? ' balance' : ' balances') + '), due in the next 14 days ' + this.fmt(soonSum) + (soonN ? ' (' + soonN + (soonN === 1 ? ' balance' : ' balances') + ')' : '') + '. Setup holds no supplier terms, so a supplier invoice is due on its own date.',
+      fClear: () => { this._focus = 'bp-h2'; set({ filter: null, limit: this.state.page || 25, swapN: (this.state.swapN || 0) + 1, say: 'All ' + fWord + ' shown.' }); },
+      swapCls: (s.swapN || 0) % 2 ? 'swapA' : (s.swapN ? 'swapB' : ''),
+      isList: isList && !stErr, isStmt: isStmt && !stErr, sides, topNotes, cards, botNotes,
+      hasBanner: isList && !stErr && !noBal, bnStyle: 'display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;padding:14px 16px;border-radius:12px;' + bnx[0], bnGlyph: bnx[1], bnTone: bnx[2], bnTitleStyle: 'color:' + bnx[3] + ';font-weight:700',
+      bnTitle: bn.title, bnText: bn.text,
+      h2, h2Code, hasH2Code, hasH2Pill, h2PillTitle,
+      hasLead, leadA, leadB, ctlCode, ctlHref: 'BooksLedger.dc.html#' + ctlCode, ctlTitle, st,
+      xlName, xlRows, xlAfter, xlCls: (s.xlN || 0) === 0 ? '' : (s.xlN % 2 ? 'fa' : 'fb'),
+      newNotes, xlSheet: Side
+    };
+  }
+}
+</script>
+</body>
+</html>

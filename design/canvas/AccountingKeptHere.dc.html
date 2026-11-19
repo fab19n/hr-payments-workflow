@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sales, Purchases, Journals, Period close · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{filter:brightness(.92)}
+.hs:hover{background:#F0F3F8 !important}
+.hl:hover{background:#EAF0FD !important}
+.cp{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp.mute{background:#EEF1F5;color:#46546A;border-color:#D5DBE4}
+.cp.info{background:#EAF0FD;color:#2450B8;border-color:#C9D7F7}
+.cp.warn{background:#FEF1D6;color:#934100;border-color:#F3D9A6}
+.kh-pg[aria-pressed="true"]{background:#EAF0FD !important;border-color:#2450B8 !important;color:#1D2F5C !important}
+.kh-main{padding:32px 40px 64px}
+@media (max-width:760px){.kh-main{padding:24px 16px 48px !important}}
+/* motion and focus base */
+.hb,.hs,.hl,.nv,.nb,.kh-pg{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="{{active}}" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="{{topSection}}" page="{{topPage}}" company="{{sbCo}}" companies="four" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="kh-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div role="group" aria-label="Board control: which page to show" style="display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; padding: 10px 14px; border-radius: 12px; border: 1px dashed #778588; background: #FFFFFF">
+        <span style="font-size: 12px; font-weight: 600; color: #46546A">Design view, not part of the page</span>
+        <sc-for list="{{pageBtns}}" as="b" hint-placeholder-count="4">
+          <button type="button" class="hs kh-pg" aria-pressed="{{b.on}}" onClick="{{b.pick}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #778588; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{b.label}}</button>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{landed}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="kh-land-h" class="rv" style="max-width: 760px; background: #FFFFFF; border: 1px dashed #778588; border-radius: 14px; padding: 24px 28px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box">
+          <span style="font-size: 12px; font-weight: 600; color: #46546A">Design view, not part of the page</span>
+          <h1 id="kh-land-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 24px; font-weight: 600">The top bar switch landed on {{coCode}}'s Overview</h1>
+          <p style="margin: 0; color: #46546A">{{landBody}}</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <a href="Main.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; font: 600 14px Inter, sans-serif; color: #FFFFFF; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="overview" tone="white" size="18" hint-size="18px,18px"></dc-import>Open the Overview board</a>
+            <button type="button" class="hs" onClick="{{backFromLand}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="company" tone="brand" size="18" hint-size="18px,18px"></dc-import>Back to {{pageTitle}} for AI</button>
+          </div>
+          <div style="font-size: 12px; color: #46546A">The old-address message is shown only for a bookmark or an old link. Use the Company control to see it.</div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{keptHere}}" hint-placeholder-val="{{ true }}">
+        <div class="rv" style="display: flex; flex-direction: column; gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+              <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Accounting</span>
+              <span class="cp mute"><dc-import name="Icon" glyph="books" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{coCode}} · Kept here</span>
+            </span>
+            <h1 id="kh-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">{{pageTitle}}</h1>
+            <p style="margin: 0; color: #46546A; max-width: 720px">{{intro}}</p>
+          </div>
+
+          <div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 14px; background: #EAF0FD; border: 1px solid #C9D7F7">
+            <dc-import name="Icon" glyph="clock" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+            <div style="flex: 1; min-width: 0"><b style="color: #1D2F5C">{{pageTitle}} is not built yet</b><div style="font-size: 13px; color: #1D2F5C">This page is a placeholder. It holds the place in the menu and lists what will be here. Nothing on it can be entered or changed yet.</div></div>
+          </div>
+
+          <sc-if value="{{noChart}}" hint-placeholder-val="{{ false }}">
+            <div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: 14px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 13px; color: #6B3A00">
+              <dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import>
+              <span><b>{{coCode}} has no chart of accounts yet.</b> {{pageTitle}} will need one first. Set it up on <a href="SetupChart.dc.html">Setup › Chart of accounts</a>.</span>
+            </div>
+          </sc-if>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+            <section aria-labelledby="kh-will" style="flex: 3 1 420px; min-width: 0; background: #FFFFFF; border: 1px solid #D5DBE4; border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+              <h2 id="kh-will" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">What will be here</h2>
+              <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px">
+                <sc-for list="{{items}}" as="it" hint-placeholder-count="4">
+                  <li style="display: flex; gap: 12px; align-items: flex-start">
+                    <span style="flex: none; width: 36px; height: 36px; border-radius: 10px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="{{it.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import></span>
+                    <div style="flex: 1; min-width: 0"><b>{{it.title}}</b><div style="font-size: 13px; color: #46546A">{{it.text}}</div></div>
+                  </li>
+                </sc-for>
+              </ul>
+            </section>
+
+            <div style="flex: 2 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+              <section aria-labelledby="kh-link" style="background: #FFFFFF; border: 1px solid #D5DBE4; border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box">
+                <h2 id="kh-link" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">How it connects</h2>
+                <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+                  <sc-for list="{{links}}" as="l" hint-placeholder-count="3">
+                    <li style="font-size: 13px; color: #46546A"><a href="{{l.href}}" style="font-weight: 600">{{l.label}}</a>: {{l.text}}</li>
+                  </sc-for>
+                </ul>
+              </section>
+
+              <section aria-labelledby="kh-rules" style="background: #FFFFFF; border: 1px solid #D5DBE4; border-radius: 14px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px; box-sizing: border-box">
+                <h2 id="kh-rules" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Rules every document here follows</h2>
+                <ul style="margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+                  <sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+                    <li>{{r.text}}</li>
+                  </sc-for>
+                </ul>
+              </section>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{sqlAccount}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="kh-old-h" class="rv" style="max-width: 760px; background: #FFFFFF; border: 1px solid #D5DBE4; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 16px; box-sizing: border-box">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+            <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="database" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+            <span class="cp info"><dc-import name="Icon" glyph="database" tone="brand" size="14" hint-size="14px,14px"></dc-import>{{coCode}} · Kept in SQL Account</span>
+          </div>
+          <h1 id="kh-old-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 26px; font-weight: 600">{{oldTitle}}</h1>
+          <p style="margin: 0; color: #46546A">{{oldBody}}</p>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <b style="font-size: 13px">{{oldWhere}}</b>
+            <ul style="margin: 0; padding: 0 0 0 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+              <sc-for list="{{oldLinks}}" as="o" hint-placeholder-count="3">
+                <li><a href="{{o.href}}" style="font-weight: 600">{{o.label}}</a>: {{o.text}}</li>
+              </sc-for>
+            </ul>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <a href="Main.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; font: 600 14px Inter, sans-serif; color: #FFFFFF; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="overview" tone="white" size="18" hint-size="18px,18px"></dc-import>Go to {{coCode}}'s Overview</a>
+            <button type="button" class="hs" onClick="{{toHere}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="company" tone="brand" size="18" hint-size="18px,18px"></dc-import>Switch to AI (Kept here)</button>
+          </div>
+          <div style="font-size: 12px; color: #46546A">You are here because a bookmark or an old link points at this address. Nothing is wrong with {{coCode}}'s books.</div>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1160},"view":{"editor":"enum","default":"sales","options":["sales","purchases","journals","close"],"section":"Page to show"},"company":{"editor":"enum","default":"ai","options":["ai","aip","aisb","ail"],"section":"Company (aisb and ail are Kept in SQL Account: the old-address message)"}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the page: AccountingKeptHere.dc.html#sales, #purchases, #journals, #close.
+    // It applies on first load, over the default page.
+    let v = (p && p.view) || 'sales', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'sales' && ['sales', 'purchases', 'journals', 'close'].includes(h)) v = h;
+    this.state = { page: v, co: String((p && p.company) || 'ai').toUpperCase(), landed: false, say: '' };
+  }
+  componentDidUpdate(pp) {
+    if (pp && (pp.view !== this.props.view || pp.company !== this.props.company)) {
+      this.setState({ page: this.props.view || 'sales', co: String(this.props.company || 'ai').toUpperCase(), landed: false, say: '' });
+    }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: true }); return true; } return false; }
+
+  renderVals() {
+    const st = this.state;
+    const COS = { AISB: 'sqlPayroll', AI: 'here', AIL: 'sql', AIP: 'here' };
+    const co = COS[st.co] ? st.co : 'AI';
+    const kind = COS[co];
+    const here = kind === 'here';
+    const page = st.page;
+
+    const PAGES = {
+      sales: {
+        title: 'Sales',
+        intro: 'Everything a Kept here company sells: invoices out, the notes that correct them, and the money that comes in against them.',
+        items: [
+          { glyph: 'receipt', title: 'Customer invoices', text: 'Raised here, posted and numbered when recorded, so customer ageing is right.' },
+          { glyph: 'document', title: 'Debit notes', text: 'Extra charges on an invoice already sent.' },
+          { glyph: 'undo', title: 'Credit notes', text: 'The way to correct a posted invoice. Each one must name the original invoice.' },
+          { glyph: 'coins', title: 'Receipts (OR series)', text: 'Money in from a customer, knocked off to the invoices it pays. Add payment opens a receipt here when money in comes from a customer.' }
+        ],
+        links: [
+          { href: 'BooksParties.dc.html', label: 'Customers and suppliers', text: 'who owes what, with ageing, from these invoices.' },
+          { href: 'PaymentsRegister.dc.html', label: 'Payments register', text: 'money in is counted apart, as it is today.' },
+          { href: 'MyInvois.dc.html', label: 'e-Invoices', text: 'issued invoices link to their MyInvois record.' }
+        ]
+      },
+      purchases: {
+        title: 'Purchases',
+        intro: 'Everything a Kept here company is billed: supplier invoices, the notes that correct them, and the payments made against them.',
+        items: [
+          { glyph: 'inbox', title: 'Supplier invoices (PI series)', text: 'A supplier bill\'s request is a supplier invoice here, posted when recorded. The approval covers that invoice.' },
+          { glyph: 'document', title: 'Debit and credit notes', text: 'Corrections to a posted supplier invoice.' },
+          { glyph: 'payment', title: 'Payments', text: 'Made from Payments. Paying posts a payment voucher and knocks the invoice off.' },
+          { glyph: 'link', title: 'Knock-off', text: 'Each payment is matched to the invoice it pays, so a bill approved but not yet paid at month end is still in the books.' }
+        ],
+        links: [
+          { href: 'Approvals.dc.html', label: 'Approvals', text: 'the form that approves a supplier invoice.' },
+          { href: 'ToPay.dc.html', label: 'To pay', text: 'approved supplier invoices wait here until they are paid.' },
+          { href: 'BooksParties.dc.html', label: 'Customers and suppliers', text: 'supplier ageing and the Suppliers due card.' }
+        ]
+      },
+      journals: {
+        title: 'Journals',
+        intro: 'The entries that do not come from an invoice or a payment: adjustments, opening balances and reversals.',
+        items: [
+          { glyph: 'sheet', title: 'Journal vouchers (JV)', text: 'A dated entry with balanced debit and credit lines, numbered when posted.' },
+          { glyph: 'books', title: 'Opening balances', text: 'The balances a company starts with when it begins to be kept here.' },
+          { glyph: 'undo', title: 'Reversals', text: 'A posted journal is never edited. A reversal cancels it and keeps its number.' }
+        ],
+        links: [
+          { href: 'BooksLedger.dc.html', label: 'Books › General ledger', text: 'each journal line opens from its account.' },
+          { href: 'Books.dc.html', label: 'Books', text: 'the trial balance includes every posted journal.' },
+          { href: 'AuditPack.dc.html', label: 'Audit pack', text: 'its gap check covers the journal series.' }
+        ]
+      },
+      close: {
+        title: 'Period close',
+        intro: 'Where a month or a year is closed so that what was reported cannot move afterwards.',
+        items: [
+          { glyph: 'lock', title: 'Month locks', text: 'A locked month cannot be changed, and posting into it is refused.' },
+          { glyph: 'calendar', title: 'Year-end close', text: 'Closes the financial year and carries the balances forward.' },
+          { glyph: 'search', title: 'Numbering gap check', text: 'Looks for a missing number in each series. A cancelled document keeps its number, so it is not a gap.' }
+        ],
+        links: [
+          { href: 'Bank.dc.html', label: 'Bank and reconciliation', text: 'a signed-off month is locked; reopening it is logged.' },
+          { href: 'BankBookLine.dc.html', label: 'Book a statement line', text: 'refused in a locked month.' },
+          { href: 'MonthlyChecklist.dc.html', label: 'Monthly checklist', text: 'Mark month as filed sits there.' }
+        ]
+      }
+    };
+    const P = PAGES[page] || PAGES.sales;
+    const rules = [
+      'Numbers restart every month, one series per document type per company.',
+      'A document is numbered when it is posted, and the number is never edited or reused.',
+      'A cancelled document keeps its number.',
+      'A posted document is corrected by a credit note or a reversal, never edited.',
+      'Nothing on these pages relies on SQL Account data.'
+    ].map(text => ({ text }));
+
+    const PAGE_OLD = {
+      sales: {
+        where: 'Where AISB\'s sales are',
+        links: [
+          { href: 'Books.dc.html', label: 'Books', text: 'trial balance and ledger, checked against SQL Account\'s.' },
+          { href: 'BooksParties.dc.html', label: 'Customers and suppliers', text: 'who owes what, with ageing.' },
+          { href: 'Sql.dc.html', label: 'SQL import', text: 'the invoices and receipts fetched from SQL Account.' }
+        ]
+      },
+      purchases: {
+        where: 'Where AISB\'s purchases are',
+        links: [
+          { href: 'BooksParties.dc.html', label: 'Customers and suppliers', text: 'supplier ageing.' },
+          { href: 'Sql.dc.html', label: 'SQL import', text: 'the supplier invoices fetched from SQL Account.' },
+          { href: 'PaymentsRegister.dc.html', label: 'Payments register', text: 'what was paid, and the SQL voucher it matches.' }
+        ]
+      },
+      journals: {
+        where: 'Where AISB\'s journals are',
+        links: [
+          { href: 'Sql.dc.html', label: 'SQL import', text: 'SQL entries and their lines.' },
+          { href: 'BooksLedger.dc.html', label: 'Books › General ledger', text: 'every posted line, by account.' }
+        ]
+      },
+      close: {
+        where: 'Where AISB\'s months are closed',
+        links: [
+          { href: 'MonthlyChecklist.dc.html', label: 'Monthly checklist', text: 'Mark month as filed.' },
+          { href: 'Bank.dc.html', label: 'Bank and reconciliation', text: 'sign-off locks a reconciled month.' }
+        ]
+      }
+    };
+    const O = PAGE_OLD[page] || PAGE_OLD.sales;
+    const t = P.title;
+    const coFull = { AISB: 'AISB', AIL: 'AIL', AI: 'AI', AIP: 'AIP' }[co];
+
+    const land = !!st.landed;
+    return {
+      landed: land, keptHere: here && !land, sqlAccount: !here && !land,
+      active: land ? 'overview' : page, sbCo: co.toLowerCase(), sbKind: kind,
+      topSection: land ? 'Overview' : 'Accounting', topPage: land ? 'Overview' : t,
+      landBody: here ? 'Switching company on the Overview stays on the Overview. This board does not draw the Overview.' : 'The app opens ' + coFull + '\'s Overview, as the top bar says, because ' + t + (page === 'close' ? ' isn\'t' : ' aren\'t') + ' used for ' + coFull + ' (Kept in SQL Account). This board does not draw the Overview.',
+      backFromLand: () => { this.setState({ co: 'AI', landed: false, say: 'Showing ' + t + ' for AI' }); setTimeout(() => this.focusId('kh-h1'), 60); },
+      pageTitle: t, coCode: coFull, say: st.say,
+      intro: P.intro, items: P.items, links: P.links, rules,
+      noChart: co === 'AI',
+      oldTitle: t + ' is for companies kept here. ' + coFull + ' is kept in SQL Account.',
+      oldBody: 'A company kept in SQL Account keeps its books in SQL Account, and this app checks them against it. ' + t + ' here is where a company kept here records its own documents, so there is nothing to show for ' + coFull + '.',
+      oldWhere: O.where, oldLinks: O.links,
+      pageBtns: ['sales', 'purchases', 'journals', 'close'].map(k => ({
+        label: PAGES[k].title, on: k === page ? 'true' : 'false',
+        pick: () => { if (k !== this.state.page || this.state.landed) { this.setState({ page: k, landed: false, say: 'Showing ' + PAGES[k].title }); } }
+      })),
+      toHere: () => { this.setState({ co: 'AI', say: 'Showing AI (Kept here)' }); setTimeout(() => this.focusId('kh-h1'), 60); },
+      // a switcher change never shows the old-address message: when the Topbar lands on the Overview
+      // (second argument true), the board follows it; the old-address message comes only from the Company control
+      onTopCo: (code, landedOnOverview) => {
+        const c = String(code).toUpperCase();
+        if (!COS[c]) return;
+        if (landedOnOverview || this.state.landed) {
+          if (c !== this.state.co || !this.state.landed) this.setState({ co: c, landed: true, say: 'Switched to ' + c + '. Showing ' + c + '\'s Overview.' });
+          setTimeout(() => this.focusId('kh-land-h'), 60);
+        } else if (c !== this.state.co) this.setState({ co: c, say: 'Showing ' + t + ' for ' + c });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,959 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup › HR · Payroll settings · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hd:hover{background:#8F140C !important}
+.hr:hover{background:#F8FAFD !important}
+.tb:hover{color:#0F1A2B !important}
+input[readonly]{background:#F5F6F8 !important;color:#46546A !important}
+.hb,.hs,.hd,.hr,.tb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible,.tb:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #2450B8;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes swapIn{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.sw{animation:swapIn .12s ease-out}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{display:inline-block;width:14px;height:14px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;animation:spin .8s linear infinite;box-sizing:border-box}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cw{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 9px;border-radius:8px;border:1px solid #F3D9A6;background:#FEF1D6;color:#934100;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box;cursor:pointer}
+.cw:hover{background:#FCE7BE}
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;overflow:hidden}
+.th{padding:10px 12px;font-weight:600;font-size:12px;color:#5F6C80;text-align:left;background:#FAFBFC}
+.td{padding:12px;border-top:1px solid #EEF1F5;vertical-align:top}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}.sk{animation:none}.spin{animation:none}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{anyDlg}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="{{shCo}}" kind="{{shKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{anyDlg}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="Payroll settings" company="{{shCo}}" onCompany="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0">
+        <dc-import name="SetupNav" active="payroll_settings" kind="{{navKind}}" payroll="{{navPayroll}}" hint-size="100%,1150px"></dc-import>
+      </div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Payroll settings</h1>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 680px">What the payroll run uses: pay items, rates and tables, due dates, the minimum wage and pay rules. Each is kept with the month it applies from, so months already run keep the figures they were run with. Shown only for a company with Runs payroll in this app on.</p>
+          <sc-if value="{{usedOn}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px"><span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 8px; border: 1px solid #C9D7F7; background: #EAF0FD; color: #2450B8; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="{{chipGlyph}}" tone="brand" size="14" hint-size="14px,14px"></dc-import>{{chipTxt}}</span><span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 8px; border: 1px solid #BFE8D0; background: #E3F7EC; color: #0A6B3D; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="payroll" tone="ok" size="14" hint-size="14px,14px"></dc-import>Runs payroll in this app: On</span><span style="color: #5F6C80; font-size: 12px">As at Nov 2026 · check each year</span></div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{notUsed}}" hint-placeholder-val="{{ false }}">
+          <section class="rv" aria-labelledby="py-nu-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+            <span style="width: 52px; height: 52px; border-radius: 14px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="payroll" tone="muted" size="28" hint-size="28px,28px"></dc-import></span>
+            <h2 id="py-nu-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Payroll settings aren't used for {{coCode}}</h2>
+            <p style="margin: 0; color: #46546A; max-width: 500px; font-size: 13px">{{coCode}} doesn't run payroll in this app: Runs payroll in this app is off on Setup › Companies. The Workbook check on HR › Payroll works without these settings. This page is reached only from an old address; the company switcher opens {{coCode}}'s Overview instead.</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+              <a href="PayrollCheck.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="payroll" tone="white" size="18" hint-size="18px,18px"></dc-import>Open the Workbook check</a>
+              <a href="SetupCompanies.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="company" tone="muted" size="18" hint-size="18px,18px"></dc-import>Go to Companies</a>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{landed}}" hint-placeholder-val="{{ false }}">
+          <section aria-labelledby="py-land-h" class="rv" style="max-width: 760px; background: #FFFFFF; border: 1px dashed #778588; border-radius: 14px; padding: 24px 28px; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box">
+            <span style="font-size: 12px; font-weight: 600; color: #46546A">Design view, not part of the page</span>
+            <h2 id="py-land-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">The top bar switch landed on {{coCode}}'s Overview</h2>
+            <p style="margin: 0; color: #46546A">The app opens {{coCode}}'s Overview, with the top bar's toast “Payroll settings aren't used for {{coCode}}. Showing {{coCode}}'s Overview.”, because {{coCode}} doesn't run payroll in this app. This board does not draw the Overview.</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+              <a href="Main.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; font: 600 14px Inter, sans-serif; color: #FFFFFF; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="overview" tone="white" size="18" hint-size="18px,18px"></dc-import>Open the Overview board</a>
+              <button type="button" class="hs" onClick="{{backFromLand}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="company" tone="brand" size="18" hint-size="18px,18px"></dc-import>Back to Payroll settings for {{backCo}}</button>
+            </div>
+            <div style="font-size: 12px; color: #46546A">The “aren't used” page is shown only for a bookmark or an old link: the not-used view draws it.</div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+          <section aria-busy="true" aria-label="Loading payroll settings" class="card">
+            <div style="display: flex; gap: 18px; padding: 12px 18px; border-bottom: 1px solid #E3E7ED"><sc-for list="{{skTabs}}" as="k" hint-placeholder-count="6"><div class="sk" style="height: 14px; width: 92px; border-radius: 5px"></div></sc-for></div>
+            <div style="padding: 16px 18px; display: flex; flex-direction: column; gap: 16px"><span role="status" style="font-size: 13px; color: #46546A">Loading…</span>
+              <sc-for list="{{skRows}}" as="k" hint-placeholder-count="6"><div style="display: flex; gap: 16px; align-items: center"><div class="sk" style="height: 14px; width: 24%; border-radius: 5px"></div><div class="sk" style="height: 18px; width: 18px; border-radius: 5px"></div><div class="sk" style="height: 18px; width: 18px; border-radius: 5px"></div><div class="sk" style="height: 18px; width: 18px; border-radius: 5px"></div><div class="sk" style="height: 12px; width: 12%; border-radius: 5px; margin-left: auto"></div></div></sc-for>
+            </div>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+          <section role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 40px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center">
+            <span style="width: 52px; height: 52px; border-radius: 14px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="28" hint-size="28px,28px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load this page</h2>
+            <p style="margin: 0; color: #46546A; max-width: 460px; font-size: 13px">The payroll settings couldn't be read from the records folder. Check the drive is connected, then try again. Nothing was changed.</p>
+            <button type="button" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </section>
+        </sc-if>
+
+        <sc-if value="{{isReady}}" hint-placeholder-val="{{ true }}">
+          <section class="card">
+            <div role="tablist" aria-label="Payroll settings" onKeyDown="{{tabKey}}" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px; border-bottom: 1px solid #E3E7ED">
+              <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
+                <button type="button" role="tab" id="{{t.id}}" class="tb" aria-selected="{{t.sel}}" aria-controls="py-panel" tabindex="{{t.tabIndex}}" onClick="{{t.pick}}" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</button>
+              </sc-for>
+            </div>
+
+            <div id="py-panel" role="tabpanel" aria-labelledby="{{panelBy}}" tabindex="0" class="fr">
+
+              <sc-if value="{{tabItems}}" hint-placeholder-val="{{ true }}">
+                <div class="sw" style="display: flex; flex-direction: column">
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+                    <div class="fx" style="display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 8px; background: #FFFFFF; flex: 1 1 220px; max-width: 320px; box-sizing: border-box"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import><input type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search pay items" aria-label="Search pay items" aria-describedby="py-count" autoComplete="off" style="flex: 1; min-width: 0; height: 30px; border: 0; outline: 0; padding: 0; background: transparent; font: 400 13px Inter, sans-serif; color: #0F1A2B"></div>
+                    <span id="py-count" role="status" aria-live="polite" style="color: #5F6C80; font-size: 13px">{{itemCount}}</span>
+                    <button type="button" id="py-add-item" class="hs" onClick="{{newItem}}" aria-haspopup="dialog" style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="brand" size="16" hint-size="16px,16px"></dc-import>Add a pay item</button>
+                  </div>
+                  <p style="margin: 0; padding: 10px 18px; border-bottom: 1px solid #EEF1F5; color: #5F6C80; font-size: 13px">Each authority counts different things as wages, so the run never works from gross pay. The ticks are filled in from each authority's rules; click an item to check or change them. Claims are paid separately, never through payroll.</p>
+                  <div style="overflow-x: auto">
+                    <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px">
+                      <caption class="vh">Pay items and what each counts for</caption>
+                      <thead><tr>
+                        <th scope="col" class="th" style="padding-left: 18px">Pay item</th>
+                        <sc-for list="{{tickHeads}}" as="h" hint-placeholder-count="5"><th scope="col" class="th" style="text-align: center; width: 92px">{{h.label}}</th></sc-for>
+                        <th scope="col" class="th">From</th>
+                        <th scope="col" class="th" style="padding-right: 18px"><span class="vh">Notes</span></th>
+                      </tr></thead>
+                      <tbody>
+                        <sc-for list="{{items}}" as="r" hint-placeholder-count="10">
+                          <tr class="{{r.cls}}" onClick="{{r.open}}" style="cursor: pointer">
+                            <td class="td" style="padding-left: 18px"><button type="button" id="{{r.btnId}}" aria-haspopup="dialog" style="border: 0; background: transparent; padding: 0; min-height: 24px; font: 600 14px Inter, sans-serif; color: inherit; cursor: pointer; text-align: left">{{r.name}}</button><div style="color: #5F6C80; font-size: 12px">{{r.how}}</div><sc-if value="{{r.nextOn}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 4px; display: inline-flex; align-items: flex-start; gap: 4px; color: #2450B8; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="calendar" tone="brand" size="13" hint-size="13px,13px"></dc-import>{{r.next}}</div></sc-if></td>
+                            <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="5"><td class="td" style="text-align: center"><sc-if value="{{c.on}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="check" tone="ok" size="18" hint-size="18px,18px"></dc-import></sc-if><sc-if value="{{c.off}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="color: #8792A2">—</span></sc-if><span class="vh">{{c.sr}}</span></td></sc-for>
+                            <td class="td" style="white-space: nowrap; color: #46546A">{{r.from}}</td>
+                            <td class="td" style="padding-right: 18px"><div style="display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end"><sc-if value="{{r.appOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 99px; border: 1px solid #C9D7F6; background: #FFFFFF; color: #2450B8; font-size: 12px; font-weight: 600; white-space: nowrap">Used by the app</span></sc-if><sc-if value="{{r.flagOn}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 8px; border: 1px solid #F3D9A6; background: #FEF1D6; color: #934100; font-size: 12px; font-weight: 600; white-space: nowrap"><dc-import name="Icon" glyph="help" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{r.flag}}</span></sc-if></div></td>
+                          </tr>
+                        </sc-for>
+                        <sc-if value="{{itemsEmpty}}" hint-placeholder-val="{{ false }}">
+                          <tr><td colspan="8" style="padding: 32px 18px; text-align: center; color: #46546A; border-top: 1px solid #EEF1F5"><div class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px"><dc-import name="Icon" glyph="search" tone="muted" size="28" hint-size="28px,28px"></dc-import><span>No pay item matches “{{q}}”. The list itself is never empty: it is filled in with the authorities' items.</span><button type="button" class="hs" onClick="{{clearQ}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear the search</button></div></td></tr>
+                        </sc-if>
+                      </tbody>
+                    </table>
+                  </div>
+                  <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid #E3E7ED; background: #F7F8FA">
+                      <span role="status" aria-live="polite" style="font-size: 13px; color: #46546A">{{moreTxt}}</span>
+                      <button type="button" class="hs" onClick="{{showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{moreBtn}}</button>
+                    </div>
+                  </sc-if>
+                  <p style="margin: 0; padding: 12px 18px; border-top: 1px solid #EEF1F5; color: #46546A; font-size: 13px">Deductions aren't pay items: advance repayments come from HR › Claims and advances, unpaid leave from HR › Leave, zakat and other deductions from the staff record and the month's run.</p>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{tabRates}}" hint-placeholder-val="{{ false }}">
+                <div class="sw" style="display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 20px">
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between">
+                    <div style="display: flex; gap: 10px; align-items: flex-start; max-width: 680px; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="verified" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">As at Nov 2026. These are the rows the Workbook check uses</b> (KWSP's Third Schedule, PERKESO's tables for SOCSO, EIS and Lindung 24 Jam). From is the first payroll month a row is used for; earlier months keep the rows they had. EPF, SOCSO and EIS from Oct 2024 were confirmed by the owner on 17 Nov 2026.</span></div>
+                    <button type="button" id="py-add-rate" class="hb" onClick="{{newRate}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a dated row</button>
+                  </div>
+                  <sc-for list="{{schemes}}" as="s" hint-placeholder-count="4">
+                    <section aria-labelledby="{{s.hid}}" style="border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden">
+                      <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="statutory" tone="brand" size="18" hint-size="18px,18px"></dc-import><h2 id="{{s.hid}}" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">{{s.name}}</h2><span style="color: #5F6C80; font-size: 12px">{{s.basis}}</span></div>
+                      <div style="overflow-x: auto">
+                        <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                          <caption class="vh">{{s.name}} rates</caption>
+                          <thead><tr><th scope="col" class="th" style="padding-left: 16px; width: 110px">From</th><th scope="col" class="th">Who</th><th scope="col" class="th" style="width: 110px">Employee</th><th scope="col" class="th">Employer</th></tr></thead>
+                          <tbody>
+                            <sc-for list="{{s.rows}}" as="x" hint-placeholder-count="2">
+                              <tr class="{{x.cls}}"><td class="td" style="padding-left: 16px; white-space: nowrap; font-weight: 600">{{x.from}}<sc-if value="{{x.newOn}}" hint-placeholder-val="{{ false }}"><div style="font-weight: 500; font-size: 12px; color: #2450B8">Not used yet</div></sc-if></td><td class="td">{{x.who}}</td><td class="td" style="font-variant-numeric: tabular-nums">{{x.ee}}</td><td class="td" style="font-variant-numeric: tabular-nums">{{x.er}}</td></tr>
+                            </sc-for>
+                          </tbody>
+                        </table>
+                      </div>
+                      <ul style="margin: 0; padding: 12px 16px 12px 34px; border-top: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 4px; color: #46546A; font-size: 13px">
+                        <sc-for list="{{s.lines}}" as="l" hint-placeholder-count="2"><li>{{l.txt}}</li></sc-for>
+                      </ul>
+                      <sc-if value="{{s.flagOn}}" hint-placeholder-val="{{ false }}">
+                        <div style="padding: 0 16px 14px; display: flex; flex-direction: column; gap: 8px">
+                          <button type="button" class="cw" onClick="{{s.flagToggle}}" aria-expanded="{{s.flagExp}}" aria-controls="{{s.flagId}}" style="align-self: flex-start"><dc-import name="Icon" glyph="help" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{s.flag}}<span class="{{s.flagChev}}"><dc-import name="Icon" glyph="chevronRight" tone="warn" size="14" hint-size="14px,14px"></dc-import></span></button>
+                          <sc-if value="{{s.flagOpen}}" hint-placeholder-val="{{ false }}"><div id="{{s.flagId}}" class="ex" style="padding: 10px 12px; border-radius: 10px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px">{{s.flagTxt}}</div></sc-if>
+                        </div>
+                      </sc-if>
+                    </section>
+                  </sc-for>
+                  <section aria-labelledby="py-sixty-h" style="border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+                    <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="birthday" tone="brand" size="18" hint-size="18px,18px"></dc-import><h2 id="py-sixty-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">When the 60-and-over rates start</h2></div>
+                    <p style="margin: 0; color: #46546A; font-size: 13px">With the payroll month after the month of the 60th birthday, whatever the day: someone who turns 60 in October is paid at the 60-and-over rates from November. SOCSO and EIS change in the same month as EPF.</p>
+                    <button type="button" class="cw" onClick="{{sixtyToggle}}" aria-expanded="{{sixtyExp}}" aria-controls="py-sixty-d" style="align-self: flex-start"><dc-import name="Icon" glyph="help" tone="warn" size="14" hint-size="14px,14px"></dc-import>Check with KWSP and PERKESO<span class="{{sixtyChev}}"><dc-import name="Icon" glyph="chevronRight" tone="warn" size="14" hint-size="14px,14px"></dc-import></span></button>
+                    <sc-if value="{{sixtyOpen}}" hint-placeholder-val="{{ false }}"><div id="py-sixty-d" class="ex" style="padding: 10px 12px; border-radius: 10px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px">Common payroll practice, not a published rule. KWSP's Third Schedule only says the rates change when someone reaches 60, and PERKESO ties SOCSO and EIS to reaching 60; neither says which month. Ask KWSP (03-8922 6000) and PERKESO (1-300-22-8000), then change this if they say otherwise.</div></sc-if>
+                  </section>
+                  <p style="margin: 0; color: #46546A; font-size: 13px">PCB isn't in this table: the Workbook check doesn't check PCB amounts. LHDN's computerised method is kept per year when payroll is run here.</p>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{tabDue}}" hint-placeholder-val="{{ false }}">
+                <div class="sw" style="display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 20px">
+                  <section aria-labelledby="py-due-m" style="border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 16px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5">
+                      <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><h2 id="py-due-m" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Monthly payments · read only</h2></div>
+                      <a href="SetupStatutory.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-size: 13px; font-weight: 600; text-decoration: none">Change on Statutory accounts<dc-import name="Icon" glyph="chevronRight" tone="muted" size="14" hint-size="14px,14px"></dc-import></a>
+                    </div>
+                    <p style="margin: 0; padding: 10px 16px; color: #46546A; font-size: 13px; border-bottom: 1px solid #EEF1F5">The due day of each authority has one home, Setup › Statutory accounts. Accounting › Statutory payables compares what was paid with it.</p>
+                    <table style="width: 100%; border-collapse: collapse; font-size: 13px">
+                      <caption class="vh">Monthly due days, from Statutory accounts</caption>
+                      <thead><tr><th scope="col" class="th" style="padding-left: 16px">Authority</th><th scope="col" class="th">Due</th><th scope="col" class="th">On Statutory accounts</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{dueMonthly}}" as="d" hint-placeholder-count="7">
+                          <tr><td class="td" style="padding-left: 16px; font-weight: 600">{{d.name}}</td><td class="td" style="font-variant-numeric: tabular-nums">{{d.due}}</td><td class="td"><span style="{{d.pillStyle}}">{{d.state}}</span></td></tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </section>
+                  <section aria-labelledby="py-due-y" style="border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 16px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="calendar" tone="brand" size="18" hint-size="18px,18px"></dc-import><h2 id="py-due-y" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Yearly, joiner and leaver forms</h2><span style="color: #5F6C80; font-size: 12px">As at Nov 2026 · check each year</span></div>
+                    <div style="overflow-x: auto">
+                      <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                        <caption class="vh">Yearly, joiner and leaver forms and when they are due</caption>
+                        <thead><tr><th scope="col" class="th" style="padding-left: 16px">Form</th><th scope="col" class="th">Due</th><th scope="col" class="th">Next for {{coCode}}</th></tr></thead>
+                        <tbody>
+                          <sc-for list="{{dueYearly}}" as="d" hint-placeholder-count="5">
+                            <tr><td class="td" style="padding-left: 16px; font-weight: 600">{{d.name}}<div style="font-weight: 500; font-size: 12px; color: #5F6C80">{{d.sub}}</div></td><td class="td">{{d.due}}</td><td class="td" style="white-space: nowrap; font-variant-numeric: tabular-nums">{{d.next}}</td></tr>
+                          </sc-for>
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style="margin: 0; padding: 10px 16px; border-top: 1px solid #EEF1F5; color: #46546A; font-size: 13px">Joiner and leaver dates come from the staff record and show on HR › Staff › Calendar and reminders. A CP22A or CP21 starts the hold until tax clearance on the leaver's final pay.</p>
+                  </section>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{tabMin}}" hint-placeholder-val="{{ false }}">
+                <div class="sw" style="display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 20px">
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; justify-content: space-between">
+                    <p style="margin: 0; max-width: 620px; color: #46546A; font-size: 13px">The run warns if someone's basic pay is below the minimum wage in force for the month. It is a warning, never a refusal. Kept with the date each amount applies from.</p>
+                    <button type="button" id="py-add-min" class="hs" onClick="{{newMin}}" aria-haspopup="dialog" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="brand" size="16" hint-size="16px,16px"></dc-import>Add a dated row</button>
+                  </div>
+                  <table style="width: 100%; border-collapse: collapse; font-size: 13px; border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden">
+                    <caption class="vh">Minimum wage, by the date it applies from</caption>
+                    <thead><tr><th scope="col" class="th" style="padding-left: 16px">From</th><th scope="col" class="th" style="text-align: right">A month (RM)</th><th scope="col" class="th">Status</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{minRows}}" as="m" hint-placeholder-count="2">
+                        <tr class="{{m.cls}}"><td class="td" style="padding-left: 16px; font-weight: 600">{{m.from}}</td><td class="td" style="text-align: right; font-variant-numeric: tabular-nums; font-weight: 600">{{m.amt}}</td><td class="td"><span style="{{m.pillStyle}}">{{m.state}}</span></td></tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                  <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="help" tone="warn" size="18" hint-size="18px,18px"></dc-import><span><b>Check with the Labour Department (JTKSM).</b> The amount and its start can differ for small employers. Add the next amount as a dated row when it is announced.</span></div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{tabRules}}" hint-placeholder-val="{{ false }}">
+                <div class="sw" style="display: flex; flex-direction: column; gap: 0">
+                  <div style="display: flex; gap: 10px; align-items: flex-start; margin: 16px 18px; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>A company may set a more generous rule, never a less generous one. The formulas are confirmed against the current Employment Act before payroll is built.</span></div>
+                  <div style="overflow-x: auto">
+                    <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px">
+                      <caption class="vh">Pay rules: the law and this company</caption>
+                      <thead><tr><th scope="col" class="th" style="padding-left: 18px">Rule</th><th scope="col" class="th">The law</th><th scope="col" class="th">This company</th><th scope="col" class="th" style="padding-right: 18px"><span class="vh">Change</span></th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{rules}}" as="u" hint-placeholder-count="9">
+                          <tr class="{{u.cls}}"><td class="td" style="padding-left: 18px; font-weight: 600">{{u.name}}</td><td class="td" style="color: #46546A">{{u.law}}</td><td class="td"><span style="{{u.pillStyle}}">{{u.co}}</span></td><td class="td" style="padding-right: 18px; text-align: right"><sc-if value="{{u.can}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{u.btnId}}" class="hs" onClick="{{u.open}}" aria-haspopup="dialog" aria-label="{{u.aria}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Change</button></sc-if><sc-if value="{{u.fixed}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; color: #5F6C80; font-size: 12px"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>{{u.fixedTxt}}</span></sc-if></td></tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{tabEmp}}" hint-placeholder-val="{{ false }}">
+                <div class="sw" style="display: flex; flex-direction: column; gap: 16px; padding: 16px 18px 20px">
+                  <sc-if value="{{headcountOn}}" hint-placeholder-val="{{ false }}">
+                    <div role="alert" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px"><b>10 Malaysian employees in employment, and HRDF registered is still off.</b><span>HRDF registration is required from 10 Malaysian employees, with a levy of 1%. Check on HRD Corp's portal whether the company is registered, then turn HRDF registered on in Setup › Companies.</span><span style="color: #46546A; font-size: 12px">Drawn as a what-if: AISB has 9 Malaysians in employment on 18 Nov 2026, so this warning doesn't show today.</span></div></div>
+                  </sc-if>
+                  <section aria-labelledby="py-emp-h" style="border: 1px solid #E3E7ED; border-radius: 14px; overflow: hidden">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding: 12px 16px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5">
+                      <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><h2 id="py-emp-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Employer numbers · read only</h2></div>
+                      <a href="SetupCompanies.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; color: #0F1A2B; font-size: 13px; font-weight: 600; text-decoration: none">Change on Companies<dc-import name="Icon" glyph="chevronRight" tone="muted" size="14" hint-size="14px,14px"></dc-import></a>
+                    </div>
+                    <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0">
+                      <sc-for list="{{empRows}}" as="e" hint-placeholder-count="6">
+                        <div style="padding: 12px 16px; border-top: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 2px"><dt style="font-size: 12px; font-weight: 600; color: #5F6C80">{{e.label}}</dt><dd style="margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; {{e.style}}">{{e.val}}</dd></div>
+                      </sc-for>
+                    </dl>
+                    <p style="margin: 0; padding: 10px 16px; border-top: 1px solid #EEF1F5; color: #46546A; font-size: 13px">Employer numbers are kept on Setup › Companies and printed on the statutory files from there.</p>
+                  </section>
+                  <section aria-labelledby="py-hrdf-h" style="border: 1px solid #E3E7ED; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+                    <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><dc-import name="Icon" glyph="statutory" tone="brand" size="18" hint-size="18px,18px"></dc-import><h2 id="py-hrdf-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">HRDF levy</h2><span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 99px; background: #EEF1F5; color: #46546A; font-size: 12px; font-weight: 600">Not worked out: HRDF registered is off</span></div>
+                    <ul style="margin: 0; padding-left: 18px; color: #46546A; font-size: 13px; display: flex; flex-direction: column; gap: 4px">
+                      <li>1% of each Malaysian employee's basic pay and fixed allowances from 10 Malaysian employees, when registration is required.</li>
+                      <li>0.5% from 5 to 9 Malaysian employees, for a company registered by choice.</li>
+                      <li>Foreign staff are left out. The pay items ticked HRDF are the wages it counts.</li>
+                    </ul>
+                    <span style="color: #46546A; font-size: 13px">Malaysian staff in employment today: <b style="font-variant-numeric: tabular-nums">{{malaysians}}</b>. A warning shows on this page and on Setup › Companies when it reaches 10 and HRDF registered is still off.</span>
+                    <button type="button" class="hs" onClick="{{whatIf}}" aria-pressed="{{whatIfPressed}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="eye" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{whatIfLabel}}</button>
+                  </section>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+        </sc-if>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 12px; min-height: 44px; max-width: 640px; padding: 8px 10px 8px 16px; box-sizing: border-box; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import><span style="padding: 4px 0">{{toastText}}</span><sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #5B6B85; background: transparent; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 40px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgCls}}" role="dialog" aria-modal="true" aria-labelledby="py-title" aria-describedby="py-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{save}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" aria-busy="{{savingAria}}" style="pointer-events: auto; width: 720px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 22px 26px 18px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dEyebrow}}</span>
+          <h2 id="py-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dTitle}}</h2>
+          <span id="py-sub" style="color: #46546A; font-size: 13px">{{dSub}}</span>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 18px">
+        <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+          <div id="py-refuse" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A; font-size: 13px">{{refuseTxt}}</div></div></div>
+        </sc-if>
+        <sc-if value="{{errSumOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>Check the fields marked below.</b> {{errSum}}</span></div>
+        </sc-if>
+
+        <sc-if value="{{isItem}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 18px">
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="py-f-name" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">Name<sc-if value="{{nameLocked}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 500; font-size: 12px; color: #5F6C80"><dc-import name="Icon" glyph="lock" tone="muted" size="13" hint-size="13px,13px"></dc-import>Used by the app</span></sc-if></label>
+                <input id="py-f-name" type="text" value="{{fName}}" onChange="{{onName}}" readOnly="{{nameLocked}}" maxLength="60" aria-invalid="{{nameInv}}" aria-describedby="{{nameBy}}" autoComplete="off" style="{{nameStyle}}">
+                <sc-if value="{{nameErrOn}}" hint-placeholder-val="{{ false }}"><span id="py-f-name-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Give the pay item a name.</span></sc-if>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="py-f-how" style="font-size: 13px; font-weight: 600; color: #46546A">How it is entered</label>
+                <select id="py-f-how" value="{{fHow}}" onChange="{{onHow}}" style="height: 40px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; box-sizing: border-box"><sc-for list="{{howOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+              </div>
+            </div>
+            <fieldset style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+              <legend style="padding: 0 0 10px; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Counts as wages for</legend>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+                <sc-for list="{{fTicks}}" as="t" hint-placeholder-count="5">
+                  <div style="display: flex; flex-direction: column; gap: 4px">
+                    <label for="{{t.id}}" style="display: flex; gap: 10px; align-items: center; min-height: 40px; padding: 0 12px; border: 1px solid {{t.border}}; border-radius: 10px; font-size: 14px; cursor: pointer"><input id="{{t.id}}" type="checkbox" checked="{{t.checked}}" onChange="{{t.change}}" aria-describedby="{{t.by}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8; flex: none">{{t.label}}<sc-if value="{{t.changed}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; font-size: 12px; font-weight: 600; color: #934100">Changed</span></sc-if></label>
+                    <span id="{{t.by}}" style="color: #5F6C80; font-size: 12px">{{t.hint}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <sc-if value="{{itemFlagOn}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid #F0C98A; background: #FFF8EC; color: #5C2B00; font-size: 13px"><dc-import name="Icon" glyph="help" tone="warn" size="16" hint-size="16px,16px"></dc-import><span>{{itemFlag}}</span></div></sc-if>
+            </fieldset>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isRate}}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="py-f-scheme" style="font-size: 13px; font-weight: 600; color: #46546A">Scheme</label>
+              <select id="py-f-scheme" value="{{fScheme}}" onChange="{{onScheme}}" style="height: 40px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; box-sizing: border-box"><sc-for list="{{schemeOpts}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="py-f-who" style="font-size: 13px; font-weight: 600; color: #46546A">Who</label>
+              <select id="py-f-who" value="{{fWho}}" onChange="{{onWho}}" style="height: 40px; padding: 0 10px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF; box-sizing: border-box"><sc-for list="{{whoOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+            </div>
+            <sc-for list="{{pctFields}}" as="p" hint-placeholder-count="2">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="{{p.id}}" style="font-size: 13px; font-weight: 600; color: #46546A">{{p.label}}</label>
+                <div style="display: flex; align-items: center; gap: 8px"><input id="{{p.id}}" type="text" inputMode="decimal" value="{{p.val}}" onChange="{{p.change}}" aria-invalid="{{p.inv}}" aria-describedby="{{p.by}}" autoComplete="off" style="{{p.style}}"><span style="color: #46546A">% of {{p.base}}</span></div>
+                <sc-if value="{{p.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{p.errId}}" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{p.err}}</span></sc-if>
+                <span id="{{p.hintId}}" style="color: #5F6C80; font-size: 12px">{{p.hint}}</span>
+              </div>
+            </sc-for>
+            <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px">
+              <label for="py-f-source" style="font-size: 13px; font-weight: 600; color: #46546A">Where it comes from</label>
+              <input id="py-f-source" type="text" value="{{fSource}}" onChange="{{onSource}}" maxLength="200" autoComplete="off" style="height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box; width: 100%">
+            </div>
+            <div style="grid-column: span 2; display: flex; gap: 8px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #F5F6F8; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="calendar" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>{{ratePreview}}</span></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isRule}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 12px">
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start">
+              <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">The law</span><span style="display: flex; align-items: center; gap: 6px; min-height: 40px"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{ruleLaw}}</span></div>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="py-f-rule" style="font-size: 13px; font-weight: 600; color: #46546A">{{ruleLabel}}</label>
+                <div style="display: flex; align-items: center; gap: 8px"><span style="color: #46546A">{{rulePre}}</span><input id="py-f-rule" type="text" inputMode="decimal" value="{{fRule}}" onChange="{{onRule}}" aria-invalid="{{ruleInv}}" aria-describedby="{{ruleBy}}" autoComplete="off" style="{{ruleStyle}}"><span style="color: #46546A">{{rulePost}}</span></div>
+                <sc-if value="{{ruleErrOn}}" hint-placeholder-val="{{ false }}"><span id="py-f-rule-err" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{ruleErr}}</span></sc-if>
+                <sc-if value="{{ruleMoreOn}}" hint-placeholder-val="{{ false }}"><span id="py-f-rule-more" style="display: flex; gap: 6px; align-items: flex-start; color: #2450B8; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="check" tone="brand" size="15" hint-size="15px,15px"></dc-import>More generous than the law. Kept as the company's rule.</span></sc-if>
+                <span id="py-f-rule-hint" style="color: #5F6C80; font-size: 12px">{{ruleHint}}</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{fromOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding-top: 16px; border-top: 1px solid #EEF1F5">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="py-f-from" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">From the payroll month<span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></label>
+              <input id="py-f-from" type="month" value="{{fFrom}}" onChange="{{onFrom}}" aria-invalid="{{fromInv}}" aria-describedby="{{fromBy}}" style="{{fromStyle}}">
+              <sc-if value="{{fromErrOn}}" hint-placeholder-val="{{ false }}"><span id="py-f-from-err" style="display: flex; gap: 6px; align-items: flex-start; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fromErr}}</span></sc-if>
+              <span id="py-f-from-hint" style="color: #5F6C80; font-size: 12px">Earlier months keep what they had. Months already run never change.</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="py-f-note" style="font-size: 13px; font-weight: 600; color: #46546A">Note</label>
+              <input id="py-f-note" type="text" value="{{fNote}}" onChange="{{onNote}}" maxLength="300" autoComplete="off" placeholder="Kept in the audit trail with the change" style="height: 40px; padding: 0 12px; border: 1px solid #8792A2; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box; width: 100%">
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="py-discard-q" aria-describedby="py-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="py-discard-q">Discard your changes?</b><div id="py-discard-d" style="color: #5F6C80; font-size: 12px">{{discardTxt}}</div></div></div>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="py-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" id="py-discard" class="hd" onClick="{{discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="py-foot" role="status" style="display: inline-flex; align-items: center; gap: 8px; color: #5F6C80; font-size: 12px"><sc-if value="{{footDirty}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 99px; background: #C77700; flex: none"></span></sc-if>{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="py-cancel" class="hs" onClick="{{askClose}}" disabled="{{saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8792A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+              <button type="submit" id="py-save" class="hb" aria-describedby="py-foot" aria-disabled="{{savingAria}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 128px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if>{{saveLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"pay-items","options":["pay-items","item-edit","item-saving","item-saved","item-refused","item-discard","item-new-errors","many","no-match","rates","check-flag","rate-new","rate-overlap","rate-saved","due-dates","min-wage","min-refused","pay-rules","rule-refused","rule-saved","employer","headcount","loading","error","not-used","switch-to-ai"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State"},"$preview":{"width":1440,"height":1600}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.init((p && p.view) || 'pay-items', (p && p.company) || 'aisb');
+  }
+  componentDidMount() { if (this.state.toast) this.toastTimer(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st); }
+
+  // ---------- data ----------
+  // The five things a pay item can count for (scope 6, Pay items).
+  heads() { return [['epf', 'EPF'], ['socso', 'SOCSO and EIS'], ['hrdf', 'HRDF'], ['pcbN', 'PCB normal pay'], ['pcbA', 'PCB additional pay']]; }
+  items() {
+    const I = (id, name, how, t, o) => ({ id, name, how, epf: t[0], socso: t[1], hrdf: t[2], pcbN: t[3], pcbA: t[4], from: 'Oct 2024', app: false, flag: '', flagTxt: '', custom: false, ...(o || {}) });
+    return [
+      I('basic', 'Basic pay', 'fixed', [1, 1, 1, 1, 0], { app: true }),
+      I('travel', 'Travelling allowance', 'fixed', [0, 0, 1, 1, 0]),
+      I('ot', 'Overtime', 'month', [0, 0, 0, 1, 0], { flag: 'Check with PERKESO', flagTxt: 'Check with PERKESO (1-300-22-8000) whether overtime counts as SOCSO and EIS wages. It isn’t ticked until they confirm. It isn’t EPF wages.' }),
+      I('bonus', 'Bonus', 'month', [1, 0, 0, 0, 1]),
+      I('comm', 'Commission', 'month', [1, 1, 0, 0, 1]),
+      I('arrears', 'Arrears of pay', 'month', [1, 1, 0, 0, 1]),
+      I('bik', 'Benefit in kind', 'month', [0, 0, 0, 1, 0]),
+      I('pilon', 'Pay in lieu of notice', 'app', [0, 0, 0, 0, 1], { app: true, flag: 'Check with PERKESO', flagTxt: 'Check with PERKESO (1-300-22-8000) whether pay in lieu of notice counts for SOCSO and EIS. It isn’t EPF wages.' }),
+      I('leavepay', 'Leave paid out', 'app', [1, 1, 0, 0, 1], { app: true, flag: 'Check with KWSP', flagTxt: 'Check with KWSP (03-8922 6000) whether annual leave paid out on leaving counts as EPF wages. The tick follows KWSP’s published list of EPF wages until they confirm.' }),
+      I('term', 'Termination benefits', 'app', [0, 0, 0, 0, 1], { app: true })
+    ];
+  }
+  extraItems() {
+    const n = ['Phone allowance', 'Meal allowance', 'Shift allowance', 'Night shift allowance', 'Attendance bonus', 'Referral bonus', 'Uniform allowance', 'Parking allowance', 'Festive bonus', 'Performance bonus', 'Long service award', 'Car allowance', 'Housing allowance', 'Childcare allowance', 'Internet allowance', 'Acting allowance', 'Relocation allowance'];
+    return n.map((name, i) => ({ id: 'x' + i, name, how: /bonus|award/i.test(name) ? 'month' : 'fixed', epf: /bonus|Acting|Shift|Night/i.test(name) ? 1 : 0, socso: /Shift|Night|Acting|Attendance/i.test(name) ? 1 : 0, hrdf: /allowance/i.test(name) && !/Relocation|Uniform|Parking/.test(name) ? 1 : 0, pcbN: /bonus|award/i.test(name) ? 0 : 1, pcbA: /bonus|award/i.test(name) ? 1 : 0, from: 'Nov 2026', app: false, flag: '', flagTxt: '', custom: true }));
+  }
+  rates() {
+    return [
+      { key: 'epf', name: 'EPF (KWSP)', basis: 'The rate times the upper limit of the wage band, rounded up to the next ringgit', flag: '', flagTxt: '',
+        rows: [{ from: 'Oct 2024', who: 'Under 60', ee: '11%', er: '13% on wages up to RM 5,000.00; 12% above' }, { from: 'Oct 2024', who: 'Malaysian citizens aged 60 and over', ee: '0%', er: '4%' }],
+        lines: ['Wage bands of RM 20 up to RM 5,000.00 and of RM 100 above it. Above RM 20,000.00 the wage itself counts.', 'EPF wages are the pay items ticked EPF on the Pay items tab.'] },
+      { key: 'socso', name: 'SOCSO (PERKESO)', basis: 'Of the midpoint of the RM 100 wage band', flag: '', flagTxt: '',
+        rows: [{ from: 'Oct 2024', who: 'First category', ee: '0.5%', er: '1.75%' }, { from: 'Oct 2024', who: 'Second category (employment injury only)', ee: 'Nothing', er: '1.25%' }],
+        lines: ['Wages above RM 6,000.00 count as the RM 5,900.01 to 6,000.00 band. Wages up to RM 400.00 have smaller bands, not held here.', 'The official table rounds to 5 sen, and not always the same way, so 5 sen either way passes the check.'] },
+      { key: 'eis', name: 'EIS (SIP)', basis: 'Of the same band midpoint, with the same RM 6,000.00 ceiling', flag: '', flagTxt: '',
+        rows: [{ from: 'Oct 2024', who: 'Aged 18 to 60', ee: '0.2%', er: '0.2%' }],
+        lines: ['Not for workers aged 60 and over.', 'A worker aged 57 or over with no EIS contributions before 57 is exempt.'] },
+      { key: 'skbbk', name: 'Lindung 24 Jam (SKBBK)', basis: 'Of the same band midpoint, rounded as SOCSO; goes in the PERKESO file', flag: 'Check with PERKESO',
+        flagTxt: 'The scheme is new and has already changed once. Its banded amounts are not confirmed yet, nor whether someone aged 60 or over who stays covered still pays. Ask PERKESO (1-300-22-8000).',
+        rows: [{ from: 'Jun 2026', who: 'Any age', ee: '0.75%', er: 'Nothing' }],
+        lines: ['From the June 2026 contribution month, with no age limit. Voluntary for Malaysians (they could opt out), required for foreign workers.', 'Rises to 1.00% from Jun 2028 and 1.25% from Jun 2031 (PERKESO’s LINDUNG 24 Jam FAQ, Aug 2026): add each as a dated row.'] }
+    ];
+  }
+  rules() {
+    return [
+      { id: 'part', name: 'Part-month pay, joiner or leaver', law: 'Monthly pay × days employed ÷ calendar days in the month (s.18A)', fixed: 'Rounded to the sen' },
+      { id: 'unpaid', name: 'Unpaid leave, per day', law: 'Monthly pay ÷ 26 (s.60I)', val: 26, lawVal: 26, pre: 'Monthly pay ÷', post: '', more: 'higher', hint: 'A higher number takes less off for each unpaid day.' },
+      { id: 'otN', name: 'Overtime on a normal day', law: '1.5 × the hourly rate', val: 1.5, lawVal: 1.5, pre: '', post: '× the hourly rate', more: 'lower-not', hint: 'A higher number pays more for each hour.' },
+      { id: 'otR', name: 'Overtime on a rest day', law: '2 × the hourly rate', val: 2, lawVal: 2, pre: '', post: '× the hourly rate', more: 'lower-not', hint: 'A higher number pays more for each hour.' },
+      { id: 'otP', name: 'Overtime on a public holiday', law: '3 × the hourly rate', val: 3, lawVal: 3, pre: '', post: '× the hourly rate', more: 'lower-not', hint: 'A higher number pays more for each hour.' },
+      { id: 'hourly', name: 'Hourly rate', law: 'Ordinary rate of pay ÷ normal hours per day', fixed: 'Hours from the staff record' },
+      { id: 'otwho', name: 'Who the overtime rules cover', law: 'Earning RM 4,000.00 a month or less, or doing manual work. Others: overtime typed as an amount', fixed: 'From the staff record' },
+      { id: 'week', name: 'Normal week', law: '45 hours', fixed: 'Set by law' },
+      { id: 'paydate', name: 'Pay date', law: 'By the 7th day of the next month (s.19). The run warns if it is approved later', fixed: 'Warning only' },
+      { id: 'fifty', name: 'Deductions over 50% of wages', law: 'Warned before the run can be approved', fixed: 'Warning only' }
+    ];
+  }
+
+  // ---------- states ----------
+  init(view, company) {
+    const COS = this.cos(), codes = Object.keys(COS);
+    const noPay = codes.find(k => !COS[k].payroll);
+    let co = String(company || 'aisb').toUpperCase() === 'AI' ? 'AI' : 'AISB';
+    // the old-address page and the switcher landing always show a company that doesn't run payroll here
+    if (view === 'not-used' || view === 'switch-to-ai') co = noPay;
+    const TAB = { rates: 'rates', 'check-flag': 'rates', 'rate-new': 'rates', 'rate-overlap': 'rates', 'rate-saved': 'rates', 'due-dates': 'due', 'min-wage': 'min', 'min-refused': 'min', 'pay-rules': 'rules', 'rule-refused': 'rules', 'rule-saved': 'rules', employer: 'emp', headcount: 'emp' };
+    const base = { co, phase: COS[co].payroll ? 'ready' : 'notused', tab: TAB[view] || 'items', items: this.items(), schemes: this.rates(), rules: this.rules(),
+      mins: [{ ym: '2025-02', amt: '1,700.00' }, { ym: '2022-05', amt: '1,500.00' }], q: '', limit: 25, flags: {}, sixty: false, whatIf: false,
+      dlg: null, form: null, loaded: null, tried: false, refuse: '', refuseAt: 'from', confirm: false, saving: false, closing: false, footMsg: '',
+      toast: null, toastLeaving: false, undo: null, flashId: null, flashN: 0 };
+    if (view === 'switch-to-ai') return { ...base, phase: 'landed' };
+    // a company that doesn't run payroll here never gets a dialog, a toast or the settings, whatever the view
+    if (!COS[co].payroll) return base;
+    const edItem = (id, f, extra) => { const r = base.items.find(x => x.id === id); const form = this.itemForm(r); return { ...base, dlg: { kind: 'item', id }, form: { ...form, ...(f || {}) }, loaded: { ...form }, ...(extra || {}) }; };
+    const commF = { pcbN: 1, pcbA: 0, from: '2026-12', note: 'Commission is paid every month now.' };
+    const rateF = { scheme: 'skbbk', who: 'Any age', ee: '1.00', er: '', from: '2028-06', source: 'PERKESO LINDUNG 24 Jam FAQ, Aug 2026', note: '' };
+    const blankRate = this.rateForm();
+    const ruleOf = id => base.rules.find(x => x.id === id);
+    switch (view) {
+      case 'loading': return { ...base, phase: 'loading' };
+      case 'error': return { ...base, phase: 'error' };
+      case 'many': return { ...base, items: [...base.items, ...this.extraItems()] };
+      case 'no-match': return { ...base, q: 'gratuity' };
+      case 'item-edit': return edItem('comm', commF);
+      case 'item-saving': return edItem('comm', commF, { saving: true });
+      case 'item-discard': return edItem('comm', commF, { confirm: true });
+      case 'item-refused': { const r = base.items.find(x => x.id === 'comm'); const f = { ...this.itemForm(r), ...commF, from: '2026-10' }; return edItem('comm', f, { tried: true, ...this.refusalOf({ kind: 'item', id: 'comm' }, f, base) }); }
+      case 'item-new-errors': { const form = this.itemForm(null); return { ...base, dlg: { kind: 'item', id: null, isNew: true }, form: { ...form, epf: 1 }, loaded: { ...form }, tried: true }; }
+      // the saved states go through the same save as the dialog, so the toast is the one the app shows
+      case 'item-saved': { const r = base.items.find(x => x.id === 'comm'); const s = this.saveItem(base.items, { kind: 'item', id: 'comm' }, { ...this.itemForm(r), ...commF }); return { ...base, items: s.items, undo: s.undo, flashId: s.changed, flashN: 1, toast: { text: s.text, undo: true } }; }
+      case 'check-flag': return { ...base, flags: { skbbk: true }, sixty: true };
+      case 'rate-new': return { ...base, dlg: { kind: 'rate', id: null, isNew: true }, form: { ...blankRate, ...rateF }, loaded: { ...blankRate } };
+      case 'rate-overlap': { const f = { ...blankRate, ...rateF, from: '2026-06' }; return { ...base, dlg: { kind: 'rate', id: null, isNew: true }, form: f, loaded: { ...blankRate }, tried: true, ...this.refusalOf({ kind: 'rate' }, f, base) }; }
+      case 'rate-saved': { const s = this.saveRate(base.schemes, { ...blankRate, ...rateF }); return { ...base, schemes: s.schemes, undo: s.undo, flashId: s.changed, flashN: 1, toast: { text: s.text, undo: true } }; }
+      case 'min-refused': { const f = { amt: '1,800.00', from: '2025-01', note: '' }; return { ...base, dlg: { kind: 'min', id: null, isNew: true }, form: f, loaded: { amt: '', from: '', note: '' }, tried: true, ...this.refusalOf({ kind: 'min' }, f, base) }; }
+      case 'rule-refused': { const u = ruleOf('unpaid'); const form = this.ruleForm(u); const f = { ...form, val: '22' }; return { ...base, dlg: { kind: 'rule', id: 'unpaid' }, form: f, loaded: form, tried: true, ...this.refusalOf({ kind: 'rule', id: 'unpaid' }, f, base) }; }
+      case 'rule-saved': { const u = ruleOf('unpaid'); const s = this.saveRule(base.rules, 'unpaid', { ...this.ruleForm(u), val: '30' }); return { ...base, rules: s.rules, undo: s.undo, flashId: s.changed, flashN: 1, toast: { text: s.text, undo: true } }; }
+      case 'headcount': return { ...base, whatIf: true };
+      default: return base;
+    }
+  }
+  itemForm(r) { return r ? { name: r.name, how: r.how, epf: r.epf, socso: r.socso, hrdf: r.hrdf, pcbN: r.pcbN, pcbA: r.pcbA, from: '2026-11', note: '' } : { name: '', how: 'month', epf: 0, socso: 0, hrdf: 0, pcbN: 0, pcbA: 0, from: '2026-11', note: '' }; }
+  rateForm() { return { scheme: 'skbbk', who: 'Any age', ee: '', er: '', from: '', source: '', note: '' }; }
+  ruleForm(u) { return { val: String(u.val), from: '2027-01', note: '' }; }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._st);
+      const nx = this.init(this.props.view || 'pay-items', this.props.company || 'aisb');
+      this.setState(nx);
+      if (nx.toast) this.toastTimer();
+      return;
+    }
+    const st = this.state;
+    if (st.dlg && !prev.dlg) { this.focusId('py-title'); return; }
+    if (!st.dlg && prev.dlg) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('py-tab-' + st.tab);
+      this._opener = null;
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && st.confirm) { this.focusId('py-keep'); return; }
+    if (prev.confirm && !st.confirm && st.dlg && !st.closing) this.focusId('py-cancel');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); return !!el; }
+
+  // ---------- rules of the forms ----------
+  monthTxt(ym, long) {
+    const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
+    if (!m) return '';
+    const name = M[Number(m[2]) - 1];
+    return (long ? name : name.slice(0, 3)) + ' ' + m[1];
+  }
+  // the companies (samples section 2): what kind of books, and whether payroll is run in this app
+  cos() { return { AISB: { kindTxt: 'Kept in SQL Account', glyph: 'database', payroll: true }, AI: { kindTxt: 'Kept here', glyph: 'company', payroll: false } }; }
+  // October 2026 has a payroll run; November 2026 is the first month not run yet
+  firstOpen() { return '2026-11'; }
+  // one rule for all four dialogs: a month already run keeps what it was run with
+  runRefusal(from, what) {
+    return from && from < this.firstOpen() ? 'October 2026 has a payroll run already, and months already run keep the ' + what + ' they were run with. Choose November 2026 or later.' : '';
+  }
+  rateClash(f, schemes) {
+    const s = schemes.find(x => x.key === f.scheme), mon = this.monthTxt(f.from);
+    return s && mon && s.rows.find(x => x.from === mon && x.who === f.who) ? s : null;
+  }
+  minClash(f, mins) { return !!f.from && mins.some(m => m.ym === f.from); }
+  lessThanLaw(u, val) {
+    const n = Number(String(val).trim());
+    if (!u || !u.lawVal || Number.isNaN(n) || n >= u.lawVal) return '';
+    return u.id === 'unpaid' ? 'A company may set a more generous rule, never a less generous one. Monthly pay ÷ ' + n + ' takes more off for each unpaid day than the law’s ÷ 26.' : 'A company may set a more generous rule, never a less generous one. ' + n + ' × the hourly rate pays less than the law’s ' + u.lawVal + ' ×.';
+  }
+  // why a save is refused, and which field it marks ('from' or 'val'); st gives the lists
+  refusalOf(d, f, st) {
+    const mon = this.monthTxt(f.from);
+    if (d.kind === 'rate') {
+      const s = this.rateClash(f, st.schemes);
+      if (s) return { refuse: s.name + ' already has a row for ' + f.who.charAt(0).toLowerCase() + f.who.slice(1) + ' from ' + mon + '. Two rows can’t start in the same month: choose a later month, or keep that row as it is.', refuseAt: 'from' };
+    }
+    if (d.kind === 'min' && this.minClash(f, st.mins)) return { refuse: 'The minimum wage already has a row from ' + mon + '. Two rows can’t start in the same month: choose another month, or keep that row as it is.', refuseAt: 'from' };
+    const what = { item: 'pay items', rate: 'rates', min: 'minimum wage', rule: 'pay rules' }[d.kind];
+    const run = this.runRefusal(f.from, what);
+    if (run) return { refuse: run, refuseAt: 'from' };
+    if (d.kind === 'rule') { const why = this.lessThanLaw(st.rules.find(x => x.id === d.id), f.val); if (why) return { refuse: why, refuseAt: 'val' }; }
+    return { refuse: '', refuseAt: 'from' };
+  }
+  // the saves: one place builds the change and its toast, for the dialog and for the drawn saved states
+  joinAnd(a) { return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+  howTxt() { return { fixed: 'Fixed each month, on the staff record', month: 'Typed for the month', app: 'Worked out by the app (leaver’s final pay)' }; }
+  saveItem(items, d, f) {
+    const H = this.heads(), mon = this.monthTxt(f.from), long = this.monthTxt(f.from, true), HOW = this.howTxt();
+    const name = String(f.name).trim();
+    const vals = { name, how: f.how, epf: f.epf, socso: f.socso, hrdf: f.hrdf, pcbN: f.pcbN, pcbA: f.pcbA };
+    if (d.isNew) {
+      const id = 'n' + items.length;
+      const it = { id, ...vals, from: mon, app: false, flag: '', flagTxt: '', custom: true, next: null };
+      return { items: [...items, it], undo: { kind: 'itemAdd', id }, changed: id, text: name + ' added, from ' + long + '.' };
+    }
+    const prev = items.find(x => x.id === d.id);
+    const on = H.filter(([k]) => !prev[k] && f[k]).map(h => h[1]), off = H.filter(([k]) => prev[k] && !f[k]).map(h => h[1]);
+    const parts = [];
+    if (name !== prev.name) parts.push('is named ' + name);
+    if (f.how !== prev.how) parts.push('is ' + HOW[f.how].charAt(0).toLowerCase() + HOW[f.how].slice(1));
+    if (on.length) parts.push('counts for ' + this.joinAnd(on));
+    if (off.length) parts.push((on.length ? 'not ' : 'no longer counts for ') + this.joinAnd(off));
+    const change = parts.join(', ');
+    // a later month is kept beside the current ticks, which the months before it still use
+    const later = f.from > this.firstOpen();
+    const next = { ...vals, from: mon, txt: 'From ' + mon + ': ' + (change || 'no change to what it counts for') };
+    const upd = later ? { ...prev, next } : { ...prev, ...vals, from: mon, next: null };
+    return { items: items.map(x => (x.id === d.id ? upd : x)), undo: { kind: 'item', prev }, changed: d.id,
+      text: change ? 'Saved. ' + prev.name + ' ' + change + ', from ' + long + '.' : 'Saved. ' + prev.name + ': applies from ' + long + '.' };
+  }
+  sidesTxt(ee, er) { const a = []; if (ee !== 'Nothing') a.push(ee + ' employee'); if (er !== 'Nothing') a.push(er + ' employer'); return a.join(', ') || 'nothing'; }
+  saveRate(schemes, f) {
+    const s = schemes.find(x => x.key === f.scheme), mon = this.monthTxt(f.from), long = this.monthTxt(f.from, true);
+    const pct = v => (String(v).trim() ? Number(v).toFixed(2) + '%' : 'Nothing');
+    const cur = s.rows.filter(x => x.who === f.who).slice(-1)[0];
+    return { schemes: this.addRate(schemes, f), undo: { kind: 'rate', schemes }, changed: f.scheme + '-' + mon,
+      text: 'Row added. ' + s.name + ': ' + this.sidesTxt(pct(f.ee), pct(f.er)) + ' from ' + long + '.' + (cur ? ' Months before keep ' + this.sidesTxt(cur.ee, cur.er) + '.' : '') };
+  }
+  saveRule(rules, id, f) {
+    const prev = rules.find(x => x.id === id), n = Number(f.val), long = this.monthTxt(f.from, true);
+    const what = id === 'unpaid' ? 'monthly pay ÷ ' + n : n + ' × the hourly rate';
+    return { rules: rules.map(x => (x.id === id ? { ...x, val: n, from: this.monthTxt(f.from) } : x)), undo: { kind: 'rule', prev }, changed: id,
+      text: 'Saved. ' + prev.name + ': ' + what + ' from ' + long + (n > prev.lawVal ? ', more generous than the law.' : ', the same as the law.') };
+  }
+  saveMin(mins, f) {
+    const amt = Number(String(f.amt).replace(/,/g, '')).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return { mins: [...mins, { ym: f.from, amt, isNew: true }], undo: { kind: 'min', mins }, changed: 'min-' + f.from,
+      text: 'Row added. Minimum wage: RM ' + amt + ' a month from ' + this.monthTxt(f.from, true) + '.' };
+  }
+  // newest first; In force is the latest row from a month up to the first month not run yet
+  minList(mins) {
+    const s = mins.slice().sort((a, b) => (a.ym < b.ym ? 1 : a.ym > b.ym ? -1 : 0));
+    const now = s.find(m => m.ym <= this.firstOpen()) || null;
+    return s.map(m => ({ ...m, kind: m.ym > this.firstOpen() ? 'next' : m === now ? 'now' : 'old' }));
+  }
+  pctErr(v, required) {
+    const s = String(v == null ? '' : v).trim();
+    if (!s) return required ? 'Enter the rate, like 1.00.' : '';
+    return /^\d{1,2}(\.\d{1,2})?$/.test(s) ? '' : 'A percentage with up to 2 decimals, like 0.75.';
+  }
+  addRate(schemes, f) {
+    const mon = this.monthTxt(f.from);
+    const pct = v => (String(v).trim() ? Number(v).toFixed(2) + '%' : 'Nothing');
+    return schemes.map(s => (s.key === f.scheme ? { ...s, rows: [...s.rows, { from: mon, who: f.who, ee: pct(f.ee), er: pct(f.er), isNew: true }] } : s));
+  }
+
+  // ---------- actions ----------
+  openDlg(dlg, form) {
+    if (this.state.dlg) return;
+    this._opener = document.activeElement;
+    this.setState({ dlg, form, loaded: { ...form }, tried: false, refuse: '', confirm: false, saving: false, closing: false, footMsg: '' });
+  }
+  setForm(patch) { const st = this.state; this.setState({ form: { ...st.form, ...patch }, footMsg: '', refuse: '' }); }
+  dirty() { const st = this.state; return !!st.dlg && JSON.stringify(st.form) !== JSON.stringify(st.loaded); }
+  askClose() {
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    if (this.dirty()) { this.setState({ confirm: true }); return; }
+    this.closeDlg();
+  }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() {
+    clearTimeout(this._t);
+    if (!this.state.dlg) return;
+    const next = { dlg: null, closing: false, confirm: false, saving: false, refuse: '', tried: false };
+    if (this._changed) { next.flashId = this._changed; next.flashN = this.state.flashN + 1; this._changed = null; }
+    this.setState(next);
+  }
+  fieldErrs() {
+    const st = this.state, f = st.form, d = st.dlg, e = {};
+    if (!d || !f) return e;
+    if (!f.from) e.from = 'Choose the payroll month it applies from.';
+    if (d.kind === 'item' && !String(f.name || '').trim()) e.name = 'name';
+    if (d.kind === 'rate') { const a = this.pctErr(f.ee, f.scheme === 'skbbk'), b = this.pctErr(f.er, f.scheme !== 'skbbk'); if (a) e.ee = a; if (b) e.er = b; }
+    if (d.kind === 'rule' && !/^\d{1,2}(\.\d{1,2})?$/.test(String(f.val || '').trim())) e.val = 'A number, like 26.';
+    if (d.kind === 'min' && !/^\d{3,5}(\.\d{1,2})?$/.test(String(f.amt || '').replace(/,/g, '').trim())) e.amt = 'An amount a month, like 1,800.00.';
+    return e;
+  }
+  save(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const st = this.state;
+    if (!st.dlg || st.closing || st.confirm || st.saving) return;
+    const errs = this.fieldErrs(), order = ['name', 'ee', 'er', 'val', 'amt', 'from'];
+    const first = order.find(k => errs[k]);
+    if (first) { this._focusId = { name: 'py-f-name', ee: 'py-f-ee', er: 'py-f-er', val: 'py-f-rule', amt: 'py-f-rule', from: 'py-f-from' }[first]; this.setState({ tried: true, refuse: '' }); return; }
+    const why = this.refusalOf(st.dlg, st.form, st);
+    if (why.refuse) { this._focusId = 'py-refuse'; this.setState({ tried: true, ...why }); return; }
+    if (!st.dlg.isNew && !this.dirty()) { this.setState({ footMsg: 'Nothing has changed.' }); return; }
+    this.setState({ saving: true });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => this.finishSave(), 700);
+  }
+  finishSave() {
+    const st = this.state, d = st.dlg, f = st.form;
+    if (!d || !st.saving) return;
+    const s = d.kind === 'item' ? this.saveItem(st.items, d, f) : d.kind === 'rate' ? this.saveRate(st.schemes, f) : d.kind === 'min' ? this.saveMin(st.mins, f) : this.saveRule(st.rules, d.id, f);
+    const { text, changed, ...patch } = s;
+    this._changed = changed;
+    this.setState(patch);
+    this.closeDlg();
+    this.toast(text, { undo: true });
+  }
+  undo() {
+    const st = this.state, u = st.undo;
+    if (!u) return;
+    if (u.kind === 'item') this.setState({ items: st.items.map(x => (x.id === u.prev.id ? u.prev : x)), flashId: u.prev.id, flashN: st.flashN + 1 });
+    if (u.kind === 'itemAdd') this.setState({ items: st.items.filter(x => x.id !== u.id) });
+    if (u.kind === 'rate') this.setState({ schemes: u.schemes });
+    if (u.kind === 'min') this.setState({ mins: u.mins });
+    if (u.kind === 'rule') this.setState({ rules: st.rules.map(x => (x.id === u.prev.id ? u.prev : x)), flashId: u.prev.id, flashN: st.flashN + 1 });
+    this.setState({ undo: null });
+    this.toast('Change undone.');
+  }
+  toast(text, extra) { clearTimeout(this._tt); this.setState({ toast: { text, ...(extra || {}) }, toastLeaving: false }); this.toastTimer(); }
+  toastTimer() { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+
+  // ---------- what the page shows ----------
+  renderVals() {
+    const st = this.state, co = st.co;
+    const SH = { AISB: ['aisb', 'sqlPayroll', 'sql', 'true'], AI: ['ai', 'here', 'here', 'false'] }[co];
+    const TABS = [['items', 'Pay items', 'payroll'], ['rates', 'Rates and tables', 'statutory'], ['due', 'Due dates', 'calendar'], ['min', 'Minimum wage', 'coins'], ['rules', 'Pay rules', 'sliders'], ['emp', 'Employer numbers', 'lock']];
+    const pick = k => this.setState({ tab: k, q: '' });
+    const tabs = TABS.map(([k, label, glyph]) => { const on = st.tab === k; return { id: 'py-tab-' + k, label, glyph, sel: on ? 'true' : 'false', tabIndex: on ? '0' : '-1', tone: on ? 'brand' : 'muted', pick: () => pick(k),
+      style: 'display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 12px;border:0;background:transparent;font:600 14px Inter,sans-serif;cursor:pointer;margin-bottom:-1px;border-bottom:2px solid ' + (on ? '#2450B8;color:#1D419A' : 'transparent;color:#46546A') }; });
+    const pill = (bg, fg) => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const flashCls = id => (st.flashId === id ? (st.flashN % 2 ? 'hr fa' : 'hr fb') : 'hr');
+
+    // pay items
+    const H = this.heads();
+    const HOW = this.howTxt();
+    const q = String(st.q || '').trim().toLowerCase();
+    const match = st.items.filter(r => !q || (r.name + ' ' + HOW[r.how]).toLowerCase().includes(q));
+    const shown = match.slice(0, st.limit);
+    const items = shown.map(r => ({ id: r.id, name: r.name, how: HOW[r.how], from: r.from, btnId: 'py-r-' + r.id, cls: flashCls(r.id),
+      cells: H.map(([k, l]) => ({ on: !!r[k], off: !r[k], sr: (r[k] ? 'Counts for ' : 'Not for ') + l })),
+      appOn: r.app, flagOn: !!r.flag, flag: r.flag, nextOn: !!r.next, next: r.next ? r.next.txt : '',
+      open: () => this.openDlg({ kind: 'item', id: r.id }, this.itemForm(r)) }));
+
+    // rates
+    const schemes = st.schemes.map(s => ({ ...s, hid: 'py-s-' + s.key, flagOn: !!s.flag, flagId: 'py-flag-' + s.key, flagOpen: !!st.flags[s.key], flagExp: st.flags[s.key] ? 'true' : 'false', flagChev: st.flags[s.key] ? 'chev on' : 'chev',
+      flagToggle: () => this.setState({ flags: { ...this.state.flags, [s.key]: !this.state.flags[s.key] } }),
+      rows: s.rows.map(x => ({ ...x, newOn: !!x.isNew, cls: st.flashId === s.key + '-' + x.from ? (st.flashN % 2 ? 'fa' : 'fb') : '' })), lines: s.lines.map(t => ({ txt: t })) }));
+
+    // due dates (monthly read from Setup › Statutory accounts; yearly kept here)
+    const ok = pill('#E3F7EC', '#0A6B3D'), grey = pill('#EEF1F5', '#46546A');
+    const dueMonthly = [['EPF (KWSP)', '15th of the next month', 'Set up', ok], ['SOCSO (PERKESO)', '15th of the next month', 'Set up', ok], ['EIS (SIP)', '15th of the next month', 'Set up', ok], ['PCB (LHDN)', '15th of the next month', 'Set up', ok],
+      ['Lindung 24 Jam (SKBBK)', '—', 'Not set up', grey], ['Zakat', '—', 'Not set up', grey], ['HRDF', '—', 'Not registered', grey]].map(([name, due, state, pillStyle]) => ({ name, due, state, pillStyle }));
+    const dueYearly = [
+      { name: 'EA form', sub: 'To each person, for the year', due: 'By the last day of February', next: 'Sun 28 Feb 2027, for 2026' },
+      { name: 'Form E with CP8D', sub: 'To LHDN, for the year', due: 'By 31 March (LHDN’s e-filing grace period may apply)', next: 'Wed 31 Mar 2027, for 2026' },
+      { name: 'e-CP22', sub: 'New employee, filed through MyTax', due: 'Within 30 days of joining', next: 'Thu 3 Dec 2026 · 1 joiner' },
+      { name: 'CP22A', sub: 'Leaver, when needed', due: 'At least 30 days before the last day', next: 'Tue 1 Dec 2026 · 1 leaver' },
+      { name: 'CP21', sub: 'Leaving Malaysia for over 3 months', due: 'At least 30 days before leaving', next: 'None due' }];
+
+    // minimum wage and pay rules
+    const mins = this.minList(st.mins), minNow = mins.find(m => m.kind === 'now') || mins[mins.length - 1];
+    const MK = { now: ['In force', ok], old: ['Earlier', grey], next: ['Not in force yet', pill('#EAF0FD', '#2450B8')] };
+    const minRows = mins.map(m => ({ from: this.monthTxt(m.ym), amt: m.amt, state: MK[m.kind][0], pillStyle: MK[m.kind][1], cls: st.flashId === 'min-' + m.ym ? (st.flashN % 2 ? 'fa' : 'fb') : '' }));
+    const rules = st.rules.map(u => {
+      const can = u.val != null, moreG = can && u.val !== u.lawVal;
+      const coTxt = !can ? 'Same as the law' : moreG ? (u.id === 'unpaid' ? 'Monthly pay ÷ ' + u.val : u.val + ' × the hourly rate') + ' from ' + u.from + ' · more generous' : 'Same as the law';
+      return { id: u.id, name: u.name, law: u.law, co: coTxt, pillStyle: moreG ? pill('#EAF0FD', '#2450B8') : ok, can, fixed: !can, fixedTxt: u.fixed || '', btnId: 'py-u-' + u.id, aria: 'Change ' + u.name.toLowerCase(), cls: flashCls(u.id),
+        open: () => this.openDlg({ kind: 'rule', id: u.id }, this.ruleForm(u)) };
+    });
+
+    // employer numbers (read only, from Setup › Companies)
+    const empRows = [['KWSP employer no.', '012345678'], ['PERKESO employer no.', 'E1234567891A'], ['LHDN employer no. (E)', 'E 9876543210'], ['HRD Corp employer no.', 'Not given'], ['HRDF registered', 'Off'], ['Runs payroll in this app', 'On']]
+      .map(([label, val]) => ({ label, val, style: val === 'Not given' || val === 'Off' ? 'color:#46546A;font-weight:500' : '' }));
+
+    // the dialog
+    const d = st.dlg, f = st.form;
+    let v = {};
+    if (d && f) {
+      const errs = st.tried ? this.fieldErrs() : {};
+      const refused = !!st.refuse;
+      const box = (bad, w) => 'height:40px;width:' + (w || '100%') + ';padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;box-sizing:border-box;border:1px solid ' + (bad ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#8792A2');
+      const errList = Object.keys(errs).map(k => ({ name: 'Name', ee: 'Employee', er: 'Employer', val: 'This company', amt: 'Amount', from: 'From the payroll month' }[k]));
+      const atFrom = refused && st.refuseAt === 'from', atVal = refused && st.refuseAt === 'val';
+      const clash = d.kind === 'rate' ? !!this.rateClash(f, st.schemes) : d.kind === 'min' ? this.minClash(f, st.mins) : false;
+      const fromBad = !!errs.from || atFrom;
+      const fromErr = errs.from || (atFrom ? (clash ? 'A row already starts in ' + this.monthTxt(f.from) + '.' : 'Months already run keep what they were run with.') : '');
+      const common = { refuseOn: refused, refuseTxt: st.refuse, errSumOn: !refused && errList.length > 0, errSum: errList.join(', ') + '.',
+        fromOn: true, fFrom: f.from, onFrom: e => this.setForm({ from: e.target.value }), fromInv: fromBad ? 'true' : 'false', fromErrOn: !!fromErr, fromErr, fromBy: fromErr ? 'py-f-from-err py-f-from-hint' : 'py-f-from-hint', fromStyle: box(fromBad, '200px'),
+        fNote: f.note || '', onNote: e => this.setForm({ note: e.target.value }),
+        confirmOn: !!st.confirm, footOn: !st.confirm, footDirty: this.dirty() && !st.saving,
+        footNote: st.saving ? 'Saving…' : st.footMsg ? st.footMsg : this.dirty() ? 'Not saved yet' : 'Changes are recorded in the audit trail.',
+        savingAria: st.saving ? 'true' : 'false' };
+      if (d.kind === 'item') {
+        const r = d.isNew ? null : st.items.find(x => x.id === d.id);
+        const nameErr = !!errs.name;
+        v = { ...common, isItem: true, dGlyph: 'payroll', dEyebrow: 'Setup › HR · Payroll settings · Pay items · ' + co, dTitle: r ? r.name : 'Add a pay item', dSub: r ? 'What this item counts for, from the month you choose.' : 'A pay item of this company’s own, such as an allowance.',
+          nameLocked: !!(r && r.app), fName: f.name, onName: e => this.setForm({ name: e.target.value }), nameInv: nameErr ? 'true' : 'false', nameErrOn: nameErr, nameBy: nameErr ? 'py-f-name-err' : '', nameStyle: box(nameErr),
+          fHow: f.how, onHow: e => this.setForm({ how: e.target.value }), howOpts: Object.keys(HOW).map(k => ({ v: k, l: HOW[k] })),
+          fTicks: H.map(([k, l]) => { const ch = !!st.loaded && st.loaded[k] !== f[k]; return { id: 'py-f-' + k, label: l, checked: !!f[k], changed: ch, border: ch ? '#C77700' : '#8792A2', by: 'py-f-' + k + '-h',
+            hint: { epf: 'Counted in EPF wages (KWSP’s Third Schedule).', socso: 'Counted in PERKESO wages, up to RM 6,000.00.', hrdf: 'Counted for the levy, only when HRDF registered is on.', pcbN: 'Taxed as monthly pay.', pcbA: 'Taxed as additional pay, worked out separately.' }[k],
+            change: e => this.setForm({ [k]: e.target.checked ? 1 : 0 }) }; }),
+          itemFlagOn: !!(r && r.flag), itemFlag: r ? r.flagTxt : '',
+          discardTxt: r ? 'Your changes to ' + r.name + ' aren’t saved. It stays as it is.' : 'The new pay item isn’t added.',
+          saveLabel: st.saving ? 'Saving…' : r ? 'Save changes' : 'Add pay item' };
+      } else if (d.kind === 'rate') {
+        const sch = st.schemes.find(x => x.key === f.scheme) || st.schemes[0];
+        const whoOpts = sch.rows.map(x => x.who).filter((w, i, a) => a.indexOf(w) === i).map(w => ({ v: w, l: w }));
+        const pf = (k, label, req) => { const err = errs[k] || ''; return { id: 'py-f-' + k, label, val: f[k], base: 'the band midpoint', change: e => this.setForm({ [k]: e.target.value }), inv: err ? 'true' : 'false', errOn: !!err, err, errId: 'py-f-' + k + '-err', hintId: 'py-f-' + k + '-h', by: err ? 'py-f-' + k + '-err py-f-' + k + '-h' : 'py-f-' + k + '-h',
+          hint: req ? 'Required.' : 'Leave empty if this side pays nothing.', style: box(!!err, '96px') }; };
+        const cur = sch.rows.filter(x => x.who === f.who).slice(-1)[0];
+        const mon = this.monthTxt(f.from, true);
+        v = { ...common, isRate: true, dGlyph: 'statutory', dEyebrow: 'Setup › HR · Payroll settings · Rates and tables · ' + co, dTitle: 'Add a dated row', dSub: 'A new rate from a payroll month. The rows before it stay as they are.',
+          fScheme: f.scheme, onScheme: e => { const s2 = st.schemes.find(x => x.key === e.target.value); this.setForm({ scheme: e.target.value, who: s2 ? s2.rows[0].who : '' }); }, schemeOpts: st.schemes.map(s => ({ v: s.key, l: s.name })),
+          fWho: f.who, onWho: e => this.setForm({ who: e.target.value }), whoOpts,
+          pctFields: [pf('ee', 'Employee', f.scheme === 'skbbk'), pf('er', 'Employer', f.scheme !== 'skbbk')],
+          fSource: f.source, onSource: e => this.setForm({ source: e.target.value }),
+          ratePreview: refused ? 'Choose a later month to see what changes.' : mon && cur ? 'From ' + mon + ': ' + (String(f.ee).trim() ? f.ee + '%' : 'nothing') + ' employee, ' + (String(f.er).trim() ? f.er + '%' : 'nothing') + ' employer. Months before keep ' + cur.ee.toLowerCase() + ' employee and ' + cur.er.toLowerCase() + ' employer (from ' + cur.from + '). The Workbook check uses it for those months too.' : 'Choose the month it applies from to see what changes.',
+          discardTxt: 'The new row isn’t added.', saveLabel: st.saving ? 'Saving…' : 'Add row' };
+      } else if (d.kind === 'min') {
+        const err = errs.amt || '';
+        v = { ...common, isRule: true, dGlyph: 'coins', dEyebrow: 'Setup › HR · Payroll settings · Minimum wage · ' + co, dTitle: 'Add a minimum wage row', dSub: 'A new amount from a payroll month. Earlier months keep RM ' + minNow.amt + '.',
+          ruleLabel: 'Amount', ruleLaw: 'RM ' + minNow.amt + ' a month from ' + this.monthTxt(minNow.ym), rulePre: 'RM', rulePost: 'a month', fRule: f.amt || '', onRule: e => this.setForm({ amt: e.target.value }), ruleInv: err ? 'true' : 'false', ruleErrOn: !!err, ruleErr: err, ruleMoreOn: false, ruleBy: 'py-f-rule-hint', ruleStyle: box(!!err, '120px'),
+          ruleHint: 'As announced by the government. The run warns below it; it never refuses.', discardTxt: 'The new row isn’t added.', saveLabel: st.saving ? 'Saving…' : 'Add row' };
+      } else {
+        const u = st.rules.find(x => x.id === d.id);
+        const n = Number(String(f.val).trim());
+        const err = errs.val || (atVal ? (u.id === 'unpaid' ? 'Less generous than the law (÷ 26).' : 'Less generous than the law (' + u.lawVal + ' ×).') : '');
+        const more = !err && !Number.isNaN(n) && n > u.lawVal;
+        v = { ...common, isRule: true, dGlyph: 'sliders', dEyebrow: 'Setup › HR · Payroll settings · Pay rules · ' + co, dTitle: u.name, dSub: 'This company’s rule, from the month you choose. It can be more generous than the law, never less.',
+          ruleLabel: 'This company', ruleLaw: u.law, rulePre: u.pre, rulePost: u.post, fRule: f.val, onRule: e => this.setForm({ val: e.target.value }), ruleInv: err ? 'true' : 'false', ruleErrOn: !!err, ruleErr: err, ruleMoreOn: more,
+          ruleBy: err ? 'py-f-rule-err py-f-rule-hint' : more ? 'py-f-rule-more py-f-rule-hint' : 'py-f-rule-hint', ruleStyle: box(!!err, '96px'), ruleHint: u.hint,
+          discardTxt: 'Your change to ' + u.name.toLowerCase() + ' isn’t saved.', saveLabel: st.saving ? 'Saving…' : 'Save changes' };
+      }
+    }
+    const D = { isItem: false, isRate: false, isRule: false, dGlyph: 'payroll', dEyebrow: '', dTitle: '', dSub: '', refuseOn: false, refuseTxt: '', errSumOn: false, errSum: '',
+      nameLocked: false, fName: '', onName: () => {}, nameInv: 'false', nameErrOn: false, nameBy: '', nameStyle: '', fHow: '', onHow: () => {}, howOpts: [], fTicks: [], itemFlagOn: false, itemFlag: '',
+      fScheme: '', onScheme: () => {}, schemeOpts: [], fWho: '', onWho: () => {}, whoOpts: [], pctFields: [], fSource: '', onSource: () => {}, ratePreview: '',
+      ruleLabel: '', ruleLaw: '', rulePre: '', rulePost: '', fRule: '', onRule: () => {}, ruleInv: 'false', ruleErrOn: false, ruleErr: '', ruleMoreOn: false, ruleBy: '', ruleStyle: '', ruleHint: '',
+      fromOn: false, fFrom: '', onFrom: () => {}, fromInv: 'false', fromErrOn: false, fromErr: '', fromBy: '', fromStyle: '', fNote: '', onNote: () => {},
+      confirmOn: false, footOn: true, footDirty: false, footNote: '', discardTxt: '', saveLabel: 'Save changes', savingAria: 'false' };
+
+    const ready = st.phase === 'ready';
+    const keys = TABS.map(t => t[0]);
+    const COS = this.cos(), C = COS[co], backCo = Object.keys(COS).find(k => COS[k].payroll);
+    return {
+      ...D, ...v,
+      shCo: SH[0], shKind: SH[1], navKind: SH[2], navPayroll: SH[3], coCode: co,
+      chipTxt: co + ' · ' + C.kindTxt, chipGlyph: C.glyph,
+      // a switch to a company that doesn't run payroll here lands on its Overview (the Topbar shows the toast);
+      // the "aren't used" page is only for an old address
+      onTopCo: code => {
+        const u = String(code || '').toUpperCase();
+        if (!COS[u]) return;
+        clearTimeout(this._t); clearTimeout(this._st);
+        if (COS[u].payroll) { this.setState({ co: u, phase: 'ready' }); return; }
+        this.setState({ co: u, phase: 'landed', dlg: null, closing: false, confirm: false, saving: false, toast: null });
+        setTimeout(() => this.focusId('py-land-h'), 60);
+      },
+      landed: st.phase === 'landed', backCo, backFromLand: () => { this.setState({ co: backCo, phase: 'ready' }); setTimeout(() => this.focusId('py-tab-' + this.state.tab), 60); },
+      anyDlg: !!d, usedOn: !!C.payroll && ['ready', 'loading', 'error'].indexOf(st.phase) >= 0, notUsed: st.phase === 'notused', isReady: ready, isLoading: st.phase === 'loading', isError: st.phase === 'error',
+      retry: () => this.setState({ phase: 'ready' }), skTabs: [1, 2, 3, 4, 5, 6], skRows: [1, 2, 3, 4, 5, 6],
+      tabs, panelBy: 'py-tab-' + st.tab,
+      tabKey: e => {
+        const i = keys.indexOf(this.state.tab);
+        const to = e.key === 'ArrowRight' ? (i + 1) % keys.length : e.key === 'ArrowLeft' ? (i + keys.length - 1) % keys.length : e.key === 'Home' ? 0 : e.key === 'End' ? keys.length - 1 : -1;
+        if (to < 0) return;
+        e.preventDefault();
+        this._focusId = 'py-tab-' + keys[to];
+        this.setState({ tab: keys[to], q: '' });
+      },
+      tabItems: st.tab === 'items', tabRates: st.tab === 'rates', tabDue: st.tab === 'due', tabMin: st.tab === 'min', tabRules: st.tab === 'rules', tabEmp: st.tab === 'emp',
+      tickHeads: H.map(([, label]) => ({ label })),
+      q: st.q, onQ: e => this.setState({ q: e.target.value, limit: 25 }), clearQ: () => this.setState({ q: '' }),
+      itemCount: q ? match.length + ' of ' + st.items.length + ' match' : st.items.length + ' pay items', items, itemsEmpty: items.length === 0,
+      moreOn: match.length > 25, moreTxt: 'Showing ' + shown.length + ' of ' + match.length + ' pay items', moreBtn: shown.length < match.length ? 'Show ' + Math.min(25, match.length - shown.length) + ' more' : 'Show fewer',
+      showMore: () => this.setState({ limit: this.state.limit < match.length ? this.state.limit + 25 : 25 }),
+      newItem: () => this.openDlg({ kind: 'item', id: null, isNew: true }, this.itemForm(null)),
+      schemes, newRate: () => this.openDlg({ kind: 'rate', id: null, isNew: true }, this.rateForm()),
+      sixtyOpen: !!st.sixty, sixtyExp: st.sixty ? 'true' : 'false', sixtyChev: st.sixty ? 'chev on' : 'chev', sixtyToggle: () => this.setState({ sixty: !this.state.sixty }),
+      dueMonthly, dueYearly, minRows, newMin: () => this.openDlg({ kind: 'min', id: null, isNew: true }, { amt: '', from: '', note: '' }),
+      rules, empRows, malaysians: st.whatIf ? '10 (what-if)' : '9', headcountOn: !!st.whatIf,
+      whatIf: () => this.setState({ whatIf: !this.state.whatIf }), whatIfPressed: st.whatIf ? 'true' : 'false', whatIfLabel: st.whatIf ? 'Back to today: 9 Malaysians' : 'Show the warning at 10 Malaysians (what-if)',
+      dlgOn: !!d, dimCls: st.closing ? 'dim-out' : 'dim-in', dlgCls: st.closing ? 'dr-out' : 'dr-in',
+      onPanelAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      askClose: () => this.askClose(), save: e => this.save(e), saving: !!st.saving,
+      keepEditing: () => this.setState({ confirm: false }), discard: () => { this.setState({ confirm: false }); this.closeDlg(); },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); if (this.state.confirm) this.setState({ confirm: false }); else this.askClose(); return; }
+        if (e.key !== 'Tab') return;
+        const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!fs.length) { e.preventDefault(); return; }
+        const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      toastOn: !!st.toast, toastText: st.toast ? st.toast.text : '', toastUndoOn: !!(st.toast && st.toast.undo && st.undo), toastCls: st.toastLeaving ? 'to-out' : 'rv',
+      toastUndo: () => this.undo(),
+      onToastAnim: () => { if (this.state.toastLeaving) this.setState({ toast: null, toastLeaving: false }); },
+      toastHold: () => clearTimeout(this._tt), toastGo: () => { if (this.state.toast && !this.state.toastLeaving) this.toastTimer(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

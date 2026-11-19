@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · General settings · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hb[aria-disabled=true]{background:#5C6F99 !important;cursor:not-allowed !important}
+.hs[aria-disabled=true]{color:#46546A !important;cursor:not-allowed !important}
+.hs:hover{background:#F0F3F8 !important}
+.hs[aria-disabled=true]:hover{background:#FFFFFF !important}
+input:focus,select:focus{outline:2px solid #2450B8;outline-offset:-1px}
+/* motion and focus base */
+.hb,.hs,.sn,.nv,.nb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.tb{transition:filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes riseB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes savedOut{to{opacity:0;transform:translateY(8px)}}
+.chev.on{transform:rotate(90deg)}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.rvB{animation:riseB .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.svOut{animation:savedOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="aisb" kind="sqlPayroll" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="General settings" company="aisb" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0"><dc-import name="SetupNav" active="settings" kind="sql" payroll="true" hint-size="100%,820px"></dc-import></div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">General</span>
+            <h1 id="gs-h1" tabindex="-1" style="margin: 0; outline: none; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">General settings</h1>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+            <span role="status" style="display: inline-flex; align-items: center; gap: 8px">
+              <sc-if value="{{saved.show}}" hint-placeholder-val="{{ false }}"><span class="{{saved.cls}}" onAnimationEnd="{{saved.end}}" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 99px; background: #E3F7EC; color: #0A5C34; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="ok" size="16" hint-size="16px,16px"></dc-import>Saved</span></sc-if>
+              <sc-if value="{{dirty}}" hint-placeholder-val="{{ false }}"><span class="{{dirtyCls}}" style="display: inline-flex; align-items: center; gap: 6px; color: #7A3A00; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="edit" tone="warn" size="16" hint-size="16px,16px"></dc-import>Unsaved changes</span></sc-if>
+              <sc-if value="{{clean}}" hint-placeholder-val="{{ true }}"><span style="color: #46546A; font-size: 13px">No changes yet</span></sc-if>
+            </span>
+            <button type="button" id="gs-discard" class="hs" aria-disabled="{{clean}}" title="{{discardTip}}" onClick="{{discard}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Discard</button>
+            <button type="submit" form="gs-form" id="gs-save" class="hb" aria-disabled="{{clean}}" title="{{saveTip}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Save settings</button>
+          </div>
+        </div>
+
+        <sc-if value="{{banner.show}}" hint-placeholder-val="{{ false }}">
+          <div id="gs-banner" role="status" class="{{banner.cls}}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C9D7F6; color: #1D3F92; font-size: 14px">
+            <dc-import name="Icon" glyph="calendar" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+            <span style="flex: 1 1 260px"><b>November payroll has started.</b> October is still open: 4 things left.</span>
+            <a href="MonthlyChecklist.dc.html" style="display: inline-flex; align-items: center; height: 32px; padding: 0 12px; border-radius: 9px; background: #2450B8; color: #FFFFFF; font-weight: 600; font-size: 13px; text-decoration: none">Go to October</a>
+            <button type="button" class="hs" onClick="{{banner.dismiss}}" style="height: 32px; padding: 0 12px; border-radius: 9px; border: 1px solid #8793A6; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Dismiss</button>
+          </div>
+        </sc-if>
+
+        <form id="gs-form" novalidate onSubmit="{{submit}}" style="display: contents">
+        <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; gap: 20px; flex-wrap: wrap; padding: 20px 22px; border-bottom: 1px solid #EEF1F5">
+            <div style="flex: 1 1 220px"><b>Organisation name</b><div style="color: #5F6C80; font-size: 13px">Shown at the top of the sidebar.</div></div>
+            <div style="flex: 2 1 280px; display: flex; flex-direction: column; gap: 6px"><input type="text" id="gs-org" aria-label="Organisation name" value="{{org}}" onInput="{{onOrg}}" aria-invalid="{{orgInvalid}}" aria-describedby="gs-org-err" style="width: 100%; box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B"><span id="gs-org-err" style="color: #B0190F; font-size: 12px; font-weight: 600">{{orgErr}}</span></div>
+          </div>
+          <div style="display: flex; gap: 20px; flex-wrap: wrap; padding: 20px 22px">
+            <div style="flex: 1 1 220px; max-width: 420px"><b>Payroll month runs until</b><div style="color: #5F6C80; font-size: 13px">Until this day of a month you are still closing the month before (the 10th: October’s payroll is worked on until 10 November). Change it rarely: joiner and leaver reminders and SQL documents dated near the day are placed by it. A change that would move one in or out of a month already filed is refused, so filed months never change.</div></div>
+            <div style="flex: 2 1 280px; display: flex; flex-direction: column; gap: 10px">
+              <div role="group" aria-label="Day of month" style="display: inline-flex; align-self: flex-start; align-items: center; border: 1px solid #8793A6; border-radius: 10px; overflow: hidden">
+                <button type="button" class="hs fr" aria-label="One day earlier" aria-controls="gs-day" onClick="{{down}}" style="width: 40px; height: 40px; border: 0; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronLeft" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                <span id="gs-day" class="fr" role="spinbutton" tabindex="0" aria-label="Payroll month runs until day" aria-valuemin="1" aria-valuemax="28" aria-valuenow="{{day}}" aria-valuetext="{{dayText}}" aria-invalid="{{dayInvalid}}" aria-describedby="{{dayBy}}" onKeyDown="{{dayKey}}" style="min-width: 70px; line-height: 40px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums"><span class="{{dayCls}}" style="display: inline-block">{{dayLabel}}</span></span>
+                <button type="button" class="hs fr" aria-label="One day later" aria-controls="gs-day" onClick="{{up}}" style="width: 40px; height: 40px; border: 0; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="chevronRight" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+              </div>
+              <div role="status" class="{{dayCls}}" style="display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: #EAF0FD; color: #1D3F92; font-size: 13px"><dc-import name="Icon" glyph="calendar" tone="brand" size="16" hint-size="16px,16px"></dc-import><span>{{dayNote}}</span></div>
+              <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+                <div id="gs-day-refused" role="alert" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span>{{refuseText}}</span></div>
+              </sc-if>
+            </div>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="sparkflag" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 style="margin: 0; font-size: 15px; font-weight: 600">Next up</h2></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; padding: 18px 22px">
+            <sc-for list="{{nums}}" as="n" hint-placeholder-count="3">
+              <div style="display: flex; flex-direction: column; gap: 6px"><label for="{{n.id}}" style="font-size: 13px; font-weight: 600; color: #46546A">{{n.label}}</label><span style="display: flex; align-items: center; gap: 8px"><input type="number" id="{{n.id}}" value="{{n.value}}" min="0" max="60" onInput="{{n.change}}" aria-invalid="{{n.invalid}}" aria-describedby="{{n.errId}}" style="width: 90px; height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B"><span style="color: #5F6C80">{{n.unit}}</span></span><span id="{{n.errId}}" style="color: #B0190F; font-size: 12px; font-weight: 600">{{n.err}}</span></div>
+            </sc-for>
+          </div>
+        </section>
+
+        <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 16px 22px; border-bottom: 1px solid #EEF1F5"><dc-import name="Icon" glyph="recurring" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 style="margin: 0; font-size: 15px; font-weight: 600">New recurring payment starts as</h2></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 18px 22px">
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Type</span><select value="{{rtype}}" onChange="{{onType}}" style="height: 40px; padding: 0 10px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="utility">Utility / telco</option><option value="salary">Salary</option><option value="director">Director allowance</option><option value="consultant">Consultant fee</option><option value="statutory">Statutory (KWSP / PERKESO / LHDN)</option><option value="rental">Rental</option><option value="claim">Staff claim</option><option value="advance">Salary advance</option><option value="payroll_run">Payroll run</option><option value="claim_overseas">Staff claim - overseas service (self-billed e-Invoice)</option><option value="transfer">Inter-company transfer</option><option value="other">Other payment</option><option value="water_bill">Water bill</option><option value="insurance">Insurance premium</option></select></label>
+            <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Paid in</span><select value="{{rpaid}}" onChange="{{onPaid}}" style="height: 40px; padding: 0 10px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #FFFFFF; color: #0F1A2B"><option value="next">The next month</option><option value="same">The payroll month</option></select></label>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="gs-rday" style="font-size: 13px; font-weight: 600; color: #46546A">Day of month</label><input type="number" id="gs-rday" value="{{rday.value}}" min="1" max="31" onInput="{{rday.change}}" aria-invalid="{{rday.invalid}}" aria-describedby="gs-rday-err" style="height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B"><span id="gs-rday-err" style="color: #B0190F; font-size: 12px; font-weight: 600">{{rday.err}}</span></div>
+          </div>
+        </section>
+
+        </form>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+          <button type="button" id="gs-why-btn" class="hs" aria-expanded="{{whyOpen}}" aria-controls="gs-why-box" onClick="{{toggleWhy}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px 0 6px; border-radius: 9px; border: 0; background: transparent; font: 600 13px Inter, sans-serif; color: #2450B8; cursor: pointer"><span class="{{whyChev}}" style="display: inline-flex; transition: transform .18s cubic-bezier(.22,1,.36,1)"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></span>Why are you changing these? (optional)</button>
+          <sc-if value="{{whyOn}}" hint-placeholder-val="{{ false }}"><div id="gs-why-box" class="ex" style="align-self: stretch; max-width: 640px; display: flex; flex-direction: column; gap: 6px"><label for="gs-why" style="font-size: 13px; font-weight: 600; color: #46546A">Reason</label><input type="text" id="gs-why" value="{{why}}" onInput="{{onWhy}}" placeholder="Kept in the audit trail with the change" style="height: 40px; padding: 0 12px; border: 1px solid #8793A6; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF"></div></sc-if>
+        </div>
+
+        <section style="background: #F7F8FA; border: 1px dashed #8793A6; border-radius: 16px; padding: 16px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="lock" tone="muted" size="20" hint-size="20px,20px"></dc-import><b style="color: #0F1A2B; font-size: 14px">{{whereHead}}</b></div>
+          <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <sc-for list="{{places}}" as="p" hint-placeholder-count="3">
+              <div style="display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center"><span style="flex: 0 0 150px; font-weight: 600; color: #0F1A2B">{{p.label}}</span><span style="flex: 1 1 220px; min-width: 0">{{p.value}}</span><a href="{{p.href}}" style="font-weight: 600; text-decoration: none">{{p.link}}</a></div>
+            </sc-for>
+          </div>
+          <div style="font-size: 12px; color: #5F6C80">{{whereNote}}</div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240},"where":{"editor":"enum","default":"pc","options":["pc","hosted"]},"view":{"editor":"enum","default":"normal","options":["normal","day-refused"],"section":"State"}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    const v = { org: 'Agrinexus · HR & Finance', day: 20, due: '3', ahead: '7', backup: '7', rtype: 'utility', rpaid: 'next', rday: '6' };
+    this.state = this.init(p && p.view, v);
+  }
+  init(view, v0) {
+    const v = v0 || { org: 'Agrinexus · HR & Finance', day: 20, due: '3', ahead: '7', backup: '7', rtype: 'utility', rpaid: 'next', rday: '6' };
+    const base = { v, saved: { ...v }, why: '', whyOpen: false, errs: {}, dayN: 0, savedOn: false, savedOut: false, savedN: 0, banner: false, bannerN: 0, refuse: '' };
+    if (view === 'day-refused') return { ...base, v: { ...v, day: 5 }, why: '', whyOpen: false, dayN: 1, refuse: this.moveRefusal(v.day, 5) };
+    return base;
+  }
+  componentDidUpdate(prevProps) { if (prevProps && prevProps.view !== this.props.view) this.setState(this.init(this.props.view)); }
+  // A filed month near the day: AI's September 2026 (filed 5 Oct; AISB's September is still open). Its checklist item
+  // Update MBB bank records was due Thu 8 Oct. db._cycle_by puts a date in the month before while its day is on or before
+  // the payroll day, so it is September's while the day is the 8th or later. (The app's refusal names SQL documents and
+  // joiner or leaver reminders; AI has none near the day, so the item stands in for the dated record.)
+  moveRefusal(from, to) {
+    const was = from >= 8 ? 'September 2026' : 'October 2026', now = to >= 8 ? 'September 2026' : 'October 2026';
+    if (was === now) return '';
+    return 'Payroll month runs until: months already filed would change, so nothing was saved. With the new day the checklist item Update MBB bank records of AI, due 8 Oct 2026, would move from ' + was + ' to ' + now + '. Reopen those months first if it really must change.';
+  }
+  componentWillUnmount() { clearTimeout(this._sv); clearTimeout(this._sv2); }
+  saveNow() {
+    clearTimeout(this._sv); clearTimeout(this._sv2);
+    this.setState({ savedOn: true, savedOut: false, savedN: this.state.savedN + 1 });
+    this._sv = setTimeout(() => { this.setState({ savedOut: true }); this._sv2 = setTimeout(() => this.savedGone(), 400); }, 2600);
+  }
+  savedGone() { clearTimeout(this._sv2); if (this.state.savedOn) this.setState({ savedOn: false, savedOut: false }); }
+  set(k, val) { this.setState({ v: { ...this.state.v, [k]: val }, errs: { ...this.state.errs, [k]: '' } }); }
+  setDay(n) { const x = Math.max(1, Math.min(28, n)); if (x !== this.state.v.day) this.setState({ v: { ...this.state.v, day: x }, dayN: this.state.dayN + 1, refuse: '' }); }
+  isDirty() { return JSON.stringify(this.state.v) !== JSON.stringify(this.state.saved) || !!this.state.why; }
+  focusSoon(id) { setTimeout(() => { const el = document.getElementById(id); if (el) el.focus(); }, 0); }
+  // payroll month rule: until the rollover day the month before is still being worked
+  trySave() {
+    const st = this.state, v = st.v, errs = {};
+    if (String(v.org).length > 120 || String(v.org).trim() === '') errs.org = 'Give some text, at most 120 characters.';
+    const whole = (s, lo, hi) => { const n = Number(s); return String(s).trim() !== '' && Number.isInteger(n) && n >= lo && n <= hi; };
+    ['due', 'ahead', 'backup'].forEach(k => { if (!whole(v[k], 0, 60)) errs[k] = 'Use a whole number from 0 to 60.'; });
+    if (!whole(v.rday, 1, 31)) errs.rday = 'Use a day from 1 to 31.';
+    if (Object.keys(errs).length) {
+      this.setState({ errs });
+      const first = Object.keys(errs)[0]; const el = document.getElementById(first === 'rday' ? 'gs-rday' : first === 'org' ? 'gs-org' : 'gs-n-' + first); if (el) el.focus();
+      return;
+    }
+    const refusal = this.moveRefusal(st.saved.day, v.day);
+    if (refusal) { this.setState({ refuse: refusal }); this.focusSoon('gs-day'); return; }
+    const dayMoved = v.day !== st.saved.day;
+    const cyc = d => d >= 18 ? 'October' : 'November';
+    const cycleChanged = cyc(st.saved.day) !== cyc(v.day);
+    this.setState({ saved: { ...v }, errs: {}, why: '', whyOpen: false, refuse: '', banner: cycleChanged, bannerN: st.bannerN + (dayMoved ? 1 : 0) });
+    this.saveNow();
+  }
+  renderVals() {
+    const st = this.state, v = st.v, d = v.day;
+    const where = this.props.where || 'pc';
+    const ord = n => n + (n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th');
+    const dirty = JSON.stringify(v) !== JSON.stringify(st.saved) || !!st.why;
+    const numDefs = [['due', 'Due soon means within', 'days'], ['ahead', 'Show payments and checklist items from', 'days before due'], ['backup', 'Remind me to back up after', 'days']];
+    const nums = numDefs.map(([k, label, unit]) => ({ id: 'gs-n-' + k, errId: 'gs-n-' + k + '-err', label, unit, value: v[k], invalid: st.errs[k] ? 'true' : 'false', err: st.errs[k] || '', change: e => this.set(k, e.target.value) }));
+    const pc = where === 'pc';
+    const places = pc
+      ? [{ label: 'Records folder', value: 'C:\\HR-Records', link: 'Backup folder', href: 'Backup.dc.html' },
+        { label: 'SQL exports folder', value: 'Your Downloads folder', link: 'Change it on SQL import', href: 'Sql.dc.html' }]
+      : [{ label: 'Records', value: 'Kept on your organisation\'s server, not on this PC.', link: 'Backups', href: 'Backup.dc.html' },
+        { label: 'SQL exports', value: 'Files are picked from the device you are using.', link: 'Open SQL import', href: 'Sql.dc.html' }];
+    return {
+      org: v.org, orgInvalid: st.errs.org ? 'true' : 'false', orgErr: st.errs.org || '', onOrg: e => this.set('org', e.target.value),
+      dayLabel: ord(d), day: d, dayText: 'the ' + ord(d) + ' of the next month',
+      dayNote: d >= 18 ? 'Today is Wednesday 18 November, so October\'s payroll is worked on until ' + ord(d) + ' November.' : 'Today is Wednesday 18 November, which is after the ' + ord(d) + ', so November payroll is now the current month. October stays open until it is filed.',
+      refuseOn: !!st.refuse, refuseText: st.refuse, dayInvalid: st.refuse ? 'true' : 'false', dayBy: st.refuse ? 'gs-day-refused' : '',
+      dayCls: st.dayN ? (st.dayN % 2 ? 'swapA' : 'swapB') : '',
+      down: () => this.setDay(this.state.v.day - 1), up: () => this.setDay(this.state.v.day + 1),
+      dayKey: e => {
+        const cur = this.state.v.day;
+        const to = e.key === 'ArrowUp' || e.key === 'ArrowRight' ? cur + 1 : e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? cur - 1
+          : e.key === 'PageUp' ? cur + 5 : e.key === 'PageDown' ? cur - 5 : e.key === 'Home' ? 1 : e.key === 'End' ? 28 : null;
+        if (to === null) return;
+        e.preventDefault();
+        this.setDay(to);
+      },
+      nums, rtype: v.rtype, onType: e => this.set('rtype', e.target.value), rpaid: v.rpaid, onPaid: e => this.set('rpaid', e.target.value),
+      rday: { value: v.rday, invalid: st.errs.rday ? 'true' : 'false', err: st.errs.rday || '', change: e => this.set('rday', e.target.value) },
+      whyOpen: st.whyOpen ? 'true' : 'false', whyOn: st.whyOpen, whyChev: st.whyOpen ? 'chev on' : 'chev', why: st.why,
+      toggleWhy: () => this.setState({ whyOpen: !this.state.whyOpen }), onWhy: e => this.setState({ why: e.target.value }),
+      dirty, clean: !dirty, dirtyCls: 'swapA',
+      discard: () => { if (!this.isDirty()) return; this.setState({ v: { ...this.state.saved }, errs: {}, why: '', refuse: '', dayN: this.state.dayN + 1 }); this.focusSoon('gs-discard'); },
+      submit: e => { e.preventDefault(); if (!this.isDirty()) return; this.trySave(); },
+      discardTip: dirty ? '' : 'Nothing to discard yet', saveTip: dirty ? '' : 'Nothing to save yet',
+      saved: { show: st.savedOn, cls: st.savedOut ? 'svOut' : (st.savedN % 2 ? 'rv' : 'rvB'), end: e => { if (this.state.savedOut && e.target === e.currentTarget) this.savedGone(); } },
+      banner: { show: st.banner, cls: st.bannerN % 2 ? 'rv' : 'rvB', dismiss: () => { this.setState({ banner: false }); this.focusSoon('gs-h1'); } },
+      whereHead: pc ? 'This PC only' : 'Where the records are kept',
+      places,
+      whereNote: pc ? 'Kept in settings.json on this PC, not in the records. The SQL exports folder saves on its own when you change it.' : 'Kept on the server. Nothing here is saved on this PC.'
+    };
+  }
+}
+</script>
+</body>
+</html>

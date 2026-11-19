@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>First run · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.pb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F4FD !important}
+.gh:hover{background:#EEF1F5 !important}
+.ub:hover{background:rgba(255,255,255,.55) !important}
+.kd:hover{background:#F0F4FD !important}
+.dg:hover{background:#8A1F15 !important}
+.kd:focus-within{outline:2px solid #2450B8;outline-offset:2px}
+.pb,.hs,.gh,.ub,.kd,.dg,.inp{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.spin{width:16px;height:16px;box-sizing:border-box;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;border-radius:99px;animation:spin .7s linear infinite;display:inline-block}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; box-sizing: border-box; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45; display: flex; flex-direction: column">
+
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 32px; background: #0D1B2E">
+    <svg viewBox="0 0 36 36" width="32" height="32" role="img" aria-label="HR Payments">
+      <rect x="0" y="0" width="36" height="36" rx="10" fill="#2450B8"></rect>
+      <rect x="9" y="9" width="18" height="18" rx="4" fill="#5C83E0"></rect>
+      <path d="M13 15h10M13 19h6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"></path>
+      <circle cx="24" cy="23" r="3" fill="#FFFFFF"></circle>
+    </svg>
+    <span style="font-family: 'Space Grotesk', Inter, sans-serif; font-weight: 600; font-size: 16px; color: #FFFFFF; flex: 1">HR Payments</span>
+    <span style="display: inline-flex; align-items: center; gap: 10px; color: #B8C4D6">
+      <span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 99px; background: #2450B8; color: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600">AR</span>
+      Aisha Rahman
+      <a href="SignIn.dc.html" class="gh" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px; color: #FFFFFF; text-decoration: none; font-weight: 600; font-size: 13px; border: 1px solid #3A4C68"><dc-import name="Icon" glyph="logout" tone="white" size="16" hint-size="16px,16px"></dc-import>Sign out</a>
+    </span>
+  </header>
+
+  <main style="flex: 1; width: 100%; max-width: 960px; box-sizing: border-box; margin: 0 auto; padding: 40px 32px 56px; display: flex; flex-direction: column; gap: 28px">
+
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 id="fr-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">Welcome to HR Payments</h1>
+      <span style="color: #46546A; font-size: 15px; max-width: 620px">There is no company here yet. Start in one of two ways. Everything is kept on this PC, and each change is noted in the audit trail.</span>
+    </div>
+
+    <sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+      <div role="status" class="rv" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 12px; background: #E3F7EC; border: 1px solid #A9DCC2; color: #0B5A35">
+        <dc-import name="Icon" glyph="check" tone="ok" size="20" hint-size="20px,20px"></dc-import>
+        <span style="flex: 1; min-width: 200px"><b>{{doneTitle}}</b> {{doneBody}}</span>
+        <button type="button" class="ub" onClick="{{undoDone}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid #2E7D55; border-radius: 10px; background: transparent; color: #0B5A35; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="ok" size="16" hint-size="16px,16px"></dc-import>Undo</button>
+        <a href="Main.dc.html" class="pb" style="display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none">Open Overview</a>
+      </div>
+    </sc-if>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+
+      <section aria-labelledby="fr-imp-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+        <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="upload" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+        <h2 id="fr-imp-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Import a setup file</h2>
+        <span style="color: #46546A">Already use HR Payments somewhere else? Start from its setup file (Move setup). Each row is checked as Setup checks it, and nothing is saved unless every row passes.</span>
+
+        <sc-if value="{{impIdle}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+            <button type="button" class="hs" onClick="{{pickFile}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #7C8799; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">Choose a setup file…</button>
+            <span style="color: #5F6C80; font-size: 13px">A file saved as setup.json</span>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{impError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" id="fr-imp-err" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 10px; background: #FDE6E3; border: 1px solid #F0B7B0; color: #8A1F15">
+            <span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import></span>
+            <span>That file can't be read as a setup file. Choose a file saved with Export template or Export everything in Move setup.</span>
+          </div>
+          <div><button type="button" class="hs" onClick="{{pickFile}}" aria-describedby="fr-imp-err" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #7C8799; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">Choose another file…</button></div>
+        </sc-if>
+
+        <sc-if value="{{impPreview}}" hint-placeholder-val="{{ false }}">
+          <div class="ex" style="display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; align-items: center; gap: 10px"><dc-import name="Icon" glyph="document" tone="muted" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1; min-width: 0"><b style="display: block; overflow-wrap: anywhere">setup-2026-11-14.json</b><span style="color: #46546A; font-size: 13px">Everything, saved 14 Nov 2026. Importing it adds or changes:</span></span></div>
+            <div style="border: 1px solid #E3E7ED; border-radius: 10px; overflow: hidden">
+              <sc-for list="{{counts}}" as="c" hint-placeholder-count="5">
+                <div style="display: flex; justify-content: space-between; padding: 8px 12px; border-top: 1px solid #F1F3F7; background: #FFFFFF"><span>{{c.what}}</span><span style="font-variant-numeric: tabular-nums; font-weight: 600">{{c.n}}</span></div>
+              </sc-for>
+            </div>
+            <span style="color: #46546A; font-size: 13px">This file holds bank account numbers and the companies' registration, tax and employer numbers.</span>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="fr-why" style="font-weight: 600">Why are you importing this? <span style="font-weight: 400; color: #46546A">(optional)</span></label>
+              <input id="fr-why" class="inp" type="text" value="{{why}}" onInput="{{onWhy}}" style="width: 100%; box-sizing: border-box; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #7C8799; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+            </div>
+            <div style="display: flex; gap: 10px">
+              <button type="button" class="pb" onClick="{{doImport}}" aria-busy="{{impBusy}}" disabled="{{impBusy}}" style="{{pbStyle}}"><sc-if value="{{impBusy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><span>{{impLabel}}</span></button>
+              <button type="button" class="gh" onClick="{{cancelImp}}" style="height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: #2450B8; font: 600 14px Inter, sans-serif; cursor: pointer">Cancel</button>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+
+      <section aria-labelledby="fr-add-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+        <span style="width: 44px; height: 44px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="company" tone="brand" size="24" hint-size="24px,24px"></dc-import></span>
+        <h2 id="fr-add-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Add your first company</h2>
+        <span style="color: #46546A">Starting fresh? Add the company you pay from. You can add more companies later in Setup.</span>
+
+        <sc-if value="{{addIdle}}" hint-placeholder-val="{{ true }}">
+          <div><button type="button" id="fr-add-open" class="pb" onClick="{{openAdd}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a company</button></div>
+        </sc-if>
+
+        <sc-if value="{{addOpen}}" hint-placeholder-val="{{ false }}">
+          <form class="ex" onSubmit="{{submitAdd}}" noValidate style="display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="fr-code" style="font-weight: 600">Short name</label>
+              <input id="fr-code" class="inp" type="text" value="{{code}}" onInput="{{onCode}}" aria-invalid="{{codeInvalid}}" aria-describedby="{{codeDesc}}" style="{{codeStyle}}">
+              <span id="fr-code-hint" style="color: #5F6C80; font-size: 13px">Shown in the company switcher, for example AISB.</span>
+              <sc-if value="{{codeErr}}" hint-placeholder-val="{{ false }}"><span id="fr-code-err" class="ex" style="display: inline-flex; align-items: center; gap: 6px; color: #A52A20; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{codeErr}}</span></sc-if>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="fr-name" style="font-weight: 600">Company name</label>
+              <input id="fr-name" class="inp" type="text" value="{{cname}}" onInput="{{onName}}" aria-invalid="{{nameInvalid}}" aria-describedby="{{nameDesc}}" style="{{nameStyle}}">
+              <sc-if value="{{nameErr}}" hint-placeholder-val="{{ false }}"><span id="fr-name-err" class="ex" style="display: inline-flex; align-items: center; gap: 6px; color: #A52A20; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{nameErr}}</span></sc-if>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="fr-reg" style="font-weight: 600">Registration number <span style="font-weight: 400; color: #46546A">(optional)</span></label>
+              <input id="fr-reg" class="inp" type="text" value="{{reg}}" onInput="{{onReg}}" style="width: 100%; box-sizing: border-box; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #7C8799; font: 400 14px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+            </div>
+            <fieldset aria-describedby="{{kindDesc}}" style="border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+              <legend style="padding: 0; font-weight: 600; margin-bottom: 8px">Where are the books kept?</legend>
+              <label for="fr-kind-sql" class="kd" style="{{kindSqlStyle}}">
+                <input id="fr-kind-sql" type="radio" name="fr-kind" value="sql" checked="{{kindSql}}" onChange="{{pickSql}}" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: #2450B8; flex: none">
+                <span><b style="display: block">Kept in SQL Account</b><span style="color: #46546A; font-size: 13px">Payments then need their PV, JV or OR from SQL.</span></span>
+              </label>
+              <label for="fr-kind-here" class="kd" style="{{kindHereStyle}}">
+                <input id="fr-kind-here" type="radio" name="fr-kind" value="here" checked="{{kindHere}}" onChange="{{pickHere}}" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: #2450B8; flex: none">
+                <span><b style="display: block">Kept here</b><span style="color: #46546A; font-size: 13px">The books are kept in this app: sales, purchases, journals and period close.</span></span>
+              </label>
+              <sc-if value="{{kindErr}}" hint-placeholder-val="{{ false }}"><span id="fr-kind-err" class="ex" style="display: inline-flex; align-items: center; gap: 6px; color: #A52A20; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="16" hint-size="16px,16px"></dc-import>{{kindErr}}</span></sc-if>
+            </fieldset>
+            <label for="fr-payroll" class="kd" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid #D5DBE4; border-radius: 10px; cursor: pointer">
+              <input id="fr-payroll" type="checkbox" checked="{{payroll}}" onChange="{{togglePayroll}}" aria-describedby="fr-payroll-hint" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: #2450B8; flex: none">
+              <span><b style="display: block">Runs payroll in this app</b><span id="fr-payroll-hint" style="color: #46546A; font-size: 13px">Turns on the payroll run, statutory files and parallel run under HR › Payroll. The Workbook check is there for every company.</span></span>
+            </label>
+            <sc-if value="{{discarding}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-labelledby="fr-disc-h" class="ex" style="display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 10px; background: #FEF1D6; border: 1px solid #E8C56C; color: #5E3300">
+                <b id="fr-disc-h">Discard your changes?</b>
+                <span>What you typed for this company will be lost.</span>
+                <div style="display: flex; gap: 10px">
+                  <button type="button" id="fr-keep" class="hs" onClick="{{keepEditing}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #7C8799; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; cursor: pointer">Keep editing</button>
+                  <button type="button" class="dg" onClick="{{discardAdd}}" style="height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #A52A20; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+                </div>
+              </div>
+            </sc-if>
+            <div style="display: flex; gap: 10px">
+              <button type="submit" class="pb" aria-busy="{{addBusy}}" disabled="{{addOff}}" style="{{pbAddStyle}}"><sc-if value="{{addBusy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><span>{{addLabel}}</span></button>
+              <button type="button" class="gh" onClick="{{cancelAdd}}" style="height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: transparent; color: #2450B8; font: 600 14px Inter, sans-serif; cursor: pointer">Cancel</button>
+            </div>
+          </form>
+        </sc-if>
+      </section>
+    </div>
+
+    <section aria-labelledby="fr-next-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h2 id="fr-next-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">What comes next</h2>
+        <span style="color: #46546A">{{nextLine}}</span>
+      </div>
+      <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+        <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+          <li style="display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-top: 1px solid #F1F3F7">
+            <span style="{{s.badge}}"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="18" hint-size="18px,18px"></dc-import></span>
+            <span style="flex: 1; min-width: 0"><b style="display: block">{{s.title}}</b><span style="color: #46546A">{{s.body}}</span></span>
+            <span style="{{s.pill}}">{{s.state}}</span>
+          </li>
+        </sc-for>
+      </ol>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"start","options":["start","file-chosen","file-error","add-company","add-error","add-discard","imported","added"],"section":"State to show"},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.fromView((p && p.view) || 'start');
+  }
+  fromView(v) {
+    const filled = v === 'add-discard' || v === 'added';
+    return {
+      imp: v === 'file-chosen' ? 'chosen' : v === 'file-error' ? 'error' : 'idle',
+      add: v === 'add-company' || v === 'add-error' || v === 'add-discard' ? 'open' : 'idle',
+      done: v === 'imported' ? 'imported' : v === 'added' ? 'added' : '',
+      code: v === 'add-error' || filled ? 'AISB' : '', cname: filled ? 'AISB Sdn Bhd' : '', reg: '', why: '',
+      kind: filled ? 'sql' : '', payroll: filled, discarding: v === 'add-discard',
+      tried: v === 'add-error', impBusy: false, addBusy: false
+    };
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps.view !== this.props.view) { this.setState(this.fromView(this.props.view || 'start')); return; }
+    if (this.state.add === 'open' && prev.add !== 'open') { const e = document.getElementById('fr-code'); if (e) e.focus({ preventScroll: true }); }
+    if (this.state.tried && !prev.tried) { const e = document.getElementById(!this.state.code.trim() ? 'fr-code' : !this.state.cname.trim() ? 'fr-name' : 'fr-kind-sql'); if (e) e.focus({ preventScroll: true }); }
+    if (this.state.discarding && !prev.discarding) { const e = document.getElementById('fr-keep'); if (e) e.focus({ preventScroll: true }); }
+    if (this.state.done && !prev.done) { const e = document.getElementById('fr-title'); if (e) e.focus({ preventScroll: true }); }
+    // the form closed without adding (Discard, or Cancel on an empty form), or Undo removed the banner: focus returns to Add a company
+    if ((prev.add === 'open' && this.state.add === 'idle' && !this.state.done) || (prev.done && !this.state.done)) { const e = document.getElementById('fr-add-open'); if (e) e.focus({ preventScroll: true }); }
+  }
+  componentWillUnmount() { clearTimeout(this._t); }
+  renderVals() {
+    const s = this.state;
+    const fld = bad => 'width:100%;box-sizing:border-box;height:40px;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;border:1px solid ' + (bad ? '#C7372B' : '#7C8799');
+    const codeErr = s.tried && !s.code.trim() ? 'Type a short name for the company.' : '';
+    const nameErr = s.tried && !s.cname.trim() ? 'Type the company name.' : '';
+    const kindErr = s.tried && !s.kind ? 'Choose where the books are kept.' : '';
+    const kindWord = s.kind === 'sql' ? 'Kept in SQL Account' : 'Kept here';
+    const card = on => 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid ' + (on ? '#2450B8' : '#D5DBE4') + ';background:' + (on ? '#EAF0FD' : '#FFFFFF');
+    const pb = (busy, off) => 'display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;min-width:120px;padding:0 16px;border:0;border-radius:10px;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:' + (busy ? 'progress;opacity:.85' : off ? 'not-allowed;opacity:.55' : 'pointer');
+    const done = !!s.done;
+    const badge = ok => 'width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + (ok ? '#E3F7EC' : '#EEF1F5');
+    const pill = 'display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:99px;font-size:12px;font-weight:600;background:#EEF1F5;color:#46546A;white-space:nowrap';
+    const S = [
+      ['bank', 'Add a bank account', 'Each payment is matched against the company’s bank statement. Add the account in Setup.', 'Admin › Setup'],
+      ['staff', 'Add your staff or paste the Excel list', 'One person at a time, or paste your Excel staff list: each row is checked and shown before anything is saved. Leave, claims and payroll start from these records.', 'HR › Staff'],
+      ['recurring', 'Add recurring payments', 'Salaries, rent and other regular payments, so each month starts with them already listed.', 'Payments › Recurring'],
+      ['calendar', 'Set up the month', 'Open the first month you want to track. Earlier months stay as they are.', 'Payments › Payments register'],
+      ['vault', 'Make the first backup', 'An encrypted copy of the records, kept in the backup folder.', 'Admin › Backup']
+    ].map((x, i) => ({ glyph: x[0], title: (i + 1) + '. ' + x[1], body: x[2], state: done ? x[3] : 'After a company is added', badge: badge(false), pill, tone: 'muted' }));
+    const reg = s.done === 'added' ? 'AISB' : '';
+    return {
+      isDone: done,
+      doneTitle: s.done === 'imported' ? 'Setup imported.' : 'Company added.',
+      doneBody: s.done === 'imported' ? 'AISB and AI and their setup are ready, with the 2 stopped companies kept as stopped. Each change is noted in the audit trail.' : (s.code.trim() || 'The company') + ' is ready: ' + kindWord + (s.payroll ? ', runs payroll in this app' : '') + '. The next steps are open below.',
+      impIdle: s.imp === 'idle', impError: s.imp === 'error', impPreview: s.imp === 'chosen',
+      // setup-2026-11-14.json as the Setup boards stood on Sat 14 Nov 2026. The file holds every row, stopped ones too
+      // (hrp/setupfile.py export; deleted ones are gone): companies AISB, AI and the stopped OLD and TEST (SetupCompanies);
+      // bank accounts Maybank current, Maybank savings, the stopped USD collections, Public Bank current (added 9 Nov) and
+      // Maybank FCA (Setup); payment types and document types as SetupTypes, less Insurance premium (added 16 Nov) and
+      // Tax form (added 17 Nov); checklist items AISB 28 (its 27 in use and the stopped headcount report) and AI 22
+      // (SetupChecklist). Nothing in these changed between 14 and 18 Nov other than the two types.
+      counts: [{ what: 'Companies', n: '4' }, { what: 'Bank accounts', n: '5' }, { what: 'Payment types', n: '15' }, { what: 'Document types', n: '18' }, { what: 'Checklist items', n: '50' }],
+      why: s.why, onWhy: e => this.setState({ why: e.target.value }),
+      pbStyle: pb(s.impBusy), impBusy: s.impBusy, impLabel: s.impBusy ? 'Importing' : 'Import',
+      pickFile: () => this.setState({ imp: s.imp === 'idle' ? 'chosen' : (s.imp === 'error' ? 'chosen' : 'error') }),
+      cancelImp: () => this.setState({ imp: 'idle', why: '' }),
+      doImport: () => {
+        if (s.impBusy) return;
+        this.setState({ impBusy: true });
+        clearTimeout(this._t);
+        this._t = setTimeout(() => this.setState({ impBusy: false, imp: 'idle', done: 'imported' }), 700);
+      },
+      addIdle: s.add === 'idle', addOpen: s.add === 'open',
+      openAdd: () => this.setState({ add: 'open', tried: false, discarding: false }),
+      cancelAdd: () => { if (s.code.trim() || s.cname.trim() || s.reg.trim() || s.kind || s.payroll) this.setState({ discarding: true }); else this.setState({ add: 'idle', tried: false }); },
+      code: s.code, cname: s.cname, reg: s.reg,
+      onCode: e => this.setState({ code: e.target.value }), onName: e => this.setState({ cname: e.target.value }), onReg: e => this.setState({ reg: e.target.value }),
+      codeErr, nameErr, kindErr, kindDesc: kindErr ? 'fr-kind-err' : '',
+      kindSql: s.kind === 'sql', kindHere: s.kind === 'here', payroll: !!s.payroll,
+      kindSqlStyle: card(s.kind === 'sql'), kindHereStyle: card(s.kind === 'here'),
+      pickSql: () => this.setState({ kind: 'sql' }), pickHere: () => this.setState({ kind: 'here' }), togglePayroll: () => this.setState({ payroll: !s.payroll }),
+      discarding: !!s.discarding, keepEditing: () => { this.setState({ discarding: false }); const e = document.getElementById('fr-code'); if (e) e.focus({ preventScroll: true }); },
+      discardAdd: () => this.setState({ add: 'idle', tried: false, discarding: false, code: '', cname: '', reg: '', kind: '', payroll: false }),
+      undoDone: () => this.setState({ done: '', add: 'idle', imp: 'idle', discarding: false, code: '', cname: '', reg: '', kind: '', payroll: false }),
+      codeInvalid: codeErr ? 'true' : 'false', nameInvalid: nameErr ? 'true' : 'false',
+      codeDesc: codeErr ? 'fr-code-hint fr-code-err' : 'fr-code-hint', nameDesc: nameErr ? 'fr-name-err' : '',
+      codeStyle: fld(!!codeErr), nameStyle: fld(!!nameErr),
+      addBusy: s.addBusy, addOff: !!(s.addBusy || s.discarding), addLabel: s.addBusy ? 'Adding' : 'Add company', pbAddStyle: pb(s.addBusy, !!s.discarding),
+      submitAdd: e => {
+        e.preventDefault();
+        if (s.addBusy || s.discarding) return;
+        if (!s.code.trim() || !s.cname.trim() || !s.kind) { this.setState({ tried: true }); return; }
+        this.setState({ addBusy: true, tried: false, discarding: false });
+        clearTimeout(this._t);
+        this._t = setTimeout(() => this.setState({ addBusy: false, add: 'idle', done: 'added', discarding: false }), 700);
+      },
+      steps: S,
+      nextLine: done ? 'Do these in any order. Each one opens where it is done.' : 'These open up once the first company is in. Nothing is lost by doing them in any order.'
+    };
+  }
+}
+</script>
+</body>
+</html>

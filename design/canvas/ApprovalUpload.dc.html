@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Upload a signed form · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+/* colours as tokens: light is the default, .dk swaps every one of them */
+.au{--pg:#F5F6F8;--card:#FFFFFF;--line:#E3E7ED;--line2:#EEF1F5;--ctl:#7D8CA3;--head:#FAFBFC;--ink:#0F1A2B;--ink2:#46546A;--ink3:#5F6C80;--brand:#2450B8;--brandBg:#EAF0FD;--brandLine:#C9D7F7;--brandInk:#1D419A;--pri:#2450B8;--priHov:#1D419A;--hov:#F8FAFD;--hs:#F0F3F8;--okBg:#F0FBF5;--okLine:#BFE8D0;--okInk:#0A6B3D;--okChip:#E3F7EC;--okChipInk:#0A5A33;--badBg:#FFF4F2;--badLine:#F5C2BB;--badInk:#B0190F;--badChip:#FDE6E3;--badChipInk:#8E1A10;--warnBg:#FFFBF2;--warnLine:#F3D9A6;--warnInk:#8A4000;--warnChip:#FEF1D6;--warnChipInk:#7A3A00;--neuBg:#EEF1F5;--neuLine:#D5DBE4;--dim:rgba(15,26,43,.45);--ring:#2450B8;--dng:#B3261E;--dngHov:#8F1D17;--desk:#E9ECF1}
+.au.dk{--pg:#0B1220;--card:#0F1724;--line:#243044;--line2:#1B2638;--ctl:#66758C;--head:#131D2E;--ink:#E6EBF2;--ink2:#C3CCDA;--ink3:#9BA8BC;--brand:#8DB0FA;--brandBg:#1B2B4A;--brandLine:#2E4677;--brandInk:#A9C3FB;--pri:#3D68D8;--priHov:#2F58C4;--hov:#16213A;--hs:#1B2638;--okBg:#0F2A1E;--okLine:#1E5A3D;--okInk:#5BD49A;--okChip:#14432E;--okChipInk:#8BE5B8;--badBg:#2A1618;--badLine:#6B2A2C;--badInk:#F58C80;--badChip:#4E2024;--badChipInk:#F9B1A8;--warnBg:#2A2012;--warnLine:#6B4E1A;--warnInk:#F2B35B;--warnChip:#4A3412;--warnChipInk:#F7C46C;--neuBg:#1B2638;--neuLine:#33415A;--dim:rgba(3,7,14,.66);--ring:#8DB0FA;--dng:#C9372C;--dngHov:#B02C22;--desk:#1B2638}
+.au a{color:var(--brand)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.eb{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.h1{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:30px;font-weight:600}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:16px;font-weight:600;display:flex;align-items:center;gap:10px}
+.stp{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:99px;background:var(--brandBg);color:var(--brandInk);font:700 12px Inter,sans-serif;flex:none}
+.stp.ok{background:var(--okChip);color:var(--okChipInk)}
+.stp.bad{background:var(--badChip);color:var(--badChipInk)}
+.mut{color:var(--ink3);font-size:13px}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.btn,.sec,.dng{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;box-sizing:border-box;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn{border:0;background:var(--pri);color:#FFFFFF}
+.au a.btn{color:#FFFFFF}
+.btn:hover{background:var(--priHov)}
+.btn:disabled,.sec:disabled,.dng:disabled{opacity:.6;cursor:not-allowed}
+.sec{border:1px solid var(--ctl);background:var(--card);color:var(--ink)}
+.au a.sec{color:var(--ink)}
+.sec:hover{background:var(--hs)}
+.dng{border:0;background:var(--dng);color:#FFFFFF}
+.dng:hover{background:var(--dngHov)}
+.sm{height:32px;padding:0 12px;font-size:13px;border-radius:9px}
+.pl{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;box-sizing:border-box}
+.pl.o{background:var(--okChip);color:var(--okChipInk)}
+.pl.b{background:var(--badChip);color:var(--badChipInk)}
+.pl.w{background:var(--warnChip);color:var(--warnChipInk)}
+.pl.g{background:var(--neuBg);color:var(--ink2)}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.cp.ok{background:var(--okChip);color:var(--okChipInk);border-color:var(--okLine)}
+.cp.mute{background:var(--neuBg);color:var(--ink2);border-color:var(--neuLine)}
+.cp.info{background:var(--brandBg);color:var(--brandInk);border-color:var(--brandLine)}
+.strip{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;font-size:13px;color:var(--ink2);background:var(--head);border:1px solid var(--line)}
+.strip b{color:var(--ink)}
+.strip.info{background:var(--brandBg);border-color:var(--brandLine);color:var(--ink)}
+.strip.ok{background:var(--okBg);border-color:var(--okLine);color:var(--ink)}
+.strip.warn{background:var(--warnBg);border-color:var(--warnLine);color:var(--ink)}
+.strip.bad{background:var(--badBg);border-color:var(--badLine);color:var(--ink)}
+.sect{display:flex;flex-direction:column;gap:12px;padding:18px 20px;border-top:1px solid var(--line2)}
+.sect:first-child{border-top:0}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lb{font-size:13px;font-weight:600;color:var(--ink2)}
+.lb span{font-weight:500;color:var(--ink3)}
+.inp{height:40px;width:100%;box-sizing:border-box;min-width:0;padding:0 12px;border:1px solid var(--ctl);border-radius:10px;font:400 14px Inter,sans-serif;background:var(--card);color:var(--ink)}
+.inp.mono{font:600 15px ui-monospace,Consolas,monospace;letter-spacing:.04em;text-transform:uppercase}
+.inp[aria-invalid="true"]{border-color:var(--badInk);box-shadow:0 0 0 1px var(--badInk)}
+.err{display:flex;gap:6px;align-items:center;color:var(--badInk);font-size:13px;font-weight:600}
+.tw{overflow-x:auto}
+.tbl{width:100%;min-width:560px;border-collapse:collapse;font-size:13px}
+.tbl th{padding:8px 12px;font-weight:600;font-size:12px;text-align:left;color:var(--ink3);background:var(--head);white-space:nowrap;border-bottom:1px solid var(--line)}
+.tbl td{padding:10px 12px;border-top:1px solid var(--line2);vertical-align:top}
+.tbl .r{text-align:right}
+.tbl tr.chg td{background:var(--badBg)}
+.rad{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border:1px solid var(--ctl);border-radius:10px;font-size:14px;cursor:pointer;box-sizing:border-box}
+.rad.on{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand);background:var(--brandBg)}
+.rad.bad{border-color:var(--badInk)}
+.rad input{width:18px;height:18px;margin:0;accent-color:var(--pri)}
+.dz{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:260px;padding:20px;border:1.5px dashed var(--ctl);border-radius:14px;text-align:center;background:var(--head)}
+.desk{display:flex;justify-content:center;padding:18px 12px;border-radius:12px;background:var(--desk)}
+.a4{position:relative;width:200px;height:283px;box-sizing:border-box;padding:14px 14px 10px;background:#FFFFFF;color:#000000;box-shadow:0 4px 14px rgba(13,27,46,.18);display:flex;flex-direction:column;gap:7px;font-size:7px}
+.a4.photo{transform:rotate(-2.2deg);filter:contrast(.9) brightness(.97)}
+.a4 .ln{height:4px;background:#C9D2E0;border-radius:2px}
+.a4 .sb{flex:1;border:1px solid #000000;height:40px;display:flex;flex-direction:column;justify-content:flex-end;padding:3px;box-sizing:border-box;font-size:6px}
+.a4 .sig{font:italic 600 11px 'Segoe Script','Brush Script MT',cursive;color:#1D2F8C}
+.hit{position:absolute;border:2px solid #0E8A50;border-radius:4px;box-shadow:0 0 0 3px rgba(14,138,80,.2)}
+.hit span{position:absolute;left:-2px;top:-20px;background:#0A6B3D;color:#FFFFFF;font:700 10px Inter,sans-serif;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,var(--neuBg) 25%,var(--hov) 50%,var(--neuBg) 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.spin{display:inline-block;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.spin.b{border-color:var(--brandLine);border-top-color:var(--brand)}
+.plate{width:44px;height:44px;flex:none;border-radius:12px;display:inline-flex;align-items:center;justify-content:center}
+.plate.warn{background:var(--warnChip)}.plate.ok{background:var(--okChip)}
+/* motion and focus base */
+.btn,.sec,.dng,.rad{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid var(--ring);outline-offset:-1px}
+.rad:focus-within{outline:2px solid var(--ring);outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.pls{animation:pulse .4s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.to-in{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@media (max-width:760px){.au-main{padding:24px 16px 48px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div class="{{rootCls}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--pg); font-family: Inter, system-ui, sans-serif; color: var(--ink); font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="approvals" company="{{sbCo}}" kind="{{sbKind}}" theme="{{theme}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Payments" page="Approvals" sub="Upload a signed form" company="{{sbCo}}" theme="{{theme}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="au-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 28px 40px 72px; display: flex; flex-direction: column; gap: 18px">
+      <div role="status" class="sr">{{say}}</div>
+      <a href="Approvals.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-weight: 600; font-size: 13px; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="{{tn.brand}}" size="16" hint-size="16px,16px"></dc-import>Approvals</a>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span class="eb">Payments › Approvals</span>
+        <h1 id="au-h1" tabindex="-1" class="h1">Upload a signed form</h1>
+        <p style="margin: 0; color: var(--ink2); max-width: 760px">An approval form, the Month review sheet or a bank reconciliation statement, as a PDF, a scan or a photo. The app reads the code, checks the keyed check against the requests or the figures as they are now, and records who signed and the date written on the paper. <b>{{coLine}}</b></p>
+      </div>
+      <sc-if value="{{asOfOn}}" hint-placeholder-val="{{ false }}">
+        <div role="note" class="strip info"><dc-import name="Icon" glyph="clock" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import><span>{{asOfText}}</span></div>
+      </sc-if>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+        <!-- the file -->
+        <section class="card" aria-labelledby="au-file-h" style="flex: 1 1 280px; max-width: 380px; padding: 18px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box">
+          <h2 id="au-file-h" class="h2"><dc-import name="Icon" glyph="document" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import>The file</h2>
+          <sc-if value="{{noFile}}" hint-placeholder-val="{{ false }}">
+            <div class="dz">
+              <dc-import name="Icon" glyph="upload" tone="{{tn.brand}}" size="34" hint-size="34px,34px"></dc-import>
+              <b>Drop the signed form or statement here</b>
+              <span class="mut">An approval form, the Month review sheet or a bank reconciliation statement: a PDF, a scan or a photo, up to 20 MB. A digitally signed PDF needs no clicks; a paper scan asks who signed.</span>
+              <button type="button" id="au-pick" class="btn" onClick="{{pickFile}}"><dc-import name="Icon" glyph="folder" tone="white" size="18" hint-size="18px,18px"></dc-import>Choose a file</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{hasFile}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; gap: 10px; align-items: flex-start">
+              <dc-import name="Icon" glyph="{{fileGlyph}}" tone="{{tn.muted}}" size="22" hint-size="22px,22px"></dc-import>
+              <div style="min-width: 0; flex: 1"><b style="word-break: break-word">{{fileName}}</b><div class="mut">{{fileMeta}}</div></div>
+            </div>
+            <sc-if value="{{refused}}" hint-placeholder-val="{{ false }}">
+              <div id="au-ref" role="alert" tabindex="-1" class="strip bad rv"><dc-import name="Icon" glyph="lock" tone="{{tn.bad}}" size="20" hint-size="20px,20px"></dc-import><span><b style="color: var(--badInk)">Nothing was kept</b><br>The PDF has a password, so the code can't be read. Save an unlocked copy and try again.</span></div>
+            </sc-if>
+            <sc-if value="{{showThumb}}" hint-placeholder-val="{{ true }}">
+              <div class="desk" role="img" aria-label="{{thumbAria}}">
+                <div class="{{a4Cls}}">
+                  <div style="display: flex; justify-content: space-between; gap: 6px"><b style="font-size: 9px">{{thumbTitle}}</b><b class="mono" style="font-size: 8px">{{thumbCode}}</b></div>
+                  <div style="display: flex; gap: 6px; align-items: center; border: 1px solid #000000; padding: 4px">
+                    <div style="display: grid; grid-template-columns: repeat(21, 2px); grid-auto-rows: 2px; flex: none"><sc-for list="{{qr}}" as="c" hint-placeholder-count="441"><span style="{{c.st}}"></span></sc-for></div>
+                    <div style="display: flex; flex-direction: column; gap: 3px; flex: 1"><span class="ln" style="width: 90%"></span><span class="ln" style="width: 70%"></span><span class="ln" style="width: 80%"></span></div>
+                  </div>
+                  <span class="ln" style="width: 40%; background: #8D99AB"></span>
+                  <span class="ln"></span><span class="ln"></span><span class="ln" style="width: 75%"></span>
+                  <b style="font-size: 7px">{{thumbLine}}</b>
+                  <div style="display: flex; gap: 4px">
+                    <sc-for list="{{thumbSig}}" as="g" hint-placeholder-count="3"><div class="sb"><span class="sig">{{g.mark}}</span><span>{{g.name}}</span></div></sc-for>
+                  </div>
+                  <span style="margin-top: auto; font-size: 6px; color: #333333">{{thumbCode}} · Page 1 of 1</span>
+                  <sc-if value="{{hitQr}}" hint-placeholder-val="{{ false }}"><div class="hit" style="left: 16px; top: 30px; width: 50px; height: 50px"><span>QR read</span></div></sc-if>
+                  <sc-if value="{{hitText}}" hint-placeholder-val="{{ false }}"><div class="hit" style="right: 10px; top: 10px; width: 70px; height: 16px"><span>Code read</span></div></sc-if>
+                </div>
+              </div>
+            </sc-if>
+            <button type="button" id="au-again" class="sec" onClick="{{chooseAgain}}" disabled="{{busy}}"><dc-import name="Icon" glyph="refresh" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>Choose another file</button>
+          </sc-if>
+          <p class="mut" style="margin: 0">Upload date: <b style="color: var(--ink)">{{upDate}}</b>, kept apart from the date written on the form.</p>
+        </section>
+
+        <!-- the checks -->
+        <div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+          <sc-if value="{{showDone}}" hint-placeholder-val="{{ false }}">
+            <section class="card rv" aria-labelledby="au-done-h" style="padding: 24px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; gap: 14px; align-items: flex-start">
+                <span class="plate ok pls"><dc-import name="Icon" glyph="verified" tone="{{tn.ok}}" size="24" hint-size="24px,24px"></dc-import></span>
+                <div><h2 id="au-done-h" tabindex="-1" class="h2" style="font-size: 20px">{{doneTitle}}</h2><p style="margin: 4px 0 0; color: var(--ink2)">{{doneText}}</p></div>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <span class="cp ok"><dc-import name="Icon" glyph="check" tone="{{tn.ok}}" size="14" hint-size="14px,14px"></dc-import>{{doneMarker}}</span>
+                <span class="cp mute"><dc-import name="Icon" glyph="person" tone="{{tn.muted}}" size="14" hint-size="14px,14px"></dc-import>{{doneHow}}</span>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                <a href="Approvals.dc.html" class="sec">Back to Approvals</a>
+                <a href="{{doneHref}}" class="sec">{{doneLink}}</a>
+                <button type="button" class="btn" onClick="{{chooseAgain}}"><dc-import name="Icon" glyph="upload" tone="white" size="18" hint-size="18px,18px"></dc-import>Upload another form</button>
+              </div>
+            </section>
+          </sc-if>
+
+          <sc-if value="{{showSteps}}" hint-placeholder-val="{{ true }}">
+            <div class="card" style="overflow: hidden">
+              <!-- 1 form code -->
+              <section class="sect" aria-labelledby="au-s1">
+                <h2 id="au-s1" tabindex="-1" class="h2"><span class="{{s1Cls}}">1</span>Form code and keyed check</h2>
+                <sc-if value="{{waitFile}}" hint-placeholder-val="{{ false }}"><p class="mut" style="margin: 0">Choose the file first. The code is read from the PDF's text, or from the QR on a scan or photo. If neither works you type it.</p></sc-if>
+                <sc-if value="{{reading}}" hint-placeholder-val="{{ false }}">
+                  <div role="status" aria-busy="true" style="display: flex; gap: 10px; align-items: center"><span class="spin b" aria-hidden="true"></span><span>Reading the file: looking for the code in its text, then for the QR…</span></div>
+                </sc-if>
+                <sc-if value="{{typing}}" hint-placeholder-val="{{ false }}">
+                  <div class="strip warn"><dc-import name="Icon" glyph="eye" tone="{{tn.warn}}" size="20" hint-size="20px,20px"></dc-import><span><b>Couldn't read a code from this file.</b> The photo has no text and the QR is blurred or cut off. Type the form code and the check printed beside the QR.</span></div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
+                    <div class="fld" style="flex: 1 1 180px"><label for="au-code" class="lb">Form code <span>Required</span></label><input id="au-code" class="inp mono" type="text" autoComplete="off" value="{{tCode}}" onChange="{{onCode}}" placeholder="AF-2611-002" aria-required="true" aria-invalid="{{codeInv}}" aria-describedby="{{codeDesc}}"></div>
+                    <div class="fld" style="flex: 1 1 160px"><label for="au-check" class="lb">Check <span>Required</span></label><input id="au-check" class="inp mono" type="text" autoComplete="off" value="{{tCheck}}" onChange="{{onCheck}}" placeholder="M6D-4YQB" aria-required="true" aria-invalid="{{checkInv}}" aria-describedby="{{checkDesc}}"></div>
+                    <button type="button" class="sec" onClick="{{findForm}}" style="margin-top: 25px">Find the form</button>
+                  </div>
+                  <sc-if value="{{codeErrOn}}" hint-placeholder-val="{{ false }}"><span id="au-code-err" role="alert" class="err"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>{{codeErrText}}</span></sc-if>
+                </sc-if>
+                <sc-if value="{{codeShown}}" hint-placeholder-val="{{ true }}">
+                  <div class="strip ok rv"><dc-import name="Icon" glyph="{{howGlyph}}" tone="{{tn.ok}}" size="20" hint-size="20px,20px"></dc-import><span><b>{{howTitle}}</b><br><span class="mono" style="font-weight: 700">{{fCode}}</span> · check <span class="mono" style="font-weight: 700">{{fCheck}}</span> · printed {{fPrinted}} for {{fCoName}}</span></div>
+                </sc-if>
+                <sc-if value="{{refused}}" hint-placeholder-val="{{ false }}"><p class="mut" style="margin: 0">No code: the file couldn't be opened.</p></sc-if>
+                <sc-if value="{{twice}}" hint-placeholder-val="{{ false }}">
+                  <div role="alert" class="strip warn rv"><dc-import name="Icon" glyph="copy" tone="{{tn.warn}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1"><b>{{fCode}} is already on file.</b> {{onFileText}} Nothing changes, and this copy isn't kept.</span></div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px"><a href="Approvals.dc.html" class="sec">See it under Approved</a><button type="button" class="btn" onClick="{{chooseAgain}}">Choose another file</button></div>
+                </sc-if>
+              </section>
+
+              <!-- 2 requests -->
+              <sc-if value="{{showReqs}}" hint-placeholder-val="{{ true }}">
+                <section class="sect" aria-labelledby="au-s2">
+                  <h2 id="au-s2" tabindex="-1" class="h2"><span class="{{s2Cls}}">2</span>{{s2Title}}</h2>
+                  <sc-if value="{{showTbl}}" hint-placeholder-val="{{ true }}"><div class="tw">
+                    <table class="tbl">
+                      <caption class="sr">Each request on the form, the amount printed, the amount now, and whether it still matches</caption>
+                      <thead><tr><th scope="col">{{thFirst}}</th><th scope="col" class="r">Printed</th><th scope="col" class="r">Now</th><th scope="col">Keyed check</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{reqRows}}" as="q" hint-placeholder-count="3">
+                          <tr class="{{q.rowCls}}">
+                            <td><b>{{q.title}}</b><div class="mut">{{q.sub}}</div></td>
+                            <td class="r num">{{q.printed}}</td>
+                            <td class="r num"><b>{{q.now}}</b></td>
+                            <td><span class="{{q.pillCls}}"><dc-import name="Icon" glyph="{{q.glyph}}" tone="{{q.tone}}" size="14" hint-size="14px,14px"></dc-import>{{q.pill}}</span><div class="mut" style="margin-top: 4px">{{q.note}}</div></td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                  </div></sc-if>
+                  <sc-if value="{{allMatch}}" hint-placeholder-val="{{ true }}"><div class="strip ok"><dc-import name="Icon" glyph="check" tone="{{tn.ok}}" size="20" hint-size="20px,20px"></dc-import><span>{{matchText}}</span></div></sc-if>
+                  <sc-if value="{{someMatch}}" hint-placeholder-val="{{ false }}"><div role="alert" class="strip warn"><dc-import name="Icon" glyph="alert" tone="{{tn.warn}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1">{{matchText}}</span><a href="{{reprintHref}}" class="sec sm">{{reprintLabel}}</a></div></sc-if>
+                  <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}"><div role="alert" class="strip bad"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1"><b style="color: var(--badInk)">{{noMatchTitle}}</b> {{matchText}}</span><a href="{{reprintHref}}" class="sec sm">{{reprintLabel}}</a></div></sc-if>
+                </section>
+              </sc-if>
+
+              <!-- 3 who signed -->
+              <sc-if value="{{showWho}}" hint-placeholder-val="{{ true }}">
+                <section class="sect" aria-labelledby="au-s3">
+                  <h2 id="au-s3" tabindex="-1" class="h2"><span class="{{s3Cls}}">3</span>Who signed</h2>
+                  <sc-if value="{{digitalOk}}" hint-placeholder-val="{{ false }}">
+                    <div class="strip ok"><dc-import name="Icon" glyph="verified" tone="{{tn.ok}}" size="20" hint-size="20px,20px"></dc-import><span><b>Digitally signed by {{digName}}</b><br>Matched to the approvers of {{coCode}} on the print date. Nothing to choose.</span></div>
+                  </sc-if>
+                  <sc-if value="{{notListed}}" hint-placeholder-val="{{ false }}">
+                    <div role="alert" class="strip bad"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="20" hint-size="20px,20px"></dc-import><span><b style="color: var(--badInk)">Digitally signed by Farid Osman, who isn't an approver.</b><br>He was an approver of AISB from 1 Jan 2025 to 30 Jun 2026, so he can't approve a form printed on Tue 17 Nov. Nothing is approved. Ask Hassan Ismail, Tan Mei Ling or Rajesh Kumar to sign it.</span></div>
+                    <a href="SetupApprovers.dc.html" style="font-weight: 600; font-size: 13px; align-self: flex-start; min-height: 32px; display: inline-flex; align-items: center">See the approvers and their history in Setup › HR › Approvers</a>
+                  </sc-if>
+                  <sc-if value="{{paper}}" hint-placeholder-val="{{ false }}">
+                    <fieldset style="margin: 0; padding: 0; border: 0; display: flex; flex-direction: column; gap: 8px" aria-describedby="{{whoDesc}}">
+                      <legend class="lb" style="padding: 0; margin-bottom: 8px">{{whoLegend}} <span>Required</span></legend>
+                      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px">
+                        <sc-for list="{{signerOpts}}" as="o" hint-placeholder-count="3">
+                          <label class="{{o.cls}}"><input type="radio" id="{{o.id}}" name="au-signer" value="{{o.name}}" aria-invalid="{{o.inv}}" checked="{{o.checked}}" onChange="{{o.pick}}" disabled="{{o.off}}"><span>{{o.name}}</span></label>
+                        </sc-for>
+                      </div>
+                    </fieldset>
+                    <sc-if value="{{whoErr}}" hint-placeholder-val="{{ false }}"><span id="au-who-err" role="alert" class="err"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>Choose the approver who signed.</span></sc-if>
+                    <div id="au-who-note" class="mut" style="display: flex; gap: 6px; align-items: flex-start"><dc-import name="Icon" glyph="person" tone="{{tn.muted}}" size="16" hint-size="16px,16px"></dc-import><span>{{whoNote}}</span></div>
+                  </sc-if>
+                </section>
+              </sc-if>
+
+              <!-- 4 date -->
+              <sc-if value="{{showDate}}" hint-placeholder-val="{{ true }}">
+                <section class="sect" aria-labelledby="au-s4">
+                  <h2 id="au-s4" class="h2"><span class="{{s4Cls}}">4</span>{{dateHead}}</h2>
+                  <div class="fld" style="max-width: 260px">
+                    <label for="au-date" class="lb">{{dateLabel}} <span>Required</span></label>
+                    <input id="au-date" class="inp" type="date" value="{{date}}" onChange="{{onDate}}" aria-required="true" aria-invalid="{{dateInv}}" aria-describedby="{{dateDesc}}">
+                  </div>
+                  <sc-if value="{{dateErr}}" hint-placeholder-val="{{ false }}"><span id="au-date-err" class="err"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>Enter the date written beside the signature, for example 12 Nov 2026.</span></sc-if>
+                  <span id="au-date-note" class="mut">{{dateNote}}</span>
+                  <sc-if value="{{afterPay}}" hint-placeholder-val="{{ false }}">
+                    <div class="strip info rv"><dc-import name="Icon" glyph="clock" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import><span>Office rental was paid on <b>Fri 30 Oct</b>, before the date on the form. It moves from Paid without approval on file to <b>Approved after payment</b>, keeping the date paid, the date on the form (5 Nov) and the upload date (Fri 6 Nov).</span></div>
+                  </sc-if>
+                </section>
+              </sc-if>
+
+              <sc-if value="{{saveRefusedOn}}" hint-placeholder-val="{{ false }}">
+                <div style="padding: 0 20px 16px">
+                  <div id="au-save-ref" role="alert" tabindex="-1" class="strip bad rv" style="align-items: center; flex-wrap: wrap"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1 1 320px"><b style="color: var(--badInk)">Nothing was saved</b><br>{{saveRefText}}</span><button type="button" id="au-recheck" class="sec sm" onClick="{{recheck}}">Check the requests again</button></div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{showFoot}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--head)">
+                  <span class="mut" style="flex: 1 1 240px">{{footNote}}</span>
+                  <sc-if value="{{cancelLink}}" hint-placeholder-val="{{ true }}"><a href="Approvals.dc.html" class="sec">Cancel</a></sc-if>
+                  <sc-if value="{{cancelAsk}}" hint-placeholder-val="{{ false }}"><button type="button" id="au-cancel" class="sec" onClick="{{askDiscard}}" disabled="{{busy}}">Cancel</button></sc-if>
+                  <button type="button" id="au-save" class="btn" onClick="{{save}}" disabled="{{saveOff}}" aria-busy="{{busyAria}}" style="min-width: 200px"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="approval" tone="white" size="18" hint-size="18px,18px"></dc-import></sc-if>{{saveLabel}}</button>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <sc-if value="{{discardOn}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dimCls}}" onClick="{{keepEditing}}" style="position: fixed; inset: 0; z-index: 60; background: var(--dim)"></div>
+    <div role="alertdialog" aria-modal="true" aria-labelledby="au-dc-t" aria-describedby="au-dc-d" tabindex="-1" class="{{dlgCls}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onDlgAnim}}" style="position: fixed; z-index: 61; top: 96px; left: 16px; right: 16px; margin: 0 auto; max-width: 440px; box-sizing: border-box; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.3); padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; gap: 12px"><span class="plate warn"><dc-import name="Icon" glyph="alert" tone="{{tn.warn}}" size="22" hint-size="22px,22px"></dc-import></span><div style="flex: 1"><h2 id="au-dc-t" tabindex="-1" style="margin: 0; font-size: 16px; font-weight: 600">Discard this upload?</h2><p id="au-dc-d" style="margin: 4px 0 0; color: var(--ink2); font-size: 13px">{{discardText}}</p></div><button type="button" class="sec" aria-label="Close" onClick="{{keepEditing}}" style="width: 36px; height: 36px; padding: 0; border-color: transparent"><dc-import name="Icon" glyph="close" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import></button></div>
+      <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap"><button type="button" id="au-dc-keep" class="sec" onClick="{{keepEditing}}">Keep editing</button><a href="Approvals.dc.html" class="dng" onClick="{{discardGo}}">Discard</a></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" class="to-in" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastRelease}}" onFocus="{{toastHold}}" onBlur="{{toastRelease}}" onKeyDown="{{toastKey}}" style="position: fixed; left: 16px; right: 16px; bottom: 24px; margin: 0 auto; max-width: 460px; z-index: 70; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; border: 1px solid #33415A; box-shadow: 0 12px 32px rgba(0,0,0,.3); font-size: 14px">
+      <dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import>
+      <span style="flex: 1">{{toastMsg}}</span>
+      <sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #8DB0FA; font: 700 14px Inter, sans-serif; cursor: pointer; text-decoration: underline">Undo</button></sc-if>
+      <button type="button" aria-label="Dismiss" onClick="{{toastClose}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"paper","options":["start","reading","pdf-text","digital","qr","paper","errors","saving","matched","some","no-match","twice","typed","wrong-code","form-date","not-listed","refused","save-refused","month-review","discard","bank-rec","bank-rec-matched","bank-rec-changed"],"section":"State to show"},"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":1460}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.fresh((p && p.view) || 'paper');
+  }
+  componentDidMount() { if (this.state.discard) this.focusId('au-dc-keep'); }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._st); clearTimeout(this._rt); clearTimeout(this._ct); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._tt); clearTimeout(this._st); clearTimeout(this._rt); clearTimeout(this._ct); this.setState(this.fresh(this.props.view || 'paper')); return; }
+    if (!prev) return;
+    const n = this.state;
+    if (!prev.discard && n.discard) this.focusId('au-dc-keep');
+    if (prev.discard && !n.discard) { const o = this._opener; this._opener = null; if (o && o.isConnected) o.focus({ preventScroll: true }); }
+    if (!prev.done && n.done) this.focusId('au-done-h');
+    if (!prev.refused && n.refused) this.focusId('au-ref');
+    if (!prev.saveRefused && n.saveRefused) this.focusId('au-save-ref');
+    if (prev.reading && !n.reading && n.form) this.focusId('au-s1');
+    if (prev.how !== 'typed' && n.how === 'typed') this.focusId('au-code');
+  }
+  focusId(id) { const el = document.getElementById(id); if (el) el.focus({ preventScroll: true }); }
+
+  // ---- sample data (scope/samples.md section 12) ------------------------------------------------------------------
+  forms() {
+    const A3 = ['Hassan Ismail', 'Tan Mei Ling', 'Rajesh Kumar'];
+    return {
+      'AF-2611-001': { co: 'AISB', check: 'C8W-3JTP', printed: 'Mon 2 Nov', approvers: A3, reqs: [{ code: 'SA-2611-001', title: 'SA-2611-001 · Hafiz · Salary advance', sub: 'RM 500.00 a month, Nov 2026 to Jan 2027', amt: '1,500.00' }] },
+      'AF-2611-002': { co: 'AISB', check: 'M6D-4YQB', printed: 'Wed 4 Nov', approvers: A3, reqs: [{ code: 'rent', title: 'Office rental', sub: 'Recurring set-up, from October · paid Fri 30 Oct', amt: '6,500.00 a month' }, { code: 'cloud', title: 'Cloud hosting', sub: 'Recurring set-up, annual plan', amt: 'USD 1,200.00' }] },
+      'AF-2611-003': { co: 'AISB', check: '7KQ-M4XP', printed: 'Wed 11 Nov', approvers: A3, onFile: 'Uploaded Fri 13 Nov by Aisha Rahman: approved by Tan Mei Ling, 12 Nov 2026, approver chosen by Aisha Rahman from a paper scan.', reqs: [{ code: 'CL-2610-004', title: 'CL-2610-004 · Wei Ming · Claim', sub: 'Parking and toll, client meals, mileage', amt: '486.50' }, { code: 'CL-2610-005', title: 'CL-2610-005 · Aina · Claim', sub: 'Mileage, parking and toll, stationery', amt: '408.00' }, { code: 'CL-2610-007', title: 'CL-2610-007 · Jia Hui · Claim', sub: 'Stationery and materials', amt: '320.00' }] },
+      'AF-2611-004': { co: 'AISB', check: 'T9F-5HRG', printed: 'Mon 16 Nov', approvers: A3, reqs: [{ code: 'PA-1010', title: 'Consultant fee · Payroll Advisory PLT', sub: 'Supplier bill, invoice PA-1010', amt: '3,200.00' }] },
+      'AF-2611-005': { co: 'AISB', check: 'W4N-7ZKC', printed: 'Tue 17 Nov', approvers: A3, reqs: [{ code: 'CL-2611-001', title: 'CL-2611-001 · Kah Seng · Claim', sub: 'Phone, October bill', amt: '145.00' }, { code: 'SA-2611-002', title: 'SA-2611-002 · Daniel · Salary advance', sub: 'RM 1,000.00 a month, Dec 2026 to Mar 2027', amt: '4,000.00' }] },
+      'MR-2610-AISB': { co: 'AISB', mr: true, check: 'N5B-2RWH', printed: 'Tue 17 Nov', approvers: A3, reqs: [{ code: 'mr', title: 'Month review, October 2026', sub: '', amt: '' }] },
+      // A bank reconciliation statement (PrintBankRec): BR, the month, the company and the account's last 4 digits. Its keyed check covers the
+      // balances and the sign-off, so a statement matches whole or not at all. Reviewed by is any approver of the company.
+      'BR-2610-AISB-0932': { co: 'AISB', br: true, check: 'H6P-4QZC', printed: 'Wed 18 Nov', approvers: A3, acct: 'Maybank savings ····0932', reqs: [
+        { code: 'bank', title: 'Balance per bank statement', sub: 'Maybank savings ····0932, 31 Oct 2026', amt: '58,011.40' },
+        { code: 'books', title: 'Balance per books', sub: 'Payments recorded here and lines explained, 31 Oct 2026', amt: '58,011.40' },
+        { code: 'sign', title: 'Sign-off', sub: 'Prepared by Aisha Rahman', amt: 'Signed off 3 Nov 2026' }] },
+      'AF-2611-006': { co: 'AI', check: 'J2V-8PMS', printed: 'Mon 16 Nov', approvers: ['Hassan Ismail'], onFile: 'Uploaded Tue 17 Nov by Aisha Rahman: approved by Hassan Ismail, 17 Nov 2026, from a digitally signed PDF matched automatically.', reqs: [{ code: 'audit', title: 'Consultant — farm audit (quarterly)', sub: 'Supplier bill, due Mon 30 Nov', amt: '2,500.00' }] }
+    };
+  }
+  fresh(view) {
+    const V = view;
+    const F = (name, kind, size) => ({ name, kind, size });
+    const base = { co: 'AISB', form: null, file: null, how: null, tCode: '', tCheck: '', codeErr: null, changed: {}, digital: null, notListed: false, chosen: '', date: '', errs: {}, saving: false, done: false, twice: false, refused: false, saveRefused: false, reading: false, discard: false, closing: false, asOf: null, whatIf: '', toast: null, say: '' };
+    // The bank reconciliation statement states: a what-if of the same day, as if BR-2610-AISB-0932 had been printed this morning and reviewed.
+    const BR = { form: 'BR-2610-AISB-0932', file: F('BR-2610-AISB-0932 signed (paper scan).pdf', 'scan', '540 KB, 2 pages'), how: 'qr',
+      whatIf: 'What-if, not in the shared data: as if BR-2610-AISB-0932, the Maybank savings statement for October 2026, had been printed today at 10:20, signed as Reviewed by and scanned.' };
+    const P3 = { form: 'AF-2611-003', file: F('Scan 13 Nov.pdf', 'scan', '1.2 MB, 1 page'), how: 'qr', asOf: 'Fri 13 Nov' };
+    const PAPER = Object.assign({}, P3, { chosen: 'Tan Mei Ling', date: '2026-11-12' });
+    const TYPED = { form: 'AF-2611-002', file: F('Photo of the form.jpg', 'photo', '2.4 MB'), how: 'typed', tCode: 'AF-2611-002', tCheck: 'M6D-4YQB', asOf: 'Fri 6 Nov' };
+    const M = {
+      start: {},
+      reading: { file: F('Scan 18 Nov.pdf', 'scan', '1.1 MB, 1 page'), reading: true },
+      'pdf-text': { form: 'AF-2611-001', file: F('AF-2611-001 signed.pdf', 'pdf', '184 KB, 1 page'), how: 'text', digital: 'Rajesh Kumar', date: '2026-11-03', asOf: 'Tue 3 Nov' },
+      digital: { co: 'AI', form: 'AF-2611-006', file: F('AF-2611-006 signed.pdf', 'pdf', '176 KB, 1 page'), how: 'text', digital: 'Hassan Ismail', date: '2026-11-17', asOf: 'Tue 17 Nov' },
+      qr: P3,
+      paper: PAPER,
+      errors: Object.assign({}, P3, { errs: { chosen: true, date: true } }),
+      saving: Object.assign({}, PAPER, { saving: true }),
+      matched: Object.assign({}, PAPER, { done: true, toast: { msg: 'AF-2611-003 approved by Tan Mei Ling, 12 Nov 2026. 3 claims, RM 1,214.50, move to To pay.', undo: true } }),
+      some: Object.assign({}, PAPER, { changed: { 'CL-2610-005': '428.00' } }),
+      'no-match': { form: 'AF-2611-004', file: F('Scan 18 Nov.pdf', 'scan', '1.1 MB, 1 page'), how: 'qr', changed: { 'PA-1010': '3,520.00' } },
+      twice: { form: 'AF-2611-003', file: F('Scan 13 Nov (2).pdf', 'scan', '1.2 MB, 1 page'), how: 'qr', twice: true },
+      typed: TYPED,
+      'wrong-code': Object.assign({}, TYPED, { form: null, tCheck: 'M6D-4YOB', codeErr: 'check' }),
+      'form-date': Object.assign({}, TYPED, { chosen: 'Hassan Ismail', date: '2026-11-05' }),
+      'not-listed': { form: 'AF-2611-005', file: F('AF-2611-005 signed.pdf', 'pdf', '190 KB, 1 page'), how: 'text', digital: 'Farid Osman', notListed: true },
+      refused: { file: F('AF-2611-005 signed.pdf', 'pdf', '190 KB, password'), refused: true },
+      'save-refused': Object.assign({}, PAPER, { saveRefused: true }),
+      'month-review': { form: 'MR-2610-AISB', file: F('MR-2610-AISB signed (paper scan).pdf', 'scan', '820 KB, 2 pages'), how: 'qr', chosen: 'Hassan Ismail', date: '2026-11-18' },
+      discard: Object.assign({}, PAPER, { discard: true }),
+      'bank-rec': Object.assign({}, BR, { chosen: 'Tan Mei Ling', date: '2026-11-18' }),
+      'bank-rec-matched': Object.assign({}, BR, { chosen: 'Tan Mei Ling', date: '2026-11-18', done: true, toast: { msg: 'BR-2610-AISB-0932 on file, reviewed by Tan Mei Ling, 18 Nov 2026. Filed with Maybank savings, October 2026.', undo: true } }),
+      // Maybank savings October reopened after this copy was printed (the reason as on Bank and reconciliation's reopen states): the sign-off it printed no longer holds.
+      'bank-rec-changed': Object.assign({}, BR, { changed: { sign: 'Reopened 18 Nov 2026' } })
+    };
+    return Object.assign({}, base, M[V] || PAPER);
+  }
+
+  showToast(msg, undo) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg, undo: !!undo } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+  }
+  closeDiscard() {
+    if (!this.state.discard || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._ct);
+    this._ct = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._ct); if (this.state.discard) this.setState({ discard: false, closing: false }); }
+  dateText(v) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v || ''); if (!m) return '';
+    const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return Number(m[3]) + ' ' + MON[Number(m[2]) - 1] + ' ' + m[1];
+  }
+
+  renderVals() {
+    const s = this.state, P = this.props;
+    const dark = (P.theme ?? 'light') === 'dark';
+    const tn = dark ? { brand: 'dbrand', muted: 'dmuted', ok: 'dok', warn: 'dwarn', bad: 'dbad' } : { brand: 'brand', muted: 'muted', ok: 'ok', warn: 'warn', bad: 'bad' };
+    const FORMS = this.forms();
+    const f = s.form ? FORMS[s.form] : null;
+    const co = s.co, isAI = co === 'AI';
+    const isMr = !!f && !!f.mr, isBr = !!f && !!f.br;
+    const found = !!f && !s.reading && !s.refused;
+    const paper = found && !s.twice && !s.digital;
+    const digitalOk = found && !s.twice && !!s.digital && !s.notListed;
+
+    // requests
+    const reqRows = found && !s.twice ? f.reqs.map(r => {
+      const now = s.changed[r.code];
+      return now
+        ? { title: r.title, sub: r.sub, printed: r.amt, now, pill: 'Changed since printing', pillCls: 'pl b', glyph: 'close', tone: tn.bad, note: isBr ? 'Changed since this copy was printed' : 'Not approved by this form', rowCls: 'chg' }
+        : { title: r.title, sub: r.sub, printed: r.amt, now: r.amt, pill: 'Matches', pillCls: 'pl o', glyph: 'check', tone: tn.ok, note: '', rowCls: '' };
+    }) : [];
+    const nAll = reqRows.length;
+    // A statement matches whole or not at all: one changed figure and nothing on it can be saved.
+    let nOk = reqRows.filter(r => r.pill === 'Matches').length;
+    if (isBr && nOk < nAll) nOk = 0;
+    const changedCodes = found ? f.reqs.filter(r => s.changed[r.code]) : [];
+    let matchText = '';
+    if (isBr && nAll) matchText = nOk === nAll
+      ? 'The statement is as printed: the keyed check ' + f.check + ' still matches. It covers ' + f.acct + ', October 2026: bank and books 58,011.40, nothing outstanding, no book entries where no money moved, the totals tallying, and the sign-off of 3 Nov 2026 by Aisha Rahman with its note.'
+      : f.acct + ', October 2026, was reopened today after this copy was printed (reason: Service charge of 31 Oct to be checked against SQL), so the sign-off printed on it no longer holds and the check ' + f.check + ' no longer matches. Nothing is kept. Sign the month off again, then print the statement again for review.';
+    else if (isMr && nAll && nOk === nAll) matchText = 'The sheet is as printed: the keyed check ' + f.check + ' still matches. It covers the register’s October 2026 total, the 2 paid without approval on file, the approvals each approver gave (Rajesh Kumar 2, Tan Mei Ling 4, Hassan Ismail 2: 8 in all) and the Maybank current reconciliation, not signed off (5 lines to explain).';
+    else if (nAll && nOk === nAll) matchText = (nAll === 1 ? 'The request is' : nAll === 2 ? 'Both requests are' : 'All ' + nAll + ' requests are') + ' as printed: the keyed check ' + f.check + ' still matches.';
+    else if (nOk > 0) matchText = changedCodes.map(r => r.title.split(' · ')[0] + ' was printed at RM ' + r.amt + ' and is now RM ' + s.changed[r.code]).join('; ') + '. It is not approved by this form: print a new form for it. The other ' + nOk + ' can be approved.';
+    else if (nAll) matchText = changedCodes.map(r => r.title.split(' · ')[0] + ' was printed at RM ' + r.amt + ' and is now RM ' + s.changed[r.code]).join('; ') + '. Nothing on it can be approved, and the file isn’t kept.';
+
+    // who signed
+    const chosen = s.chosen;
+    const signerOpts = paper ? f.approvers.map((name, i) => ({ name, id: 'au-signer-' + i, inv: s.errs.chosen ? 'true' : 'false', checked: chosen === name, off: s.saving, cls: 'rad' + (chosen === name ? ' on' : '') + (s.errs.chosen ? ' bad' : ''),
+      pick: () => this.setState({ chosen: name, errs: Object.assign({}, this.state.errs, { chosen: false }) }) })) : [];
+
+    // thumbnail
+    const QN = 21, qr = []; let seed = s.form === 'AF-2611-001' ? 11 : s.form === 'AF-2611-002' ? 5 : s.form === 'BR-2610-AISB-0932' ? 13 : 7;
+    const fin = (r, c, r0, c0) => { const rr = r - r0, cc = c - c0; if (rr < 0 || rr > 6 || cc < 0 || cc > 6) return null; return rr === 0 || rr === 6 || cc === 0 || cc === 6 || (rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4); };
+    for (let r = 0; r < QN; r++) for (let c = 0; c < QN; c++) {
+      let v = fin(r, c, 0, 0); if (v === null) v = fin(r, c, 0, QN - 7); if (v === null) v = fin(r, c, QN - 7, 0);
+      if (v === null) { if ((r < 8 && c < 8) || (r < 8 && c > QN - 9) || (r > QN - 9 && c < 8)) v = false; else { seed = (seed * 1103515245 + 12345) % 2147483648; v = (seed >> 8) % 2 === 0; } }
+      qr.push({ st: 'width:2px;height:2px;background:' + (v ? '#000000' : '#FFFFFF') });
+    }
+    const signedBy = s.digital || (s.form === 'AF-2611-003' ? 'Tan Mei Ling' : s.form === 'MR-2610-AISB' ? 'Hassan Ismail' : s.form === 'BR-2610-AISB-0932' && s.chosen ? s.chosen : s.form === 'AF-2611-002' ? 'Hassan Ismail' : '');
+    const apprList = f ? f.approvers : ['Hassan Ismail', 'Tan Mei Ling', 'Rajesh Kumar'];
+    const thumbSig = (s.digital && s.notListed ? ['Hassan Ismail', 'Tan Mei Ling', 'Rajesh Kumar'] : apprList).map(n => ({ name: n, mark: n === signedBy ? n.split(' ').map(w => w[0]).join('. ') + '.' : '' }));
+    if (s.notListed) thumbSig[0] = { name: 'Hassan Ismail', mark: '' };
+    // A bank reconciliation statement has two blocks: Prepared by (signed when printed for review) and Reviewed by.
+    if (isBr) thumbSig.splice(0, thumbSig.length, { name: 'Prepared by', mark: 'A. R.' }, { name: 'Reviewed by', mark: signedBy ? signedBy.split(' ').map(w => w[0]).join('. ') + '.' : '' });
+    const kind = s.file ? s.file.kind : 'pdf';
+    const fileKind = { pdf: 'PDF with text', scan: 'Scan, no text', photo: 'Photo' }[kind];
+
+    // code line
+    const howTitle = s.how === 'text' ? "Code read from the PDF's text" : s.how === 'qr' ? 'Code read from the QR on page 1' : 'Found from the code you typed';
+    const howGlyph = s.how === 'qr' ? 'qr' : s.how === 'typed' ? 'edit' : 'document';
+    const coName = f ? (f.co === 'AI' ? 'Agrinexus International' : 'AISB Sdn Bhd') : '';
+
+    // date
+    const needDate = found && !s.twice && !s.notListed && nOk > 0;
+    let dateNote = 'The upload date is kept separately.';
+    if (s.digital && s.date) dateNote = 'Filled in from the digital signature. Change it if the form shows another date.';
+    const afterPay = found && s.form === 'AF-2611-002' && s.date === '2026-11-05';
+
+    // save
+    const canApprove = found && !s.twice && !s.notListed && nOk > 0;
+    const saveLabel = s.saving ? 'Saving…' : isMr && canApprove ? 'Save the signed sheet' : isBr && canApprove ? 'Save the signed statement' : isBr ? 'Nothing to save' : !found ? 'Save and approve' : !canApprove ? 'Nothing to approve' : nOk === nAll ? 'Save and approve ' + (nAll === 1 ? 'the request' : nAll + ' requests') : 'Approve ' + nOk + ' of ' + nAll + ' requests';
+    let footNote = '';
+    if (!s.file) footNote = 'Choose the signed form to start.';
+    else if (s.reading) footNote = 'Reading the file…';
+    else if (s.refused) footNote = 'Nothing was kept. Choose another file.';
+    else if (s.saveRefused) footNote = 'Nothing was saved. Check the requests again, then save.';
+    else if (!found) footNote = 'Type the form code and check, then press Find the form.';
+    else if (s.notListed) footNote = 'Nothing is approved: the signer isn’t an approver.';
+    else if (!canApprove) footNote = isBr ? 'Nothing is kept: the statement changed after printing.' : 'Nothing on this form can be approved.';
+    else if (paper && isBr) footNote = 'Saved as reviewed by the approver you choose, “Reviewer chosen by Aisha Rahman from a paper scan”, and filed with the month on Bank and reconciliation.';
+    else if (paper && isMr) footNote = 'Saved as signed by the approver you choose, “Approver chosen by Aisha Rahman from a paper scan”. Month reviewed then ticks on the checklist.';
+    else if (paper) footNote = 'Saved as approved by the approver you choose, “Approver chosen by Aisha Rahman from a paper scan”.';
+    else footNote = 'Saved as approved by ' + s.digital + ', matched from the digital signature.';
+    const dirty = !!s.file && !s.done && !s.refused && !s.twice;
+
+    // done
+    const total = f ? f.reqs.filter(r => !s.changed[r.code]).map(r => r.amt) : [];
+    const doneTitle = isMr || isBr ? s.form + ' is on file' : f ? s.form + (nOk === nAll ? ' is approved' : ': ' + nOk + ' of ' + nAll + ' requests approved') : '';
+    const doneBy = s.digital || chosen;
+    const doneText = isBr ? 'The signed statement is filed against ' + f.acct + ', October 2026, on Bank and reconciliation, with Prepared by (Aisha Rahman) and Reviewed by as recorded. It is kept in the audit pack and is the detail behind part 4 of the Month review.' : isMr ? 'Month reviewed is ticked on the October 2026 checklist for AISB. The signed sheet is kept in the audit pack.' : f ? (s.form === 'AF-2611-003' && nOk === nAll ? 'Wei Ming’s, Aina’s and Jia Hui’s claims (RM 1,214.50) are approved and move to To pay. The signed form is kept with each claim and in the audit pack.'
+      : 'The approved requests move to To pay or, if already paid, to Approved after payment. The signed form is kept with each request and in the audit pack.') : '';
+
+    const t = s.toast;
+    const finishSave = () => {
+      const st = this.state, ff = st.form ? this.forms()[st.form] : null; if (!ff) return;
+      const ok = ff.reqs.filter(r => !st.changed[r.code]);
+      const by = st.digital || st.chosen;
+      this.setState({ saving: false, done: true, say: st.form + ' approved' });
+      const msg = st.form + ' approved by ' + by + ', ' + this.dateText(st.date) + '. ' + (ok.length === ff.reqs.length ? (ok.length === 1 ? 'The request moves' : ok.length + ' requests move') : ok.length + ' of ' + ff.reqs.length + ' requests move') + ' to To pay.';
+      if (ff.br) { this.showToast(st.form + ' on file, reviewed by ' + by + ', ' + this.dateText(st.date) + '. Filed with ' + ff.acct + ', October 2026.', true); return; }
+      if (ff.mr) { this.showToast(st.form + ' on file, signed by ' + by + ', ' + this.dateText(st.date) + '. Month reviewed is ticked on the October checklist.', true); return; }
+      const msg2 = st.form === 'AF-2611-002' && ok.length === 2 ? 'AF-2611-002 approved by ' + by + ', ' + this.dateText(st.date) + '. Office rental moves to Approved after payment; Cloud hosting moves to To pay.' : msg;
+      this.showToast(st.form === 'AF-2611-003' && ok.length === 3 && by === 'Tan Mei Ling' && st.date === '2026-11-12' ? 'AF-2611-003 approved by Tan Mei Ling, 12 Nov 2026. 3 claims, RM 1,214.50, move to To pay.' : msg2, true);
+    };
+    const pickFile = () => {
+      this.setState({ file: { name: 'Scan 18 Nov.pdf', kind: 'scan', size: '1.1 MB, 1 page' }, reading: true, refused: false, form: null, how: null, changed: {}, digital: null, notListed: false, twice: false, chosen: '', date: '', errs: {}, done: false, asOf: null, say: 'Reading the file' });
+      clearTimeout(this._rt);
+      const ai = this.state.co === 'AI';
+      this._rt = setTimeout(() => this.setState(ai ? { reading: false, form: 'AF-2611-006', how: 'text', twice: true, say: 'AF-2611-006 is already on file' } : { reading: false, form: 'AF-2611-005', how: 'qr', say: 'Found AF-2611-005, 2 requests, both as printed' }), 900);
+    };
+    const dlgKey = e => {
+      if (e.key === 'Escape') { if (e.stopPropagation) e.stopPropagation(); this.closeDiscard(); return; }
+      if (e.key !== 'Tab') return;
+      const fs = e.currentTarget && e.currentTarget.querySelectorAll ? e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),[tabindex]:not([tabindex="-1"])') : [];
+      if (!fs || !fs.length) return;
+      const first = fs[0], last = fs[fs.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    const stepCls = (ok, bad) => 'stp' + (bad ? ' bad' : ok ? ' ok' : '');
+
+    return {
+      theme: dark ? 'dark' : 'light', rootCls: 'au' + (dark ? ' dk' : ''), tn, say: s.say,
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', coCode: co,
+      coLine: isAI ? 'AI · Agrinexus International · Kept here' : 'AISB · AISB Sdn Bhd · Kept in SQL Account',
+      onTopCo: code => { const v = String(code).toUpperCase(); if (v === 'AISB' || v === 'AI') { if (v !== this.state.co) this.setState(Object.assign(this.fresh('start'), { co: v, say: 'Upload for ' + v })); } else this.showToast('Only AISB and AI have sample figures in this mock.'); },
+      asOfOn: !!s.asOf || !!s.whatIf, asOfText: s.whatIf ? s.whatIf + ' Today is Wed 18 Nov.' : s.asOf ? 'Shown as on ' + s.asOf + ' 2026, the day ' + (s.form || String(s.tCode || '').toUpperCase() || 'the form') + ' was uploaded. Today is Wed 18 Nov.' : '',
+      upDate: s.asOf ? s.asOf + ' 2026' : 'Wed 18 Nov 2026 (today)',
+      // file
+      noFile: !s.file, hasFile: !!s.file, fileName: s.file ? s.file.name : '', fileMeta: s.file ? fileKind + ' · ' + s.file.size : '',
+      fileGlyph: kind === 'photo' ? 'camera' : 'document', refused: !!s.refused,
+      showThumb: !!s.file && !s.refused, a4Cls: 'a4' + (kind === 'photo' ? ' photo' : ''), qr, thumbSig,
+      thumbTitle: isBr ? 'Bank reconciliation' : isMr ? 'Month review' : 'Approval form', thumbLine: isBr ? 'Prepared by and Reviewed by.' : isMr ? 'One approver signs this sheet.' : 'Any one signature approves this form.', thumbCode: s.reading ? '' : (s.form || ''), onFileText: f && f.onFile ? f.onFile : '',
+      thumbAria: 'Preview of ' + (s.file ? s.file.name : 'the file') + (s.form ? ', approval form ' + s.form : ''),
+      hitQr: found && s.how === 'qr', hitText: found && s.how === 'text',
+      pickFile, chooseAgain: () => { clearTimeout(this._rt); this.setState(Object.assign(this.fresh('start'), { co: this.state.co, say: 'Choose the signed form' })); this.focusId('au-pick'); },
+      // steps
+      showDone: !!s.done, showSteps: !s.done,
+      doneTitle, doneText, doneHref: isBr ? 'Bank.dc.html' : isMr ? 'MonthlyChecklist.dc.html' : 'ToPay.dc.html', doneLink: isBr ? 'Go to Bank and reconciliation' : isMr ? 'Go to the checklist' : 'Go to To pay',
+      doneMarker: (isBr ? 'Reviewed by ' : isMr ? 'Signed by ' : 'Approved by ') + doneBy + ', ' + this.dateText(s.date), doneHow: isBr ? 'Reviewer chosen by Aisha Rahman from a paper scan' : paper || !s.digital ? 'Approver chosen by Aisha Rahman from a paper scan' : 'Digitally signed PDF · matched automatically',
+      s1Cls: stepCls(found, !!s.codeErr || s.refused), s2Cls: stepCls(nAll > 0 && nOk === nAll, nAll > 0 && nOk === 0), s3Cls: stepCls(digitalOk || (paper && !!chosen), s.notListed || !!s.errs.chosen), s4Cls: stepCls(!!s.date, !!s.errs.date),
+      waitFile: !s.file, reading: !!s.reading, codeShown: found && s.how !== null,
+      howTitle, howGlyph, fCode: s.form || '', fCheck: f ? f.check : '', fPrinted: f ? f.printed : '', fCoName: coName,
+      typing: !!s.file && !s.reading && !s.refused && s.how === 'typed',
+      tCode: s.tCode, tCheck: s.tCheck,
+      onCode: e => this.setState({ tCode: e.target.value, codeErr: null }), onCheck: e => this.setState({ tCheck: e.target.value, codeErr: null }),
+      codeInv: s.codeErr === 'code' ? 'true' : 'false', checkInv: s.codeErr === 'check' ? 'true' : 'false',
+      codeDesc: s.codeErr === 'code' ? 'au-code-err' : '', checkDesc: s.codeErr === 'check' ? 'au-code-err' : '',
+      codeErrOn: !!s.codeErr,
+      codeErrText: s.codeErr === 'check' ? 'That check doesn’t belong to ' + (String(s.tCode).toUpperCase() || 'this form') + '. Look again at the letters: O and Q, 0 and D look alike.' : 'There is no form ' + (String(s.tCode).toUpperCase() || 'with that code') + '. Check the code printed at the top right of the form.',
+      findForm: () => {
+        const st = this.state, code = String(st.tCode || '').trim().toUpperCase(), chk = String(st.tCheck || '').trim().toUpperCase(), F2 = this.forms();
+        if (!F2[code]) { this.setState({ codeErr: 'code', say: 'No form with that code' }); this.focusId('au-code'); return; }
+        if (F2[code].check !== chk) { this.setState({ codeErr: 'check', say: 'The check does not match' }); this.focusId('au-check'); return; }
+        const dup = !!F2[code].onFile;
+        this.setState({ form: code, codeErr: null, twice: dup, asOf: dup ? null : st.asOf, say: dup ? code + ' is already on file' : 'Found ' + code });
+      },
+      twice: found && !!s.twice,
+      showReqs: found && !s.twice, showTbl: !isMr, thFirst: isBr ? 'Figure' : 'Request', s2Title: isBr ? 'What the statement says, as it is now' : isMr ? 'What the sheet covers, as it is now' : 'Requests on the form, as they are now', reqRows, matchText, allMatch: nAll > 0 && nOk === nAll, someMatch: nOk > 0 && nOk < nAll, noMatch: nAll > 0 && nOk === 0,
+      showWho: found && !s.twice && nOk > 0, digitalOk, digName: s.digital || '', notListed: found && !!s.notListed, paper: paper && nOk > 0, signerOpts,
+      whoLegend: isBr ? 'A scan or photo can’t say who reviewed it. Which approver signed as Reviewed by?' : 'A scan or photo can’t say who signed. Which approver signed it?',
+      noMatchTitle: isBr ? 'This statement no longer matches.' : 'This form no longer matches.',
+      reprintHref: isBr ? 'PrintBankRec.dc.html#savings' : 'PrintApprovalForm.dc.html', reprintLabel: isBr ? 'Print the statement again' : 'Print a new form',
+      whoNote: isBr ? 'Prepared by is printed on the statement: Aisha Rahman, who signed the month off on 3 Nov 2026. Wherever the review shows, the audit pack included, it reads “Reviewer chosen by Aisha Rahman from a paper scan”.' : isMr ? 'Wherever this shows, the audit pack included, it reads “Approver chosen by Aisha Rahman from a paper scan”.' : 'Wherever this approval shows, the audit pack included, it reads “Approver chosen by Aisha Rahman from a paper scan”. The approver sees it on the Month review sheet to confirm.',
+      dateHead: isBr ? 'Date written beside Reviewed by' : isMr ? 'Date written on the sheet' : 'Date written on the form', dateLabel: isBr ? 'Date reviewed' : isMr ? 'Date on the sheet' : 'Date on the form',
+      whoErr: !!s.errs.chosen, whoDesc: s.errs.chosen ? 'au-who-err au-who-note' : 'au-who-note',
+      showDate: needDate, date: s.date, onDate: e => this.setState({ date: e.target.value, errs: Object.assign({}, this.state.errs, { date: false }) }),
+      dateErr: !!s.errs.date, dateInv: s.errs.date ? 'true' : 'false', dateDesc: s.errs.date ? 'au-date-err au-date-note' : 'au-date-note', dateNote, afterPay,
+      // footer
+      showFoot: !s.twice, footNote, cancelLink: !dirty, cancelAsk: dirty,
+      askDiscard: e => { this._opener = (e && e.currentTarget) || null; this.setState({ discard: true, closing: false }); },
+      saveRefusedOn: !!s.saveRefused && !s.done, saveRefText: 'CL-2610-005 (Aina’s claim) was changed on HR › Claims and advances after this file was read, so the requests have to be checked against the form again. Who signed and the date are kept.',
+      recheck: () => { this.setState({ saveRefused: false, changed: { 'CL-2610-005': '428.00' }, say: 'Checked again: CL-2610-005 changed since printing, 2 of 3 requests can be approved' }); this.focusId('au-s2'); },
+      saveOff: !canApprove || !!s.saving || !!s.saveRefused, busy: !!s.saving, idle: !s.saving, busyAria: s.saving ? 'true' : 'false', saveLabel,
+      save: () => {
+        const st = this.state; if (st.saving) return;
+        const errs = { chosen: !st.digital && !st.chosen, date: !st.date };
+        if (errs.chosen || errs.date) { this.setState({ errs, say: 'Check the fields marked in red' }); this.focusId(errs.chosen ? 'au-signer-0' : 'au-date'); return; }
+        this.setState({ saving: true, errs: {}, say: 'Saving' });
+        clearTimeout(this._st); this._st = setTimeout(finishSave, 800);
+      },
+      // discard
+      discardOn: !!s.discard, dimCls: s.closing ? 'dim-out' : 'dim-in', dlgCls: s.closing ? 'dr-out' : 'dr-in', dlgKey,
+      onDlgAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      discardText: 'The file and what you chose aren’t kept. ' + (s.form || 'The form') + (isMr || isBr ? ' stays Waiting for upload,' : ' stays Waiting for approval,') + ' and you can upload it again later.',
+      keepEditing: () => this.closeDiscard(),
+      discardGo: () => this.setState({ discard: false, closing: false }),
+      // toast
+      hasToast: !!t, toastMsg: t ? t.msg : '', toastUndoOn: !!(t && t.undo),
+      toastUndo: () => { clearTimeout(this._tt); const code = this.state.form, mr = code === 'MR-2610-AISB', br = /^BR-/.test(code || ''); this.setState({ done: false, toast: { msg: 'Upload undone. ' + code + (br ? ' is waiting for upload again and is no longer filed with the month' : mr ? ' is waiting for upload again and Month reviewed is no longer ticked' : ' is waiting for approval again') + '; your choices are kept.', undo: false }, say: 'Undone' }); this._tt = setTimeout(() => this.setState({ toast: null }), 6000); },
+      toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); },
+      toastKey: e => { if (e.key === 'Escape') { clearTimeout(this._tt); this.setState({ toast: null }); } },
+      toastHold: () => clearTimeout(this._tt),
+      toastRelease: () => { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 6000); }
+    };
+  }
+}
+</script>
+</body>
+</html>

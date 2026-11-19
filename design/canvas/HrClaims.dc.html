@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Claims · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hr:hover>td{background:#F8FAFD}
+/* motion and focus base */
+.hb,.hs,.hr,.tb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa>td{animation:flashA .9s ease-out}
+.fb>td{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* pills and chips, as Foundations draws them */
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.btn,a.btn:hover{color:#FFFFFF}
+.btn:disabled{background:#8A98B8;cursor:not-allowed}
+.sec{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #778588;background:#FFFFFF;color:#0F1A2B;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.sec,a.sec:hover{color:#0F1A2B}
+.sec:disabled{color:#5F6C80;border-color:#C5CCD6;cursor:not-allowed}
+.sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+/* page tabs (links) and status tabs */
+.pt{display:flex;gap:4px;border-bottom:1px solid #E3E7ED}
+.pt a{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid transparent;color:#46546A;font:600 15px Inter,sans-serif;text-decoration:none;transition:border-color .12s ease-out,color .12s ease-out}
+.pt a:hover{color:#0F1A2B}
+.pt a[aria-current="page"]{border-bottom-color:#2450B8;color:#0F1A2B}
+.tbs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid #E3E7ED;padding:0 12px}
+.tb{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:#46546A;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.tb:hover{color:#0F1A2B}
+.tb[aria-selected="true"]{border-bottom-color:#2450B8;color:#0F1A2B}
+.cnt{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 7px;border-radius:99px;box-sizing:border-box;font:700 11px Inter,sans-serif;background:#EEF1F5;color:#46546A}
+.cnt.on{background:#EAF0FD;color:#2450B8}
+/* table */
+.hc-tbl{width:100%;min-width:1040px;border-collapse:collapse;font-size:13px}
+.hc-tbl th{position:sticky;top:0;z-index:1;background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.hc-tbl td{padding:12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.hc-tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+.ln{width:100%;border-collapse:collapse;font-size:13px;background:#FFFFFF;border:1px solid #E3E7ED;border-radius:10px}
+.ln th{padding:8px 10px;font-size:12px;font-weight:600;color:#5F6C80;text-align:left;background:#FAFBFC;border-bottom:1px solid #E3E7ED}
+.ln td{padding:8px 10px;border-top:1px solid #EEF1F5;vertical-align:top}
+.ln .r{text-align:right;font-variant-numeric:tabular-nums}
+.disc{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 6px 0 2px;margin-left:-2px;border:0;border-radius:8px;background:transparent;color:#2450B8;font:600 13px Inter,sans-serif;cursor:pointer}
+.disc:hover{background:#F0F3F8}
+.strip{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:14px;font-size:13px}
+@media (max-width:760px){.hc-main{padding:24px 16px 48px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="claims" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Claims and advances" sub="Claims" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="hc-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR · {{coName}}</span>
+          <h1 id="hc-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Claims and advances</h1>
+          <p style="margin: 0; color: #46546A; max-width: 700px">Money staff spent for the company and want back. Each claim is a request: it goes on an approval form on Payments › Approvals, and once approved it is paid on its own from Payments › To pay, never added to the payroll run.</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <button type="button" class="sec hs" onClick="{{doExcel}}" disabled="{{excelOff}}"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+          <sc-if value="{{canNew}}" hint-placeholder-val="{{ true }}"><a href="HrClaim.dc.html" class="btn hb"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>New claim</a></sc-if>
+          <sc-if value="{{cantNew}}" hint-placeholder-val="{{ false }}"><button type="button" class="btn" disabled="{{ true }}" aria-describedby="hc-nonew"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>New claim</button></sc-if>
+        </div>
+      </div>
+
+      <nav aria-label="Claims and advances" class="pt">
+        <a href="HrClaims.dc.html" aria-current="page" class="fr"><dc-import name="Icon" glyph="claim" tone="brand" size="18" hint-size="18px,18px"></dc-import>Claims</a>
+        <a href="HrAdvances.dc.html" class="fr"><dc-import name="Icon" glyph="advance" tone="muted" size="18" hint-size="18px,18px"></dc-import>Advances</a>
+      </nav>
+
+      <sc-if value="{{snap}}" hint-placeholder-val="{{ false }}">
+        <div role="note" class="strip rv" style="background: #FFFBF2; border: 1px solid #F3D9A6; color: #6B3A00"><dc-import name="Icon" glyph="history" tone="warn" size="20" hint-size="20px,20px"></dc-import><span><b>Drawn as on Wed 11 Nov 2026, before AF-2611-003 was printed.</b> The three October claims were drafts then. Printing them on one form gave AF-2611-003 (keyed check 7KQ-M4XP), which Tan Mei Ling signed on 12 Nov. Kah Seng's CL-2611-001 was entered later, so it is not in this list.</span></div>
+      </sc-if>
+
+      <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+          <span class="sr" role="status">Loading claims</span>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+          </div>
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+            <span class="sk" style="height: 32px; width: 60%"></span>
+            <span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load claims</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was changed, and every receipt is kept.</p>
+          <button type="button" id="hc-retry" class="btn hb" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+        <div class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 280px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="claim" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No claims yet</h2>
+          <p id="hc-nonew" style="margin: 0; color: #46546A; font-size: 13px; max-width: 500px">{{emptyText}}</p>
+          <a href="SetupClaimTypes.dc.html" class="sec hs"><dc-import name="Icon" glyph="sliders" tone="muted" size="18" hint-size="18px,18px"></dc-import>Setup › HR › Claim types</a>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px">
+          <sc-for list="{{sums}}" as="s" hint-placeholder-count="3">
+            <a href="{{s.href}}" class="hs" style="{{s.box}}"><span style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #46546A"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="18" hint-size="18px,18px"></dc-import>{{s.label}}</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums">{{s.value}}</span><span style="font-size: 13px; color: #5F6C80">{{s.note}}</span><span style="font-size: 13px; font-weight: 600; color: #2450B8">{{s.go}}</span></a>
+          </sc-for>
+        </div>
+
+        <section aria-labelledby="hc-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 20px 10px">
+            <h2 id="hc-list-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Claims</h2>
+            <span aria-live="polite" style="color: #5F6C80; font-size: 13px">{{countText}}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-left: auto">
+              <label for="hc-month" class="sr">Month</label>
+              <select id="hc-month" value="{{month}}" onChange="{{onMonth}}" style="height: 36px; padding: 0 8px; border: 1px solid #778588; border-radius: 10px; font: 400 13px Inter, sans-serif; color: #0F1A2B; background: #FFFFFF">
+                <sc-for list="{{months}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for>
+              </select>
+              <div style="position: relative; display: flex; align-items: center">
+                <span style="position: absolute; left: 10px; display: inline-flex; pointer-events: none"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>
+                <label for="hc-q" class="sr">Search claims</label>
+                <input id="hc-q" type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search code, person or type" autoComplete="off" style="height: 36px; width: 240px; padding: 0 10px 0 32px; border: 1px solid #778588; border-radius: 10px; font: 400 13px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box">
+              </div>
+              <a href="PrintHrLists.dc.html#claims-october" class="sec sm hs" aria-label="{{printListAria}}"><dc-import name="Icon" glyph="printer" tone="muted" size="16" hint-size="16px,16px"></dc-import>Print list</a>
+            </div>
+          </div>
+
+          <div role="tablist" aria-label="Claims by status" class="tbs">
+            <sc-for list="{{tabs}}" as="t" hint-placeholder-count="8">
+              <button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="hc-panel" tabindex="{{t.ti}}" class="tb fr" onClick="{{t.pick}}" onKeyDown="{{t.key}}">{{t.label}}<span class="{{t.cntCls}}" aria-hidden="true">{{t.n}}</span><span class="sr">{{t.sr}}</span></button>
+            </sc-for>
+          </div>
+
+          <div role="tabpanel" id="hc-panel" aria-labelledby="{{panelBy}}" class="{{panelCls}}">
+            <sc-if value="{{bulk.on}}" hint-placeholder-val="{{ false }}">
+              <div class="ex" role="region" aria-label="Selected claims" style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 12px 20px; background: #F3F6FE; border-bottom: 1px solid #C9D7F7">
+                <b>{{bulk.text}}</b>
+                <span style="color: #46546A; font-size: 13px; flex: 1 1 320px">{{bulk.note}}</span>
+                <div style="display: flex; gap: 8px; margin-left: auto">
+                  <button type="button" class="sec sm hs" onClick="{{clearSel}}">Clear</button>
+                  <a href="PrintApprovalForm.dc.html" id="hc-print" class="btn sm hb"><dc-import name="Icon" glyph="printer" tone="white" size="16" hint-size="16px,16px"></dc-import>{{bulk.label}}</a>
+                </div>
+              </div>
+            </sc-if>
+
+            <div role="region" aria-label="Claims, scrolls" tabindex="0" class="fr" style="{{scrollStyle}}">
+              <table class="hc-tbl">
+                <caption class="sr">{{caption}}</caption>
+                <thead><tr>
+                  <th scope="col" style="width: 44px; padding-left: 20px"><span class="sr">Select</span></th>
+                  <th scope="col">Claim</th>
+                  <th scope="col" style="width: 120px">Person</th>
+                  <th scope="col" style="width: 210px">Lines</th>
+                  <th scope="col" style="width: 170px">Status</th>
+                  <th scope="col" style="width: 190px">Approval form</th>
+                  <th scope="col" style="width: 190px">Payment</th>
+                  <th scope="col" class="r" style="width: 110px; padding-right: 20px">Amount</th>
+                </tr></thead>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+                  <tbody>
+                    <tr class="{{r.cls}}" style="{{r.rowStyle}}">
+                      <td style="padding: 8px 4px 8px 14px"><sc-if value="{{r.canSel}}" hint-placeholder-val="{{ false }}"><label style="display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 32px; cursor: pointer"><input type="checkbox" aria-label="{{r.selLabel}}" checked="{{r.on}}" onChange="{{r.toggle}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8"></label></sc-if></td>
+                      <td><div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><a href="HrClaim.dc.html" style="font-weight: 700">{{r.id}}</a><span>{{r.title}}</span><sc-if value="{{r.flag}}" hint-placeholder-val="{{ false }}"><span class="cp warn" style="align-self: flex-start; margin-top: 4px"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{r.flag}}</span></sc-if></div></td>
+                      <td><a href="HrStaffRecord.dc.html" style="font-weight: 600">{{r.who}}</a><div style="color: #5F6C80; font-size: 12px">{{r.no}}</div></td>
+                      <td><button type="button" class="disc" aria-expanded="{{r.exp}}" onClick="{{r.flip}}" aria-label="{{r.discLabel}}"><span class="{{r.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></span>{{r.nLines}}</button><div style="color: #5F6C80; font-size: 12px">{{r.types}}</div></td>
+                      <td><span class="{{r.pillCls}}"><dc-import name="Icon" glyph="{{r.pillGlyph}}" tone="{{r.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.pill}}</span></td>
+                      <td><sc-if value="{{r.formHref}}" hint-placeholder-val="{{ true }}"><a href="{{r.formHref}}" style="font-weight: 600">{{r.form}}</a></sc-if><sc-if value="{{r.noForm}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80">{{r.form}}</span></sc-if><div style="color: #5F6C80; font-size: 12px">{{r.formSub}}</div></td>
+                      <td><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span>{{r.pay}}</span><sc-if value="{{r.payPill}}" hint-placeholder-val="{{ false }}"><span class="{{r.payPillCls}}">{{r.payPill}}</span></sc-if><sc-if value="{{r.payHref}}" hint-placeholder-val="{{ false }}"><a href="{{r.payHref}}" style="font-size: 12px; font-weight: 600">{{r.payLink}}</a></sc-if></div></td>
+                      <td class="r" style="padding-right: 20px"><b>{{r.amt}}</b></td>
+                    </tr>
+                    <sc-if value="{{r.open}}" hint-placeholder-val="{{ false }}">
+                      <tr style="background: #FAFBFC">
+                        <td></td>
+                        <td colspan="7" style="padding: 4px 20px 16px 12px; border-top: 0">
+                          <div class="ex" style="display: flex; flex-direction: column; gap: 8px">
+                            <table class="ln">
+                              <caption class="sr">{{r.linesCap}}</caption>
+                              <thead><tr><th scope="col" style="width: 96px">Date</th><th scope="col" style="width: 190px">Claim type</th><th scope="col">Description</th><th scope="col" style="width: 120px">Receipt</th><th scope="col" class="r" style="width: 100px">Amount</th></tr></thead>
+                              <tbody>
+                                <sc-for list="{{r.lines}}" as="l" hint-placeholder-count="3">
+                                  <tr style="{{l.rowStyle}}"><td>{{l.date}}</td><td>{{l.type}}<div style="color: #5F6C80; font-size: 12px">{{l.acct}}</div></td><td>{{l.desc}}<sc-if value="{{l.flag}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 6px; align-items: center; margin-top: 4px; color: #934100; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{l.flag}}</div></sc-if></td><td><span style="display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="document" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{l.file}}</span></td><td class="r">{{l.amt}}</td></tr>
+                                </sc-for>
+                              </tbody>
+                            </table>
+                            <sc-if value="{{r.note}}" hint-placeholder-val="{{ false }}"><div role="note" style="display: flex; gap: 8px; align-items: flex-start; color: #46546A; font-size: 12px; max-width: 760px"><dc-import name="Icon" glyph="help" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>{{r.note}}</span></div></sc-if>
+                            <a href="HrClaim.dc.html" style="align-self: flex-start; font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">Open {{r.id}}</a>
+                          </div>
+                        </td>
+                      </tr>
+                    </sc-if>
+                  </tbody>
+                </sc-for>
+              </table>
+            </div>
+
+            <sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}">
+              <div class="rv" style="padding: 22px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: #46546A; font-size: 13px; border-top: 1px solid #EEF1F5"><dc-import name="Icon" glyph="filter" tone="muted" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1 1 320px">{{noRowsText}}</span><sc-if value="{{canClear}}" hint-placeholder-val="{{ false }}"><button type="button" class="sec sm hs" onClick="{{clearFilters}}">Show all claims</button></sc-if></div>
+            </sc-if>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid #E3E7ED; background: #FAFBFC">
+            <span style="font-size: 13px; color: #46546A">{{footText}}</span>
+            <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}"><button type="button" class="sec hs" onClick="{{many.more}}" disabled="{{many.off}}">{{many.label}}</button></sc-if>
+          </div>
+          <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}"><div style="padding: 0 20px 14px; background: #FAFBFC; color: #5F6C80; font-size: 12px">{{many.note}}</div></sc-if>
+        </section>
+
+        <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 920px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Only drafts can be ticked: they go together on one approval form, with the company's approvers printed on it, and any one signature approves it. A claim over its type's limit is flagged, never refused. Approval never blocks paying: once approved, each claim waits on <a href="ToPay.dc.html">To pay</a> with its own due date. {{bookNote}}</span></div>
+      </sc-if>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 620px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","one-status","select","over-limit","paid-refused","excel","empty","loading","error","many"],"section":"State to show"},"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'list'); }
+  componentDidMount() { if (this.state.toast) this.startToast(6000); }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._to); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { this.setState(this.initial(this.props.view || 'list')); return; }
+    if (this._upFocus) { const id = this._upFocus; this._upFocus = null; const e = document.getElementById(id); if (e && e.focus) e.focus({ preventScroll: true }); }
+  }
+
+  // ---- sample data: scope/samples.md sections 10 and 12 (today Wed 18 Nov 2026) ----
+  claims(co, snap, opt) {
+    if (co !== 'AISB') return [];
+    const L = (date, type, desc, amt, file, flag) => ({ date, type, desc, amt, file, flag: flag || '' });
+    const out = [
+      { id: 'CL-2610-004', title: 'Oct 2026 Claims - Wei Ming', who: 'Wei Ming', no: 'S002', month: '2026-10', st: 'approved', due: 'Sat 14 Nov', late: 4, flag: 'Over limit by RM 36.50',
+        lines: [L('Tue 6 Oct', 'Parking and toll', 'Parking, client visit', 12, '1 receipt'), L('Wed 14 Oct', 'Client meals', 'Client lunch', 186.5, '1 receipt', 'Over the RM 150.00 monthly limit by RM 36.50'), L('Thu 22 Oct', 'Mileage', '480 km at RM 0.60 a km', 288, 'Trip log')],
+        note: 'The Client meals limit of RM 150.00 a month was set on 12 Nov, after AF-2611-003 was printed. The approval stands; the flag shows here, on the claim and on its payment.' },
+      { id: 'CL-2610-005', title: 'Oct 2026 Claims - Aina', who: 'Aina', no: 'S003', month: '2026-10', st: 'approved', due: 'Fri 20 Nov', late: 0,
+        lines: [L('Mon 5 Oct', 'Mileage', '240 km at RM 0.60 a km', 144, 'Trip log'), L('Mon 12 Oct', 'Parking and toll', 'Parking and toll, bank visits', 64, '2 receipts'), L('Wed 21 Oct', 'Stationery and materials', 'Office stationery', 200, '1 receipt')] },
+      { id: 'CL-2610-006', title: 'Oct 2026 Claims - Wei Ming', who: 'Wei Ming', no: 'S002', month: '2026-10', st: 'withdrawn', why: 'Entered twice',
+        lines: [L('Tue 6 Oct', 'Parking and toll', 'Parking', 120, '1 receipt')], note: 'Withdrawn by Aisha Rahman before it was printed, reason “Entered twice”. Kept, never deleted.' },
+      { id: 'CL-2610-007', title: 'Oct 2026 Claims - Jia Hui', who: 'Jia Hui', no: 'S007', month: '2026-10', st: 'approved', due: 'Fri 20 Nov', late: 0,
+        lines: [L('Fri 30 Oct', 'Stationery and materials', 'Event materials', 320, '1 receipt')] }
+    ];
+    if (!snap) out.push({ id: 'CL-2611-001', title: 'Nov 2026 Claims - Kah Seng', who: 'Kah Seng', no: 'S006', month: '2026-11', st: 'wait',
+      lines: [L('Fri 30 Oct', 'Phone', 'October bill', 145, '1 receipt')] });
+    if (opt) out.unshift({ id: 'CL-2609-002', title: 'Sep 2026 Claims - Wei Ming', who: 'Wei Ming', no: 'S002', month: '2026-09', st: 'refused',
+      lines: [L('Sep 2026', 'Parking and toll', 'Parking', 95, '1 receipt')], note: 'An example row, drawn to show the Paid, approval refused reading. It was paid on Wed 30 Sep, before approval forms were kept, then put to an approver and refused on Mon 2 Nov: “Personal travel”. It stays on the Overview card, on Approvals under Paid without approval on file (with the October items, though paid in September) and in the audit pack until the money is paid back, a credit is recorded or a director adds a note.' });
+    if (snap) out.forEach(c => { if (c.st === 'approved') { c.st = 'draft'; c.note = ''; } if (c.id === 'CL-2610-004') c.flag = ''; });
+    return out;
+  }
+  ACCT() { return { 'Mileage': '900-860 Travelling', 'Parking and toll': '900-860 Travelling', 'Client meals': '900-870 Entertainment', 'Phone': '900-600 Telephone and internet', 'Stationery and materials': '900-800 Printing, postage and stationery', 'Overseas travel': '900-860 Travelling' }; }
+  initial(view) {
+    const co = view === 'empty' ? 'AI' : 'AISB';
+    const snap = view === 'select';
+    return { view, co, snap, opt: view === 'paid-refused', tab: view === 'one-status' ? 'approved' : view === 'select' ? 'draft' : view === 'paid-refused' ? 'notapproved' : 'all',
+      sel: snap ? { 'CL-2610-004': true, 'CL-2610-005': true, 'CL-2610-007': true } : {},
+      open: view === 'over-limit' ? { 'CL-2610-004': true } : view === 'paid-refused' ? { 'CL-2609-002': true } : {},
+      flash: view === 'over-limit' ? { id: 'CL-2610-004', n: 1 } : view === 'paid-refused' ? { id: 'CL-2609-002', n: 1 } : { id: '', n: 0 },
+      month: 'all', q: '', seq: 0, load: view === 'loading' ? 'loading' : view === 'error' ? 'error' : 'ok', many: view === 'many', manyShown: 25,
+      toast: view === 'excel' ? { msg: 'Excel file ready: Claims AISB 18 Nov 2026.xlsx, 5 claims with their 9 lines, types and statuses. It holds every claim, whatever the filter.', n: 1 } : null, say: '' };
+  }
+  fmt(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  total(c) { return c.lines.reduce((a, l) => a + l.amt, 0); }
+  tabOf(c) { return c.st === 'refused' ? 'notapproved' : c.st === 'wait' ? 'wait' : c.st; }
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  renderVals() {
+    const st = this.state, isAI = st.co === 'AI';
+    const all = this.claims(st.co, st.snap, st.opt);
+    const showLoading = st.load === 'loading', showError = st.load === 'error';
+    const showEmpty = !showLoading && !showError && all.length === 0;
+    const showList = !showLoading && !showError && !showEmpty;
+    const qq = st.q.trim().toLowerCase();
+    const inMonth = all.filter(c => st.month === 'all' || c.month === st.month)
+      .filter(c => !qq || (c.id + ' ' + c.title + ' ' + c.who + ' ' + c.lines.map(l => l.type).join(' ')).toLowerCase().includes(qq));
+    const shown = inMonth.filter(c => st.tab === 'all' || this.tabOf(c) === st.tab);
+    // status tabs
+    const T = [['all', 'All'], ['draft', 'Draft'], ['wait', 'Waiting for approval'], ['approved', 'Approved'], ['paid', 'Paid'], ['recorded', 'Recorded'], ['notapproved', 'Not approved'], ['withdrawn', 'Withdrawn']];
+    const order = T.map(t => t[0]);
+    const pick = (k, focus) => { if (focus) this._upFocus = 'hc-tab-' + k; this.setState({ tab: k, seq: this.state.seq + 1, say: T[order.indexOf(k)][1] + ' claims' }); };
+    const tabs = T.map(([k, label]) => {
+      const n = k === 'all' ? inMonth.length : inMonth.filter(c => this.tabOf(c) === k).length;
+      return { id: 'hc-tab-' + k, label, n: String(n), sr: ', ' + n + (n === 1 ? ' claim' : ' claims'), cntCls: 'cnt' + (n && (k === 'wait' || k === 'draft') ? ' on' : ''),
+        sel: st.tab === k ? 'true' : 'false', ti: st.tab === k ? '0' : '-1', pick: () => pick(k, false),
+        key: e => { const i = order.indexOf(k); let j = -1;
+          if (e.key === 'ArrowRight') j = (i + 1) % order.length; else if (e.key === 'ArrowLeft') j = (i + order.length - 1) % order.length; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = order.length - 1;
+          if (j < 0) return; if (e.preventDefault) e.preventDefault(); pick(order[j], true); } };
+    });
+    const A = this.ACCT();
+    const PILL = { draft: ['pl mute', 'edit', 'muted', 'Draft'], wait: ['pl warn', 'clock', 'warn', 'Waiting for approval'], approved: ['pl ok', 'check', 'ok', 'Approved'], withdrawn: ['pl mute', 'undo', 'muted', 'Withdrawn'],
+      refused: ['pl bad', 'alert', 'bad', 'Paid, approval refused'], notapproved: ['pl bad', 'close', 'bad', 'Not approved'], paid: ['pl ok', 'payment', 'ok', 'Paid'], recorded: ['pl info', 'books', 'brand', 'Recorded'] };
+    const rowOf = c => {
+      const p = PILL[c.st], on = !!st.sel[c.id], open = !!st.open[c.id], amt = this.total(c);
+      let form = '—', formSub = '', formHref = '', pay = '', payPill = '', payPillCls = '', payHref = '', payLink = '';
+      if (c.st === 'approved') { form = 'AF-2611-003'; formHref = 'Approvals.dc.html'; formSub = 'Signed by Tan Mei Ling, 12 Nov'; pay = 'In To pay · due ' + c.due; payPill = c.late > 0 ? 'Overdue ' + c.late + ' days' : ''; payPillCls = 'pl bad'; payHref = 'ToPay.dc.html'; payLink = 'Pay on To pay'; }
+      else if (c.st === 'wait') { form = 'AF-2611-005'; formHref = 'Approvals.dc.html'; formSub = 'Printed Tue 17 Nov, waiting for the signed form'; pay = 'Reaches To pay once approved'; }
+      else if (c.st === 'draft') { formSub = 'Not on a form yet'; pay = 'Reaches To pay once approved'; }
+      else if (c.st === 'withdrawn') { formSub = 'Withdrawn before it was printed'; pay = '—'; payPill = 'Reason: ' + c.why; payPillCls = 'pl mute'; }
+      else if (c.st === 'refused') { formSub = 'Refused Mon 2 Nov: “Personal travel”'; pay = 'Paid Wed 30 Sep'; payPill = 'Open until resolved'; payPillCls = 'pl bad'; payHref = 'Payment.dc.html'; payLink = 'Open the payment'; }
+      const n = c.lines.length;
+      return { id: c.id, title: c.title, who: c.who, no: c.no, flag: c.flag || '',
+        cls: 'hr' + (st.flash.id === c.id ? (st.flash.n % 2 ? ' fa' : ' fb') : ''), rowStyle: on ? 'background:#F3F6FE' : '',
+        canSel: c.st === 'draft', on, selLabel: 'Select ' + c.id + ', ' + c.who + ', RM ' + this.fmt(amt),
+        toggle: e => { const v = !!(e && e.target && e.target.checked); this.setState({ sel: { ...this.state.sel, [c.id]: v } }); },
+        nLines: n + (n === 1 ? ' line' : ' lines'), types: [...new Set(c.lines.map(l => l.type))].join(', '),
+        exp: open ? 'true' : 'false', chevCls: open ? 'chev on' : 'chev', discLabel: (open ? 'Hide ' : 'Show ') + 'the ' + n + (n === 1 ? ' line' : ' lines') + ' of ' + c.id,
+        flip: () => this.setState({ open: { ...this.state.open, [c.id]: !this.state.open[c.id] } }),
+        open, linesCap: 'Lines of ' + c.id, note: c.note || '',
+        lines: c.lines.map(l => ({ date: l.date, type: l.type, acct: A[l.type] || '', desc: l.desc, flag: l.flag, file: l.file, amt: this.fmt(l.amt), rowStyle: l.flag ? 'background:#FFFBF2' : '' })),
+        pillCls: p[0], pillGlyph: p[1], pillTone: p[2], pill: p[3],
+        form, formHref, noForm: !formHref, formSub, pay, payPill, payPillCls, payHref, payLink, amt: this.fmt(amt) };
+    };
+    const rows = shown.map(rowOf);
+    // summary cards
+    const sumOf = list => 'RM ' + this.fmt(list.reduce((a, c) => a + this.total(c), 0));
+    const waitL = all.filter(c => c.st === 'wait'), apprL = all.filter(c => c.st === 'approved'), draftL = all.filter(c => c.st === 'draft');
+    const box = 'border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0;text-decoration:none;color:#0F1A2B;background:#FFFFFF;border:1px solid #E3E7ED';
+    const sums = st.snap
+      ? [{ label: 'Drafts, not on a form', glyph: 'edit', tone: 'muted', value: draftL.length + ' · ' + sumOf(draftL), note: 'Tick them to print one approval form', go: 'Approvals', href: 'Approvals.dc.html', box },
+         { label: 'Waiting for approval', glyph: 'clock', tone: 'warn', value: '0', note: 'Nothing on a printed form yet', go: 'Approvals', href: 'Approvals.dc.html', box },
+         { label: 'Approved, in To pay', glyph: 'toPay', tone: 'brand', value: '0', note: 'Nothing approved yet', go: 'To pay', href: 'ToPay.dc.html', box }]
+      : [{ label: 'Waiting for approval', glyph: 'clock', tone: 'warn', value: waitL.length + ' · ' + sumOf(waitL), note: waitL.length ? 'On AF-2611-005, printed Tue 17 Nov' : 'Nothing waiting', go: 'Open Approvals', href: 'Approvals.dc.html', box },
+         { label: 'Approved, in To pay', glyph: 'toPay', tone: 'brand', value: apprL.length + ' · ' + sumOf(apprL), note: apprL.length ? '1 overdue since Sat 14 Nov · 2 due Fri 20 Nov' : 'Nothing to pay', go: 'Open To pay', href: 'ToPay.dc.html', box: apprL.length ? box.replace('border:1px solid #E3E7ED', 'border:1px solid #F5C2BB') : box },
+         { label: 'Paid this month', glyph: 'payment', tone: 'ok', value: '0', note: 'None of the October claims is paid yet', go: 'Payments register', href: 'PaymentsRegister.dc.html', box }];
+    // selection
+    const selL = all.filter(c => st.sel[c.id] && c.st === 'draft'), selN = selL.length;
+    const bulk = { on: selN > 0, text: selN + ' selected · ' + sumOf(selL), label: 'Print approval form for ' + selN + (selN === 1 ? ' claim' : ' claims') + ' · ' + sumOf(selL),
+      note: 'One form lists the claims, their total, a code and a keyed check. AISB\'s approvers Hassan Ismail, Tan Mei Ling and Rajesh Kumar are printed on it; any one signature approves it.' };
+    const months = [{ v: 'all', l: 'All months' }, { v: '2026-11', l: 'November 2026' }, { v: '2026-10', l: 'October 2026' }, { v: '2026-09', l: 'September 2026' }];
+    const many = st.many ? { on: true, off: st.manyShown >= 140, label: st.manyShown >= 140 ? 'All 140 shown' : 'Show 25 more', more: () => this.setState({ manyShown: Math.min(140, this.state.manyShown + 25), say: 'Showing ' + Math.min(140, this.state.manyShown + 25) + ' of 140 claims' }),
+      note: 'Many rows: 140 is an example count for a stress case, not a figure from the samples. The board draws the sample claims as the first rows. The header stays at the top while the list scrolls, and the Excel file always holds every claim.' }
+      : { on: false, off: true, label: '', more: () => {}, note: '' };
+    const filtered = st.month !== 'all' || !!qq;
+    const tabName = T[order.indexOf(st.tab)][1];
+    const t = st.toast;
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', say: st.say, coName: isAI ? 'Agrinexus International' : 'AISB Sdn Bhd',
+      onTopCo: code => { const c = String(code).toUpperCase(); if ((c === 'AISB' || c === 'AI') && c !== this.state.co) this.setState({ ...this.initial('list'), co: c, say: 'Showing ' + c + ' claims' }); },
+      canNew: !isAI, cantNew: isAI, excelOff: !showList,
+      doExcel: () => { this.startToast(6000); this.setState({ toast: { msg: 'Excel file ready: Claims ' + this.state.co + ' 18 Nov 2026.xlsx, ' + all.length + ' claims with their ' + all.reduce((a, c) => a + c.lines.length, 0) + ' lines, types and statuses. It holds every claim, whatever the filter.', n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }); },
+      snap: st.snap && showList, showLoading, showError, showEmpty, showList,
+      retry: () => { this._upFocus = 'hc-h1'; this.setState({ load: 'ok', say: 'Claims loaded' }); },
+      emptyText: isAI ? 'Agrinexus International has no claim types yet. A claim type needs an expense account, and AI has no chart of accounts yet, so no claim can be entered. Add the chart first, then the claim types.' : 'Claims entered here show by status and month.',
+      sums, countText: st.many ? '140 claims' : (filtered || st.tab !== 'all') ? rows.length + ' of ' + all.length + ' shown' : all.length + (all.length === 1 ? ' claim' : ' claims'),
+      printListAria: 'Print the claim list, ' + (st.month === 'all' ? 'October 2026' : (months.find(o => o.v === st.month) || months[2]).l),
+      months, month: st.month, onMonth: e => this.setState({ month: e && e.target ? e.target.value || 'all' : 'all', seq: this.state.seq + 1 }),
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '' }),
+      tabs, panelBy: 'hc-tab-' + st.tab, panelCls: st.seq % 2 ? 'swapA' : 'swapB',
+      bulk, clearSel: () => this.setState({ sel: {}, say: 'Selection cleared' }),
+      caption: 'Claims, ' + tabName.toLowerCase() + (st.month === 'all' ? ', all months' : ''), rows,
+      scrollStyle: st.many ? 'max-height:560px;overflow:auto' : 'overflow-x:auto',
+      noRows: showList && rows.length === 0, canClear: filtered || st.tab !== 'all',
+      noRowsText: qq ? 'No claims match “' + st.q.trim() + '”.' : st.tab === 'draft' ? 'No draft claims. A claim is a draft until it is printed on an approval form.' : st.tab === 'paid' ? 'No claim is paid yet. The three approved October claims are in To pay.' : st.tab === 'recorded' ? 'No claim is recorded yet. A claim is recorded once its payment is linked to SQL\'s voucher.' : 'No ' + tabName.toLowerCase() + ' claims' + (st.month === 'all' ? '.' : ' in ' + months.find(m => m.v === st.month).l + '.'),
+      clearFilters: () => { this._upFocus = 'hc-list-h'; this.setState({ tab: 'all', month: 'all', q: '', seq: this.state.seq + 1, say: 'Showing all claims' }); },
+      footText: st.many ? 'Showing ' + st.manyShown + ' of 140 claims' : 'Showing ' + rows.length + ' of ' + all.length + (all.length === 1 ? ' claim' : ' claims') + (rows.length ? ' · total RM ' + this.fmt(shown.reduce((a, c) => a + this.total(c), 0)) : ''),
+      many, bookNote: isAI ? '' : 'AISB is Kept in SQL Account: each payment is matched to SQL\'s voucher as today, and nothing is posted here.',
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastCls: t ? (t.out ? 'tOut' : (t.n % 2 ? 'tA' : 'tB')) : '',
+      toastHold: () => clearTimeout(this._tt), toastRelease: () => { if (this.state.toast) this.startToast(6000); },
+      toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

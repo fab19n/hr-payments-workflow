@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Printed approval form</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hg,.hs{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+.pf-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pf-card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.pf-h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600;color:#0F1A2B}
+.pf-lk{display:inline-flex;align-items:center;gap:6px;min-height:32px;font-weight:600;font-size:13px;text-decoration:none}
+/* the printed page: A4 portrait at full size, black and grey on white, print type sizes */
+.a4{position:relative;flex:none;width:210mm;height:297mm;box-sizing:border-box;padding:14mm 16mm 10mm;background:#FFFFFF;color:#000000;font:400 9pt/1.35 Inter,Arial,sans-serif;display:flex;flex-direction:column;gap:3.5mm;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.22),0 10px 28px rgba(16,24,40,.14)}
+.a4 .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8mm;padding-bottom:3mm;border-bottom:0.4mm solid #000000}
+.a4 .co{font-weight:700;font-size:12pt;line-height:1.25}
+.a4 .sm{font-size:7.5pt;line-height:1.35;color:#333333}
+.a4 .tt{font-family:'Space Grotesk',Inter,Arial,sans-serif;font-weight:600;font-size:16pt;line-height:1.1}
+.a4 .code{font-family:ui-monospace,Consolas,monospace;font-weight:700;font-size:13pt;line-height:1.25}
+.a4 .mono{font-family:ui-monospace,Consolas,monospace}
+.a4 .qb{display:flex;gap:5mm;align-items:center;padding:3mm;border:0.3mm solid #000000;font-size:8pt;line-height:1.4}
+.a4 .qr{flex:none;width:20mm;height:20mm}
+.a4 table{width:100%;border-collapse:collapse;font-size:8.5pt;line-height:1.3}
+.a4 caption{caption-side:top;text-align:left;font-weight:700;font-size:9pt;padding-bottom:1.5mm}
+.a4 th{text-align:left;font-weight:600;padding:1mm 2mm 1mm 0;border-bottom:0.3mm solid #000000;vertical-align:bottom}
+.a4 td{padding:1.1mm 2mm 1.1mm 0;vertical-align:top;border-bottom:0.2mm solid #BDBDBD}
+.a4 .n{text-align:right;padding-right:0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.a4 tr.b td{font-weight:700;border-top:0.3mm solid #000000}
+.a4 .ln{display:flex;justify-content:space-between;gap:3mm;font-size:7.5pt;color:#333333;margin-top:0.6mm}
+.a4 .ln.b{font-weight:600;color:#000000}
+.a4 .tl{display:flex;justify-content:flex-end;gap:6mm;font-weight:700;font-size:9.5pt}
+.a4 .cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6mm;align-items:start}
+.a4 .pp table{font-size:7.5pt}
+.a4 .pp td,.a4 .pp th{padding-right:1.2mm}
+.a4 .conf{border:0.4mm solid #000000;padding:2mm 3mm;display:flex;flex-direction:column;gap:0.8mm}
+.a4 .sgs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4mm}
+.a4 .sig{border:0.3mm solid #000000;padding:2.5mm;height:38mm;box-sizing:border-box;display:flex;flex-direction:column;gap:0.8mm}
+.a4 .x{text-decoration:line-through}
+.a4 .sgl{margin-top:auto;border-bottom:0.3mm solid #000000;height:7mm;flex:none}
+.a4 .sgd{display:flex;align-items:flex-end;gap:2mm;font-size:7pt;color:#333333;margin-top:1.5mm}
+.a4 .sgd span:last-child{flex:1;border-bottom:0.3mm solid #000000;height:4mm}
+.a4 .sgx{margin-top:auto;background:#E6E6E6;border:0.3mm solid #000000;text-align:center;font-weight:700;padding:3.5mm 1mm}
+.a4 .ft{margin-top:auto;display:flex;flex-direction:column;gap:1.5mm;font-size:7.5pt;color:#333333}
+.a4 .fx{display:flex;justify-content:space-between;gap:4mm;border-top:0.3mm solid #333333;padding-top:1.5mm}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="{{sbActive}}" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" companies="{{nCos}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="{{tbSection}}" page="{{tbPage}}" sub="Printed approval form" company="{{sbCo}}" companies="{{nCos}}" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" class="pf-sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="{{backHref}}" class="hg" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 4px; margin: -6px 0 4px -4px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{backText}}</a>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{coLine}}</span>
+        <h1 id="pf-h1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Printed approval form</h1>
+        <p style="margin: 0; color: #46546A; max-width: 780px">What <b style="color: #0F1A2B">Print approval form</b> makes: one or more requests on an A4 form, in English, with the form's code, its keyed check and a QR holding both, the requests and their total, and a block for each of the company's approvers on the print date. <b style="color: #0F1A2B">Any one signature approves this form.</b> The signed form is uploaded on Payments › Approvals or photographed with the phone.</p>
+      </div>
+
+      <div role="note" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C7D6F7">
+        <span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="printer" tone="brand" size="20" hint-size="20px,20px"></dc-import></span>
+        <p style="margin: 0; color: #0F1A2B; max-width: 940px"><b>The page is printed, not shown on screen.</b> It has no menu or top bar: A4 portrait at full size (210 × 297 mm), black and grey on white, body text at 9 pt, "Page x of y" on every page and the header repeated on page 2. Only the frame and the notes around it belong to the app. <b>The QR drawn here is a stand-in pattern and can't be scanned.</b></p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div role="group" aria-label="State to show" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%; box-sizing: border-box">
+          <sc-for list="{{states}}" as="s" hint-placeholder-count="11"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+        </div>
+        <sc-if value="{{hasSub}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+            <span id="pf-sub-l" style="font-size: 13px; font-weight: 600; color: #46546A">{{subLabel}}</span>
+            <div role="group" aria-labelledby="pf-sub-l" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; max-width: 100%; box-sizing: border-box">
+              <sc-for list="{{subOpts}}" as="o" hint-placeholder-count="2"><button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+        <section aria-labelledby="pf-lead-h" class="pf-card rv" style="flex: 2 1 440px">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px"><h2 id="pf-lead-h" class="pf-h2">{{leadTitle}}</h2><span style="{{chipStyle}}">{{chipText}}</span></div>
+          <p style="margin: 0; color: #46546A">{{leadText}}</p>
+          <dl style="margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; font-size: 13px">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="6"><dt style="color: #5F6C80; font-weight: 600">{{f.k}}</dt><dd style="margin: 0; color: #0F1A2B; min-width: 0; overflow-wrap: anywhere">{{f.v}}</dd></sc-for>
+          </dl>
+        </section>
+        <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+          <section aria-labelledby="pf-next-h" class="pf-card">
+            <h2 id="pf-next-h" class="pf-h2">{{nextTitle}}</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px">{{nextText}}</p>
+            <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px">
+              <sc-for list="{{links}}" as="l" hint-placeholder-count="3"><li><a href="{{l.href}}" class="pf-lk">{{l.text}}<dc-import name="Icon" glyph="chevronRight" tone="brand" size="16" hint-size="16px,16px"></dc-import></a></li></sc-for>
+            </ul>
+          </section>
+          <section aria-labelledby="pf-never-h" class="pf-card">
+            <h2 id="pf-never-h" class="pf-h2" style="font-size: 15px">Never on this form</h2>
+            <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #46546A">
+              <sc-for list="{{never}}" as="v" hint-placeholder-count="4"><li>{{v.t}}</li></sc-for>
+            </ul>
+          </section>
+        </div>
+      </div>
+
+      <sc-if value="{{isPaper}}" hint-placeholder-val="{{ true }}">
+        <section aria-labelledby="pf-paper-h" style="background: #E9ECF1; border: 1px solid #DDE2EA; border-radius: 16px; padding: 20px 24px 28px; overflow-x: auto">
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 16px">
+            <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+            <h2 id="pf-paper-h" style="margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere">{{fileName}}</h2>
+            <span style="color: #46546A; font-size: 13px">{{pageCount}} · A4 portrait, 210 × 297 mm · the QR is a stand-in, not scannable</span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 28px; width: max-content; min-width: 100%">
+            <sc-for list="{{pages}}" as="pg" hint-placeholder-count="1">
+              <article class="a4" aria-label="{{pg.aria}}">
+                <div class="hd">
+                  <div style="display: flex; flex-direction: column; gap: 0.8mm; min-width: 0">
+                    <div class="co">{{pg.coName}}</div>
+                    <div class="sm">{{pg.coReg}}</div>
+                    <sc-if value="{{pg.hasAddr}}" hint-placeholder-val="{{ true }}"><div class="sm">{{pg.coAddr}}</div></sc-if>
+                  </div>
+                  <div style="text-align: right; display: flex; flex-direction: column; gap: 0.8mm; flex: none">
+                    <div class="tt">Approval form</div>
+                    <div class="code">{{pg.code}}</div>
+                    <div style="font-size: 8.5pt">Check <b class="mono">{{pg.check}}</b></div>
+                    <div class="sm">Printed {{pg.printed}}</div>
+                  </div>
+                </div>
+
+                <sc-if value="{{pg.isFirst}}" hint-placeholder-val="{{ true }}">
+                  <div class="qb">
+                    <div class="qr" aria-hidden="true" style="{{pg.qrStyle}}"></div>
+                    <div><b>Scan with the phone to upload the signed form.</b><br>No phone? On Payments › Approvals choose Upload, then type the code <b class="mono">{{pg.code}}</b> and the check <b class="mono">{{pg.check}}</b>. The check is worked out from the requests as printed, so a form whose requests changed after printing no longer matches.</div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{pg.isLater}}" hint-placeholder-val="{{ false }}"><div class="sm" style="color: #000000">{{pg.laterText}}</div></sc-if>
+                <sc-if value="{{pg.hasConf}}" hint-placeholder-val="{{ false }}">
+                  <div class="conf"><b style="font-size: 10pt">Confidential: pay per person</b><span class="sm">{{pg.confText}}</span></div>
+                </sc-if>
+                <sc-if value="{{pg.hasSummary}}" hint-placeholder-val="{{ false }}"><div style="font-weight: 600">{{pg.summary}}</div></sc-if>
+
+                <sc-if value="{{pg.hasReq}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 1.5mm">
+                    <table>
+                      <caption>{{pg.reqCap}}</caption>
+                      <thead><tr><th scope="col" style="width: 23mm">Request</th><th scope="col" style="width: 24mm">Kind</th><th scope="col" style="width: 44mm">Who or what</th><th scope="col">Detail</th><th scope="col" class="n" style="width: 26mm">Amount</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{pg.rows}}" as="r" hint-placeholder-count="3">
+                          <tr>
+                            <td class="mono" style="font-size: 8pt">{{r.ref}}</td>
+                            <td>{{r.kind}}</td>
+                            <td>{{r.who}}</td>
+                            <td><div>{{r.what}}</div><sc-for list="{{r.subs}}" as="l" hint-placeholder-count="2"><div class="{{l.cls}}"><span>{{l.t}}</span><span class="n">{{l.amt}}</span></div></sc-for></td>
+                            <td class="n">{{r.amt}}</td>
+                          </tr>
+                        </sc-for>
+                      </tbody>
+                    </table>
+                    <sc-if value="{{pg.hasTot}}" hint-placeholder-val="{{ true }}"><div class="tl"><span>{{pg.totLabel}}</span><span class="n">{{pg.totVal}}</span></div></sc-if>
+                    <sc-if value="{{pg.hasMix}}" hint-placeholder-val="{{ false }}"><div class="sm" style="text-align: right">{{pg.mixText}}</div></sc-if>
+                    <sc-if value="{{pg.hasCont}}" hint-placeholder-val="{{ false }}"><div style="text-align: right; font-weight: 600">{{pg.contText}}</div></sc-if>
+                    <sc-if value="{{pg.hasRecNote}}" hint-placeholder-val="{{ false }}"><div class="sm">A recurring set-up is approved once: no form is needed for each month's payment of the same amount. A new form is printed when a set-up's amount changes.</div></sc-if>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{pg.hasRun}}" hint-placeholder-val="{{ false }}">
+                  <div class="cols">
+                    <table>
+                      <caption>October 2026 pay · 8 people</caption>
+                      <thead><tr><th scope="col">Item</th><th scope="col" class="n">Amount</th></tr></thead>
+                      <tbody><sc-for list="{{pg.payRows}}" as="p" hint-placeholder-count="16"><tr class="{{p.cls}}"><td>{{p.t}}</td><td class="n">{{p.amt}}</td></tr></sc-for></tbody>
+                    </table>
+                    <div style="display: flex; flex-direction: column; gap: 3mm">
+                      <table>
+                        <caption>To pay from this run</caption>
+                        <thead><tr><th scope="col">To whom</th><th scope="col">By</th><th scope="col" class="n">Amount</th></tr></thead>
+                        <tbody><sc-for list="{{pg.dueRows}}" as="d" hint-placeholder-count="5"><tr class="{{d.cls}}"><td>{{d.t}}</td><td style="white-space: nowrap">{{d.when}}</td><td class="n">{{d.amt}}</td></tr></sc-for></tbody>
+                      </table>
+                      <sc-for list="{{pg.runNotes}}" as="q" hint-placeholder-count="2"><div class="sm">{{q.t}}</div></sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{pg.hasPeople}}" hint-placeholder-val="{{ false }}">
+                  <div class="pp" style="display: flex; flex-direction: column; gap: 4mm">
+                    <table>
+                      <caption>Pay per person, October 2026 (employee side)</caption>
+                      <thead><tr><th scope="col" style="width: 8mm">No.</th><th scope="col">Name</th><th scope="col" class="n">Basic</th><th scope="col" class="n">Allowance</th><th scope="col" class="n">Overtime</th><th scope="col" class="n">Gross</th><th scope="col" class="n">EPF</th><th scope="col" class="n">SOCSO</th><th scope="col" class="n">EIS</th><th scope="col" class="n">PCB</th><th scope="col" class="n">Net pay</th></tr></thead>
+                      <tbody><sc-for list="{{pg.people}}" as="e" hint-placeholder-count="9"><tr class="{{e.cls}}"><td>{{e.no}}</td><td>{{e.name}}</td><td class="n">{{e.basic}}</td><td class="n">{{e.allow}}</td><td class="n">{{e.ot}}</td><td class="n">{{e.gross}}</td><td class="n">{{e.epf}}</td><td class="n">{{e.socso}}</td><td class="n">{{e.eis}}</td><td class="n">{{e.pcb}}</td><td class="n">{{e.net}}</td></tr></sc-for></tbody>
+                    </table>
+                    <table>
+                      <caption>Employer's share per person, October 2026</caption>
+                      <thead><tr><th scope="col" style="width: 8mm">No.</th><th scope="col">Name</th><th scope="col" class="n">EPF</th><th scope="col" class="n">SOCSO</th><th scope="col" class="n">EIS</th><th scope="col" class="n">Employer total</th></tr></thead>
+                      <tbody><sc-for list="{{pg.erRows}}" as="w" hint-placeholder-count="9"><tr class="{{w.cls}}"><td>{{w.no}}</td><td>{{w.name}}</td><td class="n">{{w.epf}}</td><td class="n">{{w.socso}}</td><td class="n">{{w.eis}}</td><td class="n">{{w.tot}}</td></tr></sc-for></tbody>
+                    </table>
+                    <div class="sm">Lindung 24 Jam (SKBBK) and zakat are 0.00 for everyone this month. HRDF: not registered.</div>
+                  </div>
+                </sc-if>
+
+                <sc-if value="{{pg.hasSign}}" hint-placeholder-val="{{ true }}">
+                  <div style="display: flex; flex-direction: column; gap: 2.5mm">
+                    <div><div style="font-weight: 700; font-size: 10pt">{{pg.signHead}}</div><div class="sm">{{pg.signSub}}</div></div>
+                    <div class="sgs">
+                      <sc-for list="{{pg.signers}}" as="g" hint-placeholder-count="3">
+                        <div class="sig">
+                          <b class="{{g.nameCls}}" style="font-size: 9.5pt">{{g.name}}</b>
+                          <span class="sm">{{g.role}}</span>
+                          <sc-if value="{{g.hasNote}}" hint-placeholder-val="{{ false }}"><span class="sm" style="color: #000000">{{g.note}}</span></sc-if>
+                          <sc-if value="{{g.canSign}}" hint-placeholder-val="{{ true }}"><div class="sgl"></div><div class="sm" style="font-size: 7pt">Signature</div><div class="sgd"><span>Date</span><span></span></div></sc-if>
+                          <sc-if value="{{g.struck}}" hint-placeholder-val="{{ false }}"><div class="sgx">Can't sign: payee</div></sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+
+                <div class="ft">
+                  <sc-if value="{{pg.isFirst}}" hint-placeholder-val="{{ true }}"><span>{{pg.prep}}</span></sc-if>
+                  <div class="fx"><span class="mono">{{pg.code}} · {{pg.check}}</span><span>Page {{pg.n}} of {{pg.of}}</span></div>
+                </div>
+              </article>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isRefused}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="pf-ref-h" class="rv" style="display: flex; flex-direction: column; gap: 14px">
+          <h2 id="pf-ref-h" class="pf-h2">What Print approval form says, and what is printed: nothing</h2>
+          <div style="max-width: 760px; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div role="alert" aria-live="off" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; background: #FDF3F2; border-bottom: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was printed</b><div style="color: #46546A; font-size: 13px">AIP has no approvers yet, so there is no one to print on the form. Approval forms can't be printed until a company has an approver. Add the director who signs for AIP, then print again.</div></div><a href="SetupApprovers.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #F5C2BB; background: #FFFFFF; color: #8E1A10; font: 600 13px Inter, sans-serif; text-decoration: none; box-sizing: border-box; white-space: nowrap">Add an approver</a></div>
+            <div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+              <span>The request stays under <b style="color: #0F1A2B">To print</b> on Payments › Approvals. No form code is used up, nothing is saved and nothing goes in the audit trail.</span>
+              <span>Approval never blocks paying: the request can still be paid from Payments › To pay. Once paid, it reads <b style="color: #0F1A2B">Paid without approval on file</b> until a signed form is uploaded.</span>
+              <span>The same refusal shows when the key behind the keyed check hasn't been made yet: "Approval forms can be printed once there is a key." The key is made on Setup › HR › Approvers.</span>
+            </div>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{isNotPrinted}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="pf-np-h" class="rv" style="display: flex; flex-direction: column; gap: 14px">
+          <h2 id="pf-np-h" class="pf-h2">What opens for Nurul Aina: a plain page, and no form</h2>
+          <div style="max-width: 760px; border: 1px solid #C9D0DB; border-radius: 12px; overflow: hidden; background: #FFFFFF">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 8px 12px; background: #E9ECF1; border-bottom: 1px solid #DDE2EA">
+              <span style="display: inline-flex; align-items: center; height: 28px; padding: 0 14px; border-radius: 8px 8px 0 0; background: #FFFFFF; font-size: 13px; font-weight: 600">Not printed</span>
+              <span style="flex: 1 1 200px; min-width: 0; font: 400 12px ui-monospace, Consolas, monospace; color: #46546A; overflow-wrap: anywhere">/api/approval-forms/AF-2610-009.pdf</span>
+            </div>
+            <div style="padding: 28px 24px 40px; min-height: 110px; background: #FFFFFF; color: #000000; font-family: 'Times New Roman', Times, serif; font-size: 16px; line-height: 1.4">AF-2610-009 is the approval form of AISB's October 2026 salary run. Its page 2 shows each person's pay, so only a user with the Payroll figures right can print it.</div>
+          </div>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 760px">The page is plain on purpose: it holds only the sentence, and nothing is printed, saved or audited. On HR › Payroll she sees the run's steps and people without amounts, and no Print approval form button.</p>
+        </section>
+      </sc-if>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"single","options":["single","claims","claim-advance","advance","mixed","salary","salary-no-figures","recurring","payee","one","one-self","two-pages","none"],"section":"State to show"},"$preview":{"width":1440,"height":3600}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the form to open: PrintApprovalForm.dc.html#claims (AF-2611-003), #claim-advance (AF-2611-005),
+    // #advance (AF-2611-001), #salary (AF-2610-009) and so on. It applies on first load, over the default state.
+    let v = (p && p.view) || 'single', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'single' && h && this.views().includes(h)) v = h;
+    this.state = { view: v, say: '' };
+  }
+  views() { return ['single', 'claims', 'claim-advance', 'advance', 'mixed', 'salary', 'salary-no-figures', 'recurring', 'payee', 'one', 'one-self', 'two-pages', 'none']; }
+  componentDidUpdate(pp) {
+    if (pp && pp.view !== this.props.view) this.setState({ view: this.props.view || 'single', say: '' });
+  }
+  // money from sen: 121450 -> "1,214.50"
+  f2(c) {
+    const v = Math.round(Math.abs(c));
+    return String(Math.floor(v / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '.' + String(v % 100).padStart(2, '0');
+  }
+  // A stand-in QR: 25 x 25 modules with the three finder squares and the timing lines, seeded by the form's code and
+  // check, drawn as one SVG path. It looks like a QR but is not a scannable code.
+  qrStyle(text) {
+    const n = 25, m = [];
+    for (let y = 0; y < n; y++) { m.push([]); for (let x = 0; x < n; x++) m[y].push(0); }
+    let h = 7;
+    for (let i = 0; i < text.length; i++) h = (Math.imul(h, 31) + text.charCodeAt(i)) & 0x7fffffff;
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { h = (Math.imul(h, 1103515245) + 12345) & 0x7fffffff; m[y][x] = (h >>> 9) & 1; }
+    const finder = (ox, oy) => {
+      for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+        const x = ox + dx, y = oy + dy;
+        if (x < 0 || y < 0 || x >= n || y >= n) continue;
+        const edge = dx === -1 || dy === -1 || dx === 7 || dy === 7;
+        m[y][x] = edge ? 0 : (dx === 0 || dy === 0 || dx === 6 || dy === 6 || (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4)) ? 1 : 0;
+      }
+    };
+    finder(0, 0); finder(n - 7, 0); finder(0, n - 7);
+    for (let i = 8; i < n - 8; i++) { m[6][i] = i % 2 === 0 ? 1 : 0; m[i][6] = i % 2 === 0 ? 1 : 0; }
+    let d = '';
+    for (let y = 0; y < n; y++) { let x = 0; while (x < n) { if (m[y][x]) { const s = x; while (x < n && m[y][x]) x++; d += 'M' + s + ' ' + y + 'h' + (x - s) + 'v1h-' + (x - s) + 'z'; } else x++; } }
+    const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='-1 -1 27 27' shape-rendering='crispEdges'><rect x='-1' y='-1' width='27' height='27' fill='#fff'/><path fill='#000' d='" + d + "'/></svg>";
+    return 'background:#FFFFFF url("data:image/svg+xml,' + encodeURIComponent(svg) + '") center/100% 100% no-repeat';
+  }
+
+  // ---- sample data (scope/samples.md sections 2, 5, 6, 10 to 12) -------------------------------------------------
+  data() {
+    const CO = {
+      AISB: { name: 'AISB Sdn Bhd', reg: 'Registration no. 201901023456 (1331234-K)', addr: 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor', appr: ['Hassan Ismail', 'Tan Mei Ling', 'Rajesh Kumar'], line: 'AISB · Kept in SQL Account', sb: 'aisb', kind: 'sqlPayroll', file: 'AISB' },
+      AI: { name: 'Agrinexus International', reg: 'Registration no. 202001045678 (1378901-W)', addr: '', appr: ['Hassan Ismail'], line: 'AI · Kept here', sb: 'ai', kind: 'here', file: 'AI' },
+      AIP: { name: 'Agrinexus Plantations', reg: '', addr: '', appr: [], line: 'AIP · Kept here', sb: 'aip', kind: 'here', file: 'AIP' }
+    };
+    const R = (ref, kind, who, what, amt, subs) => ({ ref, kind, who, what, amt, subs: (subs || []).map(s => ({ t: s[0], amt: s[1] || '', cls: s[2] ? 'ln b' : 'ln' })) });
+    const fee = R('PA-1010', 'Supplier bill', 'Payroll Advisory PLT', 'Consultant fee, due Sat 31 Oct 2026', '3,200.00');
+    // The October salary run, per person (samples section 6): basic, allowance, overtime, gross, EPF, SOCSO, EIS, PCB, net; employer EPF, SOCSO, EIS. In sen.
+    const PEOPLE = [
+      ['S001', 'Aisha Rahman', 860000, 120000, 0, 980000, 94600, 2975, 1190, 108000, 773235, 103200, 10415, 1190],
+      ['S002', 'Ong Wei Ming', 780000, 300000, 0, 1080000, 85800, 2975, 1190, 118000, 872035, 93600, 10415, 1190],
+      ['S003', 'Nurul Aina binti Hashim', 700000, 80000, 0, 780000, 77000, 2975, 1190, 70000, 628835, 84000, 10415, 1190],
+      ['S004', 'Mohd Hafiz bin Rosli', 570000, 260000, 0, 830000, 62700, 2825, 1130, 56000, 707345, 68400, 9890, 1130],
+      ['S005', 'Nor Khadijah binti Omar', 550000, 60000, 0, 610000, 60500, 2725, 1090, 34000, 511685, 66000, 9540, 1090],
+      ['S006', 'Wong Kah Seng', 780000, 60000, 84790, 924790, 85800, 2975, 1190, 100000, 734825, 93600, 10415, 1190],
+      ['S007', 'Goh Jia Hui', 340000, 60000, 0, 400000, 37400, 1675, 665, 5500, 354760, 44200, 5860, 665],
+      ['S008', 'Nur Izzati binti Kamal', 280000, 30000, 0, 310000, 30800, 1375, 545, 0, 277280, 36400, 4810, 545]
+    ];
+    // Two pages (drawn state): 34 invented claims for AISB's staff in employment in October, codes CL-2611-101 to 134.
+    const STAFF = ['Aisha Rahman', 'Ong Wei Ming', 'Nurul Aina binti Hashim', 'Mohd Hafiz bin Rosli', 'Wong Kah Seng', 'Goh Jia Hui', 'Nur Izzati binti Kamal'];
+    const MANY = [];
+    for (let i = 0; i < 34; i++) {
+      const who = STAFF[(i * 5) % STAFF.length];
+      // Kah Seng's October phone bill is already CL-2611-001, so his row takes parking and toll instead
+      let k = (i * 3) % 5;
+      if (k === 3 && who === 'Wong Kah Seng') k = 1;
+      let what, amt;
+      if (k === 0) { const km = 80 + (i * 37) % 300; what = 'Mileage, ' + km + ' km at RM 0.60'; amt = km * 60; }
+      else if (k === 1) { amt = (8 + (i * 13) % 60) * 100; what = 'Parking and toll'; }
+      else if (k === 2) { amt = (40 + (i * 29) % 110) * 100 + (i % 2) * 50; what = 'Client meals'; }
+      else if (k === 3) { amt = (60 + (i * 17) % 90) * 100; what = 'Phone, October bill'; }
+      else { amt = (25 + (i * 41) % 200) * 100; what = 'Stationery and materials'; }
+      MANY.push({ ref: 'CL-2611-' + (101 + i), who, what, amt });
+    }
+    return { CO, R, fee, PEOPLE, MANY };
+  }
+
+  // one printed page, with every field the template reads
+  page(o) {
+    const base = { isFirst: false, isLater: false, laterText: '', hasConf: false, confText: '', hasSummary: false, summary: '',
+      hasReq: false, reqCap: '', rows: [], hasTot: false, totLabel: '', totVal: '', hasMix: false, mixText: '', hasCont: false, contText: '', hasRecNote: false,
+      hasRun: false, payRows: [], dueRows: [], runNotes: [], hasPeople: false, people: [], erRows: [],
+      hasSign: false, signHead: '', signSub: '', signers: [], prep: '' };
+    return Object.assign(base, o);
+  }
+
+  renderVals() {
+    const V = this.state.view;
+    const { CO, R, fee, PEOPLE, MANY } = this.data();
+    const F = c => this.f2(c);
+    const PREP = 'Prepared by Aisha Rahman, as declared on this computer (declared, not verified).';
+    const sg = (name, extra) => Object.assign({ name, role: 'Director', nameCls: '', hasNote: false, note: '', canSign: true, struck: false }, extra || {});
+
+    // ---- the form for each state ----
+    const FORMS = {
+      single: { co: 'AISB', code: 'AF-2611-004', check: 'T9F-5HRG', printed: 'Mon 16 Nov 2026', rows: [fee], tot: 'RM 3,200.00', st: 'wait' },
+      claims: { co: 'AISB', code: 'AF-2611-003', check: '7KQ-M4XP', printed: 'Wed 11 Nov 2026', st: 'ok', tot: 'RM 1,214.50',
+        rows: [
+          R('CL-2610-004', 'Claim', 'Ong Wei Ming', 'Oct 2026 Claims - Wei Ming', '486.50', [['Parking and toll, Tue 6 Oct', '12.00'], ['Client meals, Wed 14 Oct', '186.50'], ['Mileage, Thu 22 Oct, 480 km at RM 0.60', '288.00']]),
+          R('CL-2610-005', 'Claim', 'Nurul Aina binti Hashim', 'Mileage, parking and toll, stationery', '408.00', [['Mileage, 240 km at RM 0.60', '144.00'], ['Parking and toll', '64.00'], ['Stationery and materials', '200.00']]),
+          R('CL-2610-007', 'Claim', 'Goh Jia Hui', 'Event materials', '320.00', [['Stationery and materials', '320.00']])
+        ] },
+      'claim-advance': { co: 'AISB', code: 'AF-2611-005', check: 'W4N-7ZKC', printed: 'Tue 17 Nov 2026', st: 'wait', tot: 'RM 4,145.00', mix: 'By kind: claims 145.00 · salary advances 4,000.00',
+        rows: [
+          R('CL-2611-001', 'Claim', 'Wong Kah Seng', 'Phone, October bill', '145.00'),
+          R('SA-2611-002', 'Salary advance', 'Daniel Lee Chee Keong', 'Repaid at RM 1,000.00 a month, Dec 2026 to Mar 2027', '4,000.00', [["Note: more than one month's pay", '', true]])
+        ] },
+      advance: { co: 'AISB', code: 'AF-2611-001', check: 'C8W-3JTP', printed: 'Mon 2 Nov 2026', st: 'ok', tot: 'RM 1,500.00',
+        rows: [R('SA-2611-001', 'Salary advance', 'Mohd Hafiz bin Rosli', 'Repaid at RM 500.00 a month, Nov 2026 to Jan 2027', '1,500.00')] },
+      mixed: { co: 'AISB', code: 'AF-2611-010', check: 'F9L-4ZRA', printed: 'Wed 18 Nov 2026', st: 'drawn', tot: 'RM 7,345.00', mix: 'By kind: claims 145.00 · salary advances 4,000.00 · supplier bills 3,200.00',
+        rows: [
+          R('CL-2611-001', 'Claim', 'Wong Kah Seng', 'Phone, October bill', '145.00'),
+          R('SA-2611-002', 'Salary advance', 'Daniel Lee Chee Keong', 'Repaid at RM 1,000.00 a month, Dec 2026 to Mar 2027', '4,000.00', [["Note: more than one month's pay", '', true]]),
+          fee
+        ] },
+      recurring: { co: 'AISB', code: 'AF-2611-002', check: 'M6D-4YQB', printed: 'Wed 4 Nov 2026', st: 'ok', tot: 'RM 6,500.00 a month and USD 1,200.00 a year', rec: true,
+        rows: [
+          R('—', 'Recurring set-up', 'Office rental', 'Lot 12 office, every month from October 2026', '6,500.00 a month'),
+          R('—', 'Recurring set-up', 'Cloud hosting', 'Annual plan, billed in USD', 'USD 1,200.00 a year')
+        ] },
+      payee: { co: 'AISB', code: 'AF-2610-001', check: 'H3T-9QWD', printed: 'Thu 1 Oct 2026', st: 'ok', tot: 'RM 60,600.00 a month', rec: true, payee: 'Hassan Ismail',
+        rows: [
+          R('—', 'Recurring set-up', 'Salaries — staff', 'Net pay for 8 people, every month: the total only', '48,600.00 a month'),
+          R('—', 'Recurring set-up', 'Director fee', 'Paid to Hassan Ismail, every month', '12,000.00 a month', [["Note: the payee is one of the approvers, so he can't sign this form", '', true]])
+        ] },
+      one: { co: 'AI', code: 'AF-2611-006', check: 'J2V-8PMS', printed: 'Mon 16 Nov 2026', st: 'ok', tot: 'RM 2,500.00',
+        rows: [R('—', 'Supplier bill', 'Consultant — farm audit (quarterly)', 'Due Mon 30 Nov 2026', '2,500.00')] },
+      'one-self': { co: 'AI', code: 'AF-2611-011', check: 'V2C-8NJE', printed: 'Wed 18 Nov 2026', st: 'drawn', tot: 'RM 640.00', self: 'Hassan Ismail',
+        rows: [R('—', 'Claim', 'Hassan Ismail', 'Mileage to the farm', '640.00', [['Note: the payee is the only approver, so signing it reads Self-approved', '', true]])] },
+      'two-pages': { co: 'AISB', code: 'AF-2611-012', check: 'G6Y-3PWC', printed: 'Wed 18 Nov 2026', st: 'drawn' },
+      salary: { co: 'AISB', code: 'AF-2610-009', check: 'Q7L-3DXA', printed: 'Wed 21 Oct 2026', st: 'ok' }
+    };
+    const key = V === 'salary-no-figures' ? 'salary' : V;
+    const fm = FORMS[key] || null;
+    const coKey = V === 'none' ? 'AIP' : fm ? fm.co : 'AISB';
+    const co = CO[coKey];
+
+    // ---- pages ----
+    let pages = [];
+    if (fm && V !== 'salary-no-figures') {
+      const qr = this.qrStyle(fm.code + ' ' + fm.check);
+      const head = { coName: co.name, coReg: co.reg, hasAddr: !!co.addr, coAddr: co.addr, code: fm.code, check: fm.check, printed: fm.printed, qrStyle: qr };
+      const signers = co.appr.map(n => {
+        if (fm.payee === n) return sg(n, { nameCls: 'x', canSign: false, struck: true });
+        if (fm.self === n) return sg(n, { hasNote: true, note: 'Payee: signing it reads Self-approved.' });
+        return sg(n);
+      });
+      const many = co.appr.length > 1;
+      const sign = {
+        hasSign: true,
+        signHead: many ? 'Any one signature approves this form.' : 'The approver’s signature approves this form.',
+        signSub: (many ? 'The approvers of ' + co.name + ' on ' + fm.printed + '. Sign and date one block; leave the others blank.' : 'The only approver of ' + co.name + ' on ' + fm.printed + '. Sign and date the block.')
+          + (fm.payee ? ' ' + fm.payee + ' is paid by this form, so his block is struck.' : ''),
+        signers
+      };
+      const reqCap = n => 'Requests (' + n + ')';
+      if (key === 'salary') {
+        const T = PEOPLE.reduce((a, p) => p.map((v, i) => i < 2 ? v : (a[i] || 0) + v), []);
+        const ded = T[6] + T[7] + T[8] + T[9], er = T[11] + T[12] + T[13];
+        const P = (t, c, cls) => ({ t, amt: c === null ? '—' : F(c), cls: cls || '' });
+        const payRows = [P('Basic pay', T[2]), P('Allowances', T[3]), P('Overtime', T[4]), P('Gross pay', T[5], 'b'),
+          P('Less employee EPF', T[6]), P('Less employee SOCSO', T[7]), P('Less employee EIS', T[8]), P('Less Lindung 24 Jam (SKBBK)', 0), P('Less PCB', T[9]), P('Less zakat', 0),
+          P('Net pay', T[10], 'b'), P('Employer EPF', T[11]), P('Employer SOCSO', T[12]), P('Employer EIS', T[13]), P('HRDF levy: not registered', null), P('Cost to the company', T[5] + er, 'b')];
+        const D = (t, when, c, cls) => ({ t, when, amt: F(c), cls: cls || '' });
+        const dueRows = [D('Net pay, 8 people, by the bank payment list', 'Sat 24 Oct', T[10]), D('KWSP: employee and employer EPF', 'Sun 15 Nov', T[6] + T[11]),
+          D('PERKESO: SOCSO, EIS and Lindung 24 Jam', 'Sun 15 Nov', T[7] + T[12] + T[8] + T[13]), D('LHDN: PCB and zakat', 'Sun 15 Nov', T[9]), D('Total', '', T[10] + T[6] + T[11] + T[7] + T[12] + T[8] + T[13] + T[9], 'b')];
+        const people = PEOPLE.map(p => ({ no: p[0], name: p[1], basic: F(p[2]), allow: F(p[3]), ot: p[4] ? F(p[4]) : '', gross: F(p[5]), epf: F(p[6]), socso: F(p[7]), eis: F(p[8]), pcb: F(p[9]), net: F(p[10]), cls: '' }))
+          .concat([{ no: '', name: 'Total, 8 people', basic: F(T[2]), allow: F(T[3]), ot: F(T[4]), gross: F(T[5]), epf: F(T[6]), socso: F(T[7]), eis: F(T[8]), pcb: F(T[9]), net: F(T[10]), cls: 'b' }]);
+        const erRows = PEOPLE.map(p => ({ no: p[0], name: p[1], epf: F(p[11]), socso: F(p[12]), eis: F(p[13]), tot: F(p[11] + p[12] + p[13]), cls: '' }))
+          .concat([{ no: '', name: 'Total, 8 people', epf: F(T[11]), socso: F(T[12]), eis: F(T[13]), tot: F(er), cls: 'b' }]);
+        pages = [
+          this.page(Object.assign({}, head, sign, { n: 1, of: 2, isFirst: true, prep: PREP, aria: 'Approval form ' + fm.code + ', page 1 of 2: the October 2026 salary run totals and the signature blocks',
+            hasReq: true, reqCap: reqCap(1), rows: [R('—', 'Salary run', '8 people, each on page 2', 'October 2026 pay, pay day Sat 24 Oct 2026', F(T[10]))],
+            hasRun: true, payRows, dueRows,
+            runNotes: [{ t: 'Totals agree: the 8 payslips, the monthly summary, the authority totals and the bank payment list all come to ' + F(T[10]) + ' net.' }, { t: 'September 2026 for comparison: gross 59,121.90, net 48,600.00.' }] })),
+          this.page(Object.assign({}, head, { n: 2, of: 2, isLater: true, laterText: 'Page 2 of form ' + fm.code + '. The QR and the signatures are on page 1.', aria: 'Approval form ' + fm.code + ', page 2 of 2: pay per person, confidential',
+            hasConf: true, confText: 'For the approver of ' + fm.code + ', kept with the signed page 1. Printed only by a user with the Payroll figures right. No IC or bank account numbers are printed.',
+            hasPeople: true, people, erRows }))
+        ];
+      } else if (key === 'two-pages') {
+        const sum = MANY.reduce((a, r) => a + r.amt, 0);
+        const rows = MANY.map(r => R(r.ref, 'Claim', r.who, r.what, F(r.amt)));
+        pages = [
+          this.page(Object.assign({}, head, sign, { n: 1, of: 2, isFirst: true, prep: PREP, aria: 'Approval form ' + fm.code + ', page 1 of 2: 18 of 34 requests and the signature blocks',
+            hasSummary: true, summary: '34 claims, RM ' + F(sum) + ' in all, listed on pages 1 and 2.',
+            hasReq: true, reqCap: 'Requests 1 to 18 of 34', rows: rows.slice(0, 18), hasCont: true, contText: 'Continued on page 2 of 2: 16 more claims.' })),
+          this.page(Object.assign({}, head, { n: 2, of: 2, isLater: true, laterText: 'Page 2 of form ' + fm.code + ', continued from page 1. The QR and the signatures are on page 1.', aria: 'Approval form ' + fm.code + ', page 2 of 2: requests 19 to 34 and the total',
+            hasReq: true, reqCap: 'Requests 19 to 34 of 34', rows: rows.slice(18), hasTot: true, totLabel: 'Total of 34 claims', totVal: 'RM ' + F(sum) }))
+        ];
+      } else {
+        const n = fm.rows.length;
+        pages = [this.page(Object.assign({}, head, sign, { n: 1, of: 1, isFirst: true, prep: PREP, aria: 'Approval form ' + fm.code + ' for ' + co.name + ', page 1 of 1, ' + n + (n === 1 ? ' request' : ' requests') + ', total ' + fm.tot,
+          hasReq: true, reqCap: reqCap(n), rows: fm.rows, hasTot: true, totLabel: 'Total', totVal: fm.tot, hasMix: !!fm.mix, mixText: fm.mix || '', hasRecNote: !!fm.rec }))];
+      }
+    }
+
+    // ---- the notes beside the page ----
+    const AP3 = 'Hassan Ismail, Tan Mei Ling and Rajesh Kumar, AISB’s approvers on the print date';
+    const K = (k, v) => ({ k, v });
+    const L = (text, href) => ({ text, href });
+    const UPL = [L('Upload the signed form', 'ApprovalUpload.dc.html'), L('Photograph page 1 with the phone', 'MobileApprovalPhoto.dc.html'), L('Payments › Approvals', 'Approvals.dc.html')];
+    const NEXT = 'Scan or photograph page 1. The app reads the code from the PDF’s text or the QR, checks the keyed check against the requests as they are now, then asks which approver signed and the date written on the form. The upload date is kept apart.';
+    const LEAD = {
+      single: ['One request on its own form', 'The consultant fee from Payroll Advisory PLT, printed by itself from To print. It is the form drawn in Foundations, and the sample the phone photographs.',
+        [K('File', 'AF-2611-004 AISB approval form.pdf'), K('Printed', 'Mon 16 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'Payments › Approvals, To print, Print approval form'), K('Audit trail', 'Printed approval form AF-2611-004 (Payroll Advisory PLT, PA-1010)'), K('Approvers printed', AP3), K('Now', 'Waiting for approval')]],
+      claims: ['A batch: the October claims', 'Three October claims chosen together, RM 1,214.50. Each claim prints its lines, as they stood on Wed 11 Nov. The client meals limit was set on 12 Nov, after printing, so the form prints Wei Ming’s client meals line plain; the over-limit flag shows on the claim in the app, and the approval stands. A limit is a warning only.',
+        [K('File', 'AF-2611-003 AISB approval form.pdf'), K('Printed', 'Wed 11 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'HR › Claims and advances or Payments › Approvals: Print approval form for 3 claims · RM 1,214.50'), K('Audit trail', 'Printed approval form AF-2611-003'), K('Approvers printed', AP3), K('Now', 'Approved by Tan Mei Ling, 12 Nov 2026 · uploaded Fri 13 Nov · Approver chosen by Aisha Rahman from a paper scan')]],
+      'claim-advance': ['A claim and an advance: AF-2611-005', 'Kah Seng’s October phone bill and Daniel’s salary advance, printed together from To print on Tue 17 Nov. The Kind column and the line under the total keep the two kinds apart. The advance prints “more than one month’s pay” without the pay figure, which only Payroll figures users see.',
+        [K('File', 'AF-2611-005 AISB approval form.pdf'), K('Printed', 'Tue 17 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'Payments › Approvals, To print: Print approval form for 2 requests · RM 4,145.00'), K('Audit trail', 'Printed approval form AF-2611-005 (CL-2611-001, SA-2611-002)'), K('Approvers printed', AP3), K('Now', 'Waiting for approval')]],
+      advance: ['A salary advance on its own: AF-2611-001', 'Hafiz’s advance of RM 1,500.00, repaid at RM 500.00 a month from his November pay. Printed by itself on Mon 2 Nov and approved the next day from a digitally signed PDF.',
+        [K('File', 'AF-2611-001 AISB approval form.pdf'), K('Printed', 'Mon 2 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'HR › Claims and advances, Advances: Print approval form'), K('Audit trail', 'Printed approval form AF-2611-001 (SA-2611-001)'), K('Approvers printed', AP3), K('Now', 'Approved by Rajesh Kumar, 3 Nov 2026 · uploaded Tue 3 Nov · digitally signed PDF, matched automatically')]],
+      mixed: ['Mixed: a claim, an advance and a supplier bill', 'HR requests and a supplier bill can share one form; the Kind column and the line under the total keep them apart. Drawn state: in the samples the fee went on AF-2611-004 (Mon 16 Nov) and the claim and the advance on AF-2611-005 (Tue 17 Nov). Printed together on Wed 18 Nov they would take a code of their own. AF-2611-010 is a drawn code, not the next code Approvals gives today; Approvals would give the same code and check (F9L-4ZRA) only if its print sequence reached that number.',
+        [K('File', 'AF-2611-010 AISB approval form.pdf'), K('Printed', 'Wed 18 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'Payments › Approvals, To print: Print approval form for 3 requests · RM 7,345.00'), K('Audit trail', 'Printed approval form AF-2611-010 (CL-2611-001, SA-2611-002, Payroll Advisory PLT, PA-1010)'), K('The advance', 'Prints “more than one month’s pay” without the pay figure, which only Payroll figures users see'), K('Approvers printed', AP3)]],
+      salary: ['The October salary run', 'A salary run is one request. Page 1 holds what the director signs: the totals, each deduction, the employer’s share and what goes to whom, with no figure per person. Page 2 lists each person’s pay, marked Confidential. Only a user with the Payroll figures right prints it. Drawn for when the run is in use: in today’s samples October’s salaries were approved once, on the recurring set-up AF-2610-001.',
+        [K('File', 'AF-2610-009 AISB approval form.pdf'), K('Printed', 'Wed 21 Oct 2026 by Aisha Rahman, who has the Payroll figures right (declared, not verified)'), K('Printed from', 'HR › Payroll › October run, Print approval form, once the run is checked'), K('Audit trail', 'Printed approval form AF-2610-009 (October 2026 salary run)'), K('Pages', 'Page 1 the totals and the signatures; page 2 each person'), K('Now', 'Approved by Hassan Ismail, 22 Oct 2026 · uploaded Thu 22 Oct')]],
+      'salary-no-figures': ['Printed only with the Payroll figures right', 'Nurul Aina has HR without the Payroll figures right. HR › Payroll › October run shows her no Print approval form button, and an old link to the form opens a plain page that says why. Nothing is printed, saved or added to the audit trail.',
+        [K('User', 'Nurul Aina · HR only'), K('Asked for', 'AF-2610-009, the October 2026 salary run'), K('Why not', 'Page 2 shows each person’s pay'), K('Who can print it', 'A user with the Payroll figures right, such as Aisha Rahman')]],
+      recurring: ['A recurring set-up', 'Approved once, not every month: the office rental from October and the yearly cloud hosting plan. The form says so in print. A new form is needed only when a set-up’s amount changes.',
+        [K('File', 'AF-2611-002 AISB approval form.pdf'), K('Printed', 'Wed 4 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'Payments › Approvals, To print (Recurring sends new set-ups there)'), K('Audit trail', 'Printed approval form AF-2611-002'), K('Approvers printed', AP3), K('Now', 'Approved by Hassan Ismail, 5 Nov 2026 · uploaded Fri 6 Nov · Approver chosen by Aisha Rahman from a paper scan. The office rental, paid Fri 30 Oct, reads Approved after payment.')]],
+      payee: ['The approver is the payee', 'The Director fee is paid to Hassan Ismail, one of AISB’s approvers, so his block is struck and reads “Can’t sign: payee”. Tan Mei Ling or Rajesh Kumar signs; Rajesh Kumar did. The salaries print as a total only.',
+        [K('File', 'AF-2610-001 AISB approval form.pdf'), K('Printed', 'Thu 1 Oct 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'Payments › Approvals, To print'), K('Audit trail', 'Printed approval form AF-2610-001'), K('Salaries', '8 people, RM 48,600.00 a month: no pay per person on the form'), K('Now', 'Approved by Rajesh Kumar, 1 Oct 2026 · uploaded Fri 2 Oct · Approver chosen by Aisha Rahman from a paper scan')]],
+      one: ['One approver: AI', 'Agrinexus International has one approver, Hassan Ismail, so the form has one block and says his signature approves it. Setup › Companies holds no address for AI, so the header prints its name and registration number only.',
+        [K('File', 'AF-2611-006 AI approval form.pdf'), K('Printed', 'Mon 16 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Printed from', 'Payments › Approvals, To print (AI)'), K('Audit trail', 'Printed approval form AF-2611-006 (Consultant — farm audit)'), K('Approver printed', 'Hassan Ismail, AI’s only approver'), K('Now', 'Approved by Hassan Ismail, 17 Nov 2026 · uploaded Tue 17 Nov · digitally signed PDF, matched automatically')]],
+      'one-self': ['One approver, who is also the payee', 'Hassan Ismail’s own mileage claim at AI. With no second approver his block is not struck: it says that signing reads Self-approved, and the approval is listed in the audit pack. Drawn state: AI has no claim types yet (no chart of accounts). AF-2611-011 is a drawn code, not the next code Approvals gives today; Approvals would give the same code and check (V2C-8NJE) only if its print sequence reached that number.',
+        [K('File', 'AF-2611-011 AI approval form.pdf'), K('Printed', 'Wed 18 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Before printing', 'To print warns: “The payee is AI’s only approver, so it can only be Self-approved”'), K('Audit pack', 'Listed on Audit pack · HR and approval pages as Self-approved'), K('To avoid it', 'Add a second approver for AI in Setup › HR › Approvers')]],
+      'two-pages': ['A form that runs to two pages', 'The header, code and check repeat on every page, and every page says Page x of y. The QR and the signature blocks stay on page 1, so one photo of page 1 is enough to upload it, and page 1 states how many requests there are and their total. Drawn state: no AISB month has 34 claims, so these rows are invented (CL-2611-101 to CL-2611-134), and AF-2611-012 is a drawn code that no other board uses.',
+        [K('File', 'AF-2611-012 AISB approval form.pdf'), K('Printed', 'Wed 18 Nov 2026 by Aisha Rahman (declared, not verified)'), K('Page 1', '18 claims, the total of all 34 and the signatures'), K('Page 2', '16 more claims and the total'), K('Approvers printed', AP3)]],
+      none: ['No approvers set: nothing prints', 'A company with no approvers in Setup › HR › Approvers can’t print an approval form, because there is no one to sign it. Print approval form says why, and nothing is printed, numbered or saved. Drawn as AIP before its approver was added; any new company starts like this.',
+        [K('Company', 'AIP · Agrinexus Plantations · Kept here'), K('Approvers', 'None yet'), K('Paying', 'Not blocked: it can be paid from To pay, and then reads Paid without approval on file'), K('Audit trail', 'Nothing added')]]
+    };
+    const lead = LEAD[V] || LEAD.single;
+    const ST = { wait: ['Waiting for approval', '#FEF1D6', '#7A4300'], ok: ['Approved', '#E3F7EC', '#0A6B3D'], drawn: ['Drawn state', '#EEF1F5', '#46546A'], no: ['Not printed', '#FDE6E3', '#B0190F'] };
+    const st = ST[V === 'none' || V === 'salary-no-figures' ? 'no' : fm ? fm.st : 'wait'];
+    const chipStyle = 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + st[1] + ';color:' + st[2];
+
+    let nextTitle = 'Once it is signed', nextText = NEXT, links = UPL;
+    if (key === 'claims') links = UPL.concat([L('HR › Claims and advances', 'HrClaims.dc.html')]);
+    if (V === 'mixed' || V === 'claim-advance') links = UPL.concat([L('HR › Claims and advances, Advances', 'HrAdvances.dc.html')]);
+    if (V === 'advance') links = [L('HR › Claims and advances, Advances', 'HrAdvances.dc.html'), L('Payments › Approvals, Approved', 'Approvals.dc.html'), L('Payments › To pay', 'ToPay.dc.html')];
+    if (V === 'advance') { nextTitle = 'Approved'; nextText = 'The signed PDF was matched automatically: its code and keyed check agreed with SA-2611-001 as it stood. The advance is in To pay, due Fri 20 Nov; the first deduction is from the November pay.'; }
+    if (V === 'salary') links = [L('Upload the signed form', 'ApprovalUpload.dc.html'), L('HR › Payroll · October run', 'PayrollRun.dc.html'), L('Summary, authorities and bank list', 'PayrollTotals.dc.html')];
+    if (V === 'recurring' || V === 'payee') links = UPL.concat([L('Payments › Recurring', 'Recurring.dc.html')]);
+    if (V === 'one' || V === 'one-self') links = UPL.concat([L('Setup › HR › Approvers', 'SetupApprovers.dc.html')]);
+    if (V === 'salary-no-figures') { nextTitle = 'What to do'; nextText = 'Ask a user with the Payroll figures right to print it, or give that right in Users and access.'; links = [L('Users and access', 'UsersAccess.dc.html'), L('HR › Payroll · October run', 'PayrollRun.dc.html')]; }
+    if (V === 'none') { nextTitle = 'What to do'; nextText = 'Add the director who signs for AIP. Up to three approvers can be set per company; the form prints the ones in place on the print date.'; links = [L('Setup › HR › Approvers', 'SetupApprovers.dc.html'), L('Payments › Approvals', 'Approvals.dc.html'), L('Payments › To pay', 'ToPay.dc.html')]; }
+
+    const never = ['No IC, passport or bank account number, and no address of a person.', 'No pay per person on page 1. A salary run prints it on page 2 only, for a user with the Payroll figures right.', 'No leave type and no medical detail.', 'No receipts: they stay with the claim in the app.'].map(t => ({ t }));
+
+    // ---- state chips ----
+    const btn = on => 'min-height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const go = (k, label) => () => this.setState({ view: k, say: label + ' shown.' });
+    const MAIN = [['single', 'Single request'], ['claims', 'October claims'], ['claim-advance', 'Claim and advance'], ['advance', 'Salary advance'], ['mixed', 'Mixed'], ['salary', 'Salary run'], ['recurring', 'Recurring set-up'], ['payee', 'Approver is the payee'], ['one', 'One approver (AI)'], ['two-pages', 'Two pages'], ['none', 'No approvers set']];
+    const mainOf = V === 'salary-no-figures' ? 'salary' : V === 'one-self' ? 'one' : V;
+    const states = MAIN.map(([k, label]) => ({ label, pressed: mainOf === k ? 'true' : 'false', style: btn(mainOf === k), pick: go(k, label) }));
+    const SUB = key === 'salary' ? ['Printed by', [['salary', 'Aisha Rahman · Payroll figures'], ['salary-no-figures', 'Nurul Aina · HR only']]]
+      : mainOf === 'one' ? ['Request', [['one', 'Farm audit'], ['one-self', 'Hassan Ismail’s own claim']]] : null;
+    const subOpts = SUB ? SUB[1].map(([k, label]) => ({ label, pressed: V === k ? 'true' : 'false', style: btn(V === k), pick: go(k, label) })) : [];
+
+    // ---- shell ----
+    const isPay = key === 'salary';
+    const aina = V === 'salary-no-figures';
+    return {
+      say: this.state.say,
+      sbActive: isPay ? 'payroll' : 'approvals', sbCo: co.sb, sbKind: co.kind, sbAccess: aina ? 'hrOnly' : 'full', nCos: coKey === 'AIP' ? 'four' : 'two',
+      tbSection: isPay ? 'HR' : 'Payments', tbPage: isPay ? 'Payroll' : 'Approvals', tbUser: aina ? 'aina' : 'aisha',
+      onTopCo: code => {
+        const c = String(code || '').toUpperCase();
+        const to = { AISB: 'single', AI: 'one', AIP: 'none' }[c];
+        if (to) this.setState({ view: to, say: 'Showing a form for ' + c + '.' });
+        else this.setState({ say: 'Only AISB, AI and AIP have a form drawn on this board.' });
+      },
+      backHref: isPay ? 'PayrollRun.dc.html' : 'Approvals.dc.html', backText: isPay ? 'Payroll · October run' : 'Approvals',
+      coLine: co.line,
+      states, hasSub: !!SUB, subLabel: SUB ? SUB[0] : '', subOpts,
+      leadTitle: lead[0], leadText: lead[1], facts: lead[2], chipText: st[0], chipStyle,
+      nextTitle, nextText, links, never,
+      isPaper: pages.length > 0, pages,
+      fileName: fm ? fm.code + ' ' + co.file + ' approval form.pdf' : '', pageCount: pages.length === 2 ? '2 pages' : '1 page',
+      isRefused: V === 'none', isNotPrinted: aina
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audit pack HR and approval pages · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hs:hover{background:#F0F3F8 !important}
+.hl:hover{background:#EAF0FD !important}
+/* motion and focus base */
+.hs,.hl{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.sheet{transition:border-color .12s ease-out,box-shadow .12s ease-out}
+.cp{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;border:1px solid #D5DBE4;background:#EEF1F5;color:#46546A;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@media (max-width:760px){.ah-main{padding:24px 16px 48px !important}.ah-nav{flex:1 1 100% !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <main class="ah-main" style="max-width: 1360px; margin: 0 auto; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 22px">
+
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Audit pack · October 2026</span>
+      <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">HR and approval pages in the PDF</h1>
+      <span style="color: #46546A; font-size: 14px; max-width: 900px">Six A4 pages come after the three books pages and before the documents, each with its own PDF bookmark: approvals of the month, paid without approval on file, approver history, steps one name did alone, the HR summary and the Month review. They hold what an auditor needs, not payslips, unless Include payslips was on when the pack was built. <a href="AuditPack.dc.html">Back to Audit pack</a> · <a href="AuditPackBooks.dc.html">The books pages</a></span>
+    </div>
+
+    <div role="group" aria-labelledby="ah-state-label" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+      <span id="ah-state-label" style="font-size: 13px; font-weight: 600; color: #46546A; margin-right: 4px">State to show</span>
+      <sc-for list="{{states}}" as="st" hint-placeholder-count="6"><button type="button" class="{{st.cls}}" aria-pressed="{{st.pressed}}" onClick="{{st.pick}}" style="{{st.style}}">{{st.label}}</button></sc-for>
+    </div>
+
+    <section aria-live="polite" class="{{sayCls}}" style="{{sayBox}}">
+      <dc-import name="Icon" glyph="{{sayGlyph}}" tone="{{sayTone}}" size="20" hint-size="20px,20px"></dc-import>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="{{sayTitleStyle}}">{{sayTitle}}</b><span style="{{sayTextStyle}}">{{sayText}}</span></div>
+    </section>
+
+    <div class="sr" role="status">{{announce}}</div>
+
+    <div style="display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+
+      <div class="ah-nav" style="flex: 0 0 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <nav aria-labelledby="ah-bm-title" style="box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="padding: 16px 18px; border-bottom: 1px solid #EEF1F5; display: flex; flex-direction: column; gap: 2px"><h2 id="ah-bm-title" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">PDF bookmarks</h2><span style="color: #5F6C80; font-size: 12px">{{packName}}</span></div>
+          <ol style="list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 2px">
+            <sc-for list="{{marks}}" as="m" hint-placeholder-count="12">
+              <li>
+                <sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}"><button type="button" class="hl fr" aria-current="{{m.current}}" onClick="{{m.go}}" style="{{m.style}}"><span style="font-weight: 600">{{m.label}}</span><span style="font-size: 12px; color: #5F6C80; flex: none">{{m.where}}</span></button></sc-if>
+                <sc-if value="{{m.isHref}}" hint-placeholder-val="{{ false }}"><a href="{{m.href}}" class="hl fr" style="{{m.style}}"><span style="font-weight: 600">{{m.label}}</span><span style="font-size: 12px; color: #5F6C80; flex: none">{{m.where}}</span></a></sc-if>
+                <sc-if value="{{m.isPlain}}" hint-placeholder-val="{{ false }}"><div style="{{m.style}}"><span style="{{m.labelStyle}}">{{m.label}}</span><span style="font-size: 12px; color: #5F6C80; flex: none">{{m.where}}</span></div></sc-if>
+              </li>
+            </sc-for>
+          </ol>
+          <div style="padding: 12px 18px 16px; border-top: 1px solid #EEF1F5; font-size: 12px; color: #5F6C80">{{marksNote}}</div>
+        </nav>
+
+        <div style="box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">How these pages read</h2>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px"><span class="cp"><dc-import name="Icon" glyph="person" tone="muted" size="14" hint-size="14px,14px"></dc-import>Declared, not verified</span></div>
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A">
+            <li>Plain text in the pack's small type, like the books pages: a head with the company, the month and the page title, then lines that wrap where the PDF wraps them. Drawn at print size, so zoom in to read.</li>
+            <li>Until logins exist, every name typed or chosen at the keyboard says "declared, not verified". A paper scan reads "Approver chosen by &lt;name&gt; from a paper scan"; a digitally signed PDF says the signer's name was matched.</li>
+            <li>No IC number, bank account, address or medical detail on these pages, and pay only as totals per authority. Payslips are added only when Include payslips is on.</li>
+            <li>Every company gets the six pages, so every pack has the same shape. A company that doesn't run payroll in the app says so on the HR summary.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start">
+        <sc-for list="{{sheets}}" as="p" hint-placeholder-count="6">
+          <figure class="rv" style="margin: 0; display: flex; flex-direction: column; gap: 8px">
+            <section id="{{p.id}}" tabindex="-1" aria-labelledby="{{p.hid}}" class="{{p.cls}}" style="{{p.style}}">
+              <h3 id="{{p.hid}}" style="margin: 0 0 4px; font-family: Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; line-height: 17.5px; color: #000000">{{p.title}}</h3>
+              <sc-for list="{{p.lines}}" as="l" hint-placeholder-count="6"><p style="{{l.style}}">{{l.t}}</p></sc-for>
+              <p style="margin: auto 0 0; padding-top: 8px; border-top: 0.5px solid #000000; font-family: Helvetica, Arial, sans-serif; font-size: 6px; line-height: 9px; color: #000000">{{p.foot}}</p>
+            </section>
+            <figcaption style="font-size: 12px; color: #5F6C80">{{p.caption}}</figcaption>
+          </figure>
+        </sc-for>
+      </div>
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2560},"view":{"editor":"enum","default":"aisb","options":["aisb","ai","none-open","one-name","payslips","before-hr"],"section":"State to show"}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { view: (p && p.view) || 'aisb', cur: 0, flip: false, announce: '', swap: 0 }; }
+  componentDidUpdate(pp) {
+    if (pp.view !== this.props.view) this.setState({ view: this.props.view || 'aisb', cur: 0, announce: '', swap: this.state.swap + 1 });
+  }
+  calm() { return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+  titles() { return ['Approvals of the month', 'Paid without approval on file', 'Approver history', 'Steps one name did alone', 'HR summary', 'Month review on file']; }
+
+  // The six pages for each state, as plain lines (H = a bold line, L = a list line). Figures from scope/samples.md.
+  content(view) {
+    const H = t => ({ t, h: true }), P = t => ({ t }), L = t => ({ t: '- ' + t });
+    const ai = view === 'ai' || view === 'one-name';
+    const DECL = "as on file when the pack was built. Who prepared, paid and chose the approver is the name declared on this computer: declared, not verified.";
+    const SCAN = 'Approver chosen by Aisha Rahman from a paper scan.';
+    const STEPS = 'The four steps are Request, Approve, Pay, and Record and reconcile. Until logins exist, the name at each step is the one declared on this computer (declared, not verified).';
+    const KEY = [H('Form key'), P('Made 6 Jan 2025 by Aisha Rahman (declared, not verified), for all companies; not changed since. Making or changing it is recorded in the audit trail.')];
+    const AUTH = [
+      H('Totals per authority, October 2026 (from the corrected workbook check of 22 Oct 2026)'),
+      L('KWSP: 11,240.00 (employee 5,346.00, employer 5,894.00). Not paid by 15 Nov 2026.'),
+      L('PERKESO: 1,086.40 (SOCSO 205.00 and 717.60, EIS 81.90 and 81.90). Paid 17 Nov 2026.'),
+      L('PCB: 4,915.00. Paid 14 Nov 2026, in full.'),
+      L('Lindung 24 Jam (SKBBK) 0.00 · zakat 0.00 · HRDF: not registered.'),
+      L('Gross pay 59,147.90; net pay 48,600.00, paid 24 Oct 2026 as PAYROLL BULK 8 ITEMS.')
+    ];
+    const LEAVE = [
+      H('Annual leave 2026, as at 18 Nov 2026 when the pack was built. Year-end balances print in the December 2026 pack.'),
+      L('Aisha Rahman: 16 days, 11 taken, 5 left.'),
+      L('Ong Wei Ming: 12 days, 8.5 taken, 3.5 left.'),
+      L('Nurul Aina binti Hashim: 16 days, 14 taken, 2 left.'),
+      L('Mohd Hafiz bin Rosli: 16 days, 10 taken, 1 booked, 5 left.'),
+      L('Nor Khadijah binti Omar: 16 days, 6 taken, 10 left.'),
+      L('Wong Kah Seng: 12 days, 7 taken, 5 left.'),
+      L('Goh Jia Hui: 3 days (joined 1 Sep 2026), 0 taken, 4 booked, -1 left. More than her legal days: a warning, not refused.'),
+      L('Nur Izzati binti Kamal: 8 days, 5 taken, 3 left.'),
+      L('Daniel Lee Chee Keong: 1 day (joined 3 Nov 2026), 0 taken, 1 left.')
+    ];
+    const ADV = [
+      H('Salary advances'), P('None outstanding on 31 Oct 2026. SA-2611-001 (Mohd Hafiz bin Rosli, 1,500.00) was approved on 3 Nov 2026 and belongs to November.'),
+      H('Amounts to collect'), L('Kavitha Nair (left 31 Aug 2026): 400.00 of advance SA-2606-001, not covered by her final pay.')
+    ];
+    if (ai) {
+      const selfOne = view === 'one-name';
+      const p7 = [P("Approvals for October 2026's payments, " + DECL),
+        H('Approved: 3'),
+        L("Salaries — staff, 21,300.00: AF-2610-002, signed by Hassan Ismail, date on the form 1 Oct 2026, uploaded 2 Oct 2026. Digitally signed PDF: the signer's name was matched to the approvers."),
+        L("Farm supplies, Agro inputs INV-7781, 6,750.00: AF-2610-003, signed by Hassan Ismail, 16 Oct 2026, uploaded 16 Oct 2026. Digitally signed PDF. Paid 19 Oct 2026."),
+        L('Consultant — farm audit, 2,500.00: AF-2611-006, signed by Hassan Ismail, 17 Nov 2026, uploaded 17 Nov 2026. Digitally signed PDF. Not paid yet.'),
+        H('Waiting: 0'),
+        H('Not needed'), P('Statutory payments, utilities and money in need no approval and are not listed.')]
+        .concat(selfOne ? [H('Self-approved: 1'), L("Director's mileage to the farm, Hassan Ismail, 640.00: requested by Hassan Ismail and approved by him. AI has one approver, so it could only be Self-approved.")] : [])
+        .concat([H('Per approver'), P(selfOne ? 'Hassan Ismail 4, 1 of them Self-approved.' : "Hassan Ismail 3. Self-approved: none. He is AI's only approver, so a request paid to him could only be Self-approved, and would be listed here.")]);
+      const p10 = [P(STEPS), H('October 2026'),
+        L('Request: Aisha Rahman.'), L('Approve: Hassan Ismail, on digitally signed PDFs.'), L('Pay: Aisha Rahman.'),
+        L('Record and reconcile: Aisha Rahman, on the bank reconciliation. No books are kept here for AI yet.'),
+        H('Done by one name alone')]
+        .concat(selfOne
+          ? [L("Every step for 1 payment: Director's mileage to the farm, 640.00. Request, Approve (Self-approved), Pay, and Record and reconcile were all declared as Hassan Ismail."),
+             L('Request, Pay, and Record and reconcile for every other payment: Aisha Rahman.')]
+          : [L('Request, Pay, and Record and reconcile: Aisha Rahman, for every payment.')])
+        .concat([P('While one person holds these steps, a director signs the Month review each month: see the last of these pages.')]);
+      return { co: 'Agrinexus International', pages: [
+        p7,
+        [P('Payments that needed approval and were paid with no approved form on file, or above what was approved.'),
+          H('Still open: 0'), P('None. Every October payment that needed approval had its form on file before it was paid.'),
+          H('Approved after payment: 0'), H('Paid, approval refused: 0')],
+        [P("Agrinexus International's approvers, from Setup › HR › Approvers, as they were on each date. Changing the list later doesn't change old approvals."),
+          L('Hassan Ismail, Director: from 1 Jan 2025. The only approver for AI.')].concat(KEY)
+          .concat([H("Forms for October 2026's payments"), P('AF-2610-002, AF-2610-003 and AF-2611-006, all signed.')]),
+        p10,
+        [P("Payroll isn't run in the app for AI."),
+          H('Headcount, October 2026'), P('5 in employment on 31 Oct 2026 · 0 joined · 0 left.'),
+          H('Pay'), P('Salaries are paid through the recurring payment Salaries — staff, 5 people, 21,300.00 a month (net, entered by hand), approved on AF-2610-002. With no payroll run here there are no totals per authority on this page: KWSP, PERKESO and PCB are payments in the register, and their documents follow in this pack.'),
+          H('Workbook check'), P('No check yet for October 2026.'),
+          H('Leave'), P('No leave entered in October 2026. Year-end balances print in the December 2026 pack.'),
+          H('Salary advances'), P('None.'), H('Amounts to collect'), P('None.')],
+        [P('Not on file. MR-2610-AI has not been printed yet, so the checklist item Month reviewed is not ticked.'),
+          P("Print it on Payments › Approvals, have Hassan Ismail sign it and upload it. This page then shows who signed, the date on the sheet and the upload date."),
+          P('The sheet covers the payments register total for October, the payments paid without approval on file (none), the approvals per approver (Hassan Ismail 3) and the bank reconciliation of Maybank FCA.')]
+      ] };
+    }
+    const noneOpen = view === 'none-open', slips = view === 'payslips', before = view === 'before-hr';
+    const p7 = [P("Approvals for October 2026's payments, " + DECL),
+      H(noneOpen ? 'Approved: 9' : 'Approved: 8'),
+      ...(noneOpen ? [L('Contractor — field works, 24,000.00: AF-2611-007, signed by Rajesh Kumar, date on the form 18 Nov 2026, uploaded 18 Nov 2026, after payment. ' + SCAN)] : []),
+      L('Salaries — staff, 48,600.00: AF-2610-001, signed by Rajesh Kumar, date on the form 1 Oct 2026, uploaded 2 Oct 2026. ' + SCAN),
+      L("Director fee, 12,000.00, paid to Hassan Ismail: AF-2610-001, signed by Rajesh Kumar, 1 Oct 2026, uploaded 2 Oct 2026. Hassan Ismail's line was struck: Can't sign: payee. " + SCAN),
+      L('Stationery Mart, 1,000.00 approved, 1,120.00 paid: AF-2610-004, signed by Tan Mei Ling, 27 Oct 2026, uploaded 27 Oct 2026. ' + SCAN + (noneOpen ? ' The 120.00 above it: AF-2611-008, signed by Tan Mei Ling, date on the form 18 Nov 2026, uploaded 18 Nov 2026, after payment. ' + SCAN : ' The 120.00 above approval is on the next page.')),
+      L('Office rental, 6,500.00: AF-2611-002, signed by Hassan Ismail, 5 Nov 2026, uploaded 6 Nov 2026, after payment. ' + SCAN),
+      L('Cloud hosting, USD 1,200.00: AF-2611-002, signed by Hassan Ismail, 5 Nov 2026, uploaded 6 Nov 2026. ' + SCAN + ' Not paid yet.'),
+      L('Oct 2026 Claims - Wei Ming, 486.50: AF-2611-003, signed by Tan Mei Ling, 12 Nov 2026, uploaded 13 Nov 2026. ' + SCAN + ' Not paid yet.'),
+      L('Oct 2026 Claims - Aina, 408.00: AF-2611-003, signed by Tan Mei Ling, 12 Nov 2026, uploaded 13 Nov 2026. ' + SCAN + ' Not paid yet.'),
+      L('Oct 2026 Claims - Jia Hui, 320.00: AF-2611-003, signed by Tan Mei Ling, 12 Nov 2026, uploaded 13 Nov 2026. ' + SCAN + ' Not paid yet.'),
+      H('Waiting: 1'),
+      L('Consultant fee, Payroll Advisory PLT, 3,200.00: AF-2611-004, printed 16 Nov 2026, not signed yet.'),
+      H('Not needed: 6'),
+      P('KWSP, PERKESO, PCB, Telephone & internet, Electricity bill and Rental received (money in).'),
+      H('Per approver'),
+      P(noneOpen ? 'Rajesh Kumar 3 · Tan Mei Ling 5 · Hassan Ismail 2: 10 approvals, as Stationery Mart has two forms. Self-approved: none.' : 'Rajesh Kumar 2 · Tan Mei Ling 4 · Hassan Ismail 2: 8 approvals. Self-approved: none.'),
+      P(noneOpen ? 'AF-2611-007 (Rajesh Kumar) and AF-2611-008 (Tan Mei Ling) were uploaded on 18 Nov 2026, after payment: see the next page.' : 'Paid without approval on file: 2 still open, on the next page.')];
+    const p8 = [P('Payments that needed approval and were paid with no approved form on file, or above what was approved.')]
+      .concat(noneOpen
+        ? [H('Still open: 0'), P('None.'),
+           H('Approved after payment: 3'),
+           L('Office rental, 6,500.00, paid Fri 30 Oct 2026; date on the form 5 Nov 2026 (AF-2611-002); uploaded 6 Nov 2026.'),
+           L('Contractor — field works, 24,000.00, paid Tue 6 Oct 2026; signed by Rajesh Kumar, date on the form 18 Nov 2026 (AF-2611-007); uploaded 18 Nov 2026.'),
+           L('Stationery Mart (PV2610-022), the 120.00 paid above the 1,000.00 approved: signed by Tan Mei Ling, date on the form 18 Nov 2026 (AF-2611-008); uploaded 18 Nov 2026.')]
+        : [H('Still open: 2'),
+           L('Contractor — field works, 24,000.00, paid Tue 6 Oct 2026, entered by Aisha Rahman (declared, not verified). Paid without approval on file.'),
+           L('Stationery Mart (PV2610-022), 1,120.00, paid Fri 30 Oct 2026 by cheque 000214, entered by Aisha Rahman (declared, not verified). Approved 1,000.00 on AF-2610-004: paid more than approved (RM 120.00).'),
+           H('Approved after payment: 1'),
+           L('Office rental, 6,500.00, paid Fri 30 Oct 2026; date on the form 5 Nov 2026 (AF-2611-002); uploaded 6 Nov 2026.')])
+      .concat([H('Paid, approval refused: 0'), P('A payment moves from Still open to Approved after payment when its form is uploaded. The audit trail keeps both dates.')]);
+    const p9 = [P("AISB Sdn Bhd's approvers, from Setup › HR › Approvers, as they were on each date. Changing the list later doesn't change old approvals."),
+      L('Hassan Ismail, Director: from 1 Jan 2025. Paid a director fee, so another approver signs anything paid to him.'),
+      L('Tan Mei Ling, Director: from 1 Jan 2025.'),
+      L('Rajesh Kumar, Director: from 1 Jul 2026. Added 30 Jun 2026 by Aisha Rahman (declared, not verified).'),
+      L('Farid Osman, Director: 1 Jan 2025 to 30 Jun 2026. Stopped 30 Jun 2026: left the board.')].concat(KEY)
+      .concat([H("Forms for October 2026's payments"), P(noneOpen ? 'AF-2610-001, AF-2610-004, AF-2611-002, AF-2611-003, AF-2611-007 and AF-2611-008 signed; AF-2611-004 waiting.' : 'AF-2610-001, AF-2610-004, AF-2611-002 and AF-2611-003 signed; AF-2611-004 waiting.')]);
+    const p10 = [P(STEPS), H('October 2026'),
+      L('Request: Aisha Rahman, for every payment.'),
+      L('Approve: Rajesh Kumar, Tan Mei Ling and Hassan Ismail, by signed form; never the name that prepared and paid.'),
+      L('Pay: Aisha Rahman, for every payment.'),
+      L('Record and reconcile: Aisha Rahman. SQL vouchers linked; the Maybank current reconciliation is not signed off yet.'),
+      H('Done by one name alone'),
+      L('Request, Pay, and Record and reconcile: Aisha Rahman.'),
+      L('Approvers chosen from a paper scan: all ' + (noneOpen ? 10 : 8) + ', each chosen by Aisha Rahman. The approvers confirm them on the Month review.'),
+      P('While one person holds these steps, a director signs the Month review each month: see the last of these pages.')];
+    const p11 = before
+      ? [P("No staff records yet, so headcount, leave, advances and amounts to collect start once staff are added on HR › Staff. The approval pages above don't need staff records."),
+         H('Headcount'), P('No staff records.')].concat(AUTH)
+      : [P(slips
+          ? "Only what an auditor needs, and the payslips: Include payslips was on when the pack was built, so October's 8 payslips follow these pages, one per page, with IC numbers and bank accounts masked to the last 4."
+          : 'Only what an auditor needs: headcount, totals per authority, leave, advances and amounts to collect. Payslips are not in this pack: Include payslips was off when it was built.'),
+         H('Headcount, October 2026'), P('8 in employment on 31 Oct 2026 · 0 joined · 0 left. 1 joined on 3 Nov 2026, in next month’s pack.')]
+        .concat(AUTH).concat(LEAVE).concat(ADV);
+    const p12 = noneOpen
+      ? [P('On file. MR-2610-AISB, signed by Hassan Ismail, date on the sheet 18 Nov 2026, uploaded 18 Nov 2026. ' + SCAN + ' The checklist item Month reviewed is ticked.'),
+         P('The sheet was printed again on 18 Nov 2026 (check F4H-9KXT), after AF-2611-007 and AF-2611-008 were uploaded. It covers the payments register total for October, the payments paid without approval on file (none open), the approvals per approver (Rajesh Kumar 3, Tan Mei Ling 5, Hassan Ismail 2) and the Maybank current reconciliation, not signed off (5 lines to explain).')]
+      : [P("Not on file. MR-2610-AISB was printed on Tue 17 Nov 2026 and is waiting for a director's signature. The checklist item Month reviewed is not ticked."),
+         P('The sheet covers the payments register total for October, the 2 payments paid without approval on file, the approvals per approver (Rajesh Kumar 2, Tan Mei Ling 4, Hassan Ismail 2) and the Maybank current reconciliation, not signed off (5 lines to explain).'),
+         P('Once a director signs it and it is uploaded on Payments › Approvals, this page shows who signed, the date on the sheet and the upload date.')];
+    const pages = [p7, p8, p9, p10, p11, p12];
+    const slip = [P('S001 · IC number ••••••-••-3418 · HR and finance executive · Finance and HR · joined 2 May 2019'),
+      H('Earnings'), L('Basic salary: 8,600.00'), L('Travelling allowance: 1,200.00'), L('Gross pay: 9,800.00'),
+      H('Deductions'), L('EPF (KWSP): 946.00'), L('SOCSO (PERKESO): 29.75'), L('EIS (SIP): 11.90'), L('PCB (LHDN): 1,080.00'),
+      H('Net pay: 7,732.35, paid 24 Oct 2026 to Maybank ····2210'),
+      H('Employer contributions'), P('EPF 1,032.00 · SOCSO 104.15 · EIS 11.90'),
+      P('The first of 8 payslips, pages 13 to 20, in staff number order.')];
+    return { co: 'AISB Sdn Bhd', pages, slip: slips ? slip : null };
+  }
+
+  goTo(n) {
+    const T = this.titles().concat(['Payslips, October 2026']);
+    this.setState({ cur: n, flip: !this.state.flip, announce: 'Showing page ' + (n + 6) + ': ' + T[n - 1] });
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById('ah-sheet-' + n);
+    if (el && el.scrollIntoView) el.scrollIntoView({ behavior: this.calm() ? 'auto' : 'smooth', block: 'nearest' });
+    if (el && el.focus) el.focus({ preventScroll: true });
+  }
+
+  renderVals() {
+    const S = this.state, view = S.view;
+    const C = this.content(view);
+    const T = this.titles();
+    const ai = view === 'ai' || view === 'one-name';
+    const head = C.co + ' - October 2026';
+    const stateList = [['aisb', 'AISB, October'], ['ai', 'AI, payroll not run here'], ['none-open', 'None still open'], ['one-name', 'One name did every step'], ['payslips', 'With payslips'], ['before-hr', 'Before HR (no staff)']];
+    const states = stateList.map(([v, label]) => ({ label, pressed: view === v ? 'true' : 'false', cls: view === v ? '' : 'hs',
+      style: 'height: 36px; padding: 0 14px; border-radius: 10px; font: 600 13px Inter, sans-serif; cursor: pointer; ' + (view === v ? 'border: 1px solid #2450B8; background: #2450B8; color: #FFFFFF' : 'border: 1px solid #8792A4; background: #FFFFFF; color: #0F1A2B'),
+      pick: () => this.setState({ view: v, cur: 0, announce: '', swap: this.state.swap + 1 }) }));
+    const SAY = {
+      'aisb': ['warn', 'alert', 'AISB, October 2026: 2 paid without approval on file, and the Month review not on file yet', 'The six pages name who signed each form and how the approver was chosen; every name typed at the keyboard is labelled declared, not verified. Include payslips was off, so the HR summary holds headcount, totals per authority, leave, advances and amounts to collect only.'],
+      'ai': ['muted', 'help', "Payroll isn't run in the app for AI", "The approval pages print as for any company: AI's three forms were digitally signed, so the signer was matched automatically. The HR summary gives headcount and says where the pay is: the recurring salary payment, approved on AF-2610-002."],
+      'none-open': ['ok', 'verified', 'Nothing still open', 'The paid-without-approval page lists no payment still open: all three sit under Approved after payment, and the signed Month review is on file. Sample state: as if AF-2611-007, AF-2611-008 and the Month review were uploaded today; not in the shared data set.'],
+      'one-name': ['warn', 'alert', 'One name did every step for one payment', "Hassan Ismail's mileage claim at AI: he requested it, approved it (Self-approved, because AI has one approver), paid and recorded it, all declared. Sample state: AI needs claim types, and so a chart of accounts, first."],
+      'payslips': ['warn', 'lock', 'Include payslips was on', "October's 8 payslips follow the six pages, pages 13 to 20, so the documents start on page 21. IC numbers and bank accounts stay masked to the last 4. The pack itself has no password: keep it as you keep payslips."],
+      'before-hr': ['muted', 'staff', 'No staff records yet', 'Before HR is in use the six pages still print. The approval pages need no staff records; the HR summary says there are none and still gives the totals per authority from the month’s workbook check.']
+    }[view];
+    const TONE = { ok: ['#F0FBF5', '#BFE8D0', '#0A6B3D', '#14532D'], warn: ['#FFFBF2', '#F3D9A6', '#7A4A00', '#5A3700'], muted: ['#F7F8FA', '#E3E7ED', '#0F1A2B', '#46546A'] }[SAY[0]];
+    const LINE = 'margin: 0 0 3px; font-family: Helvetica, Arial, sans-serif; font-size: 7px; line-height: 11px; color: #000000';
+    const sheetStyle = on => 'box-sizing: border-box; width: 460px; max-width: 100%; min-height: 650px; background: #FFFFFF; padding: 22px; border-radius: 2px; display: flex; flex-direction: column; ' + (on ? 'border: 2px solid #2450B8; box-shadow: 0 6px 22px rgba(15,26,43,.16)' : 'border: 2px solid #D5DBE4; box-shadow: 0 2px 10px rgba(15,26,43,.08)');
+    const mk = (lines, n, title, page, caption) => ({ id: 'ah-sheet-' + n, hid: 'ah-sheet-h' + n, cls: 'sheet' + (S.cur === n ? (S.flip ? ' fa' : ' fb') : ''), title: head + ' - ' + title,
+      lines: lines.map(l => ({ t: l.t, style: LINE + (l.h ? '; font-weight: 700; margin-top: 5px' : '') })),
+      foot: C.co + ' · Audit pack October 2026 · page ' + page + (n <= 6 ? ' · names as declared on this computer (declared, not verified)' : ' · IC and bank masked to the last 4'),
+      caption, style: sheetStyle(S.cur === n) });
+    const sheets = C.pages.map((lines, i) => mk(lines, i + 1, T[i], i + 7, 'Page ' + (i + 7) + ' · A4 at print size · bookmark ' + T[i]));
+    if (C.slip) sheets.push(mk(C.slip, 7, 'Payslip - Aisha Rahman', 13, 'Page 13 · the first payslip · its full design is on PrintPayslip'));
+
+    const rowBase = 'display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 8px; font: 400 13px Inter, sans-serif; text-align: left; text-decoration: none; ';
+    const plain = (label, where, muted) => ({ isLink: false, isHref: false, isPlain: true, href: '', current: 'false', label, where, style: rowBase + 'color: #46546A', labelStyle: muted ? 'color: #5F6C80' : 'font-weight: 600' });
+    const href = (label, where, to) => ({ isLink: false, isHref: true, isPlain: false, href: to, current: 'false', label, where, labelStyle: '', style: rowBase + 'color: #0F1A2B; background: #FFFFFF' });
+    const link = (n, label, where) => ({ isLink: true, isHref: false, isPlain: false, href: '', label, where, current: S.cur === n ? 'true' : 'false', labelStyle: '', go: () => this.goTo(n),
+      style: rowBase + 'border: 0; cursor: pointer; color: #0F1A2B; ' + (S.cur === n ? 'background: #EAF0FD' : 'background: #FFFFFF') });
+    const docStart = C.slip ? 21 : 13;
+    const docs = ai
+      ? [plain('Courier charges - Invoice / bill', 'page ' + docStart, true), plain('Fund receipt - Bank receipt / transfer slip', 'page ' + (docStart + 1), true)]
+      : [plain('Contractor — field works - Invoice', 'page ' + docStart, true), plain('Contractor — field works - Payment Voucher (SQL)', 'page ' + (docStart + 1), true)];
+    const marks = [plain('Index', 'page 1', false), plain('Bank reconciliation', 'page 3', false), href("SQL's books pages (3)", 'pages 4–6', 'AuditPackBooks.dc.html')]
+      .concat(T.map((t, i) => link(i + 1, t, 'page ' + (i + 7))))
+      .concat(C.slip ? [link(7, 'Payslips, October 2026 (8)', 'pages 13–20')] : [])
+      .concat(docs)
+      .concat([plain(ai ? 'and one for each other document file (74 in all)' : 'and one for each other document file (91 in all)', '', true)]);
+    return { states, sheets, marks, announce: S.announce || '',
+      packName: ai ? 'Audit pack AI 2026-10.pdf' : 'Audit pack AISB 2026-10.pdf',
+      marksNote: C.slip
+        ? 'The six HR and approval bookmarks sit at the top level, after the books pages. With Include payslips on, one Payslips bookmark follows with a page per person. Page numbers are for this sample month.'
+        : 'The six HR and approval bookmarks sit at the top level, after the books pages and before the documents. Page numbers are for this sample month.',
+      sayCls: S.swap % 2 ? 'swapA' : 'swapB', sayGlyph: SAY[1], sayTone: SAY[0], sayTitle: SAY[2], sayText: SAY[3],
+      sayBox: 'display: flex; gap: 12px; padding: 12px 14px; border-radius: 12px; align-items: flex-start; background: ' + TONE[0] + '; border: 1px solid ' + TONE[1],
+      sayTitleStyle: 'font-size: 14px; color: ' + TONE[2], sayTextStyle: 'font-size: 13px; color: ' + TONE[3] };
+  }
+}
+</script>
+</body>
+</html>

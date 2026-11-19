@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payroll · Leaver's final pay · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hd:hover:not(:disabled){background:#FDE6E3 !important}
+.ht:hover{background:#F0F3F8}
+.lr:hover{background:#F7F9FC}
+/* motion and focus base */
+.hb,.hs,.hd,.ht,.lr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+#lv-file:focus-visible + label{outline:2px solid #2450B8;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(14,138,80,.45)}to{box-shadow:0 0 0 8px rgba(14,138,80,0)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.pz{animation:pulse .4s ease-out 1}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box;white-space:nowrap}
+.pl{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#F0FBF5;border-color:#BFE8D0;color:#0F1A2B}.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}.rb.info{background:#F3F6FE;border-color:#C9D7F7;color:#1D2F5C}
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.btn,a.btn:hover{color:#FFFFFF}
+.btn:disabled{cursor:progress;opacity:.85}
+.sec{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #778588;background:#FFFFFF;color:#0F1A2B;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.sec,a.sec:hover{color:#0F1A2B}
+.sec:disabled{color:#5F6C80;border-color:#C5CCD6;cursor:not-allowed}
+.dng{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #E8A9A2;background:#FFFFFF;color:#B0190F;font:600 14px Inter,sans-serif;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.lb{display:flex;gap:8px;align-items:baseline;font-size:13px;font-weight:600;color:#46546A}
+.lb span{font-weight:500;font-size:12px;color:#5F6C80}
+.in{height:40px;padding:0 12px;border:1px solid #778588;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%}
+.in[aria-invalid="true"]{border-color:#B0190F;box-shadow:0 0 0 1px #B0190F}
+.in:disabled{background:#F5F6F8;color:#46546A}
+.err{display:flex;gap:6px;align-items:center;color:#B0190F;font-size:13px;font-weight:500}
+.hint{color:#5F6C80;font-size:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.tbl .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tbl tr.tot td{background:#FAFBFC;border-top:1px solid #D5DBE4;font-weight:700}
+@media (max-width:760px){.lv-main{padding:24px 16px 48px !important}.lv-pad{padding:16px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" sub="Leaver" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="lv-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+        <h1 id="lv-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payroll</h1>
+        <p style="margin: 0; color: #46546A; max-width: 760px">{{intro}}</p>
+      </div>
+
+      <div role="tablist" aria-label="Payroll pages" onKeyDown="{{tabKey}}" style="display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #D5DBE4">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+          <a href="{{t.href}}" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="{{t.ctl}}" tabindex="{{t.tabindex}}" class="ht" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</a>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{isAI}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="lv-ai-h" class="rv card" style="padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="payroll" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="lv-ai-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">The leaver's final pay isn't used for AI</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 580px">Agrinexus International doesn't run payroll in this app, so a leaver's last salary is paid from its recurring salary row, by hand. Its Workbook check is the only Payroll tab. <a href="SetupCompanies.dc.html" style="font-weight: 600">Setup › Companies</a> turns on “Runs payroll in this app”.</p>
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 8px"><a href="PayrollCheck.dc.html#ai" class="sec hs">Open AI's Workbook check</a><button type="button" class="sec hs" onClick="{{goAisb}}">Back to AISB</button></div>
+        </section>
+      </sc-if>
+
+      <div role="tabpanel" id="lv-panel" aria-labelledby="{{panelBy}}" style="display: flex; flex-direction: column; gap: 20px">
+        <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+            <span class="sr" role="status">Loading the leavers</span>
+            <div class="card" style="padding: 22px 24px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="height: 20px; width: 30%"></span><span class="sk" style="height: 52px"></span><span class="sk" style="height: 52px"></span></div>
+            <div class="card" style="padding: 22px 24px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="height: 24px; width: 46%"></span><span class="sk" style="height: 14px; width: 70%"></span><span class="sk" style="height: 180px"></span><span class="sk" style="height: 90px"></span></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv card" style="border-color: #F5C2BB; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the leavers</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 480px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+            <button type="button" class="btn hb" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showPage}}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{aina}}" hint-placeholder-val="{{ false }}">
+            <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Later, with logins: Nurul Aina has HR without Payroll figures.</b> She sees each leaver, the parts of the final pay, the advance left and the tax-clearance hold, with every amount hidden, and can upload LHDN's letter. Rights are set on <a href="UsersAccess.dc.html" style="font-weight: 600">Users and access</a>.</span></div>
+          </sc-if>
+
+          <section aria-labelledby="lv-list-h" class="card" style="display: flex; flex-direction: column; overflow: hidden">
+            <div class="lv-pad" style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 18px 24px 14px">
+              <div style="min-width: 0"><h2 id="lv-list-h" tabindex="-1" class="h2">Leavers · AISB · 2026</h2><p style="margin: 2px 0 0; color: #5F6C80; font-size: 13px">From each staff record's last day. A leaver's final pay is a line of the payroll run for the month they leave.</p></div>
+              <span role="status" aria-live="off" style="color: #46546A; font-size: 13px">{{countText}}</span>
+            </div>
+            <sc-if value="{{listEmpty}}" hint-placeholder-val="{{ false }}">
+              <div style="border-top: 1px solid #EEF1F5; padding: 32px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+                <span style="width: 56px; height: 56px; border-radius: 18px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="person" tone="muted" size="28" hint-size="28px,28px"></dc-import></span>
+                <h3 style="margin: 0; font-size: 15px; font-weight: 600">No leavers this year</h3>
+                <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 480px">When a staff record gets a last day, the person shows here with their final pay prepared from the record and Leave.</p>
+                <a href="HrStaff.dc.html" class="sec hs">Open Staff</a>
+                <span class="hint">State only: AISB has two leavers in the samples.</span>
+              </div>
+            </sc-if>
+            <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+              <div role="region" aria-label="Leavers, scrolls sideways" tabindex="0" class="fr" style="{{scrollStyle}}">
+                <table class="tbl" style="min-width: 820px">
+                  <caption class="sr">Leavers of AISB in 2026: last day, reason, the run their final pay is on, the hold and the advance left</caption>
+                  <thead><tr><th scope="col" style="position: sticky; top: 0">Person</th><th scope="col" style="position: sticky; top: 0">Last day</th><th scope="col" style="position: sticky; top: 0">Reason</th><th scope="col" style="position: sticky; top: 0">Final pay</th><th scope="col" style="position: sticky; top: 0">Tax clearance</th><th scope="col" style="position: sticky; top: 0">Advance</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{rows}}" as="r" hint-placeholder-count="2">
+                      <tr class="{{r.cls}}" style="{{r.trStyle}}">
+                        <td><button type="button" class="lr fr" aria-pressed="{{r.pressed}}" onClick="{{r.pick}}" style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; width: 100%; min-height: 40px; padding: 4px 6px; margin: -4px -6px; border: 0; border-radius: 8px; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer"><b>{{r.name}}</b><span style="color: #5F6C80; font-size: 12px">{{r.sub}}</span></button></td>
+                        <td style="white-space: nowrap">{{r.last}}</td>
+                        <td>{{r.reason}}</td>
+                        <td>{{r.final}}</td>
+                        <td><span class="{{r.holdCls}}"><dc-import name="Icon" glyph="{{r.holdGlyph}}" tone="{{r.holdTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.hold}}</span></td>
+                        <td>{{r.adv}}</td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 12px 24px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+                  <span role="status" aria-live="off" style="color: #46546A; font-size: 13px">{{many.foot}}</span>
+                  <button type="button" class="sec hs" onClick="{{many.more}}" disabled="{{many.off}}" style="height: 32px; font-size: 13px">{{many.label}}</button>
+                </div>
+                <div style="padding: 0 24px 14px; background: #FAFBFC; color: #5F6C80; font-size: 12px">Many rows: 48 is an example count for a stress case, not a figure from the samples. The board draws the two sample leavers as the first rows; the header stays at the top while the list scrolls.</div>
+              </sc-if>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{selOn}}" hint-placeholder-val="{{ true }}">
+            <section aria-labelledby="lv-sel-h" class="{{selCls}}" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; display: flex; flex-direction: column">
+              <div class="lv-pad" style="padding: 20px 24px 16px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #EEF1F5">
+                <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: flex-start; justify-content: space-between">
+                  <div style="min-width: 0; flex: 1 1 360px">
+                    <h2 id="lv-sel-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{sel.title}}</h2>
+                    <div style="color: #46546A; font-size: 13px; margin-top: 2px">{{sel.idLine}} <span class="mono" aria-hidden="true">{{sel.ic}}</span><span class="sr">{{sel.icLabel}}</span></div>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 6px">
+                    <sc-for list="{{sel.pills}}" as="p" hint-placeholder-count="2"><span class="{{p.cls}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="14" hint-size="14px,14px"></dc-import>{{p.text}}</span></sc-for>
+                  </div>
+                </div>
+                <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 920px">{{sel.intro}}</p>
+                <sc-if value="{{sel.later}}" hint-placeholder-val="{{ false }}">
+                  <div role="note" class="rb info"><dc-import name="Icon" glyph="clock" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b>An example from later.</b> {{sel.later}}</span></div>
+                </sc-if>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px">
+                  <span style="color: #5F6C80">{{sel.reqText}}</span>
+                  <a href="Approvals.dc.html" style="font-weight: 600">Approvals</a><a href="ToPay.dc.html" style="font-weight: 600">To pay</a><a href="HrStaffRecord.dc.html" style="font-weight: 600">{{sel.recordLink}}</a>
+                </div>
+              </div>
+
+              <div class="lv-pad" style="padding: 18px 24px; display: flex; flex-direction: column; gap: 12px">
+                <h3 style="margin: 0; font-size: 15px; font-weight: 600">{{sel.partsHead}}</h3>
+                <div role="region" aria-label="Parts of the final pay, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                  <table class="tbl" style="min-width: 760px">
+                    <caption class="sr">{{sel.partsCaption}}</caption>
+                    <thead><tr><th scope="col">Part</th><th scope="col">How it is worked out</th><th scope="col">Counts for</th><th scope="col" class="r">Amount</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{sel.parts}}" as="x" hint-placeholder-count="7">
+                        <tr><td style="font-weight: 600">{{x.part}}</td><td style="color: #46546A">{{x.how}}<sc-if value="{{x.flag}}" hint-placeholder-val="{{ false }}"><span style="display: flex; gap: 6px; align-items: center; margin-top: 4px; color: #7A3500; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="help" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{x.flag}}</span></sc-if></td><td style="color: #46546A; font-size: 13px">{{x.counts}}</td><td class="r" style="{{x.amtStyle}}">{{x.amt}}</td></tr>
+                      </sc-for>
+                      <tr class="tot"><td>Gross pay</td><td style="font-weight: 400; color: #46546A">{{sel.grossHow}}</td><td></td><td class="r">{{sel.gross}}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <sc-if value="{{sel.dedOn}}" hint-placeholder-val="{{ true }}">
+                <div class="lv-pad" style="padding: 0 24px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px">
+                  <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                    <table class="tbl"><caption style="text-align: left; padding: 10px 12px; font-weight: 600; background: #FAFBFC; border-bottom: 1px solid #E3E7ED">{{sel.eeHead}}</caption>
+                      <tbody><sc-for list="{{sel.ee}}" as="d" hint-placeholder-count="5"><tr><td>{{d.what}}<sc-if value="{{d.note}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{d.note}}</div></sc-if><sc-if value="{{d.flag}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 6px; align-items: center; color: #7A3500; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="help" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{d.flag}}</div></sc-if></td><td class="r">{{d.amt}}</td></tr></sc-for></tbody>
+                    </table>
+                  </div>
+                  <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                    <table class="tbl"><caption style="text-align: left; padding: 10px 12px; font-weight: 600; background: #FAFBFC; border-bottom: 1px solid #E3E7ED">Employer's contributions</caption>
+                      <tbody><sc-for list="{{sel.er}}" as="d" hint-placeholder-count="3"><tr><td>{{d.what}}<sc-if value="{{d.note}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{d.note}}</div></sc-if><sc-if value="{{d.flag}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 6px; align-items: center; color: #7A3500; font-size: 12px; font-weight: 600"><dc-import name="Icon" glyph="help" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{d.flag}}</div></sc-if></td><td class="r">{{d.amt}}</td></tr></sc-for></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="lv-pad" style="margin: 0 24px 18px; padding: 12px 16px; border-radius: 12px; background: #F7F8FA; display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: baseline; justify-content: space-between">
+                  <span><b>Net pay</b> <span style="color: #5F6C80; font-size: 13px">{{sel.netSub}}</span></span><b style="font-size: 18px; font-variant-numeric: tabular-nums">{{sel.net}}</b>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{sel.advOn}}" hint-placeholder-val="{{ false }}">
+                <div id="lv-adv" tabindex="-1" class="lv-pad" style="{{sel.advStyle}}">
+                  <h3 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><dc-import name="Icon" glyph="advance" tone="brand" size="18" hint-size="18px,18px"></dc-import>Advance balance <a href="HrAdvances.dc.html" style="font-size: 13px; font-weight: 600">SA-2606-001</a></h3>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px">
+                    <sc-for list="{{sel.advCells}}" as="c" hint-placeholder-count="4">
+                      <div style="{{c.box}}"><span style="color: #5F6C80; font-size: 12px; font-weight: 600">{{c.k}}</span><b style="font-size: 18px; font-variant-numeric: tabular-nums">{{c.v}}</b><span style="color: #5F6C80; font-size: 12px">{{c.sub}}</span></div>
+                    </sc-for>
+                  </div>
+                  <div role="note" class="{{sel.advNoteCls}}"><dc-import name="Icon" glyph="{{sel.advNoteGlyph}}" tone="{{sel.advNoteTone}}" size="18" hint-size="18px,18px"></dc-import><span><b>{{sel.advNoteHead}}</b> {{sel.advNote}}</span></div>
+                  <span class="hint">The Employment Act limit: in a month, deductions other than EPF, SOCSO, EIS, Lindung 24 Jam, PCB and zakat may not pass 50% of wages. The app warns; it never refuses. Advances never carry interest. <a href="AuditPackHR.dc.html">Audit pack · HR</a> lists the amount to collect.</span>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{sel.holdOn}}" hint-placeholder-val="{{ true }}">
+                <div id="lv-hold" tabindex="-1" class="lv-pad" style="{{sel.holdStyle}}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between">
+                    <h3 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; gap: 8px; align-items: center"><dc-import name="Icon" glyph="lock" tone="warn" size="18" hint-size="18px,18px"></dc-import>Hold until tax clearance</h3>
+                    <span class="{{sel.holdPillCls}}"><dc-import name="Icon" glyph="{{sel.holdPillGlyph}}" tone="{{sel.holdPillTone}}" size="14" hint-size="14px,14px"></dc-import>{{sel.holdPill}}</span>
+                  </div>
+                  <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 920px">{{sel.holdText}}</p>
+                  <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px">
+                    <sc-for list="{{sel.steps}}" as="s" hint-placeholder-count="4">
+                      <li style="{{s.box}}"><span style="display: flex; gap: 6px; align-items: center; font-weight: 600"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="16" hint-size="16px,16px"></dc-import>{{s.title}}</span><span style="color: #46546A; font-size: 13px">{{s.sub}}</span></li>
+                    </sc-for>
+                  </ol>
+                  <sc-if value="{{sel.paidAnyway}}" hint-placeholder-val="{{ false }}">
+                    <div role="note" class="rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #8E1A10">Paid during the tax-clearance hold.</b> {{sel.paidAnyway}}</span></div>
+                  </sc-if>
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+                    <sc-if value="{{sel.canUpload}}" hint-placeholder-val="{{ true }}"><button type="button" id="lv-up" class="btn hb" onClick="{{openLetter}}"><dc-import name="Icon" glyph="upload" tone="white" size="16" hint-size="16px,16px"></dc-import>Upload LHDN's letter</button></sc-if>
+                    <a href="ToPay.dc.html" class="sec hs"><dc-import name="Icon" glyph="toPay" tone="muted" size="16" hint-size="16px,16px"></dc-import>Open in To pay</a>
+                    <a href="HrCalendar.dc.html" style="font-weight: 600; font-size: 13px">CP22A on Calendar and reminders</a>
+                    <a href="MonthlyChecklist.dc.html" style="font-weight: 600; font-size: 13px">Monthly checklist</a>
+                  </div>
+                  <span class="hint">Approval never blocks paying: the hold is a warning on the item in To pay. Paying anyway is allowed, marked “Paid during the tax-clearance hold” and kept in the audit trail and the audit pack. A reminder to check, not legal advice.</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{sel.noHold}}" hint-placeholder-val="{{ false }}">
+                <div class="lv-pad" style="margin: 0 24px 20px; display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>{{sel.noHold}}</span></div>
+              </sc-if>
+            </section>
+          </sc-if>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 940px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Each part is a pay item with its own ticks on <a href="SetupPayroll.dc.html">Setup › HR › Payroll settings</a>. The part-month salary follows s.18A (monthly pay × days employed ÷ days in the month) and leave not taken is paid at monthly pay ÷ 26 a day, both rounded to the sen. IC numbers are masked to the last 4. Once the run is approved its figures are frozen; a mistake is put right in the next run, never by editing.</span></div>
+        </sc-if>
+      </div>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 640px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="{{toastTone}}" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="lv-undo" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dlg.dimCls}}" onClick="{{dlg.close}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div>
+    <div style="position: fixed; inset: 0; z-index: 51; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none">
+      <form role="dialog" aria-modal="true" aria-labelledby="lv-dlg-title" aria-describedby="lv-dlg-desc" tabindex="-1" class="{{dlg.panelCls}}" onKeyDown="{{dlg.key}}" onAnimationEnd="{{dlg.onAnim}}" onSubmit="{{dlg.go}}" noValidate="{{ true }}" aria-busy="{{dlg.busy}}" style="pointer-events: auto; position: relative; width: 100%; max-width: 560px; max-height: 100%; overflow-y: auto; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; box-shadow: 0 16px 40px rgba(13,27,46,.18); display: flex; flex-direction: column; margin: 0">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 20px 60px 14px 22px; border-bottom: 1px solid #EEF1F5">
+          <span style="flex: none; width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; background: #EAF0FD"><dc-import name="Icon" glyph="upload" tone="brand" size="22" hint-size="22px,22px"></dc-import></span>
+          <div><h2 id="lv-dlg-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Upload LHDN's clearance letter</h2><p id="lv-dlg-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{dlg.desc}}</p></div>
+        </div>
+        <button type="button" class="hs" onClick="{{dlg.close}}" aria-label="Close" style="position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+        <sc-if value="{{dlg.refused}}" hint-placeholder-val="{{ false }}">
+          <div id="lv-dlg-refused" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 22px; background: #FDF3F2; border-bottom: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">The letter wasn't uploaded</b><div style="color: #46546A; font-size: 13px">{{dlg.refusedText}}</div></div></div>
+        </sc-if>
+        <div style="padding: 16px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span id="lv-file-l" class="lb">LHDN's letter <span>PDF, or a photo or scan (JPG, PNG)</span></span>
+            <div style="{{dlg.boxStyle}}">
+              <input id="lv-file" class="sr" type="file" accept=".pdf,.jpg,.jpeg,.png" onChange="{{dlg.pickFile}}" disabled="{{dlg.saving}}" aria-labelledby="lv-file-l lv-file-name" aria-invalid="{{dlg.fileInv}}" aria-describedby="{{dlg.fileBy}}">
+              <label for="lv-file" class="hs" style="flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #778588; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; box-sizing: border-box"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Choose file</label>
+              <span id="lv-file-name" style="{{dlg.fileNameStyle}}">{{dlg.fileName}}</span>
+            </div>
+            <sc-if value="{{dlg.fileErr}}" hint-placeholder-val="{{ false }}"><span id="lv-file-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{dlg.fileErr}}</span></sc-if>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="lv-date" class="lb">Date on the letter <span>Required</span></label>
+            <input id="lv-date" type="date" class="in" value="{{dlg.date}}" onChange="{{dlg.onDate}}" disabled="{{dlg.saving}}" max="{{dlg.max}}" aria-invalid="{{dlg.dateInv}}" aria-describedby="{{dlg.dateBy}}" style="max-width: 240px">
+            <sc-if value="{{dlg.dateErr}}" hint-placeholder-val="{{ false }}"><span id="lv-date-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{dlg.dateErr}}</span></sc-if>
+            <span id="lv-date-hint" class="hint">The upload date is kept separately. Uploaded by Aisha Rahman (declared, not verified).</span>
+          </div>
+          <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #F7F8FA; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="folder" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Filed as a Tax clearance letter (LHDN) under a code, not his name, on his staff record and on the CP22A checklist item.</span></div>
+        </div>
+        <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+          <sc-if value="{{dlg.asking}}" hint-placeholder-val="{{ false }}">
+            <div role="group" aria-labelledby="lv-dask-q" class="ex" style="flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+              <span id="lv-dask-q" style="font-weight: 600; margin-right: auto">Discard your changes?</span>
+              <button type="button" id="lv-dkeep" class="sec hs" onClick="{{dlg.keep}}">Keep editing</button>
+              <button type="button" class="dng hd" onClick="{{dlg.discard}}">Discard</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{dlg.notAsking}}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="sec hs" onClick="{{dlg.close}}" disabled="{{dlg.saving}}">Cancel</button>
+            <button type="submit" id="lv-dlg-go" class="btn hb" disabled="{{dlg.saving}}" aria-busy="{{dlg.busy}}" style="min-width: 168px"><sc-if value="{{dlg.saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{dlg.idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="upload" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{dlg.goLabel}}</button>
+          </sc-if>
+        </div>
+      </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"leaver","options":["leaver","advance-over-50","hold","letter-dialog","letter-missing","letter-saving","letter-refused","letter-discard","released-letter","released-90","released-90-letter","paid-anyway","paid-anyway-letter","empty","loading","load-error","many","no-payroll-figures","ai"],"section":"State to show"},"$preview":{"width":1440,"height":2600}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'leaver'); }
+  componentDidMount() {
+    const v = this.props.view || 'leaver';
+    if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000);
+    if (this.state.dlg && this.state.dlg.saving) this.startSave();
+    if (v === 'advance-over-50') this.focusId('lv-adv');
+    else if (v === 'letter-refused') this.focusId('lv-dlg-refused');
+    else if (v === 'letter-discard') this.focusId('lv-dkeep');
+    else if (v === 'letter-missing') this.focusId('lv-file');
+    else if (this.state.dlg) this.focusId('lv-dlg-title');
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._sv); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._sv); this.setState(this.initial(this.props.view || 'leaver')); return; }
+    const st = this.state;
+    if (!prev.dlg && st.dlg) { this.focusId('lv-dlg-title'); return; }
+    if (prev.dlg && !st.dlg) {
+      const o = this._opener; this._opener = null;
+      if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+      if (o && o.isConnected && o.focus) o.focus({ preventScroll: true });
+      return;
+    }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: false }); return true; } return false; }
+
+  // ---- sample data (samples.md sections 5, 6, 9 and 11); today is Wed 18 Nov 2026; money in sen ----
+  // Kah Seng (S006) retires when his contract ends on Thu 31 Dec 2026: a CP22A is due Tue 1 Dec, so his final pay,
+  // a line of December 2026's run, has the tax-clearance hold. From November he is paid at the 60-and-over rates.
+  // Kavitha Nair (S010) left on Mon 31 Aug 2026 with RM 2,000.00 of advance SA-2606-001: RM 1,600.00 (50% of her
+  // RM 3,200.00 wages) came off her August final pay and RM 400.00 is to collect. No CP22A or CP21 for her.
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  // a date typed as yyyy-mm-dd, written as "Thu 7 Jan 2027"
+  fd(iso) { const p = String(iso || '').split('-').map(Number); if (p.length !== 3 || p.some(isNaN)) return String(iso || '');
+    return new Date(Date.UTC(p[0], p[1] - 1, p[2])).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).replace(',', ''); }
+  // "today" in each scene the letter can be uploaded from: the latest date on the letter, and the upload day
+  upDay(scene) { return scene === 'days' ? { max: '2027-03-05', on: 'Fri 5 Mar 2027' } : { max: '2027-01-11', on: 'Mon 11 Jan 2027' }; }
+  initial(view) {
+    const base = { view, co: 'AISB', sel: 'S006', scene: 'today', letter: null, load: 'ok', aina: false, many: false, shown: 25, empty: false, dlg: null, closing: false, toast: null, flashN: 0, say: '' };
+    const D = o => ({ file: null, date: '', tried: false, saving: false, refused: false, ask: false, ...o });
+    const set = {
+      'advance-over-50': { sel: 'S010' },
+      hold: { scene: 'hold' },
+      'letter-dialog': { scene: 'hold', dlg: D({}) },
+      'letter-missing': { scene: 'hold', dlg: D({ tried: true }) },
+      'letter-saving': { scene: 'hold', dlg: D({ file: { name: 'LHDN clearance letter.pdf', size: '184 KB' }, date: '2027-01-07', saving: true }) },
+      'letter-refused': { scene: 'hold', dlg: D({ file: { name: 'Clearance letter.docx', size: '36 KB' }, date: '2027-01-07', refused: true }) },
+      'letter-discard': { scene: 'hold', dlg: D({ file: { name: 'LHDN clearance letter.pdf', size: '184 KB' }, date: '2027-01-07', ask: true }) },
+      'released-letter': { scene: 'letter', toast: { msg: "LHDN's letter is on file. The hold on Kah Seng's final pay is released: To pay shows it as due.", undo: { scene: 'hold' }, glyph: 'check', tone: 'dok', n: 1 } },
+      'released-90': { scene: 'days' },
+      'released-90-letter': { scene: 'days', letter: { date: '2027-03-03', on: 'Fri 5 Mar 2027' } },
+      'paid-anyway': { scene: 'paid' },
+      'paid-anyway-letter': { scene: 'paid', letter: { date: '2027-01-07', on: 'Mon 11 Jan 2027' } },
+      empty: { empty: true },
+      loading: { load: 'loading' }, 'load-error': { load: 'error' },
+      many: { many: true },
+      'no-payroll-figures': { aina: true },
+      ai: { co: 'AI' }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+
+  // the selected leaver's card, for the scene being shown
+  card(st) {
+    const F = n => st.aina ? '•••' : this.fmt(n), scene = st.scene;
+    const box = (bg, bd) => 'display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:12px;border:1px solid ' + bd + ';background:' + bg;
+    if (st.sel === 'S010') {
+      const over = true;
+      return {
+        title: 'Kavitha Nair (Kavitha)', idLine: 'S010 · Marketing executive · Marketing · IC', ic: '••••••-••-3306', icLabel: 'IC ending 3306',
+        pills: [{ cls: 'pl mute', glyph: 'person', tone: 'muted', text: 'Left' }, { cls: 'pl ok', glyph: 'check', tone: 'ok', text: 'Final pay paid · August 2026' }],
+        intro: 'Last day Mon 31 Aug 2026, resigned. Her August final pay was paid from the payroll workbook, before payroll ran in this app, so only the parts the app keeps are shown. Her pay records are kept until 31 Dec 2033.',
+        later: '', reqText: 'August 2026 was paid before approvals were kept (the first month with approvals is October 2026).', recordLink: "Kavitha's staff record",
+        partsHead: 'Final pay · August 2026', partsCaption: "Kavitha Nair's final pay for August 2026, by part",
+        parts: [
+          { part: 'Part-month salary', how: '1 to 31 Aug 2026: 31 of 31 days, a full month.', counts: 'EPF, SOCSO and EIS, HRDF, PCB normal pay', amt: F(320000), amtStyle: '', flag: '' },
+          { part: 'Annual leave not taken', how: 'Not kept here: August was paid from the workbook.', counts: '—', amt: '—', amtStyle: 'color:#5F6C80', flag: '' },
+          { part: 'Notice pay, or pay in lieu of notice', how: 'Not kept here: August was paid from the workbook.', counts: '—', amt: '—', amtStyle: 'color:#5F6C80', flag: '' },
+          { part: 'Advance balance', how: 'Deducted, within the 50% limit: see below.', counts: 'A deduction', amt: st.aina ? '•••' : '−' + this.fmt(160000), amtStyle: '', flag: '' }
+        ],
+        gross: '—', grossHow: 'Not kept here: August was paid from the workbook, so only her salary above is known.', dedOn: false, ee: [], er: [], eeHead: '', net: '', netSub: '',
+        advOn: true, advStyle: 'margin:0 24px 20px;padding:16px 18px;border-radius:12px;border:1px solid ' + (st.view === 'advance-over-50' ? '#F3D9A6;background:#FFFBF2' : '#E3E7ED;background:#FFFFFF') + ';display:flex;flex-direction:column;gap:12px',
+        advCells: [
+          { k: 'Balance at leaving', v: F(200000), sub: 'RM ' + F(240000) + ' lent; ' + F(40000) + ' repaid in July', box: box('#F7F8FA', '#E3E7ED') },
+          { k: '50% of August wages', v: F(160000), sub: 'Of RM ' + F(320000) + ' wages', box: box('#F7F8FA', '#E3E7ED') },
+          { k: 'Taken from final pay', v: F(160000), sub: 'The most the limit allows', box: box('#F7F8FA', '#E3E7ED') },
+          { k: 'To collect', v: F(40000), sub: 'On her record and in the audit pack', box: box('#FFFBF2', '#F3D9A6') }
+        ],
+        advNoteCls: 'rb warn', advNoteGlyph: 'alert', advNoteTone: 'warn', advNoteHead: 'Advance balance over 50% of wages.',
+        advNote: over ? 'The whole RM ' + F(200000) + ' would have been ' + (st.aina ? '•••' : '62.5%') + ' of her RM ' + F(320000) + ' wages, so the final pay took RM ' + F(160000) + ' and RM ' + F(40000) + ' is kept as an amount to collect. Taking more is allowed with this warning; it is never refused.' : '',
+        holdOn: false, holdStyle: '', holdPillCls: '', holdPillGlyph: 'lock', holdPillTone: 'muted', holdPill: '', holdText: '', steps: [], canUpload: false, paidAnyway: '',
+        noHold: "No tax-clearance hold: no CP22A or CP21 reminder was made for her."
+      };
+    }
+    // Kah Seng
+    const later = scene !== 'today';
+    const pill = {
+      today: ['pl warn', 'lock', 'warn', 'Hold until tax clearance'], hold: ['pl warn', 'lock', 'warn', 'Hold until tax clearance'],
+      letter: ['pl ok pz', 'check', 'ok', "Released · LHDN's letter on file"], days: ['pl ok pz', 'check', 'ok', 'Released after 90 days'],
+      paid: ['pl bad', 'alert', 'bad', 'Paid during the tax-clearance hold']
+    }[scene];
+    const lt = st.letter;
+    const reqPill = { today: ['pl mute', 'edit', 'muted', 'Prepared · not on a run yet'], hold: ['pl info', 'toPay', 'brand', 'Sent to pay'], letter: ['pl info', 'toPay', 'brand', 'Sent to pay · due'], days: ['pl info', 'toPay', 'brand', 'Sent to pay · due'], paid: ['pl ok', 'check', 'ok', 'Paid'] }[scene];
+    const sbox = on => 'display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:12px;border:1px solid ' + (on === 'ok' ? '#BFE8D0;background:#F0FBF5' : on === 'warn' ? '#F3D9A6;background:#FFFBF2' : on === 'bad' ? '#F5C2BB;background:#FDF3F2' : '#E3E7ED;background:#FFFFFF');
+    const S = (glyph, tone, title, sub, k) => ({ glyph, tone, title, sub, box: sbox(k) });
+    const steps = [
+      later ? S('check', 'ok', 'CP22A filed', 'Tue 1 Dec 2026, its due date (30 days before the last day).', 'ok') : S('clock', 'warn', 'CP22A due Tue 1 Dec 2026', 'Not filed yet. On Calendar and reminders, Next up and the Monthly checklist.', 'warn'),
+      scene === 'paid' ? S('alert', 'bad', 'Final pay paid', 'Thu 31 Dec 2026, during the hold.', 'bad')
+        : later ? S(scene === 'hold' ? 'lock' : 'toPay', scene === 'hold' ? 'warn' : 'brand', 'Final pay in To pay', scene === 'hold' ? 'Due Thu 31 Dec 2026, under Later, with Hold until tax clearance.' : 'Due again now the hold is released.', scene === 'hold' ? 'warn' : '')
+        : S('payroll', 'muted', 'Final pay', "On December 2026's run once AISB switches over to payroll in this app; until then December is paid from Salaries — staff on Recurring.", ''),
+      scene === 'letter' ? S('check', 'ok', "LHDN's letter on file", 'Uploaded Mon 11 Jan 2027 by Aisha Rahman; date on the letter Thu 7 Jan 2027.', 'ok')
+        : lt ? S('check', 'ok', "LHDN's letter on file", 'Uploaded ' + lt.on + ' by Aisha Rahman; date on the letter ' + this.fd(lt.date) + '.', 'ok')
+        : S('document', 'muted', "LHDN's clearance letter", 'Not on file.', ''),
+      scene === 'days' ? S('check', 'ok', '90 days passed', 'Mon 1 Mar 2027: 90 days after LHDN received the CP22A, and no letter came.', 'ok')
+        : later ? S('calendar', 'muted', '90 days end Mon 1 Mar 2027', '90 days after LHDN received the CP22A on Tue 1 Dec 2026.', '') : S('calendar', 'muted', '90 days after the CP22A', 'Mon 1 Mar 2027 if it is filed on Tue 1 Dec 2026.', '')
+    ];
+    const holdText = {
+      today: "Kah Seng is retiring, so a CP22A is made and his final pay is held. AISB must hold back what it owes him until LHDN's clearance letter arrives or 90 days after LHDN receives the CP22A; paying him in full first makes AISB liable for his tax.",
+      hold: "His final pay is in To pay with Hold until tax clearance. It is released when LHDN's letter is uploaded here, or on its own on Mon 1 Mar 2027.",
+      letter: "Released on Mon 11 Jan 2027: LHDN's clearance letter is on file. To pay shows the final pay as due, without the hold.",
+      days: lt ? "Released on its own on Mon 1 Mar 2027, 90 days after LHDN received the CP22A. LHDN's letter came later and is now on file with his record; To pay is unchanged."
+        : 'Released on its own on Mon 1 Mar 2027, 90 days after LHDN received the CP22A, with no letter on file. To pay shows the final pay as due. If the letter arrives later, upload it here: it is kept with the record.',
+      paid: lt ? "His final pay was paid on Thu 31 Dec 2026 while the hold was on. LHDN's clearance letter is now on file, recorded beside the payment."
+        : "His final pay was paid on Thu 31 Dec 2026 while the hold was on. AISB may be liable for his tax until LHDN's letter is on file: upload it here when it comes."
+    }[scene];
+    const hidden = st.aina;
+    // PCB on the December run: an example figure (the samples have no December run); net = 9,900.00 − 44.65 − 890.00
+    const PCB = 89000, NET = 990000 - 4465 - PCB;
+    return {
+      title: 'Wong Kah Seng (Kah Seng)', idLine: 'S006 · IT support · IT · Contract · IC', ic: '••••••-••-1035', icLabel: 'IC ending 1035',
+      pills: [{ cls: 'pl warn', glyph: 'logout', tone: 'warn', text: 'Leaving Thu 31 Dec 2026' }, { cls: reqPill[0], glyph: reqPill[1], tone: reqPill[2], text: reqPill[3] }],
+      intro: later ? "December 2026's run is approved and sent to pay; his final pay is its line for him, frozen with the run."
+        : "Last day Thu 31 Dec 2026, reason Retiring; his contract ends the same day. Prepared on Wed 18 Nov from his staff record and Leave. It goes on December 2026's run once AISB switches over to payroll in this app (see the Parallel run); until then December is paid from Salaries — staff on Recurring. On a run, it is worked out again when the run is calculated.",
+      later: !later ? '' : scene === 'paid' ? "Aisha Rahman paid it from To pay on Thu 31 Dec 2026, past the hold's warning (declared, not verified)."
+        : 'AISB switched over to payroll in this app from December 2026 (see Recurring), so his final pay is on the December run.',
+      reqText: later ? "Request: part of December 2026's salary run, which goes on one approval form." : "Request, once on a run: part of December 2026's salary run, which goes on one approval form.", recordLink: "Kah Seng's staff record",
+      partsHead: 'Final pay · December 2026', partsCaption: "Wong Kah Seng's final pay for December 2026, by part",
+      parts: [
+        { part: 'Part-month salary', how: '1 to 31 Dec 2026: 31 of 31 days, a full month of RM ' + F(780000) + '.', counts: 'EPF, SOCSO and EIS, HRDF, PCB normal pay', amt: F(780000), amtStyle: '', flag: '' },
+        { part: 'Travelling allowance', how: 'Fixed allowance on his staff record.', counts: 'HRDF, PCB normal pay', amt: F(60000), amtStyle: '', flag: '' },
+        { part: 'Annual leave not taken', how: later ? '5 days left at his last day (12 of 12 months, 7 taken) × RM ' + F(30000) + ' a day (monthly pay ÷ 26). Taken from Leave when the run was approved.'
+          : '5 days left on 18 Nov (12 of 12 months, 7 taken) × RM ' + F(30000) + ' a day (monthly pay ÷ 26). The days follow Leave until the run is approved.', counts: 'EPF, SOCSO and EIS, PCB additional pay', amt: F(150000), amtStyle: '', flag: 'Check with KWSP whether leave paid out on leaving is EPF wages' },
+        { part: 'Notice pay, or pay in lieu of notice', how: 'None: his contract ends on its date.', counts: 'Pay in lieu of notice is not EPF wages', amt: F(0), amtStyle: 'color:#5F6C80', flag: '' },
+        { part: 'Termination benefits', how: hidden ? 'Not due: he is retiring at the end of his contract.' : 'Not due: he is retiring at the end of his contract, and he earns over RM 4,000 a month.', counts: 'PCB additional pay', amt: F(0), amtStyle: 'color:#5F6C80', flag: '' },
+        { part: 'Tax on loss of job', how: 'None: no compensation for loss of job is paid.', counts: '—', amt: F(0), amtStyle: 'color:#5F6C80', flag: '' },
+        { part: 'Advance balance', how: 'No advance left.', counts: 'A deduction', amt: F(0), amtStyle: 'color:#5F6C80', flag: '' }
+      ],
+      gross: F(990000), grossHow: '', dedOn: true, eeHead: "His deductions · aged 60 and over from November 2026",
+      ee: [
+        { what: 'EPF', note: 'Citizen aged 60 or over: 0%.', flag: '', amt: F(0) },
+        { what: 'SOCSO', note: 'Second category (employment injury only): nothing from him.', flag: '', amt: F(0) },
+        { what: 'EIS', note: "None: EIS isn't paid at 60 or over.", flag: '', amt: F(0) },
+        { what: 'Lindung 24 Jam', note: '0.75% on wages up to RM 6,000.', flag: 'Check with PERKESO whether it is paid at 60 or over', amt: F(4465) },
+        { what: 'PCB', note: later ? "LHDN's method, with leave pay as additional pay and his pay and PCB to date. Worked out when December's run was calculated; frozen with the run. An example figure: the samples have no December run."
+          : "LHDN's method, with leave pay as additional pay and his pay and PCB to date. Worked out when the run is calculated.", flag: '', amt: later ? F(PCB) : '—' },
+        { what: 'Other deductions', note: 'None. Within the 50% limit.', flag: '', amt: F(0) }
+      ],
+      er: [
+        { what: 'EPF', note: '4% on EPF wages of RM ' + F(930000) + ': basic and leave paid out (Third Schedule band).', flag: 'Leave paid out included: check with KWSP', amt: F(37200) },
+        { what: 'SOCSO', note: 'Second category, 1.25%, wages counted to RM 6,000.', flag: '', amt: F(7440) },
+        { what: 'EIS', note: 'None at 60 or over.', flag: '', amt: F(0) }
+      ],
+      net: later ? F(NET) : '—', netSub: hidden ? '' : later ? 'Gross pay less his deductions, frozen with the approved run.' : 'Gross pay less deductions, once PCB is worked out with the run.',
+      advOn: false, advStyle: '', advCells: [], advNoteCls: 'rb warn', advNoteGlyph: 'alert', advNoteTone: 'warn', advNoteHead: '', advNote: '',
+      holdOn: true, holdStyle: 'margin:0 24px 20px;padding:16px 18px;border-radius:12px;border:1px solid ' + (scene === 'paid' ? '#F5C2BB;background:#FFFFFF' : scene === 'letter' || scene === 'days' ? '#BFE8D0;background:#FFFFFF' : '#F3D9A6;background:#FFFFFF') + ';display:flex;flex-direction:column;gap:12px',
+      holdPillCls: pill[0], holdPillGlyph: pill[1], holdPillTone: pill[2], holdPill: pill[3], holdText, steps,
+      canUpload: (scene === 'hold' || scene === 'paid' || scene === 'days') && !lt,
+      paidAnyway: scene !== 'paid' ? '' : lt ? "The payment is marked so in the Payments register, the audit trail and the audit pack. LHDN's letter, uploaded " + lt.on + ', is recorded beside the payment; the marker stays.'
+        : 'The payment is marked so in the Payments register, the audit trail and the audit pack. Uploading the letter later records it beside the payment; the marker stays.',
+      noHold: ''
+    };
+  }
+
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo, glyph, tone) { this.startToast(undo ? 15000 : 6000); return { toast: { msg, undo: undo || null, glyph: glyph || 'check', tone: tone || 'dok', n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+  openLetter(ev) {
+    this._opener = (ev && ev.currentTarget) || document.activeElement;
+    this.setState({ dlg: { file: null, date: '', tried: false, saving: false, refused: false, ask: false }, closing: false, say: "Upload LHDN's clearance letter" });
+  }
+  askClose() {
+    const st = this.state, d = st.dlg; if (!d || d.saving) return;
+    if ((d.file || d.date) && !d.ask) { this._upFocus = 'lv-dkeep'; return this.setState({ dlg: { ...d, ask: true } }); }
+    this.closeDlg();
+  }
+  closeDlg(patch) {
+    const st = this.state; if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.setState({ ...(patch || {}), dlg: null, closing: false });
+    this.setState({ ...(patch || {}), closing: true });
+    clearTimeout(this._t); this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false }); }
+  go(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    const st = this.state, d = st.dlg; if (!d || d.saving) return;
+    const dateBad = !d.date || d.date > this.upDay(st.scene).max;
+    if (!d.file || dateBad) { this._upFocus = !d.file ? 'lv-file' : 'lv-date'; return this.setState({ dlg: { ...d, tried: true, refused: false } }); }
+    if (!/\.(pdf|jpe?g|png)$/i.test(d.file.name)) { this._upFocus = 'lv-dlg-refused'; return this.setState({ dlg: { ...d, refused: true } }); }
+    this.setState({ dlg: { ...d, saving: true, refused: false }, say: 'Uploading ' + d.file.name });
+    this.startSave();
+  }
+  startSave() { clearTimeout(this._sv); this._sv = setTimeout(() => this.finishSave(), 1200); }
+  finishSave() {
+    const st = this.state; if (!st.dlg || !st.dlg.saving) return;
+    this._upFocus = 'lv-hold';
+    // from the hold, the letter releases it; once paid or released after 90 days, the letter is recorded beside that state
+    if (st.scene === 'paid' || st.scene === 'days') {
+      const paid = st.scene === 'paid';
+      return this.closeDlg({ dlg: { ...st.dlg, saving: false }, letter: { date: st.dlg.date, on: this.upDay(st.scene).on }, flashN: st.flashN + 1,
+        say: paid ? 'Letter uploaded. It is recorded beside the payment; the marker stays.' : 'Letter uploaded. It is kept with his record.',
+        ...this.toastPart(paid ? "LHDN's letter is on file beside Kah Seng's final pay. The “Paid during the tax-clearance hold” marker stays."
+          : "LHDN's letter is on file with Kah Seng's record. The hold was already released after 90 days.", { letter: null }, 'check', 'dok') });
+    }
+    const back = { scene: st.scene };
+    this.closeDlg({ dlg: { ...st.dlg, saving: false }, scene: 'letter', flashN: st.flashN + 1, say: "Letter uploaded. The hold is released.",
+      ...this.toastPart("LHDN's letter is on file. The hold on Kah Seng's final pay is released: To pay shows it as due.", back, 'check', 'dok') });
+  }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if (c !== 'AISB' && c !== 'AI') return;
+    if (c === this.state.co) return;
+    this._upFocus = c === 'AI' ? 'lv-ai-h' : 'lv-h1';
+    this.setState({ co: c, say: c === 'AI' ? "The leaver's final pay isn't used for AI" : "Showing AISB's leavers" });
+  }
+
+  renderVals() {
+    const st = this.state, isAI = st.co === 'AI';
+    const TABS = [['Workbook check', 'PayrollCheck.dc.html', 'verified'], ['Run', 'PayrollRun.dc.html', 'payroll'], ['Totals', 'PayrollTotals.dc.html', 'sheet'],
+      ['Statutory files', 'PayrollFiles.dc.html', 'statutory'], ['Leaver', 'PayrollLeaver.dc.html', 'person'], ['Parallel run', 'PayrollParallel.dc.html', 'refresh'],
+      ['Opening year to date', 'PayrollOpeningYtd.dc.html', 'history']];
+    const SEL = 4;
+    const tabs = (isAI ? TABS.slice(0, 1) : TABS).map((t, i) => { const on = !isAI && i === SEL;
+      return { id: 'lv-tab-' + i, label: t[0], href: t[1], glyph: t[2], sel: on ? 'true' : 'false', ctl: on ? 'lv-panel' : null, tabindex: on || (isAI && i === 0) ? '0' : '-1', tone: on ? 'brand' : 'muted',
+        style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid ' + (on ? '#2450B8' : 'transparent') + ';border-radius:8px 8px 0 0;font:600 14px Inter,sans-serif;text-decoration:none;color:' + (on ? '#1D419A' : '#46546A') + ';box-sizing:border-box;transition:border-color .12s ease-out,color .12s ease-out' }; });
+    const tabKey = ev => {
+      const ids = tabs.map(t => t.id), i = ids.indexOf(ev && ev.target && ev.target.id), n = ids.length;
+      if (i < 0) return;
+      const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i - 1 + n) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : null;
+      if (j === null) return;
+      if (ev.preventDefault) ev.preventDefault();
+      this.focusId(ids[j]);
+    };
+
+    const showLoading = !isAI && st.load === 'loading', showError = !isAI && st.load === 'error', showPage = !isAI && st.load === 'ok';
+    const F = n => st.aina ? '•••' : this.fmt(n);
+    const holdRow = {
+      today: ['pl warn', 'lock', 'warn', 'Hold · CP22A due 1 Dec'], hold: ['pl warn', 'lock', 'warn', 'Hold until tax clearance'], letter: ['pl ok', 'check', 'ok', "Released · letter on file"],
+      days: ['pl ok', 'check', 'ok', 'Released after 90 days'], paid: ['pl bad', 'alert', 'bad', 'Paid during the hold']
+    }[st.scene];
+    const base = [
+      { id: 'S006', name: 'Wong Kah Seng (Kah Seng)', sub: 'S006 · IT support · Contract', last: 'Thu 31 Dec 2026', reason: 'Retiring; contract ends', final: st.scene === 'today' ? 'Prepared · not on a run yet' : st.scene === 'paid' ? 'December 2026 run · paid' : 'December 2026 run · sent to pay', h: holdRow, adv: 'None' },
+      { id: 'S010', name: 'Kavitha Nair (Kavitha)', sub: 'S010 · Marketing executive', last: 'Mon 31 Aug 2026', reason: 'Resigned', final: 'August 2026 · paid from the workbook', h: ['pl mute', 'lock', 'muted', 'No hold'], adv: F(40000) + ' to collect' }
+    ];
+    const rows = st.empty ? [] : base.map(r => { const on = r.id === st.sel;
+      return { name: r.name, sub: r.sub, last: r.last, reason: r.reason, final: r.final, hold: r.h[3], holdCls: r.h[0], holdGlyph: r.h[1], holdTone: r.h[2], adv: r.adv,
+        pressed: on ? 'true' : 'false', cls: on && st.flashN ? (st.flashN % 2 ? 'fa' : 'fb') : '', trStyle: on ? 'background:#F3F6FE' : '',
+        pick: () => { if (this.state.sel === r.id) return; this._upFocus = 'lv-sel-h'; this.setState({ sel: r.id, say: 'Showing ' + r.name + "'s final pay" }); } }; });
+    const total = st.many ? 48 : rows.length;
+    const many = st.many ? { on: true, off: st.shown >= 48, label: st.shown >= 48 ? 'All 48 shown' : 'Show 25 more', foot: 'Showing ' + Math.min(st.shown, 48) + ' of 48 leavers',
+      more: () => { const n = Math.min(48, this.state.shown + 25); this.setState({ shown: n, say: 'Showing ' + n + ' of 48 leavers' }); } } : { on: false, off: true, label: '', foot: '', more: () => {} };
+    const sel = this.card(st), selOn = !st.empty;
+    const d = st.dlg;
+    const fileErr = d && d.tried && !d.file ? "Choose LHDN's letter first." : '';
+    const up = this.upDay(st.scene), releases = st.scene === 'hold';
+    const dateErr = d && d.tried ? (!d.date ? 'Type the date on the letter.' : d.date > up.max ? 'The date on the letter is after today.' : '') : '';
+    const dlg = {
+      max: up.max,
+      desc: st.scene === 'paid' ? "For Kah Seng's final pay, already paid during the hold. The letter is recorded beside the payment; the “Paid during the tax-clearance hold” marker stays."
+        : st.scene === 'days' ? "For Kah Seng's final pay, released after 90 days. The letter is kept with his record; To pay doesn't change."
+        : "For Kah Seng's final pay. Once it is on file the hold is released and To pay shows the item as due.",
+      dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in',
+      saving: !!(d && d.saving), idle: !(d && d.saving), busy: d && d.saving ? 'true' : 'false', goLabel: d && d.saving ? 'Uploading…' : releases ? 'Upload and release' : 'Upload the letter',
+      refused: !!(d && d.refused), refusedText: d && d.file ? 'Only a PDF, or a photo or scan (JPG or PNG), of LHDN\'s letter can be uploaded. ' + d.file.name + (releases ? " wasn't kept; the hold stays on." : " wasn't kept; nothing changed.") + ' Save the letter as a PDF and choose it again.' : '',
+      fileName: d && d.file ? d.file.name + ' · ' + d.file.size : 'No file chosen',
+      fileNameStyle: 'min-width:0;overflow-wrap:anywhere;font-size:13px;color:' + (d && d.file ? '#0F1A2B;font-weight:600' : '#5F6C80'),
+      boxStyle: 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;min-height:52px;padding:7px 10px;border-radius:10px;box-sizing:border-box;border:1px ' + (fileErr ? 'solid #B0190F;background:#FFFFFF' : 'dashed #7C8799;background:#F7F8FA'),
+      fileErr, fileInv: fileErr ? 'true' : 'false', fileBy: fileErr ? 'lv-file-err' : null,
+      date: d ? d.date : '', dateErr, dateInv: dateErr ? 'true' : 'false', dateBy: dateErr ? 'lv-date-err lv-date-hint' : 'lv-date-hint',
+      pickFile: ev => { const f = ev && ev.target && ev.target.files && ev.target.files[0]; if (!f || !this.state.dlg) return; const kb = f.size / 1024;
+        this.setState({ dlg: { ...this.state.dlg, file: { name: f.name, size: kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB' }, refused: false }, say: 'Chosen: ' + f.name }); },
+      onDate: ev => { if (!this.state.dlg) return; this.setState({ dlg: { ...this.state.dlg, date: ev && ev.target ? ev.target.value : '' } }); },
+      asking: !!(d && d.ask), notAsking: !(d && d.ask),
+      keep: () => { this._upFocus = 'lv-file'; this.setState({ dlg: { ...this.state.dlg, ask: false } }); },
+      discard: () => this.closeDlg({ say: 'Nothing was uploaded' }),
+      close: () => this.askClose(),
+      go: ev => this.go(ev),
+      onAnim: ev => { if (this.state.closing && ev && ev.target === ev.currentTarget) this.finishClose(); },
+      key: ev => {
+        if (!ev) return;
+        if (ev.key === 'Escape') { if (ev.preventDefault) ev.preventDefault(); if (ev.stopPropagation) ev.stopPropagation(); if (this.state.dlg && this.state.dlg.ask) { this._upFocus = 'lv-file'; this.setState({ dlg: { ...this.state.dlg, ask: false } }); } else this.askClose(); return; }
+        if (ev.key !== 'Tab' || !ev.currentTarget || !ev.currentTarget.querySelectorAll) return;
+        const fs = [...ev.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], ae = document.activeElement, inside = ev.currentTarget.contains(ae);
+        if (ev.shiftKey && (!inside || ae === first || ae === ev.currentTarget || (ae && ae.id === 'lv-dlg-title'))) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && (!inside || ae === last)) { ev.preventDefault(); first.focus(); }
+      }
+    };
+    const t = st.toast;
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: st.aina ? 'hrOnly' : 'full', tbUser: st.aina ? 'aina' : 'aisha',
+      say: st.say, onTopCo: code => this.pickCo(code), goAisb: () => this.pickCo('AISB'), isAI,
+      intro: isAI ? "Check the month's payroll workbook before paying. Agrinexus International doesn't run payroll in this app."
+        : "A leaver's last pay: part-month salary, leave not taken, notice, termination benefits and the advance left, each a pay item of the run for the month they leave. A CP22A or CP21 holds the payment until tax clearance.",
+      tabs, tabKey, panelBy: isAI ? 'lv-h1' : 'lv-tab-4', showLoading, showError, showPage, aina: !!st.aina,
+      retry: () => { this._upFocus = 'lv-list-h'; this.setState({ load: 'ok', say: 'Leavers loaded' }); },
+      countText: st.empty ? 'No leavers' : total + (total === 1 ? ' leaver' : ' leavers') + ' · 1 still in employment',
+      listEmpty: !!st.empty, listOn: !st.empty, rows, many, scrollStyle: st.many ? 'max-height:420px;overflow:auto' : 'overflow-x:auto',
+      selOn, selCls: st.flashN ? (st.flashN % 2 ? 'swapA' : 'swapB') : '', sel,
+      openLetter: ev => this.openLetter(ev),
+      dlgOn: !!d, dlg,
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastGlyph: t ? t.glyph || 'check' : 'check', toastTone: t ? t.tone || 'dok' : 'dok',
+      toastCls: t ? (t.out ? 'tOut' : t.n % 2 ? 'tA' : 'tB') : '',
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); },
+      toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); clearTimeout(this._to); this.setState({ toast: null }); },
+      undo: () => {
+        const u = this.state.toast && this.state.toast.undo; if (!u) return;
+        clearTimeout(this._tt); clearTimeout(this._to);
+        this._upFocus = 'lv-hold';
+        this.setState({ ...u, toast: null, flashN: this.state.flashN + 1, say: 'scene' in u ? "Upload taken back. The letter isn't on file and the hold is on again." : "Upload taken back. The letter isn't on file." });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

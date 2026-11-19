@@ -1,0 +1,535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payroll · Totals · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.ht:hover{background:#F0F3F8}
+/* motion and focus base */
+.hb,.hs,.ht{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out both}
+.swapB{animation:swapB .12s ease-out both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+/* status chips and result boxes, as Foundations draws them */
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box;white-space:nowrap}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#F0FBF5;border-color:#BFE8D0;color:#0F1A2B}.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}.rb.info{background:#F3F6FE;border-color:#C9D7F7;color:#1D2F5C}
+.pt-tbl{width:100%;border-collapse:collapse;font-size:14px}
+.pt-tbl th{position:sticky;top:0;z-index:1;background:#FAFBFC;text-align:left;padding:9px 10px;font-size:12px;font-weight:600;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.pt-tbl thead tr.g th{top:0;font-size:11px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid #EEF1F5}
+.pt-tbl thead tr.c th{top:31px}
+.pt-tbl td{padding:9px 10px;border-top:1px solid #EEF1F5;vertical-align:top}
+.pt-tbl .r{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pt-tbl tr.tot td{background:#FAFBFC;border-top:1px solid #D5DBE4;font-weight:700}
+.pt-tbl tr.grp td{background:#FCFCFD}
+.pt-kpi{flex:1 1 170px;min-width:0;display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid #E3E7ED;border-radius:12px;background:#FAFBFC}
+@media (max-width:760px){.pt-main{padding:24px 16px 48px !important}.pt-card{padding:16px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" month-offset="{{off}}" on-month="{{onMonth}}" hint-size="100%,64px"></dc-import>
+    <main class="pt-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+        <h1 id="pt-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payroll</h1>
+        <p style="margin: 0; color: #46546A; max-width: 760px">{{intro}}</p>
+      </div>
+
+      <div role="tablist" aria-label="Payroll pages" onKeyDown="{{tabKey}}" style="display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #D5DBE4">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+          <a href="{{t.href}}" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="{{t.ctl}}" tabindex="{{t.tabindex}}" class="ht" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</a>
+        </sc-for>
+      </div>
+
+      <div role="tabpanel" id="pt-panel" aria-labelledby="{{panelBy}}" style="display: flex; flex-direction: column; gap: 20px">
+
+        <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+            <span class="sr" role="status">Loading the payroll totals</span>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+              <span class="sk" style="height: 22px; width: 38%"></span>
+              <div style="display: flex; gap: 12px; flex-wrap: wrap"><span class="sk" style="height: 64px; flex: 1 1 160px"></span><span class="sk" style="height: 64px; flex: 1 1 160px"></span><span class="sk" style="height: 64px; flex: 1 1 160px"></span><span class="sk" style="height: 64px; flex: 1 1 160px"></span></div>
+              <span class="sk" style="height: 14px; width: 72%"></span>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px">
+              <span class="sk" style="height: 36px; width: 320px; max-width: 100%"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the payroll totals</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 480px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+            <button type="button" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showAi}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+            <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C9D7F7; font-size: 13px; color: #1D2F5C"><dc-import name="Icon" glyph="sliders" tone="brand" size="20" hint-size="20px,20px"></dc-import><span>Run, Totals, Statutory files, Leaver, Parallel run and Opening year to date aren't used for Agrinexus International, because “Runs payroll in this app” is off. <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="SetupCompanies.dc.html" style="color: #1D419A; font-weight: 600">Setup › Companies</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Setup › Companies</sc-if> turns it on.</span></div>
+            <p style="margin: 0; color: #46546A; font-size: 13px">Agrinexus International pays its 5 staff through the recurring salary row on <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="Recurring.dc.html" style="font-weight: 600">Payments › Recurring</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Payments › Recurring</sc-if>. Its payroll workbook can still be checked before paying.</p>
+            <div><a href="PayrollCheck.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #2450B8; color: #FFFFFF; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="verified" tone="white" size="16" hint-size="16px,16px"></dc-import>Open the Workbook check</a></div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #EEF1F5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="sheet" tone="muted" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 id="pt-empty-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{emptyTitle}}</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 520px">{{emptyText}}</p>
+            <a href="PayrollRun.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; color: #0F1A2B; font-weight: 600; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="payroll" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{emptyLink}}</a>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showPage}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="pt-run-h" class="pt-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center">
+                <h2 id="pt-run-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{runTitle}}</h2>
+                <span class="cp info"><dc-import name="Icon" glyph="toPay" tone="brand" size="14" hint-size="14px,14px"></dc-import>Sent to pay</span>
+                <span class="cp info"><dc-import name="Icon" glyph="books" tone="brand" size="14" hint-size="14px,14px"></dc-import>Recorded</span>
+                <sc-if value="{{whatIf}}" hint-placeholder-val="{{ false }}"><span class="cp mute" title="A state drawn to show the design; the samples differ"><dc-import name="Icon" glyph="help" tone="muted" size="14" hint-size="14px,14px"></dc-import>What-if</span></sc-if>
+              </div>
+              <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}">
+                <button type="button" class="hs" onClick="{{doExcel}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+              </sc-if>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 24px; font-size: 13px; color: #46546A">
+              <div style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="approval" tone="ok" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Approval:</b> Approved by Hassan Ismail, 22 Oct 2026, on AF-2610-009<sc-if value="{{full}}" hint-placeholder-val="{{ true }}"> · <a href="Approvals.dc.html" style="font-weight: 600">Payments › Approvals</a></sc-if></span></div>
+              <div style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="toPay" tone="brand" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Payments:</b> net pay per person and each authority's total went to <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="ToPay.dc.html" style="font-weight: 600">Payments › To pay</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Payments › To pay</sc-if></span></div>
+              <div style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="database" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Recorded:</b> SQL journal JV2610-007 matches the run's journal summary (<a href="PayrollRun.dc.html" style="font-weight: 600">the run</a>)</span></div>
+              <div style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Frozen:</b> the figures were fixed when the run was approved. A mistake is put right in the next run, never by changing this one.</span></div>
+            </div>
+
+            <sc-if value="{{kpiOn}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 12px">
+                <sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+                  <div class="pt-kpi"><span style="font-size: 12px; font-weight: 600; color: #5F6C80">{{k.label}}</span><b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-variant-numeric: tabular-nums">{{k.value}}</b><span style="font-size: 12px; color: #5F6C80">{{k.sub}}</span></div>
+                </sc-for>
+              </div>
+              <sc-if value="{{agreeOn}}" hint-placeholder-val="{{ true }}">
+                <div class="rb ok" style="align-items: center"><dc-import name="Icon" glyph="verified" tone="ok" size="20" hint-size="20px,20px"></dc-import><span>{{agreeText}}</span></div>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{aina}}" hint-placeholder-val="{{ false }}">
+              <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Later, with logins: Nurul Aina has HR without Payroll figures.</b> She sees the run's state, who approved it and whether each authority is paid, with every amount hidden. The summary, the bank list and the Excel file need the Payroll figures right. Links to Payments, Accounting and Setup pages are left out, as her menu has no such pages. An admin sets rights on Users and access.</span></div>
+            </sc-if>
+          </section>
+
+          <section aria-labelledby="{{partHeadId}}" class="pt-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 24px 20px; display: flex; flex-direction: column; gap: 14px">
+            <div role="group" aria-label="Show" style="display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; border-radius: 12px; background: #EEF1F5; align-self: flex-start">
+              <sc-for list="{{parts}}" as="p" hint-placeholder-count="3">
+                <button type="button" id="{{p.id}}" aria-pressed="{{p.pressed}}" aria-controls="pt-view" onClick="{{p.pick}}" style="{{p.style}}"><dc-import name="Icon" glyph="{{p.glyph}}" tone="{{p.tone}}" size="16" hint-size="16px,16px"></dc-import>{{p.label}}</button>
+              </sc-for>
+            </div>
+
+            <div id="pt-view" class="{{swapCls}}" style="display: flex; flex-direction: column; gap: 14px">
+
+              <sc-if value="{{showSum}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between">
+                  <h2 id="pt-sum-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Monthly summary · {{label}}</h2>
+                  <span style="color: #5F6C80; font-size: 13px">{{sumSub}}</span>
+                </div>
+              </sc-if>
+              <sc-if value="{{showBank}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between">
+                  <h2 id="pt-bank-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Bank payment list · {{label}}</h2>
+                  <span style="color: #5F6C80; font-size: 13px">From Maybank current ····4417 · {{bankCount}}</span>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{listHidden}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; gap: 12px; align-items: flex-start; padding: 16px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="22" hint-size="22px,22px"></dc-import><div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start"><b>Shown only to users with the Payroll figures right.</b><p style="margin: 0; color: #46546A; font-size: 13px">{{hiddenText}}</p><sc-if value="{{hiddenPaid}}" hint-placeholder-val="{{ false }}"><span class="cp ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Bank list paid 24 Oct · 8 payments</span></sc-if></div></div>
+              </sc-if>
+
+              <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+                <sc-if value="{{missingOn}}" hint-placeholder-val="{{ false }}">
+                  <div id="pt-refused" role="alert" tabindex="-1" class="ex rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="color: #8E1A10">The bank list wasn't made: 1 person has no bank account on the staff record.</b><span style="color: #46546A">Nur Izzati binti Kamal (S008) has no bank account. Add it on <a href="HrStaffRecord.dc.html#S008" style="font-weight: 600">her staff record</a> and the list is made again. Nothing was made or changed; the run and its approval stay as they are.</span><span style="color: #46546A; font-size: 12px">Drawn as a what-if: Izzati's staff record holds Bank Islam ····4405, and October's list was paid on 24 Oct, so this refusal doesn't show today.</span></div></div>
+                </sc-if>
+                <sc-if value="{{many}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+                    <label for="pt-q" style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 260px; max-width: 420px"><span style="font-size: 13px; font-weight: 600; color: #46546A">Find a person</span><input id="pt-q" type="search" autoComplete="off" value="{{q}}" onInput="{{onQ}}" placeholder="Name or staff number" aria-describedby="pt-count" style="height: 40px; padding: 0 12px; border: 1px solid #7B8798; border-radius: 10px; font: 400 14px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box; width: 100%"></label>
+                    <span id="pt-count" role="status" style="font-size: 13px; color: #46546A; padding-bottom: 10px">{{countText}}</span>
+                  </div>
+                </sc-if>
+
+                <div role="region" aria-label="{{tblLabel}}" tabindex="0" class="fr" style="{{tblBox}}">
+                  <sc-if value="{{showSum}}" hint-placeholder-val="{{ true }}">
+                    <table class="pt-tbl" style="min-width: 1180px">
+                      <caption class="sr">Monthly summary for {{label}}: pay, employee deductions, net pay and employer contributions per person</caption>
+                      <thead>
+                        <tr class="g"><th scope="col" rowspan="2" style="vertical-align: bottom">Person</th><th scope="colgroup" colspan="4" style="text-align: center">Pay</th><th scope="colgroup" colspan="5" style="text-align: center">Employee deductions</th><th scope="col" rowspan="2" class="r" style="vertical-align: bottom">Net pay</th><th scope="colgroup" colspan="3" style="text-align: center">Employer</th><th scope="col" rowspan="2" style="vertical-align: bottom"><span class="sr">Payslip</span></th></tr>
+                        <tr class="c"><th scope="col" class="r">Basic</th><th scope="col" class="r">Allowance</th><th scope="col" class="r">Overtime</th><th scope="col" class="r">Gross</th><th scope="col" class="r">EPF</th><th scope="col" class="r">SOCSO</th><th scope="col" class="r">EIS</th><th scope="col" class="r">Lindung 24 Jam</th><th scope="col" class="r">PCB</th><th scope="col" class="r">EPF</th><th scope="col" class="r">SOCSO</th><th scope="col" class="r">EIS</th></tr>
+                      </thead>
+                      <tbody>
+                        <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+                          <tr id="{{r.rid}}" tabindex="-1" class="{{r.cls}}"><td style="white-space: nowrap"><span class="mono" style="color: #5F6C80; font-size: 12px; margin-right: 8px">{{r.no}}</span>{{r.name}}</td><td class="r">{{r.basic}}</td><td class="r">{{r.allow}}</td><td class="r">{{r.ot}}</td><td class="r">{{r.gross}}</td><td class="r">{{r.epf}}</td><td class="r">{{r.socso}}</td><td class="r">{{r.eis}}</td><td class="r">{{r.l24}}</td><td class="r">{{r.pcb}}</td><td class="r" style="font-weight: 600">{{r.net}}</td><td class="r">{{r.erEpf}}</td><td class="r">{{r.erSocso}}</td><td class="r">{{r.erEis}}</td><td><a href="PrintPayslip.dc.html" aria-label="{{r.slipLabel}}" style="display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 600; white-space: nowrap">Payslip</a></td></tr>
+                        </sc-for>
+                        <tr class="tot"><td>{{tot.label}}</td><td class="r">{{tot.basic}}</td><td class="r">{{tot.allow}}</td><td class="r">{{tot.ot}}</td><td class="r">{{tot.gross}}</td><td class="r">{{tot.epf}}</td><td class="r">{{tot.socso}}</td><td class="r">{{tot.eis}}</td><td class="r">{{tot.l24}}</td><td class="r">{{tot.pcb}}</td><td class="r">{{tot.net}}</td><td class="r">{{tot.erEpf}}</td><td class="r">{{tot.erSocso}}</td><td class="r">{{tot.erEis}}</td><td></td></tr>
+                      </tbody>
+                    </table>
+                  </sc-if>
+                  <sc-if value="{{showBank}}" hint-placeholder-val="{{ false }}">
+                    <table class="pt-tbl" style="min-width: 640px">
+                      <caption class="sr">Bank payment list for {{label}}: net pay per person with bank and account, last 4 digits shown</caption>
+                      <thead><tr class="c" style="top: 0"><th scope="col" style="top: 0">Person</th><th scope="col" style="top: 0">Bank</th><th scope="col" style="top: 0">Account</th><th scope="col" class="r" style="top: 0">Net pay</th></tr></thead>
+                      <tbody>
+                        <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+                          <tr id="{{r.rid}}" tabindex="-1" class="{{r.cls}}"><td style="white-space: nowrap"><span class="mono" style="color: #5F6C80; font-size: 12px; margin-right: 8px">{{r.no}}</span>{{r.name}}</td>
+                            <td><sc-if value="{{r.hasBank}}" hint-placeholder-val="{{ true }}">{{r.bank}}</sc-if><sc-if value="{{r.noBank}}" hint-placeholder-val="{{ false }}"><span class="cp bad"><dc-import name="Icon" glyph="alert" tone="bad" size="14" hint-size="14px,14px"></dc-import>No bank account on the staff record</span></sc-if></td>
+                            <td class="mono">{{r.acct}}</td>
+                            <td class="r" style="font-weight: 600">{{r.net}}</td></tr>
+                        </sc-for>
+                        <tr class="tot"><td colspan="3">{{tot.bankLabel}}</td><td class="r">{{tot.net}}</td></tr>
+                      </tbody>
+                    </table>
+                  </sc-if>
+                </div>
+
+                <sc-if value="{{moreOn}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED">
+                    <span style="font-size: 13px; color: #46546A">{{countText}}</span>
+                    <button type="button" class="hs" onClick="{{showMore}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Show 25 more</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+                  <div style="padding: 8px 0; color: #46546A; font-size: 13px">No one matches “{{q}}”. <button type="button" onClick="{{clearQ}}" style="border: 0; background: transparent; padding: 0 2px; min-height: 32px; color: #2450B8; font: 600 13px Inter, sans-serif; text-decoration: underline; cursor: pointer">Clear the search</button></div>
+                </sc-if>
+                <sc-if value="{{many}}" hint-placeholder-val="{{ false }}">
+                  <span style="color: #5F6C80; font-size: 12px">Many rows: a what-if of 140 people for AISB. Rows after S008 are stand-ins named by their staff number, so no new names are made up, and the totals are the what-if's own. The header rows stay at the top while the rows scroll; the list shows 25 and Show 25 more, as States › Many rows. The Excel file always holds every row.</span>
+                </sc-if>
+
+                <sc-if value="{{showSum}}" hint-placeholder-val="{{ true }}">
+                  <p style="margin: 0; color: #5F6C80; font-size: 13px; max-width: 980px">Wages for EPF, SOCSO and EIS are the basic pay; travelling allowance and overtime are outside them (Pay items on <a href="SetupPayroll.dc.html">Setup › HR › Payroll settings</a>). Zakat is 0.00 for everyone. Lindung 24 Jam was not deducted in October: the payroll check notes SKBBK is 0 on each payslip, and the <a href="PayrollParallel.dc.html">parallel run</a> lists the RM 307.70 the app works out.</p>
+                </sc-if>
+                <sc-if value="{{showBank}}" hint-placeholder-val="{{ false }}">
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+                    <sc-if value="{{bankPaid}}" hint-placeholder-val="{{ true }}">
+                      <span class="cp ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Paid 24 Oct as PAYROLL BULK 8 ITEMS</span>
+                      <span style="font-size: 13px; color: #46546A">Bank reference BULK 241026 · SQL PV2610-014 · <a href="PaymentsRegister.dc.html" style="font-weight: 600">Payments register</a></span>
+                    </sc-if>
+                    <sc-if value="{{bankWhatIf}}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size: 13px; color: #46546A">What-if list: not paid. October's real list of 8 payments was paid on 24 Oct as PAYROLL BULK 8 ITEMS.</span>
+                    </sc-if>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+                    <button type="button" class="hs" onClick="{{doBankExcel}}" disabled="{{bankBlocked}}" aria-describedby="{{bankBlockBy}}" style="{{bankBtnStyle}}"><dc-import name="Icon" glyph="sheet" tone="muted" size="16" hint-size="16px,16px"></dc-import>Bank list (Excel)</button>
+                    <button type="button" disabled="{{ true }}" aria-describedby="pt-fmt" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #C3CAD5; background: #F7F8FA; font: 600 14px Inter, sans-serif; color: #5F6C80; cursor: not-allowed"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Bank upload file</button>
+                    <span id="pt-fmt" style="font-size: 13px; color: #46546A">Maybank bulk format to be confirmed. Until then, key the payments in from the Excel list.</span>
+                  </div>
+                  <sc-if value="{{missingOn}}" hint-placeholder-val="{{ false }}"><span id="pt-bank-block" style="font-size: 13px; color: #B0190F">The Excel list waits until every person has a bank account.</span></sc-if>
+                  <p style="margin: 0; color: #5F6C80; font-size: 13px; max-width: 980px">Account numbers show the last 4 here. The Excel list holds them in full for the bank's bulk payment upload, and each download is recorded in the audit trail.</p>
+                </sc-if>
+              </sc-if>
+
+              <sc-if value="{{showAuth}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between">
+                  <h2 id="pt-auth-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Totals per authority · {{label}}</h2>
+                  <span style="color: #5F6C80; font-size: 13px">Each becomes a statutory payment in Payments › To pay</span>
+                </div>
+                <div role="region" aria-label="Totals per authority, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                  <table class="pt-tbl" style="min-width: 960px">
+                    <caption class="sr">Totals per authority for {{label}}, with each payment's due date and state</caption>
+                    <thead><tr class="c"><th scope="col" style="top: 0">Paid to</th><th scope="col" class="r" style="top: 0">Employee</th><th scope="col" class="r" style="top: 0">Employer</th><th scope="col" class="r" style="top: 0">Total</th><th scope="col" style="top: 0">Due</th><th scope="col" style="top: 0">Payment</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{auth}}" as="a" hint-placeholder-count="8">
+                        <tr id="{{a.rid}}" class="{{a.cls}}">
+                          <td style="{{a.nameStyle}}"><div style="display: flex; gap: 8px; align-items: flex-start"><sc-if value="{{a.head}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="statutory" tone="muted" size="18" hint-size="18px,18px"></dc-import></sc-if><div><div>{{a.name}}</div><sc-if value="{{a.subOn}}" hint-placeholder-val="{{ true }}"><div style="color: #5F6C80; font-size: 12px; font-weight: 400">{{a.sub}}</div></sc-if></div></div></td>
+                          <td class="r">{{a.ee}}</td><td class="r">{{a.er}}</td><td class="r" style="{{a.totStyle}}">{{a.tot}}</td>
+                          <td style="white-space: nowrap; color: #46546A">{{a.due}}</td>
+                          <td><sc-if value="{{a.payOn}}" hint-placeholder-val="{{ true }}"><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span style="display: flex; flex-wrap: wrap; gap: 6px"><span class="{{a.payCls}}"><dc-import name="Icon" glyph="{{a.payGlyph}}" tone="{{a.payTone}}" size="14" hint-size="14px,14px"></dc-import>{{a.payText}}</span><sc-if value="{{a.late}}" hint-placeholder-val="{{ false }}"><span class="cp warn">Paid late</span></sc-if></span><sc-if value="{{a.payNoteOn}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #46546A">{{a.payNote}}</span></sc-if><span style="display: flex; flex-wrap: wrap; gap: 4px 12px"><sc-for list="{{a.links}}" as="l" hint-placeholder-count="2"><a href="{{l.href}}" style="font-size: 13px; font-weight: 600; min-height: 24px; display: inline-flex; align-items: center">{{l.label}}</a></sc-for></span></div></sc-if></td>
+                        </tr>
+                      </sc-for>
+                      <tr class="tot"><td>Total to the authorities</td><td class="r">{{authTot.ee}}</td><td class="r">{{authTot.er}}</td><td class="r">{{authTot.tot}}</td><td></td><td style="font-weight: 500; color: #46546A; font-size: 13px">{{authTot.left}}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <sc-if value="{{hrdf10}}" hint-placeholder-val="{{ false }}">
+                  <div id="pt-hrdf" role="note" tabindex="-1" class="ex rb warn"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="color: #7A3500">AISB has 10 Malaysian employees in employment, and HRDF registered is off.</b><span style="color: #46546A">From 10 Malaysian employees a company must register with HRD Corp and pay a levy of 1% of each Malaysian employee's basic pay and fixed allowances; foreign staff are left out. Check on HRD Corp's portal whether AISB is registered (log in to e-TRiS with the company's MyCoID, or look for HRD Corp's approval email), then turn HRDF registered on in <a href="SetupCompanies.dc.html" style="font-weight: 600">Setup › Companies</a>. Nothing is worked out until then; this is a warning, not a refusal.</span><span style="color: #46546A; font-size: 12px">Drawn as a what-if: AISB has 9 Malaysians in employment on 18 Nov 2026, so this warning doesn't show today.</span></div></div>
+                </sc-if>
+
+                <div style="display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: #46546A; max-width: 980px">
+                  <div style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="calendar" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>Due by the 15th of the following month, from <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="SetupStatutory.dc.html">Setup › Statutory accounts</a>. <a href="BooksStatutory.dc.html">Statutory payables</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Setup › Statutory accounts. Statutory payables</sc-if> compares what was paid with these dates. Statutory payments need no approval form.</span></div>
+                  <div style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="help" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>Wong Kah Seng turned 60 on 12 Oct, so October is at the under-60 rates and the 60-and-over rates start with November's pay. <span class="cp warn" style="margin-left: 2px">Check with KWSP and PERKESO</span> Neither publishes whether the new rates start in the birthday month or the month after; the app uses the month after, as is common payroll practice.</span></div>
+                  <div style="display: flex; gap: 8px; align-items: flex-start"><dc-import name="Icon" glyph="help" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>Lindung 24 Jam (0.75% from the June 2026 contribution month, on wages up to RM 6,000) goes in the PERKESO payment and file. <span class="cp warn" style="margin-left: 2px">Check with PERKESO</span> The scheme is new and its banded amounts are not yet confirmed.</span></div>
+                </div>
+              </sc-if>
+            </div>
+          </section>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 980px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Every run checks itself before it can be approved: the payslips, this summary, the authorities' totals and the bank list must agree. Rates as at Nov 2026, kept with the date they apply from on <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="SetupPayroll.dc.html">Setup › HR › Payroll settings</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">Setup › HR › Payroll settings</sc-if>. No IC number appears on this page and bank accounts show the last 4. The files for KWSP, PERKESO and LHDN are on <a href="PayrollFiles.dc.html">Statutory files</a>; each Excel download is recorded in the <sc-if value="{{full}}" hint-placeholder-val="{{ true }}"><a href="AuditTrail.dc.html">audit trail</a></sc-if><sc-if value="{{hrOnly}}" hint-placeholder-val="{{ false }}">audit trail</sc-if>.</span></div>
+        </sc-if>
+      </div>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 640px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="{{toastTone}}" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"summary","options":["summary","authorities","hrdf-warning","bank-list","missing-bank","excel","many-rows","no-payroll-figures","empty","loading","load-error","ai"],"section":"State to show"},"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'summary'); }
+  componentDidMount() {
+    const v = this.props.view || 'summary';
+    if (this.state.toast) this.startToast(8000);
+    if (v === 'missing-bank') this.focusId('pt-refused');
+    else if (v === 'hrdf-warning') this.focusId('pt-hrdf');
+  }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._to); }
+  componentDidUpdate(pp) {
+    if (pp && pp.view !== this.props.view) { this.setState(this.initial(this.props.view || 'summary')); return; }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: false }); return true; } return false; }
+
+  // ---- sample data (samples.md sections 5 and 6); today is Wed 18 Nov 2026. Money in sen. ----
+  // [no, name, basic, allowance, overtime, EPF ee, SOCSO ee, EIS ee, PCB, EPF er, SOCSO er, EIS er, bank, account]
+  people() {
+    return [
+      ['S001', 'Aisha Rahman', 860000, 120000, 0, 94600, 2975, 1190, 108000, 103200, 10415, 1190, 'Maybank', '····2210'],
+      ['S002', 'Ong Wei Ming', 780000, 300000, 0, 85800, 2975, 1190, 118000, 93600, 10415, 1190, 'CIMB', '····8841'],
+      ['S003', 'Nurul Aina binti Hashim', 700000, 80000, 0, 77000, 2975, 1190, 70000, 84000, 10415, 1190, 'Maybank', '····5532'],
+      ['S004', 'Mohd Hafiz bin Rosli', 570000, 260000, 0, 62700, 2825, 1130, 56000, 68400, 9890, 1130, 'Public Bank', '····0917'],
+      ['S005', 'Nor Khadijah binti Omar', 550000, 60000, 0, 60500, 2725, 1090, 34000, 66000, 9540, 1090, 'Maybank', '····7764'],
+      ['S006', 'Wong Kah Seng', 780000, 60000, 84790, 85800, 2975, 1190, 100000, 93600, 10415, 1190, 'RHB', '····3390'],
+      ['S007', 'Goh Jia Hui', 340000, 60000, 0, 37400, 1675, 665, 5500, 44200, 5860, 665, 'Maybank', '····6128'],
+      ['S008', 'Nur Izzati binti Kamal', 280000, 30000, 0, 30800, 1375, 545, 0, 36400, 4810, 545, 'Bank Islam', '····4405']
+    ].map(a => this.person(a));
+  }
+  person(a) {
+    const p = { no: a[0], name: a[1], basic: a[2], allow: a[3], ot: a[4], epf: a[5], socso: a[6], eis: a[7], pcb: a[8], erEpf: a[9], erSocso: a[10], erEis: a[11], bank: a[12], acct: a[13], l24: 0 };
+    p.gross = p.basic + p.allow + p.ot;
+    p.net = p.gross - p.epf - p.socso - p.eis - p.l24 - p.pcb;
+    return p;
+  }
+  // the many-rows what-if: stand-ins named by staff number (S009 and S010 are real people, so they start at S011)
+  standIns() {
+    if (this._stand) return this._stand;
+    const BANKS = ['Maybank', 'CIMB', 'Public Bank', 'RHB', 'Bank Islam'], out = [];
+    for (let i = 11; i <= 142; i++) {
+      const basic = (2600 + ((i * 137) % 56) * 100) * 100, allow = ((i * 7) % 5) * 30000;
+      const epf = Math.ceil(basic * 0.11 / 100) * 100, erEpf = Math.ceil(basic * (basic <= 500000 ? 0.13 : 0.12) / 100) * 100;
+      const ins = Math.min(basic, 600000), socso = Math.round(ins * 0.005 / 5) * 5, eis = Math.round(ins * 0.002 / 5) * 5;
+      const erSocso = Math.round(ins * 0.0175 / 5) * 5, pcb = Math.max(0, Math.round((basic - 350000) * 0.08 / 500) * 500);
+      const no = 'S' + String(i).padStart(3, '0');
+      out.push(this.person([no, 'Stand-in ' + no, basic, allow, 0, epf, socso, eis, pcb, erEpf, erSocso, eis, BANKS[i % 5], '····' + String(1000 + ((i * 373) % 9000)).slice(0, 4)]));
+    }
+    return (this._stand = out);
+  }
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  monthLabel(off) { return ['August 2026', 'September 2026', 'October 2026', 'November 2026'][off + 2]; }
+  initial(view) {
+    const base = { view, co: 'AISB', off: 0, part: 'sum', load: 'ok', aina: false, hrdf10: false, missing: false, many: false, shown: 25, q: '', toast: null, say: '', swap: 0 };
+    const set = {
+      authorities: { part: 'auth' }, 'hrdf-warning': { part: 'auth', hrdf10: true },
+      'bank-list': { part: 'bank' }, 'missing-bank': { part: 'bank', missing: true },
+      excel: { toast: { msg: 'Downloaded AISB 2026-10 payroll totals.xlsx: the summary, the totals per authority and the bank list, with account numbers in full for the bank. Opening it is recorded in the audit trail.', glyph: 'download', tone: 'dok', n: 1 } },
+      'many-rows': { many: true }, 'no-payroll-figures': { aina: true, part: 'auth' },
+      empty: { off: 1 }, loading: { load: 'loading' }, 'load-error': { load: 'error' }, ai: { co: 'AI' }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 8000);
+  }
+  toastPart(msg, glyph, tone) { this.startToast(8000); return { toast: { msg, glyph: glyph || 'check', tone: tone || 'dok', n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if ((c !== 'AISB' && c !== 'AI') || c === this.state.co) return;
+    this._upFocus = ['pt-h1'];
+    this.setState({ co: c, q: '', shown: 25, say: c === 'AI' ? "Totals aren't used for AI: it doesn't run payroll in this app" : "Showing AISB's payroll totals" });
+  }
+  pickMonth(o) {
+    if (o === this.state.off) return;
+    this.setState({ off: o, q: '', shown: 25, say: 'Showing ' + this.monthLabel(o) });
+  }
+
+  renderVals() {
+    const st = this.state, isAI = st.co === 'AI', label = this.monthLabel(st.off), F = n => this.fmt(n);
+    const hideAmt = !!st.aina, H = n => (hideAmt ? '•••' : F(n));
+
+    // tabs as on the Workbook check: the run tabs only where Runs payroll in this app is on (AISB in the samples)
+    const TABS = [['Workbook check', 'PayrollCheck.dc.html', 'verified'], ['Run', 'PayrollRun.dc.html', 'payroll'], ['Totals', 'PayrollTotals.dc.html', 'sheet'],
+      ['Statutory files', 'PayrollFiles.dc.html', 'statutory'], ['Leaver', 'PayrollLeaver.dc.html', 'person'], ['Parallel run', 'PayrollParallel.dc.html', 'refresh'],
+      ['Opening year to date', 'PayrollOpeningYtd.dc.html', 'history']];
+    const selI = isAI ? 0 : 2;
+    const tabs = (isAI ? TABS.slice(0, 1) : TABS).map((t, i) => {
+      const on = i === selI;
+      return { id: 'pt-tab-' + i, label: t[0], href: t[1], glyph: t[2], sel: on ? 'true' : 'false', ctl: on ? 'pt-panel' : null, tabindex: on ? '0' : '-1', tone: on ? 'brand' : 'muted',
+        style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid ' + (on ? '#2450B8' : 'transparent') + ';border-radius:8px 8px 0 0;font:600 14px Inter,sans-serif;text-decoration:none;color:' + (on ? '#1D419A' : '#46546A') + ';box-sizing:border-box' };
+    });
+    const tabKey = ev => {
+      const ids = tabs.map(t => t.id), i = ids.indexOf(ev && ev.target && ev.target.id), n = ids.length;
+      if (i < 0) return;
+      const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i - 1 + n) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : null;
+      if (j === null) return;
+      if (ev.preventDefault) ev.preventDefault();
+      this.focusId(ids[j]);
+    };
+
+    const showLoading = !isAI && st.load === 'loading', showError = !isAI && st.load === 'error';
+    const hasRun = st.off === 0;
+    const showAi = isAI, showEmpty = !isAI && st.load === 'ok' && !hasRun, showPage = !isAI && st.load === 'ok' && hasRun;
+
+    // people: the 8 on the October run, or the many-rows what-if
+    const real = this.people();
+    const all = st.many ? real.concat(this.standIns()) : real;
+    const people = st.missing ? all.map(p => (p.no === 'S008' ? { ...p, bank: null, acct: null } : p)) : all;
+    const q = (st.q || '').trim().toLowerCase();
+    const matched = q ? people.filter(p => p.name.toLowerCase().indexOf(q) >= 0 || p.no.toLowerCase().indexOf(q) >= 0) : people;
+    const list = st.many ? matched.slice(0, st.shown) : matched;
+    const sum = k => people.reduce((s, p) => s + p[k], 0);
+    const T = { basic: sum('basic'), allow: sum('allow'), ot: sum('ot'), gross: sum('gross'), epf: sum('epf'), socso: sum('socso'), eis: sum('eis'), l24: sum('l24'), pcb: sum('pcb'), net: sum('net'), erEpf: sum('erEpf'), erSocso: sum('erSocso'), erEis: sum('erEis') };
+    const rows = list.map((p, i) => ({ rid: 'pt-r-' + i, cls: st.flashRow === i ? (st.swap % 2 ? 'fa' : 'fb') : '', no: p.no, name: p.name,
+      basic: F(p.basic), allow: p.allow ? F(p.allow) : '—', ot: p.ot ? F(p.ot) : '—', gross: F(p.gross), epf: F(p.epf), socso: F(p.socso), eis: F(p.eis), l24: F(p.l24), pcb: F(p.pcb), net: F(p.net),
+      erEpf: F(p.erEpf), erSocso: F(p.erSocso), erEis: F(p.erEis), slipLabel: 'Payslip, ' + p.name + ', ' + label,
+      hasBank: !!p.bank, noBank: !p.bank, bank: p.bank || '', acct: p.acct || '' }));
+    const n = people.length;
+    const tot = { label: st.many ? 'Total, all ' + n + ' people' : 'Total, ' + n + ' people', bankLabel: (st.many ? 'Total, all ' + n + ' payments' : 'Total, ' + n + ' payments'),
+      basic: F(T.basic), allow: F(T.allow), ot: F(T.ot), gross: F(T.gross), epf: F(T.epf), socso: F(T.socso), eis: F(T.eis), l24: F(T.l24), pcb: F(T.pcb), net: F(T.net), erEpf: F(T.erEpf), erSocso: F(T.erSocso), erEis: F(T.erEis) };
+    const countText = q ? 'Showing ' + list.length + ' of ' + matched.length + ' matching' : 'Showing ' + list.length + ' of ' + n + ' people';
+    const moreOn = st.many && list.length < matched.length;
+
+    // totals per authority (ties to Statutory payables, To pay and the Payments register)
+    const ee = { epf: T.epf, socso: T.socso, eis: T.eis, l24: T.l24, pcb: T.pcb }, er = { epf: T.erEpf, socso: T.erSocso, eis: T.erEis };
+    const perkeso = ee.socso + er.socso + ee.eis + er.eis + ee.l24;
+    const lnk = (label2, href) => ({ label: label2, href });
+    const L = arr => (hideAmt ? [] : arr);
+    // the many-rows what-if has no payments of its own: its authority totals are not the paid October ones
+    const wi = st.many ? { payCls: 'cp mute', payGlyph: 'help', payTone: 'muted', payText: 'What-if · no payment', late: false, payNote: '', payNoteOn: false, links: [] } : {};
+    const A = (o) => ({ rid: null, cls: '', head: false, subOn: !!o.sub, sub: '', ee: '', er: '', tot: '', due: '', payOn: false, payCls: 'cp mute', payGlyph: 'check', payTone: 'muted', payText: '', late: false, payNoteOn: !!o.payNote, payNote: '', links: [],
+      nameStyle: o.head ? 'font-weight: 600' : 'padding-left: 38px; color: #46546A', totStyle: o.head ? 'font-weight: 600' : 'color: #46546A', ...o });
+    const auth = [
+      A({ rid: 'pt-a-kwsp', head: true, name: 'EPF · KWSP', sub: 'Employer no. 012345678', ee: H(ee.epf), er: H(er.epf), tot: H(ee.epf + er.epf), due: 'Sun 15 Nov 2026',
+        payOn: true, payCls: 'cp bad', payGlyph: 'alert', payTone: 'bad', payText: 'Not paid · overdue since 15 Nov', links: L([lnk('In To pay', 'ToPay.dc.html'), lnk('Statutory payables', 'BooksStatutory.dc.html')]), ...wi }),
+      A({ rid: 'pt-a-perkeso', head: true, name: 'PERKESO · one payment', sub: 'Employer no. E1234567891A · SOCSO, EIS and Lindung 24 Jam', ee: H(ee.socso + ee.eis + ee.l24), er: H(er.socso + er.eis), tot: H(perkeso), due: 'Sun 15 Nov 2026',
+        payOn: true, payCls: 'cp ok', payGlyph: 'check', payTone: 'ok', payText: 'Paid 17 Nov · FPX 1711093', late: true, payNote: 'After the due day; the portal was down on 14 and 15 Nov.', links: L([lnk('Payments register', 'PaymentsRegister.dc.html'), lnk('Statutory payables', 'BooksStatutory.dc.html')]), ...wi }),
+      A({ name: 'SOCSO (PERKESO)', ee: H(ee.socso), er: H(er.socso), tot: H(ee.socso + er.socso) }),
+      A({ name: 'EIS (SIP)', ee: H(ee.eis), er: H(er.eis), tot: H(ee.eis + er.eis) }),
+      A({ name: 'Lindung 24 Jam (SKBBK)', sub: 'Employee only · none deducted in October', ee: H(ee.l24), er: '—', tot: H(ee.l24) }),
+      A({ rid: 'pt-a-lhdn', head: true, name: 'LHDN · PCB', sub: 'Employer no. E 9876543210 · e-PCB Plus', ee: H(ee.pcb), er: '—', tot: H(ee.pcb), due: 'Sun 15 Nov 2026',
+        payOn: true, payCls: 'cp ok', payGlyph: 'check', payTone: 'ok', payText: 'Paid 14 Nov · FPX 1410228', links: L([lnk('Payments register', 'PaymentsRegister.dc.html')]), ...wi }),
+      A({ head: true, name: 'Zakat', sub: 'Not set up in Setup › Statutory accounts', ee: H(0), er: '—', tot: H(0), due: '—', payOn: true, payCls: 'cp mute', payGlyph: 'check', payTone: 'muted', payText: 'None this month' }),
+      st.hrdf10
+        ? A({ rid: 'pt-a-hrdf', head: true, name: 'HRD Corp · HRDF levy', sub: 'HRDF registered is off · 10 Malaysian employees (what-if)', ee: '—', er: '—', tot: '—', due: '—', payOn: true, payCls: 'cp warn', payGlyph: 'alert', payTone: 'warn', payText: 'Check registration' })
+        : A({ rid: 'pt-a-hrdf', head: true, name: 'HRD Corp · HRDF levy', sub: 'HRDF registered is off in Setup › Companies · 9 Malaysian employees', ee: '—', er: '—', tot: '—', due: '—', payOn: true, payCls: 'cp mute', payGlyph: 'lock', payTone: 'muted', payText: 'Not registered' })
+    ].map(r => ({ ...r, cls: r.head ? 'grp' : '' }));
+    const eeAll = ee.epf + ee.socso + ee.eis + ee.l24 + ee.pcb, erAll = er.epf + er.socso + er.eis;
+    const authTot = { ee: H(eeAll), er: H(erAll), tot: H(eeAll + erAll), left: st.many ? 'What-if totals, not paid' : hideAmt ? '1 not paid' : 'RM ' + F(ee.epf + er.epf) + ' not paid' };
+
+    const kpis = [
+      { label: 'Gross pay', value: F(T.gross), sub: n + ' people' },
+      { label: 'Employee deductions', value: F(T.epf + T.socso + T.eis + T.l24 + T.pcb), sub: 'EPF, SOCSO, EIS, Lindung 24 Jam, PCB' },
+      { label: 'Net pay', value: F(T.net), sub: st.many ? 'What-if · not paid' : st.missing ? 'What-if · bank list not made' : 'Paid 24 Oct · bank list' },
+      { label: 'Employer contributions', value: F(T.erEpf + T.erSocso + T.erEis), sub: 'EPF, SOCSO, EIS' },
+      { label: 'To the authorities', value: F(eeAll + erAll), sub: 'KWSP, PERKESO, LHDN' }
+    ];
+
+    const P3 = [['sum', 'Summary', 'sheet'], ['auth', 'Authorities', 'statutory'], ['bank', 'Bank list', 'bank']];
+    const parts = P3.map(([k, l, g]) => {
+      const on = st.part === k;
+      return { id: 'pt-p-' + k, label: l, glyph: g, tone: on ? 'brand' : 'muted', pressed: on ? 'true' : 'false',
+        pick: () => { if (this.state.part === k) return; this._upFocus = ['pt-' + k + '-h']; this.setState({ part: k, swap: this.state.swap + 1, flashRow: null, say: 'Showing ' + l.toLowerCase() }); },
+        style: 'display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:9px;border:1px solid ' + (on ? '#C9D7F7' : 'transparent') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';box-shadow:' + (on ? '0 1px 2px rgba(15,26,43,.08)' : 'none') + ';font:600 14px Inter,sans-serif;color:' + (on ? '#1D419A' : '#46546A') + ';cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out' };
+    });
+    const showSum = st.part === 'sum', showAuth = st.part === 'auth', showBank = st.part === 'bank';
+    const listHidden = hideAmt && !showAuth, showList = !hideAmt && !showAuth;
+    const t = st.toast;
+    const offWord = st.off > 0 ? 'future' : 'past';
+
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: st.aina ? 'hrOnly' : 'full', tbUser: st.aina ? 'aina' : 'aisha',
+      off: st.off, say: st.say, label,
+      onTopCo: code => this.pickCo(code),
+      onMonth: o => this.pickMonth(o),
+      intro: isAI ? "Agrinexus International doesn't run payroll in this app, so HR › Payroll holds the Workbook check only."
+        : "What the month's run comes to: the summary, each authority's total and the bank payment list. They are worked out from the run once it is checked, and frozen once it is approved or sent to pay. October 2026 is drawn as the example run: AISB's first run paid from this app is December 2026.",
+      tabs, tabKey, panelBy: isAI ? 'pt-tab-0' : 'pt-tab-2',
+      showLoading, showError, showAi, showEmpty, showPage,
+      retry: () => { this._upFocus = ['pt-run-h']; this.setState({ load: 'ok', say: 'Payroll totals loaded' }); },
+      emptyTitle: offWord === 'future' ? 'No totals for ' + label + ' yet' : 'No run for ' + label + ' in this app',
+      emptyText: offWord === 'future' ? "The summary, the totals per authority and the bank list appear here once " + label + "'s run is checked. Nothing is typed here: every figure comes from the run."
+        : 'The first month run in this app is December 2026. Earlier months were paid from the workbook and the recurring salary rows.',
+      emptyLink: offWord === 'future' ? 'Open the ' + label.split(' ')[0] + ' run' : 'Open the October run',
+      runTitle: label + ' run · AISB',
+      excelOn: !hideAmt,
+      doExcel: () => this.setState({ say: 'Excel downloaded', ...this.toastPart('Downloaded AISB 2026-10 payroll totals.xlsx: the summary, the totals per authority and the bank list, with account numbers in full for the bank. Opening it is recorded in the audit trail.', 'download', 'dok') }),
+      kpiOn: !hideAmt, kpis, aina: hideAmt, full: !hideAmt, hrOnly: hideAmt, whatIf: !!(st.hrdf10 || st.missing || st.many),
+      agreeOn: !st.missing,
+      agreeText: 'The totals agree: the ' + n + ' payslips, this summary, the totals per authority and the bank list (RM ' + F(T.net) + ' net).',
+      parts, swapCls: st.swap % 2 ? 'swapA' : 'swapB', partHeadId: 'pt-' + st.part + '-h',
+      showSum, showAuth, showBank, listHidden, showList, hiddenPaid: showBank && hideAmt,
+      hiddenText: showBank ? 'The bank list holds each person\'s net pay and bank account. Nurul Aina sees that the list exists and was paid on 24 Oct, without the amounts.' : 'The summary holds each person\'s pay, deductions and net pay. The payslips are on each person\'s Pay tab for users with the right.',
+      sumSub: n + ' people · from the payslips, never typed', bankCount: n + ' payments',
+      many: !!st.many, q: st.q || '', countText, moreOn, noMatch: !!q && !matched.length,
+      onQ: ev => { const v = ev && ev.target ? ev.target.value : ''; this.setState({ q: v, shown: 25 }); },
+      clearQ: () => { this._upFocus = ['pt-q']; this.setState({ q: '', shown: 25, say: 'Search cleared' }); },
+      showMore: () => { const first = list.length; this._upFocus = ['pt-r-' + first]; this.setState({ shown: this.state.shown + 25, say: 'Showing ' + Math.min(first + 25, matched.length) + ' of ' + matched.length }); },
+      tblLabel: showBank ? 'Bank payment list, scrolls' : 'Monthly summary, scrolls',
+      tblBox: 'overflow:auto;border:1px solid #E3E7ED;border-radius:12px' + (st.many ? ';max-height:560px' : ''),
+      rows, tot,
+      missingOn: !!st.missing, bankPaid: !st.missing && !st.many, bankWhatIf: !!st.many && !st.missing,
+      bankBlocked: !!st.missing, bankBlockBy: st.missing ? 'pt-bank-block' : null,
+      bankBtnStyle: 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;font:600 14px Inter,sans-serif;' + (st.missing ? 'border:1px solid #C3CAD5;background:#F7F8FA;color:#5F6C80;cursor:not-allowed' : 'border:1px solid #778588;background:#FFFFFF;color:#0F1A2B;cursor:pointer'),
+      doBankExcel: () => { if (this.state.missing) return; this.setState({ say: 'Bank list downloaded', ...this.toastPart('Downloaded AISB 2026-10 bank list.xlsx: ' + n + ' payments, RM ' + F(T.net) + ', account numbers in full. Opening it is recorded in the audit trail.', 'download', 'dok') }); },
+      auth, authTot, hrdf10: !!st.hrdf10,
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastGlyph: t ? t.glyph || 'check' : 'check', toastTone: t ? t.tone || 'dok' : 'dok',
+      toastCls: t ? (t.out ? 'tOut' : t.n % 2 ? 'tA' : 'tB') : '',
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); },
+      toastRelease: () => { if (this.state.toast) this.startToast(8000); },
+      toastClose: () => { clearTimeout(this._tt); clearTimeout(this._to); this.setState({ toast: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

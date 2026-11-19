@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>To pay · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD}
+.hd:hover{background:#FDE6E3 !important}
+/* motion and focus base */
+.hb,.hs,.hr,.hd{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* status chips, as Foundations draws them */
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.tp-tbl{width:100%;min-width:900px;border-collapse:collapse;font-size:14px}
+.tp-tbl th{position:sticky;top:0;z-index:1;background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.tp-tbl td{padding:12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.tp-tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:760px){.tp-main{padding:24px 16px 48px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="topay" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Payments" page="To pay" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="tp-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">Payments</span>
+          <h1 id="tp-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">To pay</h1>
+          <p style="margin: 0; color: #46546A; max-width: 680px">Approved items, and payments that need no approval, until they are paid. Grouped by when they are due. Items waiting for approval are only on Approvals.</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+          <a href="Approvals.dc.html" class="hs" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; text-decoration: none; box-sizing: border-box"><dc-import name="Icon" glyph="approval" tone="brand" size="18" hint-size="18px,18px"></dc-import>{{waitLink}}</a>
+          <button type="button" class="hs" onClick="{{doExcel}}" disabled="{{excelOff}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+        </div>
+      </div>
+
+      <sc-if value="{{keptHere}}" hint-placeholder-val="{{ false }}">
+        <div role="note" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 14px; background: #EAF0FD; border: 1px solid #C9D7F7">
+          <dc-import name="Icon" glyph="books" tone="brand" size="22" hint-size="22px,22px"></dc-import>
+          <div style="flex: 1; min-width: 0"><b style="color: #1D2F5C">An example once AI has a chart of accounts</b><div style="font-size: 13px; color: #1D2F5C">Agrinexus International is Kept here, but AI has no chart of accounts yet, so today paying here records the payment only and posts no voucher. Once AI has a chart, each payment made here posts its payment voucher in AI's own books, numbered when it is posted in the series of the month it is paid in. A posted voucher is never edited; changing the payment later cancels it and posts a new one.</div></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{filt.on}}" hint-placeholder-val="{{ false }}">
+        <div role="status" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 12px 16px; border-radius: 14px; background: #FFFFFF; border: 1px solid #C9D7F7">
+          <dc-import name="Icon" glyph="filter" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+          <div style="flex: 1 1 360px; min-width: 0"><b>{{filt.title}}</b><div style="font-size: 13px; color: #46546A">{{filt.body}}</div></div>
+          <button type="button" class="hs" onClick="{{clearFilter}}" style="height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Show everything to pay</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{holdNote}}" hint-placeholder-val="{{ false }}">
+        <div role="note" class="rv" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 16px; border-radius: 14px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 13px; color: #6B3A00">
+          <dc-import name="Icon" glyph="lock" tone="warn" size="20" hint-size="20px,20px"></dc-import>
+          <span><b>An example from later.</b> AISB pays salaries from the payroll run from December 2026 (see Recurring). Once the December run is sent to pay (HR › Payroll), Kah Seng's final pay shows here under Later with “Hold until tax clearance”. The hold lifts when LHDN's letter is uploaded on <a href="PayrollLeaver.dc.html">the leaver's final pay</a>, or after 90 days. Today's To pay has 6 items.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+          <span class="sr" role="status">Loading To pay</span>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px">
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+          </div>
+          <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+            <span class="sk" style="height: 18px; width: 24%"></span>
+            <span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load To pay</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was paid or changed.</p>
+          <button type="button" id="tp-retry" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+        <div class="rv" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #F0FBF5; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="toPay" tone="ok" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Nothing to pay</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">Approved requests, and payments that need no approval, show here until they are paid.</p>
+          <a href="Approvals.dc.html" class="hs" style="display: inline-flex; align-items: center; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; text-decoration: none; box-sizing: border-box">{{waitLink}}</a>
+          <span style="color: #5F6C80; font-size: 12px; max-width: 460px">{{emptyNote}}</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px">
+          <sc-for list="{{sums}}" as="s" hint-placeholder-count="4">
+            <div style="{{s.box}}"><span style="{{s.labelStyle}}">{{s.label}}</span><div style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums">{{s.value}}</div><span style="font-size: 13px; color: #5F6C80">{{s.note}}</span></div>
+          </sc-for>
+        </div>
+
+        <section aria-labelledby="tp-list-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 20px; border-bottom: 1px solid #EEF1F5">
+            <h2 id="tp-list-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{listTitle}}</h2>
+            <span aria-live="polite" style="color: #5F6C80; font-size: 13px">{{countText}}</span>
+            <label style="display: inline-flex; align-items: center; gap: 8px; min-height: 32px; margin-left: auto; font-size: 13px; font-weight: 600; color: #46546A"><input type="checkbox" checked="{{allOn}}" onChange="{{onAll}}" style="width: 18px; height: 18px; accent-color: #2450B8">Select all</label>
+          </div>
+
+          <sc-if value="{{bulk.on}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" role="region" aria-label="Selected items" style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 12px 20px; background: #F3F6FE; border-bottom: 1px solid #C9D7F7">
+              <b>{{bulk.text}}</b>
+              <span style="color: #46546A; font-size: 13px">{{bulk.note}}</span>
+              <div style="display: flex; gap: 8px; margin-left: auto">
+                <button type="button" class="hs" onClick="{{clearSel}}" style="height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Clear</button>
+                <button type="button" id="tp-pay-btn" class="hb" onClick="{{openPay}}" style="display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 13px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="payment" tone="white" size="16" hint-size="16px,16px"></dc-import>{{bulk.payLabel}}</button>
+              </div>
+            </div>
+          </sc-if>
+
+          <div role="region" aria-label="Items to pay, scrolls" tabindex="0" class="fr" style="{{scrollStyle}}">
+            <table class="tp-tbl">
+              <caption class="sr">Items to pay, grouped as overdue, this week and later</caption>
+              <thead><tr>
+                <th scope="col" style="width: 44px; padding-left: 20px"><span class="sr">Select</span></th>
+                <th scope="col">Item</th>
+                <th scope="col" style="width: 170px">Due</th>
+                <th scope="col" style="width: 250px">Approval</th>
+                <th scope="col" class="r" style="width: 140px">Amount</th>
+                <th scope="col" style="width: 90px; padding-right: 20px"><span class="sr">Open</span></th>
+              </tr></thead>
+              <sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+                <tbody>
+                  <tr><th scope="rowgroup" colspan="6" style="{{g.headStyle}}"><span style="display: inline-flex; align-items: center; gap: 8px"><dc-import name="Icon" glyph="{{g.glyph}}" tone="{{g.tone}}" size="16" hint-size="16px,16px"></dc-import>{{g.title}}<span style="font-weight: 500; color: #46546A">{{g.sub}}</span></span></th></tr>
+                  <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+                    <tr class="{{r.cls}}" style="{{r.rowStyle}}">
+                      <td style="padding: 5px 4px 5px 14px"><label style="display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 32px; cursor: pointer"><input type="checkbox" aria-label="{{r.selLabel}}" checked="{{r.on}}" onChange="{{r.toggle}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8"></label></td>
+                      <td><div style="display: flex; gap: 10px; align-items: flex-start"><span style="flex: none; margin-top: 1px"><dc-import name="Icon" glyph="{{r.glyph}}" tone="brand" size="20" hint-size="20px,20px"></dc-import></span><div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                        <b>{{r.name}}</b>
+                        <span style="color: #5F6C80; font-size: 12px">{{r.kind}}<sc-if value="{{r.hasCode}}" hint-placeholder-val="{{ false }}"> · <a href="{{r.codeHref}}" style="font-weight: 600">{{r.code}}</a></sc-if><sc-if value="{{r.payee}}" hint-placeholder-val="{{ true }}"> · {{r.payee}}</sc-if></span>
+                        <sc-if value="{{r.note}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">{{r.note}}</span></sc-if>
+                        <sc-if value="{{r.hold}}" hint-placeholder-val="{{ false }}"><span style="display: flex; flex-direction: column; gap: 4px; margin-top: 4px"><span class="pl warn" style="align-self: flex-start"><dc-import name="Icon" glyph="lock" tone="warn" size="14" hint-size="14px,14px"></dc-import>Hold until tax clearance</span><span style="color: #46546A; font-size: 12px; max-width: 420px">{{r.holdText}}</span></span></sc-if>
+                      </div></div></td>
+                      <td><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span>{{r.dueText}}</span><sc-if value="{{r.duePill}}" hint-placeholder-val="{{ false }}"><span class="{{r.duePillCls}}">{{r.duePill}}</span></sc-if></div></td>
+                      <td><span class="{{r.apCls}}"><dc-import name="Icon" glyph="{{r.apGlyph}}" tone="{{r.apTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.apText}}</span><sc-if value="{{r.apForm}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px; margin-top: 4px">{{r.apForm}}</div></sc-if></td>
+                      <td class="r"><b>{{r.amt}}</b><sc-if value="{{r.amtNote}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px; font-weight: 400">{{r.amtNote}}</div></sc-if></td>
+                      <td style="padding-right: 20px"><a href="{{r.openHref}}" aria-label="{{r.openLabel}}" class="hs" style="display: inline-flex; align-items: center; height: 32px; padding: 0 10px; border-radius: 8px; border: 1px solid #778588; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; text-decoration: none; box-sizing: border-box">Open</a></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </sc-for>
+            </table>
+          </div>
+
+          <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+            <div style="padding: 18px 20px; color: #46546A; font-size: 13px; border-top: 1px solid #EEF1F5">Nothing to pay matches this filter. <button type="button" onClick="{{clearFilter}}" style="border: 0; background: transparent; padding: 0 2px; min-height: 32px; color: #2450B8; font: 600 13px Inter, sans-serif; text-decoration: underline; cursor: pointer">Show everything to pay</button></div>
+          </sc-if>
+
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid #E3E7ED; background: #FAFBFC">
+            <span role="status" aria-live="off" style="font-size: 13px; color: #46546A">{{footText}}</span>
+            <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{many.more}}" disabled="{{many.off}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{many.label}}</button></sc-if>
+          </div>
+          <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}"><div style="padding: 0 20px 14px; background: #FAFBFC; color: #5F6C80; font-size: 12px">{{many.note}}</div></sc-if>
+        </section>
+
+        <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 900px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>Pay makes one payment per item, all with the same bank reference, so the bank reconciliation can match one statement line to the group. Approval never blocks paying: an item paid before its form is uploaded shows “Paid without approval on file” in the Payments register. Paid items move to the <a href="PaymentsRegister.dc.html">Payments register</a>.</span></div>
+      </sc-if>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 620px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="tp-undo" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{dlg.show}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dlg.dimCls}}" onClick="{{dlg.close}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div>
+    <div style="position: fixed; inset: 0; z-index: 51; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none">
+      <div role="dialog" aria-modal="true" aria-labelledby="tp-dlg-title" aria-describedby="tp-dlg-desc" tabindex="-1" class="{{dlg.panelCls}}" onKeyDown="{{dlg.key}}" onAnimationEnd="{{dlg.onAnim}}" style="pointer-events: auto; position: relative; width: 100%; max-width: 580px; max-height: 100%; overflow-y: auto; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; box-shadow: 0 16px 40px rgba(13,27,46,.18); display: flex; flex-direction: column">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 20px 60px 14px 22px; border-bottom: 1px solid #EEF1F5">
+          <span style="width: 40px; height: 40px; border-radius: 12px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="payment" tone="brand" size="22" hint-size="22px,22px"></dc-import></span>
+          <div><h2 id="tp-dlg-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{dlg.title}}</h2><p id="tp-dlg-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">One payment is made for each item, all with this paid date, bank reference and bank account.</p></div>
+        </div>
+        <button type="button" class="hs" onClick="{{dlg.close}}" aria-label="Close" style="position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+
+        <sc-if value="{{dlg.refused}}" hint-placeholder-val="{{ false }}">
+          <div id="tp-refused" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 22px; background: #FDF3F2; border-bottom: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was paid</b><div style="color: #46546A; font-size: 13px">{{dlg.refusedText}}</div></div></div>
+        </sc-if>
+
+        <div style="padding: 16px 22px; display: flex; flex-direction: column; gap: 14px">
+          <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+            <sc-for list="{{dlg.items}}" as="x" hint-placeholder-count="3">
+              <div style="{{x.style}}"><span style="display: flex; flex-direction: column; min-width: 0"><b style="font-size: 13px">{{x.name}}</b><span style="color: #5F6C80; font-size: 12px">{{x.sub}}</span></span><span style="text-align: right"><b style="font-variant-numeric: tabular-nums">{{x.amt}}</b><sc-if value="{{x.bad}}" hint-placeholder-val="{{ false }}"><span style="display: block; color: #B0190F; font-size: 12px; font-weight: 600">{{x.bad}}</span></sc-if></span></div>
+            </sc-for>
+            <div style="display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; background: #FAFBFC; border-top: 1px solid #E3E7ED; font-weight: 700"><span>Total</span><span style="font-variant-numeric: tabular-nums">{{dlg.total}}</span></div>
+          </div>
+
+          <sc-if value="{{dlg.holdWarn}}" hint-placeholder-val="{{ false }}">
+            <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 13px; color: #6B3A00"><dc-import name="Icon" glyph="lock" tone="warn" size="18" hint-size="18px,18px"></dc-import><span>{{dlg.holdWarn}}</span></div>
+          </sc-if>
+          <sc-if value="{{dlg.keptHere}}" hint-placeholder-val="{{ false }}">
+            <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C9D7F7; font-size: 13px; color: #1D2F5C"><dc-import name="Icon" glyph="books" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{dlg.keptHere}}</span></div>
+          </sc-if>
+
+          <form id="tp-form" onSubmit="{{dlg.submit}}" noValidate="{{ true }}" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+            <sc-for list="{{dlg.fields}}" as="f" hint-placeholder-count="3">
+              <div style="{{f.wrap}}">
+                <label for="{{f.id}}" style="display: flex; gap: 8px; align-items: baseline; font-size: 13px; font-weight: 600; color: #46546A">{{f.label}}<sc-if value="{{f.req}}" hint-placeholder-val="{{ false }}"><span style="font-weight: 500; font-size: 12px; color: #5F6C80">Required</span></sc-if></label>
+                <sc-if value="{{f.isInput}}" hint-placeholder-val="{{ true }}"><input id="{{f.id}}" type="{{f.type}}" value="{{f.val}}" max="{{f.max}}" onChange="{{f.change}}" disabled="{{f.off}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" autoComplete="off" style="{{f.style}}"></sc-if>
+                <sc-if value="{{f.isSelect}}" hint-placeholder-val="{{ false }}"><select id="{{f.id}}" value="{{f.val}}" onChange="{{f.change}}" disabled="{{f.off}}" aria-invalid="{{f.inv}}" aria-describedby="{{f.by}}" style="{{f.style}}"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="2"><option value="{{o.v}}">{{o.l}}</option></sc-for></select></sc-if>
+                <sc-if value="{{f.errOn}}" hint-placeholder-val="{{ false }}"><span id="{{f.errId}}" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{f.err}}</span></sc-if>
+                <sc-if value="{{f.hint}}" hint-placeholder-val="{{ false }}"><span id="{{f.hintId}}" style="color: #5F6C80; font-size: 12px">{{f.hint}}</span></sc-if>
+              </div>
+            </sc-for>
+            <div style="grid-column: 1 / -1; color: #5F6C80; font-size: 12px">Entered by Aisha Rahman (declared, not verified until logins exist). Each payment keeps its request and approval form; Undo on the next message takes them all back.</div>
+          </form>
+        </div>
+
+        <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+          <sc-if value="{{dlg.asking}}" hint-placeholder-val="{{ false }}">
+            <div role="group" aria-labelledby="tp-ask-q" class="ex" style="flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+              <span id="tp-ask-q" style="font-weight: 600; margin-right: auto">Discard your changes?</span>
+              <button type="button" id="tp-keep" class="hs" onClick="{{dlg.keep}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+              <button type="button" class="hd" onClick="{{dlg.discard}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #E8A9A2; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #B0190F; cursor: pointer">Discard</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{dlg.notAsking}}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="hs" onClick="{{dlg.close}}" disabled="{{dlg.saving}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Cancel</button>
+            <button type="submit" form="tp-form" id="tp-go" class="hb" disabled="{{dlg.saving}}" aria-busy="{{dlg.busy}}" style="{{dlg.goStyle}}"><sc-if value="{{dlg.saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{dlg.idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="payment" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{dlg.goLabel}}</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","selected","pay","pay-errors","pay-saving","pay-refused","pay-discard","paid","tax-hold","tax-hold-pay","from-due","from-requests","kept-here","kept-here-pay","excel","empty","loading","load-error","many"],"section":"State to show"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the state: ToPay.dc.html#from-due (the Overview's Due and overdue card), #from-requests (Approvals'
+    // Approved tab) or #kept-here (AI). It applies on first load, over the default state.
+    let v = (p && p.view) || 'list', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'list' && ['from-due', 'from-requests', 'kept-here'].includes(h)) v = h;
+    this.state = this.initial(v);
+  }
+  componentDidMount() { const v = this.props.view; if (v === 'pay-refused') this.focusId('tp-refused'); else if (this.state.dlg) this.focusId('tp-dlg-title'); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._sv); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._sv); this.setState(this.initial(this.props.view || 'list')); return; }
+    if (!prev) return;
+    const st = this.state;
+    if (!prev.dlg && st.dlg) { this.focusId('tp-dlg-title'); return; }
+    if (prev.dlg && !st.dlg) { this._upFocus = null; const o = this._opener; if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); else this.focusId('tp-list-h'); return; }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: true }); return true; } return false; }
+
+  // ---- sample data: today is Wednesday 18 November 2026; this week runs Mon 16 to Sun 22 Nov ----
+  items(co, hold) {
+    const ok = (by, date, form) => ({ k: 'ok', text: 'Approved by ' + by + ', ' + date, form });
+    const none = why => ({ k: 'none', text: 'Not needed', form: why });
+    if (co === 'AI') return [
+      { id: 'ai-kwsp', name: 'KWSP for October', kind: 'Statutory', payee: 'KWSP', glyph: 'statutory', due: '2026-11-15', legal: true, cur: 'MYR', amt: 4478, ap: none('Statutory payments need no form'), open: 'Payment.dc.html', note: 'From the recurring payment KWSP' },
+      { id: 'ai-audit', name: 'Consultant — farm audit', kind: 'Consultant', payee: '', note: 'Quarterly', glyph: 'person', due: '2026-11-30', cur: 'MYR', amt: 2500, ap: ok('Hassan Ismail', '17 Nov 2026', 'Form AF-2611-006'), open: 'Payment.dc.html' }
+    ];
+    const out = [
+      { id: 'kwsp', name: 'KWSP for October', kind: 'Statutory', payee: 'KWSP', glyph: 'statutory', due: '2026-11-15', legal: true, cur: 'MYR', amt: 11240, ap: none('Statutory payments need no form'), open: 'Payment.dc.html', note: 'From the recurring payment KWSP' },
+      { id: 'cl4', name: 'Oct 2026 Claims - Wei Ming', kind: 'Staff claim', code: 'CL-2610-004', codeHref: 'HrClaim.dc.html', payee: 'Wei Ming', glyph: 'claim', due: '2026-11-14', cur: 'MYR', amt: 486.5, req: true, ap: ok('Tan Mei Ling', '12 Nov 2026', 'Form AF-2611-003'), open: 'Payment.dc.html' },
+      { id: 'cl5', name: 'Oct 2026 Claims - Aina', kind: 'Staff claim', code: 'CL-2610-005', codeHref: 'HrClaim.dc.html', payee: 'Aina', glyph: 'claim', due: '2026-11-20', cur: 'MYR', amt: 408, req: true, ap: ok('Tan Mei Ling', '12 Nov 2026', 'Form AF-2611-003'), open: 'Payment.dc.html' },
+      { id: 'cl7', name: 'Oct 2026 Claims - Jia Hui', kind: 'Staff claim', code: 'CL-2610-007', codeHref: 'HrClaim.dc.html', payee: 'Jia Hui', glyph: 'claim', due: '2026-11-20', cur: 'MYR', amt: 320, req: true, ap: ok('Tan Mei Ling', '12 Nov 2026', 'Form AF-2611-003'), open: 'Payment.dc.html' },
+      { id: 'sa1', name: 'Salary advance - Hafiz', kind: 'Salary advance', code: 'SA-2611-001', codeHref: 'HrAdvances.dc.html', payee: 'Hafiz', glyph: 'advance', due: '2026-11-20', cur: 'MYR', amt: 1500, req: true, ap: ok('Rajesh Kumar', '3 Nov 2026', 'Form AF-2611-001'), open: 'Payment.dc.html', note: 'RM 500.00 a month comes off his salary from Tue 24 Nov' },
+      { id: 'cloud', name: 'Cloud hosting', kind: 'Bill', payee: 'Annual plan, billed in USD', glyph: 'receipt', due: '2026-11-25', cur: 'USD', amt: 1200, ap: ok('Hassan Ismail', '5 Nov 2026', 'Form AF-2611-002'), open: 'Payment.dc.html' }
+    ];
+    if (hold) out.push({ id: 'final', name: 'Final pay - Kah Seng', kind: 'Payroll run · December 2026', code: 'Leaver', codeHref: 'PayrollLeaver.dc.html', payee: 'Kah Seng', glyph: 'payroll', due: '2026-12-31', cur: 'MYR', amt: null, req: true, hold: true,
+      ap: { k: 'ok', text: 'Approved on the December run form', form: 'Sent to pay from HR › Payroll' }, open: 'PayrollLeaver.dc.html',
+      holdText: 'Leaver: hold until LHDN\'s clearance letter is uploaded on the leaver\'s final pay, or 90 days pass. Paying it anyway is allowed and recorded.' });
+    return out;
+  }
+  initial(view) {
+    const co = view === 'kept-here' || view === 'kept-here-pay' ? 'AI' : 'AISB';
+    const base = { view, co, sel: {}, filter: null, gone: {}, dlg: null, closing: false, form: this.blankForm(co), tried: false, saving: false, refused: null, ask: false,
+      toast: null, flash: { ids: [], n: 0 }, load: 'ok', manyShown: 25, hold: false, many: false, say: '' };
+    const claims = { cl4: true, cl5: true, cl7: true };
+    const set = {
+      selected: { sel: claims },
+      pay: { sel: claims, dlg: { kind: 'pay', ids: ['cl4', 'cl5', 'cl7'] } },
+      'pay-errors': { sel: claims, dlg: { kind: 'pay', ids: ['cl4', 'cl5', 'cl7'] }, form: { ...this.blankForm('AISB'), date: '2026-11-21', ref: '' }, tried: true },
+      'pay-saving': { sel: claims, dlg: { kind: 'pay', ids: ['cl4', 'cl5', 'cl7'] }, form: { ...this.blankForm('AISB'), ref: 'IBG 1811204' }, saving: true },
+      'pay-refused': { sel: { cl4: true, cl5: true, cloud: true }, dlg: { kind: 'pay', ids: ['cl4', 'cl5', 'cloud'] }, form: { ...this.blankForm('AISB'), ref: 'IBG 1811204' }, refused: 'mixed' },
+      'pay-discard': { sel: claims, dlg: { kind: 'pay', ids: ['cl4', 'cl5', 'cl7'] }, form: { ...this.blankForm('AISB'), ref: 'IBG 1811204' }, ask: true },
+      paid: { gone: claims, toast: { msg: '3 paid on 18 Nov, ref IBG 1811204. Each is now a payment in the Payments register.', undo: { gone: {}, sel: {} }, n: 1 } },
+      'tax-hold': { hold: true },
+      'tax-hold-pay': { hold: true, sel: { final: true }, dlg: { kind: 'pay', ids: ['final'] } },
+      'from-due': { filter: 'due' },
+      'from-requests': { filter: 'requests' },
+      'kept-here-pay': { sel: { 'ai-kwsp': true }, dlg: { kind: 'pay', ids: ['ai-kwsp'] } },
+      excel: { toast: { msg: 'Excel file ready: To pay AISB 18 Nov 2026.xlsx, 6 items. It holds every item, whatever the filter.', undo: null, n: 1 } },
+      empty: { gone: { kwsp: true, cl4: true, cl5: true, cl7: true, sa1: true, cloud: true } },
+      loading: { load: 'loading' }, 'load-error': { load: 'error' }, many: { many: true }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+  blankForm(co) { return { date: '2026-11-18', ref: '', acct: co === 'AI' ? '1186' : '4417' }; }
+  fmt(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  money(n, cur) { return (cur === 'USD' ? 'USD ' : 'RM ') + this.fmt(n); }
+  sumText(list) {
+    const by = {}; list.forEach(x => { if (x.amt != null) by[x.cur] = (by[x.cur] || 0) + x.amt; });
+    const parts = ['MYR', 'USD'].filter(c => by[c] != null).map(c => this.money(by[c], c));
+    return parts.length ? parts.join(' and ') : '—';
+  }
+  dayDiff(a, b) { const x = a.split('-').map(Number), y = b.split('-').map(Number); return Math.round((Date.UTC(x[0], x[1] - 1, x[2]) - Date.UTC(y[0], y[1] - 1, y[2])) / 864e5); }
+  dayText(iso) {
+    const [y, m, d] = iso.split('-').map(Number), wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    return wd + ' ' + d + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1] + (y !== 2026 ? ' ' + y : '');
+  }
+  all() { const st = this.state; return this.items(st.co, !!st.hold).filter(x => !st.gone[x.id]); }
+  shown() {
+    const st = this.state, T = '2026-11-18';
+    return this.all().filter(x => st.filter === 'due' ? !x.hold && this.dayDiff(x.due, T) <= 7 : st.filter === 'requests' ? x.req && !x.hold : true);
+  }
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo) { this.startToast(undo ? 15000 : 6000); return { toast: { msg, undo: undo || null, n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+  errs() {
+    const F = this.state.form, e = {};
+    if (!F.date) e.date = 'Enter the paid date.';
+    else if (F.date > '2026-11-18') e.date = "The paid date can't be after today, 18 Nov 2026.";
+    if (!F.ref.trim()) e.ref = "Enter the bank reference, as on the bank's confirmation.";
+    return e;
+  }
+  dirty() { const st = this.state, b = this.blankForm(st.co); return st.form.ref !== b.ref || st.form.date !== b.date || st.form.acct !== b.acct; }
+  openPay(ev) {
+    const st = this.state, ids = this.all().filter(x => st.sel[x.id]).map(x => x.id);
+    if (!ids.length) return;
+    this._opener = (ev && ev.currentTarget) || document.activeElement;
+    this.setState({ dlg: { kind: 'pay', ids }, closing: false, form: this.blankForm(st.co), tried: false, saving: false, refused: null, ask: false });
+  }
+  askClose() {
+    const st = this.state; if (!st.dlg || st.saving) return;
+    if (this.dirty() && !st.ask) { this._upFocus = ['tp-keep']; return this.setState({ ask: true }); }
+    this.closeDlg();
+  }
+  closeDlg(patch) {
+    const st = this.state; if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.setState({ ...(patch || {}), dlg: null, closing: false, ask: false });
+    this.setState({ ...(patch || {}), closing: true });
+    clearTimeout(this._t); this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false, ask: false }); }
+  submit() {
+    const st = this.state; if (!st.dlg || st.saving) return;
+    const e = this.errs();
+    if (Object.keys(e).length) { this._upFocus = ['tp-f-' + (e.date ? 'date' : 'ref')]; return this.setState({ tried: true, refused: null }); }
+    const list = this.items(st.co, !!st.hold).filter(x => st.dlg.ids.includes(x.id));
+    const curs = [...new Set(list.map(x => x.cur))];
+    if (curs.length > 1) { this._upFocus = ['tp-refused']; return this.setState({ refused: 'mixed', tried: true }); }
+    this.setState({ saving: true, refused: null });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => this.finishPay(), 900);
+  }
+  finishPay() {
+    const st = this.state; if (!st.dlg) return;
+    const ids = st.dlg.ids, snap = { gone: st.gone, sel: st.sel }, gone = { ...st.gone }; ids.forEach(id => { gone[id] = true; });
+    const [, m, d] = st.form.date.split('-').map(Number), when = d + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+    const n = ids.length, ref = st.form.ref.trim();
+    const msg = st.co === 'AI'
+      ? (n === 1 ? 'Paid on ' + when + ', ref ' + ref + '. An example once AI has a chart: payment voucher PV2611-001 posted in AI\'s books.' : n + ' paid on ' + when + ', ref ' + ref + '. An example once AI has a chart: payment vouchers PV2611-001 to PV2611-00' + n + ' posted.')
+      : (n === 1 ? 'Paid on ' + when + ', ref ' + ref + '. It is now a payment in the Payments register.' : n + ' paid on ' + when + ', ref ' + ref + '. Each is now a payment in the Payments register.');
+    this.closeDlg({ saving: false, gone, sel: {}, say: msg, ...this.toastPart(msg, snap) });
+  }
+  renderVals() {
+    const st = this.state, T = '2026-11-18', isAI = st.co === 'AI';
+    const all = this.all(), shown = this.shown();
+    const showLoading = st.load === 'loading', showError = st.load === 'error';
+    const base = this.items(st.co, !!st.hold), showEmpty = !showLoading && !showError && all.length === 0;
+    const showList = !showLoading && !showError && !showEmpty;
+    // groups
+    const grp = [
+      { k: 'over', title: 'Overdue', glyph: 'alert', tone: 'bad', test: x => this.dayDiff(x.due, T) < 0 },
+      { k: 'week', title: 'This week', glyph: 'calendar', tone: 'brand', test: x => this.dayDiff(x.due, T) >= 0 && x.due <= '2026-11-22' },
+      { k: 'later', title: 'Later', glyph: 'clock', tone: 'muted', test: x => x.due > '2026-11-22' }
+    ];
+    const rowOf = x => {
+      const late = this.dayDiff(T, x.due), on = !!st.sel[x.id];
+      const apCls = 'cp ' + (x.ap.k === 'ok' ? 'ok' : 'mute');
+      return { id: x.id, cls: 'hr' + (st.flash.ids.includes(x.id) ? (st.flash.n % 2 ? ' fa' : ' fb') : ''), rowStyle: on ? 'background:#F3F6FE' : '',
+        on, selLabel: 'Select ' + x.name + ', ' + (x.amt == null ? 'amount from the run' : this.money(x.amt, x.cur)),
+        toggle: e => { const v = !!(e && e.target && e.target.checked); this.setState({ sel: { ...this.state.sel, [x.id]: v } }); },
+        name: x.name, kind: x.kind, hasCode: !!x.code, code: x.code || '', codeHref: x.codeHref || 'Approvals.dc.html', payee: x.payee, note: x.note || '', glyph: x.glyph,
+        hold: !!x.hold, holdText: x.holdText || '',
+        dueText: this.dayText(x.due) + (x.legal ? ' · legal deadline' : ''),
+        duePill: late > 0 ? 'Overdue ' + late + (late === 1 ? ' day' : ' days') : late === 0 ? 'Due today' : '', duePillCls: late > 0 ? 'pl bad' : 'pl warn',
+        apCls, apGlyph: x.ap.k === 'ok' ? 'check' : 'approval', apTone: x.ap.k === 'ok' ? 'ok' : 'muted', apText: x.ap.text, apForm: x.ap.form || '',
+        amt: x.amt == null ? '—' : this.money(x.amt, x.cur), amtNote: x.amt == null ? 'From the December run' : '',
+        openHref: x.open, openLabel: 'Open ' + x.name };
+    };
+    let groups = grp.map(g => { const rows = shown.filter(g.test); return { g, rows }; }).filter(o => o.rows.length).map(({ g, rows }) => ({
+      title: g.title, glyph: g.glyph, tone: g.tone, sub: ' · ' + rows.length + ' · ' + this.sumText(rows),
+      headStyle: 'text-align:left;padding:10px 20px;font-size:13px;font-weight:700;text-transform:none;letter-spacing:0;position:static;border-top:1px solid #E3E7ED;border-bottom:0;' + (g.k === 'over' ? 'background:#FFF4F2;color:#8E1A10' : 'background:#F7F8FA;color:#0F1A2B'),
+      rows: rows.map(rowOf) }));
+    // a stress example: the same drawn rows stand for the first 25 of 64
+    const many = st.many ? { on: true, off: st.manyShown >= 64, label: st.manyShown >= 64 ? 'All 64 shown' : 'Show 25 more', more: () => this.setState({ manyShown: Math.min(64, this.state.manyShown + 25), say: 'Showing ' + Math.min(64, this.state.manyShown + 25) + ' of 64 items' }),
+      note: 'Many rows: 64 is an example count for a stress case, not a figure from the samples. The board draws the six sample rows of the first 25, so the Overdue, This week and Later cards and the group totals add up those six only. The header row stays at the top while the list scrolls, the groups keep their totals, and the Excel file always holds every row.' }
+      : { on: false, off: true, label: '', more: () => {}, note: '' };
+    // summary cards
+    const over = shown.filter(grp[0].test), week = shown.filter(grp[1].test), later = shown.filter(grp[2].test);
+    const card = (label, list, tone) => ({ label, value: list.length ? this.sumText(list) : 'Nothing', note: list.length + (list.length === 1 ? ' item' : ' items'),
+      box: 'border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0;' + (tone === 'bad' && list.length ? 'background:#FFF4F2;border:1px solid #F5C2BB' : 'background:#FFFFFF;border:1px solid #E3E7ED'),
+      labelStyle: 'font-weight:600;' + (tone === 'bad' && list.length ? 'color:#B0190F' : 'color:#46546A') });
+    const sums = [card('Overdue', over, 'bad'), card('This week, to Sun 22 Nov', week), card('Later', later), card('Total to pay', shown)];
+    if (st.many) sums[3].note = '64 items';
+    // filters arriving from the Overview's Due and overdue card and from Approvals' Approved tab
+    const filt = st.filter === 'due' ? { on: true, title: 'From the Overview: Due and overdue', body: '2 overdue, RM 11,726.50 · 4 due in the next 7 days, RM 2,228.00 and USD 1,200.00. Counted from today, whatever month the top bar shows.' }
+      : st.filter === 'requests' ? { on: true, title: "From Approvals' Approved tab: approved requests waiting to pay", body: 'Claims and salary advances only: 4 items, RM 2,714.50. Requests still waiting for approval stay on Approvals.' }
+      : { on: false, title: '', body: '' };
+    // selection
+    const selList = all.filter(x => st.sel[x.id]);
+    const curs = [...new Set(selList.map(x => x.cur))];
+    const bulk = { on: selList.length > 0, text: selList.length + ' selected · ' + this.sumText(selList), payLabel: selList.length === 1 ? 'Pay 1 item' : 'Pay ' + selList.length + ' items',
+      note: curs.length > 1 ? 'Different currencies: they must be paid one currency at a time.' : 'One payment is made per item, with one bank reference.' };
+    const allOn = shown.length > 0 && shown.every(x => st.sel[x.id]);
+    // the pay dialog
+    const dlgSt = st.dlg, E = st.tried ? this.errs() : {}, F = st.form;
+    const dlgItems = dlgSt ? base.filter(x => dlgSt.ids.includes(x.id)) : [];
+    const mixed = st.refused === 'mixed';
+    const minor = dlgItems.length ? dlgItems.filter(x => x.cur !== 'MYR') : [];
+    const fld = (k, label, kind, o) => {
+      const errOn = !!E[k], errId = 'tp-f-' + k + '-err', hintId = 'tp-f-' + k + '-hint';
+      return { id: 'tp-f-' + k, label, req: !!o.req, isInput: kind !== 'select', isSelect: kind === 'select', type: kind === 'date' ? 'date' : 'text', max: kind === 'date' ? T : '', val: F[k], opts: o.opts || [],
+        off: st.saving, inv: errOn ? 'true' : 'false', errOn, err: E[k] || '', errId, hint: o.hint || '', hintId, by: [o.hint ? hintId : '', errOn ? errId : ''].filter(Boolean).join(' '),
+        wrap: 'display:flex;flex-direction:column;gap:6px;' + (o.span ? 'grid-column:1 / -1' : ''),
+        style: 'height:40px;padding:0 ' + (kind === 'select' ? '8px' : '12px') + ';border:1px solid ' + (errOn ? '#B0190F;box-shadow:0 0 0 1px #B0190F' : '#778588') + ';border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%',
+        change: e => { const v = e && e.target ? e.target.value : ''; this.setState({ form: { ...this.state.form, [k]: v }, refused: null }); } };
+    };
+    const accts = isAI ? [{ v: '1186', l: 'Maybank FCA (USD) ···· 1186' }] : [{ v: '4417', l: 'Maybank current ···· 4417' }, { v: '0932', l: 'Maybank savings ···· 0932' }];
+    const holdItem = dlgItems.find(x => x.hold);
+    const dlg = { show: !!dlgSt, dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in',
+      title: dlgItems.length === 1 ? 'Pay ' + dlgItems[0].name : 'Pay ' + dlgItems.length + ' items',
+      refused: mixed, refusedText: mixed ? minor.map(x => x.name).join(', ') + ' is in USD and the other items are in RM. Pay one currency at a time: untick it here and pay it on its own. What you typed is kept.' : '',
+      items: dlgItems.map((x, i) => ({ name: x.name, sub: x.kind + (x.code ? ' · ' + x.code : '') + ' · ' + x.ap.text, amt: x.amt == null ? '—' : this.money(x.amt, x.cur), bad: mixed && x.cur !== 'MYR' ? 'Another currency' : '',
+        style: 'display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:10px 14px;' + (i ? 'border-top:1px solid #EEF1F5;' : '') + (mixed && x.cur !== 'MYR' ? 'background:#FDF3F2' : '') })),
+      total: this.sumText(dlgItems),
+      holdWarn: holdItem ? 'Kah Seng\'s final pay is on hold until tax clearance. Paying it in full now makes AISB liable for his tax. You can still pay; the payment is marked "Paid during the tax-clearance hold".' : '',
+      keptHere: isAI ? 'An example once AI has a chart of accounts: paying then posts one payment voucher per item in AI\'s books, numbered when posted in November 2026\'s series. Today AI has no chart, so paying records the payment only. Maybank FCA, AI\'s only bank account, is in USD.' : '',
+      fields: [fld('date', 'Paid date', 'date', { req: true }), fld('ref', 'Bank reference', 'text', { req: true, hint: 'The same reference goes on each payment.' }), fld('acct', 'Bank account it was paid from', 'select', { opts: accts, span: true })],
+      saving: st.saving, idle: !st.saving, busy: st.saving ? 'true' : 'false', goLabel: st.saving ? 'Paying…' : (dlgItems.length === 1 ? 'Pay' : 'Pay ' + dlgItems.length + ' items'),
+      goStyle: 'display:inline-flex;align-items:center;gap:8px;min-width:132px;justify-content:center;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;background:#2450B8;' + (st.saving ? 'cursor:progress;opacity:.85' : 'cursor:pointer'),
+      asking: st.ask, notAsking: !st.ask,
+      keep: () => { this._upFocus = ['tp-f-ref']; this.setState({ ask: false }); },
+      discard: () => this.closeDlg({ ask: false }),
+      close: () => this.askClose(), submit: e => { if (e && e.preventDefault) e.preventDefault(); this.submit(); },
+      onAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      key: e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (this.state.ask) { this._upFocus = ['tp-f-ref']; this.setState({ ask: false }); } else this.askClose(); return; }
+        if (e.key !== 'Tab') return;
+        const fs = [...e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], ae = document.activeElement, inside = e.currentTarget.contains(ae);
+        if (e.shiftKey && (!inside || ae === first || ae === e.currentTarget || ae.id === 'tp-dlg-title')) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (!inside || ae === last)) { e.preventDefault(); first.focus(); }
+      } };
+    const t = st.toast;
+    const nShown = shown.length, nAll = all.length;
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', say: st.say,
+      onTopCo: code => { const c = String(code).toUpperCase(); if (c === 'AISB' || c === 'AI') { if (c !== this.state.co) this.setState({ co: c, sel: {}, gone: {}, filter: null, hold: false, many: false, say: 'Showing ' + c }); } },
+      keptHere: isAI && showList, holdNote: !!st.hold && showList, waitLink: isAI ? 'Approvals: nothing waiting' : 'Waiting for approval: 3, on Approvals',
+      excelOff: !showList,
+      doExcel: () => this.setState({ ...this.toastPart('Excel file ready: To pay ' + this.state.co + ' 18 Nov 2026.xlsx, ' + nAll + (nAll === 1 ? ' item' : ' items') + '. It holds every item, whatever the filter.', null) }),
+      filt, clearFilter: () => { this._upFocus = ['tp-list-h']; this.setState({ filter: null, say: 'Showing everything to pay' }); },
+      showLoading, showError, showEmpty, showList,
+      retry: () => this.setState({ load: 'ok', say: 'To pay loaded' }),
+      emptyNote: isAI ? '' : 'An example: AISB once all six items are paid. No company in the samples has an empty To pay.',
+      sums, listTitle: st.filter ? 'Filtered items' : 'Everything to pay',
+      countText: st.many ? '64 items' : st.filter ? nShown + ' of ' + nAll + ' shown' : nAll + (nAll === 1 ? ' item' : ' items'),
+      allOn, onAll: e => { const v = !!(e && e.target && e.target.checked), nx = {}; if (v) this.shown().forEach(x => { nx[x.id] = true; }); this.setState({ sel: nx }); },
+      bulk, clearSel: () => this.setState({ sel: {} }), openPay: ev => this.openPay(ev),
+      groups, noMatch: showList && nShown === 0,
+      scrollStyle: st.many ? 'max-height:520px;overflow:auto' : 'overflow-x:auto',
+      footText: st.many ? 'Showing ' + st.manyShown + ' of 64 items' : 'Showing ' + nShown + ' of ' + nAll + (nAll === 1 ? ' item' : ' items') + (nShown ? ' · total ' + this.sumText(shown) : ''),
+      many, dlg,
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastCls: t ? (t.out ? 'tOut' : (t.n % 2 ? 'tA' : 'tB')) : '',
+      toastHold: () => clearTimeout(this._tt), toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); },
+      undo: () => { const tt = this.state.toast; if (!tt || !tt.undo) return; clearTimeout(this._tt); const back = Object.keys(this.state.gone).filter(id => !tt.undo.gone[id]);
+        this._upFocus = ['tp-list-h']; this.setState({ gone: tt.undo.gone, sel: {}, toast: null, flash: { ids: back, n: this.state.flash.n + 1 }, say: 'Undone: the payments were taken back and the items are to pay again' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

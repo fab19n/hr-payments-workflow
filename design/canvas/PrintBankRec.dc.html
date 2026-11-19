@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Printed bank reconciliation statement</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}html{scroll-padding-bottom:96px}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb,.hs,.hg,.hr{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hg:hover:not(:disabled){background:#EEF1F5 !important}
+.hr:hover{background:#F8FAFD !important}
+button:disabled{cursor:not-allowed}
+/* motion and focus base */
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* the printed page: print sizes, black and grey on white */
+.br-t{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8pt;line-height:1.3;margin-top:1.2mm}
+.br-t th{text-align:left;font-weight:600;padding:0.7mm 1.6mm 0.7mm 0;border-bottom:0.25mm solid #000000;vertical-align:bottom}
+.br-t td{padding:0.8mm 1.6mm 0.8mm 0;vertical-align:top;border-bottom:0.15mm solid #B5B5B5}
+.br-t .n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.br-h{margin:3.6mm 0 0;padding-bottom:0.7mm;border-bottom:0.35mm solid #000000;font:700 10pt/1.25 Inter,Arial,sans-serif;display:flex;gap:2.5mm}
+.br-s{font-size:7.5pt;color:#333333}
+.br-m{font-family:ui-monospace,Consolas,monospace}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="bank" company="{{sbCo}}" kind="{{sbKind}}" companies="{{sbCos}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Accounting" page="Bank and reconciliation" sub="Reconciliation statement" company="{{sbCo}}" companies="{{tbCos}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <a href="Bank.dc.html" class="hg" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; height: 34px; padding: 0 10px 0 4px; margin: -6px 0 4px -4px; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="18" hint-size="18px,18px"></dc-import>Bank and reconciliation</a>
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+        <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Printed bank reconciliation statement</h1>
+        <p style="margin: 0; color: #46546A; max-width: 820px">What opens when you press <b style="color: #0F1A2B">Print the reconciliation statement</b> on Bank and reconciliation. One statement per bank account and month, in the standard layout: the bank balance, the items that make up the difference, and the book balance it comes to. Then the book entries where no money moved, the totals check, the check against SQL's books for a company Kept in SQL Account, and Prepared by and Reviewed by with the sign-off note. The signed copy is uploaded like an approval form and filed against the month; it is the detail behind part 4 of the Month review.</p>
+      </div>
+
+      <div role="group" aria-label="State to show" style="display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: #E9ECF1; border-radius: 10px; align-self: flex-start; max-width: 100%">
+        <sc-for list="{{states}}" as="s" hint-placeholder-count="3"><button type="button" aria-pressed="{{s.pressed}}" onClick="{{s.pick}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch">
+        <section aria-labelledby="br-lead-h" class="rv" style="flex: 2 1 460px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px">
+          <h2 id="br-lead-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">{{leadTitle}}</h2>
+          <p style="margin: 0; color: #46546A">{{leadText}}</p>
+          <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 16px; font-size: 13px">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="4"><dt style="color: #5F6C80; font-weight: 600">{{f.k}}</dt><dd style="margin: 0; color: #0F1A2B; min-width: 0; overflow-wrap: anywhere">{{f.v}}</dd></sc-for>
+          </dl>
+        </section>
+
+        <section aria-labelledby="br-links-h" style="flex: 1 1 320px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 10px">
+          <h2 id="br-links-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Where it is printed and where it goes</h2>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: 13px">
+            <sc-for list="{{links}}" as="l" hint-placeholder-count="6"><li style="display: flex; flex-direction: column; padding: 4px 0"><a href="{{l.href}}" style="font-weight: 600; min-height: 32px; display: inline-flex; align-items: center; align-self: flex-start">{{l.label}}</a><span style="color: #46546A">{{l.note}}</span></li></sc-for>
+          </ul>
+        </section>
+      </div>
+
+      <sc-if value="{{hasOpen}}" hint-placeholder-val="{{ false }}">
+        <div role="note" style="display: flex; gap: 14px; align-items: flex-start; padding: 16px 20px; border-radius: 14px; background: #FFF8EB; border: 1px solid #F0C97A; max-width: 920px">
+          <span style="flex: none; margin-top: 2px"><dc-import name="Icon" glyph="alert" tone="warn" size="22" hint-size="22px,22px"></dc-import></span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <b style="font-size: 15px; color: #6E3500">{{openTitle}}</b>
+            <p style="margin: 0; color: #0F1A2B">{{openText}}</p>
+            <a href="{{openHref}}" class="hs" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; height: 40px; margin-top: 4px; padding: 0 16px; border: 1px solid #5F6C80; border-radius: 10px; background: #FFFFFF; color: #0F1A2B; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="bank" tone="muted" size="18" hint-size="18px,18px"></dc-import>{{openLink}}</a>
+          </div>
+        </div>
+      </sc-if>
+
+      <section aria-labelledby="br-paper-h" style="background: #E9ECF1; border: 1px solid #DDE2EA; border-radius: 16px; padding: 20px 24px 28px; overflow-x: auto">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 16px">
+          <dc-import name="Icon" glyph="document" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+          <h2 id="br-paper-h" style="margin: 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere">{{fileName}}</h2>
+          <span style="color: #46546A; font-size: 13px">2 pages · A4, 210 × 297 mm · opens in a new tab</span>
+          <span style="{{chipStyle}}">{{chipText}}</span>
+        </div>
+        <div style="width: max-content; margin: 0 auto; display: flex; flex-direction: column; gap: 10px">
+          <article aria-label="{{sheetAria1}}" style="{{sheetStyle}}">
+            <div style="display: flex; justify-content: space-between; gap: 8mm; align-items: flex-start">
+              <div style="min-width: 0">
+                <h3 style="margin: 0; font: 700 16pt/1.1 'Space Grotesk', Inter, Arial, sans-serif">Bank reconciliation statement</h3>
+                <div style="font-size: 9.5pt; font-weight: 600; margin-top: 1.6mm">{{sh.coName}}</div>
+                <div class="br-s">{{sh.coReg}}</div>
+                <sc-if value="{{sh.hasAddr}}" hint-placeholder-val="{{ true }}"><div class="br-s">{{sh.coAddr}}</div></sc-if>
+              </div>
+              <div style="text-align: right; flex: none">
+                <div class="br-m" style="font-size: 12pt; font-weight: 700">{{sh.code}}</div>
+                <div style="font-size: 8.5pt">Check: <b class="br-m">{{sh.check}}</b></div>
+                <div style="font-size: 9pt; font-weight: 600; margin-top: 1mm">{{sh.acct}}</div>
+                <div class="br-s">October 2026 · {{sh.cur}}</div>
+                <div class="br-s">Printed {{sh.printed}}</div>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 4mm; align-items: center; margin-top: 3mm; padding: 2mm 2.5mm; border: 0.3mm solid #000000">
+              <div aria-hidden="true" style="{{sh.qrStyle}}"></div>
+              <div style="font-size: 8.5pt; line-height: 1.4"><b>Scan with the phone to upload the signed statement.</b> No phone? Open Payments › Approvals, choose Upload, and type the code <b class="br-m">{{sh.code}}</b> and the check <b class="br-m">{{sh.check}}</b>. If the reconciliation changes after printing, the check no longer matches and the statement is printed again.</div>
+            </div>
+
+            <div style="{{sh.signStyle}}">{{sh.signLine}}</div>
+
+            <h4 class="br-h"><span>1</span><span>Reconciliation at {{sh.asAt}}</span></h4>
+            <table class="br-t">
+              <caption class="sr">The bank balance, the items between the bank and the books, and the book balance</caption>
+              <colgroup><col style="width: 15mm"/><col style="width: 24mm"/><col/><col style="width: 25mm"/><col style="width: 25mm"/></colgroup>
+              <thead><tr><th scope="col">Date</th><th scope="col">Reference</th><th scope="col">Item</th><th scope="col" class="n">Each</th><th scope="col" class="n">{{sh.cur}}</th></tr></thead>
+              <tbody>
+                <sc-for list="{{sh.rec}}" as="r" hint-placeholder-count="12"><tr style="{{r.rowStyle}}"><td>{{r.date}}</td><td class="br-m" style="font-size: 7.5pt">{{r.ref}}</td><td style="{{r.itemStyle}}">{{r.item}}<sc-if value="{{r.hasWhy}}" hint-placeholder-val="{{ false }}"><span class="br-s"> · {{r.why}}</span></sc-if></td><td class="n">{{r.each}}</td><td class="n" style="{{r.totStyle}}">{{r.tot}}</td></tr></sc-for>
+              </tbody>
+            </table>
+            <p style="margin: 1.2mm 0 0; font-size: 8pt">{{sh.recLine}}</p>
+            <sc-for list="{{sh.recNotes}}" as="n" hint-placeholder-count="1"><p class="br-s" style="margin: 0.6mm 0 0">{{n.t}}</p></sc-for>
+
+            <h4 class="br-h"><span>2</span><span>Book entries where no money moved</span></h4>
+            <sc-if value="{{sh.hasPairs}}" hint-placeholder-val="{{ true }}">
+              <table class="br-t">
+                <caption class="sr">Pairs of book entries that cancel out and never touched the bank</caption>
+                <colgroup><col style="width: 24mm"/><col style="width: 15mm"/><col/><col style="width: 21mm"/><col style="width: 21mm"/></colgroup>
+                <thead><tr><th scope="col">Document</th><th scope="col">Date</th><th scope="col">Description</th><th scope="col" class="n">Money in</th><th scope="col" class="n">Money out</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{sh.pairs}}" as="p" hint-placeholder-count="3"><tr style="{{p.rowStyle}}"><td class="br-m" style="{{p.refStyle}}">{{p.ref}}</td><td>{{p.date}}</td><td style="{{p.descStyle}}">{{p.desc}}</td><td class="n">{{p.inn}}</td><td class="n">{{p.out}}</td></tr></sc-for>
+                </tbody>
+              </table>
+            </sc-if>
+            <sc-for list="{{sh.pairNotes}}" as="n" hint-placeholder-count="2"><p style="margin: 1mm 0 0; font-size: 8pt">{{n.t}}</p></sc-for>
+
+            <h4 class="br-h"><span>3</span><span>Totals check</span></h4>
+            <table class="br-t">
+              <caption class="sr">Money in and money out per the books, against the statement's total credits and debits</caption>
+              <colgroup><col/><col style="width: 30mm"/><col style="width: 30mm"/></colgroup>
+              <thead><tr><th scope="col">{{sh.cur}}</th><th scope="col" class="n">Money in</th><th scope="col" class="n">Money out</th></tr></thead>
+              <tbody>
+                <sc-for list="{{sh.tot}}" as="t" hint-placeholder-count="6"><tr style="{{t.rowStyle}}"><td style="{{t.kStyle}}">{{t.k}}</td><td class="n" style="{{t.vStyle}}">{{t.inn}}</td><td class="n" style="{{t.vStyle}}">{{t.out}}</td></tr></sc-for>
+              </tbody>
+            </table>
+            <p style="margin: 1.2mm 0 0; font-size: 8pt">{{sh.totLine}}</p>
+
+            <div style="position: absolute; left: 15mm; right: 15mm; bottom: 8mm; display: flex; justify-content: space-between; gap: 6mm; border-top: 0.25mm solid #333333; padding-top: 1.4mm; font-size: 7.5pt; color: #333333">
+              <span>{{sh.foot}}</span><span>Page 1 of 2</span>
+            </div>
+          </article>
+
+          <article aria-label="{{sheetAria2}}" style="{{sheetStyle}}">
+            <div style="display: flex; justify-content: space-between; gap: 8mm; align-items: baseline; padding-bottom: 1.6mm; border-bottom: 0.25mm solid #333333">
+              <div style="min-width: 0"><b style="font: 700 11pt/1.2 'Space Grotesk', Inter, Arial, sans-serif">Bank reconciliation statement</b> <span style="font-size: 8.5pt">· {{sh.coName}} · {{sh.acct}} · October 2026 (continued)</span></div>
+              <div style="flex: none; font-size: 8.5pt"><b class="br-m">{{sh.code}}</b> · Check <b class="br-m">{{sh.check}}</b></div>
+            </div>
+
+            <h4 class="br-h"><span>4</span><span>{{sh.glHead}}</span></h4>
+            <sc-for list="{{sh.gl}}" as="n" hint-placeholder-count="2"><p style="margin: 1mm 0 0; font-size: 8.5pt">{{n.t}}</p></sc-for>
+
+            <h4 class="br-h"><span>5</span><span>Sign-off note</span></h4>
+            <sc-for list="{{sh.note}}" as="n" hint-placeholder-count="3"><p style="margin: 1mm 0 0; font-size: 8.5pt">{{n.t}}</p></sc-for>
+            <p class="br-s" style="margin: 1mm 0 0">{{sh.noteFoot}}</p>
+
+            <h4 class="br-h"><span>6</span><span>Prepared by and Reviewed by</span></h4>
+            <p style="margin: 1mm 0 0; font-size: 8.5pt">{{sh.signText}}</p>
+            <div style="display: grid; gap: 4mm; margin-top: 1.6mm; grid-template-columns: repeat(2, minmax(0, 1fr))">
+              <sc-for list="{{sh.signers}}" as="s" hint-placeholder-count="2">
+                <div style="border: 0.3mm solid #000000; padding: 2mm 2.4mm; display: flex; flex-direction: column; gap: 1mm; min-width: 0">
+                  <b style="font-size: 9pt">{{s.role}}</b>
+                  <div style="display: flex; gap: 2mm; align-items: flex-end; min-height: 6mm"><span class="br-s">Name</span><span style="{{s.nameStyle}}">{{s.name}}</span></div>
+                  <span class="br-s">{{s.note}}</span>
+                  <div style="position: relative; height: 10mm; border-bottom: 0.25mm solid #000000"></div>
+                  <div style="display: flex; justify-content: space-between; gap: 2mm; align-items: flex-end"><span class="br-s">Signature</span><span class="br-s">Date <span style="display: inline-block; width: 18mm; border-bottom: 0.25mm solid #000000"></span></span></div>
+                </div>
+              </sc-for>
+            </div>
+            <p class="br-s" style="margin: 2mm 0 0">{{sh.prepLine}}</p>
+
+            <div style="position: absolute; left: 15mm; right: 15mm; bottom: 8mm; display: flex; justify-content: space-between; gap: 6mm; border-top: 0.25mm solid #333333; padding-top: 1.4mm; font-size: 7.5pt; color: #333333">
+              <span>{{sh.foot}}</span><span>Page 2 of 2</span>
+            </div>
+          </article>
+          <p style="margin: 0; color: #46546A; font-size: 12px; max-width: 210mm">Drawn at print size: A4 portrait, 210 × 297 mm, 12 mm and 15 mm margins, body 8 to 9.5 pt; the header repeats on page 2. The QR is a stand-in pattern, not a scannable code. The code and check are given when it is printed.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="br-parts-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+        <div style="padding: 20px 22px 12px; display: flex; flex-direction: column; gap: 6px">
+          <h2 id="br-parts-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What each part says, and where it comes from</h2>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">The statement takes every figure from the pages below as they stand when it is printed, and the keyed check is worked out from them. Nothing on it is typed by hand except the signatures, the reviewer's name and the dates.</p>
+        </div>
+        <div style="overflow-x: auto; border-top: 1px solid #EEF1F5">
+          <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px">
+            <caption class="sr">The parts of the bank reconciliation statement and their sources</caption>
+            <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">Part</th><th scope="col" style="padding: 10px 12px; font-weight: 600">Comes from</th><th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">What it holds</th></tr></thead>
+            <tbody>
+              <sc-for list="{{parts}}" as="p" hint-placeholder-count="7"><tr class="hr" style="border-top: 1px solid #F1F3F7"><td style="padding: 11px 12px 11px 22px; font-weight: 600; white-space: nowrap">{{p.name}}</td><td style="padding: 11px 12px"><a href="{{p.href}}" style="font-weight: 600">{{p.src}}</a></td><td style="padding: 11px 22px 11px 12px; color: #46546A">{{p.what}}</td></tr></sc-for>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"savings","options":["savings","current","fca"],"section":"State to show"},"$preview":{"width":1440,"height":3300}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // Bank and reconciliation opens the account's statement: PrintBankRec.dc.html#savings, #current or #fca. It applies on first load, over the default state.
+    let v = (p && p.view) || 'savings', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'savings' && ['current', 'fca'].includes(h)) v = h;
+    this.state = { view: v, say: '' };
+  }
+  componentDidUpdate(prevProps) {
+    if (prevProps && prevProps.view !== this.props.view) this.setState({ view: this.props.view || 'savings', say: '' });
+  }
+  renderVals() {
+    const V = this.state.view;
+    const co = V === 'fca' ? 'ai' : 'aisb';
+
+    // A stand-in QR: 25 x 25 modules with the three finder squares, drawn as one SVG path (not a scannable code).
+    const qrUri = text => {
+      const n = 25, m = [];
+      let h = 7;
+      for (let i = 0; i < text.length; i++) h = (h * 31 + text.charCodeAt(i)) % 2147483647;
+      for (let y = 0; y < n; y++) { m.push([]); for (let x = 0; x < n; x++) { h = (h * 1103515245 + 12345) % 2147483648; m[y].push((h >> 8) % 2); } }
+      const finder = (ox, oy) => {
+        for (let dy = -1; dy <= 7; dy++) for (let dx = -1; dx <= 7; dx++) {
+          const x = ox + dx, y = oy + dy;
+          if (x < 0 || y < 0 || x >= n || y >= n) continue;
+          m[y][x] = dx === -1 || dy === -1 || dx === 7 || dy === 7 ? 0 : (dx === 0 || dy === 0 || dx === 6 || dy === 6) ? 1 : (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4) ? 1 : 0;
+        }
+      };
+      finder(0, 0); finder(n - 7, 0); finder(0, n - 7);
+      let d = '';
+      for (let y = 0; y < n; y++) { let x = 0; while (x < n) { if (m[y][x]) { const s = x; while (x < n && m[y][x]) x++; d += 'M' + s + ' ' + y + 'h' + (x - s) + 'v1h-' + (x - s) + 'z'; } else x++; } }
+      const svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 25 25' shape-rendering='crispEdges'><path fill='#000' d='" + d + "'/></svg>";
+      return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+    };
+
+    // Rows of part 1: [date, reference, item, why, each, total, kind]; kind 'head' (a heading line with its total), 'item', 'sum' (a balance line).
+    const R = (date, ref, item, why, each, tot, kind) => ({ date, ref, item, why, each, tot, kind });
+    const NONE = '—';
+    const AISB_CO = { coName: 'AISB Sdn Bhd', coReg: 'Registration no. 201901023456 (1331234-K)', hasAddr: true, coAddr: 'Lot 12, Jalan Teknologi 3/1, Kota Damansara, 47810 Petaling Jaya, Selangor' };
+    const AISB_REVIEW = 'Any one of AISB\'s approvers reviews it: Hassan Ismail, Tan Mei Ling or Rajesh Kumar.';
+
+    // ---- AISB, Maybank savings ····0932, October 2026: signed off 3 Nov 2026 with no difference (Bank and reconciliation; samples section 16).
+    // The book side is the payments recorded here plus the lines explained without documents (Klinik Sehat deposit 8,000.00; profit 21.40; charge 10.00).
+    const SAV = Object.assign({}, AISB_CO, {
+      code: 'BR-2610-AISB-0932', check: 'H6P-4QZC', printed: 'Wed 18 Nov 2026', acct: 'Maybank savings ····0932', cur: 'RM', asAt: '31 Oct 2026',
+      signed: true, signLine: 'Signed off on 3 Nov 2026 by Aisha Rahman (declared, not verified). The month is locked.',
+      rec: [
+        R('31 Oct', '', 'Balance per bank statement', '', '', '58,011.40', 'sum'),
+        R('', '', 'Add: money in the books, not yet on the bank', '', '', NONE, 'head'),
+        R('', '', 'Less: payments in the books, not yet cleared', '', '', NONE, 'head'),
+        R('', '', 'Add or less: on the bank, not yet in the books', '', '', NONE, 'head'),
+        R('', '', 'Adjusted bank balance', '', '', '58,011.40', 'sum'),
+        R('31 Oct', '', 'Balance per books (payments recorded in this app)', '', '', '58,011.40', 'sum')
+      ],
+      recLine: 'The adjusted bank balance is the balance per books: nothing is outstanding on either side.',
+      recNotes: ['Opening balances agree: statement and books 50,000.00 at 1 Oct 2026.'],
+      pairs: [], pairNotes: ['None. No receipt and payment in the books cancel each other out this month.'],
+      tot: [['Per the books', '8,021.40', '10.00', 'b'], ['Less: book entries where no money moved', '0.00', '0.00', ''], ['Books, money that moved', '8,021.40', '10.00', 'b'], ['Add: on the statement, not in the books', '0.00', '0.00', ''], ['Less: in the books, not on the statement', '0.00', '0.00', ''], ['Per the statement (total credits and debits)', '8,021.40', '10.00', 'b']],
+      totLine: 'The debit and credit totals tally with the statement: 3 lines, 8,021.40 in and 10.00 out.',
+      glHead: 'Check against SQL\'s books',
+      gl: ['Not checked against SQL: only Maybank current is SQL\'s cash book here (310-000). This account\'s book side is the payments recorded in this app and the lines explained without documents.'],
+      note: ['No money moved: none.', 'Explained without documents: 31 Oct PROFIT PAID +21.40, Profit paid by the bank; 31 Oct SERVICE CHARGE −10.00, Bank charge.', 'Reconciling items left: none.', 'Note: none.'],
+      noteFoot: 'Written by the app at sign-off on 3 Nov 2026, as the month stood. Nothing here is written by hand.',
+      signText: 'Prepared by is the person who signed the month off in the app. ' + AISB_REVIEW + ' By signing, the reviewer confirms parts 1 to 5.',
+      signers: [{ role: 'Prepared by', name: 'Aisha Rahman', note: 'Signed off in the app on 3 Nov 2026' }, { role: 'Reviewed by', name: '', note: 'An approver of AISB' }],
+      prepLine: 'Printed by Aisha Rahman, as declared on this computer (declared, not verified). Approvers as in Setup › HR › Approvers on 18 Nov 2026.'
+    });
+
+    // ---- AISB, Maybank current ····4417, October 2026, not signed off: 5 lines to explain, books 695.80 below the bank (Bank and reconciliation cur:2026-10).
+    // The bank opening is 92,418.35 and the book opening 89,218.35: PV2609-020 (3,200.00) is brought forward from September; the 14 Oct line is its suggested match.
+    const CUR = Object.assign({}, AISB_CO, {
+      code: 'BR-2610-AISB-4417', check: 'W3K-8TNB', printed: 'Wed 18 Nov 2026', acct: 'Maybank current ····4417', cur: 'RM', asAt: '31 Oct 2026',
+      signed: false, signLine: 'Not signed off: 5 lines still to explain and 5 to confirm, and 1 pair not confirmed. The books are 695.80 below the bank.',
+      rec: [
+        R('31 Oct', '', 'Balance per bank statement', '', '', '34,314.15', 'sum'),
+        R('', '', 'Add: money in the books, not yet on the bank', '', '', NONE, 'head'),
+        R('', '', 'Less: payments in the books, not yet cleared', '', '', '−4,320.00', 'head'),
+        R('30 Oct', 'PV2610-022', 'Stationery Mart, cheque 000214', 'Not on a bank statement yet', '−1,120.00', '', 'item'),
+        R('29 Sep', 'PV2609-020', 'Consultant fee — Payroll Advisory PLT', 'Brought forward from September', '−3,200.00', '', 'item'),
+        R('', '', 'Add or less: on the bank, not yet in the books', '', '', '+3,624.20', 'head'),
+        R('8 Oct', '', 'SERVICE CHARGE', 'Bank charge: enter it in SQL Account', '+48.00', '', 'item'),
+        R('14 Oct', '', 'IBG DR CONSULTANCY', 'Not explained yet', '+3,200.00', '', 'item'),
+        R('27 Oct', '', 'IBG DR 271026', 'Not explained yet', '+150.00', '', 'item'),
+        R('27 Oct', '', 'REVERSAL IBG 271026', 'Not explained yet', '−150.00', '', 'item'),
+        R('29 Oct', '', 'IBG DR WEB HOSTING · 291026', 'Not explained yet', '+389.00', '', 'item'),
+        R('31 Oct', '', 'PROFIT PAID', 'Not explained yet', '−12.80', '', 'item'),
+        R('', '', 'Adjusted bank balance', '', '', '33,618.35', 'sum'),
+        R('31 Oct', '', 'Balance per books (SQL\'s cash book, 310-000)', '', '', '33,618.35', 'sum')
+      ],
+      recLine: 'The bank is 695.80 above the books, and every sen of it is in the items above. Not signed off: 5 of them are lines still to explain.',
+      recNotes: ['Opening balances: statement 92,418.35, books 89,218.35 at 1 Oct 2026; the 3,200.00 between them is PV2609-020, brought forward. 14 Oct IBG DR CONSULTANCY is suggested for it (same amount): once matched, both drop out.'],
+      pairs: [{ id: 'pr1', docs: [['CB2610-041', '31 Oct', 'Bank charges', '', '48.00'], ['CB2610-044', '31 Oct', 'Reversal of CB2610-041', '48.00', '']], net: 'Net nil', why: 'Reversal: CB2610-044 reverses CB2610-041 (bank charges) the same day, both on 310-000; no money moved', status: 'Not confirmed yet' }],
+      pairNotes: ['What to do in SQL Account: the pair stays in SQL\'s books. Tick both CB2610-041 and CB2610-044 as cleared in October in SQL\'s bank reconciliation, since they net to nil, so SQL\'s clearing report agrees.'],
+      tot: [['Per the books (SQL\'s cash book, 310-000)', '47,848.00', '103,448.00', 'b'], ['Less: book entries where no money moved (part 2)', '−48.00', '−48.00', ''], ['Books, money that moved', '47,800.00', '103,400.00', 'b'], ['Add: on the statement, not in the books', '+162.80', '+3,787.00', ''], ['Less: in the books, not on the statement', '0.00', '−1,120.00', ''], ['Per the statement (total credits and debits)', '47,962.80', '106,067.00', 'b']],
+      totLine: 'The debit and credit totals tally with the statement: 14 lines, 47,962.80 in and 106,067.00 out. On the statement, not in the books: in 150.00 + 12.80; out 48.00 + 3,200.00 + 150.00 + 389.00.',
+      glHead: 'Check against SQL\'s bank account',
+      gl: ['Agrees with SQL\'s bank account 310-000 at 31 Oct 2026: SQL\'s balance 33,618.35, the book closing here 33,618.35.', 'From SQL\'s GL Journal of Transaction as kept here, 1 Oct to 17 Nov 2026. Not counted as bank movements: 1 journal and 3 customer invoices; 1 cash book entry with no money in or out shown; 3 receipts or payments whose lines don\'t touch this bank account.'],
+      note: ['Not signed off yet, so there is no sign-off note. At sign-off the app writes it here: each confirmed pair with its reason and amounts, each line explained without documents, anything left as a reconciling item, and the optional note.'],
+      noteFoot: 'Print the statement again after the sign-off: the figures change, so this copy\'s check no longer matches.',
+      signText: 'Prepared by is the person who signs the month off in the app; it is blank until then. ' + AISB_REVIEW,
+      signers: [{ role: 'Prepared by', name: '', note: 'Not signed off in the app yet' }, { role: 'Reviewed by', name: '', note: 'An approver of AISB' }],
+      prepLine: 'Printed by Aisha Rahman, as declared on this computer (declared, not verified). Approvers as in Setup › HR › Approvers on 18 Nov 2026.'
+    });
+
+    // ---- AI, Maybank FCA ····1186, October 2026 (USD), Kept here with no chart of accounts yet: two lines in for the Produce export, both confirmed;
+    // the books agree with the bank, ready to sign off but not signed off (samples section 16).
+    const FCA = {
+      coName: 'Agrinexus International', coReg: 'Registration no. 202001045678 (1378901-W)', hasAddr: false, coAddr: '',
+      code: 'BR-2610-AI-1186', check: 'D9R-2LXF', printed: 'Wed 18 Nov 2026', acct: 'Maybank FCA ····1186', cur: 'USD', asAt: '31 Oct 2026',
+      signed: false, signLine: 'Not signed off yet: every line is confirmed and the books agree with the bank, so it is ready to sign off.',
+      rec: [
+        R('30 Oct', '', 'Balance per bank statement (last line 30 Oct)', '', '', '17,480.00', 'sum'),
+        R('', '', 'Add: money in the books, not yet on the bank', '', '', NONE, 'head'),
+        R('', '', 'Less: payments in the books, not yet cleared', '', '', NONE, 'head'),
+        R('', '', 'Add or less: on the bank, not yet in the books', '', '', NONE, 'head'),
+        R('', '', 'Adjusted bank balance', '', '', '17,480.00', 'sum'),
+        R('31 Oct', '', 'Balance per books (payments recorded in this app)', '', '', '17,480.00', 'sum')
+      ],
+      recLine: 'The adjusted bank balance is the balance per books: nothing is outstanding on either side.',
+      recNotes: ['Opening balances agree: statement and books USD 12,480.00 at 1 Oct 2026. Amounts in USD, the account\'s currency.'],
+      pairs: [], pairNotes: ['None. A Kept here company corrects a duplicate by a credit note or a reversal on the payable, not through the bank, so a pair here would be unusual.'],
+      tot: [['Per the books (payments recorded in this app)', '5,000.00', '0.00', 'b'], ['Less: book entries where no money moved', '0.00', '0.00', ''], ['Books, money that moved', '5,000.00', '0.00', 'b'], ['Add: on the statement, not in the books', '0.00', '0.00', ''], ['Less: in the books, not on the statement', '0.00', '0.00', ''], ['Per the statement (total credits and debits)', '5,000.00', '0.00', 'b']],
+      totLine: 'The debit and credit totals tally with the statement: 2 lines in, TT CR 3,000.00 on 28 Oct and 2,000.00 on 30 Oct, for the Produce export (USD 5,000.00 of 8,400.00 received).',
+      glHead: 'Check against SQL\'s books',
+      gl: ['Kept here: there is no check against SQL. The book side is the payments recorded in this app; Agrinexus International has no chart of accounts yet.'],
+      note: ['Not signed off yet, so there is no sign-off note. At sign-off the app writes it here: each confirmed pair with its reason and amounts, each line explained without documents, anything left as a reconciling item, and the optional note.'],
+      noteFoot: 'Print the statement again after the sign-off: the sign-off changes it, so this copy\'s check no longer matches.',
+      signText: 'Prepared by is the person who signs the month off in the app; it is blank until then. Hassan Ismail is Agrinexus International\'s only approver, so he reviews it.',
+      signers: [{ role: 'Prepared by', name: '', note: 'Not signed off in the app yet' }, { role: 'Reviewed by', name: 'Hassan Ismail', note: 'Agrinexus International\'s only approver' }],
+      prepLine: 'Printed by Aisha Rahman, as declared on this computer (declared, not verified). Approvers as in Setup › HR › Approvers on 18 Nov 2026.'
+    };
+
+    const SRC = V === 'current' ? CUR : V === 'fca' ? FCA : SAV;
+    const sh = Object.assign({}, SRC);
+    sh.qrStyle = 'flex:none;width:16mm;height:16mm;background:' + qrUri(SRC.code + '|' + SRC.check) + ' center/100% 100% no-repeat';
+    sh.signStyle = 'margin-top:2.4mm;padding:1.4mm 2.4mm;font-size:8.5pt;font-weight:600;' + (SRC.signed ? 'border:0.3mm solid #000000' : 'border:0.6mm solid #000000;font-weight:700');
+    sh.rec = SRC.rec.map(r => ({ date: r.date, ref: r.ref, item: r.item, why: r.why, hasWhy: !!r.why, each: r.each, tot: r.tot,
+      rowStyle: r.kind === 'sum' ? 'border-top:0.3mm solid #000000' : '',
+      itemStyle: r.kind === 'item' ? 'padding-left:4mm' : 'font-weight:600',
+      totStyle: r.kind === 'sum' ? 'font-weight:700' : 'font-weight:600' }));
+    sh.recNotes = SRC.recNotes.map(t => ({ t }));
+    sh.hasPairs = SRC.pairs.length > 0;
+    sh.pairs = [];
+    SRC.pairs.forEach(p => {
+      p.docs.forEach((d, i) => sh.pairs.push({ ref: d[0], date: d[1], desc: d[2], inn: d[3], out: d[4], rowStyle: i === 0 ? 'border-top:0.3mm solid #000000' : '', refStyle: 'font-size:7.5pt;font-weight:600', descStyle: '' }));
+      sh.pairs.push({ ref: p.net, date: '', desc: 'Reason: ' + p.why + '. ' + p.status + '.', inn: '', out: '', rowStyle: '', refStyle: 'font-family:Inter,Arial,sans-serif;font-weight:700', descStyle: 'font-style:italic' });
+    });
+    sh.pairNotes = SRC.pairNotes.map(t => ({ t }));
+    sh.tot = SRC.tot.map(r => ({ k: r[0], inn: r[1], out: r[2], rowStyle: r[3] ? 'border-top:0.3mm solid #000000' : '', kStyle: r[3] ? 'font-weight:600' : 'padding-left:4mm', vStyle: r[3] ? 'font-weight:600' : '' }));
+    sh.gl = SRC.gl.map(t => ({ t }));
+    sh.note = SRC.note.map(t => ({ t }));
+    sh.signers = SRC.signers.map(x => ({ ...x, nameStyle: 'flex:1;min-width:0;border-bottom:0.25mm solid #000000;font-size:9pt;font-weight:600;padding-bottom:0.3mm' }));
+    sh.foot = SRC.code + ' · ' + SRC.check + ' · ' + SRC.coName + ' · ' + SRC.acct + ', October 2026';
+    const sheetStyle = 'position:relative;flex:none;width:210mm;height:297mm;box-sizing:border-box;padding:12mm 15mm 16mm;color:#000000;font-family:Inter,Arial,sans-serif;font-size:9pt;line-height:1.35;overflow:hidden;background:#FFFFFF;box-shadow:0 1px 3px rgba(16,24,40,.22),0 10px 28px rgba(16,24,40,.14)';
+
+    // ---- the board around the page, per state
+    const LEADS = {
+      savings: ['AISB, Maybank savings: signed off', 'As it prints when Print is pressed today, Wed 18 Nov 2026. October was signed off on 3 Nov with no difference, so nothing is outstanding: the balances agree, the totals tally, and the sign-off note the app kept on 3 Nov prints in part 5. Prepared by is filled in from the sign-off; Reviewed by is left for an approver.',
+        [['File', 'BR-2610-AISB-0932 Bank reconciliation Maybank savings October 2026.pdf · 2 pages, A4'], ['Code and check', 'BR-2610-AISB-0932 · H6P-4QZC: BR, the month, the company and the account\'s last 4 digits, with a keyed check worked out from every figure'], ['Signed off', '3 Nov 2026, by Aisha Rahman (declared, not verified)'], ['After upload', 'Filed against Maybank savings, October 2026, and kept in the audit pack']]],
+      current: ['AISB, Maybank current: not signed off', 'As it prints today. October is not signed off: 5 lines to explain and the books RM 695.80 below the bank. The statement prints the reconciliation as it stands, marked Not signed off, with every item that makes up the difference, the CB2610-041 and CB2610-044 pair not confirmed yet, and no sign-off note.',
+        [['File', 'BR-2610-AISB-4417 Bank reconciliation Maybank current October 2026.pdf · 2 pages, A4'], ['Code and check', 'BR-2610-AISB-4417 · W3K-8TNB'], ['Status', 'To review on Bank and reconciliation; Prepared by is blank until the sign-off'], ['After the sign-off', 'The figures change, so a copy printed now no longer matches: the upload says so, and it is printed again']]],
+      fca: ['AI, Maybank FCA: Kept here', 'Agrinexus International is Kept here, so the book side is the payments recorded in this app and there is no check against SQL. October is ready to sign off: both lines in are confirmed and the books agree with the bank at USD 17,480.00. AI has no address in Setup › Companies, so none prints.',
+        [['File', 'BR-2610-AI-1186 Bank reconciliation Maybank FCA October 2026.pdf · 2 pages, A4'], ['Code and check', 'BR-2610-AI-1186 · D9R-2LXF'], ['Currency', 'USD, the account\'s own currency'], ['Reviewed by', 'Hassan Ismail, AI\'s only approver']]]
+    };
+    const lead = LEADS[V] || LEADS.savings;
+    const FILES = { savings: 'BR-2610-AISB-0932 Bank reconciliation Maybank savings October 2026.pdf', current: 'BR-2610-AISB-4417 Bank reconciliation Maybank current October 2026.pdf', fca: 'BR-2610-AI-1186 Bank reconciliation Maybank FCA October 2026.pdf' };
+    const CHIP = (bg, fg) => 'display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;background:' + bg + ';color:' + fg;
+    const chip = SRC.signed ? ['Signed off · as it prints', CHIP('#E3F7EC', '#0A6B3D')] : ['Not signed off · as it prints', CHIP('#FEF1D6', '#7A4300')];
+
+    const LABELS = [['savings', 'Maybank savings, signed off'], ['current', 'Maybank current, not signed off'], ['fca', 'AI Maybank FCA, Kept here']];
+    const btn = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;' + (on ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A');
+    const go = (k, label) => this.setState({ view: k, say: label + ' shown.' });
+    const states = LABELS.map(([k, label]) => ({ label, pressed: V === k ? 'true' : 'false', style: btn(V === k), pick: () => go(k, label) }));
+
+    const links = [
+      { href: 'Bank.dc.html', label: 'Bank and reconciliation', note: 'Print the reconciliation statement, under each month\'s Reconciliation statement.' },
+      { href: 'BankReview.dc.html', label: 'Review lines', note: 'Lines explained, the No money moved pairs and the sign-off note.' },
+      { href: 'ApprovalUpload.dc.html', label: 'Upload a signed form', note: 'Reads the code from the PDF or the QR, checks it, and records who reviewed it.' },
+      { href: 'MobileApprovalPhoto.dc.html', label: 'Phone: upload a signed form', note: 'The same phone screen takes the signed statement.' },
+      { href: 'PrintMonthReview.dc.html', label: 'Month review sheet', note: 'Part 4 sums up each account\'s reconciliation; this statement is the detail behind it.' },
+      { href: 'AuditPack.dc.html', label: 'Audit pack', note: 'The signed statement and its sign-off note are kept with the month.' }
+    ];
+    const parts = [
+      ['1 Reconciliation', 'Bank and reconciliation', 'Bank.dc.html', 'The standard layout: the balance per bank statement, money in the books not yet on the bank, payments not yet cleared, lines on the bank not yet in the books, and the adjusted bank balance against the balance per books.'],
+      ['2 No money moved', 'Review lines', 'BankReview.dc.html', 'Each pair of book entries that cancel out and never touched the bank, with its documents, net (nil), reason and whether it is confirmed; for Kept in SQL Account, what to do in SQL.'],
+      ['3 Totals check', 'Bank and reconciliation', 'Bank.dc.html', 'Money in and out per the books, less the entries where no money moved, against the statement\'s total credits and debits, so the totals are shown to tally, not only the closing.'],
+      ['4 Check against SQL', 'SQL import', 'Sql.dc.html', 'Kept in SQL Account, for the account that is SQL\'s cash book: SQL\'s balance on the bank\'s GL account at the month end, as on Bank and reconciliation.'],
+      ['5 Sign-off note', 'Review lines', 'BankReview.dc.html', 'Written by the app at sign-off: each confirmed pair with its reason, each line explained without documents, anything left as a reconciling item, and the free note.'],
+      ['6 Prepared by and Reviewed by', 'Setup › HR › Approvers', 'SetupApprovers.dc.html', 'Prepared by from the sign-off; Reviewed by is an approver of the company, who signs and dates it by hand.'],
+      ['Code and check', 'Approvals', 'Approvals.dc.html', 'BR-month-company-account and a keyed check worked out from every figure above, as text and as a QR. A changed figure fails the check at upload.']
+    ].map(p => ({ name: p[0], src: p[1], href: p[2], what: p[3] }));
+
+    const onTopCo = code => {
+      const c = String(code).toLowerCase();
+      if (c === 'ai') go('fca', LABELS[2][1]);
+      else if (c === 'aisb') { if (V === 'fca') go('savings', LABELS[0][1]); }
+      else this.setState({ say: 'No reconciliation statement is drawn for ' + String(code).toUpperCase() + '.' });
+    };
+
+    return {
+      say: this.state.say,
+      sbCo: co, sbKind: co === 'aisb' ? 'sqlPayroll' : 'here', sbCos: 'two', tbCos: 'two', onTopCo,
+      eyebrow: co === 'ai' ? 'AI · Kept here' : 'AISB · Kept in SQL Account',
+      states, leadTitle: lead[0], leadText: lead[1], facts: lead[2].map(x => ({ k: x[0], v: x[1] })), links, parts,
+      hasOpen: !SRC.signed,
+      openTitle: V === 'fca' ? 'Maybank FCA isn\'t signed off for October 2026' : 'Maybank current isn\'t signed off for October 2026',
+      openText: V === 'fca' ? 'The statement prints as it stands, marked Not signed off, with Prepared by blank. It is ready: sign it off on Bank and reconciliation, then print it again for Hassan Ismail to review. Printing is never blocked.'
+        : 'The statement prints the reconciliation as it stands, marked Not signed off, with the lines still to explain. You can print now for a review, or explain the lines and sign off first. Printing is never blocked.',
+      openHref: 'Bank.dc.html', openLink: 'Open Bank and reconciliation',
+      sh, sheetStyle,
+      sheetAria1: 'Printed bank reconciliation statement ' + SRC.code + ' for ' + SRC.coName + ', ' + SRC.acct + ', October 2026, page 1 of 2',
+      sheetAria2: 'Printed bank reconciliation statement ' + SRC.code + ', page 2 of 2',
+      fileName: FILES[V] || FILES.savings, chipText: chip[0], chipStyle: chip[1]
+    };
+  }
+}
+</script>
+</body>
+</html>

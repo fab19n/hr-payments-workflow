@@ -1,0 +1,896 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Claim · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hd:hover:not(:disabled){background:#FDE6E3 !important}
+/* motion and focus base */
+.hb,.hs,.hd{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.btn,a.btn:hover{color:#FFFFFF}
+.btn:disabled{cursor:progress;opacity:.85}
+.sec{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #778588;background:#FFFFFF;color:#0F1A2B;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.sec,a.sec:hover{color:#0F1A2B}
+.sec:disabled{color:#5F6C80;border-color:#C5CCD6;cursor:not-allowed}
+.dng{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #D9665C;background:#FFFFFF;color:#B0190F;font:600 14px Inter,sans-serif;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+.dng:disabled{cursor:progress;opacity:.85}
+.sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.lnk{border:0;background:transparent;padding:0 4px;min-height:32px;color:#2450B8;font:600 13px Inter,sans-serif;cursor:pointer;text-decoration:underline}
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.lb{display:flex;gap:8px;align-items:baseline;font-size:13px;font-weight:600;color:#46546A}
+.lb span{font-weight:500;font-size:12px;color:#5F6C80}
+.in{height:40px;padding:0 12px;border:1px solid #778588;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%}
+.in[aria-invalid="true"]{border-color:#B0190F;box-shadow:0 0 0 1px #B0190F}
+.in:disabled{background:#F5F6F8;color:#46546A}
+.err{display:flex;gap:6px;align-items:center;color:#B0190F;font-size:13px;font-weight:500}
+.hint{color:#5F6C80;font-size:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:9px 12px;font-size:12px;font-weight:600;color:#5F6C80;text-align:left;background:#FAFBFC;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+.fact{display:grid;grid-template-columns:120px minmax(0,1fr);gap:4px 12px;margin:0;font-size:13px}
+.fact dt{color:#5F6C80}
+.fact dd{margin:0;font-weight:500}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 4px 0 10px;border-radius:8px;background:#F5F6F8;border:1px solid #E3E7ED;font-size:12px;font-weight:500}
+@media (max-width:760px){.cl-main{padding:24px 16px 48px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="claims" company="{{sbCo}}" kind="{{sbKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Claims and advances" sub="{{tbSub}}" company="{{sbCo}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="cl-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 24px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+      <a href="HrClaims.dc.html" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 600; text-decoration: none"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="16" hint-size="16px,16px"></dc-import>Claims and advances</a>
+
+      <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+          <span class="sr" role="status">Loading the claim</span>
+          <span class="sk" style="height: 34px; width: 40%"></span><span class="sk" style="height: 18px; width: 30%"></span>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px"><span class="sk" style="height: 58px"></span><span class="sk" style="height: 58px"></span><span class="sk" style="height: 58px"></span><span class="sk" style="height: 58px"></span></div>
+          <div style="display: flex; flex-wrap: wrap; gap: 20px"><div class="card" style="flex: 2 1 520px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="height: 18px; width: 30%"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span></div><div class="card" style="flex: 1 1 300px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="height: 18px; width: 40%"></span><span class="sk" style="height: 90px"></span></div></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="rv card" style="border-color: #F5C2BB; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load CL-2610-004</h1>
+          <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was changed, and its receipts are kept.</p>
+          <button type="button" class="btn hb" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+        </div>
+      </sc-if>
+
+      <!-- ===================== NEW CLAIM FORM ===================== -->
+      <sc-if value="{{isForm}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR · Claims · AISB Sdn Bhd</span>
+          <h1 id="cl-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">{{fm.head}}</h1>
+          <p style="margin: 0; color: #46546A; max-width: 720px">Enter what the person spent, line by line, with the receipts. Saving makes a draft; a draft goes on an approval form, and once approved it is paid on its own from To pay.</p>
+        </div>
+
+        <sc-if value="{{fm.refused}}" hint-placeholder-val="{{ false }}">
+          <div id="cl-refused" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 14px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was saved</b><div style="color: #46546A; font-size: 13px">{{fm.refusedText}}</div><a href="SetupClaimTypes.dc.html" style="font-size: 13px; font-weight: 600; display: inline-flex; min-height: 32px; align-items: center">Setup › HR › Claim types</a></div></div>
+        </sc-if>
+
+        <sc-if value="{{fm.errOn}}" hint-placeholder-val="{{ false }}">
+          <div id="cl-errsum" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-radius: 14px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">{{fm.errTitle}}</b>
+            <ul style="margin: 4px 0 0; padding-left: 18px; font-size: 13px"><sc-for list="{{fm.errList}}" as="e" hint-placeholder-count="2"><li><a href="{{e.href}}">{{e.text}}</a></li></sc-for></ul></div></div>
+        </sc-if>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+          <form id="cl-form" onSubmit="{{fm.submit}}" noValidate="{{ true }}" style="flex: 2 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+            <section aria-labelledby="cl-who-h" class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+              <h2 id="cl-who-h" class="h2">Who and when</h2>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label for="cl-who" class="lb">Person <span>Required</span></label>
+                  <select id="cl-who" class="in" value="{{fm.who}}" onChange="{{fm.onWho}}" disabled="{{fm.saving}}" aria-invalid="{{fm.whoInv}}" aria-describedby="{{fm.whoBy}}" style="padding: 0 8px"><sc-for list="{{fm.people}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+                  <sc-if value="{{fm.whoErr}}" hint-placeholder-val="{{ false }}"><span id="cl-who-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fm.whoErr}}</span></sc-if>
+                  <span id="cl-who-hint" class="hint">Staff in employment at AISB. Pay to: {{fm.bank}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label for="cl-month" class="lb">Claim month</label>
+                  <select id="cl-month" class="in" value="{{fm.month}}" onChange="{{fm.onMonth}}" disabled="{{fm.saving}}" style="padding: 0 8px"><option value="2026-11">November 2026</option><option value="2026-10">October 2026</option></select>
+                  <span class="hint">Title: {{fm.title}}</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label for="cl-payby" class="lb">Pay by <span>Optional</span></label>
+                  <input id="cl-payby" type="date" class="in" value="{{fm.payBy}}" onChange="{{fm.onPayBy}}" disabled="{{fm.saving}}" aria-describedby="cl-payby-hint">
+                  <span id="cl-payby-hint" class="hint">The due date it takes in To pay once approved.</span>
+                </div>
+              </div>
+            </section>
+
+            <section aria-labelledby="cl-lines-h" class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline"><h2 id="cl-lines-h" class="h2" tabindex="-1">Lines</h2><span style="color: #5F6C80; font-size: 13px">Date, claim type, what it was for, amount and receipts. Several receipts can go on one line.</span></div>
+              <sc-for list="{{fm.lines}}" as="l" hint-placeholder-count="2">
+                <fieldset class="{{l.cls}}" style="margin: 0; padding: 14px 16px 16px; border: 1px solid #E3E7ED; border-radius: 12px; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+                  <legend style="padding: 0 6px; font-weight: 700; font-size: 13px">{{l.legend}}</legend>
+                  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+                    <div style="display: flex; flex-direction: column; gap: 6px">
+                      <label for="{{l.dateId}}" class="lb">Date</label>
+                      <input id="{{l.dateId}}" type="date" class="in" max="2026-11-18" value="{{l.date}}" onChange="{{l.onDate}}" disabled="{{l.off}}" aria-invalid="{{l.dateInv}}" aria-describedby="{{l.dateBy}}">
+                      <sc-if value="{{l.dateErr}}" hint-placeholder-val="{{ false }}"><span id="{{l.dateErrId}}" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{l.dateErr}}</span></sc-if>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px">
+                      <label for="{{l.typeId}}" class="lb">Claim type</label>
+                      <select id="{{l.typeId}}" class="in" value="{{l.type}}" onChange="{{l.onType}}" disabled="{{l.off}}" aria-invalid="{{l.typeInv}}" aria-describedby="{{l.typeBy}}" style="padding: 0 8px"><sc-for list="{{l.typeOpts}}" as="o" hint-placeholder-count="6"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+                      <sc-if value="{{l.typeErr}}" hint-placeholder-val="{{ false }}"><span id="{{l.typeErrId}}" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{l.typeErr}}</span></sc-if>
+                    </div>
+                    <div style="grid-column: span 2; display: flex; flex-direction: column; gap: 6px">
+                      <label for="{{l.descId}}" class="lb">What it was for</label>
+                      <input id="{{l.descId}}" type="text" class="in" value="{{l.desc}}" onChange="{{l.onDesc}}" disabled="{{l.off}}" aria-invalid="{{l.descInv}}" aria-describedby="{{l.descBy}}" autoComplete="off">
+                      <sc-if value="{{l.descErr}}" hint-placeholder-val="{{ false }}"><span id="{{l.descErrId}}" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{l.descErr}}</span></sc-if>
+                    </div>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start">
+                    <sc-if value="{{l.isPlain}}" hint-placeholder-val="{{ true }}">
+                      <div style="flex: 0 1 200px; display: flex; flex-direction: column; gap: 6px">
+                        <label for="{{l.amtId}}" class="lb">Amount (RM)</label>
+                        <input id="{{l.amtId}}" type="text" inputMode="decimal" class="in" value="{{l.amt}}" onChange="{{l.onAmt}}" disabled="{{l.off}}" aria-invalid="{{l.amtInv}}" aria-describedby="{{l.amtBy}}" autoComplete="off" style="text-align: right">
+                        <sc-if value="{{l.amtErr}}" hint-placeholder-val="{{ false }}"><span id="{{l.amtErrId}}" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{l.amtErr}}</span></sc-if>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{l.isKm}}" hint-placeholder-val="{{ false }}">
+                      <div style="flex: 0 1 160px; display: flex; flex-direction: column; gap: 6px">
+                        <label for="{{l.kmId}}" class="lb">Kilometres</label>
+                        <input id="{{l.kmId}}" type="text" inputMode="decimal" class="in" value="{{l.km}}" onChange="{{l.onKm}}" disabled="{{l.off}}" aria-invalid="{{l.kmInv}}" aria-describedby="{{l.kmBy}}" autoComplete="off" style="text-align: right">
+                        <sc-if value="{{l.kmErr}}" hint-placeholder-val="{{ false }}"><span id="{{l.kmErrId}}" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{l.kmErr}}</span></sc-if>
+                      </div>
+                      <div style="flex: 1 1 220px; align-self: center; padding-top: 18px; font-size: 13px; color: #46546A" id="{{l.kmHintId}}">{{l.kmText}}</div>
+                    </sc-if>
+                    <sc-if value="{{l.isFx}}" hint-placeholder-val="{{ false }}">
+                      <div style="flex: 0 1 110px; display: flex; flex-direction: column; gap: 6px">
+                        <label for="{{l.curId}}" class="lb">Currency</label>
+                        <select id="{{l.curId}}" class="in" value="{{l.cur}}" onChange="{{l.onCur}}" disabled="{{l.off}}" style="padding: 0 8px"><option value="SGD">SGD</option><option value="USD">USD</option><option value="THB">THB</option></select>
+                      </div>
+                      <div style="flex: 0 1 150px; display: flex; flex-direction: column; gap: 6px">
+                        <label for="{{l.fxId}}" class="lb">Amount</label>
+                        <input id="{{l.fxId}}" type="text" inputMode="decimal" class="in" value="{{l.fx}}" onChange="{{l.onFx}}" disabled="{{l.off}}" aria-invalid="{{l.fxInv}}" aria-describedby="{{l.fxBy}}" autoComplete="off" style="text-align: right">
+                        <sc-if value="{{l.fxErr}}" hint-placeholder-val="{{ false }}"><span id="{{l.fxErrId}}" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{l.fxErr}}</span></sc-if>
+                      </div>
+                      <div style="flex: 0 1 150px; display: flex; flex-direction: column; gap: 6px">
+                        <label for="{{l.rateId}}" class="lb">Rate to RM</label>
+                        <input id="{{l.rateId}}" type="text" inputMode="decimal" class="in" value="{{l.rate}}" onChange="{{l.onRate}}" disabled="{{l.off}}" aria-invalid="{{l.rateInv}}" aria-describedby="{{l.rateBy}}" autoComplete="off" style="text-align: right">
+                        <sc-if value="{{l.rateErr}}" hint-placeholder-val="{{ false }}"><span id="{{l.rateErrId}}" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{l.rateErr}}</span></sc-if>
+                      </div>
+                      <div style="flex: 1 1 160px; align-self: center; padding-top: 18px; font-size: 13px; color: #46546A">{{l.fxText}}</div>
+                    </sc-if>
+                    <div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; min-width: 0">
+                      <span class="lb">{{l.recLabel}}</span>
+                      <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center">
+                        <sc-for list="{{l.files}}" as="f" hint-placeholder-count="1"><span class="chip"><dc-import name="Icon" glyph="document" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{f.name}}<button type="button" onClick="{{f.remove}}" disabled="{{f.off}}" aria-label="{{f.label}}" style="width: 32px; height: 32px; border: 0; border-radius: 6px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="14" hint-size="14px,14px"></dc-import></button></span></sc-for>
+                        <button type="button" class="sec sm hs" onClick="{{l.addFile}}" disabled="{{l.off}}" aria-label="{{l.addFileLabel}}"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Add receipt</button>
+                      </div>
+                    </div>
+                  </div>
+                  <sc-for list="{{l.flags}}" as="g" hint-placeholder-count="1">
+                    <div role="note" style="{{g.style}}"><dc-import name="Icon" glyph="{{g.glyph}}" tone="{{g.tone}}" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1; min-width: 0">{{g.text}}<sc-if value="{{g.href}}" hint-placeholder-val="{{ false }}"> <a href="{{g.href}}" style="font-weight: 600">{{g.link}}</a></sc-if></span></div>
+                  </sc-for>
+                  <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; border-top: 1px solid #EEF1F5; padding-top: 10px">
+                    <span style="font-size: 12px; color: #5F6C80">{{l.acctText}}</span>
+                    <span style="display: inline-flex; gap: 12px; align-items: center"><b style="font-variant-numeric: tabular-nums">{{l.total}}</b><sc-if value="{{l.canRemove}}" hint-placeholder-val="{{ false }}"><button type="button" class="lnk" onClick="{{l.remove}}" disabled="{{l.off}}" aria-label="{{l.removeLabel}}">Remove</button></sc-if></span>
+                  </div>
+                </fieldset>
+              </sc-for>
+              <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+                <button type="button" class="sec hs" onClick="{{fm.addLine}}" disabled="{{fm.saving}}"><dc-import name="Icon" glyph="plus" tone="muted" size="18" hint-size="18px,18px"></dc-import>Add a line</button>
+                <div aria-live="polite" style="font-size: 15px">{{fm.count}} · Total <b style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-variant-numeric: tabular-nums">{{fm.total}}</b></div>
+              </div>
+            </section>
+
+            <div class="card" style="padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end; background: #FAFBFC">
+              <span style="margin-right: auto; color: #5F6C80; font-size: 12px; max-width: 360px">Entered by Aisha Rahman (declared, not verified until logins exist).</span>
+              <sc-if value="{{fm.asking}}" hint-placeholder-val="{{ false }}">
+                <div role="group" aria-labelledby="cl-ask-q" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+                  <span id="cl-ask-q" style="font-weight: 600">{{fm.askText}}</span>
+                  <button type="button" id="cl-keep" class="sec hs" onClick="{{fm.keep}}">Keep editing</button>
+                  <sc-if value="{{fm.isNew}}" hint-placeholder-val="{{ true }}"><a href="HrClaims.dc.html" class="dng hd" style="text-decoration: none">Discard</a></sc-if>
+                  <sc-if value="{{fm.isEdit}}" hint-placeholder-val="{{ false }}"><button type="button" class="dng hd" onClick="{{fm.discardEdit}}">Discard changes</button></sc-if>
+                </div>
+              </sc-if>
+              <sc-if value="{{fm.notAsking}}" hint-placeholder-val="{{ true }}">
+                <sc-if value="{{fm.dirty}}" hint-placeholder-val="{{ true }}"><button type="button" class="sec hs" onClick="{{fm.cancel}}" disabled="{{fm.saving}}">Cancel</button></sc-if>
+                <sc-if value="{{fm.cleanNew}}" hint-placeholder-val="{{ false }}"><a href="HrClaims.dc.html" class="sec hs">Cancel</a></sc-if>
+                <sc-if value="{{fm.cleanEdit}}" hint-placeholder-val="{{ false }}"><button type="button" class="sec hs" onClick="{{fm.discardEdit}}">Cancel</button></sc-if>
+                <button type="submit" form="cl-form" id="cl-save" class="btn hb" disabled="{{fm.saving}}" aria-busy="{{fm.busy}}" style="min-width: 140px"><sc-if value="{{fm.saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{fm.idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="check" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{fm.saveLabel}}</button>
+              </sc-if>
+            </div>
+          </form>
+
+          <aside aria-label="Claim types and what happens next" style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+            <section aria-labelledby="cl-types-h" class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+              <h2 id="cl-types-h" class="h2" style="font-size: 15px">AISB's claim types</h2>
+              <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px">
+                <sc-for list="{{typeList}}" as="t" hint-placeholder-count="6"><li style="display: flex; flex-direction: column; gap: 1px; padding-bottom: 8px; border-bottom: 1px solid #EEF1F5"><b>{{t.name}}</b><span style="color: #5F6C80; font-size: 12px">{{t.meta}}</span></li></sc-for>
+              </ul>
+              <span class="hint">A line over its type's monthly limit is flagged, never refused. Claim types are set per company.</span>
+              <a href="SetupClaimTypes.dc.html" style="font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">Setup › HR › Claim types</a>
+            </section>
+            <section aria-labelledby="cl-next-h" class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+              <h2 id="cl-next-h" class="h2" style="font-size: 15px">What happens next</h2>
+              <ol style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A">
+                <li>Save the draft. It gets its claim number.</li>
+                <li>Print it on an approval form, alone or with other drafts. <a href="Approvals.dc.html">Approvals</a> keeps the form.</li>
+                <li>Any one of AISB's approvers signs it; the signed form is uploaded.</li>
+                <li>Approved, it waits on <a href="ToPay.dc.html">To pay</a> and is paid on its own, never in the payroll run.</li>
+                <li>Its payment carries the receipts, so its documents are complete.</li>
+              </ol>
+            </section>
+          </aside>
+        </div>
+      </sc-if>
+
+      <!-- ===================== CLAIM PAGE ===================== -->
+      <sc-if value="{{isPage}}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{pg.example}}" hint-placeholder-val="{{ false }}">
+          <div role="note" class="rv" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 16px; border-radius: 14px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 13px; color: #6B3A00"><dc-import name="Icon" glyph="history" tone="warn" size="20" hint-size="20px,20px"></dc-import><span>{{pg.example}}</span></div>
+        </sc-if>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR · Claim · {{pg.coName}}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+              <h1 id="cl-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">{{pg.code}}</h1>
+              <span class="{{pg.pillCls}}"><dc-import name="Icon" glyph="{{pg.pillGlyph}}" tone="{{pg.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{pg.pill}}</span>
+              <sc-if value="{{pg.locked}}" hint-placeholder-val="{{ false }}"><span class="pl mute"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>Locked</span></sc-if>
+            </div>
+            <p style="margin: 0; color: #46546A">{{pg.title}} · <b style="color: #0F1A2B; font-variant-numeric: tabular-nums">{{pg.amt}}</b> · {{pg.nLines}}</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <sc-if value="{{pg.canEdit}}" hint-placeholder-val="{{ false }}"><button type="button" id="cl-edit" class="sec hs" onClick="{{openEdit}}"><dc-import name="Icon" glyph="edit" tone="muted" size="18" hint-size="18px,18px"></dc-import>Edit</button></sc-if>
+            <sc-if value="{{pg.canWithdraw}}" hint-placeholder-val="{{ false }}"><button type="button" id="cl-wd" class="sec hs" onClick="{{openWithdraw}}"><dc-import name="Icon" glyph="undo" tone="muted" size="18" hint-size="18px,18px"></dc-import>Withdraw</button></sc-if>
+            <sc-if value="{{pg.canPrint}}" hint-placeholder-val="{{ false }}"><a href="PrintApprovalForm.dc.html" class="btn hb"><dc-import name="Icon" glyph="printer" tone="white" size="18" hint-size="18px,18px"></dc-import>Print approval form</a></sc-if>
+            <sc-if value="{{pg.canPay}}" hint-placeholder-val="{{ false }}"><a href="ToPay.dc.html" class="btn hb"><dc-import name="Icon" glyph="toPay" tone="white" size="18" hint-size="18px,18px"></dc-import>Pay it on To pay</a></sc-if>
+          </div>
+        </div>
+
+        <ol aria-label="The four steps of this claim" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+          <sc-for list="{{pg.steps}}" as="s" hint-placeholder-count="4">
+            <li style="{{s.box}}"><span style="{{s.dot}}"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="16" hint-size="16px,16px"></dc-import></span><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><b style="font-size: 13px">{{s.name}}</b><span style="font-size: 12px; color: #46546A">{{s.text}}</span><span class="sr">{{s.sr}}</span></span></li>
+          </sc-for>
+        </ol>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+          <div style="flex: 2 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+            <section id="cl-lines" aria-labelledby="cl-pl-h" class="card" style="overflow: hidden">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; padding: 16px 20px 12px"><h2 id="cl-pl-h" tabindex="-1" class="h2">Lines and receipts</h2><span style="color: #5F6C80; font-size: 13px">{{pg.recNote}}</span></div>
+              <div style="overflow-x: auto">
+                <table class="tbl" style="min-width: 640px">
+                  <caption class="sr">Lines of {{pg.code}}</caption>
+                  <thead><tr><th scope="col" style="width: 92px; padding-left: 20px">Date</th><th scope="col" style="width: 190px">Claim type</th><th scope="col">Description</th><th scope="col" style="width: 150px">Receipts</th><th scope="col" class="r" style="width: 100px; padding-right: 20px">Amount</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{pg.lines}}" as="l" hint-placeholder-count="3">
+                      <tr class="{{l.cls}}" style="{{l.rowStyle}}"><td style="padding-left: 20px">{{l.date}}</td><td>{{l.type}}<div style="color: #5F6C80; font-size: 12px">{{l.acct}}</div></td><td>{{l.desc}}<sc-if value="{{l.flag}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 4px"><span class="cp warn"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{l.flag}}</span></div></sc-if></td><td><span style="display: inline-flex; gap: 6px; align-items: center; font-size: 12px"><dc-import name="Icon" glyph="document" tone="muted" size="14" hint-size="14px,14px"></dc-import>{{l.files}}</span></td><td class="r" style="padding-right: 20px">{{l.amt}}</td></tr>
+                    </sc-for>
+                    <tr style="background: #FAFBFC; font-weight: 700"><td colspan="4" style="padding-left: 20px">Total</td><td class="r" style="padding-right: 20px">{{pg.amtPlain}}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <sc-if value="{{pg.limitNote}}" hint-placeholder-val="{{ false }}">
+                <div id="cl-limit" role="note" tabindex="-1" class="ex" style="display: flex; gap: 10px; align-items: flex-start; margin: 0 20px 16px; padding: 12px 14px; border-radius: 12px; background: #FFFBF2; border: 1px solid #F3D9A6; font-size: 13px; color: #6B3A00"><dc-import name="Icon" glyph="alert" tone="warn" size="18" hint-size="18px,18px"></dc-import><span>{{pg.limitNote}} <a href="SetupClaimTypes.dc.html" style="font-weight: 600">Setup › HR › Claim types</a></span></div>
+              </sc-if>
+            </section>
+
+            <section aria-labelledby="cl-bk-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="books" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="cl-bk-h" class="h2">Booking</h2><span class="cp mute">{{pg.kindLabel}}</span></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px">{{pg.bookText}}</p>
+              <sc-if value="{{pg.hasBookRows}}" hint-placeholder-val="{{ false }}">
+                <table class="tbl" style="border: 1px solid #E3E7ED; border-radius: 10px"><caption class="sr">Expense accounts of the lines</caption><thead><tr><th scope="col">Expense account</th><th scope="col" class="r">Amount</th></tr></thead><tbody><sc-for list="{{pg.bookRows}}" as="b" hint-placeholder-count="2"><tr><td>{{b.acct}}</td><td class="r">{{b.amt}}</td></tr></sc-for></tbody></table>
+              </sc-if>
+              <sc-for list="{{pg.vouchers}}" as="v" hint-placeholder-count="2">
+                <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; background: #FAFBFC; border-bottom: 1px solid #E3E7ED"><b>{{v.code}}</b><span style="color: #5F6C80; font-size: 12px">{{v.when}}</span><span class="pl ok" style="margin-left: auto"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Posted</span></div>
+                  <table class="tbl"><caption class="sr">{{v.code}} lines</caption><thead><tr><th scope="col">Account</th><th scope="col" class="r">Debit</th><th scope="col" class="r">Credit</th></tr></thead><tbody><sc-for list="{{v.rows}}" as="x" hint-placeholder-count="2"><tr><td>{{x.acct}}</td><td class="r">{{x.dr}}</td><td class="r">{{x.cr}}</td></tr></sc-for></tbody></table>
+                </div>
+              </sc-for>
+              <sc-if value="{{pg.bookStatus}}" hint-placeholder-val="{{ false }}"><div style="{{pg.bookStatusStyle}}"><dc-import name="Icon" glyph="{{pg.bookGlyph}}" tone="{{pg.bookTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{pg.bookStatus}}</span></div></sc-if>
+            </section>
+
+            <section aria-labelledby="cl-hist-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="history" tone="muted" size="20" hint-size="20px,20px"></dc-import><h2 id="cl-hist-h" class="h2">History</h2><span class="hint">Who is declared, not verified, until logins exist.</span></div>
+              <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+                <sc-for list="{{pg.hist}}" as="h" hint-placeholder-count="3"><li class="{{h.cls}}" style="display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 4px 14px; padding: 10px 0; border-top: 1px solid #EEF1F5; font-size: 13px"><span style="color: #5F6C80">{{h.when}}</span><span><b>{{h.what}}</b><span style="display: block; color: #46546A">{{h.detail}}</span></span></li></sc-for>
+              </ol>
+            </section>
+          </div>
+
+          <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+            <section aria-labelledby="cl-ap-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="approval" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="cl-ap-h" class="h2">Approval</h2></div>
+              <dl class="fact"><sc-for list="{{pg.apFacts}}" as="f" hint-placeholder-count="4"><dt>{{f.k}}</dt><dd>{{f.v}}</dd></sc-for></dl>
+              <sc-if value="{{pg.apNote}}" hint-placeholder-val="{{ false }}"><div role="note" style="{{pg.apNoteStyle}}"><dc-import name="Icon" glyph="{{pg.apNoteGlyph}}" tone="{{pg.apNoteTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{pg.apNote}}</span></div></sc-if>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px 14px"><sc-for list="{{pg.apLinks}}" as="a" hint-placeholder-count="2"><a href="{{a.href}}" style="font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">{{a.label}}</a></sc-for></div>
+            </section>
+
+            <section aria-labelledby="cl-pay-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="payment" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="cl-pay-h" class="h2">Payment</h2><sc-if value="{{pg.payPill}}" hint-placeholder-val="{{ false }}"><span class="{{pg.payPillCls}}" style="margin-left: auto">{{pg.payPill}}</span></sc-if></div>
+              <dl class="fact"><sc-for list="{{pg.payFacts}}" as="f" hint-placeholder-count="3"><dt>{{f.k}}</dt><dd>{{f.v}}</dd></sc-for></dl>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px 14px"><sc-for list="{{pg.payLinks}}" as="a" hint-placeholder-count="2"><a href="{{a.href}}" style="font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">{{a.label}}</a></sc-for></div>
+            </section>
+
+            <section aria-labelledby="cl-who2-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 8px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="staff" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="cl-who2-h" class="h2">{{pg.whoHead}}</h2></div>
+              <b>{{pg.whoName}}</b>
+              <span style="color: #46546A; font-size: 13px">{{pg.whoMeta}}</span>
+              <sc-if value="{{pg.whoLink}}" hint-placeholder-val="{{ true }}"><a href="{{pg.whoHref}}" style="font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">Open the staff record, Claims and advances tab</a></sc-if>
+            </section>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 660px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="cl-undo" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{dlg.show}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dlg.dimCls}}" onClick="{{dlg.close}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div>
+    <div style="position: fixed; inset: 0; z-index: 51; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none">
+      <div role="dialog" aria-modal="true" aria-labelledby="cl-dlg-title" aria-describedby="cl-dlg-desc" tabindex="-1" class="{{dlg.panelCls}}" onKeyDown="{{dlg.key}}" onAnimationEnd="{{dlg.onAnim}}" style="pointer-events: auto; position: relative; width: 100%; max-width: 540px; max-height: 100%; overflow-y: auto; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; box-shadow: 0 16px 40px rgba(13,27,46,.18); display: flex; flex-direction: column">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 20px 60px 14px 22px; border-bottom: 1px solid #EEF1F5">
+          <span style="{{dlg.plate}}"><dc-import name="Icon" glyph="{{dlg.glyph}}" tone="{{dlg.tone}}" size="22" hint-size="22px,22px"></dc-import></span>
+          <div><h2 id="cl-dlg-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{dlg.title}}</h2><p id="cl-dlg-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{dlg.desc}}</p></div>
+        </div>
+        <button type="button" class="hs" onClick="{{dlg.close}}" aria-label="Close" style="position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+        <sc-if value="{{dlg.refused}}" hint-placeholder-val="{{ false }}">
+          <div id="cl-dlg-refused" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 22px; background: #FDF3F2; border-bottom: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">Nothing was withdrawn</b><div style="color: #46546A; font-size: 13px">{{dlg.refusedText}}</div></div></div>
+        </sc-if>
+        <div style="padding: 16px 22px; display: flex; flex-direction: column; gap: 12px">
+          <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A"><sc-for list="{{dlg.points}}" as="p" hint-placeholder-count="3"><li>{{p.text}}</li></sc-for></ul>
+          <sc-if value="{{dlg.isWd}}" hint-placeholder-val="{{ false }}">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="cl-reason" class="lb">Reason <span>Required</span></label>
+              <textarea id="cl-reason" rows="3" class="in" value="{{dlg.reason}}" onChange="{{dlg.onReason}}" disabled="{{dlg.saving}}" aria-invalid="{{dlg.reasonInv}}" aria-describedby="{{dlg.reasonBy}}" style="height: auto; padding: 10px 12px; resize: vertical"></textarea>
+              <sc-if value="{{dlg.reasonErr}}" hint-placeholder-val="{{ false }}"><span id="cl-reason-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{dlg.reasonErr}}</span></sc-if>
+              <span id="cl-reason-hint" class="hint">Kept on the claim and shown in the list. Withdrawn by Aisha Rahman (declared, not verified).</span>
+            </div>
+          </sc-if>
+        </div>
+        <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+          <sc-if value="{{dlg.asking}}" hint-placeholder-val="{{ false }}">
+            <div role="group" aria-labelledby="cl-dask-q" class="ex" style="flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+              <span id="cl-dask-q" style="font-weight: 600; margin-right: auto">Discard your changes?</span>
+              <button type="button" id="cl-dkeep" class="sec hs" onClick="{{dlg.keep}}">Keep editing</button>
+              <button type="button" class="dng hd" onClick="{{dlg.discard}}">Discard</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{dlg.notAsking}}" hint-placeholder-val="{{ true }}">
+            <button type="button" id="cl-dlg-no" class="sec hs" onClick="{{dlg.close}}" disabled="{{dlg.saving}}">{{dlg.noLabel}}</button>
+            <button type="button" id="cl-dlg-go" class="dng hd" onClick="{{dlg.go}}" disabled="{{dlg.saving}}" aria-busy="{{dlg.busy}}" style="min-width: 150px; justify-content: center"><sc-if value="{{dlg.saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true" style="border-color: rgba(176,25,15,.3); border-top-color: #B0190F"></span></sc-if>{{dlg.goLabel}}</button>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"approved","options":["new","lines","overseas","receipt-missing","errors","saving","refused","discard","draft-saved","edit-draft","edit-discard","waiting","approved","over-limit","edit-warning","paid","recorded","recorded-here","not-approved","withdraw","withdraw-errors","withdraw-refused","withdrawn","paid-refused","director","loading","error"],"section":"State to show"},"$preview":{"width":1440,"height":1480}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'approved'); }
+  componentDidMount() {
+    const st = this.state;
+    if (st.dlg) this.focusId('cl-dlg-title'); else if (st.refused) this.focusId('cl-refused'); else if (st.tried && st.mode === 'form') this.focusId('cl-errsum'); else if (st.limit) this.focusId('cl-limit');
+    if (st.toast) this.startToast(st.toast.undo ? 15000 : 6000);
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._sv); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._sv); this.setState(this.initial(this.props.view || 'approved')); return; }
+    if (!prev) return;
+    const st = this.state;
+    if (!prev.dlg && st.dlg) { this.focusId('cl-dlg-title'); return; }
+    if (prev.dlg && !st.dlg) { const o = this._opener; this._opener = null; if (this._upFocus) { const id = this._upFocus; this._upFocus = null; if (this.focusId(id)) return; } if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); else this.focusId('cl-h1'); return; }
+    if (this._upFocus) { const id = this._upFocus; this._upFocus = null; this.focusId(id); }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: true }); return true; } return false; }
+
+  // ---- sample data: scope/samples.md sections 5, 10 and 12; SetupClaimTypes for AISB's types ----
+  STAFF() { return [['S001', 'Aisha', 'Aisha Rahman', 'HR and finance executive', 'Maybank ····2210'], ['S002', 'Wei Ming', 'Ong Wei Ming', 'Sales executive', 'CIMB ····8841'], ['S003', 'Aina', 'Nurul Aina binti Hashim', 'HR and admin executive', 'Maybank ····5532'],
+    ['S004', 'Hafiz', 'Mohd Hafiz bin Rosli', 'Operations executive', 'Public Bank ····0917'], ['S005', 'Khadijah', 'Nor Khadijah binti Omar', 'Customer service executive', 'Maybank ····7764'], ['S006', 'Kah Seng', 'Wong Kah Seng', 'IT support', 'RHB ····3390'],
+    ['S007', 'Jia Hui', 'Goh Jia Hui', 'Marketing executive', 'Maybank ····6128'], ['S008', 'Izzati', 'Nur Izzati binti Kamal', 'Office assistant', 'Bank Islam ····4405'], ['S009', 'Daniel', 'Daniel Lee Chee Keong', 'Accounts assistant', 'Maybank ····8073']]
+    .map(([no, short, full, job, bank]) => ({ no, short, full, job, bank })); }
+  TYPES() { return [{ n: 'Mileage', acct: '900-860 Travelling', rec: 'trip', rate: 0.6 }, { n: 'Parking and toll', acct: '900-860 Travelling', rec: 'req' }, { n: 'Client meals', acct: '900-870 Entertainment', rec: 'req', limit: 150 },
+    { n: 'Phone', acct: '900-600 Telephone and internet', rec: 'req', limit: 150 }, { n: 'Stationery and materials', acct: '900-800 Printing, postage and stationery', rec: 'req' }, { n: 'Overseas travel', acct: '900-860 Travelling', rec: 'req', overseas: true }]; }
+  blankLine(k) { return { k, date: '', type: '', desc: '', amt: '', km: '', cur: 'SGD', fx: '', rate: '', files: [] }; }
+  blankForm() { return { who: '', month: '2026-11', payBy: '', lines: [this.blankLine(1)] }; }
+  sampleForm(n, noReceipt) {
+    // Wei Ming's November claim for a Singapore client visit (overseas: samples section 10; the parking and mileage lines are made up for the form)
+    const L1 = { k: 1, date: '2026-11-03', type: 'Parking and toll', desc: 'KLIA parking, 2 days', amt: '48.00', km: '', cur: 'SGD', fx: '', rate: '', files: noReceipt ? [] : ['KLIA parking.jpg'] };
+    const L2 = { k: 2, date: '2026-11-03', type: 'Mileage', desc: 'Home to KLIA and back', amt: '', km: '120', cur: 'SGD', fx: '', rate: '', files: ['Trip log 3 Nov.pdf'] };
+    const L3 = { k: 3, date: '2026-11-03', type: 'Overseas travel', desc: 'Hotel in Singapore, 1 night, client visit', amt: '', km: '', cur: 'SGD', fx: '180.00', rate: '3.4000', files: ['Hotel invoice.pdf'] };
+    return { who: 'S002', month: '2026-11', payBy: '', lines: n === 2 ? [L1, L2] : [L1, L2, L3] };
+  }
+  initial(view) {
+    const FORM = ['new', 'lines', 'overseas', 'receipt-missing', 'errors', 'saving', 'refused', 'discard'];
+    const base = { view, mode: FORM.includes(view) ? 'form' : 'page', form: this.blankForm(), tried: false, saving: false, refused: false, ask: false, nextK: 2,
+      id: 'CL-2610-004', stage: null, why: '', voided: false, newClaim: null, editOf: null, editBase: null, edited: {}, limit: false, flash: { k: '', n: 0 }, dlg: null, closing: false, toast: null, load: 'ok', say: '' };
+    const f3 = this.sampleForm(3), f2 = this.sampleForm(2);
+    const set = {
+      new: {}, lines: { form: f2, nextK: 3 }, overseas: { form: f3, nextK: 4 }, 'receipt-missing': { form: this.sampleForm(3, true), nextK: 4 },
+      errors: { form: { ...f3, lines: [{ ...f3.lines[0], date: '2026-11-20' }, { ...f3.lines[1], km: '' }, f3.lines[2]] }, tried: true, nextK: 4 },
+      saving: { form: f3, saving: true, nextK: 4 }, refused: { form: f3, refused: true, nextK: 4 }, discard: { form: f3, ask: true, nextK: 4 },
+      'draft-saved': { id: 'CL-2611-002', form: f3, nextK: 4, newClaim: f3, toast: { msg: 'Draft saved: CL-2611-002, Nov 2026 Claims - Wei Ming, RM 732.00. Print its approval form when it is ready.', undo: { back: 'form' }, n: 1 } },
+      'edit-draft': { mode: 'form', id: 'CL-2611-002', newClaim: f3, editOf: 'CL-2611-002', editBase: f3, form: { ...f3, lines: [f3.lines[0], { ...f3.lines[1], km: '140', desc: 'Home to KLIA and back, by the toll road' }, f3.lines[2]] }, nextK: 4 },
+      'edit-discard': { mode: 'form', id: 'CL-2611-002', newClaim: f3, editOf: 'CL-2611-002', editBase: f3, form: { ...f3, lines: [f3.lines[0], { ...f3.lines[1], km: '140', desc: 'Home to KLIA and back, by the toll road' }, f3.lines[2]] }, nextK: 4, ask: true },
+      waiting: { id: 'CL-2611-001' }, approved: {}, 'over-limit': { limit: true, flash: { k: 'Client meals', n: 1 } },
+      'edit-warning': { dlg: { kind: 'edit', reason: '', tried: false, saving: false, refused: false, ask: false } },
+      paid: { stage: 'paid' }, recorded: { stage: 'recorded' }, 'recorded-here': { id: 'AI-HI', stage: 'recorded' },
+      'not-approved': { id: 'CL-2611-001', stage: 'notapproved' },
+      withdraw: { id: 'CL-2611-001', dlg: { kind: 'wd', reason: '', tried: false, saving: false, refused: false, ask: false } },
+      'withdraw-errors': { id: 'CL-2611-001', dlg: { kind: 'wd', reason: '', tried: true, saving: false, refused: false, ask: false } },
+      'withdraw-refused': { id: 'CL-2611-001', dlg: { kind: 'wd', reason: 'Kah Seng will claim it with his November bill', tried: true, saving: false, refused: true, ask: false } },
+      withdrawn: { id: 'CL-2610-006' }, 'paid-refused': { id: 'CL-2609-002' }, director: { id: 'AI-HI' },
+      loading: { load: 'loading' }, error: { load: 'error' }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+  fmt(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  num(s) { const v = parseFloat(String(s || '').replace(/,/g, '')); return isNaN(v) ? 0 : v; }
+  dayText(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-').map(Number), wd = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    return wd + ' ' + d + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1] + (y !== 2026 ? ' ' + y : '');
+  }
+  type(n) { return this.TYPES().find(t => t.n === n) || null; }
+  lineAmt(l) { return l.type === 'Mileage' ? Math.round(this.num(l.km) * 0.6 * 100) / 100 : l.type === 'Overseas travel' ? Math.round(this.num(l.fx) * this.num(l.rate) * 100) / 100 : this.num(l.amt); }
+  person(no) { return this.STAFF().find(p => p.no === no) || null; }
+  titleOf(F) { const p = this.person(F.who); return (F.month === '2026-10' ? 'Oct 2026' : 'Nov 2026') + ' Claims - ' + (p ? p.short : '…'); }
+  errs() {
+    const F = this.state.form, E = { who: '', lines: {} };
+    if (!F.who) E.who = 'Choose who the claim is for.';
+    F.lines.forEach(l => {
+      const e = {};
+      if (!l.date) e.date = 'Enter the date on the receipt.'; else if (l.date > '2026-11-18') e.date = "The date can't be after today, 18 Nov 2026.";
+      if (!l.type) e.type = 'Choose a claim type.';
+      if (!l.desc.trim()) e.desc = 'Say what it was for.';
+      if (l.type === 'Mileage') { if (!(this.num(l.km) > 0)) e.km = 'Enter the kilometres.'; }
+      else if (l.type === 'Overseas travel') { if (!(this.num(l.fx) > 0)) e.fx = 'Enter the amount on the receipt.'; if (!(this.num(l.rate) > 0)) e.rate = 'Enter the rate used.'; }
+      else if (l.type && !(this.num(l.amt) > 0)) e.amt = 'Enter the amount in RM.';
+      if (Object.keys(e).length) E.lines[l.k] = e;
+    });
+    return E;
+  }
+  nErr(E) { return (E.who ? 1 : 0) + Object.values(E.lines).reduce((a, e) => a + Object.keys(e).length, 0); }
+  dirty() { return JSON.stringify(this.state.form) !== JSON.stringify(this.state.editBase || this.blankForm()); }
+  // the form of a draft opened for editing (CL-2610-004 once it is sent back to Draft, or the new CL-2611-002)
+  formOf(id) {
+    if (id === 'CL-2611-002') return this.state.newClaim || this.sampleForm(3);
+    if (this.state.edited[id]) return this.state.edited[id];
+    return { who: 'S002', month: '2026-10', payBy: '2026-11-14', lines: [
+      { k: 1, date: '2026-10-06', type: 'Parking and toll', desc: 'Parking, client visit', amt: '12.00', km: '', cur: 'SGD', fx: '', rate: '', files: ['Claim PDF, page 2'] },
+      { k: 2, date: '2026-10-14', type: 'Client meals', desc: 'Client lunch', amt: '186.50', km: '', cur: 'SGD', fx: '', rate: '', files: ['Claim PDF, page 3'] },
+      { k: 3, date: '2026-10-22', type: 'Mileage', desc: 'Client visits', amt: '', km: '480', cur: 'SGD', fx: '', rate: '', files: ['Claim PDF, page 4 (trip log)'] }] };
+  }
+  formLines(F) {
+    return F.lines.map(l => { const t = this.type(l.type), a = this.lineAmt(l);
+      return { date: this.dayText(l.date), type: l.type, desc: l.type === 'Mileage' ? l.desc + ', ' + l.km + ' km at RM 0.60 a km' : l.type === 'Overseas travel' ? l.desc + ', ' + l.cur + ' ' + this.fmt(this.num(l.fx)) + ' at ' + l.rate : l.desc, amt: a,
+        files: l.files.length ? l.files.join(', ') : 'No receipt yet',
+        flag: l.type === 'Overseas travel' ? 'Its payment needs a self-billed e-Invoice' : !l.files.length && t ? 'Receipt required' : t && t.limit && a > t.limit ? 'Over the RM ' + this.fmt(t.limit) + ' monthly limit by RM ' + this.fmt(a - t.limit) : '' }; });
+  }
+  openEditForm(code) {
+    const F = this.formOf(code), k = F.lines.reduce((a, l) => Math.max(a, l.k), 0) + 1;
+    this._upFocus = 'cl-h1';
+    this.setState({ mode: 'form', editOf: code, editBase: F, form: F, nextK: k, tried: false, ask: false, refused: false, saving: false, say: 'Editing ' + code });
+  }
+  leaveEdit() { const code = this.state.editOf; this._upFocus = 'cl-edit'; this.setState({ mode: 'page', editOf: null, editBase: null, ask: false, tried: false, refused: false, form: this.blankForm(), say: 'No changes made to ' + code }); }
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo) { this.startToast(undo ? 15000 : 6000); return { toast: { msg, undo: undo || null, n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+  setLine(k, patch) { const F = this.state.form; this.setState({ form: { ...F, lines: F.lines.map(l => l.k === k ? { ...l, ...patch } : l) }, refused: false, ask: false }); }
+  submit() {
+    const st = this.state; if (st.saving) return;
+    const E = this.errs();
+    if (this.nErr(E)) { this._upFocus = 'cl-errsum'; return this.setState({ tried: true, refused: false, say: 'Not saved: ' + this.nErr(E) + ' things to fix' }); }
+    this.setState({ saving: true, refused: false, tried: true });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => {
+      const F = this.state.form, total = F.lines.reduce((a, l) => a + this.lineAmt(l), 0);
+      const code = this.state.editOf;
+      if (code) {
+        const snap = { newClaim: this.state.newClaim, edited: this.state.edited };
+        const m2 = 'Changes saved to ' + code + ': ' + this.titleOf(F) + ', RM ' + this.fmt(total) + '. It is still a draft.';
+        this._upFocus = 'cl-h1';
+        return this.setState({ saving: false, mode: 'page', editOf: null, editBase: null, form: this.blankForm(), tried: false, newClaim: code === 'CL-2611-002' ? F : this.state.newClaim, edited: { ...this.state.edited, [code]: F }, histFlash: (this.state.histFlash || 0) + 1, say: m2, ...this.toastPart(m2, { back: 'page', snap }) });
+      }
+      const msg = 'Draft saved: CL-2611-002, ' + this.titleOf(F) + ', RM ' + this.fmt(total) + '. Print its approval form when it is ready.';
+      this._upFocus = 'cl-h1';
+      this.setState({ saving: false, mode: 'page', id: 'CL-2611-002', newClaim: F, stage: null, say: msg, ...this.toastPart(msg, { back: 'form' }) });
+    }, 900);
+  }
+
+  // ---- claims shown as a page ----
+  pageClaim(st) {
+    const P = this.person.bind(this);
+    if (st.id === 'CL-2611-002') {
+      const F = st.newClaim || this.sampleForm(3);
+      return { code: 'CL-2611-002', co: 'AISB', title: this.titleOf(F), who: P(F.who), st: 'draft', entered: 'Wed 18 Nov',
+        lines: this.formLines(F),
+        hist: (st.edited['CL-2611-002'] ? [{ when: 'Wed 18 Nov, 11:20', what: 'Changed while a draft', detail: 'By Aisha Rahman. Now RM ' + this.fmt(F.lines.reduce((a, l) => a + this.lineAmt(l), 0)) + '.' }] : []).concat([{ when: 'Wed 18 Nov, 11:05', what: 'Entered as a draft', detail: 'By Aisha Rahman. ' + F.lines.length + ' lines.' }]) };
+    }
+    const L = (date, type, desc, amt, files, flag) => ({ date, type, desc, amt, files, flag: flag || '' });
+    const D = {
+      'CL-2610-004': { code: 'CL-2610-004', co: 'AISB', title: 'Oct 2026 Claims - Wei Ming', who: P('S002'), st: 'approved', entered: 'Thu 5 Nov', due: 'Sat 14 Nov',
+        lines: [L('Tue 6 Oct', 'Parking and toll', 'Parking, client visit', 12, 'Claim PDF, page 2'), L('Wed 14 Oct', 'Client meals', 'Client lunch', 186.5, 'Claim PDF, page 3', 'Over the RM 150.00 monthly limit by RM 36.50'), L('Thu 22 Oct', 'Mileage', '480 km at RM 0.60 a km', 288, 'Claim PDF, page 4 (trip log)')],
+        recNote: 'Receipts: Claims Wei Ming October 2026.pdf, the claim form and its receipts. They go with the payment.',
+        hist: [{ when: 'Fri 13 Nov, 10:16', what: 'Moved to To pay', detail: 'Due Sat 14 Nov. Its payment carries the claim PDF.' },
+          { when: 'Fri 13 Nov, 10:15', what: 'Approved on AF-2611-003', detail: 'Signed by Tan Mei Ling, date on the form 12 Nov 2026. Approver chosen by Aisha Rahman from a paper scan.' },
+          { when: 'Wed 11 Nov', what: 'Printed on AF-2611-003', detail: 'With CL-2610-005 and CL-2610-007, RM 1,214.50 in all. By Aisha Rahman.' },
+          { when: 'Thu 5 Nov', what: 'Entered as a draft', detail: 'By Aisha Rahman. 3 lines.' }] },
+      'CL-2611-001': { code: 'CL-2611-001', co: 'AISB', title: 'Nov 2026 Claims - Kah Seng', who: P('S006'), st: 'wait', entered: 'Mon 16 Nov',
+        lines: [L('Fri 30 Oct', 'Phone', 'October bill', 145, 'Phone bill October.pdf')],
+        hist: [{ when: 'Tue 17 Nov', what: 'Printed on AF-2611-005', detail: 'With SA-2611-002 (Daniel\'s salary advance), RM 4,145.00 in all. By Aisha Rahman.' }, { when: 'Mon 16 Nov', what: 'Entered as a draft', detail: 'By Aisha Rahman. 1 line.' }] },
+      'CL-2610-006': { code: 'CL-2610-006', co: 'AISB', title: 'Oct 2026 Claims - Wei Ming', who: P('S002'), st: 'withdrawn', why: 'Entered twice', entered: 'Thu 5 Nov',
+        lines: [L('Tue 6 Oct', 'Parking and toll', 'Parking', 120, 'Parking 6 Oct.jpg')],
+        hist: [{ when: 'Mon 9 Nov, 11:40', what: 'Withdrawn', detail: 'By Aisha Rahman, before it was printed. Reason: “Entered twice”.' }, { when: 'Thu 5 Nov', what: 'Entered as a draft', detail: 'By Aisha Rahman. 1 line.' }] },
+      'CL-2609-002': { code: 'CL-2609-002', co: 'AISB', title: 'Sep 2026 Claims - Wei Ming', who: P('S002'), st: 'refused', entered: 'Sep 2026',
+        lines: [L('Sep 2026', 'Parking and toll', 'Parking', 95, 'Parking receipts September.pdf')],
+        hist: [{ when: 'Mon 2 Nov', what: 'Approval refused after payment', detail: 'Reason: “Personal travel”. Marked on Approvals by Aisha Rahman.' }, { when: 'Wed 30 Sep', what: 'Paid', detail: 'Entered on the Payments register by Aisha Rahman. Approval forms are kept from October 2026, so it has no form on file; it was put to an approver after payment.' }] },
+      'AI-HI': { code: 'Hassan Ismail\'s claim', co: 'AI', title: 'Nov 2026 Claims - Hassan Ismail', director: true, st: 'draft', entered: '—',
+        lines: [L('Oct 2026', 'Mileage', 'Trips to the farm', 640, 'Trip log October.pdf')],
+        hist: [{ when: '—', what: 'Entered as a draft', detail: 'An example once AI has claim types. By Aisha Rahman.' }] }
+    };
+    const c = { ...D[st.id] };
+    if (st.edited[st.id]) { const F = st.edited[st.id]; c.lines = this.formLines(F); c.title = this.titleOf(F); c.hist = [{ when: 'Wed 18 Nov', what: 'Changed while a draft', detail: 'By Aisha Rahman. Now RM ' + this.fmt(F.lines.reduce((a, l) => a + this.lineAmt(l), 0)) + '; it needs a new approval form.' }].concat(c.hist); }
+    if (st.stage) c.st = st.stage;
+    if (st.id === 'AI-HI' && c.st === 'recorded') { c.code = 'CL-2611-003'; c.hist = [{ when: 'Later', what: 'Entered as a draft', detail: 'Saving gave it its claim number, CL-2611-003. An example once AI has claim types. By Aisha Rahman.' }]; }
+    if (st.why) c.why = st.why;
+    if (st.voided) c.st = 'draft';
+    return c;
+  }
+  pageVals(st) {
+    const c = this.pageClaim(st), T = this.TYPES(), isAI = c.co === 'AI';
+    const amt = c.lines.reduce((a, l) => a + l.amt, 0);
+    const PILL = { draft: ['pl mute', 'edit', 'muted', 'Draft'], wait: ['pl warn', 'clock', 'warn', 'Waiting for approval'], approved: ['pl ok', 'check', 'ok', 'Approved'], withdrawn: ['pl mute', 'undo', 'muted', 'Withdrawn'],
+      refused: ['pl bad', 'alert', 'bad', 'Paid, approval refused'], notapproved: ['pl bad', 'close', 'bad', 'Not approved'], paid: ['pl ok', 'payment', 'ok', 'Paid'], recorded: ['pl info', 'books', 'brand', 'Recorded'] };
+    const p = PILL[c.st];
+    const acctOf = n => { const t = T.find(x => x.n === n); return isAI ? (n === 'Mileage' ? 'Travelling (AI\'s chart, once set up)' : '') : (t ? t.acct : ''); };
+    // the four steps
+    const S = (name, k, text) => {
+      const look = { done: ['#E3F7EC', 'check', 'ok', 'Done'], now: ['#EAF0FD', 'clock', 'brand', 'Now'], late: ['#FDE6E3', 'alert', 'bad', 'Overdue'], later: ['#EEF1F5', 'clock', 'muted', 'Later'], stop: ['#EEF1F5', 'close', 'muted', 'Stopped'], bad: ['#FDE6E3', 'alert', 'bad', 'Refused'] }[k];
+      return { name, text, glyph: look[1], tone: look[2], sr: ' (' + look[3] + ')',
+        box: 'display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#FFFFFF;border:1px solid ' + (k === 'now' ? '#C9D7F7' : k === 'late' || k === 'bad' ? '#F5C2BB' : '#E3E7ED'),
+        dot: 'flex:none;width:28px;height:28px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;background:' + look[0] };
+    };
+    const entered = c.entered === '—' ? 'Entered by Aisha Rahman' : 'Entered ' + c.entered + ' by Aisha Rahman';
+    let steps;
+    if (c.st === 'draft') steps = [S('1 Request', 'done', entered), S('2 Approve', 'now', st.voided ? 'Its approval is void: needs a new form' : 'Not on a form yet'), S('3 Pay', 'later', 'Reaches To pay once approved'), S('4 Record', 'later', isAI ? 'Posted here' : 'Matched to SQL\'s voucher')];
+    else if (c.st === 'wait') steps = [S('1 Request', 'done', entered), S('2 Approve', 'now', 'On AF-2611-005, printed Tue 17 Nov'), S('3 Pay', 'later', 'Reaches To pay once approved'), S('4 Record', 'later', 'Matched to SQL\'s voucher')];
+    else if (c.st === 'approved') steps = [S('1 Request', 'done', entered), S('2 Approve', 'done', 'Tan Mei Ling, 12 Nov'), S('3 Pay', 'late', 'In To pay, due Sat 14 Nov'), S('4 Record', 'later', 'Matched to SQL\'s voucher')];
+    else if (c.st === 'paid') steps = [S('1 Request', 'done', entered), S('2 Approve', 'done', 'Tan Mei Ling, 12 Nov'), S('3 Pay', 'done', 'Wed 18 Nov, ref IBG 1811204'), S('4 Record', 'now', 'Waiting for SQL record')];
+    else if (c.st === 'recorded') steps = isAI ? [S('1 Request', 'done', entered), S('2 Approve', 'done', 'Self-approved by Hassan Ismail'), S('3 Pay', 'done', 'Paid from To pay'), S('4 Record', 'done', 'JV and PV posted here')]
+      : [S('1 Request', 'done', entered), S('2 Approve', 'done', 'Tan Mei Ling, 12 Nov'), S('3 Pay', 'done', 'Wed 18 Nov, ref IBG 1811204'), S('4 Record', 'done', 'Linked to SQL\'s PV2611-021')];
+    else if (c.st === 'withdrawn') steps = [S('1 Request', 'done', entered), S('2 Approve', 'stop', 'Withdrawn: ' + c.why), S('3 Pay', 'stop', 'Nothing to pay'), S('4 Record', 'stop', 'Nothing to record')];
+    else if (c.st === 'notapproved') steps = [S('1 Request', 'done', entered), S('2 Approve', 'bad', 'Not approved on AF-2611-005'), S('3 Pay', 'stop', 'Nothing to pay'), S('4 Record', 'stop', 'Nothing to record')];
+    else steps = [S('1 Request', 'done', 'Entered in September'), S('2 Approve', 'bad', 'Refused Mon 2 Nov'), S('3 Pay', 'done', 'Paid Wed 30 Sep'), S('4 Record', 'later', 'Open until resolved')];
+    // approval card
+    const F = (k, v) => ({ k, v });
+    const tone = t => ({ warn: ['#FFFBF2', '#F3D9A6', '#6B3A00', 'alert', 'warn'], bad: ['#FDF3F2', '#F5C2BB', '#8E1A10', 'alert', 'bad'], info: ['#EAF0FD', '#C9D7F7', '#1D2F5C', 'help', 'brand'], ok: ['#F0FBF5', '#BFE8D0', '#0A6B3D', 'check', 'ok'] }[t]);
+    let apFacts = [], apNote = '', apTone = 'info', apLinks = [];
+    if (c.st === 'draft' && c.director) {
+      apFacts = [F('Approvers', 'Hassan Ismail (AI\'s only approver)'), F('Payee', 'Hassan Ismail')];
+      apNote = 'The payee is AI\'s only approver, so this claim can only be Self-approved. It is listed in the audit pack. At AISB, a director\'s own claim is signed by another approver: his line is struck on the form, “Can\'t sign: payee”.'; apTone = 'warn';
+      apLinks = [{ label: 'Setup › HR › Approvers', href: 'SetupApprovers.dc.html' }, { label: 'Print approval form', href: 'PrintApprovalForm.dc.html#one-self' }];
+    } else if (c.st === 'draft') {
+      apFacts = st.voided ? [F('Form', 'AF-2611-003, void for this claim'), F('Kept', 'In the claim\'s history')] : [F('Form', 'Not on a form yet'), F('Approvers', 'Hassan Ismail, Tan Mei Ling, Rajesh Kumar')];
+      apNote = st.voided ? 'The approval on AF-2611-003 is void for this claim and kept in its history. Print a new form once the change is made.' : c.lines.some(l => /e-Invoice/.test(l.flag)) ? 'Any one signature approves the form. Line 3 is overseas travel: as today, a self-billed e-Invoice is one of its payment\'s required documents. It doesn\'t hold up approval.' : 'Any one signature approves the form.';
+      apTone = st.voided || c.lines.some(l => l.flag) ? 'warn' : 'info';
+      apLinks = [{ label: 'Print approval form', href: 'PrintApprovalForm.dc.html' }, { label: 'Approvals, To print', href: 'Approvals.dc.html' }];
+      if (c.lines.some(l => /e-Invoice/.test(l.flag))) apLinks.push({ label: 'Accounting › e-Invoices', href: 'MyInvois.dc.html' });
+    } else if (c.st === 'wait') {
+      apFacts = [F('Form', 'AF-2611-005'), F('Keyed check', 'W4N-7ZKC'), F('Printed', 'Tue 17 Nov, by Aisha Rahman'), F('On the form', 'This claim and SA-2611-002, RM 4,145.00'), F('Approvers', 'Hassan Ismail, Tan Mei Ling, Rajesh Kumar')];
+      apNote = 'Waiting for the signed form. Any one signature approves it. If this claim changes now, the signed form no longer matches it and a new form is printed for it.'; apTone = 'info';
+      apLinks = [{ label: 'Upload the signed form', href: 'ApprovalUpload.dc.html' }, { label: 'Open on Approvals', href: 'Approvals.dc.html' }, { label: 'See the printed form', href: 'PrintApprovalForm.dc.html#claim-advance' }];
+    } else if (c.st === 'approved' || c.st === 'paid' || (c.st === 'recorded' && !isAI)) {
+      apFacts = [F('Form', 'AF-2611-003'), F('Keyed check', '7KQ-M4XP, matches the claim as it is now'), F('Signed by', 'Tan Mei Ling'), F('Date on form', '12 Nov 2026'), F('Uploaded', 'Fri 13 Nov 2026'), F('How', 'Approver chosen by Aisha Rahman from a paper scan')];
+      apNote = 'Approved and locked. Changing its amount, payee or lines sends it back to Draft and needs a new form.'; apTone = 'ok';
+      apLinks = [{ label: 'Open on Approvals', href: 'Approvals.dc.html' }, { label: 'See the printed form', href: 'PrintApprovalForm.dc.html#claims' }];
+    } else if (c.st === 'recorded') {
+      apFacts = [F('Approved', 'Self-approved by Hassan Ismail'), F('Why', 'AI has one approver, the payee')];
+      apNote = 'Listed in the audit pack as self-approved.'; apTone = 'warn';
+      apLinks = [{ label: 'Open on Approvals', href: 'Approvals.dc.html' }, { label: 'Audit pack, HR pages', href: 'AuditPackHR.dc.html' }];
+    } else if (c.st === 'withdrawn') {
+      apFacts = [F('Form', 'None: withdrawn before it was printed'), F('Reason', '“' + c.why + '”'), F('Withdrawn by', 'Aisha Rahman')];
+      apNote = 'Kept, never deleted. It shows in the list as Withdrawn.'; apTone = 'info';
+      apLinks = [{ label: 'Approvals, Not approved and Withdrawn', href: 'Approvals.dc.html' }];
+    } else if (c.st === 'notapproved') {
+      apFacts = [F('Form', 'AF-2611-005'), F('Refused by', 'Hassan Ismail (declared)'), F('Reason', '“Personal phone line, not the company\'s”'), F('Marked', 'Wed 18 Nov, on Approvals by Aisha Rahman')];
+      apNote = 'Not approved: nothing to pay. SA-2611-002 on the same form is not affected.'; apTone = 'bad';
+      apLinks = [{ label: 'Approvals, Not approved and Withdrawn', href: 'Approvals.dc.html' }];
+    } else {
+      apFacts = [F('Form', 'None on file: paid Wed 30 Sep, before approval forms were kept (from October 2026)'), F('Refused', 'Mon 2 Nov, put to an approver after payment'), F('Reason', '“Personal travel”'),
+        F('On Approvals', 'Listed under Paid without approval on file with the October items, although it was paid in September: it stays there until it is resolved')];
+      apNote = 'Paid, approval refused. It stays on the Overview card and in the audit pack until the money is paid back, a credit is recorded, or a director adds a note.'; apTone = 'bad';
+      apLinks = [{ label: 'Approvals, Paid without approval on file', href: 'Approvals.dc.html' }];
+    }
+    // payment card
+    const bank = c.who ? c.who.bank + ', ' + c.who.short : '—';
+    let payFacts = [], payLinks = [], payPill = '', payPillCls = '';
+    if (c.st === 'draft' || c.st === 'wait') { payFacts = [F('To pay', 'Not yet: it reaches To pay once approved'), F('Pay to', isAI ? 'Hassan Ismail\'s account' : bank + ' (from the staff record)'), F('Pay by', '—')]; payLinks = [{ label: 'To pay', href: 'ToPay.dc.html' }]; }
+    else if (c.st === 'approved') { payFacts = [F('In To pay', 'Since Fri 13 Nov'), F('Due', 'Sat 14 Nov'), F('Pay to', bank), F('Documents', 'The claim PDF comes with the payment')]; payPill = 'Overdue 4 days'; payPillCls = 'pl bad'; payLinks = [{ label: 'Pay it on To pay', href: 'ToPay.dc.html' }, { label: 'Open the payment', href: 'Payment.dc.html' }]; }
+    else if (c.st === 'paid' || c.st === 'recorded') {
+      payFacts = isAI ? [F('Paid', 'From To pay'), F('Pay to', 'Hassan Ismail')] : [F('Paid', 'Wed 18 Nov 2026'), F('Bank reference', 'IBG 1811204, with CL-2610-005 and CL-2610-007'), F('From', 'Maybank current ····4417'), F('Entered by', 'Aisha Rahman, on To pay')];
+      payPill = 'Paid'; payPillCls = 'pl ok'; payLinks = [{ label: 'Open the payment', href: 'Payment.dc.html' }, { label: 'Payments register', href: 'PaymentsRegister.dc.html' }];
+    }
+    else if (c.st === 'refused') { payFacts = [F('Paid', 'Wed 30 Sep 2026'), F('Pay to', bank), F('Marker', 'Paid, approval refused')]; payPill = 'Open'; payPillCls = 'pl bad'; payLinks = [{ label: 'Open the payment', href: 'Payment.dc.html' }]; }
+    else { payFacts = [F('To pay', 'Nothing to pay: it never reached To pay')]; payLinks = [{ label: 'To pay', href: 'ToPay.dc.html' }]; }
+    // booking
+    const byAcct = {}; c.lines.forEach(l => { const a = acctOf(l.type) || l.type; byAcct[a] = (byAcct[a] || 0) + l.amt; });
+    const bookRows = isAI ? [] : Object.keys(byAcct).map(a => ({ acct: a, amt: this.fmt(byAcct[a]) }));
+    let bookText, bookStatus = '', bookGlyph = 'clock', bookTone = 'muted', vouchers = [];
+    if (isAI) {
+      bookText = c.st === 'recorded' ? 'Agrinexus International is Kept here. When the claim was approved it posted a journal voucher; paying it posted a payment voucher. A posted voucher is never edited.'
+        : 'Agrinexus International is Kept here. Once AI has a chart of accounts and claim types, approving posts a journal voucher (claim expense / Claims payable (staff)) and paying posts a payment voucher (Claims payable (staff) / Bank).';
+      if (c.st === 'recorded') vouchers = [{ code: 'JV2611-001', when: 'On approval · AI\'s own series', rows: [{ acct: 'Travelling', dr: '640.00', cr: '' }, { acct: 'Claims payable (staff)', dr: '', cr: '640.00' }] },
+        { code: 'PV2611-002', when: 'On payment · AI\'s own series', rows: [{ acct: 'Claims payable (staff)', dr: '640.00', cr: '' }, { acct: 'Bank', dr: '', cr: '640.00' }] }];
+    } else {
+      bookText = 'AISB is Kept in SQL Account: the payment is matched to SQL\'s payment voucher, as today. Nothing is posted here. SQL books the lines to these accounts:';
+      if (c.st === 'paid') { bookStatus = 'Waiting for SQL record: Fetch from SQL exports links it once SQL has the payment voucher.'; bookGlyph = 'clock'; bookTone = 'warn'; }
+      if (c.st === 'recorded') { bookStatus = 'Recorded: linked to SQL\'s PV2611-021.'; bookGlyph = 'check'; bookTone = 'ok'; }
+    }
+    const bookLook = bookTone === 'ok' ? 'background:#F0FBF5;border:1px solid #BFE8D0;color:#0A6B3D' : 'background:#FFFBF2;border:1px solid #F3D9A6;color:#6B3A00';
+    const ex = {
+      paid: 'An example: CL-2610-004 once To pay\'s Pay is done (the To pay board\'s paid state: three claims paid Wed 18 Nov, ref IBG 1811204). Today it is still in To pay.',
+      recorded: 'An example from later: CL-2610-004 once it is paid and Fetch from SQL exports finds its payment voucher. PV2611-021 stands for whatever number SQL gives it.',
+      notapproved: 'An example: what CL-2611-001 shows if its approver refuses it on AF-2611-005. Today it is waiting for approval.',
+      aiDraft: 'An example once Agrinexus International has claim types: AI has none yet, because claim types need an expense account and AI has no chart of accounts.',
+      aiRec: 'An example from later, once AI has a chart of accounts and claim types, and the claim is approved and paid. CL-2611-003 stands for whatever claim number saving gives it.',
+      refused: 'An example row, drawn to show the Paid, approval refused reading.'
+    };
+    const example = c.co === 'AI' ? (c.st === 'recorded' ? ex.aiRec : ex.aiDraft) : st.id === 'CL-2610-004' && c.st === 'paid' ? ex.paid : st.id === 'CL-2610-004' && c.st === 'recorded' ? ex.recorded : c.st === 'notapproved' ? ex.notapproved : c.st === 'refused' ? ex.refused : '';
+    const hist = c.hist.slice();
+    if (st.id === 'CL-2610-004' && (c.st === 'paid' || c.st === 'recorded')) hist.unshift({ when: 'Wed 18 Nov', what: 'Paid', detail: 'On To pay by Aisha Rahman, ref IBG 1811204, Maybank current ····4417.' });
+    if (st.id === 'CL-2610-004' && c.st === 'recorded') hist.unshift({ when: 'Later', what: 'Recorded', detail: 'Fetch from SQL exports linked it to SQL\'s PV2611-021.' });
+    if (st.voided) hist.splice(st.edited[st.id] ? 1 : 0, 0, { when: 'Wed 18 Nov', what: 'Sent back to Draft', detail: 'By Aisha Rahman, to edit it. The approval on AF-2611-003 is void and kept here; it left To pay.' });
+    if (c.st === 'notapproved') hist.unshift({ when: 'Wed 18 Nov', what: 'Not approved', detail: 'Hassan Ismail refused it on AF-2611-005: “Personal phone line, not the company\'s”. Marked by Aisha Rahman.' });
+    if (st.id === 'CL-2611-001' && c.st === 'withdrawn') hist.unshift({ when: 'Wed 18 Nov', what: 'Withdrawn', detail: 'By Aisha Rahman. Reason: “' + c.why + '”.' });
+    const apLook = tone(apTone);
+    const nL = c.lines.length;
+    return {
+      code: c.code, coName: isAI ? 'Agrinexus International' : 'AISB Sdn Bhd', title: c.title, example,
+      pillCls: p[0] + (st.pillN % 2 ? ' swapA' : ' swapB'), pillGlyph: p[1], pillTone: p[2], pill: p[3], locked: c.st === 'approved',
+      amt: 'RM ' + this.fmt(amt), amtPlain: this.fmt(amt), nLines: nL + (nL === 1 ? ' line' : ' lines'),
+      canEdit: (c.st === 'draft' && !c.director) || c.st === 'wait' || c.st === 'approved', canWithdraw: c.st === 'wait' || (c.st === 'draft' && !c.director),
+      canPrint: c.st === 'draft', canPay: c.st === 'approved', steps,
+      recNote: c.recNote || 'Receipts go with the payment, so its documents are complete.',
+      lines: c.lines.map(l => ({ date: l.date, type: l.type, acct: acctOf(l.type), desc: l.desc, amt: this.fmt(l.amt), files: l.files, flag: l.flag,
+        cls: st.flash.k && st.flash.k === l.type ? (st.flash.n % 2 ? 'fa' : 'fb') : '', rowStyle: l.flag ? 'background:#FFFBF2' : '' })),
+      limitNote: st.limit && st.id === 'CL-2610-004' ? 'Client meals has a monthly limit of RM 150.00 at AISB. This line is RM 186.50, RM 36.50 over: it is flagged on the claim and on its payment, never refused. The limit was set on 12 Nov, after AF-2611-003 was printed, so the printed form doesn\'t show the flag; the approval stands.' : '',
+      kindLabel: isAI ? 'Kept here' : 'Kept in SQL Account', bookText, hasBookRows: bookRows.length > 0, bookRows, vouchers, bookStatus, bookGlyph, bookTone,
+      bookStatusStyle: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px;' + bookLook,
+      hist: hist.map((h, i) => ({ ...h, cls: i === 0 && st.histFlash ? (st.histFlash % 2 ? 'fa' : 'fb') : '' })),
+      apFacts, apNote, apLinks, apNoteGlyph: apLook[3], apNoteTone: apLook[4],
+      apNoteStyle: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px;background:' + apLook[0] + ';border:1px solid ' + apLook[1] + ';color:' + apLook[2],
+      payFacts, payLinks, payPill, payPillCls,
+      whoHead: c.director ? 'Payee' : 'Person', whoName: c.director ? 'Hassan Ismail' : (c.who ? c.who.full + ' (' + c.who.short + ')' : ''),
+      whoMeta: c.director ? 'Director, AI\'s only approver. Not on AI\'s staff list.' : (c.who ? c.who.no + ' · ' + c.who.job + ' · paid to ' + c.who.bank : ''), whoLink: !c.director, whoHref: c.who ? 'HrStaffRecord.dc.html#' + c.who.no + '-claims' : 'HrStaffRecord.dc.html',
+      _c: c
+    };
+  }
+
+  renderVals() {
+    const st = this.state, T = this.TYPES();
+    const showLoading = st.load === 'loading', showError = st.load === 'error';
+    const isForm = !showLoading && !showError && st.mode === 'form', isPage = !showLoading && !showError && st.mode === 'page';
+    // ---- form ----
+    const E = st.tried ? this.errs() : { who: '', lines: {} }, F = st.form, off = st.saving;
+    const person = this.person(F.who);
+    const typeOpts = [{ v: '', l: 'Choose…' }].concat(T.map(t => ({ v: t.n, l: t.n })));
+    const sameType = n => F.lines.filter(l => l.type === n).reduce((a, l) => a + this.lineAmt(l), 0);
+    const flag = (t, text, href, link) => { const lk = { warn: ['#FFFBF2', '#F3D9A6', '#6B3A00', 'alert', 'warn'], info: ['#EAF0FD', '#C9D7F7', '#1D2F5C', 'receipt', 'brand'] }[t];
+      return { text, href: href || '', link: link || '', glyph: lk[3], tone: lk[4], style: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;font-size:13px;background:' + lk[0] + ';border:1px solid ' + lk[1] + ';color:' + lk[2] }; };
+    const lines = F.lines.map((l, i) => {
+      const e = E.lines[l.k] || {}, id = f => 'cl-l' + l.k + '-' + f, t = this.type(l.type), a = this.lineAmt(l);
+      const by = (f, hint) => [hint || '', e[f] ? id(f) + '-err' : ''].filter(Boolean).join(' ');
+      const flags = [];
+      if (t && t.limit && sameType(l.type) > t.limit) flags.push(flag('warn', 'Over the RM ' + this.fmt(t.limit) + ' monthly limit for ' + t.n + ' by RM ' + this.fmt(sameType(l.type) - t.limit) + '. It is flagged on the claim and the approval form, not refused.'));
+      if (t && t.rec === 'req' && !l.files.length) flags.push(flag('warn', 'Receipt required for ' + t.n + '. The draft can be saved, but the claim can\'t go on an approval form until the receipt is added.'));
+      if (t && t.rec === 'trip' && !l.files.length) flags.push(flag('warn', 'Add the trip log: it is the receipt for mileage.'));
+      if (t && t.overseas) flags.push(flag('info', 'Overseas: as today, a self-billed e-Invoice is one of the payment\'s required documents. It doesn\'t stop the claim being saved or approved.', 'MyInvois.dc.html', 'Accounting › e-Invoices'));
+      const fs = l.files.map(name => ({ name, off, label: 'Remove ' + name + ' from line ' + (i + 1), remove: () => { this.setLine(l.k, { files: l.files.filter(x => x !== name) }); this.setState({ say: name + ' removed' }); } }));
+      return { k: l.k, legend: 'Line ' + (i + 1), cls: st.flash.k === 'L' + l.k ? (st.flash.n % 2 ? 'fa' : 'fb') : '', off,
+        dateId: id('date'), date: l.date, dateInv: e.date ? 'true' : 'false', dateErr: e.date || '', dateErrId: id('date') + '-err', dateBy: by('date'),
+        onDate: ev => this.setLine(l.k, { date: ev && ev.target ? ev.target.value : '' }),
+        typeId: id('type'), type: l.type, typeOpts, typeInv: e.type ? 'true' : 'false', typeErr: e.type || '', typeErrId: id('type') + '-err', typeBy: by('type'),
+        onType: ev => this.setLine(l.k, { type: ev && ev.target ? ev.target.value : '' }),
+        descId: id('desc'), desc: l.desc, descInv: e.desc ? 'true' : 'false', descErr: e.desc || '', descErrId: id('desc') + '-err', descBy: by('desc'),
+        onDesc: ev => this.setLine(l.k, { desc: ev && ev.target ? ev.target.value : '' }),
+        isPlain: l.type !== 'Mileage' && l.type !== 'Overseas travel', isKm: l.type === 'Mileage', isFx: l.type === 'Overseas travel',
+        amtId: id('amt'), amt: l.amt, amtInv: e.amt ? 'true' : 'false', amtErr: e.amt || '', amtErrId: id('amt') + '-err', amtBy: by('amt'),
+        onAmt: ev => this.setLine(l.k, { amt: ev && ev.target ? ev.target.value : '' }),
+        kmId: id('km'), km: l.km, kmInv: e.km ? 'true' : 'false', kmErr: e.km || '', kmErrId: id('km') + '-err', kmHintId: id('km') + '-hint', kmBy: by('km', id('km') + '-hint'),
+        kmText: this.num(l.km) > 0 ? this.num(l.km) + ' km × RM 0.60 = RM ' + this.fmt(a) + '. The rate is from Setup › HR › Claim types.' : 'RM 0.60 a km, from Setup › HR › Claim types.',
+        onKm: ev => this.setLine(l.k, { km: ev && ev.target ? ev.target.value : '' }),
+        curId: id('cur'), cur: l.cur, onCur: ev => this.setLine(l.k, { cur: ev && ev.target ? ev.target.value : 'SGD' }),
+        fxId: id('fx'), fx: l.fx, fxInv: e.fx ? 'true' : 'false', fxErr: e.fx || '', fxErrId: id('fx') + '-err', fxBy: by('fx'),
+        onFx: ev => this.setLine(l.k, { fx: ev && ev.target ? ev.target.value : '' }),
+        rateId: id('rate'), rate: l.rate, rateInv: e.rate ? 'true' : 'false', rateErr: e.rate || '', rateErrId: id('rate') + '-err', rateBy: by('rate'),
+        onRate: ev => this.setLine(l.k, { rate: ev && ev.target ? ev.target.value : '' }),
+        fxText: a > 0 ? l.cur + ' ' + this.fmt(this.num(l.fx)) + ' at ' + l.rate + ' = RM ' + this.fmt(a) : 'Typed from the receipt and the rate used.',
+        recLabel: t && t.rec === 'trip' ? 'Trip log' : 'Receipts' + (t && t.rec === 'req' ? ' (required)' : ''), files: fs,
+        addFileLabel: 'Add a receipt to line ' + (i + 1),
+        addFile: () => { const nm = (l.type === 'Mileage' ? 'Trip log ' : 'Receipt ') + (i + 1) + '-' + (l.files.length + 1) + (l.type === 'Mileage' ? '.pdf' : '.jpg'); this.setLine(l.k, { files: l.files.concat(nm) }); this.setState({ say: nm + ' added to line ' + (i + 1) }); },
+        flags, acctText: t ? 'Booked to ' + t.acct : 'Pick a claim type to see its account', total: 'RM ' + this.fmt(a),
+        canRemove: F.lines.length > 1, removeLabel: 'Remove line ' + (i + 1),
+        remove: () => { const nx = F.lines.filter(x => x.k !== l.k); this._upFocus = 'cl-lines-h'; this.setState({ form: { ...F, lines: nx }, say: 'Line ' + (i + 1) + ' removed' }); } };
+    });
+    const nE = this.nErr(E), errList = [];
+    if (E.who) errList.push({ text: E.who, href: '#cl-who' });
+    F.lines.forEach((l, i) => { const e = E.lines[l.k] || {}; Object.keys(e).forEach(f => errList.push({ text: 'Line ' + (i + 1) + ': ' + e[f], href: '#cl-l' + l.k + '-' + f })); });
+    const total = F.lines.reduce((a, l) => a + this.lineAmt(l), 0);
+    const dirty = this.dirty();
+    const fm = {
+      refused: !!st.refused, refusedText: 'Overseas travel was stopped in Setup › HR › Claim types a moment ago, so line 3 can\'t use it. Pick another type for the line, or put Overseas travel back in use first. What you typed is kept.',
+      errOn: st.tried && nE > 0, errTitle: 'Fix ' + nE + (nE === 1 ? ' thing' : ' things') + ' before saving', errList,
+      people: [{ v: '', l: 'Choose a person…' }].concat(this.STAFF().map(s => ({ v: s.no, l: s.short + ' · ' + s.no + ' · ' + s.full }))),
+      who: F.who, whoInv: E.who ? 'true' : 'false', whoErr: E.who || '', whoBy: ['cl-who-hint', E.who ? 'cl-who-err' : ''].filter(Boolean).join(' '),
+      bank: person ? person.bank + ' (from the staff record)' : 'the bank account on the staff record',
+      onWho: ev => this.setState({ form: { ...this.state.form, who: ev && ev.target ? ev.target.value : '' }, refused: false }),
+      month: F.month, onMonth: ev => this.setState({ form: { ...this.state.form, month: ev && ev.target ? ev.target.value || '2026-11' : '2026-11' } }),
+      title: this.titleOf(F), payBy: F.payBy, onPayBy: ev => this.setState({ form: { ...this.state.form, payBy: ev && ev.target ? ev.target.value : '' } }),
+      lines, count: F.lines.length + (F.lines.length === 1 ? ' line' : ' lines'), total: 'RM ' + this.fmt(total),
+      addLine: () => { const k = this.state.nextK; this._upFocus = 'cl-l' + k + '-date'; this.setState({ form: { ...this.state.form, lines: this.state.form.lines.concat(this.blankLine(k)) }, nextK: k + 1, flash: { k: 'L' + k, n: this.state.flash.n + 1 }, say: 'Line added' }); },
+      saving: st.saving, idle: !st.saving, busy: st.saving ? 'true' : 'false', saveLabel: st.saving ? 'Saving…' : st.editOf ? 'Save changes' : 'Save draft',
+      submit: ev => { if (ev && ev.preventDefault) ev.preventDefault(); this.submit(); },
+      asking: !!st.ask, notAsking: !st.ask, dirty, clean: !dirty,
+      head: st.editOf ? 'Edit ' + st.editOf : 'New claim', isEdit: !!st.editOf, isNew: !st.editOf,
+      askText: st.editOf ? 'Discard your changes to ' + st.editOf + '?' : 'Discard this new claim?',
+      cleanNew: !dirty && !st.editOf, cleanEdit: !dirty && !!st.editOf,
+      discardEdit: () => this.leaveEdit(),
+      cancel: () => { if (this.state.saving) return; this._upFocus = 'cl-keep'; this.setState({ ask: true }); },
+      keep: () => { this._upFocus = 'cl-save'; this.setState({ ask: false }); }
+    };
+    const typeList = T.map(t => ({ name: t.n, meta: t.acct + ' · ' + (t.limit ? 'limit RM ' + this.fmt(t.limit) + ' a month' : 'no limit') + ' · ' + (t.rec === 'trip' ? 'trip log, RM 0.60 a km' : t.overseas ? 'receipt and self-billed e-Invoice' : 'receipt required') }));
+    // ---- page ----
+    const pg = this.pageVals(st), c = pg._c;
+    // ---- dialogs ----
+    const d = st.dlg, isWd = !!d && d.kind === 'wd', isEdit = !!d && d.kind === 'edit';
+    const editApproved = c.st === 'approved';
+    const reasonErr = isWd && d.tried && !d.reason.trim() ? 'Say why it is withdrawn.' : '';
+    const dlg = { show: !!d, dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in', isWd,
+      plate: 'flex:none;width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:' + (isWd ? '#EEF1F5' : '#FEF1D6'),
+      glyph: isWd ? 'undo' : 'edit', tone: isWd ? 'muted' : 'warn',
+      title: isWd ? 'Withdraw ' + c.code + '?' : editApproved ? 'Edit an approved claim?' : 'Edit a claim on a printed form?',
+      desc: isWd ? c.title + ', RM ' + pg.amtPlain + '.' : editApproved ? c.code + ' is approved on AF-2611-003 and locked.' : c.code + ' is on AF-2611-005, printed Tue 17 Nov.',
+      points: (isWd ? ['It is cancelled before payment, kept and never deleted. It shows in the list as Withdrawn.', c.st === 'wait' ? 'AF-2611-005 still approves SA-2611-002 when it comes back signed; this claim is left out.' : 'It never reaches To pay.']
+        : editApproved ? ['Changing its amount, payee or lines sends it back to Draft.', 'The approval on AF-2611-003 becomes void for this claim. It stays in the claim\'s history.', 'It leaves To pay, and needs a new approval form before it can be paid.', 'CL-2610-005 and CL-2610-007 on the same form stay approved.']
+        : ['It goes back to Draft. The signed AF-2611-005 would no longer match it, so a new form is printed for it.', 'SA-2611-002 on the same form is not affected.']).map(text => ({ text })),
+      reason: isWd ? d.reason : '', reasonInv: reasonErr ? 'true' : 'false', reasonErr, reasonBy: ['cl-reason-hint', reasonErr ? 'cl-reason-err' : ''].filter(Boolean).join(' '),
+      onReason: ev => { const v = ev && ev.target ? ev.target.value : ''; this.setState({ dlg: { ...this.state.dlg, reason: v, refused: false } }); },
+      refused: !!d && !!d.refused, refusedText: 'CL-2611-001 was changed on Approvals a moment ago: AF-2611-005 has just been uploaded. Reload the claim to see it, then withdraw it again if it is still needed. Your reason is kept.',
+      saving: !!d && !!d.saving, busy: d && d.saving ? 'true' : 'false',
+      noLabel: isWd ? 'Cancel' : 'Keep it as it is', goLabel: d && d.saving ? 'Withdrawing…' : isWd ? 'Withdraw' : editApproved ? 'Edit and send back to Draft' : 'Edit and send back to Draft',
+      asking: !!d && !!d.ask, notAsking: !(d && d.ask),
+      keep: () => { this._upFocus = 'cl-reason'; this.setState({ dlg: { ...this.state.dlg, ask: false } }); },
+      discard: () => this.closeDlg(),
+      close: () => this.askClose(),
+      go: () => this.dlgGo(),
+      onAnim: ev => { if (this.state.closing && ev && ev.target === ev.currentTarget) this.finishClose(); },
+      key: ev => {
+        if (!ev) return;
+        if (ev.key === 'Escape') { if (ev.preventDefault) ev.preventDefault(); if (ev.stopPropagation) ev.stopPropagation(); if (this.state.dlg && this.state.dlg.ask) { this._upFocus = 'cl-reason'; this.setState({ dlg: { ...this.state.dlg, ask: false } }); } else this.askClose(); return; }
+        if (ev.key !== 'Tab' || !ev.currentTarget || !ev.currentTarget.querySelectorAll) return;
+        const fs = [...ev.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!fs.length) return;
+        const first = fs[0], last = fs[fs.length - 1], ae = document.activeElement, inside = ev.currentTarget.contains(ae);
+        if (ev.shiftKey && (!inside || ae === first || ae === ev.currentTarget || (ae && ae.id === 'cl-dlg-title'))) { ev.preventDefault(); last.focus(); }
+        else if (!ev.shiftKey && (!inside || ae === last)) { ev.preventDefault(); first.focus(); }
+      } };
+    const t = st.toast;
+    const isAI = c.co === 'AI' && st.mode === 'page';
+    delete pg._c;
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', tbSub: st.mode === 'form' ? (st.editOf ? 'Edit ' + st.editOf : 'New claim') : c.code, say: st.say,
+      onTopCo: code => { const k = String(code).toUpperCase(); if (k === 'AI' && !isAI) this.setState({ ...this.initial('director'), say: 'Showing AI: an example claim' }); else if (k === 'AISB' && isAI) this.setState({ ...this.initial('approved'), say: 'Showing AISB' }); },
+      showLoading, showError, isForm, isPage, retry: () => { this._upFocus = 'cl-h1'; this.setState({ load: 'ok', say: 'Claim loaded' }); },
+      fm, typeList, pg, dlg,
+      openEdit: ev => { if (c.st === 'draft') return this.openEditForm(c.code); this._opener = (ev && ev.currentTarget) || document.activeElement; this.setState({ dlg: { kind: 'edit', reason: '', tried: false, saving: false, refused: false, ask: false }, closing: false }); },
+      openWithdraw: ev => { this._opener = (ev && ev.currentTarget) || document.activeElement; this.setState({ dlg: { kind: 'wd', reason: '', tried: false, saving: false, refused: false, ask: false }, closing: false }); },
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastCls: t ? (t.out ? 'tOut' : (t.n % 2 ? 'tA' : 'tB')) : '',
+      toastHold: () => clearTimeout(this._tt), toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); },
+      undo: () => this.undo()
+    };
+  }
+  askClose() {
+    const st = this.state; if (!st.dlg || st.dlg.saving) return;
+    if (st.dlg.kind === 'wd' && st.dlg.reason.trim() && !st.dlg.ask) { this._upFocus = 'cl-dkeep'; return this.setState({ dlg: { ...st.dlg, ask: true } }); }
+    this.closeDlg();
+  }
+  closeDlg(patch) {
+    const st = this.state; if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.setState({ ...(patch || {}), dlg: null, closing: false });
+    this.setState({ ...(patch || {}), closing: true });
+    clearTimeout(this._t); this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false }); }
+  dlgGo() {
+    const st = this.state, d = st.dlg; if (!d || d.saving) return;
+    const c = this.pageClaim(st);
+    if (d.kind === 'edit') {
+      const back = { voided: st.voided, stage: st.stage, id: st.id };
+      const msg = st.id === 'CL-2610-004' ? 'CL-2610-004 is a draft again. The approval on AF-2611-003 is void for it and kept in its history; it left To pay.' : c.code + ' is a draft again. A new approval form is needed for it.';
+      this._upFocus = 'cl-h1';
+      return this.closeDlg({ voided: true, stage: null, pillN: (st.pillN || 0) + 1, histFlash: (st.histFlash || 0) + 1, say: msg, ...this.toastPart(msg, { back: 'page', snap: back }) });
+    }
+    if (!d.reason.trim()) { this._upFocus = 'cl-reason'; return this.setState({ dlg: { ...d, tried: true } }); }
+    this.setState({ dlg: { ...d, saving: true } });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => {
+      const s2 = this.state, why = s2.dlg ? s2.dlg.reason.trim() : '';
+      const back = { voided: s2.voided, stage: s2.stage, id: s2.id, why: s2.why };
+      const msg = 'Withdrawn: ' + c.code + '. It stays in the list as Withdrawn' + (c.st === 'wait' ? '; AF-2611-005 still covers SA-2611-002.' : '.');
+      this._upFocus = 'cl-h1';
+      this.closeDlg({ stage: 'withdrawn', why, voided: false, pillN: (s2.pillN || 0) + 1, histFlash: (s2.histFlash || 0) + 1, say: msg, ...this.toastPart(msg, { back: 'page', snap: back }) });
+    }, 900);
+  }
+  undo() {
+    const t = this.state.toast; if (!t || !t.undo) return; clearTimeout(this._tt);
+    if (t.undo.back === 'form') { this._upFocus = 'cl-h1'; return this.setState({ mode: 'form', newClaim: null, toast: null, tried: false, say: 'Undone: the draft was removed. What you typed is back in the form.' }); }
+    this._upFocus = 'cl-h1';
+    this.setState({ ...t.undo.snap, toast: null, pillN: (this.state.pillN || 0) + 1, histFlash: 0, say: 'Undone: the claim is back as it was' });
+  }
+}
+</script>
+</body>
+</html>

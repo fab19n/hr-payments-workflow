@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Notifications · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+.ni:hover{background:rgba(127,138,160,.12) !important}
+.nt:hover{filter:brightness(.94)}
+/* motion and focus base */
+.ni,.nb,.nv,.tb,.nt{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out,filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.dk :where(button,a,summary,[tabindex]):focus-visible{outline-color:#8DB0FA}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+@keyframes dotOut{to{opacity:0;transform:scale(.4)}}
+.dot-out{animation:dotOut .2s ease-in both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div class="{{k.cls}}" style="position: relative; min-height: 100vh; display: flex; flex-wrap: wrap; background: {{k.canvas}}; font-family: Inter, system-ui, sans-serif; color: {{k.ink}}; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: {{k.side}}; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="overview" company="all" kind="sqlPayroll" access="{{sbAccess}}" theme="{{theme}}" trail="{{trail}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Overview" page="Overview" company="all" allow-all="yes" user="{{user}}" theme="{{theme}}" trail="{{trail}}" unread="{{unreadTotal}}" bell-seen="{{open}}" bell-open="{{reopen}}" hint-size="100%,64px"></dc-import>
+    <div aria-hidden="true" style="padding: 32px 40px; display: flex; flex-direction: column; gap: 16px; opacity: .7">
+      <div style="height: 64px; width: 420px; max-width: 100%; border-radius: 12px; background: {{k.ghost}}"></div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px"><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div><div style="height: 120px; border-radius: 14px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div></div>
+      <div style="height: 420px; border-radius: 16px; background: {{k.panel}}; border: 1px solid {{k.line}}"></div>
+    </div>
+  </div>
+
+  <sc-if value="{{open}}" hint-placeholder-val="{{ true }}">
+  <div aria-hidden="true" onClick="{{close}}" style="position: absolute; inset: 0; z-index: 30"></div>
+  <section role="dialog" aria-modal="true" aria-labelledby="nt-title" tabindex="-1" class="{{dlgClass}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="z-index: 31; transform-origin: top right; position: absolute; top: 60px; right: 32px; width: 420px; max-width: calc(100% - 32px); background: {{k.panel}}; border: 1px solid {{k.line}}; border-radius: 16px; box-shadow: 0 20px 48px {{k.shadow}}; overflow: hidden">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 16px 18px 4px">
+      <h2 id="nt-title" tabindex="-1" style="margin: 0; flex: 1; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Notifications</h2>
+      <button type="button" onClick="{{readAll}}" aria-disabled="{{readAllOff}}" style="height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: {{k.link}}; font: 600 13px Inter, sans-serif; cursor: pointer; opacity: {{readAllOpacity}}">Mark all as read</button>
+      <button type="button" onClick="{{close}}" aria-label="Close notifications" class="nt" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="{{k.muted}}" size="18" hint-size="18px,18px"></dc-import></button>
+    </div>
+    <p style="margin: 0; padding: 0 18px 10px; color: {{k.ink3}}; font-size: 12px">What has happened since you last looked. What still needs doing is in Next up.</p>
+    <div role="tablist" aria-label="Show notifications" style="display: flex; gap: 18px; padding: 0 18px; border-bottom: 1px solid {{k.soft}}">
+      <button type="button" role="tab" id="nt-tab-all" class="fr" aria-selected="{{selAll}}" aria-controls="nt-panel" tabindex="{{tiAll}}" onClick="{{showAll}}" onKeyDown="{{tabKey}}" style="{{tabAll}}">All</button>
+      <button type="button" role="tab" id="nt-tab-unread" class="fr" aria-selected="{{selUnread}}" aria-controls="nt-panel" tabindex="{{tiUnread}}" onClick="{{showUnread}}" onKeyDown="{{tabKey}}" style="{{tabUnread}}">Unread <span style="display: inline-flex; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 99px; background: {{k.badge}}; color: #FFFFFF; font-size: 11px; align-items: center; justify-content: center">{{unread}}</span></button>
+    </div>
+    <sc-if value="{{undoShown}}" hint-placeholder-val="{{ false }}">
+      <div role="status" class="ex" style="display: flex; align-items: center; gap: 8px; padding: 8px 18px; background: {{k.soft2}}; border-bottom: 1px solid {{k.soft}}; font-size: 13px"><span style="flex: 1">All marked as read.</span><button type="button" class="nt" onClick="{{undoRead}}" style="height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: {{k.link}}; font: 600 13px Inter, sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 6px"><dc-import name="Icon" glyph="undo" tone="{{k.brand}}" size="16" hint-size="16px,16px"></dc-import>Undo</button></div>
+    </sc-if>
+    <div role="tabpanel" id="nt-panel" aria-labelledby="{{tabId}}" class="{{panelCls}}" style="max-height: 520px; overflow-y: auto">
+      <sc-for list="{{items}}" as="n" hint-placeholder-count="5">
+        <a href="{{n.href}}" class="ni fr" onClick="{{n.read}}" style="{{n.style}}">
+          <span style="{{n.tile}}"><dc-import name="Icon" glyph="{{n.glyph}}" tone="{{n.itone}}" size="18" hint-size="18px,18px"></dc-import></span>
+          <span style="flex: 1; min-width: 0"><span style="{{n.titleStyle}}">{{n.title}}</span><span style="display: block; color: {{n.bodyInk}}; font-size: 13px">{{n.body}}</span><span style="display: block; color: {{n.whenInk}}; font-size: 12px; margin-top: 4px">{{n.when}}</span></span>
+          <sc-if value="{{n.unread}}" hint-placeholder-val="{{ true }}"><span role="img" aria-label="Unread" class="{{n.dotCls}}" onAnimationEnd="{{n.dotEnd}}" style="{{n.dotStyle}}"></span></sc-if>
+        </a>
+      </sc-for>
+      <sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+        <div aria-hidden="true" style="display: flex; flex-direction: column"><sc-for list="{{skel}}" as="sk" hint-placeholder-count="4"><div style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; border-bottom: 1px solid {{sk.line}}"><span style="width: 36px; height: 36px; border-radius: 10px; background: {{sk.bg}}; flex: none"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 8px"><span style="display: block; height: 12px; width: {{sk.w}}; border-radius: 6px; background: {{sk.bg}}"></span><span style="display: block; height: 10px; width: 85%; border-radius: 6px; background: {{sk.bg}}"></span></span></div></sc-for></div>
+        <span role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Loading notifications</span>
+      </sc-if>
+      <sc-if value="{{failed}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 36px 18px; text-align: center"><dc-import name="Icon" glyph="alert" tone="{{k.badTone}}" size="32" hint-size="32px,32px"></dc-import><b>Notifications could not load</b><span style="color: {{k.ink3}}; font-size: 13px">Nothing was lost. Things to do are still in Next up.</span><button type="button" class="nt" onClick="{{retry}}" style="height: 34px; padding: 0 14px; border-radius: 9px; border: 1px solid {{k.btnLine}}; background: {{k.btnBg}}; font: 600 13px Inter, sans-serif; color: {{k.ink}}; cursor: pointer">Try again</button></div>
+      </sc-if>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px 18px; text-align: center"><dc-import name="Icon" glyph="check" tone="{{k.okTone}}" size="32" hint-size="32px,32px"></dc-import><b>You're all caught up</b><span style="color: {{k.ink3}}; font-size: 13px">{{emptyText}}</span></div>
+      </sc-if>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; padding: 10px 18px; border-top: 1px solid {{k.soft}}; background: {{k.foot}}; font-size: 13px"><span style="color: {{k.ink3}}">Things to do are not listed here.</span><a href="Main.dc.html" style="display: inline-flex; align-items: center; min-height: 32px; font-weight: 600; text-decoration: none; color: {{k.link}}">Open Next up</a></div>
+  </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","default":"light","options":["light","dark"]},"trail":{"editor":"enum","default":"ok","options":["ok","attention"]},"view":{"editor":"enum","default":"list","options":["list","many","mismatch","empty","loading","error"]},"user":{"editor":"enum","default":"aisha","options":["aisha","marcus","aina"]},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { read: { e4: true, e5: true, e6: true }, tab: 'all', open: true, closing: false, fading: false, swap: 0, undo: null, err: !!(p && p.view === 'error') }; }
+  componentDidMount() { this.focusTitle(); }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._rt); clearTimeout(this._ut); }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps.view !== this.props.view) { this.setState({ err: this.props.view === 'error', tab: 'all' }); return; }
+    if (this.state.open && !prev.open) this.focusTitle();
+    if (prev.undo && !this.state.undo && this.state.open) { const a = document.activeElement; if (!a || a === document.body) this.focusTitle(); }
+    if (!this.state.open && prev.open) {
+      const o = this._opener;
+      const back = o && o.isConnected && o !== document.body ? o : document.getElementById('tb-bell');
+      if (back && back.focus) back.focus({ preventScroll: true });
+    }
+  }
+  calm() { return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  focusTitle() { const h = document.getElementById('nt-title'); if (h && h.focus) h.focus({ preventScroll: true }); }
+  openPanel(from) {
+    clearTimeout(this._t);
+    if (this.state.open) { if (this.state.closing) this.setState({ closing: false }); this.focusTitle(); return; }
+    this._opener = from || document.activeElement;
+    this.setState({ open: true, closing: false });
+  }
+  close() {
+    if (!this.state.open || this.state.closing) return;
+    if (this.calm()) return this.finishClose();
+    this.setState({ closing: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.open) this.setState({ open: false, closing: false }); }
+  finishRead() {
+    clearTimeout(this._rt);
+    const all = {};
+    this._ids.forEach(id => { all[id] = true; });
+    this.setState({ undo: this._snap || this.state.read, read: all, fading: false });
+    clearTimeout(this._ut);
+    this._ut = setTimeout(() => this.setState({ undo: null }), 6000);
+  }
+  setTab(t) { if (t !== this.state.tab) this.setState({ tab: t, swap: this.state.swap + 1 }); }
+  renderVals() {
+    // Events that happened, not to-dos: to-dos live in Next up and cannot be dismissed. Read state is stored per person.
+    const attention = (this.props.trail ?? 'ok') === 'attention';
+    const dark = (this.props.theme ?? 'light') === 'dark';
+    // [id, glyph, tone, title, body, when, page, right]. right = who is told: hr, payments, accounting, admin, or a|b.
+    // HR events (leave ending, permit expiring) never reach someone without the HR right; no leave type is ever written.
+    // Rule shared with CommandPalette: an event only reaches someone whose menu shows the page it opens.
+    // Newest first. e1 (3 Nov) sits below the older 9 Nov to 4 Nov events when the many-rows view adds them.
+    const BASE = [
+      ['e0', 'alert', 'bad', 'The audit trail needs attention', '2 changes were made to the records outside this app.', 'Today, 08:00', 'AuditTrail.dc.html', 'admin'],
+      ['ec', 'leave', 'ok', 'Leave ending', 'AISB · Aina is back on Mon 23 Nov.', 'Today, 08:00', 'HrLeave.dc.html', 'hr'],
+      ['ed', 'reminder', 'warn', 'Work permit expiring', 'AI · A work permit expires on 10 Jan 2027.', 'Today, 08:00', 'HrCalendar.dc.html', 'hr'],
+      ['ea', 'approval', 'ok', 'Approval form uploaded', 'AI · AF-2611-006 · Consultant, farm audit · signed by Hassan Ismail.', '17 Nov, 16:20', 'Approvals.dc.html', 'payments'],
+      ['eb', 'approval', 'warn', 'Form doesn’t match', 'AISB · AF-2611-003 · CL-2610-005 was printed at RM 408.00, the form shows RM 428.00. That request is not approved by this form.', '13 Nov, 14:10', 'ApprovalUpload.dc.html', 'payments'],
+      ['e2', 'upload', 'ok', 'Bank slip uploaded to Office rental', 'AISB · by Aisha Rahman.', '13 Nov, 10:42', 'PaymentsRegister.dc.html', 'payments'],
+      ['e3', 'database', 'warn', 'SQL amount changed for Electricity October', 'Payment 1,163.20 · SQL 1,136.20.', '12 Nov, 16:04', 'Sql.dc.html', 'accounting'],
+      ['e4', 'database', 'ok', 'SQL listing imported', 'AISB · 24 vouchers linked.', '12 Nov, 09:30', 'Sql.dc.html', 'accounting'],
+      ['e5', 'verified', 'ok', 'Audit trail checked', '4,812 entries, chain intact.', '11 Nov', 'AuditTrail.dc.html', 'admin'],
+      ['e6', 'vault', 'ok', 'Encrypted backup made and checked', 'Copied to the OneDrive backup folder.', '11 Nov', 'Backup.dc.html', 'admin']
+    ];
+    const E1 = ['e1', 'bank', 'ok', 'October statement imported', 'AISB · Maybank current · 14 lines, 8 matched.', '3 Nov, 09:40', 'Bank.dc.html', 'accounting'];
+    // many rows: older events, so the panel scrolls. Newest first; dates as in samples (AF-2611-001 signed 3 Nov, AF-2611-002 scanned 6 Nov).
+    const OLDER = [
+      ['SQL listing imported', 'database', 'AISB · 31 vouchers linked.', 'Sql.dc.html', 'accounting', '9 Nov'],
+      ['Leave ending', 'leave', 'AI · Jun Wei is back on Wed 11 Nov.', 'HrLeave.dc.html', 'hr', '9 Nov'],
+      ['Approval form uploaded', 'approval', 'AISB · AF-2611-002 · paper scan, approver chosen by Aisha Rahman.', 'Approvals.dc.html', 'payments', '6 Nov'],
+      ['October statement imported', 'bank', 'AI · Maybank FCA · 2 lines matched.', 'Bank.dc.html', 'accounting', '5 Nov'],
+      ['Audit trail checked', 'verified', '4,790 entries, chain intact.', 'AuditTrail.dc.html', 'admin', '4 Nov'],
+      ['Approval form uploaded', 'approval', 'AISB · AF-2611-001 · signed by Rajesh Kumar, matched automatically.', 'Approvals.dc.html', 'payments', '3 Nov'],
+      ['Encrypted backup made and checked', 'vault', 'Copied to the OneDrive backup folder.', 'Backup.dc.html', 'admin', '3 Nov']
+    ];
+    const who = this.props.user ?? 'aisha';
+    const RIGHTS = { aisha: ['hr', 'payments', 'accounting', 'admin'], marcus: ['payments', 'accounting'], aina: ['hr'] }[who] || ['hr', 'payments', 'accounting', 'admin'];
+    const mine = r => r.split('|').some(x => RIGHTS.includes(x));
+    const view = this.props.view ?? 'list';
+    const OLD = view === 'many' ? OLDER.map((o, i) => ['x' + i, o[1], 'ok', o[0], o[2], o[5], o[3], o[4]]) : [];
+    // e1 (3 Nov, 09:40) goes after the 9 Nov to 4 Nov events and before the other 3 Nov ones
+    // the form-mismatch event is drawn in its own state only: elsewhere AF-2611-003 is approved and CL-2610-005 is in To pay
+    const E = BASE.concat(OLD.slice(0, 5), [E1], OLD.slice(5))
+      .filter(e => e[0] !== 'e0' || attention).filter(e => e[0] !== 'eb' || view === 'mismatch').filter(e => mine(e[7])).filter(() => view !== 'empty' && view !== 'loading' && !this.state.err);
+    this._ids = E.map(e => e[0]);
+    const r = this.state.read;
+    const k = dark
+      ? { cls: 'dk', canvas: '#0B111C', side: '#070C15', panel: '#121A27', line: '#243044', soft: '#1C2638', soft2: '#172133', foot: '#0F1724', ghost: '#172133', ink: '#E6EBF2', ink2: '#B4BFCE', ink3: '#8E9BB0', link: '#8DB0FA', muted: 'dmuted', brand: 'dbrand', okTone: 'dok', badTone: 'dbad', btnLine: '#2C3A52', btnBg: '#172133', badge: '#3D6BE0', shadow: 'rgba(0,0,0,.55)', unreadBg: '#162033',
+          tiles: { warn: '#2E2210', bad: '#33171A', ok: '#10291E' }, tones: { warn: 'dwarn', bad: 'dbad', ok: 'dok' }, dot: '#8DB0FA' }
+      : { cls: '', canvas: '#F5F6F8', side: '#0D1B2E', panel: '#FFFFFF', line: '#E3E7ED', soft: '#EEF1F5', soft2: '#F7F9FE', foot: '#FAFBFC', ghost: '#E8EBF0', ink: '#0F1A2B', ink2: '#46546A', ink3: '#5F6C80', link: '#2450B8', muted: 'muted', brand: 'brand', okTone: 'ok', badTone: 'bad', btnLine: '#D5DBE4', btnBg: '#FFFFFF', badge: '#2450B8', shadow: 'rgba(13,27,46,.18)', unreadBg: '#F7F9FE',
+          tiles: { warn: '#FEF1D6', bad: '#FDE6E3', ok: '#E3F7EC' }, tones: { warn: 'warn', bad: 'bad', ok: 'ok' }, dot: '#2450B8' };
+    const all = E.map(e => ({ id: e[0], glyph: e[1], tone: e[2], title: e[3], body: e[4], when: e[5], href: e[6], unread: !r[e[0]] }));
+    const unreadAll = all.filter(n => n.unread).length;
+    const shown = all.filter(n => this.state.tab === 'all' || n.unread).map(n => ({ ...n,
+      itone: k.tones[n.tone],
+      read: () => { clearTimeout(this._ut); this.setState({ read: { ...r, [n.id]: true }, undo: null }); },
+      dotCls: this.state.fading ? 'dot-out' : '',
+      dotEnd: e => { if (this.state.fading && e.target === e.currentTarget) this.finishRead(); },
+      dotStyle: 'width:8px;height:8px;border-radius:99px;background:' + k.dot + ';margin-top:6px;flex:none',
+      titleStyle: 'display:block;color:' + k.ink + ';font-weight:' + (n.unread ? 700 : 600),
+      bodyInk: k.ink2, whenInk: k.ink3,
+      tile: 'width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + k.tiles[n.tone],
+      style: 'transition:background-color .12s ease-out;display:flex;gap:12px;align-items:flex-start;padding:14px 18px;border-bottom:1px solid ' + k.soft + ';text-decoration:none;background:' + (n.unread ? k.unreadBg : k.panel) }));
+    const tabBase = 'transition:border-color .12s ease-out,color .12s ease-out;height:40px;padding:0 2px;border:0;background:transparent;font:600 13px Inter,sans-serif;cursor:pointer;margin-bottom:-1px;display:inline-flex;align-items:center;gap:6px;';
+    const isAll = this.state.tab === 'all';
+    const on = 'color:' + k.ink + ';border-bottom:2px solid ' + k.link, off = 'color:' + k.ink3 + ';border-bottom:2px solid transparent';
+    // the bell's number is the unread events here; opening the panel fades the bell's number out (200ms)
+    const unreadTotal = unreadAll;
+    const FOCUSABLE = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+    return {
+      k, theme: dark ? 'dark' : 'light', trail: attention ? 'attention' : 'ok',
+      items: shown, empty: shown.length === 0 && view !== 'loading' && !this.state.err, loading: view === 'loading', failed: !!this.state.err,
+      skel: ["50%", "70%", "40%", "60%"].map(w => ({ w, bg: k.ghost, line: k.soft })),
+      retry: () => this.setState({ err: false }),
+      emptyText: ({ marcus: 'New events appear here as imports finish, forms are uploaded and amounts change.', aina: 'New events appear here as leave ends and dates come close.' })[who] || 'New events appear here as imports finish, forms are uploaded, backups are checked, amounts change and dates come close.',
+      user: who, sbAccess: ({ marcus: 'noHrNoAdmin', aina: 'hrOnly' })[who] || 'full', unread: unreadAll, unreadTotal,
+      readAllOff: unreadAll ? 'false' : 'true', readAllOpacity: unreadAll ? 1 : 0.55,
+      undoShown: !!this.state.undo,
+      undoRead: () => { clearTimeout(this._ut); this.setState({ read: this.state.undo || this.state.read, undo: null }); },
+      readAll: () => {
+        if (this.state.fading || !unreadAll) return;
+        this._snap = { ...r };
+        if (this.calm()) return this.finishRead();
+        this.setState({ fading: true });      // the unread dots fade, then the rows turn read
+        clearTimeout(this._rt);
+        this._rt = setTimeout(() => this.finishRead(), 400);   // safety net if animationend never arrives
+      },
+      showAll: () => this.setTab('all'), showUnread: () => this.setTab('unread'),
+      open: this.state.open,
+      dlgClass: this.state.closing ? 'dr-out' : 'dr-in',
+      panelCls: this.state.swap ? (this.state.swap % 2 ? 'swapA' : 'swapB') : '',
+      selAll: isAll ? 'true' : 'false', selUnread: isAll ? 'false' : 'true',
+      tiAll: isAll ? '0' : '-1', tiUnread: isAll ? '-1' : '0',
+      tabId: isAll ? 'nt-tab-all' : 'nt-tab-unread',
+      close: () => this.close(),
+      reopen: e => this.openPanel(e && e.currentTarget),
+      onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      tabKey: e => {
+        const order = ['all', 'unread'];
+        let i = order.indexOf(this.state.tab);
+        if (e.key === 'ArrowRight') i = (i + 1) % order.length;
+        else if (e.key === 'ArrowLeft') i = (i - 1 + order.length) % order.length;
+        else if (e.key === 'Home') i = 0;
+        else if (e.key === 'End') i = order.length - 1;
+        else return;
+        e.preventDefault();
+        this.setTab(order[i]);
+        const t = document.getElementById('nt-tab-' + order[i]);
+        if (t && t.focus) t.focus();
+      },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); this.close(); return; }
+        if (e.key !== 'Tab') return;
+        const box = e.currentTarget;
+        const f = Array.from(box.querySelectorAll(FOCUSABLE)).filter(x => x.getAttribute('tabindex') !== '-1');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1], i = f.indexOf(document.activeElement);
+        // the focused heading (tabindex -1) is not in the list: wrap from it too
+        if (e.shiftKey && i <= 0) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (i === -1 || i === f.length - 1)) { e.preventDefault(); first.focus(); }
+      },
+      tabAll: tabBase + (isAll ? on : off),
+      tabUnread: tabBase + (!isAll ? on : off)
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calendar and reminders · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+/* colours as tokens: light is the default, .dk swaps every one of them */
+.hc{--pg:#F5F6F8;--card:#FFFFFF;--line:#E3E7ED;--line2:#EEF1F5;--ctl:#7D8CA3;--head:#FAFBFC;--ink:#0F1A2B;--ink2:#46546A;--ink3:#5F6C80;--brand:#2450B8;--brandBg:#EAF0FD;--brandLine:#C9D7F7;--brandInk:#1D419A;--pri:#2450B8;--priHov:#1D419A;--hov:#F8FAFD;--hs:#F0F3F8;--sel:#F3F6FD;--okBg:#F0FBF5;--okLine:#BFE8D0;--okInk:#0A6B3D;--okChip:#E3F7EC;--okChipInk:#0A5A33;--badBg:#FFF4F2;--badLine:#F5C2BB;--badInk:#B0190F;--badChip:#FDE6E3;--badChipInk:#8E1A10;--warnBg:#FFFBF2;--warnLine:#F3D9A6;--warnInk:#8A4000;--warnChip:#FEF1D6;--warnChipInk:#7A3A00;--neuBg:#EEF1F5;--neuLine:#D5DBE4;--wkd:#F7F8FA;--hol:#FFF7F0;--dim:rgba(15,26,43,.45);--ring:#2450B8;--dng:#B3261E;--dngHov:#8F1D17}
+.hc.dk{--pg:#0B1220;--card:#0F1724;--line:#243044;--line2:#1B2638;--ctl:#66758C;--head:#131D2E;--ink:#E6EBF2;--ink2:#C3CCDA;--ink3:#9BA8BC;--brand:#8DB0FA;--brandBg:#1B2B4A;--brandLine:#2E4677;--brandInk:#A9C3FB;--pri:#3D68D8;--priHov:#2F58C4;--hov:#16213A;--hs:#1B2638;--sel:#14213A;--okBg:#0F2A1E;--okLine:#1E5A3D;--okInk:#5BD49A;--okChip:#14432E;--okChipInk:#8BE5B8;--badBg:#2A1618;--badLine:#6B2A2C;--badInk:#F58C80;--badChip:#4E2024;--badChipInk:#F9B1A8;--warnBg:#2A2012;--warnLine:#6B4E1A;--warnInk:#F2B35B;--warnChip:#4A3412;--warnChipInk:#F7C46C;--neuBg:#1B2638;--neuLine:#33415A;--wkd:#121B2B;--hol:#22191A;--dim:rgba(3,7,14,.66);--ring:#8DB0FA;--dng:#C9372C;--dngHov:#B02C22}
+.hc a{color:var(--brand)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.eb{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.h1{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:30px;font-weight:600}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.mut{color:var(--ink3);font-size:13px}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.btn,.sec,.dng{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;box-sizing:border-box;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn{border:0;background:var(--pri);color:#FFFFFF}
+.hc a.btn{color:#FFFFFF}
+.btn:hover{background:var(--priHov)}
+.btn:disabled,.sec:disabled,.dng:disabled{opacity:.6;cursor:not-allowed}
+.sec{border:1px solid var(--ctl);background:var(--card);color:var(--ink)}
+.hc a.sec{color:var(--ink)}
+.sec:hover{background:var(--hs)}
+.dng{border:0;background:var(--dng);color:#FFFFFF}
+.dng:hover{background:var(--dngHov)}
+.sm{height:32px;padding:0 12px;font-size:13px;border-radius:9px}
+.ico{width:32px;padding:0}
+.lnk{border:0;background:transparent;color:var(--brand);font:600 13px Inter,sans-serif;text-decoration:underline;cursor:pointer;padding:0 2px;min-height:32px}
+.pl{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;box-sizing:border-box}
+.pl.g{background:var(--neuBg);color:var(--ink2)}
+.pl.o{background:var(--okChip);color:var(--okChipInk)}
+.pl.w{background:var(--warnChip);color:var(--warnChipInk)}
+.pl.i{background:var(--brandBg);color:var(--brandInk)}
+.strip{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;font-size:13px;color:var(--ink2);background:var(--head);border:1px solid var(--line)}
+.strip.info{background:var(--brandBg);border-color:var(--brandLine);color:var(--ink)}
+.strip.warn{background:var(--warnBg);border-color:var(--warnLine);color:var(--ink)}
+.tbs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tb{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:var(--ink2);font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box;transition:border-color .12s ease-out,color .12s ease-out}
+.hc a.tb{color:var(--ink2)}
+.tb:hover,.hc a.tb:hover{color:var(--ink)}
+.tb[aria-selected="true"],.hc a.tb[aria-current="page"]{border-bottom-color:var(--brand);color:var(--ink)}
+.stb .tb{height:40px}
+.cnt{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 7px;border-radius:99px;box-sizing:border-box;font:700 11px Inter,sans-serif;background:var(--brandBg);color:var(--brandInk)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:99px;border:1px solid var(--ctl);background:var(--card);color:var(--ink2);font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out}
+.chip:hover{background:var(--hs)}
+.chip[aria-pressed="true"]{background:var(--brandBg);border-color:var(--brand);color:var(--brandInk)}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lb{font-size:13px;font-weight:600;color:var(--ink2)}
+.lb span{font-weight:500;color:var(--ink3)}
+.inp{height:40px;width:100%;box-sizing:border-box;min-width:0;padding:0 12px;border:1px solid var(--ctl);border-radius:10px;font:400 14px Inter,sans-serif;background:var(--card);color:var(--ink)}
+.hc.dk .inp{color-scheme:dark}
+textarea.inp{height:auto;padding:10px 12px;resize:vertical}
+.inp[aria-invalid="true"]{border-color:var(--badInk);box-shadow:0 0 0 1px var(--badInk)}
+.err{display:flex;gap:6px;align-items:center;color:var(--badInk);font-size:13px;font-weight:600}
+.ckl{display:inline-flex;align-items:center;gap:8px;min-height:40px;font-size:14px;font-weight:600;color:var(--ink2);cursor:pointer}
+.ck{width:18px;height:18px;margin:0;accent-color:var(--pri);cursor:pointer}
+/* list */
+.gh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line2);background:var(--head);border-radius:16px 16px 0 0}
+.rl{list-style:none;margin:0;padding:0}
+.ri{border-top:1px solid var(--line2)}
+.ri:first-child{border-top:0}
+.ri:focus-visible{outline:2px solid var(--ring);outline-offset:-2px}
+.rw{display:grid;grid-template-columns:132px minmax(0,1.6fr) 178px minmax(0,1.2fr) auto;gap:8px 16px;align-items:center;padding:12px 18px}
+.rw:hover{background:var(--hov)}
+.rd{display:flex;flex-direction:column;gap:2px}
+.ra{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.rr{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;font-size:13px;color:var(--ink2)}
+.dn-t{text-decoration:line-through;color:var(--ink3)}
+.det{margin:0 18px 14px 166px;padding:12px 14px;border-radius:12px;background:var(--head);border:1px solid var(--line);display:flex;flex-direction:column;gap:10px;font-size:13px}
+.wl{display:flex;gap:8px;align-items:flex-start;color:var(--ink2);line-height:1.45}
+.tk{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,1.1fr) auto;gap:4px 14px;align-items:center;padding:8px 12px;border-top:1px solid var(--line2);background:var(--card)}
+.tk:first-child{border-top:0}
+/* month */
+.mh{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--line2)}
+.tw{overflow-x:auto}
+.mg{width:100%;min-width:760px;table-layout:fixed;border-collapse:collapse;font-size:12px}
+.mg th{padding:8px 8px;font-weight:600;font-size:12px;text-align:left;color:var(--ink3);background:var(--head);border-bottom:1px solid var(--line)}
+.mg th abbr{text-decoration:none}
+.mg td{height:104px;padding:6px 6px 8px;border:1px solid var(--line2);vertical-align:top;color:var(--ink)}
+.mg td.wk{background:var(--wkd)}
+.mg td.hol{background:var(--hol)}
+.mg td.out{background:var(--pg);color:var(--ink3)}
+.mg td.td{box-shadow:inset 0 0 0 2px var(--brand)}
+.dnum{display:flex;align-items:center;justify-content:space-between;gap:4px;font-weight:600;font-size:13px;margin-bottom:4px}
+.tdy{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:99px;background:var(--pri);color:#FFFFFF;font-size:11px;font-weight:700}
+.ch{display:flex;gap:4px;align-items:flex-start;margin-top:3px;padding:3px 5px;border-radius:6px;font-size:11.5px;font-weight:600;line-height:1.3;word-break:break-word}
+.ch.g{background:var(--neuBg);color:var(--ink2)}
+.ch.o{background:var(--okChip);color:var(--okChipInk)}
+.ch.w{background:var(--warnChip);color:var(--warnChipInk)}
+.ch.i{background:var(--brandBg);color:var(--brandInk)}
+.ch.x span{text-decoration:line-through}
+.sk{display:block;border-radius:8px;background:linear-gradient(90deg,var(--neuBg) 25%,var(--hov) 50%,var(--neuBg) 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.spin{display:inline-block;width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.plate{width:44px;height:44px;flex:none;border-radius:12px;display:inline-flex;align-items:center;justify-content:center}
+.plate.bad{background:var(--badChip)}.plate.warn{background:var(--warnChip)}.plate.brand{background:var(--brandBg)}.plate.ok{background:var(--okChip)}.plate.g{background:var(--neuBg)}
+/* motion and focus base */
+.btn,.sec,.dng,.lnk,.rw{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid var(--ring);outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes flashA{from{background-color:var(--brandBg)}}
+@keyframes flashB{from{background-color:var(--brandBg)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.to-in{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+@media (max-width:980px){.rw{grid-template-columns:110px minmax(0,1fr) auto}.rw .rk,.rw .rr{grid-column:2 / 4}.det{margin-left:18px}.tk{grid-template-columns:minmax(0,1fr) auto}}
+@media (max-width:760px){.hc-main{padding:24px 16px 48px !important}.rw{grid-template-columns:minmax(0,1fr) auto}.rw .rd{grid-column:1 / 3;flex-direction:row;gap:8px}.rw .rk,.rw .rr{grid-column:1 / 3}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div class="{{rootCls}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--pg); font-family: Inter, system-ui, sans-serif; color: var(--ink); font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="calendar" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" companies="{{sbCompanies}}" theme="{{theme}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Staff" sub="Calendar and reminders" allow-all="no" company="{{sbCo}}" companies="{{sbCompanies}}" user="{{tbUser}}" theme="{{theme}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="hc-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 72px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+          <span class="eb">HR · Staff</span>
+          <h1 id="hc-h1" tabindex="-1" class="h1">Calendar and reminders</h1>
+          <p style="margin: 0; color: var(--ink2); max-width: 760px">Birthdays, work anniversaries, probation, contract and work permit dates, leave and public holidays, and the joiner and leaver tasks, all read from the staff records. Mark a reminder done or add a one-off reminder. These are reminders to check, not legal advice. <b>{{coLine}}</b></p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" id="hc-excel" class="sec" onClick="{{doExcel}}" disabled="{{noActions}}"><dc-import name="Icon" glyph="sheet" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+          <button type="button" id="hc-add" class="btn" onClick="{{openAdd}}" disabled="{{noActions}}"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a reminder</button>
+        </div>
+      </div>
+
+      <nav aria-label="Staff pages" class="tbs stb">
+        <a href="HrStaff.dc.html" class="tb fr"><dc-import name="Icon" glyph="staff" tone="{{tn.muted}}" size="16" hint-size="16px,16px"></dc-import>Staff</a>
+        <a href="HrCalendar.dc.html" class="tb fr" aria-current="page"><dc-import name="Icon" glyph="reminder" tone="{{tn.brand}}" size="16" hint-size="16px,16px"></dc-import>Calendar and reminders</a>
+      </nav>
+
+      <sc-if value="{{ovOn}}" hint-placeholder-val="{{ false }}">
+        <div role="note" class="strip info rv"><dc-import name="Icon" glyph="filter" tone="{{tn.brand}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1">{{ovText}}</span><button type="button" class="lnk" onClick="{{clearOv}}">Show everything</button></div>
+      </sc-if>
+      <sc-if value="{{noteOn}}" hint-placeholder-val="{{ false }}">
+        <div role="note" class="strip"><dc-import name="Icon" glyph="{{noteGlyph}}" tone="{{tn.muted}}" size="20" hint-size="20px,20px"></dc-import><span style="flex: 1">{{noteText}}</span></div>
+      </sc-if>
+
+      <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+        <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+          <span class="sr" role="status">Loading the calendar and reminders</span>
+          <div class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px"><div style="display: flex; gap: 18px"><span class="sk" style="width: 60px; height: 22px"></span><span class="sk" style="width: 70px; height: 22px"></span></div><div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="sk" style="width: 60px; height: 32px; border-radius: 99px"></span><span class="sk" style="width: 140px; height: 32px; border-radius: 99px"></span><span class="sk" style="width: 200px; height: 32px; border-radius: 99px"></span><span class="sk" style="width: 150px; height: 32px; border-radius: 99px"></span></div></div>
+          <div class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="width: 24%; height: 20px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span></div>
+          <div class="card" style="padding: 18px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="width: 24%; height: 20px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span></div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+        <div role="alert" class="card rv" style="padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 280px; justify-content: center">
+          <span class="plate bad" style="width: 64px; height: 64px; border-radius: 20px"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 class="h2" style="font-size: 18px">Couldn't load the calendar</h2>
+          <p style="margin: 0; color: var(--ink2); font-size: 13px; max-width: 460px">The app didn't answer. Nothing was changed: reminders you marked done and one-off reminders you added are kept. Try again in a moment.</p>
+          <button type="button" class="btn" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="18" hint-size="18px,18px"></dc-import>Try again</button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+        <div class="card rv" style="padding: 40px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 300px; justify-content: center">
+          <span class="plate brand" style="width: 64px; height: 64px; border-radius: 20px"><dc-import name="Icon" glyph="staff" tone="{{tn.brand}}" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 class="h2" style="font-size: 18px">Add your staff or paste the Excel list</h2>
+          <p style="margin: 0; color: var(--ink2); font-size: 13px; max-width: 500px">{{emptyText}} Birthdays, work anniversaries, probation, contract and permit dates and the joiner and leaver tasks fill in from the staff records.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center">
+            <a href="HrStaffForm.dc.html" class="btn"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a person</a>
+            <a href="HrStaff.dc.html" class="sec"><dc-import name="Icon" glyph="clipboard" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>Paste a list</a>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{showBody}}" hint-placeholder-val="{{ true }}">
+        <div class="card" style="overflow: hidden">
+          <div role="tablist" aria-label="How to show the dates" class="tbs" style="padding: 0 12px">
+            <button type="button" role="tab" id="hc-tab-list" class="tb fr" aria-selected="{{tabListSel}}" aria-controls="hc-panel" tabindex="{{tabListTi}}" onClick="{{pickList}}" onKeyDown="{{tabKey}}"><dc-import name="Icon" glyph="clipboard" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>List</button>
+            <button type="button" role="tab" id="hc-tab-month" class="tb fr" aria-selected="{{tabMonthSel}}" aria-controls="hc-panel" tabindex="{{tabMonthTi}}" onClick="{{pickMonth}}" onKeyDown="{{tabKey}}"><dc-import name="Icon" glyph="calendar" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import>Month</button>
+          </div>
+          <div style="padding: 14px 16px; display: flex; flex-direction: column; gap: 14px">
+            <div role="group" aria-label="Show" class="chips">
+              <sc-for list="{{filters}}" as="f" hint-placeholder-count="4">
+                <button type="button" class="chip" aria-pressed="{{f.pressed}}" onClick="{{f.pick}}"><dc-import name="Icon" glyph="{{f.glyph}}" tone="{{f.tone}}" size="16" hint-size="16px,16px"></dc-import>{{f.label}}</button>
+              </sc-for>
+            </div>
+            <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start">
+                <div class="fld" style="flex: 0 1 190px">
+                  <label for="hc-from" class="lb">From</label>
+                  <input id="hc-from" type="date" class="inp" value="{{from}}" onChange="{{onFrom}}">
+                </div>
+                <div class="fld" style="flex: 0 1 190px">
+                  <label for="hc-to" class="lb">To</label>
+                  <input id="hc-to" type="date" class="inp" value="{{to}}" onChange="{{onTo}}" aria-invalid="{{rangeInv}}" aria-describedby="{{rangeBy}}">
+                </div>
+                <div class="fld" style="flex: 0 0 auto; padding-top: 22px">
+                  <label class="ckl" for="hc-done"><input id="hc-done" type="checkbox" class="ck" checked="{{showDone}}" onChange="{{toggleDone}}">Show done</label>
+                </div>
+                <sc-if value="{{rangeBad}}" hint-placeholder-val="{{ false }}">
+                  <span id="hc-to-err" class="err" style="flex: 1 1 100%"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>The end date is before the start date.</span>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div id="hc-panel" role="tabpanel" aria-labelledby="{{panelBy}}" class="{{panelCls}}" style="display: flex; flex-direction: column; gap: 16px">
+          <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between">
+              <p class="mut" style="margin: 0">{{summary}}</p>
+              <span class="mut">Most urgent reminders also show on the Overview's Next up: joiner and leaver tasks by their title, probation and permit dates with no name.</span>
+            </div>
+            <sc-if value="{{todayOn}}" hint-placeholder-val="{{ true }}">
+              <div class="strip"><dc-import name="Icon" glyph="leave" tone="{{tn.muted}}" size="20" hint-size="20px,20px"></dc-import><span>{{todayText}}</span></div>
+            </sc-if>
+            <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}">
+              <div class="card rv" style="padding: 32px 24px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px">
+                <span class="plate g" style="width: 56px; height: 56px; border-radius: 18px"><dc-import name="Icon" glyph="search" tone="{{tn.muted}}" size="28" hint-size="28px,28px"></dc-import></span>
+                <b style="font-size: 15px">{{noMatchTitle}}</b>
+                <span style="color: var(--ink2); font-size: 13px; max-width: 460px">{{noMatchText}}</span>
+                <button type="button" class="sec" onClick="{{clearAll}}">Show everything from today</button>
+              </div>
+            </sc-if>
+            <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+              <section class="card" aria-labelledby="{{g.hid}}">
+                <div class="gh"><h2 id="{{g.hid}}" class="h2">{{g.label}}</h2><span class="mut">{{g.count}}</span></div>
+                <ul class="rl">
+                  <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+                    <li id="{{r.rid}}" tabindex="-1" class="{{r.cls}}">
+                      <div class="rw">
+                        <div class="rd"><b class="num">{{r.date}}</b><span class="mut">{{r.dateSub}}</span></div>
+                        <div style="min-width: 0; display: flex; flex-direction: column; gap: 3px">
+                          <div style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center"><b class="{{r.whatCls}}">{{r.what}}</b><sc-if value="{{r.carriedOn}}" hint-placeholder-val="{{ false }}"><span class="pl w"><dc-import name="Icon" glyph="history" tone="{{r.tnWarn}}" size="14" hint-size="14px,14px"></dc-import>{{r.carried}}</span></sc-if></div>
+                          <span class="mut">{{r.sub}}</span>
+                        </div>
+                        <div class="rk"><span class="{{r.pillCls}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="14" hint-size="14px,14px"></dc-import>{{r.kind}}</span></div>
+                        <div class="rr">
+                          <span>{{r.rem}}</span>
+                          <sc-if value="{{r.chkOn}}" hint-placeholder-val="{{ false }}"><a href="MonthlyChecklist.dc.html" style="font-weight: 600; display: inline-flex; align-items: center; gap: 4px; min-height: 32px">{{r.chk}}</a></sc-if>
+                          <sc-if value="{{r.nu}}" hint-placeholder-val="{{ false }}"><span class="pl i"><dc-import name="Icon" glyph="overview" tone="{{r.tnBrand}}" size="14" hint-size="14px,14px"></dc-import>On Next up</span></sc-if>
+                        </div>
+                        <div class="ra">
+                          <sc-if value="{{r.canDone}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{r.doneId}}" class="sec sm" aria-label="{{r.doneAria}}" onClick="{{r.markDone}}"><dc-import name="Icon" glyph="check" tone="{{r.tnMuted}}" size="16" hint-size="16px,16px"></dc-import>Mark done</button></sc-if>
+                          <sc-if value="{{r.isDone}}" hint-placeholder-val="{{ false }}"><span class="pl o"><dc-import name="Icon" glyph="check" tone="{{r.tnOk}}" size="14" hint-size="14px,14px"></dc-import>{{r.doneTxt}}</span><button type="button" id="{{r.undoneId}}" class="lnk" aria-label="{{r.undoneAria}}" onClick="{{r.markUndone}}">Mark not done</button></sc-if>
+                          <sc-if value="{{r.isTask}}" hint-placeholder-val="{{ false }}"><a href="MonthlyChecklist.dc.html" class="sec sm" aria-label="{{r.chkAria}}"><dc-import name="Icon" glyph="checklist" tone="{{r.tnMuted}}" size="16" hint-size="16px,16px"></dc-import>Open checklist</a></sc-if>
+                          <sc-if value="{{r.hasDet}}" hint-placeholder-val="{{ false }}"><button type="button" class="sec sm ico" aria-expanded="{{r.exp}}" aria-label="{{r.detAria}}" onClick="{{r.toggle}}"><span class="{{r.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="{{r.tnMuted}}" size="16" hint-size="16px,16px"></dc-import></span></button></sc-if>
+                        </div>
+                      </div>
+                      <sc-if value="{{r.open}}" hint-placeholder-val="{{ false }}">
+                        <div class="det ex">
+                          <sc-for list="{{r.lines}}" as="ln" hint-placeholder-count="2"><div class="wl"><dc-import name="Icon" glyph="{{ln.glyph}}" tone="{{ln.tone}}" size="16" hint-size="16px,16px"></dc-import><span>{{ln.t}}</span></div></sc-for>
+                          <sc-if value="{{r.hasTasks}}" hint-placeholder-val="{{ false }}">
+                            <div style="display: flex; flex-direction: column; gap: 6px">
+                              <b style="font-size: 12px; color: var(--ink3)">{{r.tasksHead}}</b>
+                              <div role="list" style="border: 1px solid var(--line); border-radius: 10px; overflow: hidden">
+                                <sc-for list="{{r.tasks}}" as="tk" hint-placeholder-count="2">
+                                  <div role="listitem" class="tk"><b>{{tk.title}}</b><span class="num">{{tk.due}}</span><span class="mut">{{tk.where}}</span><span class="{{tk.pillCls}}"><dc-import name="Icon" glyph="{{tk.glyph}}" tone="{{tk.tone}}" size="14" hint-size="14px,14px"></dc-import>{{tk.status}}</span></div>
+                                </sc-for>
+                              </div>
+                            </div>
+                          </sc-if>
+                          <div style="display: flex; flex-wrap: wrap; gap: 4px 16px">
+                            <sc-for list="{{r.links}}" as="lk" hint-placeholder-count="1"><a href="{{lk.href}}" style="font-weight: 600; display: inline-flex; align-items: center; gap: 6px; min-height: 32px">{{lk.label}}<dc-import name="Icon" glyph="arrow" tone="{{lk.tone}}" size="14" hint-size="14px,14px"></dc-import></a></sc-for>
+                          </div>
+                        </div>
+                      </sc-if>
+                    </li>
+                  </sc-for>
+                </ul>
+              </section>
+            </sc-for>
+            <sc-if value="{{pageOn}}" hint-placeholder-val="{{ false }}">
+              <div class="card" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px">
+                <span role="status" aria-live="off" style="font-size: 13px; color: var(--ink2)">{{pageSay}}</span>
+                <sc-if value="{{moreOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="sec" onClick="{{showMore}}">{{moreLabel}}</button></sc-if>
+              </div>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span class="mut">No year of birth and no age are shown anywhere. Leave shows as On leave: its type is only on HR › Leave.</span>
+              <span class="mut">{{holNote}}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{monthOn}}" hint-placeholder-val="{{ false }}">
+            <section class="card" aria-labelledby="hc-month-h" style="overflow: hidden">
+              <div class="mh">
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <button type="button" id="hc-prev" class="sec sm ico" aria-label="{{prevAria}}" onClick="{{prevMonth}}" disabled="{{prevOff}}"><dc-import name="Icon" glyph="chevronLeft" tone="{{tn.muted}}" size="16" hint-size="16px,16px"></dc-import></button>
+                  <h2 id="hc-month-h" class="h2" aria-live="polite" style="min-width: 150px; text-align: center">{{monthLabel}}</h2>
+                  <button type="button" id="hc-next" class="sec sm ico" aria-label="{{nextAria}}" onClick="{{nextMonth}}" disabled="{{nextOff}}"><dc-import name="Icon" glyph="chevronRight" tone="{{tn.muted}}" size="16" hint-size="16px,16px"></dc-import></button>
+                  <button type="button" class="sec sm" onClick="{{thisMonth}}" disabled="{{thisOff}}">This month</button>
+                </div>
+                <span class="mut">{{monthSay}}</span>
+              </div>
+              <sc-if value="{{stripsOn}}" hint-placeholder-val="{{ true }}">
+                <div style="display: flex; flex-direction: column; gap: 6px; padding: 12px 18px 0">
+                  <sc-for list="{{strips}}" as="st" hint-placeholder-count="1"><div class="strip" style="padding: 8px 12px"><dc-import name="Icon" glyph="leave" tone="{{st.tone}}" size="18" hint-size="18px,18px"></dc-import><span>{{st.t}}</span></div></sc-for>
+                </div>
+              </sc-if>
+              <div class="tw" style="padding: 12px 18px 4px">
+                <table class="mg">
+                  <caption class="sr">{{monthCap}}</caption>
+                  <thead><tr>
+                    <sc-for list="{{wkd}}" as="w" hint-placeholder-count="7"><th scope="col"><abbr title="{{w.full}}">{{w.short}}</abbr></th></sc-for>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{weeks}}" as="wk" hint-placeholder-count="5">
+                      <tr>
+                        <sc-for list="{{wk.days}}" as="d" hint-placeholder-count="7">
+                          <td class="{{d.cls}}" aria-current="{{d.cur}}">
+                            <div class="dnum"><span aria-hidden="true">{{d.num}}</span><span class="sr">{{d.sr}}</span><sc-if value="{{d.isToday}}" hint-placeholder-val="{{ false }}"><span class="tdy" aria-hidden="true">Today</span></sc-if></div>
+                            <sc-for list="{{d.items}}" as="it" hint-placeholder-count="1"><div class="{{it.cls}}"><dc-import name="Icon" glyph="{{it.glyph}}" tone="{{it.tone}}" size="13" hint-size="13px,13px"></dc-import><span>{{it.label}}</span></div></sc-for>
+                          </td>
+                        </sc-for>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 12px 18px 16px; font-size: 12px; color: var(--ink3)">
+                <sc-for list="{{legend}}" as="lg" hint-placeholder-count="5"><span class="{{lg.cls}}" style="margin: 0"><dc-import name="Icon" glyph="{{lg.glyph}}" tone="{{lg.tone}}" size="13" hint-size="13px,13px"></dc-import><span>{{lg.t}}</span></span></sc-for>
+                <span>Weekends and public holidays are shaded. Done reminders are struck through.</span>
+              </div>
+            </section>
+          </sc-if>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <!-- dialog: add a one-off reminder -->
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dimCls}}" onClick="{{dlgBackdrop}}" style="position: fixed; inset: 0; z-index: 60; background: var(--dim)"></div>
+    <div role="dialog" aria-modal="true" aria-labelledby="hc-dlg-title" aria-describedby="hc-dlg-desc" tabindex="-1" class="{{dlgCls}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onDlgAnim}}" style="position: fixed; z-index: 61; top: 48px; left: 16px; right: 16px; margin: 0 auto; max-width: 560px; max-height: calc(100vh - 96px); overflow-y: auto; box-sizing: border-box; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 24px 60px rgba(0,0,0,.3); display: flex; flex-direction: column">
+      <div style="display: flex; gap: 12px; align-items: flex-start; padding: 18px 20px 12px">
+        <span class="plate brand"><dc-import name="Icon" glyph="reminder" tone="{{tn.brand}}" size="22" hint-size="22px,22px"></dc-import></span>
+        <div style="flex: 1; min-width: 0"><h2 id="hc-dlg-title" tabindex="-1" style="margin: 0; font-size: 17px; font-weight: 600">Add a one-off reminder</h2><p id="hc-dlg-desc" style="margin: 4px 0 0; color: var(--ink2); font-size: 13px">For {{coCode}}. It shows on this list and in the month view until it is marked done. Other reminders come from the staff records by themselves.</p></div>
+        <button type="button" class="sec" aria-label="Close" onClick="{{dlgCloseBtn}}" style="width: 36px; height: 36px; padding: 0; border-color: transparent"><dc-import name="Icon" glyph="close" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import></button>
+      </div>
+
+      <sc-if value="{{dRefused}}" hint-placeholder-val="{{ false }}">
+        <div id="hc-ref" role="alert" tabindex="-1" class="rv" style="display: flex; gap: 12px; align-items: flex-start; margin: 0 20px 4px; padding: 12px 14px; border-radius: 12px; background: var(--badBg); border: 1px solid var(--badLine)">
+          <dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="20" hint-size="20px,20px"></dc-import>
+          <div style="flex: 1; min-width: 0; font-size: 13px"><b style="color: var(--badInk)">Nothing was saved</b><div style="color: var(--ink2)">The calendar was changed in another window after this form was opened: Nurul Aina added a reminder for the same day. Reload the list to see it, then add yours again if it is still needed. What you typed is kept below.</div></div>
+          <button type="button" class="sec sm" onClick="{{reloadList}}">Reload the list</button>
+        </div>
+      </sc-if>
+
+      <div style="padding: 4px 20px 16px; display: flex; flex-direction: column; gap: 14px">
+        <div class="fld">
+          <label for="hc-what" class="lb">What to remember <span>Required</span></label>
+          <input id="hc-what" type="text" class="inp" value="{{dWhat}}" onChange="{{onWhat}}" placeholder="Renew the group insurance staff list" autoComplete="off" aria-required="true" aria-invalid="{{dWhatInv}}" aria-describedby="{{dWhatBy}}" disabled="{{dBusy}}">
+          <sc-if value="{{dWhatErr}}" hint-placeholder-val="{{ false }}"><span id="hc-what-err" class="err"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>Say what to remember.</span></sc-if>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px">
+          <div class="fld">
+            <label for="hc-date" class="lb">Date <span>Required</span></label>
+            <input id="hc-date" type="date" class="inp" value="{{dDate}}" onChange="{{onDate}}" min="2026-11-18" aria-required="true" aria-invalid="{{dDateInv}}" aria-describedby="{{dDateBy}}" disabled="{{dBusy}}">
+            <span id="hc-date-hint" class="mut">Today or later.</span>
+            <sc-if value="{{dDateErr}}" hint-placeholder-val="{{ false }}"><span id="hc-date-err" class="err"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="15" hint-size="15px,15px"></dc-import>{{dDateMsg}}</span></sc-if>
+          </div>
+          <div class="fld">
+            <label for="hc-who" class="lb">About a person <span>Optional</span></label>
+            <select id="hc-who" class="inp" value="{{dWho}}" onChange="{{onWho}}" disabled="{{dBusy}}">
+              <option value="">No one in particular</option>
+              <sc-for list="{{whoOpts}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}">{{o.label}}</option></sc-for>
+            </select>
+          </div>
+        </div>
+        <div class="fld">
+          <label for="hc-note" class="lb">Note <span>Optional · seen only on HR pages</span></label>
+          <textarea id="hc-note" class="inp" rows="3" value="{{dNote}}" onChange="{{onNote}}" disabled="{{dBusy}}"></textarea>
+        </div>
+        <span class="mut" style="display: inline-flex; gap: 6px; align-items: center"><dc-import name="Icon" glyph="person" tone="{{tn.muted}}" size="14" hint-size="14px,14px"></dc-import>Added by {{byName}} · declared, not verified</span>
+      </div>
+
+      <sc-if value="{{discardOn}}" hint-placeholder-val="{{ false }}">
+        <div role="alertdialog" aria-labelledby="hc-dc-t" aria-describedby="hc-dc-d" class="rv" style="margin: 0 20px 14px; padding: 14px; border-radius: 12px; background: var(--warnBg); border: 1px solid var(--warnLine); display: flex; flex-direction: column; gap: 10px">
+          <div><b id="hc-dc-t">Discard your changes?</b><div id="hc-dc-d" style="font-size: 13px; color: var(--ink2)">The reminder you typed isn't saved. Nothing is added to the calendar.</div></div>
+          <div style="display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap"><button type="button" id="hc-dc-keep" class="sec" onClick="{{keepEditing}}">Keep editing</button><button type="button" class="dng" onClick="{{discardGo}}">Discard</button></div>
+        </div>
+      </sc-if>
+      <sc-if value="{{dFoot}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 20px 18px; border-top: 1px solid var(--line2)">
+          <button type="button" class="sec" onClick="{{dlgCloseBtn}}" disabled="{{dBusy}}">Cancel</button>
+          <button type="button" id="hc-save" class="btn" onClick="{{doSave}}" disabled="{{dBusy}}" aria-busy="{{dBusyAria}}" style="min-width: 150px"><sc-if value="{{dBusy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{dIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import></sc-if>{{dSaveLabel}}</button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" class="to-in" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastRelease}}" onFocus="{{toastHold}}" onBlur="{{toastRelease}}" onKeyDown="{{toastKey}}" style="position: fixed; left: 16px; right: 16px; bottom: 24px; margin: 0 auto; max-width: 480px; z-index: 70; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; border: 1px solid #33415A; box-shadow: 0 12px 32px rgba(0,0,0,.3); font-size: 14px">
+      <dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import>
+      <span style="flex: 1">{{toastMsg}}</span>
+      <sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #8DB0FA; font: 700 14px Inter, sans-serif; cursor: pointer; text-decoration: underline">Undo</button></sc-if>
+      <button type="button" id="hc-toast-x" aria-label="Dismiss" onClick="{{toastClose}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","month","month-december","coming-up","birthdays","done-undo","done-shown","joiner","leaver","carried","add","add-errors","add-saving","add-refused","add-discard","add-saved","excel","ai","hr-only","no-match","empty","loading","error","many"],"section":"State"},"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":1960}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the state: HrCalendar.dc.html#coming-up (the Overview card Dates coming up), #birthdays, #month and the
+    // other view names. It applies on first load, over the default state.
+    let v = (p && p.view) || 'list', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'list' && ['month', 'month-december', 'coming-up', 'birthdays', 'done-undo', 'done-shown', 'joiner', 'leaver', 'carried', 'add', 'add-errors', 'add-saving', 'add-refused', 'add-discard', 'add-saved', 'excel', 'ai', 'hr-only', 'no-match', 'empty', 'loading', 'error', 'many'].includes(h)) v = h;
+    this.state = this.fresh(v);
+  }
+  componentDidMount() {
+    const d = this.state.dlg; if (!d) return;
+    // refused: the reason; Discard your changes?: Keep editing; errors shown: the first field in error; else the title
+    const e = d.tried ? this.dlgErrs(d) : {};
+    this.focusId(d.refused ? 'hc-ref' : this.state.discard ? 'hc-dc-keep' : e.what ? 'hc-what' : e.date ? 'hc-date' : 'hc-dlg-title');
+  }
+  componentWillUnmount() { clearTimeout(this._tt); clearTimeout(this._ct); clearTimeout(this._st); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._tt); clearTimeout(this._ct); clearTimeout(this._st); this._opener = null; this.setState(this.fresh(this.props.view || 'list')); return; }
+    if (!prev) return;
+    const n = this.state;
+    if (!prev.dlg && n.dlg) this.focusId('hc-dlg-title');
+    if (prev.dlg && !n.dlg) this.focusBack();
+    if (!prev.discard && n.discard) this.focusId('hc-dc-keep');
+    if (prev.discard && !n.discard && n.dlg && !n.closing) this.focusId('hc-what');
+    if (prev.dlg && n.dlg && !prev.dlg.refused && n.dlg.refused) this.focusId('hc-ref');
+    if (prev.dlg && n.dlg && n.dlg.tried && n.dlg.errN !== prev.dlg.errN) { const e = this.dlgErrs(n.dlg); this.focusId(e.what ? 'hc-what' : e.date ? 'hc-date' : 'hc-save'); }
+    if (this._tabFocus && prev.tab !== n.tab) { this._tabFocus = false; this.focusId('hc-tab-' + n.tab); }
+    if (this._rowFocus) { const ids = [].concat(this._rowFocus); this._rowFocus = null; const id = ids.find(x => document.getElementById(x)); if (id) this.focusId(id); }
+  }
+  focusId(id) { const el = document.getElementById(id); if (el) el.focus({ preventScroll: false }); }
+  focusBack() { const o = this._opener; this._opener = null; if (o && o.isConnected) o.focus({ preventScroll: true }); else this.focusId('hc-h1'); }
+
+  // ---- dates ------------------------------------------------------------------------------------------------
+  dt(iso) { const p = String(iso).split('-').map(Number); return new Date(Date.UTC(p[0], p[1] - 1, p[2])); }
+  isoOf(d) { return d.toISOString().slice(0, 10); }
+  plus(iso, n) { const d = this.dt(iso); d.setUTCDate(d.getUTCDate() + n); return this.isoOf(d); }
+  fd(iso, withYear) {
+    const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const d = this.dt(iso), y = d.getUTCFullYear();
+    return W[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + M[d.getUTCMonth()] + (withYear || y !== 2026 ? ' ' + y : '');
+  }
+  fs(iso) { const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const d = this.dt(iso); return d.getUTCDate() + ' ' + M[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); }
+  fl(iso) {
+    const W = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'], M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const d = this.dt(iso); return W[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + M[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  }
+  monthName(ym) { const M = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; const p = ym.split('-').map(Number); return M[p[1] - 1] + ' ' + p[0]; }
+  span(a, b) {
+    if (!b || a === b) return this.fd(a);
+    const W = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], da = this.dt(a), db = this.dt(b);
+    const same = da.getUTCMonth() === db.getUTCMonth() && da.getUTCFullYear() === db.getUTCFullYear();
+    return (same ? W[da.getUTCDay()] + ' ' + da.getUTCDate() : this.fd(a)) + ' to ' + this.fd(b);
+  }
+
+  // ---- sample data (scope/samples.md sections 2, 5, 8 and 9) ------------------------------------------------
+  // Birthdays and anniversaries are worked out from the staff records, as the app would.
+  kinds() {
+    return {
+      holiday: { label: 'Public holiday', pl: 'g', glyph: 'calendar', tone: 'muted', grp: 'off', ord: 0 },
+      leaver: { label: 'Leaver task', pl: 'i', glyph: 'staff', tone: 'brand', grp: 'dates', ord: 1 },
+      joiner: { label: 'Joiner task', pl: 'i', glyph: 'staff', tone: 'brand', grp: 'dates', ord: 1 },
+      probation: { label: 'Probation ending', pl: 'w', glyph: 'reminder', tone: 'warn', grp: 'dates', ord: 2 },
+      contract: { label: 'Contract ending', pl: 'w', glyph: 'reminder', tone: 'warn', grp: 'dates', ord: 2 },
+      permit: { label: 'Work permit expiry', pl: 'w', glyph: 'reminder', tone: 'warn', grp: 'dates', ord: 2 },
+      joins: { label: 'Joins', pl: 'i', glyph: 'staff', tone: 'brand', grp: 'dates', ord: 3 },
+      oneoff: { label: 'One-off', pl: 'i', glyph: 'reminder', tone: 'brand', grp: 'dates', ord: 4 },
+      birthday: { label: 'Birthday', pl: 'o', glyph: 'birthday', tone: 'ok', grp: 'bd', ord: 5 },
+      anniv: { label: 'Work anniversary', pl: 'o', glyph: 'birthday', tone: 'ok', grp: 'bd', ord: 6 },
+      leave: { label: 'On leave', pl: 'g', glyph: 'leave', tone: 'muted', grp: 'off', ord: 7 },
+      back: { label: 'Back from leave', pl: 'g', glyph: 'leave', tone: 'muted', grp: 'off', ord: 7 }
+    };
+  }
+  data(co) {
+    // [no, preferred, full name, birthday (month-day), joined, last day]
+    const STAFF = {
+      AISB: [
+        ['S001', 'Aisha', 'Aisha Rahman', '11-27', '2019-05-02', null],
+        ['S002', 'Wei Ming', 'Ong Wei Ming', '03-09', '2021-06-01', null],
+        ['S003', 'Aina', 'Nurul Aina binti Hashim', '06-15', '2016-10-03', null],
+        ['S004', 'Hafiz', 'Mohd Hafiz bin Rosli', '07-22', '2019-03-04', null],
+        ['S005', 'Khadijah', 'Nor Khadijah binti Omar', '02-03', '2020-02-01', null],
+        ['S006', 'Kah Seng', 'Wong Kah Seng', '10-12', '2024-01-01', '2026-12-31'],
+        ['S007', 'Jia Hui', 'Goh Jia Hui', '12-30', '2026-09-01', null],
+        ['S008', 'Izzati', 'Nur Izzati binti Kamal', '10-21', '2025-01-15', null],
+        ['S009', 'Daniel', 'Daniel Lee Chee Keong', '05-14', '2026-11-03', null],
+        ['S010', 'Kavitha', 'Kavitha Nair', '08-08', '2023-07-01', '2026-08-31']
+      ],
+      AI: [
+        ['A001', 'Faizal', 'Mohd Faizal bin Yusof', '04-04', '2020-04-01', null],
+        ['A002', 'Pei Shan', 'Chong Pei Shan', '01-19', '2021-10-01', null],
+        ['A003', 'Priya', 'Priya Subramaniam', '09-02', '2022-08-16', null],
+        ['A004', 'Jun Wei', 'Lee Jun Wei', '12-25', '2023-03-01', null],
+        ['A005', 'Rina', 'Rina Santoso', '11-06', '2025-01-15', null]
+      ]
+    }[co] || [];
+    const P = {}; STAFF.forEach(r => { P[r[0]] = { no: r[0], who: r[1], full: r[2] }; });
+    const ln = (glyph, t, tone) => ({ glyph, t, tone: tone || 'muted' });
+    // the joiner and leaver reminders as Setup › Joiner and leaver reminders' templates (SetupChecklist): title, due date, and the checklist month they go to
+    // (the payroll month being worked on when they fall due, the 10th being the rollover day). carry: the task the
+    // "carried" state shows as passed on (and still open) from a filed month. Daniel's registration was ticked on the November checklist; the
+    // "carried" state passes his contract stamping on from a filed November.
+    const tk = (title, due, where, done, carry) => ({ title, due, where, status: done ? done : 'Open', pl: done ? 'o' : 'w', carry: !!carry });
+    const ev = [];
+    // birthdays and anniversaries, October 2026 to the end of 2027, only while the person is employed
+    STAFF.forEach(r => {
+      [2026, 2027].forEach(y => {
+        const b = y + '-' + r[3];
+        if (b >= r[4] && (!r[5] || b <= r[5])) ev.push({ id: 'bd-' + r[0] + '-' + y, kind: 'birthday', iso: b, no: r[0], what: r[1] + '’s birthday', rem: 'No year or age shown' });
+        const n = y - Number(r[4].slice(0, 4)), a = y + r[4].slice(4);
+        if (n >= 1 && (!r[5] || a <= r[5])) ev.push({ id: 'an-' + r[0] + '-' + y, kind: 'anniv', iso: a, no: r[0], what: r[1] + ', ' + n + (n === 1 ? ' year' : ' years'), rem: 'Joined ' + this.fs(r[4]) });
+      });
+    });
+    if (co === 'AISB') {
+      ev.push(
+        { id: 'joins-S009', kind: 'joins', iso: '2026-11-03', no: 'S009', what: 'Daniel joins', rem: 'Joiner tasks start' },
+        { id: 'prob-S007', kind: 'probation', iso: '2026-11-30', no: 'S007', what: 'Jia Hui’s probation ends', rem: '30 and 7 days before', nextUp: true, canDone: true,
+          lines: [ln('person', 'From Jia Hui’s staff record: joined Tue 1 Sep 2026, probation ends Mon 30 Nov.'), ln('clock', 'Reminded 30 days before (Sat 31 Oct) and 7 days before (Mon 23 Nov).'), ln('overview', 'On Next up as “A probation ends on 30 Nov: confirm or extend it”, with no name.', 'brand'), ln('help', 'Confirm or extend it on her staff record, then mark this done.')],
+          links: [['Open her staff record', 'HrStaffRecord.dc.html']] },
+        { id: 'cp22a-S006', kind: 'leaver', iso: '2026-12-01', no: 'S006', what: 'CP22A for Kah Seng', chk: 'December', nextUp: true, isTask: true,
+          lines: [ln('person', 'From Kah Seng’s staff record: last day Thu 31 Dec 2026, reason Retiring. A CP22A is made because he is retiring.'), ln('overview', 'On Next up as “CP22A for Kah Seng”.', 'brand'), ln('alert', 'Leaver reminder: it starts the tax-clearance hold on the final pay. A reminder to check, not legal advice.', 'warn'), ln('lock', 'His final pay shows Hold until tax clearance on To pay. The hold is released when HR uploads LHDN’s letter, or after 90 days.'), ln('checklist', 'Leaver tasks are ticked on the Monthly checklist with their acknowledgement, and show as done here at the same time.')],
+          tasksHead: 'Leaver tasks for Kah Seng',
+          tasks: [tk('CP22A for Kah Seng', 'Due Tue 1 Dec', 'On the December checklist')],
+          links: [['Open the Monthly checklist', 'MonthlyChecklist.dc.html'], ['Leaver’s final pay', 'PayrollLeaver.dc.html'], ['Open his staff record', 'HrStaffRecord.dc.html']] },
+        { id: 'ecp22-S009', kind: 'joiner', iso: '2026-12-03', no: 'S009', what: 'e-CP22 for Daniel', chk: 'November', nextUp: true, isTask: true,
+          lines: [ln('person', 'From Daniel’s staff record: joined Tue 3 Nov 2026.'), ln('overview', 'On Next up as “e-CP22 for Daniel”.', 'brand'), ln('help', 'Joiner reminder: a reminder to check, not legal advice.'), ln('checklist', 'Joiner tasks are ticked on the Monthly checklist with their acknowledgement, and show as done here at the same time. A filed month passes an open task on to the next open month.')],
+          tasksHead: 'Joiner tasks for Daniel',
+          tasks: [tk('Register Daniel with KWSP and PERKESO', 'Due Tue 10 Nov', 'On the November checklist', 'Done'), tk('e-CP22 for Daniel', 'Due Thu 3 Dec', 'On the November checklist'),
+            tk('Stamp the contract of Daniel', 'Due Thu 3 Dec', 'On the November checklist', null, true)],
+          links: [['Open the Monthly checklist', 'MonthlyChecklist.dc.html'], ['Open his staff record', 'HrStaffRecord.dc.html']] },
+        { id: 'contract-S006', kind: 'contract', iso: '2026-12-31', no: 'S006', what: 'Kah Seng’s contract ends and last day', rem: '60 and 30 days before', canDone: true,
+          lines: [ln('person', 'From Kah Seng’s staff record: contract 1 Jan 2024 to 31 Dec 2026, which is also his last day.'), ln('clock', 'Reminded 60 days before (Sun 1 Nov) and 30 days before (Tue 1 Dec).'), ln('overview', 'On the Overview card Dates coming up as “Contract ends 31 Dec”, with no name.', 'brand')],
+          links: [['Open his staff record', 'HrStaffRecord.dc.html']] },
+        { id: 'prob-S009', kind: 'probation', iso: '2027-02-02', no: 'S009', what: 'Daniel’s probation ends', rem: '30 and 7 days before', canDone: true,
+          lines: [ln('person', 'From Daniel’s staff record: probation ends Tue 2 Feb 2027.'), ln('clock', 'Reminders on Sun 3 Jan and Tue 26 Jan 2027 (30 and 7 days before). It joins Next up then.')],
+          links: [['Open his staff record', 'HrStaffRecord.dc.html']] }
+      );
+      [['S006', '2026-11-02', '2026-11-02', '2026-11-03', ''], ['S003', '2026-11-16', '2026-11-20', '2026-11-23', ''], ['S004', '2026-11-20', '2026-11-20', '2026-11-23', ''],
+        ['S005', '2026-10-05', '2027-01-10', '2027-01-11', ''], ['S007', '2026-12-07', '2026-12-10', '2026-12-11', ''], ['S002', '2026-10-14', '2026-10-14', null, 'half day']]
+        .forEach(l => ev.push({ id: 'lv-' + l[0] + '-' + l[1], kind: 'leave', iso: l[1], end: l[2], back: l[3], half: l[4], no: l[0] }));
+      [['2026-11-08', 'Deepavali'], ['2026-11-09', 'Deepavali (replacement day)'], ['2026-12-25', 'Christmas']]
+        .forEach(h => ev.push({ id: 'hol-' + h[0], kind: 'holiday', iso: h[0], what: h[1], rem: 'Wilayah Persekutuan Kuala Lumpur' }));
+    }
+    if (co === 'AI') {
+      ev.push({ id: 'permit-A005', kind: 'permit', iso: '2027-01-10', no: 'A005', what: 'Rina’s work permit expires', rem: '90, 60 and 30 days before', nextUp: true, canDone: true,
+        lines: [ln('document', 'From Rina’s documents: work permit, expires Sun 10 Jan 2027. Passport ••••1307, Indonesia.'), ln('clock', 'Reminded 90, 60 and 30 days before (Mon 12 Oct, Wed 11 Nov, Fri 11 Dec).'), ln('overview', 'On Next up as “A work permit expires on 10 Jan 2027”, with no name.', 'brand'), ln('help', 'Upload the renewed permit on her Documents tab, then mark this done.')],
+        links: [['Open her staff record', 'HrStaffRecord.dc.html']] });
+      ev.push({ id: 'lv-A004-2026-11-09', kind: 'leave', iso: '2026-11-09', end: '2026-11-10', back: '2026-11-11', half: '', no: 'A004' });
+      [['2026-10-03', 'Governor of Sabah’s birthday'], ['2026-12-24', 'Christmas Eve'], ['2026-12-25', 'Christmas']]
+        .forEach(h => ev.push({ id: 'hol-' + h[0], kind: 'holiday', iso: h[0], what: h[1], rem: 'Sabah' }));
+    }
+    ev.forEach(e => { const p = e.no && P[e.no]; e.who = p ? p.who : ''; e.sub = p ? p.no + ' · ' + p.full : ''; });
+    return { STAFF, P, ev };
+  }
+  // the signed-in user's name, as the Topbar shows it: stamps on Mark done and on new one-off reminders follow it
+  userName() { return { aisha: 'Aisha Rahman', aina: 'Nurul Aina' }[this.state.user] || 'Aisha Rahman'; }
+  oneOffSample() { return { id: 'oneoff-1', co: 'AISB', kind: 'oneoff', iso: '2026-12-15', no: '', what: 'Renew the group insurance staff list', note: '', by: 'Aisha Rahman', canDone: true }; }
+
+  fresh(view) {
+    const V = view || 'list';
+    const s = {
+      co: 'AISB', tab: 'list', filter: 'all', from: '2026-11-18', to: '2027-02-02', showDone: false, ov: null, open: {}, done: {},
+      oneoffs: [this.oneOffSample()], month: '2026-11', loading: false, failed: false, page: 0, user: 'aisha', note: null,
+      dlg: null, closing: false, discard: false, toast: null, say: '', flash: null, flashN: 0, swap: 0
+    };
+    const filled = { what: 'Renew the group insurance staff list', date: '2026-12-15', who: '', note: 'Send the list of the 9 staff in employment to the insurer.' };
+    const dlg = (o) => Object.assign({ what: '', date: '', who: '', note: '', tried: false, saving: false, refused: false, errN: 0 }, o || {});
+    switch (V) {
+      case 'month': s.tab = 'month'; break;
+      case 'month-december': s.tab = 'month'; s.month = '2026-12'; break;
+      case 'coming-up': s.ov = 'dates'; s.filter = 'dates'; s.to = '2027-01-17'; break;
+      case 'birthdays': s.ov = 'birthdays'; s.filter = 'bd'; s.from = '2026-10-01'; s.to = '2026-10-31'; break;
+      case 'done-undo': s.done = { 'prob-S007': 'Wed 18 Nov, Aisha Rahman' }; s.flash = 'g-2026-11'; s.toast = { msg: 'Marked done: Jia Hui’s probation ends Mon 30 Nov. Its Next up row goes. Turn on Show done to see it.', undo: { kind: 'done', id: 'prob-S007' } }; break;
+      case 'done-shown': s.done = { 'prob-S007': 'Wed 18 Nov, Aisha Rahman' }; s.showDone = true; s.from = '2026-11-01'; break;
+      case 'joiner': s.open = { 'ecp22-S009': true }; break;
+      case 'leaver': s.open = { 'cp22a-S006': true }; break;
+      case 'carried': s.open = { 'ecp22-S009': true }; s.carried = true;
+        s.note = { glyph: 'history', t: 'State only. A joiner or leaver task that is still open when its month is filed moves to the next open month. Here November 2026 has been filed with “Stamp the contract of Daniel” (due Thu 3 Dec, on the November checklist) still open, so the task is now on the December checklist and says where it came from. In the samples November is still open and the task waits there.' }; break;
+      case 'add': s.oneoffs = []; s.dlg = dlg(); break;
+      case 'add-errors': s.oneoffs = []; s.dlg = dlg({ what: '', date: '2026-11-10', tried: true, errN: 1 }); break;
+      case 'add-saving': s.oneoffs = []; s.dlg = dlg(Object.assign({ saving: true }, filled)); break;
+      case 'add-refused': s.oneoffs = []; s.dlg = dlg(Object.assign({ refused: true }, filled)); break;
+      case 'add-discard': s.oneoffs = []; s.dlg = dlg(filled); s.discard = true; break;
+      case 'add-saved': s.flash = 'oneoff-1'; s.toast = { msg: 'Reminder added for Tue 15 Dec: Renew the group insurance staff list.', undo: { kind: 'add', id: 'oneoff-1' } }; break;
+      case 'excel': s.toast = { msg: this.excelMsg('AISB', '2026-11-18', '2027-02-02', 15), undo: null }; break;
+      case 'ai': s.co = 'AI'; break;
+      case 'hr-only': s.user = 'aina'; s.note = { glyph: 'person', t: 'Seen as Nurul Aina (HR only, no Payroll figures). This page shows no pay, so every user with the HR right sees the same calendar.' }; break;
+      case 'no-match': s.filter = 'off'; s.from = '2027-01-12'; s.to = '2027-01-31'; break;
+      case 'empty': s.co = 'AIL'; break;
+      case 'loading': s.loading = true; break;
+      case 'error': s.failed = true; break;
+      case 'many': s.to = '2027-11-17'; s.page = 25; break;
+      default: break;
+    }
+    return s;
+  }
+  excelMsg(co, from, to, n) { return 'Excel file ready: Calendar and reminders ' + co + ' ' + this.fs(from) + ' to ' + this.fs(to) + '.xlsx, ' + n + (n === 1 ? ' date' : ' dates') + '. No year of birth, no age, no leave type. Recorded in the audit trail as a read.'; }
+
+  // ---- toast and dialog -------------------------------------------------------------------------------------
+  showToast(msg, undo) {
+    clearTimeout(this._tt);
+    this.setState({ toast: { msg, undo: undo || null } });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+  }
+  dlgErrs(d) {
+    const e = {};
+    if (!d) return e;
+    if (!String(d.what || '').trim()) e.what = 'Say what to remember.';
+    if (!d.date) e.date = 'Pick a date.';
+    else if (d.date < '2026-11-18') e.date = 'Pick today or a later date. Past dates belong on the staff record.';
+    return e;
+  }
+  openAddDlg(ev) {
+    this._opener = (ev && ev.currentTarget) || null;
+    this.setState({ dlg: { what: '', date: '', who: '', note: '', tried: false, saving: false, refused: false, errN: 0 }, closing: false, discard: false });
+  }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true, discard: false });
+    clearTimeout(this._ct);
+    this._ct = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._ct); if (this.state.dlg) this.setState({ dlg: null, closing: false, discard: false }); }
+  requestClose() {
+    const d = this.state.dlg; if (!d || this.state.closing || d.saving) return;
+    if (String(d.what || '').trim() || d.date || d.who || String(d.note || '').trim()) { this.setState({ discard: true }); return; }
+    this.closeDlg();
+  }
+  setD(patch) { const d = this.state.dlg; if (!d) return; this.setState({ dlg: Object.assign({}, d, patch) }); }
+  save() {
+    const d = this.state.dlg; if (!d || d.saving) return;
+    const e = this.dlgErrs(d);
+    if (e.what || e.date) { this.setState({ dlg: Object.assign({}, d, { tried: true, errN: (d.errN || 0) + 1 }) }); return; }
+    this.setState({ dlg: Object.assign({}, d, { saving: true, refused: false }) });
+    clearTimeout(this._st);
+    this._st = setTimeout(() => {
+      const cur = this.state.dlg; if (!cur) return;
+      const id = 'oneoff-' + Date.now();
+      const item = { id, co: this.state.co, kind: 'oneoff', iso: cur.date, no: cur.who || '', what: String(cur.what).trim(), note: String(cur.note || '').trim(), by: this.userName(), canDone: true };
+      const inRange = cur.date >= this.state.from && cur.date <= this.state.to;
+      this.setState({ oneoffs: this.state.oneoffs.concat([item]), dlg: null, closing: false, discard: false, flash: id, flashN: this.state.flashN + 1, say: 'Reminder added' });
+      this.showToast('Reminder added for ' + this.fd(cur.date) + ': ' + item.what + '.' + (inRange ? '' : ' It is outside the dates shown.'), { kind: 'add', id });
+    }, 700);
+  }
+
+  // ---- render -----------------------------------------------------------------------------------------------
+  renderVals() {
+    const s = this.state, P = this.props;
+    const dark = (P.theme ?? 'light') === 'dark';
+    const tn = dark ? { brand: 'dbrand', muted: 'dmuted', ok: 'dok', warn: 'dwarn', bad: 'dbad' } : { brand: 'brand', muted: 'muted', ok: 'ok', warn: 'warn', bad: 'bad' };
+    const T = k => tn[k] || tn.muted;
+    const K = this.kinds();
+    const co = s.co, hasStaff = co === 'AISB' || co === 'AI';
+    const D = this.data(co);
+    const TODAY = '2026-11-18';
+    const KIND = { AISB: 'sqlPayroll', AI: 'here', AIL: 'sql', AIP: 'here' };
+    const FULL = { AISB: 'AISB Sdn Bhd · Kept in SQL Account', AI: 'Agrinexus International · Kept here', AIL: 'Agrinexus Logistics · Kept in SQL Account', AIP: 'Agrinexus Plantations · Kept here' };
+    const four = co === 'AIL' || co === 'AIP';
+
+    // every event, with the one-off reminders
+    const oneoffs = hasStaff ? s.oneoffs.filter(o => o.co === co) : [];
+    const all = D.ev.concat(oneoffs.map(o => {
+      const p = o.no && D.P[o.no];
+      return Object.assign({}, o, { who: p ? p.who : '', sub: (p ? p.no + ' · ' + p.full + ' · ' : '') + 'Added by ' + o.by, rem: 'Added by hand',
+        lines: [{ glyph: 'person', t: 'Added by ' + o.by + ' · declared, not verified.', tone: 'muted' }].concat(o.note ? [{ glyph: 'document', t: o.note, tone: 'muted' }] : []).concat([{ glyph: 'help', t: 'A one-off reminder shows here and in the month view only, not on Next up.', tone: 'muted' }]),
+        links: o.no ? [['Open the staff record', 'HrStaffRecord.dc.html']] : [] });
+    }));
+    const isDone = e => !!s.done[e.id];
+    const grpOk = e => s.filter === 'all' || (K[e.kind] && K[e.kind].grp === s.filter);
+    const ovKinds = s.ov === 'dates' ? ['probation', 'contract', 'permit'] : null;
+    const kindOk = e => !ovKinds || ovKinds.includes(e.kind);
+
+    // ---- list
+    const rangeBad = s.from && s.to && s.to < s.from;
+    const rowsAll = [];
+    if (!rangeBad) all.forEach(e => {
+      if (!grpOk(e) || !kindOk(e)) return;
+      if (isDone(e) && !s.showDone) return;
+      if (e.kind === 'leave') {
+        if (e.iso >= s.from && e.iso <= s.to) rowsAll.push(Object.assign({}, e, { at: e.iso, what: e.who + ' on leave' + (e.half ? ', ' + e.half : ''), rem: e.back ? 'Back ' + this.fd(e.back) : '' }));
+        else if (e.iso < s.from && e.end >= s.from && e.back && e.back <= s.to) rowsAll.push(Object.assign({}, e, { id: e.id + '-back', kind: 'back', at: e.back, what: e.who + ' back', rem: 'On leave since ' + this.fd(e.iso) }));
+        return;
+      }
+      if (e.iso >= s.from && e.iso <= s.to) rowsAll.push(Object.assign({}, e, { at: e.iso }));
+    });
+    rowsAll.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : K[a.kind].ord - K[b.kind].ord));
+    const total = rowsAll.length;
+    const shownN = s.page ? Math.min(s.page, total) : total;
+    const shown = rowsAll.slice(0, shownN);
+    const groupsMap = {};
+    const order = [];
+    shown.forEach((e, i) => {
+      const ym = e.at.slice(0, 7);
+      if (!groupsMap[ym]) { groupsMap[ym] = []; order.push(ym); }
+      const k = K[e.kind], done = isDone(e), open = !!s.open[e.id];
+      const hasDet = !!(e.lines && e.lines.length);
+      const flash = s.flash && (s.flash === e.id || s.flash === 'g-' + ym) ? (s.flashN % 2 ? ' fb' : ' fa') : '';
+      const chkLabel = e.chk ? 'On the ' + e.chk + ' checklist' : '';
+      groupsMap[ym].push({
+        rid: 'hc-row-' + i, cls: 'ri' + flash,
+        date: e.kind === 'leave' ? this.span(e.iso, e.end) : this.fd(e.at), dateSub: e.at === TODAY ? 'Today' : '',
+        what: e.what, whatCls: done ? 'dn-t' : '', sub: e.sub || (e.kind === 'holiday' ? 'Public holiday, ' + e.rem : ''),
+        carriedOn: !!(s.carried && (e.tasks || []).some(t => t.carry)), carried: '1 task carried on from November 2026',
+        kind: k.label, pillCls: 'pl ' + k.pl, glyph: k.glyph, tone: T(k.tone),
+        rem: e.kind === 'holiday' ? '' : (e.rem || ''), chkOn: !!e.chk, chk: chkLabel, nu: !!e.nextUp && !done,
+        canDone: !!e.canDone && !done, isDone: done, doneTxt: done ? 'Done · ' + s.done[e.id] : '',
+        doneId: 'hc-row-' + i + '-done', undoneId: 'hc-row-' + i + '-undone',
+        doneAria: 'Mark done: ' + e.what + ', ' + this.fl(e.at), undoneAria: 'Mark not done: ' + e.what,
+        isTask: !!e.isTask, chkAria: 'Open the Monthly checklist for: ' + e.what,
+        hasDet, exp: open ? 'true' : 'false', open: hasDet && open, chevCls: open ? 'chev on' : 'chev', detAria: 'Details: ' + e.what,
+        lines: (e.lines || []).map(l => ({ glyph: l.glyph, t: l.t, tone: T(l.tone) })),
+        hasTasks: !!(e.tasks && e.tasks.length), tasksHead: e.tasksHead || '',
+        tasks: (e.tasks || []).map(t => ({ title: t.title, due: t.due, where: s.carried && t.carry ? 'On the December checklist, carried on from November 2026' : t.where, status: s.carried && t.carry ? 'Open' : t.status, pillCls: 'pl ' + (s.carried && t.carry ? 'w' : t.pl), glyph: t.pl === 'o' && !(s.carried && t.carry) ? 'check' : 'clock', tone: T(t.pl === 'o' && !(s.carried && t.carry) ? 'ok' : 'warn') })),
+        links: (e.links || []).map(l => ({ label: l[0], href: l[1], tone: tn.brand })),
+        tnMuted: tn.muted, tnOk: tn.ok, tnBrand: tn.brand, tnWarn: tn.warn,
+        toggle: () => { const o = Object.assign({}, this.state.open); o[e.id] = !o[e.id]; this.setState({ open: o }); },
+        markDone: () => {
+          const d = Object.assign({}, this.state.done); d[e.id] = 'Wed 18 Nov, ' + this.userName();
+          // focus stays in the list: this row's Mark not done when done rows show, else the row that moves up into its
+          // place, else the row before it, else the heading
+          this._rowFocus = (this.state.showDone ? ['hc-row-' + i + '-undone'] : []).concat(['hc-row-' + i, 'hc-row-' + (i - 1), 'hc-h1']);
+          this.setState({ done: d, say: 'Marked done: ' + e.what });
+          this.showToast('Marked done: ' + e.what + ' ' + this.fd(e.at) + '.' + (e.nextUp ? ' Its Next up row goes.' : '') + (this.state.showDone ? '' : ' Turn on Show done to see it.'), { kind: 'done', id: e.id });
+        },
+        markUndone: () => {
+          const d = Object.assign({}, this.state.done); delete d[e.id];
+          // focus the Mark done button that replaces the link, else the row
+          this._rowFocus = ['hc-row-' + i + '-done', 'hc-row-' + i, 'hc-h1'];
+          this.setState({ done: d, flash: e.id, flashN: this.state.flashN + 1, say: 'Marked not done: ' + e.what });
+          this.showToast('Marked not done: ' + e.what + '.' + (e.nextUp ? ' It is back on Next up.' : ''), { kind: 'undone', id: e.id });
+        }
+      });
+    });
+    const groups = order.map(ym => ({ hid: 'hc-g-' + ym, label: this.monthName(ym), count: groupsMap[ym].length + (groupsMap[ym].length === 1 ? ' date' : ' dates'), rows: groupsMap[ym] }));
+    const openN = rowsAll.filter(e => (e.canDone || e.isTask) && !isDone(e)).length;
+    const nuN = rowsAll.filter(e => e.nextUp && !isDone(e)).length;
+    const summary = rangeBad ? 'Fix the dates to see the list.' : total + (total === 1 ? ' date' : ' dates') + ' from ' + this.fd(s.from, true) + ' to ' + this.fd(s.to, true) + ' · ' + openN + (openN === 1 ? ' reminder' : ' reminders') + ' open · ' + nuN + ' on Next up';
+    const FL = { all: 'everything', dates: 'Dates and tasks', bd: 'Birthdays and anniversaries', off: 'Leave and holidays' };
+    const noMatch = hasStaff && !rangeBad && total === 0;
+    const onToday = hasStaff ? D.ev.filter(e => e.kind === 'leave' && e.iso <= TODAY && e.end >= TODAY).map(e => e.who) : [];
+    const todayOn = !rangeBad && s.from <= TODAY && s.to >= TODAY && (s.filter === 'all' || s.filter === 'off') && !s.ov;
+    const todayText = onToday.length ? 'Today, Wed 18 Nov: ' + onToday.join(' and ') + ' on leave.' : 'Today, Wed 18 Nov: no one is on leave.';
+    const holNote = co === 'AI' ? 'Public holidays are AI’s list for Sabah (Setup › HR › Public holidays). The 2027 list is not confirmed yet, so 2027 holidays are not shown.'
+      : 'Public holidays are AISB’s list for Wilayah Persekutuan Kuala Lumpur (Setup › HR › Public holidays). The 2027 list is not confirmed yet, so 2027 holidays are not shown.';
+
+    // ---- month
+    const MONTHS = ['2026-10', '2026-11', '2026-12', '2027-01', '2027-02'];
+    const mi = MONTHS.indexOf(s.month);
+    const mFirst = s.month + '-01';
+    const mLast = this.plus(this.isoOf(new Date(Date.UTC(Number(s.month.slice(0, 4)), Number(s.month.slice(5, 7)), 1))), -1);
+    const longLeave = e => e.kind === 'leave' && (this.dt(e.end) - this.dt(e.iso)) / 86400000 >= 10;
+    const mEvents = all.filter(e => grpOk(e) && (e.kind !== 'leave' || !longLeave(e)));
+    const strips = hasStaff && (s.filter === 'all' || s.filter === 'off') ? D.ev.filter(e => longLeave(e) && e.iso <= mLast && e.end >= mFirst)
+      .map(e => ({ t: e.who + ' on leave from ' + this.fd(e.iso) + ' to ' + this.fd(e.end) + ', back ' + this.fd(e.back) + '. Shown here instead of on every day.', tone: tn.muted })) : [];
+    const hols = {}; D.ev.filter(e => e.kind === 'holiday').forEach(e => { hols[e.iso] = true; });
+    const dow = (this.dt(mFirst).getUTCDay() + 6) % 7;
+    let cur = this.plus(mFirst, -dow);
+    const weeks = [];
+    let monthItems = 0;
+    while (cur <= mLast) {
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const iso = cur, inM = iso >= mFirst && iso <= mLast, wd = i >= 5;
+        const items = inM ? mEvents.filter(e => (e.kind === 'leave' ? e.iso <= iso && e.end >= iso : e.iso === iso)).sort((a, b) => K[a.kind].ord - K[b.kind].ord).map(e => {
+          const k = K[e.kind], done = isDone(e);
+          const label = e.kind === 'leave' ? e.who + ' on leave' + (e.half ? ', ' + e.half : '') : e.what;
+          return { cls: 'ch ' + k.pl + (done ? ' x' : ''), glyph: k.glyph, tone: T(k.tone), label: label + (done ? ' (done)' : '') };
+        }) : [];
+        monthItems += items.length;
+        const isToday = iso === TODAY;
+        days.push({ num: Number(iso.slice(8)), cls: (inM ? '' : 'out') + (inM && wd ? ' wk' : '') + (inM && hols[iso] ? ' hol' : '') + (isToday ? ' td' : ''), cur: isToday ? 'date' : 'false',
+          isToday, sr: inM ? this.fl(iso) + (isToday ? ', today' : '') + (items.length ? ', ' + items.length + (items.length === 1 ? ' item' : ' items') : ', nothing') : 'Not in ' + this.monthName(s.month), items });
+        cur = this.plus(cur, 1);
+      }
+      weeks.push({ days });
+    }
+    const wkd = [['Mon', 'Monday'], ['Tue', 'Tuesday'], ['Wed', 'Wednesday'], ['Thu', 'Thursday'], ['Fri', 'Friday'], ['Sat', 'Saturday'], ['Sun', 'Sunday']].map(w => ({ short: w[0], full: w[1] }));
+    const legend = ['holiday', 'probation', 'joiner', 'birthday', 'leave'].map(k => ({ cls: 'ch ' + K[k].pl, glyph: K[k].glyph, tone: T(K[k].tone),
+      t: { holiday: 'Public holiday', probation: 'Probation, contract and permit dates', joiner: 'Joiner and leaver tasks, one-off reminders', birthday: 'Birthdays and anniversaries', leave: 'On leave' }[k] }));
+
+    // ---- filters
+    const filters = [['all', 'All', 'reminder'], ['dates', 'Dates and tasks', 'clock'], ['bd', 'Birthdays and anniversaries', 'birthday'], ['off', 'Leave and holidays', 'leave']].map(f => ({
+      label: f[1], glyph: f[2], tone: s.filter === f[0] ? tn.brand : tn.muted, pressed: s.filter === f[0] ? 'true' : 'false',
+      pick: () => this.setState({ filter: f[0], ov: null, swap: this.state.swap + 1, say: 'Showing ' + FL[f[0]] })
+    }));
+
+    // ---- overview arrival
+    const ovText = s.ov === 'dates' ? 'Opened from the Overview card Dates coming up: probation ends, contracts ending, and passport and work permit expiries in the next 60 days, to Sun 17 Jan 2027.'
+      : s.ov === 'birthdays' ? 'Opened from the birthdays and anniversaries on the Overview card Dates coming up. No age and no year of birth.' : '';
+
+    // ---- dialog
+    const d = s.dlg, errs = d && d.tried ? this.dlgErrs(d) : {};
+    const dlgKey = e => {
+      if (e.key === 'Escape') { if (e.stopPropagation) e.stopPropagation(); if (this.state.discard) { this.setState({ discard: false }); return; } this.requestClose(); return; }
+      if (e.key !== 'Tab') return;
+      const f = e.currentTarget && e.currentTarget.querySelectorAll ? e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])') : [];
+      if (!f || !f.length) return;
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    const whoOpts = D.STAFF.filter(r => !r[5] || r[5] >= TODAY).map(r => ({ v: r[0], label: r[1] + ' (' + r[0] + ')' }));
+
+    // ---- tabs
+    const setTab = (t, kb) => { if (kb) this._tabFocus = true; this.setState({ tab: t, swap: this.state.swap + 1, say: t === 'list' ? 'List' : 'Month: ' + this.monthName(this.state.month) }); };
+    const tabKey = e => {
+      const k = e.key; if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(k)) return;
+      if (e.preventDefault) e.preventDefault();
+      const t = k === 'Home' ? 'list' : k === 'End' ? 'month' : this.state.tab === 'list' ? 'month' : 'list';
+      setTab(t, true);
+    };
+
+    const t = s.toast;
+    const isList = s.tab === 'list', isMonth = s.tab === 'month';
+    const showBody = hasStaff && !s.loading && !s.failed;
+    const pageOn = !!s.page && isList && total > 0;
+    return {
+      theme: dark ? 'dark' : 'light', rootCls: 'hc' + (dark ? ' dk' : ''), tn, say: s.say,
+      sbCo: co.toLowerCase(), sbKind: KIND[co] || 'sql', sbAccess: s.user === 'aina' ? 'hrOnly' : 'full', sbCompanies: four ? 'four' : 'two', tbUser: s.user,
+      coLine: co + ' · ' + FULL[co], coCode: co, noActions: !showBody,
+      onTopCo: code => {
+        const v = String(code).toUpperCase();
+        if (['AISB', 'AI', 'AIL', 'AIP'].includes(v)) { if (v !== this.state.co) this.setState({ co: v, open: {}, ov: null, filter: 'all', from: '2026-11-18', to: '2027-02-02', page: 0, flash: null, say: 'Showing the calendar for ' + v }); }
+        else this.showToast('Calendar and reminders is shown for one company at a time.');
+      },
+      doExcel: () => this.showToast(this.excelMsg(co, this.state.from, this.state.to, total)),
+      openAdd: ev => this.openAddDlg(ev),
+      ovOn: !!s.ov && showBody, ovText, clearOv: () => this.setState({ ov: null, filter: 'all', from: TODAY, to: '2027-02-02', say: 'Showing everything from today' }),
+      noteOn: !!s.note && !s.loading && !s.failed, noteText: s.note ? s.note.t : '', noteGlyph: s.note ? s.note.glyph : 'help',
+      showLoading: s.loading, showError: s.failed, retry: () => this.setState({ failed: false, loading: false, say: 'Calendar loaded' }),
+      showEmpty: !hasStaff && !s.loading && !s.failed, emptyText: (FULL[co] || '').split(' · ')[0] + ' has no staff records yet.',
+      showBody,
+      tabListSel: isList ? 'true' : 'false', tabMonthSel: isMonth ? 'true' : 'false', tabListTi: isList ? '0' : '-1', tabMonthTi: isMonth ? '0' : '-1',
+      pickList: () => setTab('list'), pickMonth: () => setTab('month'), tabKey,
+      panelBy: 'hc-tab-' + s.tab, panelCls: s.swap % 2 ? 'swapB' : 'swapA',
+      filters, listOn: isList, monthOn: isMonth,
+      from: s.from, to: s.to, rangeBad: !!rangeBad, rangeInv: rangeBad ? 'true' : 'false', rangeBy: rangeBad ? 'hc-to-err' : '',
+      onFrom: e => this.setState({ from: (e && e.target && e.target.value) || TODAY, ov: null, page: this.state.page ? 25 : 0 }),
+      onTo: e => this.setState({ to: (e && e.target && e.target.value) || '2027-02-02', ov: null, page: this.state.page ? 25 : 0 }),
+      showDone: s.showDone, toggleDone: () => this.setState({ showDone: !this.state.showDone, say: this.state.showDone ? 'Done reminders hidden' : 'Done reminders shown' }),
+      summary, todayOn, todayText, groups,
+      noMatch, noMatchTitle: 'Nothing to show for these dates',
+      noMatchText: 'No ' + (s.filter === 'all' ? 'dates' : FL[s.filter].toLowerCase()) + ' between ' + this.fd(s.from, true) + ' and ' + this.fd(s.to, true) + (s.showDone ? '.' : ', or only done reminders (turn on Show done).'),
+      clearAll: () => this.setState({ filter: 'all', ov: null, from: TODAY, to: '2027-02-02', say: 'Showing everything from today' }),
+      pageOn, pageSay: shownN < total ? 'Showing ' + shownN + ' of ' + total + ' dates' : 'Showing all ' + total + ' dates', moreOn: shownN < total,
+      moreLabel: 'Show ' + Math.min(25, total - shownN) + ' more',
+      showMore: () => { this._rowFocus = 'hc-row-' + shownN; this.setState({ page: this.state.page + 25, say: 'More dates shown' }); },
+      holNote,
+      // month
+      monthLabel: this.monthName(s.month), monthCap: 'Calendar for ' + this.monthName(s.month) + ', ' + co + ', weeks start on Monday',
+      monthSay: monthItems + (monthItems === 1 ? ' item' : ' items') + (s.month === '2026-11' ? ' · today is Wed 18 Nov' : ''),
+      prevOff: mi <= 0, nextOff: mi >= MONTHS.length - 1, thisOff: s.month === '2026-11',
+      prevAria: mi > 0 ? 'Previous month, ' + this.monthName(MONTHS[mi - 1]) : 'Previous month (not drawn)',
+      nextAria: mi < MONTHS.length - 1 ? 'Next month, ' + this.monthName(MONTHS[mi + 1]) : 'Next month (not drawn)',
+      prevMonth: () => { const i = MONTHS.indexOf(this.state.month); if (i > 0) this.setState({ month: MONTHS[i - 1], swap: this.state.swap + 1 }); },
+      nextMonth: () => { const i = MONTHS.indexOf(this.state.month); if (i < MONTHS.length - 1) this.setState({ month: MONTHS[i + 1], swap: this.state.swap + 1 }); },
+      thisMonth: () => this.setState({ month: '2026-11', swap: this.state.swap + 1 }),
+      stripsOn: strips.length > 0, strips, wkd, weeks, legend,
+      // dialog
+      dlgOn: !!d, dimCls: s.closing ? 'dim-out' : 'dim-in', dlgCls: s.closing ? 'dr-out' : 'dr-in', dlgKey,
+      onDlgAnim: e => { if (this.state.closing && e && e.target === e.currentTarget) this.finishClose(); },
+      dlgBackdrop: () => this.requestClose(), dlgCloseBtn: () => this.requestClose(),
+      dRefused: !!(d && d.refused), reloadList: () => { this.setD({ refused: false }); this.setState({ say: 'List reloaded. Your reminder is kept in the form.' }); },
+      dWhat: d ? d.what : '', dDate: d ? d.date : '', dWho: d ? d.who : '', dNote: d ? d.note : '',
+      onWhat: e => this.setD({ what: (e && e.target && e.target.value) || '' }),
+      onDate: e => this.setD({ date: (e && e.target && e.target.value) || '' }),
+      onWho: e => this.setD({ who: (e && e.target && e.target.value) || '' }),
+      onNote: e => this.setD({ note: (e && e.target && e.target.value) || '' }),
+      dWhatErr: !!errs.what, dWhatInv: errs.what ? 'true' : 'false', dWhatBy: errs.what ? 'hc-what-err' : '',
+      dDateErr: !!errs.date, dDateMsg: errs.date || '', dDateInv: errs.date ? 'true' : 'false', dDateBy: errs.date ? 'hc-date-hint hc-date-err' : 'hc-date-hint',
+      whoOpts, dBusy: !!(d && d.saving), dIdle: !(d && d.saving), dBusyAria: d && d.saving ? 'true' : 'false', dSaveLabel: d && d.saving ? 'Adding…' : 'Add reminder',
+      doSave: () => this.save(), byName: this.userName(),
+      discardOn: s.discard, dFoot: !s.discard,
+      keepEditing: () => this.setState({ discard: false }), discardGo: () => this.closeDlg(),
+      // toast
+      hasToast: !!t, toastMsg: t ? t.msg : '', toastUndoOn: !!(t && t.undo),
+      toastUndo: () => {
+        const u = this.state.toast && this.state.toast.undo; if (!u) return;
+        clearTimeout(this._tt);
+        // the new toast has no Undo, so focus moves to its Dismiss button rather than falling to the page
+        this._rowFocus = ['hc-toast-x'];
+        if (u.kind === 'add') this.setState({ oneoffs: this.state.oneoffs.filter(o => o.id !== u.id), toast: { msg: 'Reminder removed. Nothing else changed.', undo: null }, say: 'Undone' });
+        else if (u.kind === 'done') { const dd = Object.assign({}, this.state.done); delete dd[u.id]; this.setState({ done: dd, flash: u.id, flashN: this.state.flashN + 1, toast: { msg: 'Put back as not done.', undo: null }, say: 'Undone' }); }
+        else { const dd = Object.assign({}, this.state.done); dd[u.id] = 'Wed 18 Nov, ' + this.userName(); this.setState({ done: dd, toast: { msg: 'Marked done again.', undo: null }, say: 'Undone' }); }
+        this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+      },
+      toastClose: () => { clearTimeout(this._tt); this._rowFocus = ['hc-h1']; this.setState({ toast: null }); },
+      toastKey: e => { if (e && e.key === 'Escape') { clearTimeout(this._tt); this._rowFocus = ['hc-h1']; this.setState({ toast: null }); } },
+      toastHold: () => clearTimeout(this._tt),
+      toastRelease: () => { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 6000); }
+    };
+  }
+}
+</script>
+</body>
+</html>

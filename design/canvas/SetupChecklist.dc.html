@@ -1,0 +1,1256 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Setup · Monthly checklist · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover{background:#1D419A !important}
+.hs:hover{background:#F0F3F8 !important}
+.hr:hover{background:#F8FAFD !important}
+.mv:hover{background:#F0F3F8 !important;color:#46546A !important}
+/* motion and focus base */
+.hb,.hs,.hr,.mv,.sn,.nv,.nb,.bp,.bs,.bd{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+.tb{transition:filter .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.to-out{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+/* a picked-up row lifts */
+.rw{transition:transform .12s ease-out,box-shadow .12s ease-out}
+.lift{position:relative;z-index:1;background:#FFFFFF;transform:scale(1.01);box-shadow:0 8px 22px rgba(13,27,46,.18)}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+/* form parts used in the dialog and the list header */
+.ci{box-sizing:border-box;width:100%;height:40px;padding:0 12px;border:1px solid #8794A8;border-radius:10px;background:#FFFFFF;color:#0F1A2B;font:400 14px Inter,sans-serif}
+textarea.ci{height:auto;min-height:84px;padding:10px 12px;resize:vertical;line-height:1.45}
+.ci[aria-invalid="true"]{border-color:#B0190F}
+.ci[readonly]{background:#F1F3F7;color:#46546A}
+.cl{font-size:13px;font-weight:600;color:#46546A}
+.cn{color:#5F6C80;font-size:12px}
+.ce{display:flex;gap:6px;align-items:center;color:#B0190F;font-size:13px;font-weight:500}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fw{grid-column:1/-1}
+.bp,.bs,.bd{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.bp{border:0;background:#2450B8;color:#FFFFFF}
+.bp:hover{background:#1D419A}
+.bs{border:1px solid #8794A8;background:#FFFFFF;color:#0F1A2B}
+.bs:hover{background:#F0F3F8}
+.bd{border:0;background:#B0190F;color:#FFFFFF}
+.bd:hover{background:#8F140C}
+.bp[disabled],.bs[disabled]{opacity:.5;cursor:not-allowed}
+.bg{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:9px;border:0;background:transparent;font:600 14px Inter,sans-serif;cursor:pointer;color:#2450B8}
+.bg:hover{background:#EAF0FD}
+.bgd{color:#B0190F}.bgd:hover{background:#FDECEA}
+.lk{border:0;background:transparent;padding:0;font:700 14px Inter,sans-serif;color:#0F1A2B;cursor:pointer;text-align:left}
+.lk:hover{text-decoration:underline}
+@keyframes sh{0%{background-position:-300px 0}100%{background-position:300px 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sk{background:linear-gradient(90deg,#EEF1F5 0,#F7F8FA 50%,#EEF1F5 100%);background-size:600px 100%;animation:sh 1.4s linear infinite}
+.spin{animation:spin .7s linear infinite}
+.pl{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap}
+.pl-ok{background:#E3F7EC;color:#0A6B3D}.pl-warn{background:#FEF1D6;color:#934100}.pl-grey{background:#EEF1F5;color:#46546A}.pl-brand{background:#EAF0FD;color:#2450B8}
+.chk{display:inline-flex;align-items:center;gap:8px;min-height:32px;padding:0 12px 0 8px;border:1px solid #8794A8;border-radius:8px;background:#FFFFFF;font-size:13px;font-weight:500;cursor:pointer}
+.chk:has(input:checked){background:#EAF0FD;border-color:#2450B8;color:#1D419A}
+.chk input,.tk input{width:18px;height:18px;margin:0;accent-color:#2450B8}
+.tk{display:inline-flex;align-items:center;gap:8px;min-height:32px;font-size:13px;color:#46546A;cursor:pointer}
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:12px;padding:14px 16px}
+.th{padding:10px 18px;font-weight:600}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div inert="{{dlgOn}}" style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="setup" company="{{shCo}}" kind="{{shKind}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div inert="{{dlgOn}}" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Setup" sub="{{topPage}}" company="{{shCo}}" onCompany="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+      <div style="flex: 1 1 220px; max-width: 260px; min-width: 0"><dc-import name="SetupNav" active="checklist" kind="{{navKind}}" payroll="{{navPayroll}}" hint-size="100%,820px"></dc-import></div>
+
+      <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">{{eyebrow}}</span>
+            <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 28px; font-weight: 600">{{heading}}</h1>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 720px">{{intro}}</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <sc-if value="{{copyOn}}" hint-placeholder-val="{{ false }}">
+              <button type="button" id="ck-copy-btn" class="bs" onClick="{{openCopy}}"><dc-import name="Icon" glyph="copy" tone="brand" size="18" hint-size="18px,18px"></dc-import>Copy from another company</button>
+            </sc-if>
+            <button type="button" id="ck-add" class="bp" onClick="{{openNew}}"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>{{addLabel}}</button>
+          </div>
+        </div>
+
+        <div role="tablist" aria-label="Section" style="display: flex; gap: 24px; border-bottom: 1px solid #E3E7ED">
+          <button type="button" role="tab" id="cl-tab-list" aria-selected="{{tabs.list.sel}}" aria-controls="cl-panel" tabindex="{{tabs.list.ti}}" onKeyDown="{{tabKey}}" onClick="{{showList}}" style="{{tabList}}">Monthly checklist <span style="color: #5F6C80; font-weight: 500">{{tabs.list.n}}</span></button>
+          <button type="button" role="tab" id="cl-tab-rem" aria-selected="{{tabs.rem.sel}}" aria-controls="cl-panel" tabindex="{{tabs.rem.ti}}" onKeyDown="{{tabKey}}" onClick="{{showRem}}" style="{{tabRem}}">Joiner and leaver reminders <span style="color: #5F6C80; font-weight: 500">{{tabs.rem.n}}</span></button>
+        </div>
+
+        <div id="cl-panel" role="tabpanel" aria-labelledby="{{tabBy}}" style="display: flex; flex-direction: column; gap: 24px">
+        <span id="cl-mv-hint" class="vh">Press Space to pick this item up, the up or down arrow key to move it, Space to drop it and Escape to cancel. Alt with an arrow key moves it from anywhere in the row.</span>
+        <span role="status" class="vh">{{moveMsg}}</span>
+        <sc-if value="{{loadingOn}}" hint-placeholder-val="{{ false }}">
+          <section aria-busy="true" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <span role="status" class="vh">{{loadingLabel}}</span>
+            <div style="display: flex; gap: 14px; padding: 14px 18px; background: #FAFBFC; border-bottom: 1px solid #EEF1F5"><div class="sk" style="height: 10px; width: 14%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 10px; width: 10%; border-radius: 5px"></div></div>
+            <sc-for list="{{skRows}}" as="k" hint-placeholder-count="5"><div style="display: flex; gap: 14px; padding: 18px; border-bottom: 1px solid #EEF1F5; align-items: center"><div class="sk" style="height: 14px; width: 60px; border-radius: 5px"></div><div class="sk" style="height: 12px; width: {{k.a}}%; border-radius: 5px"></div><div style="flex: 1"></div><div class="sk" style="height: 12px; width: {{k.b}}%; border-radius: 5px"></div></div></sc-for>
+          </section>
+        </sc-if>
+        <sc-if value="{{errorOn}}" hint-placeholder-val="{{ false }}">
+          <section style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 role="alert" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{errorTitle}}</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The setup records can't be reached right now. Check the connection, then try again. Nothing was changed.</p>
+            <button type="button" id="ck-retry" class="bp" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </section>
+        </sc-if>
+        <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+        <section style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 12px 18px; border-bottom: 1px solid #EEF1F5">
+            <div class="fx" style="position: relative; flex: 1 1 220px; max-width: 340px; min-width: 180px">
+              <span aria-hidden="true" style="position: absolute; left: 11px; top: 11px; display: inline-flex"><dc-import name="Icon" glyph="search" tone="muted" size="18" hint-size="18px,18px"></dc-import></span>
+              <input id="ck-search" type="search" aria-label="{{searchLabel}}" placeholder="{{searchPh}}" value="{{q}}" onChange="{{onQ}}" onKeyDown="{{searchKey}}" class="ci" style="padding-left: 38px; height: 40px">
+            </div>
+            <span role="status" style="color: #5F6C80; font-size: 13px">{{countText}}</span>
+            <span style="flex: 1 1 0"></span>
+            <label class="tk"><input id="ck-stopped" type="checkbox" checked="{{showStopped}}" onChange="{{toggleStopped}}">Show stopped ({{stoppedN}})</label>
+            <label class="tk"><input id="ck-deleted" type="checkbox" checked="{{showDeleted}}" onChange="{{toggleDeleted}}">Show deleted</label>
+          </div>
+
+          <sc-if value="{{starterOn}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 14px 18px; background: #EAF0FD; border-bottom: 1px solid #D5E0F8">
+              <dc-import name="Icon" glyph="help" tone="brand" size="20" hint-size="20px,20px"></dc-import>
+              <div style="flex: 1 1 320px; min-width: 0"><b>{{co}} is using the starter checklist</b><div style="color: #46546A; font-size: 13px">Every new company is given it. You can change it item by item, or copy the checklist of another company in its place.</div></div>
+              <button type="button" class="bs" onClick="{{openCopy}}"><dc-import name="Icon" glyph="copy" tone="brand" size="18" hint-size="18px,18px"></dc-import>Copy from another company</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{orderBarOn}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-start; padding: 14px 18px; background: #FFFBF2; border-bottom: 1px solid #F3E2B8">
+              <div style="display: flex; gap: 10px; align-items: center; flex: 1 1 260px"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b style="color: #5C3100">The order has changed</b><div style="color: #5C3100; font-size: 13px">It applies from the month you choose on. Filed months never change.</div></div></div>
+              <div class="fld" style="width: 190px">
+                <label for="ck-ofrom" class="cl">From which month?</label>
+                <input id="ck-ofrom" type="month" class="ci" min="{{orderMin}}" value="{{orderFrom}}" onChange="{{onOrderFrom}}" aria-invalid="{{orderErrOn}}" aria-describedby="ck-ofrom-err">
+                <sc-if value="{{orderErrOn}}" hint-placeholder-val="{{ false }}"><span id="ck-ofrom-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{orderErr}}</span></sc-if>
+              </div>
+              <div style="display: flex; gap: 8px; align-self: flex-start; margin-top: 22px"><button type="button" class="bs" onClick="{{undoOrder}}">Undo changes</button><button type="button" class="bp" onClick="{{saveOrder}}">Save order</button></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{emptyOn}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 24px; text-align: center">
+              <dc-import name="Icon" glyph="checklist" tone="muted" size="32" hint-size="32px,32px"></dc-import>
+              <div style="max-width: 440px; color: #46546A">{{emptyText}}</div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center"><button type="button" class="bs" onClick="{{openCopy}}"><dc-import name="Icon" glyph="copy" tone="brand" size="18" hint-size="18px,18px"></dc-import>Copy from another company</button><button type="button" class="bp" onClick="{{openNew}}"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add item</button></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{noMatchOn}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="padding: 28px 18px; text-align: center; color: #46546A">Nothing matches "{{q}}". <button type="button" class="bg" onClick="{{clearQ}}">Clear the search</button></div>
+          </sc-if>
+
+          <sc-if value="{{remEmptyOn}}" hint-placeholder-val="{{ false }}">
+            <div class="ex" style="display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 24px; text-align: center">
+              <dc-import name="Icon" glyph="reminder" tone="muted" size="32" hint-size="32px,32px"></dc-import>
+              <div style="max-width: 440px; color: #46546A">No joiner or leaver reminders yet. Add one, and it is made from the date joined or last day on each staff record.</div>
+              <button type="button" class="bs" onClick="{{openNew}}"><dc-import name="Icon" glyph="plus" tone="brand" size="18" hint-size="18px,18px"></dc-import>Add reminder</button>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{list}}" hint-placeholder-val="{{ true }}">
+            <div class="ex">
+            <sc-for list="{{items}}" as="it" hint-placeholder-count="6">
+              <div class="{{it.cls}}" onKeyDown="{{it.key}}" style="{{it.rowStyle}}">
+                <button type="button" class="mv" id="{{it.mvId}}" aria-label="Move {{it.title}}, position {{it.pos}}" aria-pressed="{{it.held}}" aria-describedby="cl-mv-hint" disabled="{{it.mvOff}}" onClick="{{it.hold}}" style="width: 32px; height: 32px; margin: -6px -8px; flex: none; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 8px; background: transparent; cursor: grab"><dc-import name="Icon" glyph="grip" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+                <span style="font: 700 12px ui-monospace, Consolas, monospace; color: #2450B8; width: 76px">{{it.code}}</span>
+                <div style="flex: 1 1 260px; min-width: 0"><button type="button" class="lk" id="{{it.edId}}" onClick="{{it.open}}" style="{{it.titleStyle}}">{{it.title}}</button><div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px"><sc-for list="{{it.docs}}" as="d" hint-placeholder-count="1"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; background: #F1F3F7; color: #46546A; font-size: 11px; font-weight: 600">{{d}}</span></sc-for></div></div>
+                <span style="display: inline-flex; align-items: center; gap: 6px; color: #46546A; font-size: 13px; white-space: nowrap"><dc-import name="Icon" glyph="calendar" tone="muted" size="16" hint-size="16px,16px"></dc-import>{{it.due}}</span>
+                <span style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 150px"><span class="{{it.autoCls}}">{{it.auto}}</span><span style="color: #5F6C80; font-size: 12px">{{it.rule}}</span></span>
+                <span style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 140px"><span class="{{it.statCls}}">{{it.status}}</span><sc-if value="{{it.built}}" hint-placeholder-val="{{ false }}"><span class="pl pl-grey" style="height: 20px; font-size: 11px">Built in</span></sc-if></span>
+                <button type="button" class="hs" id="{{it.edBtn}}" aria-label="Edit {{it.title}}" onClick="{{it.open}}" style="width: 36px; height: 36px; border-radius: 9px; border: 1px solid #8794A8; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="edit" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+              </div>
+            </sc-for>
+            <div style="display: flex; gap: 10px; padding: 12px 18px; background: #FAFBFC; color: #5F6C80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="muted" size="16" hint-size="16px,16px"></dc-import>Press a handle to pick an item up, then use the arrow keys. Changes apply from a payroll month on and never reach a filed month.</div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{rem}}" hint-placeholder-val="{{ false }}">
+            <div class="ex">
+            <sc-for list="{{reminders}}" as="r" hint-placeholder-count="5">
+              <div class="{{r.cls}}" style="{{r.rowStyle}}">
+                <span style="{{r.tile}}"><dc-import name="Icon" glyph="{{r.glyph}}" tone="{{r.tone}}" size="18" hint-size="18px,18px"></dc-import></span>
+                <div style="flex: 1 1 260px; min-width: 0"><button type="button" class="lk" id="{{r.edId}}" onClick="{{r.open}}" style="{{r.titleStyle}}">{{r.title}}</button> <span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; background: #F1F3F7; color: #46546A; font-size: 11px; font-weight: 700; margin-left: 6px">{{r.short}}</span><div style="color: #5F6C80; font-size: 13px">{{r.when}} · {{r.salary}}</div><div style="color: #5F6C80; font-size: 12px">{{r.driver}}</div><div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px"><sc-for list="{{r.docs}}" as="d" hint-placeholder-count="1"><span style="display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; background: #F1F3F7; color: #46546A; font-size: 11px; font-weight: 600">{{d}}</span></sc-for></div></div>
+                <span class="{{r.forCls}}">{{r.trigger}}</span>
+                <span style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 140px"><span class="{{r.statCls}}">{{r.status}}</span><sc-if value="{{r.built}}" hint-placeholder-val="{{ false }}"><span class="pl pl-grey" style="height: 20px; font-size: 11px">Built in</span></sc-if></span>
+                <button type="button" class="hs" id="{{r.edBtn}}" aria-label="Edit {{r.title}}" onClick="{{r.open}}" style="width: 36px; height: 36px; border-radius: 9px; border: 1px solid #8794A8; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="edit" tone="muted" size="16" hint-size="16px,16px"></dc-import></button>
+              </div>
+            </sc-for>
+            <div style="display: flex; gap: 10px; padding: 12px 18px; background: #FAFBFC; color: #5F6C80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="muted" size="16" hint-size="16px,16px"></dc-import><span>{name} in a title becomes the person's short name; {date} in the detail becomes the date joined or last day.</span></div>
+            </div>
+          </sc-if>
+        </section>
+        </sc-if>
+
+        <sc-if value="{{delOn}}" hint-placeholder-val="{{ false }}">
+          <section class="ex" aria-labelledby="ck-del-h" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; overflow: hidden">
+            <div style="padding: 16px 18px 10px"><h2 id="ck-del-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{delHead}}</h2><div style="color: #5F6C80; font-size: 13px">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</div></div>
+            <div style="overflow-x: auto">
+              <table style="width: 100%; min-width: 640px; border-collapse: collapse">
+                <thead><tr style="background: #FAFBFC; text-align: left; color: #5F6C80; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" class="th">Name</th><th scope="col" class="th">Deleted</th><th scope="col" class="th">By</th><th scope="col" class="th">Why</th><th scope="col" class="th"><span class="vh">Actions</span></th></tr></thead>
+                <tbody>
+                  <sc-for list="{{deleted}}" as="d" hint-placeholder-count="2">
+                    <tr class="{{d.cls}}" style="border-top: 1px solid #EEF1F5; vertical-align: top">
+                      <td style="padding: 12px 18px"><b>{{d.name}}</b><div style="font: 700 12px ui-monospace, Consolas, monospace; color: #2450B8">{{d.code}}</div></td>
+                      <td style="padding: 12px 18px; white-space: nowrap">{{d.at}}<div class="cn">Entry {{d.entry}}</div></td>
+                      <td style="padding: 12px 18px">{{d.by}}</td>
+                      <td style="padding: 12px 18px">{{d.why}}</td>
+                      <td style="padding: 8px 18px; min-width: 230px">
+                        <div style="display: flex; gap: 6px; flex-wrap: wrap"><sc-if value="{{d.canPut}}" hint-placeholder-val="{{ true }}"><button type="button" id="{{d.putId}}" class="bs" onClick="{{d.put}}" style="height: 36px"><dc-import name="Icon" glyph="undo" tone="brand" size="16" hint-size="16px,16px"></dc-import>Put it back</button></sc-if><button type="button" class="bs" aria-expanded="{{d.histOn}}" onClick="{{d.hist}}" style="height: 36px"><dc-import name="Icon" glyph="history" tone="muted" size="16" hint-size="16px,16px"></dc-import>History</button></div>
+                        <sc-if value="{{d.hasProblem}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 6px; margin-top: 8px; color: #5C3100; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="warn" size="16" hint-size="16px,16px"></dc-import><span>{{d.problem}}</span></div></sc-if>
+                      </td>
+                    </tr>
+                    <sc-if value="{{d.histOn}}" hint-placeholder-val="{{ false }}">
+                      <tr class="ex"><td colspan="5" style="padding: 4px 18px 14px; background: #FAFBFC; color: #46546A; font-size: 13px"><sc-for list="{{d.histLines}}" as="h" hint-placeholder-count="2"><div style="padding: 3px 0">{{h}}</div></sc-for></td></tr>
+                    </sc-if>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <sc-if value="{{delEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 20px 18px; color: #5F6C80; border-top: 1px solid #EEF1F5">None deleted.</div></sc-if>
+          </section>
+        </sc-if>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; pointer-events: none">
+    <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
+      <div class="{{toastCls}}" onAnimationEnd="{{onToastAnim}}" tabindex="0" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastGo}}" onFocus="{{toastHold}}" onBlur="{{toastGo}}" style="pointer-events: auto; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 8px 6px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-weight: 600; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>{{toastText}}<sc-if value="{{toastUndoOn}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #8DB0FA; background: transparent; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimClass}}" onClick="{{askClose}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(13, 27, 46, .42); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 40px 16px 24px; box-sizing: border-box; pointer-events: none">
+    <form class="{{dlgClass}}" role="dialog" aria-modal="true" aria-labelledby="ck-title" aria-describedby="ck-sub" tabindex="-1" noValidate="{{ true }}" onSubmit="{{submit}}" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onPanelAnim}}" style="pointer-events: auto; width: 720px; max-width: 100%; max-height: 100%; margin: 0; background: #FFFFFF; border-radius: 16px; box-shadow: 0 24px 64px rgba(13, 27, 46, .32); overflow: hidden; display: flex; flex-direction: column">
+      <div style="padding: 20px 26px 16px; border-bottom: 1px solid #EEF1F5; display: flex; gap: 14px; align-items: flex-start">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="{{dlgGlyph}}" tone="brand" size="26" hint-size="26px,26px"></dc-import></span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+          <span style="color: #5F6C80; font-size: 13px">{{dlgEyebrow}}</span>
+          <h2 id="ck-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{dlgTitle}}</h2>
+          <div id="ck-sub" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: #46546A; font-size: 13px"><sc-if value="{{dlgPillOn}}" hint-placeholder-val="{{ false }}"><span class="{{dlgPillCls}}">{{dlgPill}}</span></sc-if><span>{{dlgSub}}</span></div>
+        </div>
+        <button type="button" class="hs" onClick="{{askClose}}" aria-label="Close" style="width: 40px; height: 40px; border: 0; border-radius: 10px; background: #FFFFFF; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="muted" size="20" hint-size="20px,20px"></dc-import></button>
+      </div>
+
+      <div style="flex: 1; min-height: 0; overflow-y: auto; padding: 20px 26px 22px; display: flex; flex-direction: column; gap: 18px">
+
+        <sc-if value="{{refuseOn}}" hint-placeholder-val="{{ false }}">
+          <div id="ck-refused" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #F4C7C1; background: #FFF6F5; color: #8F140C; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="bad" size="18" hint-size="18px,18px"></dc-import><span><b>Not saved.</b> {{refuse}} Nothing was changed.</span></div>
+        </sc-if>
+        <sc-if value="{{noteOn}}" hint-placeholder-val="{{ false }}">
+          <div class="ex" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; border: 1px solid #C9D7F6; background: #F3F6FE; color: #1D3A80; font-size: 13px"><dc-import name="Icon" glyph="help" tone="brand" size="18" hint-size="18px,18px"></dc-import><div style="display: flex; flex-direction: column; gap: 6px"><span>{{note}}</span><sc-if value="{{noteLinkOn}}" hint-placeholder-val="{{ false }}"><a href="{{noteHref}}" style="font-weight: 600">{{noteLink}}</a></sc-if></div></div>
+        </sc-if>
+        <sc-if value="{{isForm}}" hint-placeholder-val="{{ true }}">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start">
+          <sc-if value="{{isNewItem}}" hint-placeholder-val="{{ true }}">
+            <div class="fld fw"><label for="ck-done" class="cl">Done when</label>
+              <select id="ck-done" class="ci" value="{{f.done}}" onChange="{{h.done}}" aria-describedby="ck-done-h"><option value="hand">Ticked by hand</option><option value="payments">Payments with their documents</option><option value="statements" hidden="{{hideStatements}}" disabled="{{hideStatements}}">Bank statements imported</option><option value="statements_balanced" hidden="{{hideBalanced}}" disabled="{{hideBalanced}}">Statements balanced, every line explained</option><option value="reconciled" hidden="{{hideReconciled}}" disabled="{{hideReconciled}}">Statements reconciled</option><option value="pack" hidden="{{hidePack}}" disabled="{{hidePack}}">Audit pack built (ticked when the month is filed)</option><option value="books" hidden="{{hideBooks}}" disabled="{{hideBooks}}">SQL books agree with SQL Account (from SQL’s journal and trial balance)</option></select>
+              <span id="ck-done-h" class="cn">Fixed once the item is added. A company has each of the built-in ones once at most.</span></div>
+          </sc-if>
+          <sc-if value="{{isEditItem}}" hint-placeholder-val="{{ false }}">
+            <div class="fld fw"><label for="ck-done-l" class="cl">Done when</label>
+              <input id="ck-done-l" class="ci" readonly="{{ true }}" tabindex="-1" value="{{doneLabel}}" aria-describedby="ck-done-lh"><span id="ck-done-lh" class="cn">Fixed once the item is added.</span></div>
+          </sc-if>
+          <sc-if value="{{isNewRem}}" hint-placeholder-val="{{ false }}">
+            <div class="fld"><label for="ck-key" class="cl">Key</label>
+              <input id="ck-key" type="text" class="ci" maxLength="20" spellCheck="false" autoComplete="off" required="{{ true }}" aria-required="true" placeholder="ecp22" value="{{fKey.val}}" onChange="{{fKey.change}}" aria-invalid="{{fKey.inv}}" aria-describedby="{{fKey.by}}" style="font-family: ui-monospace, Consolas, monospace">
+              <sc-if value="{{fKey.errOn}}" hint-placeholder-val="{{ false }}"><span id="ck-key-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fKey.err}}</span></sc-if>
+              <span id="ck-key-h" class="cn">Lower-case letters, digits and _, 2 to 20, starting with a letter. Fixed once added.</span></div>
+            <div class="fld"><label for="ck-kind" class="cl">For</label>
+              <select id="ck-kind" class="ci" value="{{f.kind}}" onChange="{{h.kind}}" aria-describedby="ck-kind-h"><option value="joiner">A joiner (from the date joined)</option><option value="leaver">A leaver (from the last day)</option></select>
+              <span id="ck-kind-h" class="cn">Fixed once added.</span></div>
+          </sc-if>
+          <sc-if value="{{isEditRem}}" hint-placeholder-val="{{ false }}">
+            <div class="fld"><label for="ck-key-l" class="cl">Key</label><input id="ck-key-l" class="ci" readonly="{{ true }}" tabindex="-1" value="{{f.key}}" style="font-family: ui-monospace, Consolas, monospace" aria-describedby="ck-key-lh"><span id="ck-key-lh" class="cn">Fixed once added.</span></div>
+            <div class="fld"><label for="ck-kind-l" class="cl">For</label><input id="ck-kind-l" class="ci" readonly="{{ true }}" tabindex="-1" value="{{kindLabel}}" aria-describedby="ck-kind-lh"><span id="ck-kind-lh" class="cn">Fixed once added.</span></div>
+          </sc-if>
+          <sc-if value="{{isRem}}" hint-placeholder-val="{{ false }}">
+            <div class="fld fw"><label for="ck-short" class="cl">Short name</label>
+              <input id="ck-short" type="text" class="ci" maxLength="40" placeholder="e-CP22" value="{{f.short}}" onChange="{{h.short}}" aria-describedby="ck-short-h">
+              <span id="ck-short-h" class="cn">Next up names reminders due together by their short names, and the recurring payment dialog lists them.</span></div>
+          </sc-if>
+
+          <div class="fld fw"><label for="ck-f-title" class="cl">Title <span style="color: #B0190F" aria-hidden="true">*</span></label>
+            <input id="ck-f-title" type="text" class="ci" maxLength="200" required="{{ true }}" aria-required="true" placeholder="{{titlePh}}" value="{{fTitle.val}}" onChange="{{fTitle.change}}" aria-invalid="{{fTitle.inv}}" aria-describedby="{{fTitle.by}}">
+            <sc-if value="{{fTitle.errOn}}" hint-placeholder-val="{{ false }}"><span id="ck-title-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fTitle.err}}</span></sc-if>
+          </div>
+          <div class="fld fw"><label for="ck-f-detail" class="cl">Detail<sc-if value="{{isRem}}" hint-placeholder-val="{{ false }}"> <span style="color: #B0190F" aria-hidden="true">*</span></sc-if></label>
+            <textarea id="ck-f-detail" class="ci" rows="3" maxLength="2000" aria-required="{{detailReq}}" value="{{fDetail.val}}" onChange="{{fDetail.change}}" aria-invalid="{{fDetail.inv}}" aria-describedby="{{fDetail.by}}"></textarea>
+            <sc-if value="{{fDetail.errOn}}" hint-placeholder-val="{{ false }}"><span id="ck-detail-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fDetail.err}}</span></sc-if>
+            <sc-if value="{{isRem}}" hint-placeholder-val="{{ false }}"><span id="ck-detail-h" class="cn">{name} in the title becomes the person's short name; {date} in the detail becomes the date joined or last day. No other braces can be used. The wording doesn't change by itself when you change the days or the salary.</span></sc-if>
+          </div>
+
+          <sc-if value="{{isItem}}" hint-placeholder-val="{{ true }}">
+            <div class="fld"><label for="ck-off" class="cl">Due in</label>
+              <select id="ck-off" class="ci" value="{{f.off}}" onChange="{{h.off}}"><option value="0">The payroll month</option><option value="1">The month after</option></select></div>
+            <div class="fld"><label for="ck-day" class="cl">Day of the month <span style="color: #B0190F" aria-hidden="true">*</span></label>
+              <input id="ck-day" type="number" class="ci" min="1" max="31" step="1" required="{{ true }}" aria-required="true" value="{{fDay.val}}" onChange="{{fDay.change}}" aria-invalid="{{fDay.inv}}" aria-describedby="{{fDay.by}}">
+              <sc-if value="{{fDay.errOn}}" hint-placeholder-val="{{ false }}"><span id="ck-day-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fDay.err}}</span></sc-if>
+              <span id="ck-day-h" class="cn">A shorter month uses its last day.</span></div>
+          </sc-if>
+          <sc-if value="{{isRem}}" hint-placeholder-val="{{ false }}">
+            <div class="fld"><label for="ck-days" class="cl">Number of days <span style="color: #B0190F" aria-hidden="true">*</span></label>
+              <input id="ck-days" type="number" class="ci" min="0" max="366" step="1" required="{{ true }}" aria-required="true" value="{{fDays.val}}" onChange="{{fDays.change}}" aria-invalid="{{fDays.inv}}" aria-describedby="{{fDays.by}}">
+              <sc-if value="{{fDays.errOn}}" hint-placeholder-val="{{ false }}"><span id="ck-days-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fDays.err}}</span></sc-if>
+              <span id="ck-days-h" class="cn">0 is on the day itself.</span></div>
+            <div class="fld"><label for="ck-when" class="cl">Before or after {{whatDay}}</label>
+              <select id="ck-when" class="ci" value="{{f.when}}" onChange="{{h.when}}"><option value="after">After</option><option value="before">Before</option></select></div>
+            <div class="fld fw"><label for="ck-salary" class="cl">Only when the monthly salary is over (optional)</label>
+              <input id="ck-salary" type="number" class="ci" step="0.01" min="0" value="{{f.salary}}" onChange="{{h.salary}}" aria-describedby="ck-salary-h">
+              <span id="ck-salary-h" class="cn">Leave it empty for any salary.</span></div>
+          </sc-if>
+
+          <div class="fld fw" role="group" aria-labelledby="ck-docs-l">
+            <span id="ck-docs-l" class="cl">Documents for this {{recWord}}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{docOpts}}" as="o" hint-placeholder-count="4"><label class="chk"><input type="checkbox" checked="{{o.on}}" onChange="{{o.toggle}}">{{o.label}}</label></sc-for></div>
+          </div>
+
+          <sc-if value="{{showDeadline}}" hint-placeholder-val="{{ false }}">
+            <div class="fw"><label class="tk"><input id="ck-deadline" type="checkbox" checked="{{f.deadline}}" onChange="{{h.deadline}}">A deadline: Next up shows it from a few days before</label></div>
+          </sc-if>
+          <sc-if value="{{showSubmit}}" hint-placeholder-val="{{ false }}">
+            <div class="fld fw"><label for="ck-submit" class="cl">Submitted as (optional)</label>
+              <input id="ck-submit" type="text" class="ci" maxLength="30" placeholder="KWSP" value="{{f.submit}}" onChange="{{h.submit}}" aria-describedby="ck-submit-h">
+              <span id="ck-submit-h" class="cn">Items due the same day with a name here are one Next up row, for example Submit Oct KWSP, PERKESO and e-PCB.</span></div>
+          </sc-if>
+
+          <sc-if value="{{showRule}}" hint-placeholder-val="{{ false }}">
+            <fieldset class="fw ex" style="margin: 0; padding: 14px 16px 16px; border: 1px solid #8794A8; border-radius: 12px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+              <legend class="cl" style="padding: 0 6px">Which payments, and what each needs</legend>
+              <div class="fld fw" role="group" aria-labelledby="ck-rt-l"><span id="ck-rt-l" class="cn">Payment types covered (none ticked: any type)</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{typeOpts}}" as="o" hint-placeholder-count="4"><label class="chk"><input type="checkbox" checked="{{o.on}}" onChange="{{o.toggle}}">{{o.label}}</label></sc-for></div></div>
+              <div class="fld"><label for="ck-rdir" class="cl">Money</label>
+                <select id="ck-rdir" class="ci" value="{{f.rdir}}" onChange="{{h.rdir}}"><option value="">Either</option><option value="out">Money out</option><option value="in">Money in</option></select></div>
+              <div class="fld"><label for="ck-rwords" class="cl">Words in the description or payee</label>
+                <input id="ck-rwords" type="text" class="ci" placeholder="KWSP, KUMPULAN WANG" spellCheck="false" value="{{f.rwords}}" onChange="{{h.rwords}}" aria-describedby="ck-rwords-h">
+                <span id="ck-rwords-h" class="cn">Whole words, with commas between them. Empty: any payment of the types above.</span></div>
+              <div class="fld fw" role="group" aria-labelledby="ck-rn-l" aria-describedby="{{needBy}}"><span id="ck-rn-l" class="cn">Each payment needs (at least one)</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{needOpts}}" as="o" hint-placeholder-count="4"><label class="chk"><input type="checkbox" id="{{o.id}}" aria-invalid="{{o.inv}}" checked="{{o.on}}" onChange="{{o.toggle}}">{{o.label}}</label></sc-for></div>
+                <sc-if value="{{needErrOn}}" hint-placeholder-val="{{ false }}"><span id="ck-need-err" class="ce" role="alert"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{needErr}}</span></sc-if></div>
+              <div class="fld fw" role="group" aria-labelledby="ck-ro-l"><span id="ck-ro-l" class="cn">Of these, may be filed on this item instead</span>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px"><sc-for list="{{filedOpts}}" as="o" hint-placeholder-count="1"><label class="chk"><input type="checkbox" checked="{{o.on}}" onChange="{{o.toggle}}">{{o.label}}</label></sc-for></div>
+                <sc-if value="{{noFiledOpts}}" hint-placeholder-val="{{ false }}"><span class="cn">Tick a document above first.</span></sc-if></div>
+              <div class="fw"><label class="tk"><input type="checkbox" checked="{{f.rpaid}}" onChange="{{h.rpaid}}">A paid payment counts without its documents</label></div>
+              <div class="fld fw"><label for="ck-rnone" class="cl">With no such payment in the month, it is done once the statements are in, saying</label>
+                <input id="ck-rnone" type="text" class="ci" maxLength="200" placeholder="no statutory payments this month" value="{{f.rnone}}" onChange="{{h.rnone}}"></div>
+              <div class="fld"><label for="ck-rn1" class="cl">What one is called</label><input id="ck-rn1" type="text" class="ci" maxLength="80" placeholder="KWSP payment" value="{{f.rname1}}" onChange="{{h.rname1}}"></div>
+              <div class="fld"><label for="ck-rn2" class="cl">What several are called</label><input id="ck-rn2" type="text" class="ci" maxLength="80" placeholder="KWSP payments" value="{{f.rname2}}" onChange="{{h.rname2}}"></div>
+            </fieldset>
+          </sc-if>
+
+          <div class="fld fw"><label for="ck-from" class="cl">{{fromLabel}}</label>
+            <input id="ck-from" type="month" class="ci" min="{{fromMin}}" required="{{ true }}" value="{{fFrom.val}}" onChange="{{fFrom.change}}" aria-invalid="{{fFrom.inv}}" aria-describedby="{{fFrom.by}}">
+            <sc-if value="{{fFrom.errOn}}" hint-placeholder-val="{{ false }}"><span id="ck-from-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fFrom.err}}</span></sc-if>
+            <span id="ck-from-h" class="cn">Months before this keep what they had. Filed months never change.</span></div>
+          <div class="fld fw"><label for="ck-reason" class="cl">Why are you making this change? (optional)</label>
+            <input id="ck-reason" type="text" class="ci" maxLength="500" autoComplete="off" value="{{f.reason}}" onChange="{{h.reason}}"></div>
+        </div>
+
+        <sc-if value="{{previewOn}}" hint-placeholder-val="{{ false }}">
+          <div class="card rv" id="ck-preview" style="background: #FAFBFC"><h3 style="margin: 0 0 6px; font-size: 14px; font-family: 'Space Grotesk', Inter, sans-serif">{{previewHead}}</h3>
+            <sc-for list="{{previewLines}}" as="l" hint-placeholder-count="2"><div style="color: #46546A; font-size: 13px; padding: 2px 0">{{l}}</div></sc-for>
+            <div style="margin-top: 6px; font-size: 13px"><b>{{previewSum}}</b></div></div>
+        </sc-if>
+
+        <sc-if value="{{isExisting}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #EEF1F5; padding-top: 16px">
+            <div><h3 style="margin: 0 0 2px; font-size: 14px; font-family: 'Space Grotesk', Inter, sans-serif">Where used</h3><div class="cn" style="font-size: 13px">{{usedText}}</div></div>
+
+            <sc-if value="{{actionsOn}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+                <sc-if value="{{canStop}}" hint-placeholder-val="{{ true }}"><button type="button" id="ck-a-stop" class="bs" onClick="{{askStop}}"><dc-import name="Icon" glyph="eyeOff" tone="muted" size="16" hint-size="16px,16px"></dc-import>Stop using</button></sc-if>
+                <sc-if value="{{canUse}}" hint-placeholder-val="{{ false }}"><button type="button" id="ck-a-use" class="bs" onClick="{{askUse}}"><dc-import name="Icon" glyph="refresh" tone="brand" size="16" hint-size="16px,16px"></dc-import>{{useLabel}}</button></sc-if>
+                <sc-if value="{{canDelete}}" hint-placeholder-val="{{ false }}"><button type="button" id="ck-a-del" class="bs" onClick="{{askDelete}}" style="color: #B0190F"><dc-import name="Icon" glyph="trash" tone="bad" size="16" hint-size="16px,16px"></dc-import>Delete</button></sc-if>
+                <button type="button" class="bs" aria-expanded="{{histOn}}" onClick="{{toggleHist}}"><dc-import name="Icon" glyph="history" tone="muted" size="16" hint-size="16px,16px"></dc-import>History</button>
+              </div>
+              <div class="cn" style="font-size: 13px">{{actNote}}</div>
+            </sc-if>
+
+            <sc-if value="{{confirmOn}}" hint-placeholder-val="{{ false }}">
+              <div role="group" aria-labelledby="ck-c-q" class="ex" style="display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid {{confirmBorder}}; background: {{confirmBg}}">
+                <div style="display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="alert" tone="{{confirmTone}}" size="20" hint-size="20px,20px"></dc-import><div><b id="ck-c-q">{{confirmQ}}</b><div style="color: #46546A; font-size: 13px">{{confirmNote}}</div></div></div>
+                <sc-if value="{{confirmMonthOn}}" hint-placeholder-val="{{ true }}">
+                  <div class="fld"><label for="ck-c-from" class="cl">From which month? <span style="color: #B0190F" aria-hidden="true">*</span></label><input id="ck-c-from" type="month" class="ci" min="{{fromMin}}" required="{{ true }}" aria-required="true" value="{{cFromVal}}" onChange="{{onCFrom}}" aria-invalid="{{cFromErrOn}}" aria-describedby="{{cFromBy}}" style="max-width: 220px">
+                    <sc-if value="{{cFromErrOn}}" hint-placeholder-val="{{ false }}"><span id="ck-c-from-err" class="ce" role="alert"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{cFromErr}}</span></sc-if></div>
+                </sc-if>
+                <div class="fld"><label for="ck-c-why" class="cl">Why? <span style="color: #B0190F" aria-hidden="true">*</span></label>
+                  <input id="ck-c-why" type="text" class="ci" maxLength="500" autoComplete="off" required="{{ true }}" aria-required="true" value="{{cReason}}" onChange="{{onCReason}}" aria-invalid="{{cErrOn}}" aria-describedby="{{cBy}}">
+                  <sc-if value="{{cErrOn}}" hint-placeholder-val="{{ false }}"><span id="ck-c-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+                  <span id="ck-c-h" class="cn">Kept in the audit trail with the change.</span></div>
+                <div style="display: flex; gap: 8px; justify-content: flex-end"><button type="button" class="bs" onClick="{{cancelConfirm}}">Keep as it is</button><button type="button" id="ck-c-go" class="{{confirmBtnCls}}" onClick="{{confirmGo}}">{{confirmBtn}}</button></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{histOn}}" hint-placeholder-val="{{ false }}">
+              <div class="card ex" style="background: #FAFBFC"><h3 style="margin: 0 0 6px; font-size: 14px; font-family: 'Space Grotesk', Inter, sans-serif">History</h3>
+                <sc-for list="{{histLines}}" as="h" hint-placeholder-count="3"><div style="color: #46546A; font-size: 13px; padding: 2px 0">{{h}}</div></sc-for></div>
+            </sc-if>
+
+            <div><h3 style="margin: 0 0 6px; font-size: 14px; font-family: 'Space Grotesk', Inter, sans-serif">By month</h3>
+              <div style="display: flex; flex-direction: column; gap: 6px"><sc-for list="{{terms}}" as="t" hint-placeholder-count="2"><div style="display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px"><b style="min-width: 190px">{{t.m}}</b><span style="color: #46546A; flex: 1 1 260px">{{t.t}}</span></div></sc-for></div></div>
+          </div>
+        </sc-if>
+        </sc-if>
+
+        <sc-if value="{{isSaved}}" hint-placeholder-val="{{ false }}">
+          <div class="card rv" style="background: #F3FBF7; border-color: #BFE6D1"><h3 style="margin: 0 0 6px; font-size: 14px; font-family: 'Space Grotesk', Inter, sans-serif; color: #0A6B3D">{{savedHead}}</h3>
+            <sc-for list="{{savedLines}}" as="l" hint-placeholder-count="2"><div style="color: #46546A; font-size: 13px; padding: 2px 0">{{l}}</div></sc-for>
+            <div style="margin-top: 6px; font-size: 13px"><b>{{savedSum}}</b></div></div>
+        </sc-if>
+
+        <sc-if value="{{isCopy}}" hint-placeholder-val="{{ false }}">
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-content: start">
+            <div class="fld fw"><label for="ck-cp-src" class="cl">Copy the checklist of</label>
+              <select id="ck-cp-src" class="ci" aria-describedby="ck-cp-h"><option value="AISB">AISB · AISB Sdn Bhd ({{copyCount}} items)</option></select>
+              <span id="ck-cp-h" class="cn">Its items in force in the month below are added to {{co}}, with their wording, due dates and documents. They replace the starter checklist {{co}} was given. You can change them here afterwards.</span></div>
+            <div class="fld fw"><label for="ck-cp-from" class="cl">From which month?</label>
+              <input id="ck-cp-from" type="month" class="ci" min="{{fromMin}}" value="{{fFrom.val}}" onChange="{{fFrom.change}}" aria-invalid="{{fFrom.inv}}" aria-describedby="{{fFrom.by}}">
+              <sc-if value="{{fFrom.errOn}}" hint-placeholder-val="{{ false }}"><span id="ck-from-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{fFrom.err}}</span></sc-if>
+              <span id="ck-from-h" class="cn">Months before this keep the checklist they had. Filed months never change.</span></div>
+            <div class="fld fw"><label for="ck-cp-why" class="cl">Why are you making this change? (optional)</label>
+              <input id="ck-cp-why" type="text" class="ci" maxLength="500" autoComplete="off" value="{{f.reason}}" onChange="{{h.reason}}"></div>
+          </div>
+          <sc-if value="{{previewOn}}" hint-placeholder-val="{{ false }}">
+            <div class="card rv" style="background: #FAFBFC"><h3 style="margin: 0 0 6px; font-size: 14px; font-family: 'Space Grotesk', Inter, sans-serif">{{previewHead}}</h3>
+              <sc-for list="{{previewLines}}" as="l" hint-placeholder-count="2"><div style="color: #46546A; font-size: 13px; padding: 2px 0">{{l}}</div></sc-for>
+              <div style="margin-top: 6px; font-size: 13px"><b>{{previewSum}}</b></div></div>
+          </sc-if>
+        </sc-if>
+
+        <sc-if value="{{isPut}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 6px; color: #46546A; font-size: 14px">
+            <div>{{putWhen}}</div>
+            <div>{{putSame}}</div>
+            <sc-for list="{{putNotes}}" as="n" hint-placeholder-count="1"><div>{{n}}</div></sc-for>
+          </div>
+          <div class="card" style="background: #FAFBFC"><h3 style="margin: 0 0 6px; font-size: 14px; font-family: 'Space Grotesk', Inter, sans-serif">Putting it back also changes</h3>
+            <sc-for list="{{putLines}}" as="l" hint-placeholder-count="2"><div style="color: #46546A; font-size: 13px; padding: 2px 0">{{l}}</div></sc-for>
+            <div style="margin-top: 6px; font-size: 13px"><b>{{putSum}}</b></div></div>
+          <div class="fld"><label for="ck-p-why" class="cl">Why are you putting it back? <span style="color: #B0190F" aria-hidden="true">*</span></label>
+            <input id="ck-p-why" type="text" class="ci" maxLength="500" autoComplete="off" required="{{ true }}" aria-required="true" value="{{f.reason}}" onChange="{{h.reason}}" aria-invalid="{{putErrOn}}" aria-describedby="{{putBy}}">
+            <sc-if value="{{putErrOn}}" hint-placeholder-val="{{ false }}"><span id="ck-p-err" class="ce"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Say why you're making this change.</span></sc-if>
+            <span id="ck-p-h" class="cn">Kept in the audit trail with the change.</span></div>
+        </sc-if>
+      </div>
+
+      <div style="padding: 14px 26px; border-top: 1px solid #EEF1F5; background: #FAFBFC">
+        <sc-if value="{{discardOn}}" hint-placeholder-val="{{ false }}">
+          <div role="alertdialog" aria-labelledby="ck-discard-q" aria-describedby="ck-discard-d" class="ex" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 10px; align-items: center; min-width: 0"><dc-import name="Icon" glyph="alert" tone="warn" size="20" hint-size="20px,20px"></dc-import><div><b id="ck-discard-q">Discard your changes?</b><div id="ck-discard-d" style="color: #5F6C80; font-size: 12px">What you changed is not kept.</div></div></div>
+            <div style="display: flex; gap: 8px"><button type="button" id="ck-keep" class="bs" onClick="{{keepEditing}}">Keep editing</button><button type="button" class="bd" onClick="{{discard}}">Discard</button></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{footOn}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between">
+            <span id="ck-foot" style="color: #5F6C80; font-size: 13px">{{footNote}}</span>
+            <div style="display: flex; gap: 8px">
+              <button type="button" id="ck-cancel" class="bs" onClick="{{askClose}}">{{cancelLabel}}</button>
+              <sc-if value="{{previewBtnOn}}" hint-placeholder-val="{{ true }}"><button type="button" id="ck-preview-btn" class="bs" disabled="{{noChange}}" aria-describedby="ck-foot" onClick="{{doPreview}}">Preview</button></sc-if>
+              <button type="submit" id="ck-submit" class="bp" disabled="{{submitOff}}" aria-busy="{{savingAria}}" aria-describedby="ck-foot" style="min-width: 112px"><sc-if value="{{saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true" style="width: 16px; height: 16px; flex: none; box-sizing: border-box; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); border-top-color: #FFFFFF"></span></sc-if>{{submitLabel}}</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </form>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","starter","empty","reminders","deleted","new-item","errors","edit-item","edit-payroll-calc","edit-approvals","edit-review","edit-payments","edit-builtin","edit-books","preview","saving","refused","saved","stop","delete","discard","copy","put-back","new-reminder","edit-reminder","edit-cp22a","edit-hr-handled","loading","error","many","reminders-empty","reminders-many","reminders-loading","reminders-error"],"section":"State"},"company":{"editor":"enum","default":"aisb","options":["aisb","ai"],"section":"State"},"$preview":{"width":1440,"height":2900}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.baseState();
+    this.state = { ...this.state, ...this.viewPatch((p && p.view) || 'list') };
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._sv); clearTimeout(this._ld); }
+
+  // ---- sample data (October 2026 is the month being worked; today is Wednesday 18 November 2026) ----
+  D() {
+    if (this._D) return this._D;
+    // Document and payment types by their Setup › Payment types and Document types labels (SetupTypes.dc.html).
+    const DOCS = ['Bank statement', 'Bank reconciliation', 'Payment Voucher (SQL)', 'Acknowledgement / portal bill', 'Official Receipt (SQL)', 'e-Invoice (MyInvois)', 'Approval form (signed)', 'Invoice / bill', 'Bank receipt / transfer slip', 'Payroll summary', 'Month review (signed)', 'Tax clearance letter (LHDN)', 'Other'];
+    const STATY = 'Statutory (KWSP / PERKESO / LHDN)', OVTY = 'Staff claim - overseas service (self-billed e-Invoice)', ACK = 'Acknowledgement / portal bill';
+    const TYPES = ['Salary', 'Director allowance', 'Consultant fee', STATY, 'Utility / telco', 'Rental', 'Staff claim', OVTY, 'Salary advance', 'Payroll run', 'Inter-company transfer', 'Money received', 'Other payment', 'Water bill', 'Insurance premium'];
+    const COMPL = { hand: 'Ticked by hand', approvals: 'Approvals on file for every payment (ticks itself)', review: 'Month review signed and on file (ticks itself)', payroll_check: 'Payroll check workbook filed (ticks itself)', run_approval: 'The payroll run’s approval is on file (ticks itself after the switch-over)', payments: 'Payments with their documents', statements: 'Bank statements imported', statements_balanced: 'Statements balanced, every line explained', reconciled: 'Statements reconciled', pack: 'Audit pack built (ticked when the month is filed)', books: 'SQL books agree with SQL Account (from SQL\u2019s journal and trial balance)' };
+    const BOOKS_DETAIL = 'Fetch SQL\u2019s GL Journal of Transaction and Trial Balance up to at least the month\u2019s last day. Done when every document of the month is in the journal and in SQL\u2019s listings, each one balances and agrees with its listing, and SQL\u2019s trial balance agrees with the books here.';
+    // AISB: the 27 items of its Monthly checklist (MonthlyChecklist.dc.html), with the same titles and due days, in its order.
+    // Used: the months that hold the item, at most 3 (September, October and November 2026), and 2 for the two items new with
+    // approvals (from October 2026). The stopped headcount report and the two deleted items sit with them, out of sight.
+    const ITEMS = {
+      INPUTS: { code: 'inputs', title: 'Collect payroll changes', detail: 'Joiners, leavers, unpaid leave, allowance changes. Update the leave record for the month.', off: 0, day: 18, docs: [], done: 'hand', rule: '', used: 3 },
+      BUDGET: { code: 'budget', title: 'Prepare budget and fund requisition', detail: 'Payroll, consultant fees, claims, office rental, copier, electricity, internet. Send the requisition for approval.', off: 0, day: 20, docs: ['Approval form (signed)'], done: 'hand', rule: '', used: 3 },
+      PCALC: { code: 'payroll-calc', title: 'Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB', detail: 'Net pay per employee and the employer contributions for the month.', off: 0, day: 22, docs: ['Payroll summary'], done: 'payroll_check', rule: 'Uploaded on HR › Payroll › Workbook check', built: true, used: 3, noDl: true,
+        note: 'This is the Payroll check’s item. The workbook checked on HR › Payroll › Workbook check is filed here and the item ticks itself; a newer check replaces the filed workbook and the earlier ones stay in its history. A company that doesn’t run payroll in this app still uses the Payroll check to file its workbook.', link: ['PayrollCheck.dc.html', 'Open the Payroll check'] },
+      HRMEMO: { code: 'payroll-approve', title: 'Payroll approved', detail: 'Approval of the payroll summary before the bank transfer.', off: 0, day: 24, docs: ['Approval form (signed)'], done: 'run_approval', rule: 'By hand until the switch-over', used: 3,
+        note: 'Ticked by hand until payroll is run in the app. After the switch-over it ticks itself from the approved form of the month’s payroll run (HR › Payroll › Run), so no one ticks it.', link: ['Approvals.dc.html', 'Open Approvals'] },
+      LEAVE: { code: 'LEAVE', title: 'Leave balances reviewed', detail: 'Check the leave balances against the payroll.', off: 0, day: 25, docs: [], done: 'hand', rule: '', used: 3 },
+      COUR: { code: 'COUR', title: 'Courier receipts checked', detail: 'Courier receipts are checked against the claims.', off: 0, day: 28, docs: [], done: 'hand', rule: '', used: 0 },
+      PAYSLIP: { code: 'payslips', title: 'Payslips sent to staff', detail: 'Each payslip PDF opens with the IC number without dashes, or a personal password set on the staff record.', off: 0, day: 28, docs: [], done: 'hand', rule: '', used: 3 },
+      COPIER: { code: 'copier', title: 'Copier bill checked against the meter reading', detail: 'Check the copier bill against the meter reading.', off: 0, day: 28, docs: [], done: 'hand', rule: '', used: 3 },
+      CLAIMS: { code: 'claims', title: 'Staff claims compiled and approved', detail: 'Compiled and approved, then paid. Each claim becomes a payment once it is approved.', off: 1, day: 2, docs: [], done: 'hand', rule: '', used: 3 },
+      KWSP: { code: 'kwsp', title: 'KWSP: submit contribution data', detail: 'i-Akaun: contribution month = next month, wages month = payroll month. File the acknowledgement on the KWSP payment.', off: 1, day: 3, docs: [], done: 'hand', rule: '', used: 3, deadline: true, submit: 'KWSP' },
+      PERKESO: { code: 'perkeso', title: 'PERKESO: submit SOCSO, EIS and SKBBK', detail: 'ASSIST portal. SOCSO, EIS and SKBBK (Lindung 24 Jam) are separate lines. File the acknowledgement on each payment.', off: 1, day: 3, docs: [], done: 'hand', rule: '', used: 3, deadline: true, submit: 'PERKESO' },
+      EPCB: { code: 'epcb', title: 'LHDN: submit PCB (e-PCB Plus)', detail: 'Get the payment reference before paying. File the acknowledgement on the PCB payment.', off: 1, day: 3, docs: [], done: 'hand', rule: '', used: 3, deadline: true, submit: 'e-PCB' },
+      STMT: { code: 'STMT', title: 'Import bank statements for every account', detail: 'Import the statement of each bank account for the month.', off: 1, day: 5, docs: ['Bank statement'], done: 'statements', rule: '', built: true, used: 3, noDl: true },
+      PETTY: { code: 'petty', title: 'Petty cash counted and the count filed', detail: 'Count the petty cash and file the count.', off: 1, day: 5, docs: ['Other'], done: 'hand', rule: '', used: 3 },
+      UTIL: { code: 'utility', title: 'Utility bills filed (electricity, telephone and internet)', detail: 'Each utility bill is filed on its payment.', off: 1, day: 7, docs: [], done: 'hand', rule: '', used: 3 },
+      PV: { code: 'PV', title: 'PV in SQL for each salary', detail: 'Each salary payment has its PV in SQL.', off: 1, day: 7, docs: ['Payment Voucher (SQL)'], done: 'payments', rule: 'Salary payments', used: 3, r: { types: { Salary: true }, dir: 'out', words: '', need: { 'Payment Voucher (SQL)': true }, filed: {}, paid: false, none: '', n1: 'Salary payment', n2: 'Salary payments' } },
+      SELFBILL: { code: 'einv-selfbilled', title: 'Self-billed e-Invoices for overseas providers', detail: 'Overseas services that issue no Malaysian e-Invoice. Done once each overseas claim of the month has its e-Invoice.', off: 1, day: 7, docs: [], done: 'payments', rule: 'Overseas claims', used: 3, deadline: true, submit: '',
+        r: { types: { [OVTY]: true }, dir: 'out', words: '', need: { 'e-Invoice (MyInvois)': true }, filed: {}, paid: false, none: 'no overseas claims this month', n1: 'Overseas claim', n2: 'Overseas claims' } },
+      OVSEAS: { code: 'OVSEAS', title: 'Overseas claims have their receipts', detail: 'Each overseas claim has its receipt filed.', off: 1, day: 12, docs: ['Official Receipt (SQL)'], done: 'payments', rule: 'Overseas claims', used: 0, r: { types: { [OVTY]: true }, dir: 'out', words: '', need: { 'Official Receipt (SQL)': true }, filed: {}, paid: false, none: '', n1: 'Overseas claim', n2: 'Overseas claims' } },
+      SUPPLIER: { code: 'supplier', title: 'Supplier statements checked against the books', detail: 'Check each supplier statement against the books.', off: 1, day: 10, docs: [], done: 'hand', rule: '', used: 3 },
+      OLDRPT: { code: 'OLDRPT', title: 'Monthly headcount report sent to the board', detail: 'Send the headcount report to the board.', off: 1, day: 10, docs: [], done: 'hand', rule: '', used: 0 },
+      STAT: { code: 'STAT', title: 'KWSP, PERKESO and PCB paid or acknowledgement filed', detail: 'Each is due by the 15th of the next month.', off: 1, day: 15, docs: [ACK, 'Bank receipt / transfer slip'], done: 'payments', rule: 'Statutory payments', built: true, used: 3, deadline: true, submit: '',
+        r: { types: { [STATY]: true }, dir: 'out', words: 'KWSP, PERKESO, LHDN', need: { [ACK]: true }, filed: { [ACK]: true }, paid: true, none: 'no statutory payments this month', n1: 'Statutory payment', n2: 'Statutory payments' } },
+      // update 30: added at the end of the built-in items, for a company kept in SQL Account only; due the 15th of the next month, with no deadline to file
+      SQLBOOKS: { code: 'sql-books', title: 'SQL books agree with SQL Account', detail: BOOKS_DETAIL, off: 1, day: 15, docs: [], done: 'books', rule: '', built: true, used: 3, noDl: true },
+      EINV: { code: 'EINV', title: 'Fund receipts: OR and validated e-Invoices add up', detail: 'Official receipts and validated e-Invoices add up to the funds received.', off: 1, day: 20, docs: ['Official Receipt (SQL)', 'e-Invoice (MyInvois)'], done: 'payments', rule: 'Money in', used: 3, r: { types: { 'Money received': true }, dir: 'in', words: '', need: { 'Official Receipt (SQL)': true, 'e-Invoice (MyInvois)': true }, filed: {}, paid: false, none: '', n1: 'Fund receipt', n2: 'Fund receipts' } },
+      RECON: { code: 'RECON', title: 'Bank reconciliation balanced and filed', detail: 'Each bank account balances and the reconciliation is filed.', off: 1, day: 20, docs: ['Bank reconciliation'], done: 'reconciled', rule: '', built: true, used: 3, noDl: true },
+      // new with approvals: both join every month from October 2026, the first month approvals are kept
+      APPR: { code: 'approvals', title: 'Approvals on file for every payment', detail: 'Every payment that needs approval has an approved form on file. Ticks itself when nothing is left on the Paid without approval on file list for the month.', off: 1, day: 20, docs: [], done: 'approvals', rule: 'Ticks itself when the open list is empty', built: true, used: 2, noDl: true, since: '2026-10',
+        note: 'Ticks itself when Approvals shows no payment of the month paid without an approved form, or paid more than approved. A payment approved after it was paid leaves that list, so the item can tick later. Approval never blocks a payment.', link: ['Approvals.dc.html', 'Open Approvals'] },
+      CUST: { code: 'customers', title: 'Customer balances older than 30 days followed up', detail: 'Follow up each customer balance older than 30 days.', off: 1, day: 25, docs: [], done: 'hand', rule: '', used: 3 },
+      REVIEW: { code: 'month-review', title: 'Month reviewed', detail: 'One approver signs the printed Month review of the month: the register total, the payments paid without approval, the approvals per approver and the bank reconciliation.', off: 1, day: 30, docs: ['Month review (signed)'], done: 'review', rule: 'Ticks when the signed sheet is uploaded', built: true, used: 2, noDl: true, since: '2026-10',
+        note: 'The Month review is printed from Payments › Approvals or the Monthly checklist, signed by one approver and uploaded on Approvals or from the phone. The item ticks when the signed sheet is on file.', link: ['Approvals.dc.html', 'Open Approvals'] },
+      ASSETS: { code: 'assets', title: 'Fixed asset register updated', detail: 'Update the fixed asset register for the month.', off: 1, day: 30, docs: [], done: 'hand', rule: '', used: 3 },
+      INSUR: { code: 'insurance', title: 'Insurance and licence renewals checked', detail: 'Check the insurance and licence renewals coming up.', off: 1, day: 30, docs: [], done: 'hand', rule: '', used: 3 },
+      PACK: { code: 'pack', title: 'Audit pack built since the last document was added', detail: 'Build the audit pack once the month’s documents are in.', off: 1, day: 30, docs: [], done: 'pack', rule: '', built: true, used: 3, noDl: true }
+    };
+    // AI: its own 22 items (copied from AISB's and changed since; MonthlyChecklist.dc.html), in its order. Used: September
+    // 2026 (filed 5 Oct) and October 2026, and October only for the two items new with approvals. AI's November isn't set up.
+    const I = (k, more) => ({ ...ITEMS[k], used: ITEMS[k].since ? 1 : 2, ...(more || {}) });
+    const AIITEMS = {
+      A_INPUTS: I('INPUTS'),
+      A_BUDGET: I('BUDGET', { title: 'Prepare the month’s budget', detail: 'Payroll, consultant fees, claims, rental and bills. Send it for approval.' }),
+      A_PAPPR: I('HRMEMO', { done: 'hand', rule: '', note: '', link: null }),
+      A_LEAVE: I('LEAVE'),
+      A_INV: { code: 'invoices', title: 'Issue invoices to customers', detail: 'Issue the month’s invoices to customers.', off: 0, day: 26, docs: ['Invoice / bill'], done: 'hand', rule: '', used: 2 },
+      A_PAYSLIP: I('PAYSLIP'),
+      A_CLAIMS: I('CLAIMS'),
+      A_KWSP: I('KWSP'),
+      A_PERKESO: I('PERKESO'),
+      A_STMT: I('STMT'),
+      A_PETTY: I('PETTY'),
+      A_PAYROLL: { code: 'payroll', title: 'Payroll summary filed', detail: 'File the month’s payroll summary. It can be checked first on HR › Payroll › Workbook check.', off: 1, day: 7, docs: ['Payroll summary'], done: 'hand', rule: '', used: 2 },
+      A_SELFBILL: I('SELFBILL'),
+      A_RECORDS: { code: 'records', title: 'Update MBB bank records', detail: 'Record every payment and receipt for the month.', off: 1, day: 8, docs: [], done: 'hand', rule: '', used: 2 },
+      A_STAT: I('STAT', { title: 'KWSP and PERKESO paid or acknowledgement filed', r: { ...ITEMS.STAT.r, words: 'KWSP, PERKESO' } }),
+      A_APPR: I('APPR'),
+      A_RECON: I('RECON'),
+      A_EXPORT: { code: 'export', title: 'Export receipts matched to invoices', detail: 'Each export receipt is on the statement and matches its invoice.', off: 1, day: 20, docs: [], done: 'hand', rule: '', used: 2 },
+      A_SUPPLIER: I('SUPPLIER', { day: 25 }),
+      A_REVIEW: I('REVIEW'),
+      A_INSUR: I('INSUR'),
+      A_PACK: I('PACK')
+    };
+    const REMS = {
+      ecp22: { key: 'ecp22', kind: 'joiner', short: 'e-CP22', days: 30, title: 'e-CP22 for {name}', detail: 'Submit the e-CP22 for {name} by {date}.', docs: ['Acknowledgement / portal bill'], built: true, used: 2, src: 'Date joined', cond: 'For every new employee' },
+      register: { key: 'register', kind: 'joiner', short: 'KWSP', days: 7, title: 'Register {name} with KWSP and PERKESO', detail: 'Register {name} with KWSP and PERKESO by {date}.', docs: ['Acknowledgement / portal bill'], built: true, used: 2, src: 'Date joined', cond: 'For every new employee' },
+      stamp: { key: 'stamp', kind: 'joiner', short: 'Stamping', days: 30, salary: 3000, title: 'Stamp the contract of {name}', detail: 'Stamp the employment contract of {name} by {date}.', docs: [], used: 2, src: 'Date joined', cond: 'When the salary is over the amount' },
+      probation: { key: 'probation', kind: 'joiner', short: 'Probation', days: -30, title: 'Probation review for {name}', detail: 'Review the probation of {name} by {date}.', docs: [], used: 0, src: 'Probation end date', hr: true, cond: 'Handled by HR',
+        note: 'Probation dates now come from the staff record. HR › Staff › Calendar and reminders warns 30 and 7 days before the probation end date and shows it on Next up, so this template makes no task of its own.', link: ['HrCalendar.dc.html', 'Open Calendar and reminders'] },
+      cp22a: { key: 'cp22a', kind: 'leaver', short: 'CP22A', days: -30, title: 'CP22A for {name}', detail: 'Submit the CP22A for {name} by {date}.', docs: ['Acknowledgement / portal bill', 'Tax clearance letter (LHDN)'], built: true, used: 1, src: 'Last day', cond: 'Only when retiring, deceased, leaving Malaysia, or no PCB was deducted',
+        note: 'Made from the last day on the staff record, and only for the reasons shown. It starts the tax-clearance hold: the leaver’s final payment shows Hold until tax clearance in To pay until the LHDN letter is on file.', link: ['HrStaff.dc.html', 'Open Staff'] },
+      cp21: { key: 'cp21', kind: 'leaver', short: 'CP21', days: -30, title: 'CP21 for {name}', detail: 'Submit the CP21 for {name} by {date}.', docs: ['Acknowledgement / portal bill', 'Tax clearance letter (LHDN)'], built: true, used: 0, src: 'Last day', cond: 'Only when leaving Malaysia for more than 3 months',
+        note: 'Made from the last day on the staff record when the reason is leaving Malaysia for over 3 months. It also starts the tax-clearance hold.' },
+      final: { key: 'final', kind: 'leaver', short: 'Final pay', days: 0, title: 'Final pay and statutory for {name}', detail: 'Pay {name} the final salary, and pay the statutory amounts, on {date}.', docs: ['Payment Voucher (SQL)'], built: true, used: 1, src: 'Last day', cond: 'For every leaver' },
+      wpass: { key: 'wpass', kind: 'joiner', short: 'Work pass', days: -60, title: 'Work pass renewal for {name}', detail: 'Renew the work pass of {name} by {date}.', docs: [], used: 0, src: 'Work permit expiry', hr: true, cond: 'Handled by HR' }
+    };
+    // FIRST: the month a new item or reminder starts from by default. The earliest month a change can start from is firstFor().
+    // SETUP: the months set up and not filed, per company (AISB's September 2026 is still open; AI's was filed on 5 Oct).
+    return (this._D = { DOCS, TYPES, COMPL, ITEMS, AIITEMS, REMS, NOW: '2026-11', FIRST: '2026-10', SETUP: { AISB: ['2026-09', '2026-10', '2026-11'], AI: ['2026-10'] }, ME: 'Aisha Rahman' });
+  }
+  // The earliest month a change can start from: filed months never change. AISB's first month tracked, September 2026, is
+  // still open. AI's September 2026 is filed, and reminders are kept for every company, so they wait for October too.
+  firstFor(kind, co) { return kind === 'item' && co === 'AISB' ? '2026-09' : '2026-10'; }
+  fromErr(from, kind, co) {
+    const first = this.firstFor(kind, co);
+    if (from && from >= first) return '';
+    if (!from) return 'Choose ' + this.ml(first) + ' or later.';
+    if (from === '2026-09') return 'AI’s September 2026 is filed, and filed months never change. Choose October 2026 or later.';
+    return this.ml(from) + ' is before the first month tracked in this app. Choose ' + this.ml(first) + ' or later.';
+  }
+  baseState() {
+    return {
+      tab: 'list', co: this.startCo(), aiMode: 'own', q: '', showStopped: false, showDeleted: false,
+      orders: { AISB: null, AI: null, rem: null }, orderBase: { AISB: null, AI: null, rem: null }, orderFrom: '2026-10', orderErr: '',
+      held: null, heldFrom: null, moved: null, moves: 0, moveMsg: '',
+      stat: {
+        'AISB:LEAVE': { k: 'planned', from: '2026-12' },
+        'AISB:OLDRPT': { k: 'stopped', from: '2026-09' },
+        'AISB:COUR': { k: 'deleted', at: '12 Nov 2026, 14:05', entry: 431, by: 'Aisha Rahman', why: 'Added by mistake', sameId: true, id: 14 },
+        'AISB:OVSEAS': { k: 'deleted', at: '3 Oct 2026, 09:40', entry: 360, by: 'Aisha Rahman', why: 'Replaced by the self-billed e-Invoices item', sameId: true, id: 9 },
+        'rem:wpass': { k: 'deleted', at: '28 Oct 2026, 16:12', entry: 401, by: 'Aisha Rahman', why: 'Work permit dates are reminded in HR › Staff › Calendar and reminders', sameId: false, id: 18 }
+      },
+      extra: {}, edits: {}, histFor: null,
+      dlg: null, closing: false, confirm: null, discard: false, f: null, f0: '', tried: false, preview: null, saved: null, hist: false,
+      cReason: '', cFrom: '2026-12', cTried: false, putTried: false,
+      load: null, saving: false, refuse: '', noRem: false,
+      toast: null, toastLeaving: false, undo: null, flashKey: null, flashN: 0
+    };
+  }
+  viewPatch(view) {
+    const dlgIn = (kind, mode, code, co, more) => ({ ...this.openDlg(kind, mode, code, co), ...(more || {}) });
+    switch (view) {
+      case 'loading': return { load: 'loading' };
+      case 'error': return { load: 'error' };
+      case 'reminders-loading': return { tab: 'rem', load: 'loading' };
+      case 'reminders-error': return { tab: 'rem', load: 'error' };
+      case 'reminders-empty': return { tab: 'rem', noRem: true };
+      case 'many': return { extra: this.manyExtra('item') };
+      case 'reminders-many': return { tab: 'rem', extra: this.manyExtra('rem') };
+      case 'edit-payroll-calc': return dlgIn('item', 'edit', 'PCALC', 'AISB');
+      case 'edit-approvals': return dlgIn('item', 'edit', 'APPR', 'AISB');
+      case 'edit-review': return dlgIn('item', 'edit', 'REVIEW', 'AISB');
+      case 'edit-cp22a': return dlgIn('rem', 'edit', 'cp22a', 'AISB', { tab: 'rem' });
+      case 'edit-hr-handled': return dlgIn('rem', 'edit', 'probation', 'AISB', { tab: 'rem' });
+      case 'saving': { const o = this.openDlg('item', 'edit', 'HRMEMO', 'AISB'); return { ...o, f: { ...o.f, day: '25' }, saving: true }; }
+      case 'refused': { const o = this.openDlg('item', 'edit', 'HRMEMO', 'AISB'); return { ...o, f: { ...o.f, day: '25' }, refuse: 'This checklist item was changed in another window at 10:12, after you opened it. Close this and open it again to see that change, then make yours again.' }; }
+      case 'starter': return { co: 'AI', aiMode: 'starter' };
+      case 'empty': return { co: 'AI', aiMode: 'empty' };
+      case 'reminders': return { tab: 'rem' };
+      case 'deleted': return { showDeleted: true, showStopped: true };
+      case 'new-item': return dlgIn('item', 'new', '', 'AISB');
+      case 'errors': return dlgIn('item', 'new', '', 'AISB', { tried: true });
+      case 'edit-item': return dlgIn('item', 'edit', 'HRMEMO', 'AISB');
+      case 'edit-payments': return dlgIn('item', 'edit', 'STAT', 'AISB');
+      case 'edit-builtin': return dlgIn('item', 'edit', 'STMT', 'AISB');
+      case 'edit-books': return dlgIn('item', 'edit', 'SQLBOOKS', 'AISB');
+      case 'preview': {
+        const o = this.openDlg('item', 'edit', 'PV', 'AISB');
+        const f = { ...o.f, docs: { 'Payment Voucher (SQL)': true, 'Approval form (signed)': true }, from: '2026-10' };
+        return { ...o, f, preview: this.makePreview(f, o.dlg, o.f0) };
+      }
+      case 'saved': {
+        const o = this.openDlg('item', 'edit', 'PV', 'AISB');
+        const f = { ...o.f, day: '6' };
+        return { ...o, f, f0: JSON.stringify(f), saved: this.makePreview(f, o.dlg, JSON.stringify(o.f), 'Saved') };
+      }
+      case 'stop': return dlgIn('item', 'edit', 'EINV', 'AISB', { confirm: 'stop' });
+      // only an item in no month can be deleted: the headcount report, stopped before the first month tracked
+      case 'delete': return dlgIn('item', 'edit', 'OLDRPT', 'AISB', { confirm: 'delete', showStopped: true });
+      case 'discard': {
+        const o = this.openDlg('item', 'edit', 'HRMEMO', 'AISB');
+        return { ...o, f: { ...o.f, title: o.f.title + ' by a director' }, discard: true };
+      }
+      case 'copy': return dlgIn('copy', 'new', '', 'AI', { co: 'AI', aiMode: 'starter' });
+      case 'put-back': return dlgIn('put', 'edit', 'COUR', 'AISB', { showDeleted: true, showStopped: true });
+      case 'new-reminder': return dlgIn('rem', 'new', '', 'AISB', { tab: 'rem' });
+      case 'edit-reminder': return dlgIn('rem', 'edit', 'stamp', 'AISB', { tab: 'rem' });
+      default: return {};
+    }
+  }
+
+  manyExtra(kind) {
+    const W = ['Insurance renewal', 'Licence renewal', 'Courier statement', 'Petty cash count', 'Fixed asset list', 'Stock count', 'Supplier statements', 'Customer statements', 'Tenancy review', 'Vehicle road tax', 'Fire safety check', 'Server backup test'];
+    const out = {};
+    for (let i = 0; i < 30; i++) {
+      const w = W[i % 12] + (i < 12 ? '' : i < 24 ? ' (quarterly)' : ' (yearly)');
+      if (kind === 'item') out['AISB:X' + (100 + i)] = { code: 'X' + (100 + i), title: w, detail: 'Tick when it is done.', off: i % 2, day: 3 + (i % 25), docs: [], done: 'hand', rule: '', used: i % 5 };
+      else out['rem:x' + (100 + i)] = { key: 'x' + (100 + i), kind: i % 3 ? 'joiner' : 'leaver', short: 'Task ' + (i + 1), days: i % 3 ? 7 + i : -(7 + i), title: w + ' for {name}', detail: 'Check it for {name} by {date}.', docs: [], used: i % 4, src: i % 3 ? 'Date joined' : 'Last day', cond: i % 3 ? 'For every new employee' : 'For every leaver' };
+    }
+    return out;
+  }
+  // ---- small helpers ----
+  ms(m) { const [y, n] = String(m || '').split('-'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(+n || 1) - 1] + ' ' + y; }
+  ml(m) { const [y, n] = String(m || '').split('-'); return ['January','February','March','April','May','June','July','August','September','October','November','December'][(+n || 1) - 1] + ' ' + y; }
+  ord1(n) { n = +n; const s = n % 100 >= 11 && n % 100 <= 13 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'); return n + s; }
+  dueText(o) { return this.ord1(o.day) + ' of the ' + (+o.off ? 'month after' : 'payroll month'); }
+  remWhen(o) { const d = +o.days || 0, what = o.src ? 'the ' + o.src.toLowerCase().replace('last day', 'last day') : o.kind === 'leaver' ? 'the last day' : 'the date joined'; return d ? Math.abs(d) + (Math.abs(d) === 1 ? ' day ' : ' days ') + (d < 0 ? 'before ' : 'after ') + what : 'On ' + what; }
+  statKey(kind, code, co) { return kind === 'rem' ? 'rem:' + code : (co || this.state.co) + ':' + code; }
+  stOf(key, S) { return (S || this.state).stat[key] || { k: 'use' }; }
+  // the item or reminder as it is now: what it came with, then what was saved
+  rec(kind, code, co, S) {
+    S = S || this.state; const D = this.D();
+    const base = kind === 'rem' ? (D.REMS[code] || (S.extra['rem:' + code])) : (D.AIITEMS[code] || D.ITEMS[code] || S.extra[co + ':' + code]);
+    if (!base) return null;
+    return { ...base, ...(S.edits[this.statKey(kind, code, co)] || {}) };
+  }
+  codesFor(kind, co, S) {
+    S = S || this.state; const D = this.D();
+    if (kind === 'rem') return S.noRem ? [] : [...Object.keys(D.REMS), ...Object.keys(S.extra).filter(k => k.startsWith('rem:')).map(k => k.slice(4))];
+    const mine = Object.keys(S.extra).filter(k => k.startsWith(co + ':')).map(k => k.slice(co.length + 1));
+    if (co === 'AISB') return [...Object.keys(D.ITEMS), ...mine];
+    // own: AI's 22 items. starter and empty are what-ifs for a new company (the starter here is shortened to six items,
+    // without the SQL-only ones); copied: AISB's checklist copied over the starter (the copy dialog).
+    if (S.aiMode === 'starter') return [...this.starterCodes(), ...mine];
+    if (S.aiMode === 'empty') return mine;
+    if (S.aiMode === 'copied') return [...this.copyCodes(), ...mine];
+    return [...Object.keys(D.AIITEMS), ...mine];
+  }
+  starterCodes() { return ['STMT', 'PCALC', 'STAT', 'RECON', 'APPR', 'REVIEW']; }
+  // AISB's items in use, less the ones only a company kept in SQL Account has
+  copyCodes() {
+    const S0 = { ...this.state, orders: {}, extra: {} };
+    return Object.keys(this.D().ITEMS).filter(c => !['PV', 'SQLBOOKS'].includes(c) && !['stopped', 'deleted'].includes(this.status('item', c, 'AISB', S0).k));
+  }
+  ordKey(kind, co) { return kind === 'rem' ? 'rem' : co; }
+  ordOf(kind, co, S, which) {
+    S = S || this.state; const base = this.codesFor(kind, co, S), cur = (which === 'base' ? S.orderBase : S.orders)[this.ordKey(kind, co)];
+    if (!cur) return base;
+    return [...cur.filter(c => base.includes(c)), ...base.filter(c => !cur.includes(c))];
+  }
+  status(kind, code, co, S) {
+    const s = this.stOf(this.statKey(kind, code, co), S);
+    if (s.k === 'planned') return { k: s.k, label: 'Stops from ' + this.ms(s.from), cls: 'pl pl-warn' };
+    if (s.k === 'stopped') return { k: s.k, label: 'Stopped from ' + this.ms(s.from), cls: 'pl pl-grey' };
+    if (s.k === 'again') return { k: s.k, label: 'In use again from ' + this.ms(s.from), cls: 'pl pl-ok' };
+    if (s.k === 'deleted') return { k: s.k, label: 'Deleted', cls: 'pl pl-grey' };
+    const r0 = kind === 'rem' ? this.rec(kind, code, co, S) : null;
+    if (r0 && r0.hr) return { k: 'use', label: 'Handled in HR', cls: 'pl pl-brand' };
+    return { k: 'use', label: 'In use', cls: 'pl pl-ok' };
+  }
+  // the codes drawn now, in order: not deleted, not stopped unless asked, matching the search
+  shown(kind, co, S) {
+    S = S || this.state; const q = S.q.trim().toLowerCase();
+    return this.ordOf(kind, co, S).filter(c => {
+      const k = this.status(kind, c, co, S).k;
+      if (k === 'deleted' || (k === 'stopped' && !S.showStopped)) return false;
+      if (!q) return true;
+      const r = this.rec(kind, c, co, S);
+      return (r.title + ' ' + (r.code || r.key) + ' ' + (r.short || '') + ' ' + (r.rule || '')).toLowerCase().includes(q);
+    });
+  }
+
+  // ---- the dialog: open, form, checks, preview ----
+  blank() {
+    return { title: '', detail: '', off: '1', day: '', docs: {}, deadline: false, submit: '', done: 'hand', from: this.D().FIRST, reason: '',
+      rtypes: {}, rdir: 'out', rwords: '', rneed: {}, rfiled: {}, rpaid: false, rnone: '', rname1: '', rname2: '',
+      key: '', kind: 'joiner', short: '', days: '', when: 'after', salary: '' };
+  }
+  formFor(kind, mode, code, co) {
+    const b = this.blank();
+    if (mode === 'new') return b;
+    const o = this.rec(kind, code, co);
+    if (!o) return b;
+    const toSet = a => { const x = {}; (a || []).forEach(n => { x[n] = true; }); return x; };
+    if (kind === 'rem') return { ...b, key: o.key, kind: o.kind, short: o.short || '', days: String(Math.abs(o.days)), when: o.days < 0 ? 'before' : 'after', salary: o.salary ? String(o.salary) : '', title: o.title, detail: o.detail, docs: toSet(o.docs) };
+    const r = o.r || {};
+    return { ...b, title: o.title, detail: o.detail, off: String(o.off), day: String(o.day), docs: toSet(o.docs), deadline: !!o.deadline, submit: o.submit || '', done: o.done,
+      rtypes: r.types || {}, rdir: r.dir || '', rwords: r.words || '', rneed: r.need || {}, rfiled: r.filed || {}, rpaid: !!r.paid, rnone: r.none || '', rname1: r.n1 || '', rname2: r.n2 || '' };
+  }
+  openDlg(kind, mode, code, co) {
+    const f = kind === 'copy' || kind === 'put' ? { ...this.blank(), reason: '' } : this.formFor(kind, mode, code, co);
+    return { dlg: { kind, mode, code, co: co || this.state.co }, closing: false, confirm: null, discard: false, f, f0: JSON.stringify(f), tried: false, preview: null, saved: null, hist: false, cReason: '', cFrom: '2026-12', cTried: false, putTried: false };
+  }
+  errors(f, dlg) {
+    const e = {};
+    if (!dlg) return e;
+    const D = this.D(), anyOf = o => Object.keys(o || {}).some(k => o[k]);
+    if (dlg.kind === 'item') {
+      if (!f.title.trim()) e.title = 'Give the item a title.';
+      const d = +f.day; if (!(f.day !== '' && d >= 1 && d <= 31)) e.day = 'Enter a day from 1 to 31.';
+      if (f.done === 'payments' && !anyOf(f.rneed)) e.need = 'Choose at least one document each payment needs.';
+    }
+    if (dlg.kind === 'rem') {
+      if (dlg.mode === 'new' && !/^[a-z][a-z0-9_]{1,19}$/.test(f.key)) e.key = 'The key needs 2 to 20 lower-case letters, digits or _, starting with a letter.';
+      else if (dlg.mode === 'new' && (this.D().REMS[f.key] || this.state.extra['rem:' + f.key])) e.key = 'There is a reminder with the key "' + f.key + '" already.';
+      const d = Number(f.days); if (f.days === '' || !(d >= 0 && d <= 366)) e.days = 'Enter the number of days, from 0 to 366.';
+      if (!f.title.trim()) e.title = 'Give the reminder a title.';
+      if (!f.detail.trim()) e.detail = 'Say what to check.';
+    }
+    if (dlg.kind !== 'put') { const fe = this.fromErr(f.from, dlg.kind === 'rem' ? 'rem' : 'item', dlg.co); if (fe) e.from = fe; }
+    return e;
+  }
+  makePreview(f, dlg, f0, head) {
+    const D = this.D(), n = D.SETUP[dlg.kind === 'item' && dlg.co === 'AI' ? 'AI' : 'AISB'].filter(m => m >= f.from).length;
+    let was = {}; try { was = JSON.parse(f0 || '{}'); } catch (e) { was = {}; }
+    const docsChanged = JSON.stringify(Object.keys(f.docs || {}).filter(k => f.docs[k]).sort()) !== JSON.stringify(Object.keys(was.docs || {}).filter(k => (was.docs || {})[k]).sort());
+    const lines = [];
+    const what = dlg.kind === 'rem' ? 'reminder' : 'checklist item';
+    if (dlg.kind === 'copy') return null;
+    if (dlg.mode === 'new') lines.push('Adds "' + (f.title || 'the ' + what) + '" from ' + this.ml(f.from) + ' on.');
+    else lines.push('Changes "' + f.title + '" from ' + this.ml(f.from) + ' on. Months before it keep what they had.');
+    if (dlg.kind === 'item' && docsChanged) lines.push('The documents asked for change, so some payments are checked again.');
+    const p = dlg.kind === 'item' && docsChanged ? n * 2 : 0, miss = p ? 1 : 0;
+    const parts = [n ? n + ' ' + what + (n === 1 ? '' : 's') + ' in months already set up ' + (n === 1 ? 'changes' : 'change') : 'No ' + what + 's in months already set up change'];
+    if (p) parts.push(p + ' payments affected');
+    if (miss) parts.push(miss + ' now misses something');
+    return { head: head || 'Preview: nothing is saved yet', lines, sum: parts.join('; ') + '.' };
+  }
+  setF(patch) { this.setState({ f: { ...this.state.f, ...patch }, preview: null, saved: null }); }
+  tog(group, name) { const f = this.state.f || this.blank(); const g = { ...(f[group] || {}) }; g[name] = !g[name]; this.setF({ [group]: g }); }
+  focusId(id) { const el = document.getElementById(id); if (el && el.focus) el.focus({ preventScroll: true }); }
+
+  openRecord(kind, code, openerId) {
+    this._opener = document.getElementById(openerId) || document.activeElement;
+    this.setState(this.openDlg(kind, 'edit', code, this.state.co));
+  }
+  openNewDlg() {
+    this._opener = document.getElementById('ck-add') || document.activeElement;
+    this.setState(this.openDlg(this.state.tab === 'rem' ? 'rem' : 'item', 'new', '', this.state.co));
+  }
+  openCopyDlg() { this._opener = document.activeElement; this.setState(this.openDlg('copy', 'new', '', this.state.co)); }
+  openPut(kind, code, openerId) { this._opener = document.getElementById(openerId) || document.activeElement; this.setState(this.openDlg('put', 'edit', kind === 'rem' ? 'rem:' + code : code, this.state.co)); }
+  isDirty() { const S = this.state; return !!S.dlg && S.dlg.kind !== 'put' && JSON.stringify(S.f) !== S.f0; }
+  askClose() {
+    const S = this.state;
+    if (!S.dlg || S.closing || S.saving) return;
+    if (S.discard) return;
+    if (this.isDirty()) { this.setState({ discard: true, confirm: null }); return; }
+    this.closeDlg();
+  }
+  closeDlg() {
+    if (!this.state.dlg || this.state.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.finishClose();
+    this.setState({ closing: true, discard: false });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false, discard: false, confirm: null }); }
+  // the company the shell (menu and top bar) shows follows the one this page shows; the top-bar switcher picks it
+  startCo() { const u = String(this.props.company || "").toUpperCase(); return u === "AI" ? "AI" : "AISB"; }
+  shell() {
+    const SH = { AISB: ["aisb", "sqlPayroll", "sql", "true"], AI: ["ai", "here", "here", "false"], AIL: ["ail", "sql", "sql", "false"], AIP: ["aip", "here", "here", "false"] };
+    const h = SH[String(this.state.co || "").toUpperCase()] || SH.AISB;
+    return { shCo: h[0], shKind: h[1], navKind: h[2], navPayroll: h[3], onTopCo: code => { const u = String(code).toUpperCase(); if (u !== "AISB" && u !== "AI") return; if (u !== this.state.co) this.setState(this.state.tab === "list" ? { co: u, q: "", held: null, heldFrom: null, moveMsg: "Showing the checklist of " + u + "." } : { co: u, held: null, heldFrom: null }); } };
+  }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && (prevProps.view !== this.props.view || prevProps.company !== this.props.company)) {
+      clearTimeout(this._t); clearTimeout(this._tt);
+      this.setState(this.baseState(), () => this.setState(this.viewPatch(this.props.view || 'list')));
+      return;
+    }
+    const S = this.state;
+    if (!prev.dlg && S.dlg) { this.focusId('ck-title'); return; }
+    if (prev.dlg && !S.dlg) {
+      const o = this._opener;
+      if (o && o.isConnected && o !== document.body && o.focus) o.focus({ preventScroll: true }); else this.focusId('ck-add');
+      return;
+    }
+    if (this._focusId) { const id = this._focusId; this._focusId = null; this.focusId(id); return; }
+    if (!prev.confirm && S.confirm) { this.focusId('ck-c-why'); return; }
+    if (prev.confirm && !S.confirm && S.dlg && !S.closing) { this.focusId({ stop: 'ck-a-stop', use: 'ck-a-use', cancel: 'ck-a-use', delete: 'ck-a-del' }[prev.confirm] || 'ck-title'); return; }
+    if (!prev.discard && S.discard) { this.focusId('ck-keep'); return; }
+    if (prev.discard && !S.discard && S.dlg && !S.closing) this.focusId('ck-cancel');
+  }
+
+  // ---- saving, stopping, deleting, putting back, copying ----
+  say(text, undo) { clearTimeout(this._tt); this.setState({ toast: text, toastLeaving: false, undo: undo || null }); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); }
+  flash(key) { this.setState({ flashKey: key, flashN: this.state.flashN + 1 }); }
+  submitForm() {
+    const S = this.state, dlg = S.dlg;
+    if (!dlg || S.closing || S.discard) return;
+    if (dlg.kind === 'put') return this.doPut();
+    const errs = this.errors(S.f, dlg), order = ['key', 'title', 'detail', 'day', 'days', 'need', 'from'].filter(k => errs[k]);
+    if (order.length) {
+      this._focusId = { key: 'ck-key', title: 'ck-f-title', detail: 'ck-f-detail', day: 'ck-day', days: 'ck-days', need: 'ck-need-0', from: dlg.kind === 'copy' ? 'ck-cp-from' : 'ck-from' }[order[0]];
+      this.setState({ tried: true });
+      return;
+    }
+    if (dlg.kind === 'copy') return this.doCopy();
+    if (S.saving) return;
+    this.setState({ saving: true, refuse: '' });
+    clearTimeout(this._sv); this._sv = setTimeout(() => this.commitSave(), 650);
+  }
+  commitSave() {
+    const S = this.state, dlg = S.dlg;
+    if (!dlg || !S.saving) return;
+    const f = S.f, kind = dlg.kind, co = dlg.co, D = this.D();
+    const docs = Object.keys(f.docs).filter(k => f.docs[k]);
+    const saved = this.makePreview(f, dlg, S.f0, 'Saved');
+    let code = dlg.code;
+    const next = { tried: false, preview: null, saved, f0: JSON.stringify(f), hist: false, saving: false };
+    if (kind === 'item') {
+      const patch = { title: f.title.trim(), detail: f.detail, off: +f.off, day: +f.day, docs, deadline: f.deadline, submit: f.submit };
+      if (f.done === 'payments') patch.r = { types: f.rtypes, dir: f.rdir, words: f.rwords, need: f.rneed, filed: f.rfiled, paid: f.rpaid, none: f.rnone, n1: f.rname1, n2: f.rname2 };
+      if (dlg.mode === 'new') {
+        code = 'NEW' + (Object.keys(S.extra).length + 1);
+        const rec = { code, ...patch, done: f.done, rule: '', used: 0 };
+        next.extra = { ...S.extra, [co + ':' + code]: rec };
+        next.dlg = { ...dlg, mode: 'edit', code };
+      } else next.edits = { ...S.edits, [this.statKey('item', code, co)]: { ...(S.edits[this.statKey('item', code, co)] || {}), ...patch } };
+    } else {
+      const sign = f.when === 'before' ? -1 : 1, patch = { title: f.title.trim(), detail: f.detail, short: f.short, days: sign * (+f.days || 0), salary: f.salary ? +f.salary : 0, docs };
+      if (dlg.mode === 'new') {
+        code = f.key;
+        next.extra = { ...S.extra, ['rem:' + code]: { key: code, kind: f.kind, used: 0, ...patch } };
+        next.dlg = { ...dlg, mode: 'edit', code };
+      } else next.edits = { ...S.edits, [this.statKey('rem', code, co)]: { ...(S.edits[this.statKey('rem', code, co)] || {}), ...patch } };
+    }
+    this.setState(next);
+    this.say(dlg.mode === 'new' ? (kind === 'rem' ? 'Reminder added' : 'Item added') : 'Saved', { restore: { edits: S.edits, extra: S.extra, ...(dlg.mode === 'new' ? { dlg: null, closing: false, saved: null } : { f: S.f0 ? JSON.parse(S.f0) : S.f, f0: S.f0, saved: null }) }, key: this.statKey(kind, code, co) });
+    this.flash(this.statKey(kind, code, co));
+  }
+  doPreview() {
+    const S = this.state, dlg = S.dlg;
+    if (!dlg || dlg.kind === 'put') return;
+    const errs = this.errors(S.f, dlg);
+    if (Object.keys(errs).length) { this.submitForm(); return; }
+    if (dlg.kind === 'copy') { this.setState({ preview: this.copyPreview() }); return; }
+    this.setState({ preview: this.makePreview(S.f, dlg, S.f0) });
+  }
+  // A what-if from the starter: the sample starter is shortened to six items; the app's real starter checklist has about 13.
+  // New work: the line on the SQL-only items. checklistbook.py drops a SQL-only item from a copy to a company not kept in SQL Account silently.
+  copyPreview() {
+    const st = this.starterCodes(), cp = this.copyCodes(), code = c => this.rec('item', c, 'AISB').code;
+    return { head: 'Preview: nothing is saved yet', lines: ['Replaces the ' + st.length + ' starter items: ' + st.map(code).join(', ') + '.', 'Adds AISB’s ' + cp.length + ' items in use, in AISB’s order, with their wording, due dates and documents.', 'The stopped item OLDRPT is not copied.', 'PV (PV in SQL for each salary) and sql-books (SQL books agree with SQL Account) are not copied: AI is Kept here.'], sum: 'October 2026 gets the ' + cp.length + ' items in place of the ' + st.length + ' starter items. September 2026 is filed and keeps its checklist.' };
+  }
+  doCopy() {
+    const S = this.state;
+    this.setState({ aiMode: 'copied', dlg: S.dlg, preview: null });
+    this.closeDlg();
+    this.say('Checklist copied. October 2026 gets ' + this.copyCodes().length + ' items.', { restore: { aiMode: S.aiMode }, key: 'AI:INPUTS' });
+    this.flash('AI:INPUTS');
+  }
+  askAct(act) { this.setState({ confirm: act, cReason: '', cTried: false, cFrom: this.state.cFrom || '2026-12' }); }
+  actGo() {
+    const S = this.state, dlg = S.dlg, act = S.confirm;
+    if (!dlg || !act) return;
+    const needFrom = act === 'stop' || act === 'use';
+    if (needFrom && this.fromErr(S.cFrom, dlg.kind, dlg.co)) { this._focusId = 'ck-c-from'; this.setState({ cTried: true }); return; }
+    if (!S.cReason.trim()) { this._focusId = 'ck-c-why'; this.setState({ cTried: true }); return; }
+    const key = this.statKey(dlg.kind, dlg.code, dlg.co), prev = S.stat[key], o = this.rec(dlg.kind, dlg.code, dlg.co);
+    const word = dlg.kind === 'rem' ? 'reminder' : 'item', D = this.D();
+    if (act === 'delete') {
+      const rec = { k: 'deleted', at: '18 Nov 2026, 10:24', entry: 440, by: D.ME, why: S.cReason.trim(), sameId: true, id: 15 };
+      this.setState({ stat: { ...S.stat, [key]: rec }, confirm: null, dlg: S.dlg });
+      this.closeDlg();
+      this.say(o.title + ' deleted', { key, prev: prev || null });
+      return;
+    }
+    if (act === 'cancel') {
+      const back = { ...S.stat }; delete back[key];
+      this.setState({ stat: back, confirm: null, cReason: '' });
+      this.flash(key);
+      this.say(o.title + ' stays in use', { key, prev: prev || null, word });
+      return;
+    }
+    const from = S.cFrom, planned = act === 'stop' && from > D.NOW;
+    const rec = act === 'stop' ? { k: planned ? 'planned' : 'stopped', from } : { k: 'again', from };
+    this.setState({ stat: { ...S.stat, [key]: rec }, confirm: null, cReason: '' });
+    this.flash(key);
+    this.say(act === 'stop' ? o.title + (planned ? ' stops from ' : ' stopped from ') + this.ms(from) : o.title + ' in use again from ' + this.ms(from), { key, prev: prev || null, word });
+  }
+  doPut() {
+    const S = this.state, dlg = S.dlg, key = dlg.code;   // 'item-key' or 'rem:code'
+    if (!S.f.reason.trim()) { this._focusId = 'ck-p-why'; this.setState({ putTried: true }); return; }
+    const kind = key.startsWith('rem:') ? 'rem' : 'item', code = kind === 'rem' ? key.slice(4) : key;
+    const sk = this.statKey(kind, code, dlg.co), was = S.stat[sk], o = this.rec(kind, code, dlg.co);
+    const next = { ...S.stat }; delete next[sk];
+    this.setState({ stat: next });
+    this.closeDlg();
+    this.say(o.title + ' put back' + (was && !was.sameId ? ' as #' + was.id : ''), { key: sk, prev: was || null });
+    this.flash(sk);
+  }
+  undoNow() {
+    const S = this.state, u = S.undo;
+    if (!u) return;
+    const stat = { ...S.stat }; if (!u.restore) { if (u.prev) stat[u.key] = u.prev; else delete stat[u.key]; }
+    clearTimeout(this._tt);
+    this.setState({ ...(u.restore || {}), stat, toast: 'Undone', toastLeaving: false, undo: null });
+    this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000);
+    this.flash(u.key);
+  }
+
+  // ---- reordering ----
+  vis(co) { return this.shown('item', co); }
+  moveCode(code, dir, focusId) {
+    const S = this.state, co = S.co, vis = this.vis(co), i = vis.indexOf(code), j = i + dir, o = this.rec('item', code, co);
+    if (S.q.trim()) { this.setState({ moveMsg: 'Clear the search to move items.' }); return; }
+    if (i < 0 || j < 0 || j >= vis.length) { this.setState({ moveMsg: o.title + ' is already ' + (j < 0 ? 'first.' : 'last.') }); return; }
+    const cur = this.ordOf('item', co, S).slice(); cur.splice(cur.indexOf(code), 1);
+    const t = cur.indexOf(vis[j]); cur.splice(dir > 0 ? t + 1 : t, 0, code);
+    const after = this.shown('item', co, { ...S, orders: { ...S.orders, [co]: cur } });
+    this.setState({ orders: { ...S.orders, [co]: cur }, moved: code, moves: S.moves + 1, moveMsg: o.title + ' moved to position ' + (after.indexOf(code) + 1) + ' of ' + after.length + '.' }, () => { if (focusId) this.focusId(focusId); });
+  }
+  toggleHold(code) {
+    const S = this.state, co = S.co, vis = this.vis(co), o = this.rec('item', code, co);
+    if (S.held === code) { this.setState({ held: null, heldFrom: null, moveMsg: o.title + ' dropped at position ' + (vis.indexOf(code) + 1) + ' of ' + vis.length + '.' }); return; }
+    this.setState({ held: code, heldFrom: this.ordOf('item', co, S).slice(), moveMsg: 'Picked up ' + o.title + ', position ' + (vis.indexOf(code) + 1) + ' of ' + vis.length + '. Use the up and down arrow keys to move it, Space to drop it, Escape to cancel.' });
+  }
+
+  renderVals() {
+    const S = this.state, D = this.D(), co = S.co, dlg = S.dlg;
+    const list = S.tab === 'list', tabOrder = ['list', 'rem'];
+    const tabBase = 'height:44px;padding:0 2px;border:0;background:transparent;font:600 14px Inter,sans-serif;cursor:pointer;margin-bottom:-1px;transition:border-color .12s ease-out,color .12s ease-out;';
+    const tabKey = e => {
+      const i = tabOrder.indexOf(S.tab), n = tabOrder.length;
+      const to = e.key === 'ArrowRight' ? (i + 1) % n : e.key === 'ArrowLeft' ? (i + n - 1) % n : e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : null;
+      if (to === null) return;
+      e.preventDefault();
+      this.setState({ tab: tabOrder[to], q: '' });
+      const el = document.getElementById('cl-tab-' + tabOrder[to]); if (el) el.focus();
+    };
+    const kindNow = list ? 'item' : 'rem';
+    const doneLabelOf = o => D.COMPL[o.done] || D.COMPL.hand;
+
+    // the list
+    const shownCodes = this.shown('item', co), visAll = this.ordOf('item', co);
+    const nonDel = visAll.filter(c => this.status('item', c, co).k !== 'deleted');
+    const stoppedItems = nonDel.filter(c => this.status('item', c, co).k === 'stopped');
+    const dirtyOrder = JSON.stringify(this.ordOf('item', co)) !== JSON.stringify(this.ordOf('item', co, null, 'base'));
+    const items = shownCodes.map((code, idx) => {
+      const o = this.rec('item', code, co), st = this.status('item', code, co), sk = this.statKey('item', code, co);
+      const held = S.held === code, flash = S.flashKey === sk, searching = !!S.q.trim();
+      return { code, title: o.title, due: this.dueText(o), docs: o.docs.slice(), auto: doneLabelOf(o), rule: o.rule || '', built: !!o.built,
+        autoCls: 'pl ' + (o.done === 'hand' ? 'pl-grey' : 'pl-ok'), status: st.label, statCls: st.cls,
+        pos: (idx + 1) + ' of ' + shownCodes.length, mvId: 'ck-mv-' + code, edId: 'ck-ed-' + code, edBtn: 'ck-eb-' + code, held: held ? 'true' : 'false', mvOff: searching,
+        cls: 'rw hr' + (held ? ' lift' : '') + (flash ? (S.flashN % 2 ? ' fa' : ' fb') : '') + (!held && S.moved === code && S.moves ? (S.moves % 2 ? ' fa' : ' fb') : ''),
+        rowStyle: 'display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:14px 18px;border-bottom:1px solid #EEF1F5;' + (st.k === 'stopped' ? 'color:#5F6C80' : ''),
+        titleStyle: st.k === 'stopped' ? 'color:#46546A' : '',
+        open: () => this.openRecord('item', code, 'ck-eb-' + code),
+        hold: () => this.toggleHold(code),
+        key: e => {
+          const onH = e.target && e.target.id === 'ck-mv-' + code;
+          if (e.key === 'Escape' && S.held === code && onH) {
+            e.preventDefault(); e.stopPropagation();
+            this.setState({ orders: { ...S.orders, [co]: S.heldFrom }, held: null, heldFrom: null, moveMsg: 'Move cancelled. ' + o.title + ' is back where it was.' });
+            return;
+          }
+          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+          if (!e.altKey && !onH) return;
+          e.preventDefault();
+          this.moveCode(code, e.key === 'ArrowUp' ? -1 : 1, e.target && e.target.id);
+        } };
+    });
+
+    const remCodes = this.shown('rem', co);
+    const remNon = this.ordOf('rem', co).filter(c => this.status('rem', c, co).k !== 'deleted');
+    const remStopped = remNon.filter(c => this.status('rem', c, co).k === 'stopped');
+    const reminders = remCodes.map(code => {
+      const o = this.rec('rem', code, co), st = this.status('rem', code, co), sk = this.statKey('rem', code, co), warn = o.kind === 'leaver';
+      return { title: o.title, short: o.short || o.key, when: this.remWhen(o), salary: o.salary ? 'Salary over RM ' + Number(o.salary).toLocaleString('en-MY', { minimumFractionDigits: 2 }) : 'Any salary', docs: (o.docs || []).slice(),
+        driver: (o.src ? 'From the staff record: ' + o.src.toLowerCase() : '') + (o.cond ? ' · ' + o.cond : ''), glyph: o.kind === 'leaver' ? 'logout' : 'person', tone: warn ? 'warn' : 'brand', trigger: warn ? 'Leaver' : 'Joiner', forCls: 'pl ' + (warn ? 'pl-warn' : 'pl-brand'),
+        status: st.label, statCls: st.cls, built: !!o.built, cls: 'hr' + (S.flashKey === sk ? (S.flashN % 2 ? ' fa' : ' fb') : ''), edId: 'ck-ed-r-' + code, edBtn: 'ck-eb-r-' + code,
+        tile: 'width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + (warn ? '#FEF1D6' : '#EAF0FD'),
+        rowStyle: 'display:flex;flex-wrap:wrap;gap:14px;align-items:center;padding:14px 18px;border-bottom:1px solid #EEF1F5;' + (st.k === 'stopped' ? 'color:#5F6C80' : ''),
+        titleStyle: st.k === 'stopped' ? 'color:#46546A' : '',
+        open: () => this.openRecord('rem', code, 'ck-eb-r-' + code) };
+    });
+
+    // header toolbar
+    const nShown = list ? shownCodes.length : remCodes.length, nAll = (list ? nonDel : remNon).length;
+    const stoppedN = (list ? stoppedItems : remStopped).length;
+    const q = S.q.trim();
+    const emptyAI = list && co === 'AI' && S.aiMode === 'empty' && !nonDel.length;
+    const starterOn = list && co === 'AI' && S.aiMode === 'starter';
+    const copyOn = list && co === 'AI' && (S.aiMode === 'starter' || S.aiMode === 'empty');
+    const noMatchOn = !!q && nShown === 0 && !emptyAI;
+    const segBase = 'height:32px;padding:0 12px;border-radius:7px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;transition:background-color .12s ease-out,box-shadow .12s ease-out,color .12s ease-out;';
+    const cos = ['AISB', 'AI'].map(c => ({ label: c, on: c === co ? 'true' : 'false',
+      pick: () => { if (c !== co) this.setState({ co: c, q: '', held: null, heldFrom: null, moveMsg: 'Showing the checklist of ' + c + '.' }); },
+      style: segBase + (c === co ? 'background:#FFFFFF;color:#0F1A2B;box-shadow:0 1px 2px rgba(16,24,40,.12)' : 'background:transparent;color:#46546A') }));
+
+    // deleted table of the open tab
+    const delKeys = Object.keys(S.stat).filter(k => S.stat[k].k === 'deleted' && (list ? k.startsWith(co + ':') : k.startsWith('rem:')))
+      .sort((a, b) => S.stat[b].entry - S.stat[a].entry);
+    const deleted = delKeys.map(k => {
+      const s = S.stat[k], code = k.slice(k.indexOf(':') + 1), o = this.rec(kindNow, code, co), histOn = S.histFor === k;
+      return { name: o.title, code, at: s.at, entry: s.entry, by: s.by, why: s.why, problem: s.problem || '', hasProblem: !!s.problem, canPut: !s.problem,
+        putId: 'ck-put-' + code, histOn, cls: S.flashKey === k ? (S.flashN % 2 ? 'fa' : 'fb') : '',
+        histLines: ['Entry ' + s.entry + ' · ' + s.at + ' · ' + s.by + ' · Deleted. Why: ' + s.why, 'Entry ' + (100 + (code.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 60)) + ' · 7 Jan 2026, 15:40 · ' + D.ME + ' · Added'],
+        put: () => this.openPut(kindNow, code, 'ck-put-' + code),
+        hist: () => this.setState({ histFor: histOn ? null : k }) };
+    });
+
+    // ---- the dialog ----
+    const kind = dlg ? dlg.kind : 'item', mode = dlg ? dlg.mode : 'new', dco = dlg ? dlg.co : co;
+    const f = S.f || this.blank();
+    const isItem = kind === 'item', isRem = kind === 'rem', isForm = isItem || isRem, isCopy = kind === 'copy', isPut = kind === 'put';
+    const isNew = mode === 'new', errs = S.tried ? this.errors(f, dlg) : {};
+    const rec = dlg && isForm && !isNew ? this.rec(kind, dlg.code, dco) : null;
+    const dsk = dlg && isForm && !isNew ? this.statKey(kind, dlg.code, dco) : '';
+    const dst = dsk ? this.status(kind, dlg.code, dco) : { k: 'use', label: '', cls: 'pl pl-ok' };
+    const inUse = dst.k === 'use' || dst.k === 'again' || dst.k === 'planned', planned = dst.k === 'planned';
+    const usedDone = {}; if (isItem) this.codesFor('item', dco).filter(c => this.status('item', c, dco).k !== 'deleted').forEach(c => { const r0 = this.rec('item', c, dco); if (r0) usedDone[r0.done] = true; });
+    const putKey = isPut && dlg ? dlg.code : '';
+    const putKind = putKey.startsWith('rem:') ? 'rem' : 'item', putCode = putKind === 'rem' ? putKey.slice(4) : putKey;
+    const putRec = isPut && dlg ? this.rec(putKind, putCode, dco) : null, putSt = putRec ? (S.stat[this.statKey(putKind, putCode, dco)] || {}) : {};
+    const dirty = this.isDirty();
+    const noteRec = rec && isForm ? rec : null;
+    const mkF = (id, key, err, hint) => ({ val: f[key], change: e => this.setF({ [key]: e.target.value }), inv: err ? 'true' : 'false', errOn: !!err, err: err || '',
+      by: err ? 'ck-' + id + '-err' + (hint ? ' ck-' + id + '-h' : '') : (hint ? 'ck-' + id + '-h' : '') });
+    const hk = ['done', 'kind', 'short', 'off', 'when', 'salary', 'rdir', 'rwords', 'rnone', 'rname1', 'rname2', 'submit', 'reason'];
+    const h = {}; hk.forEach(k => { h[k] = e => this.setF({ [k]: e.target.value }); });
+    h.deadline = () => this.setF({ deadline: !f.deadline }); h.rpaid = () => this.setF({ rpaid: !f.rpaid });
+    const opts = (group, names) => names.map(n => ({ label: n, on: !!(f[group] || {})[n], toggle: () => this.tog(group, n) }));
+    const needNames = Object.keys(f.rneed || {}).filter(k => f.rneed[k]);
+    const showDeadline = isItem && !(rec && rec.noDl);
+    const showRule = isItem && f.done === 'payments';
+    const dlgTitle = !dlg ? '' : isCopy ? 'Copy a checklist' : isPut ? (putRec ? putRec.title : 'Put back') : isNew ? (isItem ? 'Add item' : 'Add reminder') : (rec ? rec.title : '');
+    const usedN = rec ? +rec.used || 0 : 0;
+    const canDelete = !!rec && usedN === 0 && !rec.built && dst.k !== 'deleted';
+    const actNote = !rec ? '' : (inUse
+      ? (isItem ? 'Stopping it leaves it out of the months from the month you choose on. Where something is filed on it or it is ticked, it stays.' : 'Stopping it leaves it out for people starting (or leaving) from the month you choose on. Where something is ticked or filed on it, it stays.')
+      : 'Use again puts it back from the month you choose on, with the wording it had.')
+      + (planned ? ' It is already set to stop from ' + this.ms(S.stat[dsk].from) + '.' : '')
+      + (canDelete ? '' : rec.built ? ' The app relies on it, so it can\'t be deleted.' : ' It can\'t be deleted once it has been used; stop using it instead.');
+    const confirm = S.confirm;
+    const cFromErr = S.cTried && (confirm === 'stop' || confirm === 'use') ? this.fromErr(S.cFrom, kind, dco) : '';
+    const cNote = { stop: isItem ? 'Left out of the checklist from the month you choose. Everything recorded stays.' : 'Left out for people starting (or leaving) from the month you choose. Everything recorded stays.',
+      use: 'It comes back from the month you choose, with the wording it had.', cancel: 'Keeps it in use after ' + (planned ? this.ms(S.stat[dsk].from) : 'the month it was set to stop') + '.', delete: 'It leaves the list and the months not filed yet. You can put it back from Show deleted.' };
+    const termLine = o => isItem ? o.title + ', due the ' + this.dueText(o) + (o.docs.length ? ', ' + o.docs.join(', ') : '') : o.title + ', ' + this.remWhen(o).toLowerCase() + (o.salary ? ', salary over RM ' + Number(o.salary).toLocaleString('en-MY', { minimumFractionDigits: 2 }) : '');
+    // By month: in force from September 2026, the first month tracked (October 2026 for the two items new with approvals),
+    // with the wording it had before that; the history says when the change was made.
+    const since = rec && rec.since ? rec.since : '2026-09';
+    const stopFrom = dst.k === 'stopped' && S.stat[dsk] ? S.stat[dsk].from : '', before = m => { const [y, n] = m.split('-').map(Number); return n === 1 ? (y - 1) + '-12' : y + '-' + String(n - 1).padStart(2, '0'); };
+    const terms = !rec ? [{ m: '', t: '' }] : stopFrom ? [{ m: this.ms(stopFrom) + ' on', t: 'Stopped: not in the checklist' }, { m: 'Jan 2026 to ' + this.ms(before(stopFrom)), t: termLine(rec) }] : rec.since ? [{ m: this.ms(since) + ' on (in force now)', t: termLine(rec) }]
+      : [{ m: this.ms(since) + ' on (in force now)', t: termLine(rec) },
+        { m: 'Jan 2026 to ' + this.ms('2026-08'), t: isItem ? termLine({ ...rec, day: Math.max(1, (+rec.day || 3) - 2) }) : termLine({ ...rec, days: rec.days + (rec.days > 3 ? 5 : 0) }) }];
+    const histLines = !rec ? [''] : rec.since ? ['Entry 1104 · 1 Oct 2026, 08:00 · The app · Added with approvals, from October 2026']
+      : [stopFrom ? 'Entry 206 · 20 Aug 2026, 10:05 · ' + D.ME + ' · Stopped, from ' + this.ml(stopFrom) : 'Entry 204 · 19 Aug 2026, 11:30 · ' + D.ME + ' · Changed ' + (isItem ? 'the due date' : 'the days') + ', from September 2026', 'Entry ' + (100 + (String(rec.code || rec.key).split('').reduce((a, c) => a + c.charCodeAt(0), 0) % 60)) + ' · 7 Jan 2026, 15:40 · ' + D.ME + ' · Added'];
+    const noChange = isForm ? (!isNew && !dirty) : isCopy ? false : false;
+    const eyebrow = isItem ? 'Monthly checklist · ' + dco : isRem ? 'Joiner and leaver reminder' : isCopy ? 'Monthly checklist · ' + dco : 'Put back';
+    const dlgPillOn = !!rec;
+    const cFromVal = S.cFrom;
+    const confirmTone = confirm === 'delete' ? 'bad' : 'warn';
+    const copyPrev = isCopy ? S.preview : null;
+    const mainPrev = isForm ? S.preview : null;
+    const delEmpty = deleted.length === 0;
+    const pv = isCopy ? copyPrev : mainPrev;
+    const kindLabel = f.kind === 'leaver' ? 'A leaver (from the last day)' : 'A joiner (from the date joined)';
+    const putWhen = putRec ? putRec.title + ' deleted ' + (putSt.at || '') + (putSt.by ? ' by ' + putSt.by : '') + ', in entry ' + (putSt.entry || '') + (putSt.why ? '. Why: ' + putSt.why : '') + '.' : '';
+    const putSame = putSt.sameId === false ? 'It comes back as it was when it was deleted, as #' + putSt.id + '.' : 'It comes back as it was when it was deleted, with the same number.';
+    const putNotes = putSt.sameId === false ? ['Its old number has been used again since, so it gets a new one.'] : [];
+    const putFirst = this.firstFor(putKind, dco), putN = D.SETUP[dco === 'AI' ? 'AI' : 'AISB'].length;
+    const putLines = putKind === 'rem' ? ['People starting from ' + this.ms(putFirst) + ' on get this reminder again.'] : ['The ' + this.ms(putFirst) + ' checklist and later months get this item again.', 'Its place in the list is the one it had.'];
+    const putSum = putKind === 'rem' ? 'No reminders in months already set up change.' : putN + ' checklist ' + (putN === 1 ? 'item' : 'items') + ' in months already set up ' + (putN === 1 ? 'changes' : 'change') + '.';
+    const fromLabel = isItem ? 'From which month?' : 'For people starting (or leaving) from which month?';
+    const footNote = isForm ? (noChange ? 'Nothing changed yet.' : isNew ? 'Nothing is saved until you add it.' : 'Saving starts from the month above.') : isCopy ? 'Preview shows what would be added or replaced.' : 'Kept in the audit trail with the change.';
+    const submitLabel = isForm ? (isNew ? (isItem ? 'Add item' : 'Add reminder') : 'Save') : isCopy ? 'Copy checklist' : 'Put it back';
+    const sub = !dlg ? '' : isForm ? (isNew ? (isItem ? 'A new step in the monthly checklist of ' + dco + '.' : 'A prompt to check when someone joins or leaves.') : (isItem ? rec.code + ' · due the ' + this.dueText(rec) : (rec.kind === 'leaver' ? 'For leavers' : 'For joiners'))) : isCopy ? 'Take the checklist of another company.' : 'Bring back a deleted ' + (putKind === 'rem' ? 'reminder' : 'item') + '.';
+    const dlgKey = e => {
+      if (e.key === 'Escape') {
+        e.stopPropagation(); e.preventDefault();
+        if (S.discard) this.setState({ discard: false });
+        else if (S.confirm) this.setState({ confirm: null });
+        else this.askClose();
+        return;
+      }
+      if (e.key === 'Enter' && S.confirm && e.target && (e.target.id === 'ck-c-why' || e.target.id === 'ck-c-from')) { e.preventDefault(); this.actGo(); return; }
+      if (e.key !== 'Tab') return;
+      const fs = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+      if (!fs.length) { e.preventDefault(); return; }
+      const first = fs[0], last = fs[fs.length - 1], at = document.activeElement, inside = fs.indexOf(at) >= 0;
+      if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+    };
+
+    return {
+      loadingOn: S.load === 'loading', errorOn: S.load === 'error', listOn: !S.load,
+      loadingLabel: list ? 'Loading the checklist items' : 'Loading the reminders', errorTitle: list ? 'Couldn’t load the checklist' : 'Couldn’t load the reminders',
+      skRows: [[34, 16], [26, 12], [40, 18], [30, 14], [36, 16]].map(([a, b]) => ({ a, b })),
+      retry: () => { clearTimeout(this._ld); this.setState({ load: 'loading' }); this._ld = setTimeout(() => { this._focusId = 'ck-add'; this.setState({ load: null }); }, 900); },
+      remEmptyOn: !list && !remNon.length, saving: !!S.saving, savingAria: S.saving ? 'true' : 'false', submitOff: !!S.saving || !!(isForm && noChange),
+      refuseOn: !!S.refuse, refuse: S.refuse || '',
+      noteOn: !!(noteRec && noteRec.note), note: noteRec ? (noteRec.note || '') : '', noteLinkOn: !!(noteRec && noteRec.link), noteHref: noteRec && noteRec.link ? noteRec.link[0] : '', noteLink: noteRec && noteRec.link ? noteRec.link[1] : '',
+      ...this.shell(), topPage: list ? 'Monthly checklist' : 'Joiner and leaver reminders',
+      list, rem: !list, items, reminders, tabKey, moveMsg: S.moveMsg, dlgOn: !!dlg,
+      tabs: { list: { sel: list ? 'true' : 'false', ti: list ? 0 : -1, n: nonDel.filter(c => this.status('item', c, co).k !== 'stopped').length }, rem: { sel: list ? 'false' : 'true', ti: list ? -1 : 0, n: remNon.filter(c => this.status('rem', c, co).k !== 'stopped').length } },
+      tabBy: list ? 'cl-tab-list' : 'cl-tab-rem',
+      eyebrow: list ? 'Monthly work · ' + co : 'Monthly work',
+      heading: list ? 'Monthly checklist' : 'Joiner and leaver reminders',
+      intro: list ? 'What each month\'s checklist holds for ' + co + ', in order. A change starts from a payroll month you choose: the months before it keep the checklist they had, and filed months never change.' : 'Prompts to check when someone joins or leaves. The dates come from the staff record in HR (date joined, last day, probation end, permit expiry), so no one types them here. A change starts from the month of the date you choose; filed months never change.',
+      addLabel: list ? 'Add item' : 'Add reminder',
+      tabList: tabBase + (list ? 'color:#0F1A2B;border-bottom:2px solid #2450B8' : 'color:#5F6C80;border-bottom:2px solid transparent'),
+      tabRem: tabBase + (!list ? 'color:#0F1A2B;border-bottom:2px solid #2450B8' : 'color:#5F6C80;border-bottom:2px solid transparent'),
+      showList: () => this.setState({ tab: 'list', q: '' }), showRem: () => this.setState({ tab: 'rem', q: '' }),
+      co, coOn: list, cos, copyOn, starterOn, emptyOn: emptyAI, noMatchOn,
+      orderMin: this.firstFor('item', co), fromMin: this.firstFor(isRem ? 'rem' : 'item', dco), copyCount: this.copyCodes().length,
+      emptyText: co + ' has no monthly checklist yet. Add an item, or copy another company\'s checklist.',
+      openCopy: () => this.openCopyDlg(), openNew: () => this.openNewDlg(),
+      q: S.q, onQ: e => this.setState({ q: e.target.value }), clearQ: () => { this.setState({ q: '' }); this.focusId('ck-search'); },
+      searchKey: e => { if (e.key === 'Escape' && S.q) { e.preventDefault(); this.setState({ q: '' }); } },
+      searchLabel: list ? 'Search the checklist items' : 'Search the reminders', searchPh: 'Search ' + nAll + (list ? (nAll === 1 ? ' item' : ' items') : (nAll === 1 ? ' reminder' : ' reminders')),
+      countText: q ? nShown + ' of ' + nAll : nShown + (nShown === 1 ? ' shown' : ' shown'),
+      showStopped: S.showStopped, stoppedN, toggleStopped: () => this.setState({ showStopped: !S.showStopped }),
+      showDeleted: S.showDeleted, toggleDeleted: () => this.setState({ showDeleted: !S.showDeleted, histFor: null }),
+      orderBarOn: list && dirtyOrder, orderFrom: S.orderFrom, orderErrOn: !!S.orderErr, orderErr: S.orderErr,
+      onOrderFrom: e => this.setState({ orderFrom: e.target.value, orderErr: '' }),
+      undoOrder: () => this.setState({ orders: { ...S.orders, [co]: S.orderBase[co] }, held: null, heldFrom: null, orderErr: '', moveMsg: 'Order changes undone.' }, () => this.focusId('ck-mv-' + (S.moved || shownCodes[0]))),
+      saveOrder: () => {
+        const oe = this.fromErr(S.orderFrom, 'item', co);
+        if (oe) { this.setState({ orderErr: oe }); this.focusId('ck-ofrom'); return; }
+        this.setState({ orderBase: { ...S.orderBase, [co]: this.ordOf('item', co) }, orderErr: '', held: null, heldFrom: null, moveMsg: 'Order saved from ' + this.ml(S.orderFrom) + '.' }, () => this.focusId('ck-mv-' + (S.moved || shownCodes[0])));
+        this.say('Order saved from ' + this.ml(S.orderFrom), { restore: { orderBase: S.orderBase, orders: S.orders } , key: 'order' });
+      },
+      delOn: S.showDeleted, delHead: list ? 'Deleted items' : 'Deleted reminders', deleted, delEmpty,
+      toastOn: !!S.toast, toastText: S.toast || '', toastCls: S.toastLeaving ? 'to-out' : 'rv', toastUndoOn: !!S.undo, toastUndo: () => this.undoNow(),
+      onToastAnim: e => { if (this.state.toastLeaving && e.target === e.currentTarget) this.setState({ toast: null, toastLeaving: false, undo: null }); },
+      toastHold: () => clearTimeout(this._tt),
+      toastGo: () => { if (this.state.toast && !this.state.toastLeaving) { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toastLeaving: true }), 6000); } },
+
+      // dialog
+      dimClass: S.closing ? 'dim-out' : 'dim-in', dlgClass: S.closing ? 'dr-out' : 'dr-in',
+      askClose: () => this.askClose(), onPanelAnim: e => { if (this.state.closing && e.target === e.currentTarget) this.finishClose(); },
+      dlgKey, submit: e => { if (e && e.preventDefault) e.preventDefault(); if (S.confirm) { this.actGo(); return; } this.submitForm(); },
+      dlgGlyph: isRem ? 'person' : isPut ? 'undo' : isCopy ? 'copy' : 'checklist', dlgEyebrow: eyebrow, dlgTitle, dlgSub: sub,
+      dlgPillOn, dlgPill: dst.label, dlgPillCls: dst.cls,
+      hideStatements: !!usedDone.statements, hideBalanced: !!usedDone.statements_balanced, hideReconciled: !!usedDone.reconciled, hidePack: !!usedDone.pack, hideBooks: !!usedDone.books || dco === 'AI',
+      isForm, isItem, isRem, isCopy, isPut, isNewItem: isForm && isItem && isNew, isEditItem: isForm && isItem && !isNew, isNewRem: isForm && isRem && isNew, isEditRem: isForm && isRem && !isNew,
+      isExisting: isForm && !isNew, doneLabel: rec ? doneLabelOf(rec) + (rec.done === 'payments' && rec.rule && rec.rule.toLowerCase() !== doneLabelOf(rec).toLowerCase() ? ': ' + rec.rule.charAt(0).toLowerCase() + rec.rule.slice(1) : '') : '', kindLabel,
+      f: { done: f.done, kind: f.kind, short: f.short, off: f.off, when: f.when, salary: f.salary, rdir: f.rdir, rwords: f.rwords, rnone: f.rnone, rname1: f.rname1, rname2: f.rname2, submit: f.submit, reason: f.reason, deadline: !!f.deadline, rpaid: !!f.rpaid, key: f.key },
+      h, fKey: mkF('key', 'key', errs.key, true), fTitle: mkF('title', 'title', errs.title, false), detailReq: isRem ? 'true' : 'false', fDetail: mkF('detail', 'detail', errs.detail, isRem),
+      fDay: mkF('day', 'day', errs.day, true), fDays: mkF('days', 'days', errs.days, true), fFrom: mkF('from', 'from', errs.from, true),
+      titlePh: isItem ? 'Import bank statements for every account' : 'e-CP22 for {name}',
+      whatDay: f.kind === 'leaver' ? 'the last day' : 'the date joined', recWord: isItem ? 'item' : 'reminder',
+      docOpts: opts('docs', D.DOCS), typeOpts: opts('rtypes', D.TYPES), needOpts: opts('rneed', D.DOCS).map((o, i) => ({ ...o, id: 'ck-need-' + i, inv: errs.need ? 'true' : 'false' })), needBy: errs.need ? 'ck-need-err' : '',
+      filedOpts: needNames.map(n => ({ label: n, on: !!f.rfiled[n], toggle: () => this.tog('rfiled', n) })), noFiledOpts: needNames.length === 0,
+      needErrOn: !!errs.need, needErr: errs.need || '',
+      showDeadline, showSubmit: showDeadline && !!f.deadline, showRule, fromLabel,
+      previewOn: !!pv, previewHead: pv ? pv.head : '', previewLines: pv ? pv.lines : [''], previewSum: pv ? pv.sum : '',
+      isSaved: !!S.saved && isForm, savedHead: S.saved ? S.saved.head : '', savedLines: S.saved ? S.saved.lines : [''], savedSum: S.saved ? S.saved.sum : '',
+      usedText: rec ? (usedN ? (isItem ? 'In ' + usedN + (usedN === 1 ? ' month' : ' months') + ' so far.' : usedN + (usedN === 1 ? ' reminder' : ' reminders') + ' made so far.') : (isItem ? 'Not in any month yet.' : 'No reminder made yet.')) : '',
+      actionsOn: !confirm, canStop: inUse && dst.k !== 'deleted', canUse: !inUse || planned, useLabel: planned ? 'Cancel the planned stop' : 'Use again', canDelete, actNote,
+      askStop: () => this.askAct('stop'), askUse: () => this.askAct(planned ? 'cancel' : 'use'), askDelete: () => this.askAct('delete'),
+      histOn: S.hist, toggleHist: () => this.setState({ hist: !S.hist }), histLines, terms,
+      confirmOn: !!confirm, confirmQ: { stop: 'Stop using this ' + (isItem ? 'item' : 'reminder') + '?', use: 'Use this ' + (isItem ? 'item' : 'reminder') + ' again?', cancel: 'Cancel the planned stop?', delete: 'Delete this ' + (isItem ? 'item' : 'reminder') + '?' }[confirm] || '',
+      confirmNote: cNote[confirm] || '', confirmMonthOn: confirm === 'stop' || confirm === 'use', cFromVal, onCFrom: e => this.setState({ cFrom: e.target.value }),
+      confirmBorder: confirm === 'delete' ? '#F4C7C1' : '#F3E2B8', confirmBg: confirm === 'delete' ? '#FFF6F5' : '#FFFBF2', confirmTone,
+      cFromErrOn: !!cFromErr, cFromErr, cFromBy: cFromErr ? 'ck-c-from-err' : '', cReason: S.cReason, onCReason: e => this.setState({ cReason: e.target.value }), cErrOn: S.cTried && !S.cReason.trim(), cBy: S.cTried && !S.cReason.trim() ? 'ck-c-err ck-c-h' : 'ck-c-h',
+      cancelConfirm: () => this.setState({ confirm: null }), confirmGo: () => this.actGo(),
+      confirmBtn: { stop: 'Stop using it', use: 'Use it again', cancel: 'Keep using it', delete: 'Delete it' }[confirm] || '', confirmBtnCls: confirm === 'delete' ? 'bd' : 'bp',
+      putWhen, putSame, putNotes: putNotes.length ? putNotes : [''], putLines, putSum, putErrOn: S.putTried && !f.reason.trim(), putBy: S.putTried && !f.reason.trim() ? 'ck-p-err ck-p-h' : 'ck-p-h',
+      discardOn: S.discard, footOn: !S.discard, keepEditing: () => this.setState({ discard: false }), discard: () => { this.setState({ discard: false }); this.closeDlg(); },
+      footNote, cancelLabel: isPut || isCopy ? 'Cancel' : 'Close', previewBtnOn: isForm || isCopy, noChange: !!(isForm && noChange), doPreview: () => this.doPreview(), submitLabel: S.saving ? 'Saving…' : submitLabel
+    };
+  }
+}
+</script>
+</body>
+</html>

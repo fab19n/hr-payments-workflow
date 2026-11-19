@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audit trail · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+/* colours as tokens: light is the default, .dk swaps every one of them */
+.at{--pg:#F5F6F8;--card:#FFFFFF;--line:#E3E7ED;--line2:#EEF1F5;--ctl:#7D8CA3;--head:#FAFBFC;--ink:#0F1A2B;--ink2:#46546A;--ink3:#5F6C80;--brand:#2450B8;--brandBg:#EAF0FD;--pri:#2450B8;--priHov:#1D419A;--hov:#F8FAFD;--hs:#F0F3F8;--okBg:#F0FBF5;--okLine:#BFE8D0;--okInk:#0A6B3D;--okChip:#E3F7EC;--okChipInk:#0A5A33;--badBg:#FEF3F1;--badLine:#F3C3BD;--badInk:#B0190F;--badChip:#FDE6E3;--badChipInk:#8E1A10;--warnBg:#FFF8EC;--warnLine:#F2D59B;--warnInk:#8A4000;--warnChip:#FCE3B0;--warnChipInk:#7A3A00;--neuBg:#EEF1F5;--dim:rgba(15,26,43,.45);--ring:#2450B8}
+.at.dk{--pg:#0B1220;--card:#0F1724;--line:#243044;--line2:#1B2638;--ctl:#66758C;--head:#131D2E;--ink:#E6EBF2;--ink2:#C3CCDA;--ink3:#9BA8BC;--brand:#8DB0FA;--brandBg:#1B2B4A;--pri:#3D68D8;--priHov:#2F58C4;--hov:#16213A;--hs:#1B2638;--okBg:#0F2A1E;--okLine:#1E5A3D;--okInk:#5BD49A;--okChip:#14432E;--okChipInk:#8BE5B8;--badBg:#2A1618;--badLine:#6B2A2C;--badInk:#F58C80;--badChip:#4E2024;--badChipInk:#F9B1A8;--warnBg:#2A2012;--warnLine:#6B4E1A;--warnInk:#F2B35B;--warnChip:#4A3412;--warnChipInk:#F7C46C;--neuBg:#1B2638;--dim:rgba(3,7,14,.66);--ring:#8DB0FA}
+.at a{color:var(--brand)}
+.fld{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fld>span{font-size:12px;font-weight:600;color:var(--ink2)}
+.inp{height:40px;width:100%;box-sizing:border-box;min-width:0;padding:0 10px;border:1px solid var(--ctl);border-radius:10px;font:400 14px Inter,sans-serif;background:var(--card);color:var(--ink)}
+.inp::placeholder{color:var(--ink3)}
+.btn,.sec{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;box-sizing:border-box;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn{border:0;background:var(--pri);color:#FFFFFF}
+.btn:hover{background:var(--priHov)}
+.sec{border:1px solid var(--ctl);background:var(--card);color:var(--ink)}
+.sec:hover{background:var(--hs)}
+.sm{height:32px;padding:0 12px;font-size:13px;border-radius:9px}
+.hr:hover{background:var(--hov)}
+.pl{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;box-sizing:border-box}
+.pl.g{background:var(--neuBg);color:var(--ink2)}
+.pl.b{background:var(--badChip);color:var(--badChipInk)}
+.pl.w{background:var(--warnChip);color:var(--warnChipInk)}
+button.pl{border:0;cursor:pointer;font-family:inherit;height:32px;padding:0 12px}
+.cp{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;border:1px solid var(--line);background:var(--neuBg);color:var(--ink2);font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.cp.ok{border-color:var(--okLine);background:var(--okChip);color:var(--okChipInk)}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.cv{display:inline-block;padding:1px 6px;border-radius:5px}
+.cv.a{background:var(--okChip);color:var(--okChipInk)}
+.cv.d{background:var(--badChip);color:var(--badChipInk)}
+.cv.bf{background:var(--badChip);color:var(--badChipInk);text-decoration:line-through}
+.chip{display:inline-flex;align-items:center;gap:2px;height:32px;padding:0 0 0 12px;border-radius:99px;background:var(--brandBg);color:var(--ink);font-size:13px;font-weight:600;box-sizing:border-box}
+.chip button{width:32px;height:32px;border:0;border-radius:99px;background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.chip button:hover{background:var(--hs)}
+.oc{display:inline-flex;align-items:center;gap:8px;min-height:40px;box-sizing:border-box;padding:6px 12px;border-radius:10px;background:var(--card);border:1px solid var(--okLine);color:var(--ink2);font-size:13px;text-decoration:none}
+.oc b{color:var(--ink)}
+.oc.w{background:var(--warnChip);border-color:var(--warnLine);color:var(--warnChipInk)}
+.oc.w b{color:var(--warnChipInk);font-size:15px}
+.sw{display:inline-flex;align-items:center;gap:10px;min-height:32px;padding:0 4px;border:0;background:transparent;color:var(--ink);font:500 13px Inter,sans-serif;cursor:pointer;border-radius:8px}
+.tbl{width:100%;min-width:420px;border-collapse:collapse;font-size:13px}
+.tbl th{padding:8px 12px;font-weight:600;text-align:left;color:var(--ink3);background:var(--head)}
+.tbl td{padding:8px 12px;border-top:1px solid var(--line2);vertical-align:top;color:var(--ink)}
+.tbl td.k{color:var(--ink2);white-space:nowrap}
+.sk{border-radius:8px;background:linear-gradient(90deg,var(--neuBg) 25%,var(--hov) 50%,var(--neuBg) 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+/* motion and focus base */
+.hs,.hr,.nv,.nb,.btn,.sec,.chip button{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid var(--ring);outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid var(--ring);outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes flashA{from{background-color:var(--brandBg)}}
+@keyframes flashB{from{background-color:var(--brandBg)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.bar{transition:width .32s cubic-bezier(.2,0,0,1)}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.to-in{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.sp2{width:18px;height:18px;box-sizing:border-box;border-radius:99px;border:2px solid var(--line);border-top-color:var(--brand);animation:spin .7s linear infinite;flex:none}
+@media (max-width:760px){.at-main{padding:24px 16px 48px !important}.at-ex{padding-left:16px !important}.at-meta{width:100%;padding-left:30px}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div class="{{rootCls}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: var(--pg); font-family: Inter, system-ui, sans-serif; color: var(--ink); font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="trail" company="aisb" kind="sqlPayroll" theme="{{theme}}" hosting="{{hosting}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="Admin" page="Audit trail" company="aisb" theme="{{theme}}" hosting="{{hosting}}" hint-size="100%,64px"></dc-import>
+    <main class="at-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3)">Every change, sealed in a hash chain</span>
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Audit trail</h1>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 13px; color: var(--ink2)"><span class="{{who.cls}}"><dc-import name="Icon" glyph="{{who.glyph}}" tone="{{who.tone}}" size="14" hint-size="14px,14px"></dc-import>{{who.chip}}</span><span>{{who.text}}</span></div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" class="sec" id="at-export" onClick="{{exportClick}}"><dc-import name="Icon" glyph="download" tone="{{tn.brand}}" size="18" hint-size="18px,18px"></dc-import>{{exportLabel}}</button>
+          <button type="button" id="at-check" class="btn" onClick="{{check}}" disabled="{{checking}}" aria-busy="{{busyAttr}}" style="{{checkStyle}}"><sc-if value="{{checking}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="verified" tone="white" size="18" hint-size="18px,18px"></dc-import></sc-if>{{checkLabel}}</button>
+        </div>
+      </div>
+
+      <section aria-label="Trail status" style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; padding: 18px 22px; border-radius: 16px; background: {{panel.bg}}; border: 1px solid {{panel.line}}">
+        <span style="width: 48px; height: 48px; border-radius: 14px; background: var(--card); display: inline-flex; align-items: center; justify-content: center; flex: none">
+          <sc-if value="{{panel.okIcon}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="verified" tone="{{tn.ok}}" size="28" hint-size="28px,28px"></dc-import></sc-if>
+          <sc-if value="{{panel.badIcon}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="28" hint-size="28px,28px"></dc-import></sc-if>
+          <sc-if value="{{panel.neuIcon}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="clock" tone="{{tn.brand}}" size="28" hint-size="28px,28px"></dc-import></sc-if>
+        </span>
+        <div style="flex: 1 1 260px; min-width: 0">
+          <b role="status" class="{{swapCls}}" style="display: inline-block; color: {{panel.ink}}; font-size: 15px">{{panel.title}}</b>
+          <sc-if value="{{panel.hasReasons}}" hint-placeholder-val="{{ false }}">
+            <ul style="margin: 6px 0 0; padding-left: 18px; color: var(--ink); font-size: 13px; display: flex; flex-direction: column; gap: 4px">
+              <sc-for list="{{panel.reasons}}" as="r" hint-placeholder-count="2"><li>{{r.t}}</li></sc-for>
+            </ul>
+            <div style="color: var(--ink2); font-size: 13px; margin-top: 6px">{{panel.advice}}</div>
+          </sc-if>
+          <sc-if value="{{panel.hasText}}" hint-placeholder-val="{{ true }}">
+            <div style="color: var(--ink2); font-size: 13px">{{panel.pre}} Check code <b style="font-family: ui-monospace, Consolas, monospace; color: var(--ink)">3c9ea071</b> is printed on audit pack covers.</div>
+          </sc-if>
+        </div>
+        <sc-if value="{{hasOutside}}" hint-placeholder-val="{{ false }}">
+          <a href="#at-outside" class="oc w"><span>Changes made outside this app</span><b>{{outCount}}</b><span>waiting</span></a>
+        </sc-if>
+        <sc-if value="{{noOutside}}" hint-placeholder-val="{{ true }}">
+          <div class="oc"><span>Changes made outside this app</span><b>0</b></div>
+        </sc-if>
+      </section>
+
+      <div aria-live="polite">
+        <sc-if value="{{rb.show}}" hint-placeholder-val="{{ false }}">
+          <div class="rv" style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 14px; padding: 14px 18px; border-radius: 14px; background: {{rb.bg}}; border: 1px solid {{rb.line}}">
+            <sc-if value="{{rb.running}}" hint-placeholder-val="{{ false }}"><span class="sp2" aria-hidden="true"></span></sc-if>
+            <sc-if value="{{rb.isDone}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="check" tone="{{tn.ok}}" size="22" hint-size="22px,22px"></dc-import></sc-if>
+            <sc-if value="{{rb.isWarn}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="alert" tone="{{tn.warn}}" size="22" hint-size="22px,22px"></dc-import></sc-if>
+            <sc-if value="{{rb.isFail}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="22" hint-size="22px,22px"></dc-import></sc-if>
+            <div style="flex: 1 1 300px; min-width: 0">
+              <b style="color: {{rb.ink}}">{{rb.title}}</b>
+              <div style="color: var(--ink); font-size: 13px">{{rb.text}}</div>
+              <sc-if value="{{rb.running}}" hint-placeholder-val="{{ false }}">
+                <div role="progressbar" aria-label="Checking the audit trail" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{rb.pct}}" style="height: 6px; margin-top: 8px; border-radius: 99px; background: var(--line); overflow: hidden"><div class="bar" style="height: 6px; border-radius: 99px; background: var(--brand); width: {{rb.pct}}%"></div></div>
+              </sc-if>
+              <sc-if value="{{rb.hasWhen}}" hint-placeholder-val="{{ false }}"><div style="color: var(--ink3); font-size: 12px; margin-top: 2px">{{rb.when}}. This stays here until the next check.</div></sc-if>
+            </div>
+            <sc-if value="{{rb.isWarn}}" hint-placeholder-val="{{ false }}"><sc-if value="{{rb.hasReview}}" hint-placeholder-val="{{ true }}"><a href="#at-outside" class="sec sm">Review the changes</a></sc-if></sc-if>
+            <sc-if value="{{rb.isFail}}" hint-placeholder-val="{{ false }}"><button type="button" class="sec sm" onClick="{{check}}">Try again</button></sc-if>
+          </div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{showOutside}}" hint-placeholder-val="{{ false }}">
+        <section id="at-outside" aria-labelledby="at-out-h" class="rv" style="background: var(--card); border: 1px solid var(--warnLine); border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+          <h2 id="at-out-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Changes made outside this app · {{out.total}}</h2>
+          <div style="color: var(--ink2); font-size: 13px; max-width: 760px">These were saved to the records by another program (such as DB Browser for SQLite), or found by the check to differ from the trail. They were not made through this app. Check them, then accept them with the reason they were made. They stay in the trail either way.</div>
+          <sc-for list="{{out.items}}" as="g" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <div><b>{{g.op}}</b> · {{g.tbl}} · {{g.rec}}</div>
+              <div style="overflow-x: auto; border: 1px solid var(--line); border-radius: 12px">
+                <table class="tbl">
+                  <thead><tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+                  <tbody><sc-for list="{{g.fields}}" as="h" hint-placeholder-count="1"><tr><td class="k">{{h.f}}</td><td><span class="cv bf">{{h.b}}</span></td><td><span class="cv a">{{h.a}}</span></td></tr></sc-for></tbody>
+                </table>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{out.hasMore}}" hint-placeholder-val="{{ false }}"><div style="color: var(--ink2); font-size: 13px">{{out.moreText}}</div></sc-if>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+            <label class="fld" style="flex: 1 1 320px"><span>Why were they made?</span>
+              <input id="at-reason" class="inp" maxlength="500" placeholder="e.g. Corrected a payee's name in DB Browser" value="{{reason}}" onInput="{{onReason}}" aria-required="true" aria-invalid="{{reasonInvalid}}" aria-describedby="at-reason-e" style="{{reasonStyle}}">
+            </label>
+            <button type="button" class="btn" onClick="{{accept}}" disabled="{{accepting}}" aria-busy="{{acceptBusy}}"><sc-if value="{{accepting}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{acceptLabel}}</button>
+          </div>
+          <div id="at-reason-e" role="alert" style="color: var(--badInk); font-size: 13px; font-weight: 600; margin-top: -6px">
+            <sc-if value="{{reasonErr}}" hint-placeholder-val="{{ false }}">Say why these changes were made outside the app.</sc-if>
+          </div>
+        </section>
+      </sc-if>
+
+      <section style="background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px 10px; align-items: flex-end; padding: 16px 20px; border-bottom: 1px solid var(--line2)">
+          <label class="fld" style="flex: 2 1 220px"><span>Search</span><span class="fx" style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid var(--ctl); border-radius: 10px; background: var(--card)"><dc-import name="Icon" glyph="search" tone="{{tn.muted}}" size="16" hint-size="16px,16px"></dc-import><input type="search" id="at-q" value="{{f.q}}" onInput="{{onQ}}" placeholder="A name, amount, ref or reason" style="flex: 1; border: 0; background: transparent; color: var(--ink); font: 400 14px Inter, sans-serif; min-width: 0; height: 36px"></span></label>
+          <label class="fld" style="flex: 1 1 140px"><span>From</span><input type="date" class="inp" value="{{f.from}}" onChange="{{onFrom}}"></label>
+          <label class="fld" style="flex: 1 1 140px"><span>To</span><input type="date" class="inp" value="{{f.to}}" onChange="{{onTo}}"></label>
+          <label class="fld" style="flex: 1 1 120px"><span>Company</span><select class="inp" value="{{f.co}}" onChange="{{onCo}}"><option value="">All</option><option value="AISB">AISB</option><option value="AI">AI</option></select></label>
+          <label class="fld" style="flex: 1 1 170px"><span>Record</span><select class="inp" value="{{f.rec}}" onChange="{{onRec}}"><option value="">All records</option><option value="payment">Payments</option><option value="document">Documents</option><option value="recurring">Recurring payments</option><option value="month">Months</option><option value="bank">Bank lines</option><option value="staff">Staff</option><option value="leave">Leave</option><option value="claim">Claims</option><option value="advance">Salary advances</option><option value="payroll">Payroll checks</option><option value="approval">Approvals</option><option value="users">Users and access</option><option value="setup">Setup</option><option value="setting">Settings</option><option value="restore">Put back</option><option value="audit">Audit trail</option></select></label>
+          <label class="fld" style="flex: 1 1 170px"><span>Made by</span><select class="inp" value="{{f.src}}" onChange="{{onSrc}}"><option value="">All</option><option value="user">You</option><option value="auto">Automatic</option><option value="import">Import</option><option value="update">Update</option><option value="seed">Starting data</option><option value="system">System</option><option value="outside">Outside this app</option></select></label>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--line2); background: var(--head)">
+          <button type="button" id="at-show" role="switch" aria-checked="{{showAttr}}" class="sw" onClick="{{toggleShow}}"><span aria-hidden="true" style="{{swTrack}}"><span style="{{swKnob}}"></span></span>Show bank details, account numbers and pay<b style="color: var(--ink2); font-weight: 600">{{showLabel}}</b></button>
+          <span style="color: var(--ink3); font-size: 12px">Export to Excel follows the filters and this switch. IC numbers stay masked to the last 4, in the export too.</span>
+          <span style="flex: 1 1 20px"></span>
+          <span aria-live="polite" style="color: var(--ink2); font-size: 13px; font-weight: 600">{{countText}}</span>
+        </div>
+        <sc-if value="{{hasChips}}" hint-placeholder-val="{{ false }}">
+          <div class="ex" style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 20px; border-bottom: 1px solid var(--line2)">
+            <span style="color: var(--ink3); font-size: 12px; font-weight: 600">Filters</span>
+            <sc-for list="{{chips}}" as="k" hint-placeholder-count="2"><span class="chip">{{k.label}}<button type="button" aria-label="{{k.rmLabel}}" onClick="{{k.remove}}"><dc-import name="Icon" glyph="close" tone="{{k.tone}}" size="14" hint-size="14px,14px"></dc-import></button></span></sc-for>
+            <button type="button" class="sec sm" onClick="{{clearAll}}">Clear all</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{noEntries}}" hint-placeholder-val="{{ false }}">
+          <div role="status" class="rv" style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 44px 20px; text-align: center">
+            <span style="width: 48px; height: 48px; border-radius: 14px; background: var(--neuBg); display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="search" tone="{{tn.muted}}" size="24" hint-size="24px,24px"></dc-import></span>
+            <b style="font-size: 15px">No entries match.</b>
+            <span style="color: var(--ink2); font-size: 13px; max-width: 420px">{{noMatchText}}</span>
+            <button type="button" class="sec" onClick="{{clearAll}}">Clear all filters</button>
+          </div>
+        </sc-if>
+        <sc-for list="{{entries}}" as="e" hint-placeholder-count="6">
+          <div class="{{e.flashCls}}" style="border-bottom: 1px solid var(--line2)">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 6px 20px 6px 8px">
+              <button type="button" class="hr fr" onClick="{{e.toggle}}" aria-expanded="{{e.open}}" style="flex: 1 1 340px; min-width: 0; display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 8px 12px 8px 8px; border: 0; border-radius: 10px; background: transparent; font: inherit; color: inherit; text-align: left; cursor: pointer">
+                <span class="{{e.chevCls}}" aria-hidden="true"><dc-import name="Icon" glyph="chevronRight" tone="{{e.muted}}" size="18" hint-size="18px,18px"></dc-import></span>
+                <span style="{{e.tile}}"><dc-import name="Icon" glyph="{{e.glyph}}" tone="{{e.tone}}" size="18" hint-size="18px,18px"></dc-import></span>
+                <span style="flex: 1; min-width: 0"><span style="display: block"><span style="{{e.badge}}">{{e.kind}}</span> <b>{{e.record}}</b></span><span style="display: block; color: var(--ink3); font-size: 13px">Why: {{e.why}}</span></span>
+              </button>
+              <div class="at-meta" style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center">
+                <span class="{{e.srcCls}}">{{e.srcLabel}}</span>
+                <span style="display: inline-flex; align-items: center; gap: 4px; color: var(--ink2); font-size: 13px; white-space: nowrap"><sc-if value="{{e.isVerified}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="verified" tone="{{e.okTone}}" size="14" hint-size="14px,14px"></dc-import></sc-if>{{e.actor}}<sc-if value="{{e.isVerified}}" hint-placeholder-val="{{ false }}"><span class="vh">, signed in</span></sc-if></span>
+                <sc-if value="{{e.hasCo}}" hint-placeholder-val="{{ true }}"><span class="pl g">{{e.co}}</span></sc-if>
+                <sc-if value="{{e.isLate}}" hint-placeholder-val="{{ false }}"><button type="button" id="{{e.lateId}}" class="pl w" aria-expanded="{{e.lateOpen}}" onClick="{{e.lateToggle}}" onKeyDown="{{e.lateKey}}">Sealed late</button></sc-if>
+                <span style="color: var(--ink3); font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums">{{e.when}}</span>
+              </div>
+            </div>
+            <sc-if value="{{e.lateOpen}}" hint-placeholder-val="{{ false }}">
+              <div role="note" class="ex" style="margin: 0 20px 10px 70px; padding: 10px 14px; border-radius: 10px; background: var(--warnBg); border: 1px solid var(--warnLine); color: var(--ink); font-size: 13px">Sealed at a later start, after the app stopped unexpectedly. The entry is complete and in order; it was sealed to the trail when the app next opened.</div>
+            </sc-if>
+            <sc-if value="{{e.open}}" hint-placeholder-val="{{ false }}">
+              <div class="ex at-ex" style="padding: 0 20px 16px 70px; display: flex; flex-direction: column; gap: 12px">
+                <sc-if value="{{e.eventOnly}}" hint-placeholder-val="{{ false }}"><div style="color: var(--ink2); font-size: 13px">{{e.eventText}}</div></sc-if>
+                <sc-for list="{{e.changes}}" as="c" hint-placeholder-count="1">
+                  <div style="display: flex; flex-direction: column; gap: 6px">
+                    <div><b>{{c.head}}</b></div>
+                    <sc-if value="{{c.isRestore}}" hint-placeholder-val="{{ false }}"><div><button type="button" class="sec sm" onClick="{{c.history}}">Its history</button></div></sc-if>
+                    <sc-if value="{{c.isUpd}}" hint-placeholder-val="{{ false }}">
+                      <div style="overflow-x: auto; border: 1px solid var(--line); border-radius: 12px">
+                        <table class="tbl">
+                          <thead><tr><th scope="col">Field</th><th scope="col">Before</th><th scope="col">After</th></tr></thead>
+                          <tbody><sc-for list="{{c.fields}}" as="d" hint-placeholder-count="2"><tr><td class="k">{{d.f}}</td><td><sc-if value="{{d.bHas}}" hint-placeholder-val="{{ true }}"><span class="cv bf" aria-label="{{d.bl}}">{{d.b}}</span></sc-if><sc-if value="{{d.bNo}}" hint-placeholder-val="{{ false }}"><span style="color: var(--ink3)">{{d.b}}</span></sc-if></td><td><sc-if value="{{d.aHas}}" hint-placeholder-val="{{ true }}"><span class="cv a" aria-label="{{d.al}}">{{d.a}}</span></sc-if><sc-if value="{{d.aNo}}" hint-placeholder-val="{{ false }}"><span style="color: var(--ink3)">{{d.a}}</span></sc-if></td></tr></sc-for></tbody>
+                        </table>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{c.isOne}}" hint-placeholder-val="{{ false }}">
+                      <div style="overflow-x: auto; border: 1px solid var(--line); border-radius: 12px">
+                        <table class="tbl">
+                          <thead><tr><th scope="col">Field</th><th scope="col">{{c.valHead}}</th></tr></thead>
+                          <tbody><sc-for list="{{c.fields}}" as="d" hint-placeholder-count="2"><tr><td class="k">{{d.f}}</td><td><span class="{{d.cls}}" aria-label="{{d.vl}}">{{d.v}}</span></td></tr></sc-for></tbody>
+                        </table>
+                      </div>
+                    </sc-if>
+                  </div>
+                </sc-for>
+                <sc-if value="{{e.hasNotShown}}" hint-placeholder-val="{{ false }}"><div style="color: var(--ink2); font-size: 13px">{{e.notShown}}</div></sc-if>
+                <sc-if value="{{e.canPutBack}}" hint-placeholder-val="{{ false }}"><div><button type="button" class="sec sm" onClick="{{e.putBack}}"><dc-import name="Icon" glyph="undo" tone="{{e.brandTone}}" size="16" hint-size="16px,16px"></dc-import>Put it back</button></div></sc-if>
+                <sc-if value="{{e.putIn}}" hint-placeholder-val="{{ false }}"><div style="color: var(--ink2); font-size: 13px">{{e.putInText}}</div></sc-if>
+                <div style="color: var(--ink3); font-size: 12px; font-family: ui-monospace, Consolas, monospace">{{e.footer}}</div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{loadingMore}}" hint-placeholder-val="{{ false }}">
+          <div aria-hidden="true" style="padding: 14px 20px; display: flex; flex-direction: column; gap: 14px; border-bottom: 1px solid var(--line2)">
+            <div style="display: flex; gap: 14px; align-items: center"><span class="sk" style="width: 36px; height: 36px; border-radius: 10px"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 12px; width: 52%"></span><span class="sk" style="height: 10px; width: 34%"></span></span></div>
+            <div style="display: flex; gap: 14px; align-items: center"><span class="sk" style="width: 36px; height: 36px; border-radius: 10px"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 12px; width: 44%"></span><span class="sk" style="height: 10px; width: 28%"></span></span></div>
+          </div>
+        </sc-if>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; padding: 12px 20px; background: var(--head); color: var(--ink3); font-size: 13px"><span>{{footText}}</span>
+          <sc-if value="{{hasMore}}" hint-placeholder-val="{{ true }}"><button type="button" class="sec sm" onClick="{{loadMore}}" disabled="{{loadingMore}}" aria-busy="{{moreBusy}}"><sc-if value="{{loadingMore}}" hint-placeholder-val="{{ false }}"><span class="sp2" aria-hidden="true" style="width: 14px; height: 14px"></span></sc-if>{{moreLabel}}</button></sc-if>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <sc-if value="{{pbOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box">
+      <div aria-hidden="true" class="{{pbDimCls}}" onClick="{{closePb}}" style="position: absolute; inset: 0; background: var(--dim)"></div>
+      <div role="dialog" aria-modal="true" aria-labelledby="at-pb-title" tabindex="-1" class="{{pbPanelCls}}" onKeyDown="{{pbKey}}" onAnimationEnd="{{onPanelAnim}}" style="position: relative; width: 100%; max-width: 540px; max-height: 100%; overflow-y: auto; box-sizing: border-box; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 24px 60px rgba(0,0,0,.28); display: flex; flex-direction: column">
+        <div style="position: sticky; top: 0; z-index: 1; background: var(--card); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 22px 12px; border-bottom: 1px solid var(--line2)">
+          <div><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink3)">Put back</span><h2 id="at-pb-title" tabindex="-1" style="margin: 2px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{pb.title}}</h2></div>
+          <button type="button" class="sec" aria-label="Close" onClick="{{closePb}}" style="width: 40px; padding: 0"><dc-import name="Icon" glyph="close" tone="{{tn.muted}}" size="18" hint-size="18px,18px"></dc-import></button>
+        </div>
+        <div style="padding: 16px 22px; display: flex; flex-direction: column; gap: 12px">
+          <div style="color: var(--ink2); font-size: 14px">{{pb.deleted}}</div>
+          <sc-if value="{{pb.refused}}" hint-placeholder-val="{{ false }}">
+            <div role="alert" style="padding: 12px 14px; border-radius: 12px; background: var(--badBg); border: 1px solid var(--badLine); display: flex; gap: 10px; align-items: flex-start"><dc-import name="Icon" glyph="alert" tone="{{tn.bad}}" size="20" hint-size="20px,20px"></dc-import><div><b style="color: var(--badInk)">It can't be put back</b><div style="font-size: 13px; color: var(--ink)">{{pb.problem}}</div></div></div>
+            <div style="color: var(--ink2); font-size: 13px">{{pb.fix}}</div>
+          </sc-if>
+          <sc-if value="{{pb.ok}}" hint-placeholder-val="{{ true }}">
+            <div style="color: var(--ink2); font-size: 14px">{{pb.numberLine}}</div>
+            <sc-for list="{{pb.notes}}" as="n" hint-placeholder-count="1"><div style="color: var(--ink2); font-size: 14px">{{n.t}}</div></sc-for>
+            <div style="padding: 12px 14px; border-radius: 12px; background: var(--head); border: 1px solid var(--line)">
+              <b style="font-size: 13px">Putting it back also changes</b>
+              <ul style="margin: 6px 0 0; padding-left: 18px; font-size: 13px; display: flex; flex-direction: column; gap: 3px"><sc-for list="{{pb.effect}}" as="x" hint-placeholder-count="2"><li>{{x.t}}</li></sc-for></ul>
+            </div>
+            <label class="fld"><span>Why is it being put back?</span>
+              <input id="at-pb-reason" class="inp" maxlength="500" autocomplete="off" aria-required="true" aria-invalid="{{pbInvalid}}" aria-describedby="at-pb-err" value="{{pbReason}}" onInput="{{onPbReason}}" style="{{pbInpStyle}}">
+            </label>
+            <div id="at-pb-err" role="alert" style="color: var(--badInk); font-size: 13px; font-weight: 600; margin-top: -6px"><sc-if value="{{pbErr}}" hint-placeholder-val="{{ false }}">Say why it is being put back.</sc-if></div>
+          </sc-if>
+        </div>
+        <div style="position: sticky; bottom: 0; background: var(--card); display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; padding: 12px 22px 18px; border-top: 1px solid var(--line2)">
+          <button type="button" class="sec" onClick="{{closePb}}">{{pb.closeLabel}}</button>
+          <sc-if value="{{pb.ok}}" hint-placeholder-val="{{ true }}"><button type="button" class="btn" onClick="{{pbGo}}" disabled="{{pbBusy}}" aria-busy="{{pbBusyAttr}}" style="min-width: 150px"><sc-if value="{{pbBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{pbGoLabel}}</button></sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div role="status" class="{{toastCls}}" onMouseEnter="{{toastHold}}" onMouseLeave="{{toastRelease}}" style="position: fixed; left: 50%; bottom: 24px; margin-left: -190px; width: 380px; max-width: calc(100% - 32px); z-index: 70; box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; border: 1px solid #33415A; box-shadow: 0 12px 32px rgba(0,0,0,.3); font-size: 14px">
+      <dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import>
+      <span style="flex: 1">{{toastMsg}}</span>
+      <button type="button" aria-label="Dismiss" onClick="{{toastClose}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; cursor: pointer; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="close" tone="nav" size="16" hint-size="16px,16px"></dc-import></button>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"healthy","options":["healthy","never","outside","problems","warnings","nomatch","nomatch-hr","hosted"]},"theme":{"editor":"enum","default":"light","options":["light","dark"]},"$preview":{"width":1440,"height":1720}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { open: {}, lateId: null, f: { q: '', from: '', to: '', co: '', rec: '', src: '' }, touched: false, show: false,
+      checking: false, prog: 0, result: null, runs: 0, ranOnce: false, more: false, loadingMore: false,
+      pb: null, pbClosing: false, pbReason: '', pbErr: false, pbBusy: false, put: {}, fresh: [], seq: 0, flashId: null, flash: 0,
+      acc: 0, reason: '', reasonErr: false, accepting: false, toast: null, toastKey: 0 };
+  }
+  componentDidUpdate(pp, prev) {
+    // the check is done and the button is enabled again: give focus back if it was lost while disabled
+    if (prev.checking && !this.state.checking) { const a = document.activeElement; if (!a || a === document.body) { const b = document.getElementById('at-check'); if (b) b.focus({ preventScroll: true }); } }
+    if (!prev.pb && this.state.pb) { const t = document.getElementById('at-pb-title'); if (t) t.focus({ preventScroll: true }); }
+    if (prev.pb && !this.state.pb && this._opener && this._opener.isConnected) this._opener.focus({ preventScroll: true });
+    if (!prev.reasonErr && this.state.reasonErr) { const r = document.getElementById('at-reason'); if (r) r.focus({ preventScroll: true }); }
+    if (!prev.pbErr && this.state.pbErr) { const r = document.getElementById('at-pb-reason'); if (r) r.focus({ preventScroll: true }); }
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._pt); clearTimeout(this._mt); clearTimeout(this._tt); clearTimeout(this._at); }
+
+  // the filters as shown: the two "no match" views start with two filters on until one is touched (nomatch-hr: an HR filter, Claims at AI, which has no claim types yet)
+  eff() {
+    const f = { ...this.state.f };
+    if ((this.props.view ?? 'healthy') === 'nomatch' && !this.state.touched) { f.q = 'kiosk'; f.co = 'AI'; }
+    if ((this.props.view ?? 'healthy') === 'nomatch-hr' && !this.state.touched) { f.rec = 'claim'; f.co = 'AI'; }
+    return f;
+  }
+  setF(k, v) { this.setState({ f: { ...this.eff(), [k]: v }, touched: true }); }
+  toast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg, toastKey: this.state.toastKey + 1 });
+    this._tt = setTimeout(() => this.setState({ toast: null }), 6000);
+  }
+
+  renderVals() {
+    const view = this.props.view ?? 'healthy';
+    const dark = (this.props.theme ?? 'light') === 'dark';
+    const st = this.state;
+    const num = n => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const tn = dark ? { brand: 'dbrand', muted: 'dmuted', ok: 'dok', warn: 'dwarn', bad: 'dbad' } : { brand: 'brand', muted: 'muted', ok: 'ok', warn: 'warn', bad: 'bad' };
+    const show = st.show;
+    const hosted = view === 'hosted';
+    const LAST = 4830;   // the newest entry in the sample; new ones follow it
+    // masked values: a bank number (shown with the switch), a pay figure (shown with the switch), an IC number (never shown in full)
+    const m = (mask, raw) => ({ m: mask, r: raw });
+    const mp = raw => ({ m: 'Hidden', r: raw, pay: true });
+    const ic = mask => ({ m: mask, r: mask, ic: true });
+    const lbl = v => !(v && typeof v === 'object') ? '' : v.ic ? 'IC number, masked, ending ' + v.m.slice(-4) : show ? '' : v.pay ? 'Pay figure hidden' : 'Bank details hidden, ends ' + v.m.slice(-4);
+    const sv = v => (v && typeof v === 'object') ? (show ? v.r : v.m) : v;
+
+    const K = {
+      Changed: { tone: tn.brand, tile: 'var(--brandBg)', badge: 'background:var(--brandBg);color:var(--brand)' },
+      Added: { tone: tn.ok, tile: 'var(--okChip)', badge: 'background:var(--okChip);color:var(--okChipInk)' },
+      Removed: { tone: tn.bad, tile: 'var(--badChip)', badge: 'background:var(--badChip);color:var(--badChipInk)' },
+      'Put back': { tone: tn.brand, tile: 'var(--brandBg)', badge: 'background:var(--brandBg);color:var(--brand)' },
+      Done: { tone: tn.muted, tile: 'var(--neuBg)', badge: 'background:var(--neuBg);color:var(--ink2)' },
+      Read: { tone: tn.muted, tile: 'var(--neuBg)', badge: 'background:var(--neuBg);color:var(--ink2)' }
+    };
+    const SRC = { user: ['You', 'g'], auto: ['Automatic', 'g'], import: ['Import', 'g'], outside: ['Outside this app', 'b'] };
+    const MCH = 'FINANCE-PC';
+
+    // sample entries, newest first. op: what the change is; fields are before/after (a bank number carries a masked and a full form)
+    const D = [
+      { id: 4830, d: '2026-11-18', when: '18 Nov 09:25', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Read', glyph: 'sheet', rec: 'payroll', record: 'Payroll check for AISB November 2026 · Excel report opened', why: 'Logged as a read: payroll check export', action: 'payroll check export', seal: 'e5c0a2d7', eventOnly: true, readOnly: true, changes: [] },
+      { id: 4829, d: '2026-11-18', when: '18 Nov 09:20', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'payroll', rec: 'payroll', record: 'Payroll check for AISB November 2026', why: "3 things to fix before paying, 2 to check; 10 notes ('Example Payroll - NOV 2026.xlsx'), filed on Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB", action: 'payroll-check', seal: '6d18f3b0',
+        changes: [{ op: 'Added', tbl: 'Payroll check', rec: 'AISB November 2026', fields: [{ f: 'File', a: 'Example Payroll - NOV 2026.xlsx' }, { f: 'Headline', a: '3 things to fix before paying, 2 to check; 10 notes' }, { f: 'Payslips read', a: '9' }, { f: 'Filed on', a: 'Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB' }] }] },
+      { id: 4828, d: '2026-11-18', when: '18 Nov 09:15', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'upload', rec: 'setup', record: 'Setup · Company AISB · logo uploaded', why: 'The logo printed on AISB’s invoices', action: 'setup', seal: 'a3d4e517',
+        changes: [{ op: 'Changed', tbl: 'Company', rec: 'AISB', fields: [{ f: 'Logo', b: '—', a: 'aisb-logo.png' }] }] },
+      { id: 4827, d: '2026-11-18', when: '18 Nov 09:05', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'calendar', rec: 'month', record: 'Month · AISB November 2026 set up', why: 'To prepare November pay', action: 'month', seal: '1f6b2c90',
+        changes: [{ op: 'Added', tbl: 'Month', rec: 'AISB November 2026', fields: [{ f: 'Status', a: 'Set up' }, { f: 'Checklist items', a: '30, 1 done (Register Daniel with KWSP and PERKESO, done 10 Nov)' }] }] },
+      { id: 4819, d: '2026-11-17', when: '17 Nov 09:12', co: '', src: 'user', actor: 'Aisha Rahman', kind: 'Done', glyph: 'sliders', rec: 'setting', record: 'Setting · SQL exports folder', why: 'Exports moved to the shared drive', action: 'settings', seal: '3c9ea071',
+        changes: [{ op: 'Done', tbl: 'Setting', rec: 'SQL exports folder', fields: [{ f: 'Folder', b: 'D:\\Finance\\SQL exports', a: 'E:\\Shared\\SQL exports' }] }] },
+      { id: 4818, d: '2026-11-16', when: '16 Nov 15:48', co: 'AISB', src: 'import', actor: 'SQL import', kind: 'Added', glyph: 'database', rec: 'document', record: '3 exported listings kept', why: 'Fetched from SQL Account for October 2026', action: 'import', seal: '9a40c1d8',
+        changes: [
+          { op: 'Added', tbl: 'Document', rec: 'SQL Account export · Payment vouchers', fields: [{ f: 'File', a: 'Payment vouchers Oct 2026.xlsx' }, { f: 'Rows', a: '74' }] },
+          { op: 'Added', tbl: 'Document', rec: 'SQL Account export · Supplier invoices', fields: [{ f: 'File', a: 'Supplier invoices Oct 2026.xlsx' }, { f: 'Rows', a: '112' }] },
+          { op: 'Added', tbl: 'Document', rec: 'SQL Account export · Bank listing', fields: [{ f: 'File', a: 'Maybank listing Oct 2026.xlsx' }, { f: 'Rows', a: '61' }] }
+        ] },
+      { id: 4802, d: '2026-11-14', when: '14 Nov 09:02', co: 'AISB', src: 'outside', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'edit', rec: 'payment', record: 'Payment · Office rental (AISB)', why: 'Corrected a description in DB Browser', action: 'accept-outside', seal: 'b3d57e10',
+        changes: [{ op: 'Changed', tbl: 'Payment', rec: 'Office rental (AISB)', fields: [{ f: 'Description', b: 'Office rental Oct', a: 'Office rental, Oct 2026' }] }] },
+      { id: 4799, d: '2026-11-13', when: '13 Nov 15:10', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'leave', rec: 'leave', record: 'Leave · Goh Jia Hui (AISB)', why: 'Booked; more than her legal days this year, a warning only', action: 'leave', seal: '3f6a0c21',
+        changes: [{ op: 'Added', tbl: 'Leave', rec: 'Goh Jia Hui, annual leave', fields: [{ f: 'Dates', a: 'Mon 7 to Thu 10 Dec 2026' }, { f: 'Days', a: '4' }, { f: 'Status', a: 'Booked' }, { f: 'Warning shown', a: '3 days this year by law' }] }] },
+      { id: 4797, d: '2026-11-13', when: '13 Nov 10:42', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'upload', rec: 'document', record: 'Document · Bank slip, Office rental', why: 'Uploaded · SHA-256 fingerprint stored', action: 'upload', seal: '5d02b81e',
+        changes: [{ op: 'Added', tbl: 'Document', rec: 'Bank slip, Office rental', fields: [{ f: 'File', a: 'Bank slip 30 Oct.pdf' }] }] },
+      { id: 4796, d: '2026-11-13', when: '13 Nov 09:58', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'approval', rec: 'approval', record: 'Approval form · AF-2611-003 uploaded (AISB)', why: 'Signed form for 3 October claims, RM 1,214.50', action: 'approval-upload', seal: '91be4c07',
+        changes: [{ op: 'Changed', tbl: 'Approval form', rec: 'AF-2611-003', fields: [{ f: 'Status', b: 'Waiting', a: 'Approved' }, { f: 'Signed by', b: '—', a: 'Tan Mei Ling' }, { f: 'Date on the form', b: '—', a: '12 Nov 2026' }, { f: 'How', b: '—', a: 'Paper scan · Approver chosen by Aisha Rahman from a paper scan' }] }] },
+      { id: 4791, d: '2026-11-12', when: '12 Nov 16:04', co: 'AISB', src: 'import', actor: 'SQL import', kind: 'Changed', glyph: 'payment', rec: 'payment', record: 'Payment · Electricity bill (AISB)', why: 'SQL import: estimate takes the voucher amount', action: 'import', seal: 'a91c3f7a', late: true, notShown: 9,
+        changes: [{ op: 'Changed', tbl: 'Payment', rec: 'Electricity bill (AISB)', fields: [{ f: 'Amount', b: '1,150.00', a: '1,163.20' }, { f: 'SQL PV no.', b: '—', a: 'PV2611-003' }] }] },
+      { id: 4786, d: '2026-11-11', when: '11 Nov 14:20', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'recurring', rec: 'recurring', record: 'Recurring payment · KWSP (AISB)', why: 'October’s contributions from the payroll summary', action: 'recurring', seal: 'c47e09d2',
+        changes: [{ op: 'Changed', tbl: 'Recurring payment', rec: 'KWSP (AISB)', fields: [{ f: 'Usual amount', b: '11,180.00', a: '11,240.00' }] }] },
+      { id: 4783, d: '2026-11-11', when: '11 Nov 08:50', co: '', src: 'user', actor: 'Aisha Rahman', kind: 'Done', glyph: 'verified', rec: 'audit', record: 'Audit trail · Checked', why: 'All 4,783 entries checked out', action: 'audit', seal: '41fcd6a2', eventOnly: true, changes: [] },
+      { id: 4781, d: '2026-11-10', when: '10 Nov 09:31', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'bank', rec: 'bank', record: 'Bank line · 27 Oct IBG DR 271026', why: 'Ignored: a correction, no money moved', action: 'bank', seal: '18aae6c0',
+        changes: [{ op: 'Changed', tbl: 'Bank line', rec: '27 Oct IBG DR 271026', fields: [{ f: 'Explained as', b: '—', a: 'Correction' }] }] },
+      { id: 4778, d: '2026-11-09', when: '9 Nov 11:40', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'claim', rec: 'claim', record: 'Claim · CL-2610-006, Ong Wei Ming (AISB)', why: 'Entered twice', action: 'claim', seal: '5a27e9d4',
+        changes: [{ op: 'Changed', tbl: 'Claim', rec: 'CL-2610-006', fields: [{ f: 'Status', b: 'Draft', a: 'Withdrawn' }, { f: 'Reason', b: '—', a: 'Entered twice' }] }] },
+      { id: 4772, d: '2026-11-08', when: '8 Nov 17:55', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Removed', glyph: 'payment', rec: 'payment', record: 'Payment · Duplicate courier charge (AISB)', why: 'Entered twice by mistake', action: 'payments', seal: '7b3f44a1',
+        changes: [{ op: 'Removed', tbl: 'Payment', rec: 'Duplicate courier charge (AISB)', fields: [{ f: 'Amount', b: '186.50' }] }] },
+      { id: 4748, d: '2026-11-03', when: '3 Nov 14:20', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Removed', glyph: 'trash', rec: 'recurring', record: 'Recurring payment · Water bill (AISB)', why: 'Entered twice by mistake', action: 'recurring', seal: '6c2e8b41', pbKey: 'water',
+        changes: [{ op: 'Removed', tbl: 'Recurring payment', rec: 'Water bill (AISB)', fields: [{ f: 'Payee', b: 'Water bill' }, { f: 'Usual amount', b: '85.00' }, { f: 'Supplier', b: '400-W001' }, { f: 'Bank details', b: 'Air Selangor' }, { f: 'Account / ref no.', b: '1200 6631' }] }] },
+      { id: 4742, d: '2026-11-02', when: '2 Nov 15:30', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'staff', rec: 'staff', record: 'Staff · S009 Daniel Lee Chee Keong (AISB)', why: 'Joins on 3 Nov 2026', action: 'staff', seal: 'c03d7f58',
+        changes: [{ op: 'Added', tbl: 'Staff record', rec: 'S009 Daniel Lee Chee Keong', fields: [{ f: 'Joined', a: '3 Nov 2026' }, { f: 'IC number', a: ic('••••••-••-9153') }, { f: 'Basic pay', a: mp('3,500.00 from 3 Nov 2026') }, { f: 'Bank account', a: m('••••8073', 'Maybank 1640 2290 8073') }] }] },
+      { id: 4741, d: '2026-11-02', when: '2 Nov 11:08', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'sliders', rec: 'setup', record: 'Setup · Bank account Maybank savings ····0932 (AISB)', why: 'Named as on the bank statement', action: 'setup', seal: 'e2107c95',
+        changes: [{ op: 'Changed', tbl: 'Bank account', rec: 'Maybank savings, 5141 2300 0932 (AISB)', fields: [{ f: 'Name', b: 'Savings account', a: 'Maybank savings' }] }] },
+      { id: 4740, d: '2026-11-02', when: '2 Nov 10:30', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'advance', rec: 'advance', record: 'Salary advance · SA-2611-001, Mohd Hafiz bin Rosli (AISB)', why: 'Asked for on 2 Nov; printed on approval form AF-2611-001', action: 'advance', seal: '7e40b19a',
+        changes: [{ op: 'Added', tbl: 'Salary advance', rec: 'SA-2611-001', fields: [{ f: 'Amount', a: mp('1,500.00') }, { f: 'Repayments', a: mp('500.00 a month, Nov 2026 to Jan 2027') }, { f: 'Repaid', a: mp('0.00') }, { f: 'Status', a: 'Waiting for approval' }] }] }
+    ];
+    const OLDER = [
+      { id: 4731, d: '2026-10-30', when: '30 Oct 16:40', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'upload', rec: 'document', record: 'Document · Cheque 000214, Stationery Mart', why: 'Uploaded · SHA-256 fingerprint stored', action: 'upload', seal: '8c1455e0',
+        changes: [{ op: 'Added', tbl: 'Document', rec: 'Cheque 000214, Stationery Mart', fields: [{ f: 'File', a: 'Cheque 000214.pdf' }] }] },
+      { id: 4725, d: '2026-10-28', when: '28 Oct 11:02', co: 'AISB', src: 'import', actor: 'SQL import', kind: 'Changed', glyph: 'payment', rec: 'payment', record: 'Payment · Salaries — staff (AISB)', why: 'SQL import: matched to its voucher', action: 'import', seal: 'd7a319b2',
+        changes: [{ op: 'Changed', tbl: 'Payment', rec: 'Salaries — staff (AISB)', fields: [{ f: 'SQL PV no.', b: '—', a: 'PV2610-014' }, { f: 'Paid date', b: '—', a: '24 Oct 2026' }] }] },
+      { id: 4719, d: '2026-10-27', when: '27 Oct 09:15', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Added', glyph: 'recurring', rec: 'recurring', record: 'Recurring payment · Office rental (AISB)', why: 'New office lease from October', action: 'recurring', seal: '60e8c3f4',
+        changes: [{ op: 'Added', tbl: 'Recurring payment', rec: 'Office rental (AISB)', fields: [{ f: 'Usual amount', a: '6,500.00 a month' }, { f: 'From', a: 'October 2026' }] }] },
+      { id: 4612, d: '2026-10-12', when: '12 Oct 15:40', co: '', src: 'user', actor: 'Aisha Rahman', kind: 'Removed', glyph: 'trash', rec: 'setup', record: 'Setup · Payment type Donation', why: 'Donations go under Other payment', action: 'setup', seal: 'd85f0a3e', pbKey: 'donation',
+        changes: [{ op: 'Removed', tbl: 'Payment type', rec: 'Donation', fields: [{ f: 'Name', b: 'Donation' }, { f: 'Key', b: 'donation' }, { f: 'Money', b: 'Money out (a payment)' }] }] },
+      { id: 4601, d: '2026-10-09', when: '9 Oct 09:12', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Put back', glyph: 'undo', rec: 'restore', record: 'Recurring payment · Electricity bill (AISB)', why: 'Deleted by mistake', action: 'restore', seal: '2b97c6d0',
+        changes: [{ op: 'Put back', restore: true, head: 'Put back · Recurring payment Electricity bill · from entry 4,596 · with the same number', fields: [] }] },
+      { id: 4596, d: '2026-10-08', when: '8 Oct 17:30', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Removed', glyph: 'trash', rec: 'recurring', record: 'Recurring payment · Electricity bill (AISB)', why: 'Thought it was a duplicate', action: 'recurring', seal: '904e1fa7', putIn: 4601,
+        changes: [{ op: 'Removed', tbl: 'Recurring payment', rec: 'Electricity bill (AISB)', fields: [{ f: 'Payee', b: 'Electricity bill' }, { f: 'Usual amount', b: '1,150.00' }, { f: 'Supplier', b: '400-E012' }, { f: 'Account / ref no.', b: '2200 4417 08' }] }] },
+      { id: 4388, d: '2026-09-12', when: '12 Sep 11:02', co: 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Removed', glyph: 'trash', rec: 'recurring', record: 'Recurring payment · Security guard (AISB)', why: 'Contract ended', action: 'recurring', seal: '5ae3d218', pbKey: 'security',
+        changes: [{ op: 'Removed', tbl: 'Recurring payment', rec: 'Security guard (AISB)', fields: [{ f: 'Payee', b: 'Security guard' }, { f: 'Usual amount', b: '900.00' }, { f: 'Supplier', b: '400-S007' }, { f: 'Pay from', b: m('••••7710', 'USD collections 5141 2300 7710') }] }] }
+    ];
+    // what Put it back would do, per deleted Setup record
+    const PB = {
+      water: { title: 'Water bill', label: 'Recurring payment Water bill', record: 'Recurring payment · Water bill (AISB)', rec: 'recurring', at: '3 Nov 14:20', entry: '4,748', why: 'Entered twice by mistake',
+        notes: ['Its supplier and bank details come back with it.'], effect: ['Nothing in the months already set up changes.'] },
+      donation: { title: 'Donation', label: 'Payment type Donation', record: 'Setup · Payment type Donation', rec: 'setup', co: '', at: '12 Oct 15:40', entry: '4,612', why: 'Donations go under Other payment', notes: [], effect: [] },
+      security: { title: 'Security guard', label: 'Recurring payment Security guard', at: '12 Sep 11:02', entry: '4,388', why: 'Contract ended',
+        problem: "The bank account it was paid from, USD collections, is stopped now, so it can't be put back.", fix: 'Use that bank account again in Setup › Bank accounts first, then try again. Its history stays in the trail.' }
+    };
+
+    const total = LAST + st.fresh.length;
+    const outAll = [
+      { op: 'Changed', tbl: 'Payment', rec: 'Staff medical claim (AISB)', fields: [{ f: 'Amount', b: '480.00', a: '408.00' }] },
+      { op: 'Changed', tbl: 'Recurring payment', rec: 'Office rental (AISB)', fields: [{ f: 'Bank details', b: m('••••7122', 'CIMB 8006447122 (Menara Holdings)'), a: m('••••7123', 'CIMB 8006447123 (Menara Holdings)') }] },
+      { op: 'Changed', tbl: 'Payment', rec: 'Water bill (AISB)', fields: [{ f: 'Paid date', b: '—', a: '6 Nov 2026' }] },
+      { op: 'Changed', tbl: 'Payment', rec: 'Telephone bill (AISB)', fields: [{ f: 'Amount', b: '212.40', a: '221.40' }] },
+      { op: 'Changed', tbl: 'Recurring payment', rec: 'Cleaning service (AISB)', fields: [{ f: 'Payee', b: 'Cleaning service', a: 'Cleaning services' }] },
+      { op: 'Changed', tbl: 'Payment', rec: 'Courier charge (AI)', fields: [{ f: 'Paid date', b: '3 Nov 2026', a: '4 Nov 2026' }] }
+    ];
+    const outTotal0 = view === 'outside' ? 3 : view === 'problems' ? 14 : 0;
+    const outTotal = Math.max(0, outTotal0 - (view === 'outside' ? (st.acc ? 3 : 0) : st.acc * 3));
+    const outListed = Math.min(3, outTotal);
+    const outItems = outTotal ? outAll.slice((st.acc % 2) * 3, (st.acc % 2) * 3 + outListed) : [];
+    const showOutside = outTotal > 0;
+    const outMore = outTotal - outListed;
+    const fmtField = f => ({ f: f.f, b: sv(f.b), a: sv(f.a), v: sv(f.a ?? f.b) });
+
+    // the status panel
+    const reasons = [], hasProblems = view === 'problems', hasWarn = view === 'warnings';
+    if (hasWarn) reasons.push('The records file is older than the last entry recorded beside it. That is expected after restoring a backup; otherwise entries may have been removed.', 'The last entry recorded beside the records file has a different fingerprint inside it: the trail may have been rebuilt.');
+    if (hasProblems) reasons.push('Entry 4,790 has been changed since it was saved.', 'Entry 4,791 does not follow entry 4,790.');
+    if (showOutside) reasons.push(outTotal + (outTotal === 1 ? ' change was' : ' changes were') + ' made to the records outside this app. Check ' + (outTotal === 1 ? 'it' : 'them') + ' below, then accept ' + (outTotal === 1 ? 'it' : 'them') + ' with the reason ' + (outTotal === 1 ? 'it was' : 'they were') + ' made.');
+    const bad = reasons.length > 0, never = view === 'never' && !st.ranOnce;
+    const checkedWords = st.ranOnce ? 'checked just now' : 'last checked 11 Nov';
+    const panel = bad
+      ? { bg: 'var(--badBg)', line: 'var(--badLine)', ink: 'var(--badInk)', title: 'The audit trail needs attention', okIcon: false, badIcon: true, neuIcon: false, hasReasons: true, reasons: reasons.map(t => ({ t })), hasText: false, pre: '',
+          advice: hasWarn ? 'If you just put a backup back, this is expected. If not, run the check and tell the person who looks after the records.' : 'Nothing is lost: every change stays in the trail, and these are shown as made outside the app.' }
+      : never
+        ? { bg: 'var(--brandBg)', line: 'var(--line)', ink: 'var(--brand)', title: 'The whole trail has not been checked yet', okIcon: false, badIcon: false, neuIcon: true, hasReasons: false, reasons: [], hasText: true, advice: '',
+            pre: num(total) + ' entries. The last 200 check out, and each save is sealed to the one before. Run the check to read all of them.' }
+        : { bg: 'var(--okBg)', line: 'var(--okLine)', ink: 'var(--okInk)', title: 'Trail intact · ' + checkedWords, okIcon: true, badIcon: false, neuIcon: false, hasReasons: false, reasons: [], hasText: true, advice: '',
+            pre: num(total) + ' entries, every save sealed to the one before.' };
+
+    // the check: a button that works, then a result that stays
+    const checking = st.checking;
+    const check = () => {
+      if (this.state.checking) return;
+      this.setState({ checking: true, prog: 0, result: null });
+      clearTimeout(this._t);
+      const tick = i => {
+        if (i < 6) { this.setState({ prog: i }); this._t = setTimeout(() => tick(i + 1), 220); return; }
+        const v = this.props.view ?? 'healthy';
+        const n = num(LAST + this.state.fresh.length);
+        const res = v === 'problems'
+          ? { tone: 'fail', title: 'Problems found', text: 'Entry 4,790 has been changed since it was saved. Entry 4,791 does not follow entry 4,790. ' + (14 - this.state.acc * 3) + ' records differ from the trail and are listed under Changes made outside this app.' }
+          : v === 'outside' && this.state.acc === 0
+            ? { tone: 'warn', title: 'Checked, with changes to review', text: 'All ' + n + ' entries check out, but 3 records differ from the trail. They are listed under Changes made outside this app.', review: true }
+            : v === 'warnings'
+              ? { tone: 'warn', title: 'Checked, with warnings', text: 'All ' + n + ' entries check out in order, but the records file is older than the last entry recorded beside it. Read the warnings above.', review: false }
+              : { tone: 'done', title: 'Everything checks out', text: 'All ' + n + ' entries check out, and all 1,206 records match the trail. Check code 3c9ea071.' };
+        this.setState({ checking: false, prog: 0, ranOnce: true, runs: this.state.runs + 1, result: res });
+      };
+      this._t = setTimeout(() => tick(1), 220);
+    };
+    const res = st.result;
+    const rbTone = checking ? 'run' : res ? res.tone : '';
+    const pct = Math.round(st.prog / 6 * 100);
+    const rb = {
+      show: checking || !!res, running: checking, isDone: !checking && !!res && res.tone === 'done', isWarn: !checking && !!res && res.tone === 'warn', isFail: !checking && !!res && res.tone === 'fail',
+      bg: rbTone === 'done' ? 'var(--okBg)' : rbTone === 'warn' ? 'var(--warnBg)' : rbTone === 'fail' ? 'var(--badBg)' : 'var(--card)',
+      line: rbTone === 'done' ? 'var(--okLine)' : rbTone === 'warn' ? 'var(--warnLine)' : rbTone === 'fail' ? 'var(--badLine)' : 'var(--line)',
+      ink: rbTone === 'done' ? 'var(--okInk)' : rbTone === 'warn' ? 'var(--warnInk)' : rbTone === 'fail' ? 'var(--badInk)' : 'var(--ink)',
+      title: checking ? 'Checking ' + num(Math.round((LAST + st.fresh.length) * st.prog / 6)) + ' of ' + num(LAST + st.fresh.length) + ' entries…' : res ? res.title : '',
+      text: checking ? 'Reading every entry and comparing each record with the trail. You can keep working; this stays here until it is done.' : res ? res.text : '',
+      pct, hasWhen: !checking && !!res, when: 'Checked just now', hasReview: !!(res && res.review)
+    };
+
+    // filters
+    const f = this.eff();
+    const needle = (f.q || '').trim().toLowerCase();
+    const fresh = st.fresh;
+    const base = [...fresh, ...D, ...(st.more ? OLDER : [])];
+    const match = e => (!f.from || e.d >= f.from) && (!f.to || e.d <= f.to) && (!f.co || e.co === f.co) && (!f.rec || e.rec === f.rec) && (!f.src || e.src === f.src)
+      && (!needle || (e.record + ' ' + e.why + ' ' + e.actor + ' ' + e.changes.map(c => (c.rec || '') + ' ' + c.fields.map(x => sv(x.b) + ' ' + sv(x.a)).join(' ')).join(' ')).toLowerCase().includes(needle));
+    const shown = base.filter(match);
+    const dateLabel = iso => { const mo = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; const p = iso.split('-'); return Number(p[2]) + ' ' + mo[Number(p[1]) - 1] + ' ' + p[0]; };
+    const REC = { payment: 'Payments', document: 'Documents', recurring: 'Recurring payments', month: 'Months', bank: 'Bank lines', staff: 'Staff', leave: 'Leave', claim: 'Claims', advance: 'Salary advances', payroll: 'Payroll checks', approval: 'Approvals', users: 'Users and access', setup: 'Setup', setting: 'Settings', restore: 'Put back', audit: 'Audit trail' };
+    const chips = [];
+    const addChip = (k, label) => chips.push({ tone: tn.muted, label, rmLabel: 'Remove filter: ' + label, remove: () => this.setF(k, '') });
+    if (f.q) addChip('q', 'Search: ' + f.q);
+    if (f.from) addChip('from', 'From ' + dateLabel(f.from));
+    if (f.to) addChip('to', 'To ' + dateLabel(f.to));
+    if (f.co) addChip('co', 'Company: ' + f.co);
+    if (f.rec) addChip('rec', 'Record: ' + REC[f.rec]);
+    if (f.src) addChip('src', 'Made by: ' + SRC[f.src][0]);
+    const clearAll = () => this.setState({ f: { q: '', from: '', to: '', co: '', rec: '', src: '' }, touched: true });
+
+    const entries = shown.map(e => {
+      const open = !!st.open[e.id];
+      const isFresh = fresh.some(x => x.id === e.id);
+      const doneIn = st.put[e.id];
+      const putIn = e.putIn || doneIn;
+      const pbd = e.pbKey ? PB[e.pbKey] : null;
+      const canPutBack = !!pbd && !doneIn;
+      const lateOpen = st.lateId === e.id;
+      const src = SRC[e.src];
+      return {
+        id: e.id, muted: tn.muted, brandTone: tn.brand, open, kind: e.kind, record: e.record, why: e.why, actor: e.actor, when: e.when, co: e.co, hasCo: !!e.co,
+        glyph: e.glyph, tone: K[e.kind].tone, chevCls: open ? 'chev on' : 'chev',
+        tile: 'width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:none;background:' + K[e.kind].tile,
+        badge: 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:700;margin-right:4px;' + K[e.kind].badge,
+        srcLabel: src[0], srcCls: 'pl ' + src[1],
+        isLate: !!e.late, lateId: 'at-sl-' + e.id, lateOpen,
+        flashCls: st.flashId === e.id ? (st.flash % 2 ? 'fa' : 'fb') : '',
+        eventOnly: !!e.eventOnly,
+        eventText: e.readOnly ? 'Nothing changed in the records. Opening the Excel report is logged as a read, with who opened it and when; IC numbers in it are masked to the last 4.' : 'Nothing changed in the records (an event only).',
+        isVerified: hosted && e.src === 'user', okTone: tn.ok,
+        changes: e.changes.map(c => {
+          const one = !c.restore && c.op !== 'Changed' && c.op !== 'Done';
+          const del = c.op === 'Removed';
+          return { head: c.restore ? c.head : c.op + ' · ' + c.tbl + ' · ' + c.rec, isRestore: !!c.restore, isUpd: !c.restore && !one, isOne: one, valHead: del ? 'Value before it was removed' : 'Value',
+            history: () => this.toast('The record\'s history opens beside the trail.'),
+            fields: c.fields.map(x => {
+              const b = sv(x.b), a = sv(x.a), v = sv(x.a ?? x.b);
+              return { bl: lbl(x.b), al: lbl(x.a), vl: lbl(x.a ?? x.b), f: x.f, b: b ?? '—', a: a ?? '—', bHas: b != null && b !== '—', bNo: b == null || b === '—', aHas: a != null && a !== '—', aNo: a == null || a === '—',
+                v: v ?? '—', cls: 'cv ' + (del ? 'd' : 'a') };
+            }) };
+        }),
+        hasNotShown: !!e.notShown, notShown: 'And ' + e.notShown + ' more records as they stood.',
+        canPutBack, putIn: !!putIn, putInText: putIn ? 'Put back in entry ' + num(putIn) + '.' : '',
+        footer: 'Entry ' + num(e.id) + ' · ' + e.action + ' · ' + MCH + (e.src === 'user' ? (hosted ? ' · ' + e.actor + ', signed in' : ' · ' + e.actor + ', declared, not verified') : e.src === 'outside' ? (hosted ? ' · made outside this app, no sign-in · accepted by ' + e.actor + ', signed in' : ' · made outside this app · accepted by ' + e.actor + ', declared, not verified') : '') + ' · check code ' + e.seal,
+        toggle: () => this.setState({ open: { ...this.state.open, [e.id]: !this.state.open[e.id] } }),
+        lateToggle: () => this.setState({ lateId: this.state.lateId === e.id ? null : e.id }),
+        lateKey: ev => { if (ev.key === 'Escape' && this.state.lateId === e.id) { ev.stopPropagation(); this.setState({ lateId: null }); } },
+        putBack: ev => { this._opener = (ev && ev.currentTarget) || null; this.setState({ pb: e.id, pbKey: e.pbKey, pbReason: '', pbErr: false, pbBusy: false, pbClosing: false }); }
+      };
+    });
+
+    // Put back dialog
+    const pbKey = st.pbKey, pbd = pbKey ? PB[pbKey] : null;
+    const pbEntry = st.pb != null ? [...D, ...OLDER].find(x => x.id === st.pb) : null;
+    const refused = !!(pbd && pbd.problem);
+    const pbView = pbd ? {
+      title: pbd.title, refused, ok: !refused, problem: pbd.problem || '', fix: pbd.fix || '', closeLabel: refused ? 'Close' : 'Cancel',
+      deleted: pbd.label + ' was deleted ' + pbd.at + ' by Aisha Rahman, in entry ' + pbd.entry + '. Why: ' + pbd.why + '.',
+      numberLine: 'It comes back as it was when it was deleted, ' + (pbd.num || 'with the same number') + '.',
+      notes: (pbd.notes || []).map(t => ({ t })), effect: (pbd.effect || []).map(t => ({ t }))
+    } : { title: '', refused: false, ok: true, problem: '', fix: '', closeLabel: 'Cancel', deleted: '', numberLine: '', notes: [], effect: [] };
+    const closePb = () => {
+      if (!this.state.pb || this.state.pbClosing) return;
+      const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (calm) return this.finishClose();
+      this.setState({ pbClosing: true });
+      clearTimeout(this._pt);
+      this._pt = setTimeout(() => this.finishClose(), 400);   // only a safety net if animationend never arrives
+    };
+    const pbGo = () => {
+      if (this.state.pbBusy) return;
+      if (!this.state.pbReason.trim()) { this.setState({ pbErr: true }); return; }
+      this.setState({ pbBusy: true, pbErr: false });
+      clearTimeout(this._mt);
+      this._mt = setTimeout(() => {
+        const s = this.state, seq = LAST + 1 + s.fresh.length, k = PB[s.pbKey];
+        if (!k || k.problem) { this.setState({ pbBusy: false }); return; }
+        const entry = { id: seq, d: '2026-11-18', when: '18 Nov 09:40', co: k.co ?? 'AISB', src: 'user', actor: 'Aisha Rahman', kind: 'Put back', glyph: 'undo', rec: 'restore', record: k.record, why: s.pbReason.trim(), action: 'restore', seal: 'ae517d03',
+          changes: [{ op: 'Put back', restore: true, head: 'Put back · ' + k.label + ' · from entry ' + k.entry + ' · ' + (k.newNo ? 'as #' + k.newNo + ', as #29 had been given to another record' : 'with the same number'), fields: [] }] };
+        this.setState({ fresh: [entry, ...s.fresh], put: { ...s.put, [s.pb]: seq }, flashId: seq, flash: s.flash + 1, pbBusy: false, pbClosing: false, pb: null, pbKey: null });
+        this.toast(k.title + ' put back' + (k.newNo ? ' as #' + k.newNo : ', with the same number'));
+      }, 800);
+    };
+    const pbKeyDown = e => {
+      if (e.key === 'Escape') { e.stopPropagation(); closePb(); return; }
+      if (e.key === 'Tab') {
+        const list = [...e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!list.length) return;
+        const first = list[0], last = list[list.length - 1], a = document.activeElement;
+        if (e.shiftKey && (a === first || a === e.currentTarget || !e.currentTarget.contains(a))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && a === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+
+    // accept the outside changes
+    const accept = () => {
+      if (this.state.accepting) return;
+      if (!this.state.reason.trim()) { this.setState({ reasonErr: true }); return; }
+      this.setState({ accepting: true, reasonErr: false });
+      clearTimeout(this._at);
+      this._at = setTimeout(() => {
+        const s = this.state, seq = LAST + 1 + s.fresh.length;
+        const n = outListed;
+        const entry = { id: seq, d: '2026-11-18', when: '18 Nov 09:44', co: 'AISB', src: 'outside', actor: 'Aisha Rahman', kind: 'Changed', glyph: 'edit', rec: 'payment', record: 'Changes made outside this app · ' + n + ' accepted', why: s.reason.trim(), action: 'accept-outside', seal: '5b0ce2f9',
+          changes: outItems.map(g => ({ op: 'Changed', tbl: g.tbl, rec: g.rec, fields: g.fields })) };
+        this.setState({ fresh: [entry, ...s.fresh], acc: s.acc + 1, accepting: false, reason: '', flashId: seq, flash: s.flash + 1 });
+        this.toast(n + (n === 1 ? ' change' : ' changes') + ' accepted and sealed in entry ' + num(seq) + '.');
+      }, 700);
+    };
+    const loadMore = () => {
+      if (this.state.loadingMore) return;
+      this.setState({ loadingMore: true });
+      clearTimeout(this._mt);
+      this._mt = setTimeout(() => this.setState({ loadingMore: false, more: true }), 900);
+    };
+
+    const anyF = chips.length > 0;
+    const hasMore = !st.more;
+    return {
+      rootCls: 'at' + (dark ? ' dk' : ''), theme: dark ? 'dark' : 'light', tn, hosting: hosted ? 'hosted' : 'pc',
+      who: hosted
+        ? { cls: 'cp ok', glyph: 'verified', tone: tn.ok, chip: 'Signed in, verified', text: 'Each name is the person who was signed in when the change was made. A change made outside this app has no sign-in: its name is the person who accepted it.' }
+        : { cls: 'cp', glyph: 'person', tone: tn.muted, chip: 'Declared, not verified', text: 'Until sign-in is built, each name is the one declared on this computer.' },
+      noMatchText: f.rec === 'users' && !hosted && shown.length === 0
+        ? 'Nothing has changed Users and access yet: its records start when sign-in and hosting are built. Clear the filter to see every entry again.'
+        : f.rec === 'claim' && f.co === 'AI'
+          ? "AI has no claims in the trail: claim types need AI's chart of accounts first, so no claim has been entered. Clear the filters to see every entry again."
+          : ['staff', 'leave', 'claim', 'advance', 'payroll'].includes(f.rec)
+            ? 'No ' + REC[f.rec].toLowerCase() + ' entries fit these filters. Clear them to see every entry again.'
+            : 'Nothing in the trail fits these filters. Clear them to see every entry again.',
+      exportLabel: anyF ? 'Export filtered list to Excel' : 'Export to Excel',
+      exportClick: () => this.toast('Excel file ready: ' + (anyF ? 'the filtered entries' : 'every entry') + ', bank details ' + (show ? 'shown' : 'hidden') + '.'),
+      check, checking, idle: !checking, busyAttr: checking ? 'true' : 'false',
+      checkLabel: checking ? 'Checking…' : 'Check the audit trail',
+      checkStyle: 'min-width:212px;' + (checking ? 'cursor:progress' : ''),
+      swapCls: st.runs % 2 ? 'swapB' : 'swapA',
+      panel, rb,
+      hasOutside: showOutside, noOutside: !showOutside, outCount: outTotal,
+      showOutside, out: { total: outTotal, items: outItems.map(g => ({ op: g.op, tbl: g.tbl, rec: g.rec, fields: g.fields.map(x => ({ f: x.f, b: sv(x.b), a: sv(x.a) })) })), hasMore: outMore > 0,
+        moreText: outMore + ' more are not listed. Accepting seals only the ' + outListed + ' listed above; the next ones then show here.' },
+      reason: st.reason, onReason: e => this.setState({ reason: e.target.value, reasonErr: e.target.value.trim() ? false : this.state.reasonErr }),
+      reasonErr: st.reasonErr, reasonInvalid: st.reasonErr ? 'true' : 'false',
+      reasonStyle: st.reasonErr ? 'border-color:var(--badInk);box-shadow:0 0 0 1px var(--badInk)' : '',
+      accept, accepting: st.accepting, acceptBusy: st.accepting ? 'true' : 'false',
+      acceptLabel: st.accepting ? 'Accepting…' : (outMore > 0 ? 'Accept these ' + outListed : outListed === 1 ? 'Accept this change' : 'Accept these ' + outListed),
+      f, onQ: e => this.setF('q', e.target.value), onFrom: e => this.setF('from', e.target.value), onTo: e => this.setF('to', e.target.value),
+      onCo: e => this.setF('co', e.target.value), onRec: e => this.setF('rec', e.target.value), onSrc: e => this.setF('src', e.target.value),
+      showAttr: show ? 'true' : 'false', showLabel: show ? 'On' : 'Off', toggleShow: () => this.setState({ show: !this.state.show }),
+      swTrack: 'position:relative;display:inline-block;width:36px;height:20px;border-radius:99px;flex:none;transition:background-color .12s ease-out;background:' + (show ? 'var(--pri)' : 'var(--ctl)'),
+      swKnob: 'position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:99px;background:#FFFFFF;transition:transform .18s cubic-bezier(.22,1,.36,1);transform:translateX(' + (show ? 16 : 0) + 'px)',
+      countText: shown.length + (shown.length === 1 ? ' entry' : ' entries'),
+      hasChips: anyF, chips, clearAll, noEntries: shown.length === 0, entries,
+      loadingMore: st.loadingMore, moreBusy: st.loadingMore ? 'true' : 'false', moreLabel: st.loadingMore ? 'Loading older entries…' : 'Show older', loadMore, hasMore,
+      footText: anyF ? (shown.length ? 'Showing the newest entries that fit the filters.' : 'No entries fit the filters.') : (st.more ? 'That is every entry for these filters.' : 'Showing the newest ' + shown.length + ' entries.'),
+      pbOpen: st.pb != null, pb: pbView, pbDimCls: st.pbClosing ? 'dim-out' : 'dim-in', pbPanelCls: st.pbClosing ? 'dr-out' : 'dr-in',
+      closePb, pbKey: pbKeyDown, onPanelAnim: e => { if (this.state.pbClosing && e.target === e.currentTarget) this.finishClose(); },
+      pbReason: st.pbReason, onPbReason: e => this.setState({ pbReason: e.target.value, pbErr: e.target.value.trim() ? false : this.state.pbErr }),
+      pbErr: st.pbErr, pbInvalid: st.pbErr ? 'true' : 'false', pbInpStyle: st.pbErr ? 'border-color:var(--badInk);box-shadow:0 0 0 1px var(--badInk)' : '',
+      pbGo, pbBusy: st.pbBusy, pbBusyAttr: st.pbBusy ? 'true' : 'false', pbGoLabel: st.pbBusy ? 'Putting it back…' : 'Put it back',
+      hasToast: !!st.toast, toastMsg: st.toast || '', toastCls: 'to-in', toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); },
+      toastHold: () => clearTimeout(this._tt), toastRelease: () => { clearTimeout(this._tt); this._tt = setTimeout(() => this.setState({ toast: null }), 6000); }
+    };
+  }
+  finishClose() { clearTimeout(this._pt); if (this.state.pb != null) this.setState({ pb: null, pbKey: null, pbClosing: false, pbBusy: false }); }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bank and reconciliation (dark) · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B111C}html{color-scheme:dark}
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),select,textarea{background-color:#0B111C;color:#E6EBF2}
+input::placeholder,textarea::placeholder{color:#8E9BB0;opacity:1}html{scroll-padding-bottom:96px}
+a{color:#8DB0FA}a:hover{color:#B3CBFF}
+.hb:hover:not(:disabled){background:#3360D0 !important}
+.hs:hover:not(:disabled){background:#1E2A3F !important}
+.hg:hover:not(:disabled){background:#1E2838 !important}
+.hr:hover{background:#152038 !important}
+.dz:hover{border-color:#8DB0FA !important;background:#162033 !important}
+.lk:hover{color:#B3CBFF !important}
+button:disabled{cursor:not-allowed}
+::placeholder{color:#8E9BB0;opacity:1}
+/* motion and focus base */
+.hb,.hs,.hr,.hg,.dz,.lk{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #8DB0FA;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #8DB0FA;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.tb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+.fx:focus-within{outline:2px solid #8DB0FA;outline-offset:1px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes rise2{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#1B2A4A}}
+@keyframes flashB{from{background-color:#1B2A4A}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(63,191,131,0.45)}to{box-shadow:0 0 0 8px rgba(63,191,131,0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.rv2{animation:rise2 .24s cubic-bezier(.22,1,.36,1) both}
+.tout{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.chev{display:inline-flex;transition:transform .18s cubic-bezier(.22,1,.36,1)}
+.chev.on{transform:rotate(90deg)}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.okA{animation:swapA .12s ease-out,pulse .4s ease-out}
+.okB{animation:swapB .12s ease-out,pulse .4s ease-out}
+.fa{animation:flashA .9s ease-out}
+.fb{animation:flashB .9s ease-out}
+.sp{width:16px;height:16px;box-sizing:border-box;border-radius:99px;border:2px solid rgba(255,255,255,.4);border-top-color:#FFFFFF;animation:spin .7s linear infinite;flex:none}
+.spd{border-color:#34435E;border-top-color:#8DB0FA}
+.sk{display:block;border-radius:8px;background:#1E2838;animation:skp 1.4s ease-in-out infinite}
+@keyframes skp{50%{opacity:.55}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div onDragOver="{{dragOver}}" onDrop="{{dropPage}}" style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #0B111C; font-family: Inter, system-ui, sans-serif; color: #E6EBF2; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #070C15; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" theme="dark" active="bank" company="{{sbCo}}" kind="{{sbKind}}" companies="{{topCos}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" theme="dark" light-href="Bank.dc.html" section="Accounting" page="Bank and reconciliation" company="{{sbCo}}" companies="{{topCos}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 24px">
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{sayA}}</div>
+      <div role="status" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{sayB}}</div>
+
+      <sc-if value="{{loadErr}}" hint-placeholder-val="{{ false }}">
+        <section role="alert" class="rv" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; background: #121A27; border: 1px solid #7D2F2B; border-radius: 16px; padding: 22px">
+          <span style="width: 44px; height: 44px; border-radius: 12px; background: #33171A; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="alert" tone="dbad" size="24" hint-size="24px,24px"></dc-import></span>
+          <div style="flex: 1 1 320px; min-width: 0"><b style="font-size: 15px">Couldn't load this page.</b><div style="color: #B4BFCE; font-size: 13px">Something went wrong (500).</div></div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{hasHead}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+        <div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 420px; min-width: 0">
+          <h1 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Bank and reconciliation</h1>
+          <p style="margin: 0; color: #B4BFCE; max-width: 760px">Import each month's Maybank statement PDF. Every line is matched to a payment automatically where the payee and amount agree (split DuitNow transfers are added together). Then review the month: confirm what was matched, explain the rest, and sign it off once the books agree with the bank. A signed-off month is locked; reopening it needs a reason and the sign-off again.</p>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+        <div role="status" aria-label="Loading the bank statements" style="display: flex; flex-direction: column; gap: 16px">
+          <div style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 20px 22px; display: flex; flex-wrap: wrap; gap: 12px"><span class="sk" style="height: 40px; flex: 1 1 240px"></span><span class="sk" style="height: 40px; flex: 2 1 320px"></span><span class="sk" style="height: 40px; width: 176px"></span></div>
+          <div style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 12px"><span class="sk" style="height: 22px; width: 260px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px"></span><span class="sk" style="height: 40px; width: 70%"></span></div>
+          <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Loading the months of Maybank current</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{noAccount}}" hint-placeholder-val="{{ false }}">
+        <section aria-labelledby="bk-none-h" class="rv" style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+          <span style="width: 64px; height: 64px; border-radius: 20px; background: #1E2838; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="bank" tone="dmuted" size="34" hint-size="34px,34px"></dc-import></span>
+          <h2 id="bk-none-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{noneTitle}}</h2>
+          <p style="margin: 0; color: #B4BFCE; font-size: 13px; max-width: 520px">Statements are imported per bank account. Add the company's bank account first, then import its first statement here.</p>
+          <a href="Setup.dc.html" class="hb" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; background: #3D6BE0; color: #FFFFFF; font: 600 14px Inter, sans-serif; text-decoration: none"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>Add a bank account in Setup</a>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{loaded}}" hint-placeholder-val="{{ true }}">
+      <div style="display: flex; flex-direction: column; gap: 24px">
+
+      <section aria-label="Import statement" style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-end">
+          <label style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #B4BFCE">Account</span><select id="bk-acct-sel" value="{{importAcct}}" onChange="{{onImportAcct}}" style="height: 40px; padding: 0 10px; border: 1px solid #7A89A3; border-radius: 10px; font: 400 14px Inter, sans-serif; background: #0B111C; color: #E6EBF2"><sc-for list="{{accOpts}}" as="o" hint-placeholder-count="2"><option value="{{o.id}}">{{o.text}}</option></sc-for></select></label>
+          <div style="flex: 2 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <span id="bk-file-cap" style="font-size: 13px; font-weight: 600; color: #B4BFCE">Statement PDF</span>
+            <label class="dz fx" onDragEnter="{{dzOn}}" onDragLeave="{{dzOff}}" style="{{dzStyle}}">
+              <span aria-hidden="true" style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 7px; border:1px solid #7A89A3; background: #121A27; font: 600 13px Inter, sans-serif; color: #E6EBF2; flex: none"><dc-import name="Icon" glyph="document" tone="dbrand" size="16" hint-size="16px,16px"></dc-import>Choose file</span>
+              <span id="bk-file-name" style="{{fileNameStyle}}">{{fileText}}</span>
+              <span aria-hidden="true" style="margin-left: auto; color: #8E9BB0; font-size: 12px">or drop the PDF here</span>
+              <input type="file" id="bk-file" accept=".pdf" aria-labelledby="bk-file-cap bk-file-name" onChange="{{onFile}}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer">
+            </label>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 8px">
+            <button type="button" id="bk-imp" class="{{impCls}}" disabled="{{busyAny}}" aria-busy="{{impBusyAttr}}" onClick="{{doImport}}" style="{{impStyle}}"><sc-if value="{{impBusy}}" hint-placeholder-val="{{ false }}"><span class="{{impSp}}" aria-hidden="true"></span></sc-if><sc-if value="{{impIdle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="upload" tone="{{impTone}}" size="18" hint-size="18px,18px"></dc-import></sc-if>{{impLabel}}</button>
+            <button type="button" class="hs" disabled="{{busyAny}}" onClick="{{doMatch}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; min-width: 150px; padding: 0 14px; border-radius: 10px; border:1px solid #7A89A3; background: #121A27; color: #E6EBF2; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="dbrand" size="18" hint-size="18px,18px"></dc-import>Match again</button>
+          </div>
+        </div>
+        <sc-if value="{{hasResult}}" hint-placeholder-val="{{ false }}">
+          <div id="bk-result" class="rv" role="{{resRole}}" tabindex="-1" style="{{resStyle}}">
+            <dc-import name="Icon" glyph="{{resGlyph}}" tone="{{resTone}}" size="18" hint-size="18px,18px"></dc-import>
+            <span style="flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere">{{resText}}</span>
+            <button type="button" class="hg" aria-label="Dismiss this message" onClick="{{clearResult}}" style="width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button>
+          </div>
+        </sc-if>
+      </section>
+
+      <section aria-labelledby="bk-year-h" style="background: #121A27; border: 1px solid #243044; border-radius: 16px; overflow: hidden">
+        <div style="display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: flex-start; justify-content: space-between; padding: 20px 22px 16px">
+          <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <span style="display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center"><span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #8E9BB0">{{coName}}</span><span style="{{kindStyle}}"><dc-import name="Icon" glyph="{{kindGlyph}}" tone="{{kindTone}}" size="14" hint-size="14px,14px"></dc-import>{{kindText}}</span></span>
+            <h2 id="bk-year-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{yearTitle}}</h2>
+            <span style="color: #8E9BB0; font-size: 13px">{{yearNote}}</span>
+            <sc-if value="{{hasYearList}}" hint-placeholder-val="{{ false }}"><span style="color: #B4BFCE; font-size: 13px">{{yearList}}</span></sc-if>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px">
+            <sc-if value="{{hasAcctSwitch}}" hint-placeholder-val="{{ true }}">
+              <div role="group" aria-label="Account" style="display: flex; gap: 4px; padding: 4px; background: #1E2838; border-radius: 10px"><sc-for list="{{acctBtns}}" as="a" hint-placeholder-count="2"><button type="button" aria-pressed="{{a.pressed}}" onClick="{{a.pick}}" style="{{a.style}}">{{a.label}}</button></sc-for></div>
+            </sc-if>
+            <sc-if value="{{hasYearSwitch}}" hint-placeholder-val="{{ true }}">
+              <div role="group" aria-label="Year" style="display: flex; gap: 4px; padding: 4px; background: #1E2838; border-radius: 10px"><sc-for list="{{yearBtns}}" as="y" hint-placeholder-count="2"><button type="button" aria-pressed="{{y.pressed}}" onClick="{{y.pick}}" style="{{y.style}}">{{y.label}}</button></sc-for></div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="overflow-x: auto; border-top: 1px solid #243044">
+          <table class="{{tblCls}}" style="width: 100%; min-width: 860px; border-collapse: collapse">
+            <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">{{caption}}</caption>
+            <thead><tr style="background: #0F1724; text-align: left; color: #8E9BB0; font-size: 12px; text-transform: uppercase; letter-spacing: .05em">
+              <th scope="col" style="padding: 10px 12px 10px 22px; font-weight: 600">Month</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600">Status</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Bank closing</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600; text-align: right">Book closing</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600">Reconciled on</th>
+              <th scope="col" style="padding: 10px 22px 10px 12px; font-weight: 600">Statement</th>
+            </tr></thead>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="7">
+              <tbody>
+                <tr class="{{r.trCls}}" style="{{r.trStyle}}">
+                  <th scope="row" style="{{r.thStyle}}"><button type="button" id="{{r.btnId}}" class="lk" aria-expanded="{{r.expanded}}" onClick="{{r.toggle}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 4px 0 0; border: 0; background: transparent; font: 600 14px Inter, sans-serif; color: #8DB0FA; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; white-space: nowrap"><span class="{{r.chevCls}}"><dc-import name="Icon" glyph="chevronRight" tone="dbrand" size="16" hint-size="16px,16px"></dc-import></span>{{r.label}}</button></th>
+                  <td style="padding: 12px"><span style="display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center"><span class="{{r.pillCls}}" style="{{r.pillStyle}}">{{r.status}}</span><sc-if value="{{r.locked}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #1E2838; color: #B4BFCE"><dc-import name="Icon" glyph="lock" tone="dmuted" size="14" hint-size="14px,14px"></dc-import>Locked</span></sc-if><sc-if value="{{r.reopened}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 99px; font-size: 12px; font-weight: 600; white-space: nowrap; background: #1B2A4A; color: #B3CBFF"><dc-import name="Icon" glyph="history" tone="dbrand" size="14" hint-size="14px,14px"></dc-import>{{r.reopenedText}}</span></sc-if></span><sc-if value="{{r.hasChg}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 6px; max-width: 360px; color: #F58C80; font-size: 12px; font-weight: 500">{{r.chgText}}</div></sc-if></td>
+                  <td style="padding: 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{r.bank}}</td>
+                  <td style="{{r.bookStyle}}">{{r.bookText}}</td>
+                  <td style="padding: 12px; white-space: nowrap; color: #B4BFCE">{{r.recOn}}<sc-if value="{{r.recBefore}}" hint-placeholder-val="{{ false }}"><span style="color: #8E9BB0"> · before tracking</span></sc-if></td>
+                  <td style="padding: 10px 22px 10px 12px; white-space: nowrap"><sc-if value="{{r.hasPdf}}" hint-placeholder-val="{{ true }}"><a href="#" onClick="{{r.pdf}}" aria-label="{{r.pdfAria}}" style="display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 4px; border-radius: 6px; font-weight: 600; font-size: 13px"><dc-import name="Icon" glyph="document" tone="dbrand" size="16" hint-size="16px,16px"></dc-import>PDF</a></sc-if><sc-if value="{{r.noPdf}}" hint-placeholder-val="{{ false }}"><span style="color: #8E9BB0">—</span></sc-if></td>
+                </tr>
+                <sc-if value="{{r.isOpen}}" hint-placeholder-val="{{ false }}">
+                  <tr>
+                    <td colspan="6" style="padding: 0">
+                      <div class="ex" role="region" aria-labelledby="{{r.btnId}}" style="display: flex; flex-direction: column; gap: 16px; padding: 20px 22px 22px; background: #0F1724; border-top: 1px solid #243044; box-shadow: inset 3px 0 0 #8DB0FA">
+
+                        <sc-if value="{{r.p.notImported}}" hint-placeholder-val="{{ false }}">
+                          <p style="margin: 0; color: #B4BFCE">{{r.p.notImportedText}}</p>
+                          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 230px)); gap: 12px">
+                            <div style="background: #121A27; border: 1px solid #243044; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px"><span style="{{r.p.bookTileStyle}}">{{r.p.bookTile}}</span><span style="color: #8E9BB0; font-size: 13px">Book closing</span></div>
+                          </div>
+                        </sc-if>
+
+                        <sc-if value="{{r.p.imported}}" hint-placeholder-val="{{ true }}">
+                          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+                            <sc-for list="{{r.p.tiles}}" as="t" hint-placeholder-count="5">
+                              <div style="background: #121A27; border: 1px solid #243044; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+                                <span style="{{t.valStyle}}"><sc-if value="{{t.hasIcon}}" hint-placeholder-val="{{ false }}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="18" hint-size="18px,18px"></dc-import></sc-if>{{t.value}}</span>
+                                <span style="color: #8E9BB0; font-size: 13px">{{t.label}}</span>
+                              </div>
+                            </sc-for>
+                          </div>
+
+                          <sc-if value="{{r.p.hasChk}}" hint-placeholder-val="{{ true }}">
+                            <div style="display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: 13px">
+                              <sc-if value="{{r.p.chkOk}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 10px; border-radius: 99px; background: #10291E; color: #5BD49A; font-size: 13px; font-weight: 600"><dc-import name="Icon" glyph="check" tone="dok" size="14" hint-size="14px,14px"></dc-import>{{r.p.chkText}}</span></sc-if>
+                              <sc-if value="{{r.p.chkBad}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 10px; border-radius: 99px; background: #33171A; color: #F58C80; font-size: 13px; font-weight: 600; white-space: nowrap"><dc-import name="Icon" glyph="alert" tone="dbad" size="14" hint-size="14px,14px"></dc-import>Check against SQL</span><span style="flex: 1 1 320px; min-width: 0; color: #F58C80; font-weight: 500">{{r.p.chkText}}</span></sc-if>
+                              <sc-if value="{{r.p.chkSkip}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: flex-start; gap: 6px; color: #B4BFCE"><dc-import name="Icon" glyph="database" tone="dmuted" size="16" hint-size="16px,16px"></dc-import><span>{{r.p.chkText}}</span></span></sc-if>
+                            </div>
+                          </sc-if>
+
+                          <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between">
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center">
+                              <span>Lines: <b>{{r.p.matched}}</b> matched · <b>{{r.p.confirmed}}</b> confirmed · <b>{{r.p.toExplain}}</b> to explain</span>
+                              <sc-if value="{{r.p.badAdd}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 99px; background: #33171A; color: #F58C80; font-size: 12px; font-weight: 600; white-space: nowrap"><dc-import name="Icon" glyph="alert" tone="dbad" size="14" hint-size="14px,14px"></dc-import>Statement doesn't add up</span></sc-if>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+                              <a href="#" class="hs" onClick="{{r.p.pdf}}" aria-label="{{r.p.pdfAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #7A89A3; background: #121A27; font: 600 13px Inter, sans-serif; color: #E6EBF2; text-decoration: none"><dc-import name="Icon" glyph="document" tone="dmuted" size="16" hint-size="16px,16px"></dc-import>Statement PDF</a>
+                              <a href="BankReview.dc.html" title="Light version only in this mock" class="hb" aria-label="{{r.p.reviewAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; background: #3D6BE0; font: 600 13px Inter, sans-serif; color: #FFFFFF; text-decoration: none"><dc-import name="Icon" glyph="checklist" tone="white" size="16" hint-size="16px,16px"></dc-import>Review lines</a>
+                            </div>
+                          </div>
+
+                          <div style="display: flex; flex-direction: column; gap: 8px">
+                            <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; justify-content: space-between"><h3 style="margin: 4px 0 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 16px; font-weight: 600">Reconciliation statement</h3><a href="{{r.p.printHref}}" title="Light version only in this mock" class="hs" aria-label="{{r.p.printAria}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border:1px solid #7A89A3; background: #121A27; font: 600 13px Inter, sans-serif; color: #E6EBF2; text-decoration: none"><dc-import name="Icon" glyph="printer" tone="dmuted" size="16" hint-size="16px,16px"></dc-import>Print the reconciliation statement</a></div>
+                            <sc-if value="{{r.p.hasBookNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; display: flex; gap: 8px; align-items: flex-start; color: #B4BFCE; font-size: 13px"><dc-import name="Icon" glyph="alert" tone="dwarn" size="16" hint-size="16px,16px"></dc-import><span>{{r.p.bookNoteText}}</span></p></sc-if>
+                            <sc-if value="{{r.p.hasExplain}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; max-width: 900px">{{r.p.explainText}}</p></sc-if>
+                            <sc-if value="{{r.p.clearOk}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; display: flex; gap: 8px; align-items: center; color: #5BD49A; font-weight: 500"><dc-import name="Icon" glyph="check" tone="dok" size="18" hint-size="18px,18px"></dc-import>Everything on the statement is in the books, and the other way round.</p></sc-if>
+                            <sc-if value="{{r.p.clearNote}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #B4BFCE">Everything on the statement is in the books, and the other way round.</p></sc-if>
+                          </div>
+
+                          <sc-if value="{{r.p.hasBooksOnly}}" hint-placeholder-val="{{ true }}">
+                            <div style="background: #121A27; border: 1px solid #243044; border-radius: 12px; overflow: hidden">
+                              <h4 style="margin: 0; padding: 12px 16px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #243044">{{r.p.booksOnlyTitle}}</h4>
+                              <div style="overflow-x: auto">
+                                <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                  <thead><tr style="background: #0F1724; text-align: left; color: #8E9BB0; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px 8px 16px; font-weight: 600; width: 80px">Date</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Amount</th><th scope="col" style="padding: 8px 16px 8px 12px; font-weight: 600">Why</th></tr></thead>
+                                  <tbody>
+                                    <sc-for list="{{r.p.booksOnly}}" as="b" hint-placeholder-count="1">
+                                      <tr style="border-top: 1px solid #243044">
+                                        <td style="padding: 10px 12px 10px 16px; font-family: ui-monospace, Consolas, monospace; white-space: nowrap; color: #B4BFCE">{{b.date}}</td>
+                                        <td style="padding: 10px 12px"><sc-if value="{{b.hasRef}}" hint-placeholder-val="{{ true }}"><b style="font-family: ui-monospace, Consolas, monospace; margin-right: 6px">{{b.ref}}</b></sc-if>{{b.desc}}</td>
+                                        <td style="{{b.amtStyle}}">{{b.amt}}</td>
+                                        <td style="padding: 10px 16px 10px 12px; color: #B4BFCE">{{b.why}}</td>
+                                      </tr>
+                                    </sc-for>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{r.p.hasBankOnly}}" hint-placeholder-val="{{ true }}">
+                            <div style="background: #121A27; border: 1px solid #243044; border-radius: 12px; overflow: hidden">
+                              <h4 style="margin: 0; padding: 12px 16px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #243044">{{r.p.bankOnlyTitle}}</h4>
+                              <div style="overflow-x: auto">
+                                <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                  <thead><tr style="background: #0F1724; text-align: left; color: #8E9BB0; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px 8px 16px; font-weight: 600; width: 80px">Date</th><th scope="col" style="padding: 8px 12px; font-weight: 600">Description</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Amount</th><th scope="col" style="padding: 8px 16px 8px 12px; font-weight: 600">Why</th></tr></thead>
+                                  <tbody>
+                                    <sc-for list="{{r.p.bankOnly}}" as="x" hint-placeholder-count="6">
+                                      <tr style="border-top: 1px solid #243044">
+                                        <td style="padding: 10px 12px 10px 16px; font-family: ui-monospace, Consolas, monospace; white-space: nowrap; color: #B4BFCE">{{x.date}}</td>
+                                        <td style="padding: 10px 12px">{{x.desc}}</td>
+                                        <td style="{{x.amtStyle}}">{{x.amt}}</td>
+                                        <td style="padding: 10px 16px 10px 12px; color: #B4BFCE">{{x.why}}</td>
+                                      </tr>
+                                    </sc-for>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{r.p.hasDiffer}}" hint-placeholder-val="{{ false }}">
+                            <div style="background: #121A27; border: 1px solid #243044; border-radius: 12px; overflow: hidden">
+                              <h4 style="margin: 0; padding: 12px 16px; font-size: 14px; font-weight: 600; border-bottom: 1px solid #243044">{{r.p.differTitle}}</h4>
+                              <div style="overflow-x: auto">
+                                <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px">
+                                  <thead><tr style="background: #0F1724; text-align: left; color: #8E9BB0; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px 8px 16px; font-weight: 600">Payment</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Books</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Statement</th><th scope="col" style="padding: 8px 16px 8px 12px; font-weight: 600; text-align: right">Difference</th></tr></thead>
+                                  <tbody>
+                                    <sc-for list="{{r.p.differ}}" as="d" hint-placeholder-count="1">
+                                      <tr style="border-top: 1px solid #243044">
+                                        <td style="padding: 10px 12px 10px 16px"><b style="font-family: ui-monospace, Consolas, monospace; margin-right: 6px">{{d.ref}}</b>{{d.desc}}</td>
+                                        <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{d.book}}</td>
+                                        <td style="padding: 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{d.bank}}</td>
+                                        <td style="padding: 10px 16px 10px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{d.amt}}</td>
+                                      </tr>
+                                    </sc-for>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{r.p.hasNotes}}" hint-placeholder-val="{{ true }}">
+                            <div style="display: flex; flex-direction: column; gap: 6px; color: #B4BFCE; font-size: 13px; max-width: 900px">
+                              <sc-if value="{{r.p.hasLeftJ}}" hint-placeholder-val="{{ false }}"><p style="margin: 0">{{r.p.leftJText}}</p></sc-if>
+                              <sc-if value="{{r.p.hasLeftU}}" hint-placeholder-val="{{ false }}"><p style="margin: 0">{{r.p.leftUText}}</p></sc-if>
+                              <sc-if value="{{r.p.hasLeftO}}" hint-placeholder-val="{{ false }}"><p style="margin: 0">{{r.p.leftOText}}</p></sc-if>
+                              <sc-if value="{{r.p.hasLeftL}}" hint-placeholder-val="{{ false }}"><p style="margin: 0">{{r.p.leftLText}}</p></sc-if>
+                              <sc-if value="{{r.p.sqlNote}}" hint-placeholder-val="{{ true }}"><p style="margin: 0">For the reconciliation, fetch only the bank's cash book listing: a voucher paid from petty cash or a card would count as a bank movement.</p></sc-if>
+                            </div>
+                          </sc-if>
+
+                          <sc-if value="{{r.p.hasChg}}" hint-placeholder-val="{{ false }}">
+                            <div id="{{r.p.chgId}}" role="group" aria-labelledby="{{r.p.chgTitleId}}" style="display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid #A77A2E; background: #2E2210">
+                              <div style="display: flex; gap: 10px; align-items: flex-start">
+                                <dc-import name="Icon" glyph="alert" tone="dwarn" size="18" hint-size="18px,18px"></dc-import>
+                                <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><b id="{{r.p.chgTitleId}}" style="color: #F2B35B">Book figures changed since sign-off: confirm again</b><span style="color: #E6EBF2; font-size: 13px">SQL's receipts and payments now count by what each one posted to the bank account, not by its listing amount.</span></div>
+                              </div>
+                              <div style="overflow-x: auto"><table style="min-width: 380px; width: min(520px, 100%); border-collapse: collapse; font-size: 13px; background: #121A27; border: 1px solid #A77A2E">
+                                <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Book figures at sign-off and now</caption>
+                                <thead><tr style="text-align: left; color: #8E9BB0; font-size: 12px; text-transform: uppercase; letter-spacing: .05em"><th scope="col" style="padding: 8px 12px; font-weight: 600">Figure</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">At sign-off</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right">Now</th></tr></thead>
+                                <tbody>
+                                  <sc-for list="{{r.p.chgRows}}" as="g" hint-placeholder-count="3"><tr style="border-top: 1px solid #243044"><th scope="row" style="padding: 8px 12px; text-align: left; font-weight: 600">{{g.label}}</th><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{g.a}}</td><td style="padding: 8px 12px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap">{{g.b}}</td></tr></sc-for>
+                                </tbody>
+                              </table></div>
+                              <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center">
+                                <button type="button" class="{{r.p.chgCls}}" disabled="{{r.p.chgOff}}" onClick="{{r.p.chgGo}}" aria-describedby="{{r.p.chgWhyRef}}" style="{{r.p.chgBtnStyle}}">Confirm again</button>
+                                <sc-if value="{{r.p.hasChgWhy}}" hint-placeholder-val="{{ false }}"><span id="{{r.p.chgWhyId}}" style="flex: 1 1 320px; min-width: 0; color: #E6EBF2; font-size: 13px">{{r.p.chgWhy}}</span></sc-if>
+                              </div>
+                            </div>
+                          </sc-if>
+                          <div id="{{r.p.signId}}" tabindex="-1" role="group" aria-label="Sign-off" style="background: #121A27; border: 1px solid #243044; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+                            <sc-if value="{{r.p.isSigned}}" hint-placeholder-val="{{ false }}">
+                              <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center">
+                                <span class="{{r.p.signPillCls}}" style="display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 99px; background: #10291E; color: #5BD49A; font-size: 13px; font-weight: 600; white-space: nowrap"><dc-import name="Icon" glyph="check" tone="dok" size="14" hint-size="14px,14px"></dc-import>{{r.p.signPill}}</span>
+                                <span style="display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 10px; border-radius: 99px; background: #1E2838; color: #B4BFCE; font-size: 13px; font-weight: 600; white-space: nowrap"><dc-import name="Icon" glyph="lock" tone="dmuted" size="14" hint-size="14px,14px"></dc-import>Locked</span>
+                                <sc-if value="{{r.p.hasSignNote}}" hint-placeholder-val="{{ false }}"><span style="color: #B4BFCE; font-size: 13px">{{r.p.signNote}}</span></sc-if>
+                                <button type="button" id="{{r.p.undoId}}" class="hs" aria-haspopup="dialog" onClick="{{r.p.undo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; margin-left: auto; padding: 0 12px; border-radius: 9px; border:1px solid #7A89A3; background: #121A27; font: 600 13px Inter, sans-serif; color: #E6EBF2; cursor: pointer"><dc-import name="Icon" glyph="history" tone="dbrand" size="16" hint-size="16px,16px"></dc-import>Reopen month</button>
+                              </div>
+                              <p style="margin: 0; color: #B4BFCE; font-size: 13px">{{r.p.lockText}}</p>
+                              <sc-if value="{{r.p.hasReopenLog}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #8E9BB0; font-size: 12px">{{r.p.reopenLog}}</p></sc-if>
+                            </sc-if>
+                            <sc-if value="{{r.p.wasReopened}}" hint-placeholder-val="{{ false }}">
+                              <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: #162033; border: 1px solid #2F4A86; font-size: 13px">
+                                <dc-import name="Icon" glyph="history" tone="dbrand" size="18" hint-size="18px,18px"></dc-import>
+                                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b>{{r.p.reopenTitle}}</b><span style="color: #B4BFCE">{{r.p.reopenWhy}}</span></div>
+                              </div>
+                            </sc-if>
+                            <sc-if value="{{r.p.unsigned}}" hint-placeholder-val="{{ true }}">
+                              <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center">
+                                <button type="button" id="{{r.p.markId}}" class="{{r.p.markCls}}" disabled="{{r.p.markOff}}" onClick="{{r.p.mark}}" aria-describedby="{{r.p.whyRef}}" style="{{r.p.markStyle}}"><dc-import name="Icon" glyph="check" tone="white" size="18" hint-size="18px,18px"></dc-import>Mark reconciled</button>
+                                <sc-if value="{{r.p.hasWhy}}" hint-placeholder-val="{{ true }}"><span id="{{r.p.whyId}}" style="flex: 1 1 320px; min-width: 0; color: #B4BFCE; font-size: 13px">{{r.p.whyText}}</span></sc-if>
+                              </div>
+                            </sc-if>
+                            <sc-if value="{{r.p.before}}" hint-placeholder-val="{{ false }}">
+                              <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 10px; border-top: 1px solid #243044; padding-top: 12px">
+                                <p style="margin: 0; color: #B4BFCE; font-size: 13px">This month is before tracking began here. If it was reconciled outside this app, say so.</p>
+                                <label style="display: flex; flex-direction: column; gap: 6px; width: min(420px, 100%)"><span style="font-size: 13px; font-weight: 600; color: #B4BFCE">{{r.p.btLabel}}</span><input type="text" id="{{r.p.btNoteId}}" maxlength="200" value="{{r.p.btNote}}" onChange="{{r.p.onBtNote}}" placeholder="e.g. reconciled in SQL Account in August" aria-invalid="{{r.p.btNoteBad}}" aria-describedby="{{r.p.btNoteDesc}}" style="{{r.p.btNoteStyle}}"></label>
+                                <label style="display: flex; align-items: center; gap: 8px; min-height: 32px; cursor: pointer"><input type="checkbox" id="{{r.p.btTickId}}" checked="{{r.p.btTick}}" onChange="{{r.p.onBtTick}}" aria-invalid="{{r.p.btTickBad}}" aria-describedby="{{r.p.btTickDesc}}" style="width: 17px; height: 17px; margin: 0; accent-color: #3D6BE0; flex: none">This month was reconciled before tracking began</label>
+                                <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center">
+                                  <button type="button" id="{{r.p.btBtnId}}" class="hs" disabled="{{r.p.btOff}}" onClick="{{r.p.btGo}}" style="{{r.p.btStyle}}">Reconciled before tracking</button>
+                                  <sc-if value="{{r.p.btOff}}" hint-placeholder-val="{{ false }}"><span style="color: #B4BFCE; font-size: 13px">The statement has to add up first.</span></sc-if>
+                                </div>
+                                <sc-if value="{{r.p.hasBtErr}}" hint-placeholder-val="{{ false }}"><span id="{{r.p.btErrId}}" role="alert" class="rv" style="display: flex; gap: 6px; align-items: flex-start; color: #F58C80; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="dbad" size="16" hint-size="16px,16px"></dc-import>{{r.p.btErr}}</span></sc-if>
+                              </div>
+                            </sc-if>
+                          </div>
+                          <p style="margin: 0; color: #8E9BB0; font-size: 12px">{{r.p.footText}}</p>
+                        </sc-if>
+
+                      </div>
+                    </td>
+                  </tr>
+                </sc-if>
+              </tbody>
+            </sc-for>
+          </table>
+        </div>
+      </section>
+
+      <section aria-labelledby="bk-op-h" style="background: #121A27; border: 1px solid #243044; border-radius: 16px; padding: 20px 22px; display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <h2 id="bk-op-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Book opening</h2>
+          <p style="margin: 0; color: #B4BFCE; font-size: 13px; max-width: 900px">{{opNote}}</p>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+          <label style="flex: 0 1 220px; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #B4BFCE">Month it applies to</span><input type="month" id="bk-op-month" required value="{{opMonth}}" onChange="{{onOpMonth}}" aria-invalid="{{opMonthBad}}" aria-describedby="{{opDesc}}" style="{{opMonthStyle}}"></label>
+          <label style="flex: 0 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #B4BFCE">{{opAmountLabel}}</span><input type="text" id="bk-op-amount" required inputmode="decimal" autocomplete="off" placeholder="e.g. 25,367.58" value="{{opAmount}}" onChange="{{onOpAmount}}" onKeyDown="{{opKey}}" aria-invalid="{{opAmtBad}}" aria-describedby="{{opDesc}}" style="{{opAmtStyle}}"></label>
+          <button type="button" class="hs" onClick="{{saveOpening}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border:1px solid #7A89A3; background: #121A27; color: #E6EBF2; font: 600 14px Inter, sans-serif; cursor: pointer">Save book opening</button>
+        </div>
+        <sc-if value="{{hasOpErr}}" hint-placeholder-val="{{ false }}"><span id="bk-op-err" role="alert" class="rv" style="display: flex; gap: 6px; align-items: flex-start; color: #F58C80; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="dbad" size="16" hint-size="16px,16px"></dc-import>{{opErr}}</span></sc-if>
+        <sc-if value="{{hasOpLock}}" hint-placeholder-val="{{ false }}">
+          <div id="bk-op-lock" role="alert" tabindex="-1" class="rv" style="display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #221416; border: 1px solid #7D2F2B">
+            <dc-import name="Icon" glyph="lock" tone="dbad" size="18" hint-size="18px,18px"></dc-import>
+            <div style="flex: 1 1 320px; min-width: 0"><b style="color: #F58C80">Nothing was saved</b><div style="color: #B4BFCE; font-size: 13px">{{opLockText}}</div></div>
+            <button type="button" class="hs" onClick="{{opLockGo}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border:1px solid #7A89A3; background: #121A27; font: 600 13px Inter, sans-serif; color: #E6EBF2; cursor: pointer">{{opLockBtn}}</button>
+          </div>
+        </sc-if>
+      </section>
+
+      </div>
+      </sc-if>
+
+      <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+        <div class="{{toastCls}}" onMouseEnter="{{toastHoverIn}}" onMouseLeave="{{toastHoverOut}}" onFocus="{{toastFocusIn}}" onBlur="{{toastFocusOut}}" onAnimationEnd="{{onToastAnim}}" style="position: sticky; bottom: 20px; z-index: 5; align-self: center; max-width: min(520px, 100%); box-sizing: border-box; display: flex; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 12px; background: #1E2838; color: #FFFFFF; box-shadow: 0 10px 28px rgba(0,0,0,0.48)">
+          <dc-import name="Icon" glyph="{{toastGlyph}}" tone="white" size="18" hint-size="18px,18px"></dc-import>
+          <span style="flex: 1; min-width: 0; font-size: 13px">{{toastText}}</span>
+          <sc-if value="{{toastHasUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="bk-toast-undo" class="tb" onClick="{{toastUndo}}" style="display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 0; background: #1B2A4A; color: #8DB0FA; font: 600 13px Inter, sans-serif; cursor: pointer; flex: none"><dc-import name="Icon" glyph="undo" tone="white" size="16" hint-size="16px,16px"></dc-import>Undo</button></sc-if>
+          <button type="button" class="tb" aria-label="Close this message" onClick="{{closeToast}}" style="width: 34px; height: 34px; border-radius: 9px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="white" size="16" hint-size="16px,16px"></dc-import></button>
+        </div>
+      </sc-if>
+    </main>
+  </div>
+
+  <sc-if value="{{dlgOn}}" hint-placeholder-val="{{ false }}">
+    <div class="{{dimCls}}" onClick="{{dlgDim}}" aria-hidden="true" style="position: fixed; inset: 0; z-index: 40; background: rgba(2,6,12,0.67)"></div>
+    <div style="position: fixed; inset: 0; z-index: 41; display: flex; justify-content: center; align-items: flex-start; padding: 72px 16px 24px; box-sizing: border-box; pointer-events: none">
+      <section id="bk-dlg" class="{{dlgCls}}" role="{{dlgRole}}" aria-modal="true" aria-labelledby="{{dlgLabel}}" aria-describedby="{{dlgDescBy}}" tabindex="-1" onKeyDown="{{dlgKey}}" onAnimationEnd="{{onDlgAnim}}" style="pointer-events: auto; position: relative; width: 520px; max-width: 100%; max-height: 100%; overflow-y: auto; box-sizing: border-box; background: #121A27; border-radius: 16px; box-shadow: 0 24px 64px rgba(0,0,0,0.6); padding: 22px 24px 20px; display: flex; flex-direction: column; gap: 14px">
+        <sc-if value="{{dlgForm}}" hint-placeholder-val="{{ true }}">
+          <sc-if value="{{dlgRefused}}" hint-placeholder-val="{{ false }}">
+            <div id="bk-dlg-ref" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 10px; align-items: flex-start; margin: -22px -24px 0; padding: 14px 24px; background: #221416; border-bottom: 1px solid #7D2F2B; border-radius: 16px 16px 0 0">
+              <dc-import name="Icon" glyph="alert" tone="dbad" size="20" hint-size="20px,20px"></dc-import>
+              <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px"><b style="color: #F58C80">Nothing was changed</b><span style="color: #B4BFCE; font-size: 13px">{{dlgRefText}}</span><span><button type="button" class="hs" onClick="{{dlgRefGo}}" style="height: 32px; padding: 0 12px; border-radius: 8px; border:1px solid #7A89A3; background: #121A27; font: 600 13px Inter, sans-serif; color: #E6EBF2; cursor: pointer">{{dlgRefBtn}}</button></span></div>
+            </div>
+          </sc-if>
+          <div style="display: flex; gap: 12px; align-items: flex-start">
+            <span style="width: 44px; height: 44px; border-radius: 12px; background: #1B2A4A; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="history" tone="dbrand" size="22" hint-size="22px,22px"></dc-import></span>
+            <div style="flex: 1; min-width: 0"><h2 id="bk-dlg-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">{{dlgTitle}}</h2><p id="bk-dlg-d" style="margin: 4px 0 0; color: #B4BFCE; font-size: 13px">{{dlgBody}}</p></div>
+            <button type="button" class="hg" aria-label="Close" onClick="{{dlgClose}}" style="width: 36px; height: 36px; margin: -6px -8px 0 0; border: 0; border-radius: 9px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none"><dc-import name="Icon" glyph="close" tone="dmuted" size="18" hint-size="18px,18px"></dc-import></button>
+          </div>
+          <div style="padding: 10px 12px; border-radius: 10px; background: #0F1724; font-size: 13px; color: #B4BFCE">Reopening unlocks the month's lines and its book opening. The month goes back to To review and needs the sign-off again.</div>
+          <label style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; font-weight: 600; color: #B4BFCE">Why are you reopening this month? <span style="font-weight: 500; color: #8E9BB0">Required</span></span>
+            <input type="text" id="bk-dlg-why" maxlength="200" autocomplete="off" value="{{dlgWhy}}" onChange="{{dlgOnWhy}}" readonly="{{dlgBusy}}" aria-required="true" aria-invalid="{{dlgWhyBad}}" aria-describedby="{{dlgWhyDesc}}" placeholder="e.g. Service charge booked in SQL after sign-off" style="{{dlgWhyStyle}}">
+          </label>
+          <sc-if value="{{dlgHasErr}}" hint-placeholder-val="{{ false }}"><span id="bk-dlg-err" role="alert" style="display: flex; gap: 6px; align-items: center; margin-top: -6px; color: #F58C80; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="dbad" size="15" hint-size="15px,15px"></dc-import>Say why you're reopening this month.</span></sc-if>
+          <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #8E9BB0"><dc-import name="Icon" glyph="trail" tone="dmuted" size="16" hint-size="16px,16px"></dc-import>The reopen and its reason are kept in the audit trail.</div>
+          <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+            <button type="button" id="bk-dlg-cancel" class="hs" disabled="{{dlgBusy}}" onClick="{{dlgClose}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #7A89A3; background: #121A27; font: 600 14px Inter, sans-serif; color: #E6EBF2; cursor: pointer">Cancel</button>
+            <button type="button" id="bk-dlg-go" class="{{dlgGoCls}}" disabled="{{dlgBusy}}" aria-busy="{{dlgBusyAttr}}" onClick="{{dlgGo}}" style="{{dlgGoStyle}}"><sc-if value="{{dlgBusy}}" hint-placeholder-val="{{ false }}"><span class="sp" aria-hidden="true"></span></sc-if>{{dlgGoLabel}}</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{dlgDiscard}}" hint-placeholder-val="{{ false }}">
+          <div class="ex" style="display: flex; flex-direction: column; gap: 14px">
+            <div style="display: flex; gap: 12px; align-items: flex-start">
+              <span style="width: 44px; height: 44px; border-radius: 12px; background: #2E2210; display: inline-flex; align-items: center; justify-content: center; flex: none"><dc-import name="Icon" glyph="edit" tone="dwarn" size="22" hint-size="22px,22px"></dc-import></span>
+              <div style="flex: 1; min-width: 0"><h2 id="bk-disc-h" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Discard your changes?</h2><p id="bk-disc-d" style="margin: 4px 0 0; color: #B4BFCE; font-size: 13px">{{discText}}</p></div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #8E9BB0"><dc-import name="Icon" glyph="alert" tone="dmuted" size="16" hint-size="16px,16px"></dc-import>Discarded changes can't be recovered. The month stays locked.</div>
+            <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px">
+              <button type="button" id="bk-disc-keep" class="hs" onClick="{{discKeep}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border:1px solid #7A89A3; background: #121A27; font: 600 14px Inter, sans-serif; color: #E6EBF2; cursor: pointer">Keep editing</button>
+              <button type="button" class="hb" onClick="{{discGo}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #3D6BE0; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer">Discard</button>
+            </div>
+          </div>
+        </sc-if>
+      </section>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"october","options":["year","october","september","october-split","october-sql-differs","october-changed","october-changed-differs","september-journal-gap","september-stale","august","june","may","november","savings-october","not-adding-up","december-2025","company-ai","signed-off","reopen","reopen-no-reason","reopening","reopen-refused","reopen-discard","reopened","opening-locked","loading","no-account","import-chosen","importing","imported","import-error","match-again","drop-hint","opening-error","load-error"],"section":"State to show"},"importError":{"editor":"enum","default":"no-file","options":["no-file","no-date","no-lines","line","unreadable","other-account","duplicate"],"section":"State to show"},"$preview":{"width":1440,"height":2200}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = this.initial(p || {});
+    this.timer = null;
+    this.toastT = null;
+    this._focus = null;
+  }
+  // The sample data (gaps.md section 3): company AISB on SQL Account, first tracked month September 2026, payroll month November 2026, today 18 Nov 2026.
+  data() {
+    if (this._d) return this._d;
+    const ACC = {
+      cur: { label: 'Maybank current', no: '5141 2345 4417', cur: 'MYR', src: 'sql', gl: '310-000' },
+      sav: { label: 'Maybank savings', no: '5141 2345 0932', cur: 'MYR', src: 'payments' },
+      fca: { label: 'Maybank FCA', no: '5141 2399 1186', cur: 'USD', src: 'payments' }
+    };
+    // Kept in SQL Account (sql: true) or Kept here. AIP is the four-company variant, used only for the no-bank-account state.
+    const COS = {
+      AISB: { name: 'AISB', sql: true, accounts: ['cur', 'sav'], def: 'cur' },
+      AI: { name: 'Agrinexus International', sql: false, accounts: ['fca'], def: 'fca' },
+      AIP: { name: 'Agrinexus Plantations', sql: false, accounts: [], def: null },
+      // AIL (four-company variant): Kept in SQL Account, payroll not run here, no bank account yet, so it shows the same empty state.
+      AIL: { name: 'Agrinexus Logistics', sql: true, accounts: [], def: null, sb: 'sql' }
+    };
+    // Statement lines with nothing in the books, sorted by day: [day, description, amount, why (default 'Not explained yet')].
+    const CHG = 'No payment needed: Bank charge';
+    const lineList = (mon, list) => list.slice().sort((x, y) => x[0] - y[0])
+      .map(([d, desc, amount, why]) => ({ date: d + ' ' + mon, desc, amount, why: why || 'Not explained yet' }));
+    const rep = (n, f) => Array.from({ length: n }, (_, i) => f(i));
+    // May 2026 and December 2025 have no book side, so every statement line is listed here (recon.month_summary).
+    const MAY_BANK = lineList('May', [[4, 'SERVICE CHARGE', -12, CHG], [5, 'IBG CR RENTAL TENANT', 2800], [20, 'IBG CR KLINIK SEHAT', 15800], [29, 'SERVICE CHARGE', -12, CHG],
+      ...rep(17, i => [6 + i, 'IBG DR FIELD WAGES', -1500]), [28, 'IBG DR TNB ELECTRICITY', -4280.10]]);
+    const DEC_BANK = lineList('Dec', [[1, 'IBG CR KLINIK SEHAT', 12500], [15, 'IBG CR KLINIK SEHAT', 12500],
+      ...rep(12, i => [2 + i, 'IBG DR FIELD WAGES', -1250]), [30, 'IBG DR TNB ELECTRICITY', -1290], [31, 'SERVICE CHARGE', -10, CHG]]);
+    // Printed statements: opening, money in, money out, printed closing, line counts, and the outstanding items of the month panel.
+    const ST = {
+      'cur:2025-12': { open: 129860.40, inn: 25000, out: 16300, close: 138560.40, total: 16, toExplain: 15, confirmed: 0, signed: { at: '3 Jul 2026', how: 'before tracking', note: 'Reconciled in SQL Account in January' },
+        bankOnly: DEC_BANK },
+      'cur:2026-05': { open: 131204.10, inn: 18600, out: 29804.10, close: 120000, total: 22, toExplain: 20, confirmed: 0, bankOnly: MAY_BANK },
+      'cur:2026-06': { open: 120000, inn: 30000, out: 41250, close: 108750, total: 8, toExplain: 0, confirmed: 0, signed: { at: '3 Jul 2026', how: 'before tracking', note: 'Reconciled in SQL Account in July' } },
+      'cur:2026-07': { open: 108750, inn: 45000, out: 52310.40, close: 101439.60, total: 12, toExplain: 0, confirmed: 12, signed: { at: '3 Sep 2026', how: 'before tracking', note: 'Reconciled in SQL Account in August' } },
+      'cur:2026-08': { open: 101439.60, inn: 38500, out: 43939.60, close: 96000, total: 11, toExplain: 0, confirmed: 11, signed: { at: '3 Sep 2026', how: 'before tracking', note: 'Reconciled in SQL Account in September' } },
+      // listing: 7 is a design figure, not in samples.md yet: September has no SQL journal, so its receipts and payments count by listing amount (correct app behaviour).
+      'cur:2026-09': { open: 96000, inn: 12000, out: 15581.65, close: 92418.35, total: 9, toExplain: 0, confirmed: 9, listing: 7,
+        booksOnly: [{ date: '29 Sep', ref: 'PV2609-020', desc: 'Consultant fee — Payroll Advisory PLT', amount: -3200, why: 'Not on a bank statement yet (not cleared?)' }] },
+      'cur:2026-10': { open: 92418.35, inn: 47962.80, out: 106067, close: 34314.15, total: 14, toExplain: 5, confirmed: 4,
+        booksOnly: [{ date: '30 Oct', ref: 'PV2610-022', desc: 'Stationery Mart (cheque 000214)', amount: -1120, why: 'Not on a bank statement yet (not cleared?)' }],
+        bankOnly: [
+          { date: '8 Oct', desc: 'SERVICE CHARGE', amount: -48, why: 'No payment needed: Bank charge' },
+          { date: '14 Oct', desc: 'IBG DR CONSULTANCY', amount: -3200, why: 'Not explained yet' },
+          { date: '27 Oct', desc: 'IBG DR 271026', amount: -150, why: 'Not explained yet' },
+          { date: '27 Oct', desc: 'REVERSAL IBG 271026', amount: 150, why: 'Not explained yet' },
+          { date: '29 Oct', desc: 'IBG DR WEB HOSTING · 291026', amount: -389, why: 'Not explained yet' },
+          { date: '31 Oct', desc: 'PROFIT PAID', amount: 12.80, why: 'Not explained yet' }
+        ],
+        leftOut: { journals: 1, invoices: 3, unknown: 1, otherBank: 3 } },
+      // Maybank savings October: every line confirmed on 3 Nov and signed off the same day, so the month is locked.
+      'sav:2026-10': { open: 50000, inn: 8021.40, out: 10, close: 58011.40, total: 3, toExplain: 0, confirmed: 3, signed: { at: '3 Nov 2026', how: 'review', note: null } },
+      // AI (Kept here), Maybank FCA October (samples section 16): two lines in for the Produce export (USD 3,000.00 on 28 Oct, 2,000.00 on 30 Oct), both matched and confirmed; not signed off yet.
+      'fca:2026-10': { open: 12480, inn: 5000, out: 0, close: 17480, total: 2, toExplain: 0, confirmed: 2 }
+    };
+    // Book movements [in, out] per month. On the SQL cash book a month without an entry has no SQL listing fetched.
+    const MOV = {
+      cur: { '2026-06': [30000, 41250], '2026-07': [45000, 52310.40], '2026-08': [38500, 43939.60], '2026-09': [12000, 18781.65], '2026-10': [47848, 103448] },
+      sav: { '2026-10': [8021.40, 10] },
+      fca: { '2026-09': [0, 0], '2026-10': [5000, 0] }
+    };
+    const ERR = {
+      'no-file': 'Choose the statement PDF first.',
+      // Not offered as an importError state: the server sends this only for a company with no bank account, after a file is chosen
+      // (app.py 1044-1045; a missing file is stopped first on the client). Such a company has no year view to draw it under.
+      'missing': 'Choose the account and the statement PDF.',
+      'no-date': "Couldn't find the statement date. Is this a Maybank statement PDF?",
+      'no-lines': "Couldn't read any transactions from this statement.",
+      'line': "Line 7 (2026-10-20) doesn't add up to the printed balance. Nothing was imported.",
+      'unreadable': "This PDF couldn't be read as a Maybank statement.",
+      'other-account': 'This statement is for account 514123454417, not Maybank savings (5141 2345 0932).',
+      'duplicate': 'A statement for Maybank current October 2026 is already imported.'
+    };
+    this._d = { ACC, COS, ST, MOV, ERR,
+      SAMPLE: 'Maybank current Oct 2026.pdf',
+      IMPORTED: 'Imported 14 lines for October 2026; 8 matched, 1 bank charges or own transfers.',
+      MATCHED: '0 more bank lines matched; 0 marked as bank charges or own transfers',
+      DROP: 'Drop the statement PDF on the Choose file button under Statement PDF.',
+      TODAY: '18 Nov 2026', FIRST: '2026-09', NOW: '2026-11' };
+    return this._d;
+  }
+  initial(p) {
+    const D = this.data();
+    const view = p.view || 'october';
+    const errKey = p.importError || 'no-file';
+    const s = { co: 'AISB', acct: 'cur', year: null, open: null, octIn: true, octJust: false, stale: false, mayBad: false, loadErr: false,
+      importAcct: 'cur', file: '', fileKey: 0, dzOver: false, busy: null, result: null, toast: null, toastOut: false, toastN: 0, say: '', sayN: 0, splitUndone: false,
+      signed: {}, openings: { cur: [['2026-06', 120000]], sav: [['2026-10', 50000]], fca: [['2026-09', 12480]] }, opMonth: null, opAmount: '', opErr: '', opBad: '', opLock: null,
+      bt: {}, flash: null, flashN: 0, pillN: {}, swapN: 0, undo: null, reopened: {}, dlg: null, loading: false,
+      reconf: {}, chgView: view === 'october-changed' ? 'ok' : view === 'october-changed-differs' ? 'differs' : null, sqlDiff: view === 'october-sql-differs', sqlGap: view === 'september-journal-gap' };
+    const OPEN = { october: '2026-10', 'october-split': '2026-10', september: '2026-09', 'september-journal-gap': '2026-09', 'september-stale': '2026-09', august: '2026-08', june: '2026-06', may: '2026-05',
+      november: '2026-11', 'october-sql-differs': '2026-10', 'october-changed': '2026-10', 'october-changed-differs': '2026-10', 'savings-october': '2026-10', 'not-adding-up': '2026-05', imported: '2026-10', 'december-2025': '2025-12' };
+    if (OPEN[view]) s.open = OPEN[view];
+    if (view === 'december-2025') s.year = '2025';
+    if (view === 'october-split') s.splitUndone = true;   // October with line 3 (the split DuitNow transfer) undone
+    if (view === 'september-stale') s.stale = true;
+    if (view === 'savings-october') { s.acct = 'sav'; s.importAcct = 'sav'; }
+    if (view === 'not-adding-up') s.mayBad = true;
+    if (view === 'company-ai' || view === 'signed-off') { s.co = 'AI'; s.acct = 'fca'; s.importAcct = 'fca'; s.open = '2026-10'; }
+    if (view === 'signed-off') {
+      // AI's October just marked reconciled: the toast offers Undo for 8 seconds (a static preview: no timer).
+      s.signed = { 'fca:2026-10': { at: D.TODAY, how: 'review', note: null } };
+      s.toast = 'Marked as reconciled. October 2026 is locked for Maybank FCA.';
+      s.undo = { patch: { signed: {} }, msg: 'Sign-off undone. October 2026 is open again; both changes are in the audit trail.', focus: 'bk-mark-fca-2026-10' };
+    }
+    // Reopen: the locked Maybank savings October (signed off 3 Nov). The reason is required, and the reopen is logged.
+    const WHY = 'Service charge of 31 Oct to be checked against SQL';
+    if (/^reopen/.test(view)) { s.acct = 'sav'; s.importAcct = 'sav'; s.open = '2026-10'; }
+    if (view === 'reopen') s.dlg = { key: 'sav:2026-10', why: '', opener: 'bk-undo-sav-2026-10' };
+    if (view === 'reopen-no-reason') s.dlg = { key: 'sav:2026-10', why: '', err: true, opener: 'bk-undo-sav-2026-10' };
+    if (view === 'reopening') s.dlg = { key: 'sav:2026-10', why: WHY, busy: true, opener: 'bk-undo-sav-2026-10' };
+    if (view === 'reopen-discard') s.dlg = { key: 'sav:2026-10', why: WHY, discard: true, opener: 'bk-undo-sav-2026-10' };
+    if (view === 'reopen-refused') {
+      // July can't be reopened while August, which carries on from July's closing, stays signed off.
+      s.acct = 'cur'; s.importAcct = 'cur'; s.open = '2026-07';
+      s.dlg = { key: 'cur:2026-07', why: 'Opening balance typed wrongly', refused: 'cur:2026-08', opener: 'bk-undo-cur-2026-07' };
+    }
+    if (view === 'reopened') {
+      s.signed = { 'sav:2026-10': null };
+      s.reopened = { 'sav:2026-10': { at: D.TODAY, why: WHY } };
+      s.toast = 'October 2026 reopened for Maybank savings. It needs the sign-off again.';
+      s.undo = { patch: { signed: {}, reopened: {} }, msg: 'Reopen undone. October 2026 is locked again; both changes are in the audit trail.', focus: 'bk-undo-sav-2026-10' };
+    }
+    if (view === 'opening-locked') {
+      // A book opening typed for August, which is signed off: refused, nothing saved, what was typed is kept.
+      s.opMonth = '2026-08'; s.opAmount = '96,000.00'; s.opLock = { month: '2026-08', key: 'cur:2026-08' };
+    }
+    if (view === 'loading') s.loading = true;
+    if (view === 'no-account') { s.co = 'AIP'; s.acct = null; s.importAcct = null; s.open = null; }
+    if (view === 'load-error') s.loadErr = true;
+    // 'importing' and 'drop-hint' are static previews: they show that state and hold it (no import timer, no toast timeout).
+    if (view === 'import-chosen' || view === 'importing') { s.octIn = false; s.file = D.SAMPLE; if (view === 'importing') s.busy = 'import'; }
+    if (view === 'imported') { s.octJust = true; s.result = { tone: 'ok', text: D.IMPORTED }; s.flash = 'cur:2026-10'; s.flashN = 1; }
+    if (view === 'match-again') s.result = { tone: 'info', text: D.MATCHED };
+    if (view === 'drop-hint') s.toast = D.DROP;
+    if (view === 'opening-error') { s.opAmount = 'RM 25,367.58'; s.opErr = 'Choose the month and type the balance as a number.'; s.opBad = 'amount'; }
+    if (view === 'import-error') {
+      s.result = { tone: 'bad', text: D.ERR[errKey] || D.ERR['no-file'] };
+      s.file = errKey === 'no-file' ? '' : D.SAMPLE;
+      if (errKey === 'other-account') s.importAcct = 'sav';
+      s.octIn = errKey === 'no-file' || errKey === 'duplicate';
+    }
+    return s;
+  }
+  componentWillUnmount() { clearTimeout(this.timer); clearTimeout(this.toastT); clearTimeout(this.dlgT); }
+  // A state that starts with the dialog open puts focus in it, as opening it does.
+  componentDidMount() { const d = this.state.dlg; if (d) this._focus = d.refused ? 'bk-dlg-ref' : d.discard ? 'bk-disc-keep' : 'bk-dlg-why'; if (this._focus) this.componentDidUpdate(this.props, this.state); }
+  componentDidUpdate(prevProps, prev) {
+    if (prevProps && prevProps !== this.props && (prevProps.view !== this.props.view || prevProps.importError !== this.props.importError)) {
+      // The "State to show" tweak changed: start that state afresh.
+      clearTimeout(this.timer); clearTimeout(this.toastT); clearTimeout(this.dlgT);
+      this._tHover = false; this._tFocus = false;
+      const fresh = this.initial(this.props), d = fresh.dlg;
+      if (d) this._focus = d.refused ? 'bk-dlg-ref' : d.discard ? 'bk-disc-keep' : 'bk-dlg-why';
+      this.setState(fresh);
+      return;
+    }
+    if (prev && prev.fileKey !== this.state.fileKey) {
+      // The page redraw after an import or a switch clears the chosen file.
+      const f = document.getElementById('bk-file');
+      if (f) { try { f.value = ''; } catch (e) { /* some browsers refuse; the shown name is already cleared */ } }
+    }
+    if (this._focus) {
+      const id = this._focus; this._focus = null; this._lastFocus = id;
+      const el = document.getElementById(id);
+      if (el && el.focus) el.focus();
+    }
+  }
+  // Toasts: rise in, stay 6 s (paused while hovered or focused), leave by their own animation.
+  // The toast is mounted with its text, so it is not a live region itself: its text is also sent to the hidden status regions.
+  // A toast that confirms a change carries Undo (States): undo = { patch, msg, focus } puts the state back and says so; it stays 8 s.
+  toastState(text, undo) {
+    clearTimeout(this.toastT);
+    this.toastT = setTimeout(() => this.hideToast(), undo ? 8000 : 6000);
+    this._toastFrom = null;
+    this._tHover = false; this._tFocus = false;
+    return { toast: text, undo: undo || null, toastOut: false, toastN: (this.state.toastN || 0) + 1, ...this.sayState(text) };
+  }
+  // The hidden status regions read messages with no live region of their own, toasts included; two regions take turns so a repeat is read again.
+  sayState(text) {
+    return { say: text, sayN: (this.state.sayN || 0) + 1 };
+  }
+  hideToast() {
+    clearTimeout(this.toastT);
+    if (!this.state.toast) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.dropToast();
+    this.setState({ toastOut: true });
+    this.toastT = setTimeout(() => this.dropToast(), 400);   // only a safety net if animationend never arrives
+  }
+  // An unmounting toast fires no mouseleave or blur, so its pause flags are reset here.
+  dropToast() {
+    this._tHover = false; this._tFocus = false;
+    this.setState({ toast: null, toastOut: false, undo: null });
+  }
+  // The reopen dialog leaves by its own animation; focus goes back to what opened it (or where the result now is).
+  closeDlg(focusId) {
+    if (!this.state.dlg || this.state.dlg.closing) return;
+    this.setState(this.closePatch(focusId));
+  }
+  // The state change that closes the dialog, to merge into one update with the result.
+  closePatch(focusId) {
+    clearTimeout(this.dlgT);
+    this._focus = focusId || this.state.dlg.opener || null;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return { dlg: null };
+    this.dlgT = setTimeout(() => this.setState({ dlg: null }), 400);   // only a safety net if animationend never arrives
+    return { dlg: { ...this.state.dlg, closing: true } };
+  }
+  // job: the file, company and account read when Import was pressed (as the app reads them at submit), so a switch meanwhile changes nothing.
+  finishImport(job) {
+    const D = this.data();
+    const s = this.state;
+    const j = job || { file: s.file, co: s.co, importAcct: s.importAcct };
+    const co = D.COS[j.co];
+    const ia = co.accounts.includes(j.importAcct) ? j.importAcct : co.def;
+    const a = D.ACC[ia];
+    let err = '';
+    if (!/\.pdf$/i.test(j.file || '')) err = D.ERR.unreadable;
+    else if (ia !== 'cur') err = 'This statement is for account 514123454417, not ' + a.label + ' (' + a.no + ').';
+    else if (s.octIn) err = D.ERR.duplicate;
+    if (err) { this._focus = 'bk-result'; return this.setState({ busy: null, result: { tone: 'bad', text: err } }); }
+    // The whole page redraws: the file input clears and the imported month opens below.
+    this._focus = 'bk-m-cur-2026-10';
+    this.setState({ busy: null, octIn: true, octJust: true, co: 'AISB', acct: 'cur', year: '2026', open: '2026-10', file: '', fileKey: s.fileKey + 1,
+      result: { tone: 'ok', text: D.IMPORTED }, ...this.sayState(D.IMPORTED), flash: 'cur:2026-10', flashN: s.flashN + 1, swapN: s.swapN + 1 });
+  }
+  // Dark twin of Bank.dc.html: same logic and data in the dark colours. Icon tones are mapped once, on the way out.
+  renderVals() {
+    const M = { brand: 'dbrand', ok: 'dok', warn: 'dwarn', bad: 'dbad', muted: 'dmuted', grey: 'dmuted', info: 'dbrand' };
+    const walk = v => {
+      if (Array.isArray(v)) return v.map(walk);
+      if (v && typeof v === 'object' && Object.getPrototypeOf(v) === Object.prototype) {
+        const r = {};
+        for (const k in v) { const x = v[k]; r[k] = typeof x === 'string' && (k === 'tone' || /Tone$/.test(k)) && M[x] ? M[x] : walk(x); }
+        return r;
+      }
+      return v;
+    };
+    return walk(this.renderBase());
+  }
+  renderBase() {
+    const D = this.data();
+    const { ACC, COS, ST, MOV } = D;
+    const s = this.state;
+    const set = x => this.setState(x);
+    const noop = () => {};
+    const TOL = 0.005;
+    const r2 = n => Math.round(n * 100) / 100;
+    const fmt = n => Math.abs(r2(n)).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const money = (n, cur) => (n == null ? '—' : (cur === 'MYR' ? 'RM ' : cur + ' ') + (r2(n) < 0 ? '-' : '') + fmt(n));
+    const sgn = n => (r2(n) < 0 ? '−' : '+') + fmt(n);
+    const MN = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const mName = m => MN[+m.slice(5) - 1] + ' ' + m.slice(0, 4);
+    const nextM = m => { let y = +m.slice(0, 4), mo = +m.slice(5) + 1; if (mo > 12) { mo = 1; y++; } return y + '-' + String(mo).padStart(2, '0'); };
+    const lines = n => n + ' line' + (n === 1 ? '' : 's');
+    const idOf = k => k.replace(':', '-');
+
+    const co = COS[s.co];
+    const noAcct = !co.accounts.length;   // a company with no bank account: the empty state; the year view below is built for AISB's default and not shown
+    const acctId = co.accounts.includes(s.acct) ? s.acct : co.def || 'cur';
+    const acc = ACC[acctId];
+    const cur = acc.cur;
+
+    // One statement as the server sends it, with this board's state applied (just imported, a stale sign-off, a misprinted closing, sign-offs made here).
+    const stmt = (a, m) => {
+      const k = a + ':' + m;
+      const b = ST[k];
+      if (!b) return null;
+      if (k === 'cur:2026-10' && !s.octIn) return null;
+      const x = { ...b };
+      if (k === 'cur:2026-10' && s.octJust) x.confirmed = 0;
+      if (k === 'cur:2026-10' && s.splitUndone) {
+        // Line 3 undone: the -14,000.00 split part is unmatched, and PV2610-003 stays matched to the -10,000.00 part only.
+        x.toExplain = 6; x.confirmed = 3;
+        x.bankOnly = [{ date: '6 Oct', desc: 'DUITNOW TRF CONTRACTOR · FIELD WORKS', amount: -14000, why: 'Not explained yet' }, ...(b.bankOnly || [])];
+        x.differ = [{ ref: 'PV2610-003', desc: 'Contractor — field works', book: -24000, bank: -10000, amount: 14000 }];
+      }
+      if (k === 'cur:2026-05' && s.mayBad) x.open = 131194.10;   // the RM 10.00 error sits on the opening, which no imported month contradicts (April is not imported)
+      if (k === 'cur:2026-09' && s.stale) x.signed = { at: '8 Oct 2026', how: 'review', note: null };
+      if (k === 'cur:2026-10' && s.chgView) {
+        // A state-only variant (samples section 21): October agrees with the bank and was signed off on 14 Nov, before SQL's account lines were read on 18 Nov.
+        Object.assign(x, { inn: 47848, out: 106648, close: 33618.35, total: 14, toExplain: 0, confirmed: 14, booksOnly: [], bankOnly: [], differ: [] });
+        x.signed = { at: '14 Nov 2026', how: 'review', note: null, book: { inn: 47800, out: 103400, close: 33618.35 } };
+      }
+      if (k in s.signed) x.signed = s.signed[k];
+      if (s.reconf[k] && x.signed && x.signed.book) x.signed = { ...x.signed, book: null };   // confirmed again: the sign-off now stands on the new figures
+      return x;
+    };
+    // The book side (recon.py book_table): starts at the earliest opening; a typed opening restarts it; an SQL month with no listing breaks the chain.
+    const tables = {};
+    const bookTable = a => {
+      const ops = {};
+      (s.openings[a] || []).forEach(([m, v]) => { ops[m] = v; });
+      const ms = Object.keys(ops).sort();
+      const res = {};
+      if (!ms.length) return res;
+      const sql = ACC[a].src === 'sql';
+      const mov = { ...(MOV[a] || {}) };
+      if (a === 'cur' && s.chgView === 'differs') mov['2026-10'] = [47848, 103498];   // PV2610-022 was edited in SQL after the sign-off: 1,120.00 became 1,170.00
+      let bal = null, broken = null;
+      for (let m = ms[0]; m <= D.NOW; m = nextM(m)) {
+        if (m in ops) { bal = ops[m]; broken = null; }
+        if (broken) { res[m] = { state: 'needs_listing', month: broken }; continue; }
+        if (sql && !mov[m]) { broken = m; res[m] = { state: 'needs_listing', month: m }; continue; }
+        const [i, o] = mov[m] || [0, 0];
+        const c = r2(bal + i - o);
+        res[m] = { state: 'ok', opening: bal, inn: i, out: o, closing: c };
+        bal = c;
+      }
+      return res;
+    };
+    const book = (a, m) => {
+      if (!tables[a]) tables[a] = bookTable(a);
+      const b = { ...(tables[a][m] || { state: 'needs_opening' }) };
+      b.note = b.state === 'needs_opening' ? 'Needs book opening' : b.state === 'needs_listing' ? (b.month === m ? "Fetch SQL's cash book listing" : "Fetch SQL's cash book listing for " + mName(b.month)) : null;
+      return b;
+    };
+    // Status, reasons and sign-off (recon.py _signed, _status, why_not).
+    const summary = (a, m) => {
+      const A = ACC[a];
+      const st = stmt(a, m);
+      const bk = book(a, m);
+      const bookOk = bk.state === 'ok';
+      const o = { a, m, key: a + ':' + m, label: mName(m), st, bk, bookOk, before: m < D.FIRST, signed: null, locked: false, reopened: null };
+      if (!st) { o.status = 'to_import'; return o; }
+      const toConfirm = st.total - st.toExplain - st.confirmed;
+      const addsUp = Math.abs(r2(st.open + st.inn - st.out) - st.close) <= TOL;
+      const diff = bookOk ? r2(st.close - bk.closing) : null;
+      const matches = diff !== null && Math.abs(diff) <= TOL;
+      const sg = st.signed || null;
+      const sb = sg && sg.book;   // the figures at sign-off, kept while the book figures have changed under it: the month is judged by them until it is confirmed again
+      const holds = !!sg && (sg.how === 'before tracking' || !!sb || diff === null || Math.abs(diff) <= TOL);
+      let status = 'to_review';
+      if (sg && holds) status = 'reconciled';
+      else if (sg || (diff !== null && Math.abs(diff) > TOL && st.toExplain === 0 && toConfirm === 0)) status = 'difference';
+      const why = [];
+      if (!addsUp) why.push("the statement doesn't add up (opening plus lines is not the closing balance)");
+      if (st.toExplain) why.push(lines(st.toExplain) + ' to explain');
+      if (toConfirm) why.push(lines(toConfirm) + ' to confirm');
+      if (!bookOk) why.push(bk.note.charAt(0).toLowerCase() + bk.note.slice(1));
+      else if (!matches) why.push('the books differ from the bank by ' + money(diff, A.cur));
+      Object.assign(o, { toConfirm, addsUp, diff, matches, status, why, canSign: !why.length, canBefore: o.before && addsUp, signed: status === 'reconciled' ? sg : null,
+        locked: status === 'reconciled', reopened: s.reopened[o.key] || null,
+        chg: status === 'reconciled' && sb && bookOk ? { at: sb, now: { inn: bk.inn, out: bk.out, close: bk.closing }, can: matches } : null });
+      return o;
+    };
+
+    // The check against SQL's bank account (recon.py rcSqlCheck): the cash book account of a company kept in SQL only. SQL's GL Journal of Transaction kept here reads 1 Oct to 17 Nov 2026.
+    // A month before the journal still agrees: base() returns the kept 1 Oct opening of 310-000 (as_of 2026-10-01, after the 30 Sep month end), so the
+    // "doesn't cover" skip (needs as_of <= end) does not fire and the 30 Sep balance is that opening (89,218.35), the September book closing.
+    // The skip is shown only in the state-only view september-journal-gap (a 310-000 opening kept at 1 Sep 2026, on or before the month end); its first date is that opening's date, not the month start.
+    const JOURNAL_FROM = '2026-10', GAP_FROM = '01/09/2026';
+    const dmy = (m, last) => (last ? String(new Date(Date.UTC(+m.slice(0, 4), +m.slice(5), 0)).getUTCDate()).padStart(2, '0') : '01') + '/' + m.slice(5) + '/' + m.slice(0, 4);
+    const sqlCheck = S => {
+      if (ACC[S.a].src !== 'sql' || !S.st) return null;
+      const skip = t => ({ kind: 'skip', text: "Not checked against SQL's bank account: " + t });
+      if (S.before) return skip('a month before tracking began here');
+      if (!S.bookOk) return skip('there is no book closing yet');
+      if (s.sqlGap && S.m < JOURNAL_FROM) return skip("SQL's GL Journal of Transaction kept doesn't cover " + GAP_FROM + ' to ' + dmy(S.m, true) + ': fetch it for those dates');
+      const theirs = s.sqlDiff && S.m === '2026-10' ? 33570.35 : S.bk.closing;   // the 8 Oct service charge was booked in SQL as JV2610-012 after the journal was read
+      const d = r2(S.bk.closing - theirs);
+      if (Math.abs(d) <= TOL) return { kind: 'ok', text: "Agrees with SQL's bank account " + ACC[S.a].gl };
+      return { kind: 'bad', text: "Differs from SQL's bank account " + ACC[S.a].gl + ' by ' + money(Math.abs(d), ACC[S.a].cur) + ': the book closing here is ' + money(S.bk.closing, ACC[S.a].cur)
+        + ", SQL's balance on " + dmy(S.m, true) + ' is ' + money(theirs, ACC[S.a].cur) };
+    };
+
+    // Which months appear: first tracked month to the payroll month, plus any month with an imported statement; newest first.
+    const monthsOf = a => {
+      const all = new Set();
+      for (let m = D.FIRST; m <= D.NOW; m = nextM(m)) all.add(m);
+      Object.keys(ST).forEach(k => { const [aa, mm] = k.split(':'); if (aa === a && stmt(aa, mm)) all.add(mm); });
+      return [...all].sort().reverse();
+    };
+    const months = monthsOf(acctId);
+    const years = [...new Set(months.map(m => m.slice(0, 4)))];
+    const year = years.includes(s.year) ? s.year : years[0];
+
+    const TXT = { to_import: 'To import', to_review: 'To review', difference: 'Difference', reconciled: 'Reconciled' };
+    const TONE = { to_import: 'grey', to_review: 'warn', difference: 'bad', reconciled: 'ok' };
+    const P = { ok: 'background:#10291E;color:#5BD49A', warn: 'background:#2E2210;color:#F2B35B', bad: 'background:#33171A;color:#F58C80', grey: 'background:#1E2838;color:#B4BFCE' };
+    const pill = t => 'display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:99px;font-size:12px;font-weight:600;white-space:nowrap;' + P[t];
+    const amtStyle = () => 'padding:10px 12px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:#E6EBF2';   // neutral, as rcTable's td.num: the sign says the direction
+    const inputSt = bad => 'height:40px;box-sizing:border-box;padding:0 12px;border-radius:10px;font:400 14px Inter,sans-serif;color:#E6EBF2;' + (bad ? 'border:1px solid #F58C80;background:#221416' : 'border:1px solid #7A89A3;background:#121A27');
+    const pdf = e => { if (e && e.preventDefault) e.preventDefault(); };
+
+    // Sign-off and before tracking run with no confirm step, as in the app: toast with Undo, the row's pill swaps, the row flashes.
+    // A signed-off month is locked; it opens again only through Reopen month, which asks for a reason (the dialog below).
+    const bump = key => ({ flash: key, flashN: s.flashN + 1, pillN: { ...s.pillN, [key]: (s.pillN[key] || 0) + 1 } });
+    const mLabel = key => mName(key.split(':')[1]);
+    const markSign = key => {
+      this._focus = 'bk-undo-' + idOf(key);
+      set({ signed: { ...s.signed, [key]: { at: D.TODAY, how: 'review', note: null } }, bt: {}, ...bump(key),
+        ...this.toastState('Marked as reconciled. ' + mLabel(key) + ' is locked for ' + ACC[key.split(':')[0]].label + '.',
+          { patch: { signed: s.signed, ...bump(key) }, msg: 'Sign-off undone. ' + mLabel(key) + ' is open again; both changes are in the audit trail.', focus: 'bk-mark-' + idOf(key) }) });
+    };
+    // Confirm again: the sign-off stands on the new book figures. The banner goes, so focus moves to Reopen month.
+    const confirmAgain = key => {
+      this._focus = 'bk-undo-' + idOf(key);
+      set({ reconf: { ...s.reconf, [key]: true }, ...bump(key), ...this.toastState('Sign-off confirmed again with the new book figures.',
+        { patch: { reconf: s.reconf, ...bump(key) }, msg: 'Undone. The sign-off waits to be confirmed again.', focus: 'bk-sign-' + idOf(key) }) });
+    };
+    // Reopen month: the dialog (reason required). It is refused while a later month of the account, which carries on from this one's closing, is signed off.
+    const openDlg = (key, opener) => { this._focus = 'bk-dlg-why'; set({ dlg: { key, why: '', opener } }); };
+    const laterLocked = key => {
+      const [a, m] = key.split(':');
+      return monthsOf(a).filter(x => x > m).sort().map(x => summary(a, x)).find(x => x.locked) || null;
+    };
+    const finishReopen = (key, why) => {
+      const st = this.state;
+      if (!st.dlg || st.dlg.key !== key) return;
+      const S = summary(key.split(':')[0], key.split(':')[1]);
+      const before = { signed: st.signed, reopened: st.reopened, reconf: st.reconf };
+      this.setState({ ...this.closePatch(S.canSign ? 'bk-mark-' + idOf(key) : 'bk-sign-' + idOf(key)), signed: { ...st.signed, [key]: null }, reopened: { ...st.reopened, [key]: { at: D.TODAY, why } }, reconf: { ...st.reconf, [key]: false }, bt: {}, ...bump(key),
+        ...this.toastState(mLabel(key) + ' reopened for ' + ACC[key.split(':')[0]].label + '. It needs the sign-off again.',
+          { patch: { ...before, ...bump(key) }, msg: 'Reopen undone. ' + mLabel(key) + ' is locked again; both changes are in the audit trail.', focus: 'bk-undo-' + idOf(key) }) });
+    };
+    const btSet = (key, x) => set({ bt: { ...s.bt, [key]: { ...(s.bt[key] || {}), ...x } } });
+    const btGo = S => {
+      const bt = this.state.bt[S.key] || {};
+      let err = '', bad = '';
+      if (!bt.tick) { err = 'Tick that this month was reconciled before tracking began.'; bad = 'tick'; }
+      else if (!S.addsUp) err = "The statement doesn't add up (opening plus lines is not the closing balance), so it can't be marked.";
+      else if (!S.matches && !(bt.note || '').trim()) { err = "The books don't agree with the bank here, so say in a short note how it was reconciled."; bad = 'note'; }
+      if (err) {
+        if (bad) this._focus = 'bk-bt' + bad + '-' + idOf(S.key);
+        return set({ bt: { ...s.bt, [S.key]: { ...bt, err, bad } } });
+      }
+      this._focus = 'bk-undo-' + idOf(S.key);
+      set({ signed: { ...s.signed, [S.key]: { at: D.TODAY, how: 'before tracking', note: (bt.note || '').trim() || null } }, bt: {}, ...bump(S.key),
+        ...this.toastState('Marked as reconciled before tracking. ' + S.label + ' is locked.',
+          { patch: { signed: s.signed, ...bump(S.key) }, msg: 'Undone. ' + S.label + ' is open again; both changes are in the audit trail.', focus: 'bk-bttick-' + idOf(S.key) }) });
+    };
+
+    const EMPTY = { notImported: false, notImportedText: '', bookTile: '', bookTileStyle: '', imported: false, matched: 0, confirmed: 0, toExplain: 0, badAdd: false,
+      pdf, pdfAria: '', reviewAria: '', printHref: '', printAria: '', tiles: [], hasBookNote: false, bookNoteText: '', hasExplain: false, explainText: '', allClear: false, clearOk: false, clearNote: false,
+      hasBooksOnly: false, booksOnlyTitle: '', booksOnly: [], hasBankOnly: false, bankOnlyTitle: '', bankOnly: [], hasDiffer: false, differTitle: '', differ: [],
+      hasNotes: false, hasLeftJ: false, leftJText: '', hasLeftU: false, leftUText: '', hasLeftO: false, leftOText: '', hasLeftL: false, leftLText: '', sqlNote: false,
+      hasChk: false, chkOk: false, chkBad: false, chkSkip: false, chkText: '',
+      hasChg: false, chgId: '', chgTitleId: '', chgWhyId: '', chgRows: [], chgOff: true, chgCls: '', chgGo: noop, hasChgWhy: false, chgWhy: '', chgWhyRef: '', chgBtnStyle: '',
+      signId: '', isSigned: false, signPill: '', signPillCls: '', hasSignNote: false, signNote: '', undoId: '', undo: noop,
+      lockText: '', hasReopenLog: false, reopenLog: '', wasReopened: false, reopenTitle: '', reopenWhy: '', footText: '',
+      unsigned: false, markId: '', markCls: '', markOff: true, mark: noop, markStyle: '', hasWhy: false, whyId: '', whyRef: '', whyText: '',
+      before: false, btLabel: '', btNoteId: '', btNote: '', onBtNote: noop, btNoteBad: 'false', btNoteStyle: '', btTickId: '', btTick: false, onBtTick: noop,
+      btTickBad: 'false', btBtnId: '', btOff: true, btGo: noop, btStyle: '', hasBtErr: false, btErr: '', btErrId: '', btNoteDesc: '', btTickDesc: '' };
+
+    // The month panel: one template, filled per month (app.js monthPanel and signBlock).
+    const panel = S => {
+      const A = ACC[S.a], c = A.cur, id = idOf(S.key);
+      const p = { ...EMPTY };
+      if (!S.st) {
+        p.notImported = true;
+        p.notImportedText = 'The ' + S.label + ' statement for ' + A.label + " isn't imported yet. Import it above.";
+        p.bookTile = S.bookOk ? money(S.bk.closing, c) : S.bk.note;
+        p.bookTileStyle = S.bookOk ? 'font-size:20px;font-weight:600;font-variant-numeric:tabular-nums' : 'font-size:15px;font-weight:500;color:#8E9BB0';
+        return p;
+      }
+      const st = S.st;
+      p.imported = true;
+      p.matched = st.total - st.toExplain; p.confirmed = st.confirmed; p.toExplain = st.toExplain; p.badAdd = !S.addsUp;
+      p.pdfAria = 'Statement PDF, ' + S.label; p.reviewAria = 'Review lines, ' + S.label;
+      // Print: the account's reconciliation statement (PrintBankRec), opened on that account; only October 2026 is drawn, so other months land on it.
+      p.printHref = 'PrintBankRec.dc.html#' + ({ cur: 'current', sav: 'savings', fca: 'fca' }[S.a] || 'current');
+      p.printAria = 'Print the reconciliation statement, ' + A.label + ', ' + S.label + (S.m === '2026-10' ? '' : ' (opens the October 2026 example)');
+      const zero = S.matches;   // the same test as summary's matches (<= TOL), so the tile and the all-clear line never disagree
+      const val = 'display:inline-flex;align-items:center;gap:6px;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;';
+      p.tiles = [
+        { label: 'Money in', value: money(st.inn, c), valStyle: val, hasIcon: false, glyph: 'check', tone: 'ok' },
+        { label: 'Money out', value: money(st.out, c), valStyle: val, hasIcon: false, glyph: 'check', tone: 'ok' },
+        { label: 'Bank closing', value: money(st.close, c), valStyle: val, hasIcon: false, glyph: 'check', tone: 'ok' },
+        { label: 'Book closing', value: S.bookOk ? money(S.bk.closing, c) : S.bk.note, valStyle: S.bookOk ? val : 'font-size:15px;font-weight:500;color:#8E9BB0;padding:3px 0', hasIcon: false, glyph: 'check', tone: 'ok' },
+        { label: 'Difference (bank less books)', value: S.diff === null ? '—' : money(S.diff, c), hasIcon: S.diff !== null, glyph: zero ? 'check' : 'alert', tone: zero ? 'ok' : 'bad',
+          valStyle: val + (S.diff === null ? 'color:#8E9BB0' : zero ? 'color:#5BD49A' : 'color:#F58C80') }
+      ];
+      const ck = sqlCheck(S);
+      if (ck) { p.hasChk = true; p.chkOk = ck.kind === 'ok'; p.chkBad = ck.kind === 'bad'; p.chkSkip = ck.kind === 'skip'; p.chkText = ck.text; }
+      if (!S.bookOk) {
+        p.hasBookNote = true;
+        p.bookNoteText = S.bk.state === 'needs_opening' ? "Needs book opening: type this account's book balance under Book opening below."
+          : S.bk.note + ' on the SQL import page.';
+      }
+      // The outstanding lists come from the month's movements whatever the book state is (recon._lists); only the explanation and the all-clear need the book side.
+      const bo = st.booksOnly || [], ba = st.bankOnly || [], df = st.differ || [];
+      const differ = r2(df.reduce((t, x) => t + x.amount, 0));
+      if (S.bookOk && S.diff !== null && !S.matches) {
+        const bf = r2(st.open - S.bk.opening);
+        const booksOut = r2(bo.filter(x => x.amount < 0).reduce((t, x) => t - x.amount, 0));
+        const booksIn = r2(bo.filter(x => x.amount > 0).reduce((t, x) => t + x.amount, 0));
+        const bankNet = r2(ba.reduce((t, x) => t + x.amount, 0));
+        const other = r2(S.diff - bf - booksOut + booksIn - bankNet - differ);
+        const parts = [];
+        if (Math.abs(bf) >= TOL) parts.push(money(bf, c) + ' brought forward from last month (bank opening less book opening)');
+        if (Math.abs(booksOut) >= TOL) parts.push(money(booksOut, c) + ' paid out in the books, not on the statement');
+        if (Math.abs(booksIn) >= TOL) parts.push(money(-booksIn, c) + ' received in the books, not on the statement');
+        if (Math.abs(bankNet) >= TOL) parts.push(money(bankNet, c) + ' net on the statement, not in the books');
+        if (Math.abs(differ) >= TOL) parts.push(money(differ, c) + ' from matched amounts that differ');
+        if (Math.abs(other) >= TOL) parts.push(money(other, c) + ' not explained by any of these');
+        p.hasExplain = true;
+        p.explainText = 'The books are ' + money(Math.abs(S.diff), c) + (S.diff > 0 ? ' below' : ' above') + ' the bank.' + (parts.length ? ' That is: ' + parts.join('; ') + '.' : '');
+      }
+      p.booksOnly = bo.map(x => ({ date: x.date, ref: x.ref || '', hasRef: !!x.ref, desc: x.desc, amt: sgn(x.amount), amtStyle: amtStyle(x.amount), why: x.why }));
+      // Kept in SQL Account: a bank charge explained here still has to be entered in SQL, or the books never agree with the bank.
+      // Not for a month before tracking began, or one marked reconciled before tracking: SQL has those charges already.
+      const sqlTodo = co.sql && !S.before && !(S.signed && S.signed.how === 'before tracking');
+      p.bankOnly = ba.map(x => ({ date: x.date, desc: x.desc, amt: sgn(x.amount), amtStyle: amtStyle(x.amount),
+        why: x.why + (sqlTodo && /Bank charge$/.test(x.why) ? ' · Enter this in SQL Account' : '') }));
+      p.hasBooksOnly = bo.length > 0; p.booksOnlyTitle = 'In the books, not on this statement · ' + bo.length;
+      p.hasBankOnly = ba.length > 0; p.bankOnlyTitle = 'On the statement, not in the books · ' + ba.length;
+      p.differ = df.map(x => ({ ref: x.ref, desc: x.desc, book: money(x.book, c), bank: money(x.bank, c), amt: money(x.amount, c) }));
+      p.hasDiffer = df.length > 0; p.differTitle = 'Matched, but the amounts differ · ' + df.length;
+      p.allClear = S.bookOk && !bo.length && !ba.length && !df.length;
+      // Success styling only when the books also agree; otherwise the same sentence is a neutral note, as in the app (the gap is brought forward).
+      p.clearOk = p.allClear && S.matches; p.clearNote = p.allClear && !S.matches;
+      const lo = (A.src === 'sql' && st.leftOut) || { journals: 0, invoices: 0, unknown: 0, otherBank: 0 };
+      if (lo.journals || lo.invoices) {
+        p.hasLeftJ = true;
+        p.leftJText = 'Not counted as bank movements: ' + lo.journals + ' journal' + (lo.journals === 1 ? '' : 's') + ' and ' + lo.invoices + ' customer invoice' + (lo.invoices === 1 ? '' : 's')
+          + " (customer refunds included) in the SQL listing. Fetch SQL's GL Journal of Transaction to count a journal that moves the bank.";
+      }
+      if (lo.unknown) { p.hasLeftU = true; p.leftUText = 'Not counted: ' + lo.unknown + ' cash book ' + (lo.unknown === 1 ? 'entry' : 'entries') + ' with no money in or out shown, so the books may differ by that amount.'; }
+      if (lo.otherBank) { p.hasLeftO = true; p.leftOText = 'Not counted: ' + lo.otherBank + (lo.otherBank === 1 ? ' receipt or payment whose lines' : ' receipts or payments whose lines') + " in SQL don't touch this bank account (paid from another account)."; }
+      if (A.src === 'sql' && st.listing) {
+        p.hasLeftL = true;
+        p.leftLText = st.listing + (st.listing === 1 ? ' receipt or payment this month is still counted by its listing amount' : ' receipts or payments this month are still counted by their listing amount') + ": fetch SQL's GL Journal of Transaction to count them by their bank lines.";
+      }
+      p.sqlNote = co.sql;   // the app ties this note to the company (s.uses_sql), not the account
+      p.hasNotes = p.hasLeftJ || p.hasLeftU || p.hasLeftO || p.hasLeftL || p.sqlNote;
+
+      if (S.chg) {
+        // Signed off before SQL's receipts and payments counted by what each one posted to the bank account (recon.py book_changed).
+        const g = S.chg, can = g.can;
+        p.hasChg = true; p.chgId = 'bk-chg-' + id; p.chgTitleId = 'bk-chgh-' + id; p.chgWhyId = 'bk-chgw-' + id;
+        p.chgRows = [{ label: 'Money in', a: money(g.at.inn, c), b: money(g.now.inn, c) }, { label: 'Money out', a: money(g.at.out, c), b: money(g.now.out, c) }, { label: 'Book closing', a: money(g.at.close, c), b: money(g.now.close, c) }];
+        p.chgOff = !can; p.chgCls = can ? 'hb' : ''; p.chgGo = () => { if (can) confirmAgain(S.key); };
+        p.hasChgWhy = !can; p.chgWhy = can ? '' : 'The new book closing differs from the bank by ' + money(S.diff, c) + ': reopen the month and review it.'; p.chgWhyRef = can ? '' : p.chgWhyId;
+        p.chgBtnStyle = 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;' + (can ? 'background:#3D6BE0;cursor:pointer' : 'background:#4A5870;cursor:not-allowed');
+      }
+      p.signId = 'bk-sign-' + id;
+      const n = s.pillN[S.key] || 0;
+      if (S.signed) {
+        p.isSigned = true;
+        p.signPill = 'Reconciled ' + S.signed.at + (S.signed.how === 'before tracking' ? ' · before tracking' : '');
+        p.signPillCls = n ? (n % 2 ? 'okA' : 'okB') : '';
+        p.hasSignNote = !!S.signed.note; p.signNote = S.signed.note || '';
+        p.undoId = 'bk-undo-' + id; p.undo = () => { if (!s.dlg) openDlg(S.key, 'bk-undo-' + id); };
+        p.lockText = 'Locked since ' + S.signed.at + ': its lines, matches and book opening can\'t change'
+          + (co.sql ? '' : ', and nothing can be posted into it') + '. Reopen the month to change anything.';
+        p.hasReopenLog = !!S.reopened; p.reopenLog = S.reopened ? 'Reopened ' + S.reopened.at + ' (' + S.reopened.why + '), then marked reconciled again.' : '';
+      } else {
+        p.wasReopened = !!S.reopened;
+        p.reopenTitle = S.reopened ? 'Reopened ' + S.reopened.at : '';
+        p.reopenWhy = S.reopened ? 'Reason: ' + S.reopened.why + '. Mark it reconciled again once the month is reviewed.' : '';
+        p.unsigned = true;
+        p.markId = 'bk-mark-' + id; p.markOff = !S.canSign; p.mark = () => { if (S.canSign) markSign(S.key); };
+        p.markCls = S.canSign ? 'hb' : '';
+        p.markStyle = 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;'
+          + (S.canSign ? 'background:#3D6BE0;cursor:pointer' : 'background:#4A5870;cursor:not-allowed');
+        p.hasWhy = S.why.length > 0; p.whyId = 'bk-why-' + id; p.whyRef = p.hasWhy ? p.whyId : '';
+        p.whyText = 'Not ready: ' + S.why.join('; ') + '.';
+      }
+      if (S.before && !S.signed) {
+        const bt = s.bt[S.key] || {};
+        p.before = true;
+        p.btLabel = 'How it was reconciled' + (S.matches ? ' (optional: the books agree with the bank)' : '');
+        p.btNoteId = 'bk-btnote-' + id; p.btTickId = 'bk-bttick-' + id; p.btBtnId = 'bk-bt-' + id;
+        p.btNote = bt.note || ''; p.btTick = !!bt.tick;
+        p.btNoteBad = bt.bad === 'note' ? 'true' : 'false'; p.btTickBad = bt.bad === 'tick' ? 'true' : 'false';
+        p.btNoteStyle = 'width:100%;' + inputSt(bt.bad === 'note');
+        p.onBtNote = e => btSet(S.key, { note: e.target.value, err: bt.bad === 'note' ? '' : bt.err, bad: bt.bad === 'note' ? '' : bt.bad });
+        p.onBtTick = e => btSet(S.key, { tick: !!e.target.checked, err: bt.bad === 'tick' ? '' : bt.err, bad: bt.bad === 'tick' ? '' : bt.bad });
+        p.btOff = !S.canBefore; p.btGo = () => { if (S.canBefore) btGo(S); };
+        p.btStyle = 'height:40px;padding:0 16px;border-radius:10px;border:1px solid #7A89A3;background:#121A27;font:600 14px Inter,sans-serif;'
+          + (S.canBefore ? 'color:#E6EBF2;cursor:pointer' : 'color:#8E9BB0;cursor:not-allowed');
+        p.hasBtErr = !!bt.err; p.btErr = bt.err || '';
+        p.btErrId = 'bk-bterr-' + id; p.btNoteDesc = bt.bad === 'note' ? p.btErrId : ''; p.btTickDesc = bt.bad === 'tick' ? p.btErrId : '';
+      }
+      p.footText = co.sql ? 'Marking a month reconciled locks it here. Nothing is posted to SQL Account; a change in SQL after the sign-off asks you to confirm it again.'
+        : "Marking a month reconciled locks it in this company's books here: payments dated in it can't change until it is reopened.";
+      return p;
+    };
+
+    const yearMonths = months.filter(m => m.slice(0, 4) === year);
+    const openHere = yearMonths.includes(s.open) ? s.open : null;
+    const rows = yearMonths.map(m => {
+      const S = summary(acctId, m);
+      const open = m === openHere;
+      const n = s.pillN[S.key] || 0;
+      const flash = s.flash === S.key ? (s.flashN % 2 ? ' fa' : ' fb') : '';
+      return {
+        key: S.key, label: S.label, btnId: 'bk-m-' + idOf(S.key), expanded: open ? 'true' : 'false', chevCls: open ? 'chev on' : 'chev', isOpen: open,
+        toggle: () => set({ open: open ? null : m, flash: null, bt: {}, pillN: {} }),
+        trCls: (open ? '' : 'hr') + flash,
+        trStyle: 'border-top:1px solid #243044;background:' + (open ? '#162033' : '#121A27'),
+        thStyle: 'padding:10px 12px 10px 22px;text-align:left;font-weight:600;' + (open ? 'box-shadow:inset 3px 0 0 #8DB0FA' : ''),
+        
+        hasChg: !!S.chg, chgText: S.chg ? 'Book figures changed since sign-off: confirm again: book closing ' + money(S.chg.at.close, cur) + ' at sign-off, ' + money(S.chg.now.close, cur) + ' now (in ' + money(S.chg.at.inn, cur) + ' → ' + money(S.chg.now.inn, cur) + ', out ' + money(S.chg.at.out, cur) + ' → ' + money(S.chg.now.out, cur) + ')' : '',
+        status: TXT[S.status], pillStyle: pill(TONE[S.status]),
+        pillCls: n ? (S.status === 'reconciled' ? (n % 2 ? 'okA' : 'okB') : (n % 2 ? 'swapA' : 'swapB')) : '',
+        bank: S.st ? money(S.st.close, ACC[acctId].cur) : '—',
+        bookText: S.bookOk ? money(S.bk.closing, cur) : S.bk.note,
+        bookStyle: 'padding:12px;text-align:right;white-space:nowrap;' + (S.bookOk ? 'font-variant-numeric:tabular-nums' : 'color:#8E9BB0;font-size:13px'),
+        locked: S.locked, reopened: !S.locked && !!S.reopened, reopenedText: S.reopened ? 'Reopened ' + S.reopened.at.replace(/ 2026$/, '') : '',
+        recOn: S.signed ? S.signed.at : '—', recBefore: !!(S.signed && S.signed.how === 'before tracking'),
+        hasPdf: !!S.st, noPdf: !S.st, pdfAria: 'Statement PDF, ' + S.label, pdf,
+        p: open ? panel(S) : EMPTY
+      };
+    });
+
+    // Switches: company (resets the year view), account (full redraw, preselects the upload form), year (redraws the year view only).
+    const seg = on => 'height:34px;padding:0 14px;border-radius:8px;border:0;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap;transition:background-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out;'
+      + (on ? 'background:#243044;color:#E6EBF2;box-shadow:inset 0 0 0 1px #7A89A3,0 1px 2px rgba(0,0,0,0.36)' : 'background:transparent;color:#B4BFCE;box-shadow:inset 0 0 0 1px transparent');
+    const redraw = { file: '', fileKey: s.fileKey + 1, result: null, opMonth: null, opAmount: '', opErr: '', opBad: '', opLock: null, flash: null, bt: {}, pillN: {}, swapN: s.swapN + 1 };
+    const pickCo = c => { if (c !== s.co) set({ co: c, acct: COS[c].def, importAcct: COS[c].def, year: null, open: null, ...redraw }); };
+    const acctBtns = co.accounts.map(id => ({ label: ACC[id].label, pressed: id === acctId ? 'true' : 'false', style: seg(id === acctId),
+      pick: () => { if (id !== acctId) set({ acct: id, importAcct: id, year: null, open: null, ...redraw }); } }));
+    const yearBtns = years.map(y => ({ label: y, pressed: y === year ? 'true' : 'false', style: seg(y === year),
+      pick: () => { if (y !== year) set({ year: y, open: null, flash: null, bt: {}, pillN: {}, swapN: s.swapN + 1 }); } }));
+
+    // Import form.
+    const importAcct = co.accounts.includes(s.importAcct) ? s.importAcct : co.def;
+    const accOpts = co.accounts.map(id => ({ id, text: ACC[id].label + ' · ' + ACC[id].no }));
+    const busyImp = s.busy === 'import';
+    const impPrimary = !openHere;
+    const doImport = () => {
+      if (s.busy) return;
+      if (!s.file) { this._focus = 'bk-result'; return set({ result: { tone: 'bad', text: D.ERR['no-file'] } }); }
+      clearTimeout(this.timer);
+      const job = { file: s.file, co: s.co, importAcct };
+      set({ busy: 'import', result: null, ...this.sayState('Importing the statement') });
+      this.timer = setTimeout(() => this.finishImport(job), 1200);
+    };
+    // Match again posts and then shows its result straight away, as in the app: no busy state.
+    const doMatch = () => {
+      if (s.busy) return;
+      set({ result: { tone: 'info', text: D.MATCHED }, ...this.sayState(D.MATCHED), file: '', fileKey: s.fileKey + 1, bt: {} });
+    };
+    const RES = {
+      ok: { glyph: 'check', tone: 'ok', box: 'background:#0E2018;border:1px solid #1F5C42;color:#E6EBF2' },
+      bad: { glyph: 'alert', tone: 'bad', box: 'background:#221416;border:1px solid #7D2F2B;color:#F58C80' },
+      info: { glyph: 'refresh', tone: 'brand', box: 'background:#162033;border:1px solid #2F4A86;color:#E6EBF2' }
+    };
+    const res = s.result ? RES[s.result.tone] : RES.info;
+
+    // Book opening card.
+    const ops = (s.openings[acctId] || []).slice().sort((x, y) => (x[0] < y[0] ? -1 : 1));
+    const stmtMonths = yearMonths.filter(m => stmt(acctId, m)).sort();
+    const defMonth = ops.length ? ops[0][0] : stmtMonths.length ? stmtMonths[0] : (yearMonths.slice().sort()[0] || '');
+    const opMonth = s.opMonth ?? defMonth;
+    const opNote = 'The balance ' + acc.label + ' had in your books on the first day of its first month here' + (co.sql ? ' (your SQL Account bank balance)' : '')
+      + '. Type it once; each later month carries on from the month before. '
+      + (ops.length ? 'Set so far: ' + ops.map(([m, v]) => mName(m) + ': ' + money(v, cur)).join(' · ') + '.' : 'None set yet, so book closing shows Needs book opening.');
+    const saveOpening = () => {
+      // Both fields are required, as in the app: an empty one gets the browser's own prompt and the form is not sent.
+      if (!opMonth || !String(s.opAmount || '').trim()) {
+        const el = typeof document !== 'undefined' && document.getElementById(!opMonth ? 'bk-op-month' : 'bk-op-amount');
+        if (el && el.reportValidity) el.reportValidity();
+        return;
+      }
+      const t = String(s.opAmount || '').replace(/,/g, '').trim();
+      const n = /^-?\d+(\.\d+)?$/.test(t) ? Number(t) : NaN;   // the whole text must be a number: '25abc' is refused, not read as 25
+      let err = '', bad = '';
+      if (isNaN(n)) { err = 'Choose the month and type the balance as a number.'; bad = 'amount'; }
+      else if (!isFinite(n) || Math.abs(n) > 1e12) { err = 'Type the book balance as a number.'; bad = 'amount'; }
+      else if (opMonth < '2015-01' || opMonth > '2027-11') { err = "Choose the month the account's books start from: between January 2015 and a year from now."; bad = 'month'; }
+      if (err) { this._focus = bad === 'month' ? 'bk-op-month' : 'bk-op-amount'; return set({ opErr: err, opBad: bad, opLock: null }); }
+      // An opening changes its month and every later month up to the next opening: refused when one of them is signed off (locked).
+      const nextOp = ops.map(x => x[0]).filter(m => m > opMonth).sort()[0] || '9999-12';
+      const hit = monthsOf(acctId).filter(m => m >= opMonth && m < nextOp).sort().map(m => summary(acctId, m)).find(x => x.locked);
+      if (hit) { this._focus = 'bk-op-lock'; return set({ opErr: '', opBad: '', opLock: { month: hit.m, key: hit.key } }); }
+      const list = (s.openings[acctId] || []).filter(x => x[0] !== opMonth).concat([[opMonth, r2(n)]]);
+      set({ openings: { ...s.openings, [acctId]: list }, opMonth: null, opAmount: '', opErr: '', opBad: '', opLock: null, bt: {},
+        ...this.toastState('Book opening saved for ' + mName(opMonth) + '.', { patch: { openings: s.openings }, msg: 'Undone. The book opening is back as it was.', focus: 'bk-op-amount' }) });
+    };
+
+    const toastHold = (kind, e) => {
+      if (this.state.toastOut) return;
+      if (kind === 'hover') this._tHover = true; else this._tFocus = true;
+      clearTimeout(this.toastT);
+      // Remember where focus came from when it entered the toast, to return it there on close.
+      if (kind === 'focus' && e && e.relatedTarget && e.currentTarget && !e.currentTarget.contains(e.relatedTarget)) this._toastFrom = e.relatedTarget;
+    };
+    const toastGo = (kind, e) => {
+      if (kind === 'hover') this._tHover = false;
+      else if (!(e && e.relatedTarget && e.currentTarget && e.currentTarget.contains(e.relatedTarget))) this._tFocus = false;
+      if (this._tHover || this._tFocus) return;
+      if (this.state.toast && !this.state.toastOut && this.state.toastN > 0) { clearTimeout(this.toastT); this.toastT = setTimeout(() => this.hideToast(), this.state.undo ? 8000 : 6000); }
+    };
+    // The year card's note: months from the first tracked month on that still count some receipts or payments by their listing amount.
+    const listMonths = acc.src === 'sql' ? yearMonths.filter(m => m >= D.FIRST && stmt(acctId, m) && stmt(acctId, m).listing) : [];
+    const yearList = listMonths.length ? listMonths.length + (listMonths.length === 1 ? ' month this year still counts' : ' months this year still count') + " some receipts or payments by their listing amount: fetch SQL's GL Journal of Transaction to count them by their bank lines." : '';
+    const cyc = (k, a, b) => (k === 0 ? '' : k % 2 ? a : b);
+
+    // The Reopen month dialog: a required reason; refused while a later signed-off month carries on from this one; Discard your changes? when a typed reason would be lost.
+    const dg = s.dlg;
+    const keyS = k => summary(k.split(':')[0], k.split(':')[1]);
+    const dS = dg ? keyS(dg.key) : null;
+    const dAcc = dg ? ACC[dg.key.split(':')[0]] : acc;
+    const dRef = dg && dg.refused ? keyS(dg.refused) : null;
+    const setDlg = x => { if (this.state.dlg && !this.state.dlg.closing) set({ dlg: { ...this.state.dlg, ...x } }); };
+    const dlgClose = () => {
+      const d = this.state.dlg;
+      if (!d || d.busy || d.closing) return;
+      if (d.discard) { this._focus = 'bk-dlg-why'; return setDlg({ discard: false }); }
+      if ((d.why || '').trim()) { this._focus = 'bk-disc-keep'; return setDlg({ discard: true }); }
+      this.closeDlg();
+    };
+    const dlgGo = () => {
+      const d = this.state.dlg;
+      if (!d || d.busy || d.closing) return;
+      const why = (d.why || '').trim();
+      if (!why) { this._focus = 'bk-dlg-why'; return setDlg({ err: true, refused: null }); }
+      const later = laterLocked(d.key);
+      if (later) { this._focus = 'bk-dlg-ref'; return setDlg({ err: false, refused: later.key }); }
+      clearTimeout(this.timer);
+      setDlg({ err: false, refused: null, busy: true });
+      this.timer = setTimeout(() => finishReopen(d.key, why), 900);
+    };
+    const dlgBusy = !!(dg && dg.busy);
+    const goStyle = 'display:inline-flex;align-items:center;justify-content:center;gap:8px;min-width:150px;height:40px;padding:0 16px;border-radius:10px;border:0;font:600 14px Inter,sans-serif;color:#FFFFFF;'
+      + (dlgBusy ? 'background:#4A5870;cursor:not-allowed' : 'background:#3D6BE0;cursor:pointer');
+    const whyBad = !!(dg && dg.err);
+    const kindSql = co.sql;
+    return {
+      sayA: s.sayN % 2 ? s.say : '', sayB: s.sayN % 2 ? '' : s.say, loadErr: s.loadErr,
+      hasHead: !s.loadErr, isLoading: !s.loadErr && s.loading, noAccount: !s.loadErr && !s.loading && noAcct, loaded: !s.loadErr && !s.loading && !noAcct,
+      noneTitle: co.name + ' has no bank account yet',
+      kindText: kindSql ? 'Kept in SQL Account' : 'Kept here', kindGlyph: kindSql ? 'database' : 'books', kindTone: kindSql ? 'brand' : 'muted',
+      kindStyle: 'display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:8px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box;'
+        + (kindSql ? 'background:#1B2A4A;color:#8DB0FA;border:1px solid #2F4A86' : 'background:#1E2838;color:#B4BFCE;border:1px solid #2C3A52'),
+      topCos: s.co === 'AIP' || s.co === 'AIL' ? 'four' : 'two',
+      sbCo: s.co.toLowerCase(), sbKind: co.sb || (kindSql ? 'sqlPayroll' : 'here'),
+      onTopCo: code => { const c = String(code || '').toUpperCase(); if (COS[c]) pickCo(c); },
+
+      dlgOn: !!dg, dimCls: dg && dg.closing ? 'dim-out' : 'dim-in', dlgCls: dg && dg.closing ? 'dr-out' : 'dr-in',
+      dlgDim: dlgClose, dlgClose, dlgGo,
+      onDlgAnim: e => { const d = this.state.dlg; if (d && d.closing && e && e.target === e.currentTarget) { clearTimeout(this.dlgT); this.setState({ dlg: null }); } },
+      dlgKey: e => {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); dlgClose(); return; }
+        if (e.key === 'Enter' && e.target && e.target.id === 'bk-dlg-why') { e.preventDefault(); dlgGo(); return; }
+        if (e.key !== 'Tab') return;
+        const f = Array.from(e.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'));
+        if (!f.length) { e.preventDefault(); return; }
+        const first = f[0], last = f[f.length - 1], at = document.activeElement, inside = f.indexOf(at) >= 0;
+        if (e.shiftKey && (at === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (at === last || !inside)) { e.preventDefault(); first.focus(); }
+      },
+      dlgForm: !!dg && !dg.discard, dlgDiscard: !!(dg && dg.discard),
+      // While Discard your changes? shows, the dialog itself becomes the alert dialog and is named by that question.
+      dlgRole: dg && dg.discard ? 'alertdialog' : 'dialog', dlgLabel: dg && dg.discard ? 'bk-disc-h' : 'bk-dlg-h', dlgDescBy: dg && dg.discard ? 'bk-disc-d' : 'bk-dlg-d',
+      dlgTitle: dS ? 'Reopen ' + dS.label + ' for ' + dAcc.label + '?' : '',
+      dlgBody: dS && dS.signed ? 'It was marked reconciled on ' + dS.signed.at + (dS.signed.how === 'before tracking' ? ' (before tracking)' : '') + ' and is locked.' : 'It is locked.',
+      dlgWhy: dg ? dg.why || '' : '', dlgOnWhy: e => setDlg({ why: e.target.value, err: false }),
+      dlgWhyBad: whyBad ? 'true' : 'false', dlgWhyDesc: whyBad ? 'bk-dlg-err' : '', dlgHasErr: whyBad,
+      dlgWhyStyle: 'width:100%;' + inputSt(whyBad),
+      dlgBusy, dlgBusyAttr: dlgBusy ? 'true' : 'false', dlgGoLabel: dlgBusy ? 'Reopening…' : 'Reopen month', dlgGoCls: dlgBusy ? '' : 'hb', dlgGoStyle: goStyle,
+      dlgRefused: !!dRef,
+      dlgRefText: dRef ? dRef.label + ' is marked reconciled and carries on from ' + (dS ? dS.label.split(' ')[0] : '') + "'s closing balance, so this month can't be reopened on its own. Reopen " + dRef.label + ' first.' : '',
+      dlgRefBtn: dRef ? 'Go to ' + dRef.label : '',
+      dlgRefGo: () => { const d = this.state.dlg; if (!d || !d.refused) return; const m = d.refused.split(':')[1]; set({ ...this.closePatch('bk-undo-' + idOf(d.refused)), open: m, year: m.slice(0, 4) }); },
+      discText: dS ? 'You typed a reason for reopening ' + dS.label + '. Closing now loses it.' : '',
+      discKeep: () => { this._focus = 'bk-dlg-why'; setDlg({ discard: false }); },
+      discGo: () => this.closeDlg(),
+
+      hasOpLock: !!s.opLock,
+      opLockText: s.opLock ? mName(s.opLock.month) + " is marked reconciled and locked, so a book opening that changes it can't be saved. Reopen " + mName(s.opLock.month) + ' first; what you typed is kept.' : '',
+      opLockBtn: s.opLock ? 'Go to ' + mName(s.opLock.month) : '',
+      opLockGo: () => { if (!s.opLock) return; const m = s.opLock.month; this._focus = 'bk-undo-' + idOf(s.opLock.key); set({ open: m, year: m.slice(0, 4) }); },
+      toastHasUndo: !!s.undo,
+      toastUndo: () => {
+        const u = this.state.undo;
+        if (!u) return;
+        this._focus = u.focus || null;
+        set({ ...u.patch, ...this.toastState(u.msg) });
+      },
+
+      coAName: COS.AISB.name, coBName: COS.AI.name,   // the switch and the year card's eyebrow print the same name, as the app does (e.name)
+      coA: seg(s.co === 'AISB'), coB: seg(s.co === 'AI'), coAOn: s.co === 'AISB' ? 'true' : 'false', coBOn: s.co === 'AI' ? 'true' : 'false',
+      pickA: () => pickCo('AISB'), pickB: () => pickCo('AI'),
+
+      importAcct, accOpts, onImportAcct: e => set({ importAcct: e.target.value || co.def, result: null }),
+      fileText: s.file || 'No file chosen',
+      fileNameStyle: 'flex:1 1 160px;min-width:0;overflow-wrap:anywhere;font-size:13px;' + (s.file ? 'font-weight:600;color:#E6EBF2' : 'color:#8E9BB0'),
+      dzStyle: 'position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;min-height:40px;box-sizing:border-box;padding:5px 12px 5px 6px;border-radius:10px;cursor:pointer;'
+        + (s.dzOver ? 'border:1.5px dashed #8DB0FA;background:#162033' : 'border:1.5px dashed #7A89A3;background:#0F1724'),
+      dzOn: () => { if (!s.dzOver) set({ dzOver: true }); }, dzOff: () => { if (s.dzOver) set({ dzOver: false }); },
+      onFile: e => { const f = e && e.target && e.target.files && e.target.files[0]; set({ file: f ? f.name : '', result: null, dzOver: false }); },
+      dragOver: e => { if (!(e && e.target && e.target.type === 'file') && e && e.preventDefault) e.preventDefault(); },
+      dropPage: e => {
+        if (e && e.target && e.target.type === 'file') return;   // a drop on the file input works natively
+        if (e && e.preventDefault) e.preventDefault();
+        set({ dzOver: false, ...this.toastState(D.DROP) });
+      },
+      impCls: impPrimary ? 'hb' : 'hs', impTone: impPrimary ? 'white' : 'brand', impSp: impPrimary ? 'sp' : 'sp spd',
+      impStyle: 'display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;min-width:176px;padding:0 16px;border-radius:10px;font:600 14px Inter,sans-serif;cursor:pointer;'
+        + (impPrimary ? 'border:0;background:#3D6BE0;color:#FFFFFF' : 'border:1px solid #7A89A3;background:#121A27;color:#E6EBF2'),
+      impBusy: busyImp, impIdle: !busyImp, impBusyAttr: busyImp ? 'true' : 'false', impLabel: busyImp ? 'Importing…' : 'Import statement',
+      busyAny: !!s.busy, doImport, doMatch,
+      hasResult: !!s.result, resText: s.result ? s.result.text : '', resRole: s.result && s.result.tone === 'bad' ? 'alert' : 'status',
+      resGlyph: res.glyph, resTone: res.tone,
+      resStyle: 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 10px 10px 14px;border-radius:12px;font-size:13px;font-weight:500;' + res.box,
+      clearResult: () => { this._focus = 'bk-imp'; set({ result: null }); },
+
+      coName: co.name, yearTitle: acc.label + ' · ' + year,
+hasYearList: !!yearList, yearList,
+            yearNote: 'Click a month for its summary. Book closing comes from ' + (acc.src === 'sql' ? 'SQL cash book' : 'payments recorded here') + '.',
+      hasAcctSwitch: acctBtns.length > 1, acctBtns, hasYearSwitch: years.length > 1, yearBtns,
+      caption: 'Months of ' + acc.label + ', ' + year + ', newest first', tblCls: cyc(s.swapN, 'swapA', 'swapB'),
+      rows,
+
+      opNote, opMonth, opAmount: s.opAmount, opAmountLabel: 'Book balance (' + cur + ')',
+      onOpMonth: e => set({ opMonth: e.target.value, opErr: s.opBad === 'month' ? '' : s.opErr, opBad: s.opBad === 'month' ? '' : s.opBad, opLock: null }),
+      onOpAmount: e => set({ opAmount: e.target.value, opErr: s.opBad === 'amount' ? '' : s.opErr, opBad: s.opBad === 'amount' ? '' : s.opBad, opLock: null }),
+      opKey: e => { if (e.key === 'Enter') { e.preventDefault(); saveOpening(); } },
+      saveOpening, hasOpErr: !!s.opErr, opErr: s.opErr, opDesc: s.opErr ? 'bk-op-err' : '',
+      opMonthBad: s.opBad === 'month' ? 'true' : 'false', opAmtBad: s.opBad === 'amount' ? 'true' : 'false',
+      opMonthStyle: 'width:100%;' + inputSt(s.opBad === 'month'), opAmtStyle: 'width:100%;' + inputSt(s.opBad === 'amount'),
+
+      hasToast: !!s.toast, toastText: s.toast || '', toastGlyph: s.toast === D.DROP ? 'upload' : 'check',
+      toastCls: s.toastOut ? 'tout' : (s.toastN % 2 ? 'rv2' : 'rv'),
+      // The toast pauses while hovered or focused: each reason is tracked on its own, and the timer restarts only when neither holds.
+      // A static preview (toastN 0, as 'drop-hint') never starts one; the exit phase keeps hideToast's safety timer.
+      toastHoverIn: e => toastHold('hover', e), toastFocusIn: e => toastHold('focus', e),
+      toastHoverOut: e => toastGo('hover', e), toastFocusOut: e => toastGo('focus', e),
+      closeToast: () => {
+        const from = this._toastFrom; this._toastFrom = null;
+        this.hideToast();
+        setTimeout(() => {
+          if (typeof document === 'undefined') return;
+          let el = from && from.isConnected ? from : null;
+          if (!el && this._lastFocus) el = document.getElementById(this._lastFocus);
+          if (!el) el = document.getElementById('bk-imp');
+          if (el && el.focus) el.focus();
+        }, 0);
+      },
+      onToastAnim: e => { if (this.state.toastOut && e && e.target === e.currentTarget) { clearTimeout(this.toastT); this.dropToast(); } }
+    };
+  }
+}
+</script>
+</body>
+</html>

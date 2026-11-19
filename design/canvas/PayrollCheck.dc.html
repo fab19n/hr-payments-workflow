@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payroll · Workbook check · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.ht:hover{background:#F0F3F8}
+.hd:hover{background:#8E1A10 !important}
+/* motion and focus base */
+.hb,.hs,.ht,.hd{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.fr:focus-visible{outline-offset:-2px}
+#pc-file:focus-visible + label{outline:2px solid #2450B8;outline-offset:2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+.dimIn{animation:dimIn .2s ease-out both}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+/* status chips and result boxes, as Foundations draws them (Payroll check tones) */
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box;white-space:nowrap}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+.rb{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;border:1px solid;font-size:13px;box-sizing:border-box}
+.rb.ok{background:#F0FBF5;border-color:#BFE8D0;color:#0F1A2B}.rb.warn{background:#FFFBF2;border-color:#F3D9A6;color:#0F1A2B}.rb.bad{background:#FDF3F2;border-color:#F5C2BB;color:#0F1A2B}
+.pc-tbl{width:100%;min-width:860px;border-collapse:collapse;font-size:14px}
+.pc-tbl th{background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.pc-tbl td{padding:10px 12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.pc-tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+.pc-tbl tr.tot td{background:#FAFBFC;border-top:1px solid #D5DBE4;font-weight:700}
+@media (max-width:760px){.pc-main{padding:24px 16px 48px !important}.pc-card{padding:16px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="payroll" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Payroll" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" month-offset="{{off}}" on-month="{{onMonth}}" hint-size="100%,64px"></dc-import>
+    <main class="pc-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR</span>
+        <h1 id="pc-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Payroll</h1>
+        <p style="margin: 0; color: #46546A; max-width: 720px">{{intro}}</p>
+      </div>
+
+      <div role="tablist" aria-label="Payroll pages" onKeyDown="{{tabKey}}" style="display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid #D5DBE4">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+          <a href="{{t.href}}" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="{{t.ctl}}" tabindex="{{t.tabindex}}" class="ht" style="{{t.style}}"><dc-import name="Icon" glyph="{{t.glyph}}" tone="{{t.tone}}" size="16" hint-size="16px,16px"></dc-import>{{t.label}}</a>
+        </sc-for>
+      </div>
+
+      <sc-if value="{{runOff}}" hint-placeholder-val="{{ false }}">
+        <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #EAF0FD; border: 1px solid #C9D7F7; font-size: 13px; color: #1D2F5C"><dc-import name="Icon" glyph="sliders" tone="brand" size="20" hint-size="20px,20px"></dc-import><span>Run, Totals, Statutory files, Leaver, Parallel run and Opening year to date aren't used for {{coName}}, because “Runs payroll in this app” is off. <a href="SetupCompanies.dc.html" style="color: #1D419A; font-weight: 600">Setup › Companies</a> turns it on.</span></div>
+      </sc-if>
+
+      <div role="tabpanel" id="pc-panel" aria-labelledby="pc-tab-0" style="display: flex; flex-direction: column; gap: 20px">
+
+        <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+            <span class="sr" role="status">Loading the payroll check</span>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+              <span class="sk" style="height: 22px; width: 42%"></span>
+              <span class="sk" style="height: 48px; width: 70%"></span>
+              <span class="sk" style="height: 14px; width: 86%"></span>
+              <span class="sk" style="height: 44px; width: 54%"></span>
+            </div>
+            <div style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+              <span class="sk" style="height: 18px; width: 28%"></span><span class="sk" style="height: 56px"></span><span class="sk" style="height: 56px"></span><span class="sk" style="height: 56px"></span><span class="sk" style="height: 56px"></span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv" style="background: #FFFFFF; border: 1px solid #F5C2BB; border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load the payroll check</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 480px">{{errText}}</p>
+            <sc-if value="{{retryOn}}" hint-placeholder-val="{{ true }}"><button type="button" class="hb" onClick="{{retry}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #2450B8; color: #FFFFFF; font: 600 14px Inter, sans-serif; cursor: pointer"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button></sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showPage}}" hint-placeholder-val="{{ true }}">
+          <section aria-labelledby="pc-h2" class="pc-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+              <h2 id="pc-h2" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600">{{h2}}</h2>
+              <sc-if value="{{excelOn}}" hint-placeholder-val="{{ true }}">
+                <button type="button" class="hs" onClick="{{doExcel}}" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import>Excel report</button>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{canUpload}}" hint-placeholder-val="{{ true }}">
+              <form id="pc-form" onSubmit="{{submit}}" noValidate="{{ true }}" aria-busy="{{busy}}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end">
+                <div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+                  <span id="pc-file-l" style="font-size: 13px; font-weight: 600; color: #46546A">{{fieldLabel}}</span>
+                  <div onDragOver="{{dragOver}}" onDrop="{{dropFile}}" style="{{boxStyle}}">
+                    <input id="pc-file" class="sr" type="file" accept=".xlsx" onChange="{{pickFile}}" disabled="{{busy}}" aria-labelledby="pc-file-l pc-file-name" aria-invalid="{{fileInv}}" aria-describedby="{{fileBy}}">
+                    <label for="pc-file" class="hs" style="flex: none; display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #778588; background: #FFFFFF; font: 600 13px Inter, sans-serif; color: #0F1A2B; cursor: pointer; box-sizing: border-box"><dc-import name="Icon" glyph="upload" tone="muted" size="16" hint-size="16px,16px"></dc-import>Choose file</label>
+                    <span id="pc-file-name" style="{{fileNameStyle}}">{{fileName}}</span>
+                  </div>
+                  <sc-if value="{{fileErr}}" hint-placeholder-val="{{ false }}"><span id="pc-file-err" style="display: flex; gap: 6px; align-items: center; color: #B0190F; font-size: 13px; font-weight: 500"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>Choose the payroll workbook first.</span></sc-if>
+                </div>
+                <button type="submit" id="pc-go" class="hb" disabled="{{busy}}" style="{{goStyle}}"><sc-if value="{{busy}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="verified" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{goLabel}}</button>
+              </form>
+            </sc-if>
+
+            <sc-if value="{{busy}}" hint-placeholder-val="{{ false }}">
+              <div role="status" class="ex" style="display: flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 12px; background: #F3F6FE; border: 1px solid #C9D7F7; font-size: 13px; color: #1D2F5C"><dc-import name="Icon" glyph="clock" tone="brand" size="18" hint-size="18px,18px"></dc-import><span>{{busyText}}</span></div>
+            </sc-if>
+
+            <sc-if value="{{refused.on}}" hint-placeholder-val="{{ false }}">
+              <div id="pc-refused" role="alert" tabindex="-1" class="ex rb bad"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="color: #8E1A10">{{refused.title}}</b><span style="color: #46546A">{{refused.text}}</span><span style="color: #46546A">{{refused.kept}}</span></div></div>
+            </sc-if>
+
+            <sc-if value="{{canUpload}}" hint-placeholder-val="{{ true }}">
+              <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 900px">{{noteA}}<sc-if value="{{taskOn}}" hint-placeholder-val="{{ true }}"><a href="MonthlyChecklist.dc.html" style="font-weight: 600">{{taskTitle}}</a></sc-if>{{noteB}}<sc-if value="{{ratesLink}}" hint-placeholder-val="{{ true }}"> The rates are the rows on <a href="SetupPayroll.dc.html" style="font-weight: 600">Setup › HR › Payroll settings</a>.</sc-if></p>
+            </sc-if>
+            <sc-if value="{{readOnly}}" hint-placeholder-val="{{ false }}">
+              <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span style="display: flex; flex-direction: column; gap: 6px; min-width: 0"><span class="cp info" style="align-self: flex-start"><dc-import name="Icon" glyph="clock" tone="brand" size="14" hint-size="14px,14px"></dc-import>An example from later</span><span><b style="color: #0F1A2B">Read only: {{label}} was paid before the switch-over.</b> AISB pays salaries from the payroll run from December 2026 (switched over on Tue 1 Dec 2026). The checks of November 2026 and earlier months stay as they were, and no workbook can be checked or replaced for those months. The run and its sign-off are on the <a href="PayrollParallel.dc.html" style="font-weight: 600">Parallel run</a> tab.</span></span></div>
+            </sc-if>
+            <sc-if value="{{noUpload}}" hint-placeholder-val="{{ false }}">
+              <div role="note" style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; border: 1px solid #E3E7ED; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="lock" tone="muted" size="18" hint-size="18px,18px"></dc-import><span><b style="color: #0F1A2B">Later, with logins: Nurul Aina has HR without Payroll figures.</b> She sees what the check found and where, with every amount hidden. Checking a workbook, the Excel report and the amounts to pay need the Payroll figures right, as the workbook holds everyone's pay. Rights are set on <a href="UsersAccess.dc.html" style="font-weight: 600">Users and access</a>.</span></div>
+            </sc-if>
+
+            <sc-if value="{{hasCheck}}" hint-placeholder-val="{{ true }}">
+              <div id="pc-head" tabindex="-1" class="{{head.box}}" style="align-items: center; flex-wrap: wrap"><dc-import name="Icon" glyph="{{head.glyph}}" tone="{{head.tone}}" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1 1 320px; min-width: 0"><b style="{{head.inkStyle}}">{{head.text}}</b><div style="color: #46546A">{{head.sub}}</div></div></div>
+              <sc-if value="{{nextUp.on}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80; font-size: 12px">Next up on the <a href="Main.dc.html">Overview</a> says “{{nextUp.text}}” until a newer check of {{label}} has nothing to fix.</span></sc-if>
+            </sc-if>
+            <sc-if value="{{noCheck}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #F7F8FA; font-size: 13px; color: #46546A"><dc-import name="Icon" glyph="document" tone="muted" size="20" hint-size="20px,20px"></dc-import><span><b style="color: #0F1A2B">{{noCheckTitle}}</b> {{noCheckSub}}</span></div>
+            </sc-if>
+          </section>
+
+          <sc-if value="{{hasCheck}}" hint-placeholder-val="{{ true }}">
+            <section aria-labelledby="pc-f-h" class="pc-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 24px 8px; display: flex; flex-direction: column">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #EEF1F5">
+                <h2 id="pc-f-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">What the check found</h2>
+                <div role="group" aria-label="Show findings" style="display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto">
+                  <sc-for list="{{chips}}" as="c" hint-placeholder-count="4">
+                    <button type="button" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" class="hs" style="{{c.style}}">{{c.label}}<span style="font-variant-numeric: tabular-nums; font-weight: 700">{{c.count}}</span></button>
+                  </sc-for>
+                </div>
+              </div>
+              <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+                <div style="{{g.wrap}}">
+                  <h3 style="margin: 0 0 6px; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 15px; font-weight: 600"><span>{{g.title}}</span><sc-if value="{{g.nric}}" hint-placeholder-val="{{ true }}"><span class="mono" aria-hidden="true" style="color: #5F6C80; font-weight: 500; font-size: 13px">{{g.nric}}</span><span class="sr">{{g.nricLabel}}</span></sc-if><sc-if value="{{g.none}}" hint-placeholder-val="{{ false }}"><span class="cp ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Nothing found</span></sc-if></h3>
+                  <sc-for list="{{g.findings}}" as="f" hint-placeholder-count="2">
+                    <div style="padding: 6px 0 8px; display: flex; flex-direction: column; gap: 3px">
+                      <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><span class="{{f.cls}}"><dc-import name="Icon" glyph="{{f.glyph}}" tone="{{f.tone}}" size="14" hint-size="14px,14px"></dc-import>{{f.label}}</span><sc-if value="{{f.where}}" hint-placeholder-val="{{ true }}"><span class="mono" style="font-size: 13px; color: #46546A">{{f.where}}</span></sc-if></div>
+                      <div>{{f.what}}</div>
+                      <div style="color: #5F6C80; font-size: 13px">Should be: {{f.should}}</div>
+                    </div>
+                  </sc-for>
+                  <sc-if value="{{g.hasLines}}" hint-placeholder-val="{{ true }}">
+                    <div style="display: flex; flex-direction: column; gap: 1px; padding: 4px 0 2px; color: #5F6C80; font-size: 13px">
+                      <sc-for list="{{g.lines}}" as="ln" hint-placeholder-count="2"><span>{{ln.t}}<sc-if value="{{ln.flag}}" hint-placeholder-val="{{ false }}"> <span class="cp warn" style="margin-left: 4px; white-space: normal">Check with KWSP and PERKESO</span></sc-if></span></sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+              <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 0 4px; border-top: 1px solid #EEF1F5">
+                  <span role="status" aria-live="off" style="font-size: 13px; color: #46546A">{{many.text}}</span>
+                  <button type="button" class="hs" onClick="{{many.more}}" aria-disabled="{{many.done}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #7C8799; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">{{many.btn}}</button>
+                </div>
+                <span style="padding: 0 0 10px; color: #5F6C80; font-size: 12px">What-if: a workbook with 120 payslips. The board draws only the sample payslips of the first 25 to save room. Show more keeps the place, and the Excel report holds every payslip.</span>
+              </sc-if>
+              <sc-if value="{{noMatch}}" hint-placeholder-val="{{ false }}"><div style="padding: 16px 0; color: #46546A; font-size: 13px">Nothing in this check is marked {{filterWord}}. <button type="button" onClick="{{showAll}}" style="border: 0; background: transparent; padding: 0 2px; min-height: 32px; color: #2450B8; font: 600 13px Inter, sans-serif; text-decoration: underline; cursor: pointer">Show everything</button></div></sc-if>
+            </section>
+
+            <sc-if value="{{payOn}}" hint-placeholder-val="{{ true }}">
+              <section aria-labelledby="pc-pay-h" class="pc-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 24px; display: flex; flex-direction: column; gap: 12px">
+                <h2 id="pc-pay-h" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Amounts to pay · as the Summary has them</h2>
+                <div role="region" aria-label="Amounts to pay, scrolls sideways" tabindex="0" class="fr" style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                  <table class="pc-tbl">
+                    <caption class="sr">Amounts to pay for {{label}}, per person and per authority, from the Summary sheet</caption>
+                    <thead><tr><th scope="col">Name</th><th scope="col">NRIC</th><th scope="col" class="r">To pay</th><th scope="col" class="r">KWSP</th><th scope="col" class="r">SOCSO</th><th scope="col" class="r">EIS</th><th scope="col" class="r">SKBBK</th><th scope="col" class="r">PCB</th></tr></thead>
+                    <tbody>
+                      <sc-for list="{{payRows}}" as="r" hint-placeholder-count="8">
+                        <tr><td>{{r.name}}</td><td class="mono" style="color: #46546A"><span aria-hidden="true">{{r.nric}}</span><span class="sr">{{r.nricLabel}}</span></td><td class="r">{{r.toPay}}</td><td class="r">{{r.kwsp}}</td><td class="r">{{r.socso}}</td><td class="r">{{r.eis}}</td><td class="r">{{r.skbbk}}</td><td class="r">{{r.pcb}}</td></tr>
+                      </sc-for>
+                      <tr class="tot"><td>Total</td><td></td><td class="r">{{payTot.toPay}}</td><td class="r">{{payTot.kwsp}}</td><td class="r">{{payTot.socso}}</td><td class="r">{{payTot.eis}}</td><td class="r">{{payTot.skbbk}}</td><td class="r">{{payTot.pcb}}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p style="margin: 0; color: #5F6C80; font-size: 13px">KWSP, SOCSO and EIS are the employee's and employer's shares together, rounded to the sen. Fix what the check found before paying from this.</p>
+              </section>
+            </sc-if>
+            <sc-if value="{{payHidden}}" hint-placeholder-val="{{ false }}">
+              <section aria-labelledby="pc-pay-h2" class="pc-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 24px; display: flex; gap: 12px; align-items: flex-start">
+                <dc-import name="Icon" glyph="eyeOff" tone="muted" size="22" hint-size="22px,22px"></dc-import>
+                <div><h2 id="pc-pay-h2" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Amounts to pay · as the Summary has them</h2><p style="margin: 4px 0 0; color: #46546A; font-size: 13px">Shown only to users with the Payroll figures right.</p></div>
+              </section>
+            </sc-if>
+
+            <sc-if value="{{listOn}}" hint-placeholder-val="{{ true }}">
+              <section aria-labelledby="pc-list-h" class="pc-card" style="background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; padding: 18px 24px; display: flex; flex-direction: column; gap: 4px">
+                <h2 id="pc-list-h" tabindex="-1" style="margin: 0 0 8px; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 17px; font-weight: 600">Checks of {{label}}</h2>
+                <sc-for list="{{checkRows}}" as="c" hint-placeholder-count="2">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid #EEF1F5">
+                    <span style="min-width: 0">{{c.kind}} · {{c.file}} · <span style="color: #5F6C80">{{c.at}}</span></span>
+                    <span style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center"><span class="{{c.cls}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.tone}}" size="14" hint-size="14px,14px"></dc-import>{{c.headline}}</span><sc-if value="{{c.isShown}}" hint-placeholder-val="{{ true }}"><span style="color: #5F6C80; font-size: 13px; min-width: 56px">Shown</span></sc-if><sc-if value="{{c.notShown}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{c.show}}" aria-label="{{c.showLabel}}" style="height: 32px; min-width: 56px; padding: 0 10px; border-radius: 8px; border: 1px solid #778588; background: #FFFFFF; font: 600 12px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Show</button></sc-if></span>
+                  </div>
+                </sc-for>
+                <span style="color: #5F6C80; font-size: 12px; padding-top: 6px">A newer check replaces the workbook filed on the checklist item; the earlier checks stay listed here with what they found.</span>
+              </section>
+            </sc-if>
+          </sc-if>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 920px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>The check reads the workbook by its headings: the Summary against each payslip, each payslip's own sums and month, and EPF, SOCSO, EIS and SKBBK against the rates. IC numbers are masked to the last 4 everywhere, the Excel report included. Each check, and each opening of an Excel report, is recorded in the <a href="AuditTrail.dc.html">audit trail</a>.</span></div>
+        </sc-if>
+      </div>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 640px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="{{toastGlyph}}" tone="{{toastTone}}" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" id="pc-undo" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+
+    <sc-if value="{{ask.on}}" hint-placeholder-val="{{ false }}">
+      <div aria-hidden="true" class="dimIn" onClick="{{ask.keep}}" style="position: fixed; inset: 0; z-index: 70; background: rgba(13,27,46,.45)"></div>
+      <div style="position: fixed; inset: 0; z-index: 71; display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box; pointer-events: none">
+        <div role="alertdialog" aria-modal="true" aria-labelledby="pc-dk-t" aria-describedby="pc-dk-d" onKeyDown="{{ask.key}}" class="rv" style="pointer-events: auto; width: 100%; max-width: 480px; box-sizing: border-box; background: #FFFFFF; border: 1px solid #E3E7ED; border-radius: 16px; box-shadow: 0 16px 40px rgba(13,27,46,.18); display: flex; flex-direction: column">
+          <div style="padding: 20px 22px 16px; display: flex; gap: 14px; align-items: flex-start">
+            <span style="flex: none; width: 40px; height: 40px; border-radius: 12px; background: #FEF1D6; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="edit" tone="warn" size="22" hint-size="22px,22px"></dc-import></span>
+            <div style="min-width: 0"><h2 id="pc-dk-t" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">Discard your changes?</h2><p id="pc-dk-d" style="margin: 4px 0 0; color: #46546A; font-size: 13px; overflow-wrap: anywhere">{{ask.text}}</p></div>
+          </div>
+          <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; border-radius: 0 0 16px 16px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end">
+            <button type="button" id="pc-dk-keep" class="hs" onClick="{{ask.keep}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #778588; background: #FFFFFF; font: 600 14px Inter, sans-serif; color: #0F1A2B; cursor: pointer">Keep editing</button>
+            <button type="button" id="pc-dk-go" class="hd" onClick="{{ask.discard}}" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 0; background: #B0190F; font: 600 14px Inter, sans-serif; color: #FFFFFF; cursor: pointer">Discard</button>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"findings","options":["findings","filter-fix","many-rows","nothing-found","amounts","earlier","only-checks","no-check","no-file","discard","checking","checked","refused-pdf","refused-no-summary","refused-no-payslips","refused-too-big","refused-unreadable","wrong-month","excel","loading","load-error","update-38","no-payroll-figures","ai","ai-not-filed","after-switch-over","drop-hint"],"section":"State to show"},"$preview":{"width":1440,"height":3700}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    // A link can name the state: PayrollCheck.dc.html#ai (AI's Workbook check), #ai-not-filed, #earlier, #many-rows and the
+    // other state names. It applies on first load, over the default state; an unknown name is ignored.
+    let v = (p && p.view) || 'findings', h = '';
+    try { h = decodeURIComponent(((typeof location !== 'undefined' && location.hash) || '').slice(1)); } catch (e) { h = ''; }
+    if (v === 'findings' && h && h !== 'findings' && this.VIEWS().includes(h)) v = h;
+    this.state = this.initial(v);
+  }
+  VIEWS() {
+    return ['findings', 'filter-fix', 'many-rows', 'nothing-found', 'amounts', 'earlier', 'only-checks', 'no-check', 'no-file', 'discard', 'checking', 'checked', 'refused-pdf', 'refused-no-summary',
+      'refused-no-payslips', 'refused-too-big', 'refused-unreadable', 'wrong-month', 'excel', 'loading', 'load-error', 'update-38', 'no-payroll-figures', 'ai', 'ai-not-filed', 'after-switch-over', 'drop-hint'];
+  }
+  componentDidMount() {
+    const v = this.state.view || 'findings';
+    if (this.state.busy) this.startBusy();
+    if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000);
+    if (v.indexOf('refused') === 0) this.focusId('pc-refused');
+    else if (v === 'no-file') this.focusId('pc-file');
+    else if (v === 'amounts') this.focusId('pc-pay-h');
+    else if (v === 'discard') this.focusId('pc-dk-keep');
+  }
+  componentWillUnmount() { clearTimeout(this._busy); clearTimeout(this._tt); clearTimeout(this._to); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._busy); this.setState(this.initial(this.props.view || 'findings')); return; }
+    if (this._upFocus) { const ids = [].concat(this._upFocus); this._upFocus = null; for (const id of ids) if (this.focusId(id)) return; }
+    // the Discard your changes? dialog closed with Keep editing or Escape: focus goes back to what opened it
+    if (prev && prev.ask && !this.state.ask) { const o = this._opener; this._opener = null; if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); else this.focusId('pc-file'); }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: false }); return true; } return false; }
+
+  // ---- sample data (samples.md sections 5, 6 and 7); today is Wed 18 Nov 2026 ----
+  // Money is in sen. Each payslip sheet is named by the person's preferred name; pay row 17 on every payslip
+  // (C Basic, D EPF, E SOCSO, F EIS, G SKBBK, H PCB, I Total deduction, J Allowance, K Net pay, L-N employer EPF,
+  // SOCSO, EIS). The Summary has headings on row 4 and one row per person from row 5 (D Basic, E KWSP ... K Net,
+  // M Transport Allowance, N TOTAL), then its Total row.
+  people(nov, eisOff) {
+    const rows = [
+      ['Aisha', 'Aisha Rahman', '3418', 860000, 120000, 94600, 2975, 1190, 108000, 103200, 10415, 1190, 595000, 4465],
+      ['Wei Ming', 'Ong Wei Ming', '5127', 780000, 300000, 85800, 2975, 1190, 118000, 93600, 10415, 1190, 595000, 4465],
+      ['Aina', 'Nurul Aina binti Hashim', '2046', 700000, 80000, 77000, 2975, 1190, 70000, 84000, 10415, 1190, 595000, 4465],
+      ['Hafiz', 'Mohd Hafiz bin Rosli', '7391', 570000, 260000, 62700, 2825, 1130, 56000, 68400, 9890, 1130, 565000, 4240],
+      ['Khadijah', 'Nor Khadijah binti Omar', '6582', 550000, 60000, 60500, 2725, 1090, 34000, 66000, 9540, 1090, 545000, 4090],
+      // October: travelling 600.00 and weekend overtime 847.90 in the allowance column. November: at the 60-and-over
+      // rates for EPF and SOCSO, but EIS still deducted (the check's finding), no overtime. eisOff: the what-if
+      // corrected November workbook (only-checks state), with his EIS taken off.
+      nov ? ['Kah Seng', 'Wong Kah Seng', '1035', 780000, 60000, 0, 0, eisOff ? 0 : 1190, 100000, 31200, 7440, eisOff ? 0 : 1190, 595000, 4465]
+          : ['Kah Seng', 'Wong Kah Seng', '1035', 780000, 144790, 85800, 2975, 1190, 100000, 93600, 10415, 1190, 595000, 4465],
+      ['Jia Hui', 'Goh Jia Hui', '4720', 340000, 60000, 37400, 1675, 665, 5500, 44200, 5860, 665, 335000, 2515],
+      ['Izzati', 'Nur Izzati binti Kamal', '8264', 280000, 30000, 30800, 1375, 545, 0, 36400, 4810, 545, 275000, 2065]
+    ];
+    if (nov) rows.push(['Daniel', 'Daniel Lee Chee Keong', '9153', 350000, 0, 38500, 1725, 690, 0, 45500, 6040, 690, 345000, 2590]);
+    return rows.map((a, i) => {
+      const p = { sheet: a[0], name: a[1], ic: a[2], basic: a[3], allow: a[4], epf: a[5], socso: a[6], eis: a[7], pcb: a[8], erEpf: a[9], erSocso: a[10], erEis: a[11], mid: a[12], skb: a[13], row: 5 + i };
+      p.ded = p.epf + p.socso + p.eis + p.pcb;
+      p.sumNet = p.basic - p.ded;          // the Summary's Net (Basic - Total deduction)
+      p.toPay = p.sumNet + p.allow;        // its TOTAL (Net + Insurance Premium + Transport Allowance), the payslip's net pay
+      return p;
+    });
+  }
+  fmt(sen) { return (sen / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  rm(sen) { return 'RM ' + this.fmt(sen); }
+  // payrollcheck.headline
+  headline(c) {
+    const parts = [];
+    if (c.fix) parts.push(c.fix + ' thing' + (c.fix > 1 ? 's' : '') + ' to fix before paying');
+    if (c.check) parts.push(c.check + ' ' + (!c.fix ? 'thing' + (c.check > 1 ? 's' : '') + ' ' : '') + 'to check');
+    const head = parts.length ? parts.join(', ') : 'Nothing to fix or check';
+    return head + (c.note ? '; ' + c.note + ' note' + (c.note > 1 ? 's' : '') : '');
+  }
+  // payrollcheck.report_of: the Summary, one group per payslip, then the whole workbook; Fix before paying first
+  report(kind) {
+    this._reps = this._reps || {};
+    if (this._reps[kind]) return this._reps[kind];
+    // 'only' is a what-if: November's workbook corrected for the three things to fix, Daniel's typed KWSP left
+    const nov = kind === 'nov' || kind === 'only', R = s => this.rm(s), ps = this.people(nov, kind === 'only');
+    const KP = 'Check with KWSP and PERKESO';   // the 60-and-over start month is common payroll practice (scope 6)
+    const F = (sev, sheet, cells, what, should) => ({ sev, sheet, cells, what, should });
+    const totRow = 5 + ps.length;
+    const summary = [];
+    if (kind === 'oct1') {
+      const rows = ps.reduce((s, p) => s + p.epf, 0), izz = ps.find(p => p.sheet === 'Izzati');
+      summary.push(F('fix', 'Summary', ['E' + totRow], 'The Total of KWSP is ' + R(rows - izz.epf) + ' but the rows above add up to ' + R(rows) + '.', R(rows) + ': check that the SUM covers every row.'));
+      summary.push(F('fix', 'Summary', ['I' + totRow], 'The Total row has amounts with more than 2 decimals: e-PCB RM 4,915.003333.', "Round each person's figures to the sen; the month's TOTAL then is RM 48,600.00, RM 0.00 less than the RM 48,600.00 it shows now."));
+    }
+    if (kind === 'wrong') summary.push(F('fix', 'Summary', [], 'The workbook is for October 2026, but this is the check for November 2026.', "Upload November 2026's workbook, or choose October 2026 at the top of the page."));
+    if (nov) {
+      const all = ps.reduce((s, p) => s + p.sumNet, 0), dan = ps.find(p => p.sheet === 'Daniel');
+      if (kind === 'nov') summary.push(F('fix', 'Summary', ['K' + totRow], 'The Total of Net is ' + R(all - dan.sumNet) + ' but the rows above add up to ' + R(all) + '.', R(all) + ': check that the SUM covers every row.'));
+      summary.push(F('check', 'Summary', ['E' + dan.row], 'KWSP on row ' + dan.row + ' (' + dan.name + ') is typed (' + R(dan.epf) + ") where the other figures are linked, so it won't follow the payslip if that changes.", 'Link it to =Daniel!D17.'));
+    }
+    if (kind === 'oct1') {
+      const h = ps.find(p => p.sheet === 'Hafiz');
+      summary.push(F('check', 'Summary', ['M' + h.row], 'Transport Allowance on row ' + h.row + ' (' + h.name + ') is typed (' + R(h.allow) + ") where the other figures are linked, so it won't follow the payslip if that changes.", 'Link it to =Hafiz!J17.'));
+      // payrollcheck summary_name: the Summary types "Izzati" where the payslip says Nur Izzati binti Kamal
+      const iz = ps.find(p => p.sheet === 'Izzati');
+      summary.push(F('check', 'Summary', ['B' + iz.row], 'The name typed on row ' + iz.row + " isn't the name on " + iz.name + "'s payslip, whose figures the row takes.", 'Check that the row is for the right person, and link the name to the payslip.'));
+    }
+    const M = nov ? 'November 2026' : 'October 2026';
+    const groups = [{ title: 'Summary', nric: '', lines: [], findings: summary }];
+    ps.forEach(p => {
+      const f = [], lines = [];
+      if (p.sheet === 'Kah Seng' && nov) {
+        lines.push('EPF: aged 60 or over; on EPF wages ' + R(p.basic) + ': RM 0.00 employee, ' + R(p.erEpf) + ' employer.',
+          { t: 'SOCSO: second category (employment injury only) assumed: aged 60 or over; band midpoint ' + R(p.mid) + '.', flag: KP },
+          "EIS: none, as EIS isn't for workers aged 60 or over.");
+        if (kind === 'nov') {
+          f.push(F('fix', p.sheet, ['F17'], 'Employee EIS is ' + R(p.eis) + "; EIS isn't paid for a worker aged 60 or over.", 'RM 0.00.'));
+          f.push(F('fix', p.sheet, ['N17'], 'Employer EIS is ' + R(p.erEis) + "; EIS isn't paid for a worker aged 60 or over.", 'RM 0.00.'));
+        }
+      } else {
+        if (p.sheet === 'Kah Seng') lines.push({ t: "Turns 60 this month: the under-60 rates still apply; the 60-and-over rates start with November 2026's pay.", flag: KP });
+        lines.push('EPF: under 60; on EPF wages ' + R(p.basic) + ': ' + R(p.epf) + ' employee, ' + R(p.erEpf) + ' employer.', 'SOCSO: first category assumed; band midpoint ' + R(p.mid) + '.');
+      }
+      if (kind === 'nov' && p.sheet === 'Daniel') f.push(F('check', p.sheet, [], 'No month was found on this payslip.', 'Put the month (' + M + ') beside Month on the payslip.'));
+      if (kind === 'oct1' && p.sheet === 'Jia Hui') f.push(F('fix', p.sheet, ['K17'], 'Net pay is ' + R(p.toPay - p.allow) + ' but basic less deductions plus allowance is ' + R(p.toPay) + '.', 'Net pay should be basic salary - total deduction + allowance.'));
+      f.push(F('note', p.sheet, ['G17'], 'SKBBK (Lindung 24 Jam) is 0: opted out or not yet deducted? check. On these wages it would be ' + R(p.skb) + '.', 'Nothing to do if they opted out; else deduct it.'));
+      groups.push({ title: p.name + ' (' + p.sheet + ')', nric: '••••••-••-' + p.ic, lines, findings: f });
+    });
+    groups.push({ title: 'The whole workbook', nric: '', lines: [], findings: [F('note', null, [], "PCB amounts themselves are not checked (they need the details payroll will hold). Only each payslip's year-to-date PCB is checked against its monthly table.", "Check each PCB on LHDN's calculator as before.")] });
+    const order = { fix: 0, check: 1, note: 2 };
+    groups.forEach(g => { g.findings = g.findings.map((x, i) => ({ ...x, i })).sort((a, b) => order[a.sev] - order[b.sev] || a.i - b.i); });
+    const counts = { fix: 0, check: 0, note: 0 };
+    groups.forEach(g => g.findings.forEach(x => { counts[x.sev]++; }));
+    const pay = ps.map(p => ({ name: p.name, nric: '••••••-••-' + p.ic, toPay: p.toPay, kwsp: p.epf + p.erEpf, socso: p.socso + p.erSocso, eis: p.eis + p.erEis, skbbk: 0, pcb: p.pcb }));
+    const tot = { toPay: 0, kwsp: 0, socso: 0, eis: 0, skbbk: 0, pcb: 0 };
+    pay.forEach(r => Object.keys(tot).forEach(k => { tot[k] += r[k]; }));
+    return (this._reps[kind] = { counts, headline: this.headline(counts), groups, pay, tot });
+  }
+  checksOf(co, off) {
+    if (co !== 'AISB') return [];
+    if (off === 0) return [
+      { id: 'o2', file: 'Example Payroll - OCT 2026 (corrected).xlsx', at: 'Thu 22 Oct 2026 09:40', rep: 'oct2' },
+      { id: 'o1', file: 'Example Payroll - OCT 2026.xlsx', at: 'Wed 21 Oct 2026 10:12', rep: 'oct1' }
+    ];
+    if (off === 1) return [{ id: 'n1', file: 'Example Payroll - NOV 2026.xlsx', at: 'Wed 18 Nov 2026 09:20', rep: 'nov' }];
+    return [];
+  }
+  monthLabel(off) { return ['August 2026', 'September 2026', 'October 2026', 'November 2026'][off + 2]; }
+  // payrollcheck.payroll_task: the month's checklist item that asks for the payroll summary
+  task(co, off) {
+    if (co === 'AISB') return off >= -1 ? 'Calculate payroll, KWSP, SOCSO, EIS, SKBBK and PCB' : null;
+    return off <= 0 ? 'Payroll summary filed' : null;
+  }
+  refusal(k) {
+    return {
+      pdf: ['Example Payroll - NOV 2026.pdf', '310 KB', 'Only an Excel workbook (.xlsx) can be checked. Open the payroll in Excel, save it as an Excel Workbook (.xlsx) and upload that.'],
+      summary: ['Example Payroll - NOV 2026.xlsx', '186 KB', "This workbook has no sheet named Summary, so it can't be checked against the payslips. Check that this is the month's payroll workbook."],
+      payslips: ['Example Payroll - NOV 2026.xlsx', '42 KB', "No sheet in this workbook looks like a payslip (a Basic Salary heading with the month's pay under it), so there is nothing to check."],
+      big: ['Example Payroll - NOV 2026.xlsx', '24.6 MB', 'This file is larger than this check takes (20 MB). The payroll workbook is usually under 1 MB: check that this is the right file.'],
+      unreadable: ['Example Payroll - NOV 2026.xlsx', '231 KB', "This workbook couldn't be read. Open it in Excel, save it again as an Excel Workbook (.xlsx) and upload that."]
+    }[k];
+  }
+  initial(view) {
+    const co = view === 'ai' || view === 'ai-not-filed' || view === 'drop-hint' ? 'AI' : 'AISB';
+    const offs = { 'nothing-found': 0, amounts: 0, earlier: 0, 'no-check': -1, ai: 0, 'ai-not-filed': 1, 'after-switch-over': 0, 'drop-hint': 0 };
+    const off = view in offs ? offs[view] : 1;
+    const base = { view, co, off, checks: this.checksOf(co, off), shown: null, filter: 'all', file: null, fileErr: false, refused: null, busy: false, load: 'ok', toast: null, aina: false, after: false, ask: null, say: '', many: false, manyShown: 25 };
+    const ref = k => { const r = this.refusal(k); return { file: { name: r[0], size: r[1], bytes: 0 }, refused: k }; };
+    const nov = this.report('nov');
+    const set = {
+      'filter-fix': { filter: 'fix' },
+      // a what-if: a company with 120 payslips. The list shows the first 25 payslips and adds 25 more on request.
+      'many-rows': { many: true, manyShown: 25 },
+      earlier: { shown: 'o1' },
+      // a what-if: November's workbook corrected later the same day, with Daniel's typed KWSP still to check. It leaves
+      // the 22 Oct record (nothing to fix or check) as samples.md section 7 has it.
+      'only-checks': { checks: [{ id: 'n2', file: 'Example Payroll - NOV 2026 (corrected).xlsx', at: 'Wed 18 Nov 2026 11:05', rep: 'only' }].concat(this.checksOf('AISB', 1)) },
+      'no-file': { fileErr: true },
+      // a corrected workbook chosen, then October 2026 picked at the top before checking it
+      discard: (() => { const file = { name: 'Example Payroll - NOV 2026 (corrected).xlsx', size: '232 KB', bytes: 237568 };
+        return { file, ask: { patch: this.monthPatch('AISB', 0), text: this.askText(file.name, 'October 2026') } }; })(),
+      // an example from later: AISB switched over on Tue 1 Dec 2026 (PayrollParallel, switched-over state)
+      'after-switch-over': { after: true },
+      checking: { checks: [], file: { name: 'Example Payroll - NOV 2026.xlsx', size: '231 KB', bytes: 236544 }, busy: true },
+      checked: { toast: { msg: nov.headline, undo: { checks: [] }, glyph: 'alert', tone: 'dbad', n: 1 } },
+      'refused-pdf': ref('pdf'), 'refused-no-summary': ref('summary'), 'refused-no-payslips': ref('payslips'), 'refused-too-big': ref('big'), 'refused-unreadable': ref('unreadable'),
+      'wrong-month': { checks: [{ id: 'w1', file: 'Example Payroll - OCT 2026 (corrected).xlsx', at: 'Wed 18 Nov 2026 09:12', rep: 'wrong' }] },
+      excel: { toast: { msg: 'Downloaded AISB 2026-11 payroll check.xlsx: the findings and the amounts to pay, IC numbers masked. Opening it is recorded in the audit trail.', glyph: 'download', tone: 'dok', n: 1 } },
+      'drop-hint': { toast: { msg: 'Drop the payroll workbook on the Choose file button above Check the workbook.', glyph: 'upload', tone: 'dbrand', n: 1 } },
+      loading: { load: 'loading' }, 'load-error': { load: 'error' }, 'update-38': { load: 'update' },
+      'no-payroll-figures': { aina: true }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo, glyph, tone) { this.startToast(undo ? 15000 : 6000); return { toast: { msg, undo: undo || null, glyph: glyph || 'check', tone: tone || 'dok', n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+  startBusy() { clearTimeout(this._busy); this._busy = setTimeout(() => this.finishCheck(), 1600); }
+  // payrollcheck.check then save: the workbook is filed, the check kept and shown, its headline in the toast
+  finishCheck() {
+    const st = this.state;
+    if (!st.busy) return;
+    let add = null;
+    if (st.co === 'AISB' && st.off === 1 && !st.checks.length) add = { id: 'n1', file: 'Example Payroll - NOV 2026.xlsx', at: 'Wed 18 Nov 2026 09:20', rep: 'nov' };
+    else if (st.checks.length) add = { ...st.checks[0], id: 'r' + (st.checks.length + 1), file: st.file ? st.file.name : st.checks[0].file, at: 'Wed 18 Nov 2026 11:05' };
+    // a month with no sample workbook: the file picked comes back as payrollcheck's "no payslips" refusal
+    if (!add) { this._upFocus = ['pc-refused']; return this.setState({ busy: false, refused: 'payslips', say: (st.file ? st.file.name : 'The workbook') + " wasn't checked" }); }
+    const rep = this.report(add.rep), before = st.checks;
+    this._upFocus = ['pc-head'];
+    this.setState({ busy: false, file: null, checks: [add].concat(before), shown: null, filter: 'all', say: rep.headline,
+      ...this.toastPart(rep.headline, { checks: before }, rep.counts.fix ? 'alert' : rep.counts.check ? 'eye' : 'check', rep.counts.fix ? 'dbad' : rep.counts.check ? 'dwarn' : 'dok') });
+  }
+  submit(ev) {
+    if (ev && ev.preventDefault) ev.preventDefault();
+    const st = this.state;
+    if (st.busy) return;
+    if (!st.file) { this._upFocus = ['pc-file']; return this.setState({ fileErr: true, refused: null, say: 'Choose the payroll workbook first.' }); }
+    if (!/\.xlsx$/i.test(st.file.name)) { this._upFocus = ['pc-refused']; return this.setState({ refused: 'pdf', fileErr: false }); }
+    if (st.file.bytes > 20 * 1024 * 1024) { this._upFocus = ['pc-refused']; return this.setState({ refused: 'big', fileErr: false }); }
+    this.setState({ busy: true, refused: null, fileErr: false, say: 'Checking ' + st.file.name });
+    this.startBusy();
+  }
+  takeFile(f) {
+    if (!f) return;
+    const kb = f.size / 1024, size = kb >= 1024 ? (kb / 1024).toFixed(1) + ' MB' : Math.max(1, Math.round(kb)) + ' KB';
+    this.setState({ file: { name: f.name, size, bytes: f.size }, fileErr: false, refused: null, say: 'Chosen: ' + f.name });
+  }
+  pickCo(code) {
+    const c = String(code).toUpperCase();
+    if (c !== 'AISB' && c !== 'AI') return;
+    if (c === this.state.co) return;
+    const off = c === 'AI' && this.state.off < -1 ? -1 : this.state.off;
+    this.moveTo(this.monthPatch(c, off, 'Showing ' + c + "'s payroll check"), c + "'s payroll check");
+  }
+  pickMonth(o) {
+    if (o === this.state.off) return;
+    this.moveTo(this.monthPatch(this.state.co, o), this.monthLabel(o));
+  }
+  monthPatch(co, off, say) {
+    return { co, off, checks: this.checksOf(co, off), shown: null, filter: 'all', file: null, fileErr: false, refused: null, busy: false, ask: null, many: false, say: say || 'Showing ' + this.monthLabel(off) };
+  }
+  askText(name, where) { return 'You chose ' + name + " but haven't checked it. Showing " + where + ' drops the file: nothing is checked or filed.'; }
+  // a chosen workbook not checked yet: Discard your changes? before another month or company drops it
+  moveTo(patch, where) {
+    const st = this.state;
+    if (st.file && !st.busy && !st.refused) {
+      this._opener = document.activeElement; this._upFocus = ['pc-dk-keep'];
+      return this.setState({ ask: { patch, text: this.askText(st.file.name, where) }, say: 'Discard your changes?' });
+    }
+    clearTimeout(this._busy);
+    this.setState(patch);
+  }
+
+  renderVals() {
+    const st = this.state, isAI = st.co === 'AI', label = this.monthLabel(st.off);
+    const coName = isAI ? 'Agrinexus International' : 'AISB Sdn Bhd';
+    // after the switch-over (an example from later) every month on the picker was paid from the workbook: read only
+    const readOnly = !!st.after && !isAI && !st.aina;
+    const hide = s => st.aina ? String(s).replace(/RM [\d,]+\.\d+/g, 'RM •••') : s;
+    const TONE = { fix: ['cp bad', 'alert', 'bad', 'Fix before paying'], check: ['cp warn', 'eye', 'warn', 'Check'], note: ['cp mute', 'help', 'muted', 'Note'] };
+    const toneOf = c => c.fix ? 'fix' : c.check ? 'check' : 'ok';
+
+    // tabs: the Workbook check always; the run tabs only where Runs payroll in this app is on (AISB in the samples)
+    const TABS = [['Workbook check', 'PayrollCheck.dc.html', 'verified'], ['Run', 'PayrollRun.dc.html', 'payroll'], ['Totals', 'PayrollTotals.dc.html', 'sheet'],
+      ['Statutory files', 'PayrollFiles.dc.html', 'statutory'], ['Leaver', 'PayrollLeaver.dc.html', 'person'], ['Parallel run', 'PayrollParallel.dc.html', 'refresh'],
+      ['Opening year to date', 'PayrollOpeningYtd.dc.html', 'history']];
+    const tabs = (isAI ? TABS.slice(0, 1) : TABS).map((t, i) => ({ id: 'pc-tab-' + i, label: t[0], href: t[1], glyph: t[2], sel: i === 0 ? 'true' : 'false', ctl: i === 0 ? 'pc-panel' : null, tabindex: i === 0 ? '0' : '-1',
+      tone: i === 0 ? 'brand' : 'muted',
+      style: 'display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid ' + (i === 0 ? '#2450B8' : 'transparent') + ';border-radius:8px 8px 0 0;font:600 14px Inter,sans-serif;text-decoration:none;color:' + (i === 0 ? '#1D419A' : '#46546A') + ';box-sizing:border-box' }));
+    const tabKey = ev => {
+      const ids = tabs.map(t => t.id), i = ids.indexOf(ev && ev.target && ev.target.id), n = ids.length;
+      if (i < 0) return;
+      const j = ev.key === 'ArrowRight' ? (i + 1) % n : ev.key === 'ArrowLeft' ? (i - 1 + n) % n : ev.key === 'Home' ? 0 : ev.key === 'End' ? n - 1 : null;
+      if (j === null) return;
+      if (ev.preventDefault) ev.preventDefault();
+      this.focusId(ids[j]);
+    };
+
+    // the check chosen: the latest unless an earlier one is shown
+    const checks = st.checks, chosen = (st.shown && checks.find(c => c.id === st.shown)) || checks[0] || null;
+    const latest = !!chosen && chosen === checks[0];
+    const rep = chosen ? this.report(chosen.rep) : null;
+    const showLoading = st.load === 'loading', showError = st.load === 'error' || st.load === 'update', showPage = st.load === 'ok';
+    const task = this.task(st.co, st.off);
+    const where = task ? "It is filed as the month's payroll summary on the checklist item " : label + " isn't set up for " + st.co + ', so the workbook is kept but not filed on a checklist item.';
+    const noteA = 'Upload ' + label + "'s workbook before paying. " + where;
+    const noteB = (task ? '.' : '') + ' Statutory rates as at Nov 2026; PCB amounts themselves are not checked.';
+
+    const head = rep ? (() => {
+      const t = toneOf(rep.counts);
+      const box = { fix: ['rb bad', 'alert', 'bad', 'color:#B0190F'], check: ['rb warn', 'eye', 'warn', 'color:#7A3500'], ok: ['rb ok', 'verified', 'ok', 'color:#0A6B3D'] }[t];
+      return { box: box[0], glyph: box[1], tone: box[2], inkStyle: box[3], text: rep.headline, sub: (latest ? 'Latest check' : 'An earlier version') + ': ' + chosen.file + ', ' + chosen.at };
+    })() : { box: 'rb ok', glyph: 'verified', tone: 'ok', inkStyle: '', text: '', sub: '' };
+    const nextUp = rep && latest && rep.counts.fix && !readOnly ? { on: true, text: label.slice(0, 3) + ' ' + st.co + ': the payroll check found ' + rep.counts.fix + ' thing' + (rep.counts.fix > 1 ? 's' : '') + ' to fix before paying' } : { on: false, text: '' };
+
+    // findings, filtered by tone
+    const f = st.filter;
+    const groups = rep ? rep.groups.map((g, gi) => {
+      const list = g.findings.filter(x => f === 'all' || x.sev === f);
+      const lines = f === 'all' ? g.lines : [];
+      if (!g.findings.length && !g.lines.length) return null;          // as viewPayroll: a group with nothing is left out
+      if (f !== 'all' && !list.length) return null;
+      return { title: g.title, nric: g.nric, nricLabel: g.nric ? 'NRIC ending ' + g.nric.slice(-4) : '', none: !g.findings.length,
+        wrap: 'padding: 14px 0 10px;' + (gi ? 'border-top: 1px solid #EEF1F5' : ''),
+        hasLines: lines.length > 0, lines: lines.map(x => typeof x === 'string' ? { t: hide(x), flag: false } : { t: hide(x.t), flag: !!x.flag }),
+        findings: list.map(x => ({ cls: TONE[x.sev][0], glyph: TONE[x.sev][1], tone: TONE[x.sev][2], label: TONE[x.sev][3],
+          where: x.cells.length ? (x.sheet ? x.sheet + ' ' : '') + x.cells.join(', ') : (x.sheet || ''), what: hide(x.what), should: hide(x.should) })) };
+    }).filter(Boolean) : [];
+    if (groups.length) groups[0].wrap = 'padding: 14px 0 10px';
+    const cnt = rep ? rep.counts : { fix: 0, check: 0, note: 0 };
+    const chips = [['all', 'All', cnt.fix + cnt.check + cnt.note], ['fix', 'Fix before paying', cnt.fix], ['check', 'Check', cnt.check], ['note', 'Note', cnt.note]].map(([k, l, n]) => ({
+      label: l + ' ', count: String(n), pressed: f === k ? 'true' : 'false',
+      pick: () => { this._upFocus = null; this.setState({ filter: k, say: k === 'all' ? 'Showing every finding' : 'Showing ' + l + ' only' }); },
+      style: 'display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 10px;border-radius:99px;font:600 12px Inter,sans-serif;cursor:pointer;border:1px solid ' + (f === k ? '#2450B8;background:#EAF0FD;color:#1D419A' : '#7C8799;background:#FFFFFF;color:#0F1A2B') }));
+    const noMatch = !!rep && !groups.length;
+    // many rows (a what-if: 120 payslips): the first 25 payslips, then 25 more on request; the Excel report holds every one
+    const ALL = 120, manyN = Math.min(st.manyShown || 25, ALL);
+    const many = st.many && rep && f === 'all' ? { on: true, text: 'Showing ' + manyN + ' of ' + ALL + ' payslips', btn: manyN >= ALL ? 'All ' + ALL + ' shown' : 'Show 25 more', done: manyN >= ALL ? 'true' : 'false',
+      more: () => { if ((this.state.manyShown || 25) >= ALL) return; const n = Math.min((this.state.manyShown || 25) + 25, ALL); this.setState({ manyShown: n, say: 'Showing ' + n + ' of ' + ALL + ' payslips' }); } }
+      : { on: false, text: '', btn: '', done: 'true', more: () => {} };
+
+    const pay = rep && !st.aina ? rep : null, F = n => this.fmt(n);
+    const payRows = pay ? pay.pay.map(r => ({ name: r.name, nric: r.nric, nricLabel: 'NRIC ending ' + r.nric.slice(-4), toPay: F(r.toPay), kwsp: F(r.kwsp), socso: F(r.socso), eis: F(r.eis), skbbk: F(r.skbbk), pcb: F(r.pcb) })) : [];
+    const payTot = pay ? { toPay: F(pay.tot.toPay), kwsp: F(pay.tot.kwsp), socso: F(pay.tot.socso), eis: F(pay.tot.eis), skbbk: F(pay.tot.skbbk), pcb: F(pay.tot.pcb) } : { toPay: '', kwsp: '', socso: '', eis: '', skbbk: '', pcb: '' };
+
+    const listOn = checks.length > 1 || (!!chosen && !latest);
+    const checkRows = checks.map((c, i) => {
+      const r = this.report(c.rep), t = toneOf(r.counts), sh = chosen && c.id === chosen.id;
+      return { kind: i ? 'Earlier version' : 'Latest', file: c.file, at: c.at, headline: r.headline,
+        cls: { fix: 'cp bad', check: 'cp warn', ok: 'cp ok' }[t], glyph: { fix: 'alert', check: 'eye', ok: 'check' }[t], tone: { fix: 'bad', check: 'warn', ok: 'ok' }[t],
+        isShown: !!sh, notShown: !sh, showLabel: 'Show the check of ' + c.file + ', ' + c.at,
+        show: () => { this._upFocus = ['pc-head']; this.setState({ shown: i ? c.id : null, filter: 'all', say: 'Showing the check of ' + c.file + ', ' + c.at }); } };
+    });
+
+    const refused = st.refused ? (() => { const r = this.refusal(st.refused), name = st.file ? st.file.name : r[0];
+      return { on: true, title: name + " wasn't checked", text: r[2], kept: checks.length ? 'Nothing was kept: the check below is still the latest, and its workbook stays filed.' : 'Nothing was kept.' }; })() : { on: false, title: '', text: '', kept: '' };
+
+    const busy = !!st.busy, t = st.toast;
+    const fileName = st.file ? st.file.name + ' · ' + st.file.size : 'No file chosen';
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: st.aina ? 'hrOnly' : 'full', tbUser: st.aina ? 'aina' : 'aisha',
+      off: st.off, say: st.say, label, coName,
+      onTopCo: code => this.pickCo(code),
+      onMonth: o => this.pickMonth(o),
+      intro: isAI ? "Check the month's payroll workbook before paying. Every company can use the Workbook check; Agrinexus International doesn't run payroll in this app."
+        : "Check the month's payroll workbook before paying. AISB also runs payroll in this app: the run, its totals and files, the leaver's final pay, the parallel run and the opening year to date are the other tabs.",
+      tabs, tabKey, runOff: isAI,
+      showLoading, showError, showPage,
+      errText: st.load === 'update' ? 'The records need update 38 for the payroll check. Restart the app.' : "The records folder can't be reached. Check the drive is connected, then try again. Nothing was checked or changed.",
+      retryOn: st.load === 'error',   // update 38 needs a restart, so it offers no Try again
+      retry: () => { this._upFocus = ['pc-h2']; this.setState({ load: 'ok', say: 'Payroll check loaded' }); },
+      h2: 'Payroll check · ' + st.co + ' · ' + label,
+      excelOn: !!chosen && !st.aina,
+      doExcel: () => this.setState({ say: 'Excel report downloaded', ...this.toastPart('Downloaded ' + st.co + ' ' + ['2026-08', '2026-09', '2026-10', '2026-11'][st.off + 2] + ' payroll check.xlsx: the findings and the amounts to pay, IC numbers masked. Opening it is recorded in the audit trail.', null, 'download', 'dok') }),
+      canUpload: !st.aina && !readOnly, noUpload: !!st.aina, readOnly,
+      fieldLabel: checks.length ? 'Corrected workbook (.xlsx)' : 'Payroll workbook (.xlsx)',
+      goLabel: busy ? 'Checking…' : checks.length ? 'Check again' : 'Check the workbook', busy, idle: !busy,
+      busyText: busy && st.file ? 'Checking ' + st.file.name + ': the Summary against each payslip, then EPF, SOCSO, EIS and SKBBK. Nothing is filed until the check is done.' : '',
+      goStyle: 'display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;cursor:' + (busy ? 'progress' : 'pointer') + (busy ? ';opacity:.85' : ''),
+      boxStyle: 'display:flex;flex-wrap:wrap;gap:10px;align-items:center;min-height:52px;padding:7px 10px;border-radius:10px;box-sizing:border-box;border:1px ' + (st.fileErr ? 'solid #B0190F;background:#FFFFFF' : 'dashed #7C8799;background:#F7F8FA'),
+      fileName, fileNameStyle: 'min-width:0;overflow-wrap:anywhere;font-size:13px;color:' + (st.file ? '#0F1A2B;font-weight:600' : '#5F6C80'),
+      fileErr: !!st.fileErr, fileInv: st.fileErr ? 'true' : 'false', fileBy: st.fileErr ? 'pc-file-err' : null,
+      pickFile: ev => this.takeFile(ev && ev.target && ev.target.files && ev.target.files[0]),
+      dragOver: ev => { if (ev && ev.preventDefault) ev.preventDefault(); },
+      dropFile: ev => { if (ev && ev.preventDefault) ev.preventDefault(); this.takeFile(ev && ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]); },
+      submit: ev => this.submit(ev),
+      refused,
+      noteA, taskOn: !!task, taskTitle: task || '', noteB, ratesLink: !isAI,
+      hasCheck: !!rep, noCheck: !rep,
+      noCheckTitle: readOnly ? 'No workbook was checked for ' + label + '.' : 'No workbook checked for ' + label + ' yet.',
+      noCheckSub: readOnly ? 'The month was paid before the switch-over, so nothing can be checked for it now.' : st.aina ? 'A user with the Payroll figures right checks it here.' : 'Choose the workbook above and check it before paying: what to fix, what to check and the amounts to pay show here.',
+      head, nextUp,
+      chips, groups, noMatch, many, filterWord: { fix: 'Fix before paying', check: 'Check', note: 'Note', all: '' }[f],
+      showAll: () => { this._upFocus = ['pc-f-h']; this.setState({ filter: 'all', say: 'Showing every finding' }); },
+      payOn: !!pay, payHidden: !!rep && !!st.aina, payRows, payTot,
+      listOn, checkRows,
+      ask: st.ask ? {
+        on: true, text: st.ask.text,
+        keep: () => this.setState({ ask: null, say: 'Kept ' + (st.file ? st.file.name : 'the chosen file') }),
+        discard: () => { clearTimeout(this._busy); this._opener = null; this._upFocus = ['pc-h2']; this.setState({ ...st.ask.patch, ask: null }); },
+        key: ev => {
+          if (!ev) return;
+          if (ev.key === 'Escape') { if (ev.preventDefault) ev.preventDefault(); return this.setState({ ask: null, say: 'Kept ' + (st.file ? st.file.name : 'the chosen file') }); }
+          if (ev.key !== 'Tab') return;
+          const a = document.getElementById('pc-dk-keep'), b = document.getElementById('pc-dk-go'), cur = document.activeElement;
+          if (ev.shiftKey && cur !== b) { if (ev.preventDefault) ev.preventDefault(); if (b) b.focus(); }
+          else if (!ev.shiftKey && cur !== a) { if (ev.preventDefault) ev.preventDefault(); if (a) a.focus(); }
+        }
+      } : { on: false, text: '', keep: null, discard: null, key: null },
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastGlyph: t ? t.glyph || 'check' : 'check', toastTone: t ? t.tone || 'dok' : 'dok',
+      toastCls: t ? (t.out ? 'tOut' : t.n % 2 ? 'tA' : 'tB') : '',
+      toastHold: () => { clearTimeout(this._tt); clearTimeout(this._to); },
+      toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); clearTimeout(this._to); this.setState({ toast: null }); },
+      undo: () => {
+        const u = this.state.toast && this.state.toast.undo;
+        if (!u) return;
+        clearTimeout(this._tt); clearTimeout(this._to);
+        this._upFocus = ['pc-h2'];
+        this.setState({ checks: u.checks, shown: null, filter: 'all', toast: null, say: 'Check taken back. The workbook filed before it is filed again.' });
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

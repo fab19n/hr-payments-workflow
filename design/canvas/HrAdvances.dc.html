@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Salary advances · HR Payments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F5F6F8}
+a{color:#2450B8}a:hover{color:#1D419A}
+.hb:hover:not(:disabled){background:#1D419A !important}
+.hs:hover:not(:disabled){background:#F0F3F8 !important}
+.hd:hover:not(:disabled){background:#FDE6E3 !important}
+.hr:hover>td{background:#F8FAFD}
+/* motion and focus base */
+.hb,.hs,.hd,.hr,.tb{transition:background-color .12s ease-out,border-color .12s ease-out,color .12s ease-out,box-shadow .12s ease-out}
+:where(button,a,summary,[tabindex]):focus-visible{outline:2px solid #2450B8;outline-offset:2px}
+:where(input,select,textarea):focus-visible{outline:2px solid #2450B8;outline-offset:-1px}
+.nv:focus-visible,.nb:focus-visible{outline-color:#8DB0FA}
+.fr:focus-visible{outline-offset:-2px}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes unfold{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+@keyframes flashA{from{background-color:#EAF0FD}}
+@keyframes flashB{from{background-color:#EAF0FD}}
+@keyframes swapA{from{opacity:0}}
+@keyframes swapB{from{opacity:0}}
+@keyframes dimIn{from{opacity:0}to{opacity:1}}
+@keyframes dimOut{from{opacity:1}to{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(8px) scale(.98)}}
+@keyframes toastA{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastB{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateY(8px)}}
+@keyframes shimmer{to{background-position:-200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rv{animation:rise .24s cubic-bezier(.22,1,.36,1) both}
+.ex{animation:unfold .18s cubic-bezier(.22,1,.36,1) both}
+.fa>td,.fa.blk{animation:flashA .9s ease-out}
+.fb>td,.fb.blk{animation:flashB .9s ease-out}
+.swapA{animation:swapA .12s ease-out}
+.swapB{animation:swapB .12s ease-out}
+.dim-in{animation:dimIn .2s ease-out both}
+.dim-out{animation:dimOut .15s ease-in both}
+.dr-in{animation:popIn .24s cubic-bezier(.22,1,.36,1) both}
+.dr-out{animation:popOut .18s cubic-bezier(.4,0,1,1) both}
+.tA{animation:toastA .24s cubic-bezier(.22,1,.36,1) both}
+.tB{animation:toastB .24s cubic-bezier(.22,1,.36,1) both}
+.tOut{animation:toastOut .18s cubic-bezier(.4,0,1,1) both}
+.sk{border-radius:8px;background:linear-gradient(90deg,#EEF1F5 25%,#F8FAFD 50%,#EEF1F5 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite}
+.spin{display:inline-block;width:16px;height:16px;border-radius:99px;border:2px solid rgba(255,255,255,.45);border-top-color:#FFFFFF;box-sizing:border-box;animation:spin .7s linear infinite}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* pills and chips, as Foundations draws them */
+.cp{display:inline-flex;align-items:center;gap:6px;min-height:24px;padding:2px 9px;border-radius:8px;border:1px solid;font:600 12px Inter,sans-serif;box-sizing:border-box}
+.pl{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:99px;font:600 12px Inter,sans-serif;white-space:nowrap;box-sizing:border-box}
+.ok{background:#E3F7EC;color:#0A6B3D}.warn{background:#FEF1D6;color:#934100}.bad{background:#FDE6E3;color:#B0190F}.info{background:#EAF0FD;color:#2450B8}.mute{background:#EEF1F5;color:#46546A}
+.cp.ok{border-color:#BFE8D0}.cp.warn{border-color:#F3D9A6}.cp.bad{border-color:#F5C2BB}.cp.info{border-color:#C9D7F7}.cp.mute{border-color:#D5DBE4}
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:10px;border:0;background:#2450B8;color:#FFFFFF;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.btn,a.btn:hover{color:#FFFFFF}
+.btn:disabled{background:#8A98B8;cursor:not-allowed}
+.btn.busy:disabled{background:#2450B8;cursor:progress;opacity:.85}
+.sec{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #778588;background:#FFFFFF;color:#0F1A2B;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.sec,a.sec:hover{color:#0F1A2B}
+.sec:disabled{color:#5F6C80;border-color:#C5CCD6;cursor:not-allowed}
+.dng{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 14px;border-radius:10px;border:1px solid #D9665C;background:#FFFFFF;color:#B0190F;font:600 14px Inter,sans-serif;text-decoration:none;cursor:pointer;box-sizing:border-box;white-space:nowrap}
+a.dng,a.dng:hover{color:#B0190F}
+.dng:disabled{cursor:progress;opacity:.85}
+.sm{height:32px;padding:0 10px;font-size:13px;border-radius:8px}
+.codeb{display:inline-flex;align-items:center;min-height:32px;margin:-6px 0 -4px;padding:0;border:0;background:transparent;color:#2450B8;font:700 13px Inter,sans-serif;text-decoration:underline;text-underline-offset:2px;cursor:pointer;text-align:left}
+.codeb:hover{color:#1D419A}
+.back{display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 6px 0 2px;border:0;border-radius:8px;background:transparent;color:#2450B8;font:600 13px Inter,sans-serif;cursor:pointer}
+/* page tabs (links) and status tabs */
+.pt{display:flex;gap:4px;border-bottom:1px solid #E3E7ED}
+.pt a{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;margin-bottom:-1px;border-bottom:2px solid transparent;color:#46546A;font:600 15px Inter,sans-serif;text-decoration:none;transition:border-color .12s ease-out,color .12s ease-out}
+.pt a:hover{color:#0F1A2B}
+.pt a[aria-current="page"]{border-bottom-color:#2450B8;color:#0F1A2B}
+.tbs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid #E3E7ED;padding:0 12px}
+.tb{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 12px;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;background:transparent;color:#46546A;font:600 13px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.tb:hover{color:#0F1A2B}
+.tb[aria-selected="true"]{border-bottom-color:#2450B8;color:#0F1A2B}
+.cnt{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 7px;border-radius:99px;box-sizing:border-box;font:700 11px Inter,sans-serif;background:#EEF1F5;color:#46546A}
+.cnt.on{background:#EAF0FD;color:#2450B8}
+/* tables, cards, forms */
+.ha-tbl{width:100%;min-width:1080px;border-collapse:collapse;font-size:13px}
+.ha-tbl th{position:sticky;top:0;z-index:1;background:#FAFBFC;text-align:left;padding:10px 12px;font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#5F6C80;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.ha-tbl td{padding:12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.ha-tbl .r,.tbl .r{text-align:right;font-variant-numeric:tabular-nums}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{padding:9px 12px;font-size:12px;font-weight:600;color:#5F6C80;text-align:left;background:#FAFBFC;border-bottom:1px solid #E3E7ED;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid #EEF1F5;vertical-align:top}
+.card{background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px}
+.h2{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:17px;font-weight:600}
+.fact{display:grid;grid-template-columns:120px minmax(0,1fr);gap:4px 12px;margin:0;font-size:13px}
+.fact dt{color:#5F6C80}
+.fact dd{margin:0;font-weight:500}
+.lb{display:flex;gap:8px;align-items:baseline;font-size:13px;font-weight:600;color:#46546A}
+.lb span{font-weight:500;font-size:12px;color:#5F6C80}
+.in{height:40px;padding:0 12px;border:1px solid #778588;border-radius:10px;font:400 14px Inter,sans-serif;color:#0F1A2B;background:#FFFFFF;box-sizing:border-box;width:100%}
+.in[aria-invalid="true"]{border-color:#B0190F;box-shadow:0 0 0 1px #B0190F}
+.in:disabled{background:#F5F6F8;color:#46546A}
+.err{display:flex;gap:6px;align-items:center;color:#B0190F;font-size:13px;font-weight:500}
+.hint{color:#5F6C80;font-size:12px}
+.strip{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:14px;font-size:13px}
+@media (max-width:760px){.ha-main{padding:24px 16px 48px !important}}
+@media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:1ms !important;animation-delay:0s !important;animation-iteration-count:1 !important;transition-duration:1ms !important;scroll-behavior:auto !important}}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-wrap: wrap; background: #F5F6F8; font-family: Inter, system-ui, sans-serif; color: #0F1A2B; font-size: 14px; line-height: 1.45">
+  <div style="flex: 1 1 248px; background: #0D1B2E; display: flex; flex-direction: column">
+    <dc-import name="Sidebar" active="advances" company="{{sbCo}}" kind="{{sbKind}}" access="{{sbAccess}}" hint-size="100%,1020px"></dc-import>
+  </div>
+  <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+    <dc-import name="Topbar" section="HR" page="Claims and advances" sub="{{tbSub}}" company="{{sbCo}}" user="{{tbUser}}" on-company="{{onTopCo}}" hint-size="100%,64px"></dc-import>
+    <main class="ha-main" style="width: 100%; max-width: 1280px; box-sizing: border-box; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px">
+      <div role="status" class="sr">{{say}}</div>
+
+      <!-- ===================== LIST ===================== -->
+      <sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR · {{coName}}</span>
+            <h1 id="ha-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">Claims and advances</h1>
+            <p style="margin: 0; color: #46546A; max-width: 720px">Salary advances: money paid to a person before payday and taken back from their pay, a set amount each month. Each advance is a request: it goes on an approval form on Payments › Approvals, and once approved it is paid from Payments › To pay.</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <button type="button" class="sec hs" onClick="{{doExcel}}" disabled="{{excelOff}}"><dc-import name="Icon" glyph="sheet" tone="muted" size="18" hint-size="18px,18px"></dc-import>Excel</button>
+            <button type="button" id="ha-new" class="btn hb" onClick="{{openNew}}" disabled="{{cantNew}}" aria-describedby="{{newBy}}"><dc-import name="Icon" glyph="plus" tone="white" size="18" hint-size="18px,18px"></dc-import>New advance</button>
+          </div>
+        </div>
+
+        <nav aria-label="Claims and advances" class="pt">
+          <a href="HrClaims.dc.html" class="fr"><dc-import name="Icon" glyph="claim" tone="muted" size="18" hint-size="18px,18px"></dc-import>Claims</a>
+          <a href="HrAdvances.dc.html" aria-current="page" class="fr"><dc-import name="Icon" glyph="advance" tone="brand" size="18" hint-size="18px,18px"></dc-import>Advances</a>
+        </nav>
+
+        <sc-if value="{{noteOn}}" hint-placeholder-val="{{ false }}">
+          <div role="note" class="strip rv" style="{{noteStyle}}"><dc-import name="Icon" glyph="{{noteGlyph}}" tone="{{noteTone}}" size="20" hint-size="20px,20px"></dc-import><span><b>{{noteHead}}</b> {{noteText}}</span></div>
+        </sc-if>
+
+        <sc-if value="{{showLoading}}" hint-placeholder-val="{{ false }}">
+          <div aria-busy="true" style="display: flex; flex-direction: column; gap: 16px">
+            <span class="sr" role="status">Loading advances</span>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+              <div class="card" style="border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+              <div class="card" style="border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+              <div class="card" style="border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px"><span class="sk" style="height: 14px; width: 50%"></span><span class="sk" style="height: 26px; width: 70%"></span></div>
+            </div>
+            <div class="card" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+              <span class="sk" style="height: 32px; width: 60%"></span>
+              <span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span><span class="sk" style="height: 44px"></span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showError}}" hint-placeholder-val="{{ false }}">
+          <div role="alert" class="rv card" style="border-color: #F5C2BB; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #FDE6E3; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="alert" tone="bad" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">Couldn't load advances</h2>
+            <p style="margin: 0; color: #46546A; font-size: 13px; max-width: 460px">The records folder can't be reached. Check the drive is connected, then try again. Nothing was changed.</p>
+            <button type="button" class="btn hb" onClick="{{retry}}"><dc-import name="Icon" glyph="refresh" tone="white" size="16" hint-size="16px,16px"></dc-import>Try again</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showEmpty}}" hint-placeholder-val="{{ false }}">
+          <div class="rv card" style="padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 280px; box-sizing: border-box; justify-content: center">
+            <span style="width: 64px; height: 64px; border-radius: 20px; background: #EAF0FD; display: inline-flex; align-items: center; justify-content: center"><dc-import name="Icon" glyph="advance" tone="brand" size="34" hint-size="34px,34px"></dc-import></span>
+            <h2 style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 18px; font-weight: 600">No salary advances</h2>
+            <p id="ha-nonew" style="margin: 0; color: #46546A; font-size: 13px; max-width: 520px">{{emptyText}}</p>
+            <sc-if value="{{emptyChart}}" hint-placeholder-val="{{ true }}"><a href="SetupChart.dc.html" class="sec hs"><dc-import name="Icon" glyph="sliders" tone="muted" size="18" hint-size="18px,18px"></dc-import>Setup › Chart of accounts</a></sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{showList}}" hint-placeholder-val="{{ true }}">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px">
+            <sc-for list="{{sums}}" as="s" hint-placeholder-count="3">
+              <div style="display: contents">
+                <sc-if value="{{s.isLink}}" hint-placeholder-val="{{ true }}"><a href="{{s.href}}" class="hs" style="{{s.box}}"><span style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #46546A"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="18" hint-size="18px,18px"></dc-import>{{s.label}}</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums">{{s.value}}</span><span style="font-size: 13px; color: #5F6C80">{{s.note}}</span><span style="font-size: 13px; font-weight: 600; color: #2450B8">{{s.go}}</span></a></sc-if>
+                <sc-if value="{{s.isBtn}}" hint-placeholder-val="{{ false }}"><button type="button" class="hs" onClick="{{s.open}}" style="{{s.box}}"><span style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #46546A"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="18" hint-size="18px,18px"></dc-import>{{s.label}}</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums">{{s.value}}</span><span style="font-size: 13px; color: #5F6C80">{{s.note}}</span><span style="font-size: 13px; font-weight: 600; color: #2450B8">{{s.go}}</span></button></sc-if>
+                <sc-if value="{{s.isPlain}}" hint-placeholder-val="{{ false }}"><div style="{{s.box}}"><span style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: #46546A"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="18" hint-size="18px,18px"></dc-import>{{s.label}}</span><span style="font-family: 'Space Grotesk', Inter, sans-serif; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums">{{s.value}}</span><span style="font-size: 13px; color: #5F6C80">{{s.note}}</span><span style="font-size: 12px; color: #5F6C80">{{s.go}}</span></div></sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <sc-if value="{{kh.on}}" hint-placeholder-val="{{ false }}">
+            <section aria-labelledby="ha-kh-h" class="card rv" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center"><dc-import name="Icon" glyph="books" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ha-kh-h" class="h2">Checked against Advances to staff</h2><span class="cp mute">Kept here</span><span class="pl ok" style="margin-left: auto"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>{{kh.result}}</span></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px">Each person's balance left here must equal their line in Advances to staff in the books. Paying an advance posts it there; each repayment through the pay takes it off. The audit pack runs the same check.</p>
+              <div style="overflow-x: auto; border: 1px solid #E3E7ED; border-radius: 12px">
+                <table class="tbl" style="min-width: 560px">
+                  <caption class="sr">Balance left here against Advances to staff, per person</caption>
+                  <thead><tr><th scope="col">Person</th><th scope="col" class="r">Balance left here</th><th scope="col" class="r">Advances to staff</th><th scope="col">Result</th></tr></thead>
+                  <tbody><sc-for list="{{kh.rows}}" as="k" hint-placeholder-count="1"><tr><td>{{k.who}}</td><td class="r">{{k.here}}</td><td class="r">{{k.books}}</td><td><span class="pl ok"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>{{k.res}}</span></td></tr></sc-for></tbody>
+                </table>
+              </div>
+              <span class="hint">A difference reads "Differs by RM x" with the journal that caused it, and the audit pack lists it until it is put right. <a href="AuditPackHR.dc.html" style="font-weight: 600">Audit pack, HR pages</a></span>
+            </section>
+          </sc-if>
+
+          <section aria-labelledby="ha-list-h" class="card" style="overflow: hidden">
+            <div style="display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 20px 10px">
+              <h2 id="ha-list-h" tabindex="-1" class="h2">Advances</h2>
+              <span aria-live="polite" style="color: #5F6C80; font-size: 13px">{{countText}}</span>
+              <div style="position: relative; display: flex; align-items: center; margin-left: auto">
+                <span style="position: absolute; left: 10px; display: inline-flex; pointer-events: none"><dc-import name="Icon" glyph="search" tone="muted" size="16" hint-size="16px,16px"></dc-import></span>
+                <label for="ha-q" class="sr">Search advances</label>
+                <input id="ha-q" type="search" value="{{q}}" onChange="{{onQ}}" placeholder="Search code or person" autoComplete="off" style="height: 36px; width: 240px; padding: 0 10px 0 32px; border: 1px solid #778588; border-radius: 10px; font: 400 13px Inter, sans-serif; color: #0F1A2B; box-sizing: border-box">
+              </div>
+            </div>
+
+            <div role="tablist" aria-label="Advances by status" class="tbs">
+              <sc-for list="{{tabs}}" as="t" hint-placeholder-count="8">
+                <button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="ha-panel" tabindex="{{t.ti}}" class="tb fr" onClick="{{t.pick}}" onKeyDown="{{t.key}}">{{t.label}}<span class="{{t.cntCls}}" aria-hidden="true">{{t.n}}</span><span class="sr">{{t.sr}}</span></button>
+              </sc-for>
+            </div>
+
+            <div role="tabpanel" id="ha-panel" aria-labelledby="{{panelBy}}" class="{{panelCls}}">
+              <sc-if value="{{bulk.on}}" hint-placeholder-val="{{ false }}">
+                <div class="ex" role="region" aria-label="Selected advances" style="display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; padding: 12px 20px; background: #F3F6FE; border-bottom: 1px solid #C9D7F7">
+                  <b>{{bulk.text}}</b>
+                  <span style="color: #46546A; font-size: 13px; flex: 1 1 320px">{{bulk.note}}</span>
+                  <div style="display: flex; gap: 8px; margin-left: auto">
+                    <button type="button" class="sec sm hs" onClick="{{clearSel}}">Clear</button>
+                    <a href="PrintApprovalForm.dc.html" class="btn sm hb"><dc-import name="Icon" glyph="printer" tone="white" size="16" hint-size="16px,16px"></dc-import>{{bulk.label}}</a>
+                  </div>
+                </div>
+              </sc-if>
+
+              <div role="region" aria-label="Advances, scrolls" tabindex="0" class="fr" style="{{scrollStyle}}">
+                <table class="ha-tbl">
+                  <caption class="sr">{{caption}}</caption>
+                  <thead><tr>
+                    <th scope="col" style="width: 44px; padding-left: 20px"><span class="sr">Select</span></th>
+                    <th scope="col">Advance</th>
+                    <th scope="col" style="width: 140px">Person</th>
+                    <th scope="col" style="width: 160px">Repayment</th>
+                    <th scope="col" style="width: 170px">Status</th>
+                    <th scope="col" style="width: 180px">Approval form</th>
+                    <th scope="col" style="width: 180px">Payment</th>
+                    <th scope="col" class="r" style="width: 100px">Amount</th>
+                    <th scope="col" class="r" style="width: 110px; padding-right: 20px">Left</th>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{rows}}" as="r" hint-placeholder-count="3">
+                      <tr class="{{r.cls}}" style="{{r.rowStyle}}">
+                        <td style="padding: 8px 4px 8px 14px"><sc-if value="{{r.canSel}}" hint-placeholder-val="{{ false }}"><label style="display: inline-flex; align-items: center; justify-content: center; min-width: 32px; min-height: 32px; cursor: pointer"><input type="checkbox" aria-label="{{r.selLabel}}" checked="{{r.on}}" onChange="{{r.toggle}}" style="width: 18px; height: 18px; margin: 0; accent-color: #2450B8"></label></sc-if></td>
+                        <td><div style="display: flex; flex-direction: column; gap: 2px; align-items: flex-start; min-width: 0"><button type="button" class="codeb" onClick="{{r.open}}" aria-label="{{r.openLabel}}">{{r.id}}</button><span>{{r.title}}</span><sc-if value="{{r.flag}}" hint-placeholder-val="{{ false }}"><span class="cp warn" style="margin-top: 4px"><dc-import name="Icon" glyph="alert" tone="warn" size="14" hint-size="14px,14px"></dc-import>{{r.flag}}</span></sc-if></div></td>
+                        <td><a href="{{r.whoHref}}" style="font-weight: 600">{{r.who}}</a><div style="color: #5F6C80; font-size: 12px">{{r.no}}</div></td>
+                        <td><span style="font-variant-numeric: tabular-nums">{{r.per}}</span><div style="color: #5F6C80; font-size: 12px">{{r.months}}</div></td>
+                        <td><span class="{{r.pillCls}}"><dc-import name="Icon" glyph="{{r.pillGlyph}}" tone="{{r.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{r.pill}}</span></td>
+                        <td><sc-if value="{{r.formHref}}" hint-placeholder-val="{{ true }}"><a href="{{r.formHref}}" style="font-weight: 600">{{r.form}}</a></sc-if><sc-if value="{{r.noForm}}" hint-placeholder-val="{{ false }}"><span style="color: #5F6C80">{{r.form}}</span></sc-if><div style="color: #5F6C80; font-size: 12px">{{r.formSub}}</div></td>
+                        <td><div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start"><span>{{r.pay}}</span><sc-if value="{{r.payPill}}" hint-placeholder-val="{{ false }}"><span class="{{r.payPillCls}}">{{r.payPill}}</span></sc-if><sc-if value="{{r.payHref}}" hint-placeholder-val="{{ false }}"><a href="{{r.payHref}}" style="font-size: 12px; font-weight: 600">{{r.payLink}}</a></sc-if></div></td>
+                        <td class="r"><b>{{r.amt}}</b></td>
+                        <td class="r" style="padding-right: 20px"><span style="font-variant-numeric: tabular-nums">{{r.left}}</span><sc-if value="{{r.collect}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 4px"><span class="cp bad">{{r.collect}}</span></div></sc-if></td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+
+              <sc-if value="{{noRows}}" hint-placeholder-val="{{ false }}">
+                <div class="rv" style="padding: 22px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: #46546A; font-size: 13px; border-top: 1px solid #EEF1F5"><dc-import name="Icon" glyph="filter" tone="muted" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1 1 320px">{{noRowsText}}</span><button type="button" class="sec sm hs" onClick="{{clearFilters}}">Show all advances</button></div>
+              </sc-if>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-top: 1px solid #E3E7ED; background: #FAFBFC">
+              <span style="font-size: 13px; color: #46546A">{{footText}}</span>
+              <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}"><button type="button" class="sec hs" onClick="{{many.more}}" disabled="{{many.off}}">{{many.label}}</button></sc-if>
+            </div>
+            <sc-if value="{{many.on}}" hint-placeholder-val="{{ false }}"><div style="padding: 0 20px 14px; background: #FAFBFC; color: #5F6C80; font-size: 12px">{{many.note}}</div></sc-if>
+          </section>
+
+          <div style="display: flex; gap: 10px; align-items: flex-start; color: #5F6C80; font-size: 13px; max-width: 940px"><dc-import name="Icon" glyph="help" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>{{helpText}}</span></div>
+        </sc-if>
+      </sc-if>
+
+      <!-- ===================== ADVANCE PAGE ===================== -->
+      <sc-if value="{{isPage}}" hint-placeholder-val="{{ false }}">
+        <button type="button" id="ha-back" class="back" onClick="{{backToList}}" style="align-self: flex-start"><dc-import name="Icon" glyph="chevronLeft" tone="brand" size="16" hint-size="16px,16px"></dc-import>Advances</button>
+        <sc-if value="{{pg.example}}" hint-placeholder-val="{{ false }}">
+          <div role="note" class="strip rv" style="background: #FFFBF2; border: 1px solid #F3D9A6; color: #6B3A00"><dc-import name="Icon" glyph="history" tone="warn" size="20" hint-size="20px,20px"></dc-import><span>{{pg.example}}</span></div>
+        </sc-if>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; justify-content: space-between">
+          <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+            <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #5F6C80">HR · Salary advance · {{pg.coName}}</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+              <h1 id="ha-h1" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 30px; font-weight: 600">{{pg.code}}</h1>
+              <span class="{{pg.pillCls}}"><dc-import name="Icon" glyph="{{pg.pillGlyph}}" tone="{{pg.pillTone}}" size="14" hint-size="14px,14px"></dc-import>{{pg.pill}}</span>
+              <sc-if value="{{pg.locked}}" hint-placeholder-val="{{ false }}"><span class="pl mute"><dc-import name="Icon" glyph="lock" tone="muted" size="14" hint-size="14px,14px"></dc-import>Locked</span></sc-if>
+            </div>
+            <p style="margin: 0; color: #46546A">{{pg.title}} · <b style="color: #0F1A2B; font-variant-numeric: tabular-nums">{{pg.amt}}</b> · {{pg.perText}}</p>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <sc-if value="{{pg.canWithdraw}}" hint-placeholder-val="{{ false }}"><button type="button" id="ha-wd" class="sec hs" onClick="{{openWithdraw}}"><dc-import name="Icon" glyph="undo" tone="muted" size="18" hint-size="18px,18px"></dc-import>Withdraw</button></sc-if>
+            <sc-if value="{{pg.canPrint}}" hint-placeholder-val="{{ false }}"><a href="PrintApprovalForm.dc.html" class="btn hb"><dc-import name="Icon" glyph="printer" tone="white" size="18" hint-size="18px,18px"></dc-import>Print approval form</a></sc-if>
+            <sc-if value="{{pg.canPay}}" hint-placeholder-val="{{ false }}"><a href="ToPay.dc.html" class="btn hb"><dc-import name="Icon" glyph="toPay" tone="white" size="18" hint-size="18px,18px"></dc-import>Pay it on To pay</a></sc-if>
+            <sc-if value="{{pg.canCollect}}" hint-placeholder-val="{{ false }}"><a href="NewPayment.dc.html" class="btn hb"><dc-import name="Icon" glyph="payment" tone="white" size="18" hint-size="18px,18px"></dc-import>Record money received</a></sc-if>
+          </div>
+        </div>
+
+        <ol aria-label="The four steps of this advance" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+          <sc-for list="{{pg.steps}}" as="s" hint-placeholder-count="4">
+            <li style="{{s.box}}"><span style="{{s.dot}}"><dc-import name="Icon" glyph="{{s.glyph}}" tone="{{s.tone}}" size="16" hint-size="16px,16px"></dc-import></span><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><b style="font-size: 13px">{{s.name}}</b><span style="font-size: 12px; color: #46546A">{{s.text}}</span><span class="sr">{{s.sr}}</span></span></li>
+          </sc-for>
+        </ol>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+          <div style="flex: 2 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+            <section aria-labelledby="ha-sc-h" class="card" style="overflow: hidden">
+              <div style="display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; padding: 16px 20px 12px"><h2 id="ha-sc-h" class="h2">Repayment schedule</h2><span style="color: #5F6C80; font-size: 13px">{{pg.schedNote}}</span></div>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid #EEF1F5; border-bottom: 1px solid #EEF1F5; background: #FAFBFC">
+                <sc-for list="{{pg.totals}}" as="t" hint-placeholder-count="3"><div style="{{t.box}}"><span style="font-size: 12px; font-weight: 600; color: #5F6C80">{{t.k}}</span><span style="{{t.vStyle}}">{{t.v}}</span></div></sc-for>
+              </div>
+              <div style="overflow-x: auto">
+                <table class="tbl" style="min-width: 620px">
+                  <caption class="sr">Repayment schedule of {{pg.code}}</caption>
+                  <thead><tr><th scope="col" style="padding-left: 20px; width: 120px">Month</th><th scope="col">Comes off</th><th scope="col" class="r" style="width: 110px">Deduction</th><th scope="col" style="width: 150px">Status</th><th scope="col" class="r" style="width: 130px; padding-right: 20px">Left after</th></tr></thead>
+                  <tbody>
+                    <sc-for list="{{pg.sched}}" as="x" hint-placeholder-count="3">
+                      <tr style="{{x.rowStyle}}"><td style="padding-left: 20px; font-weight: 600">{{x.m}}</td><td>{{x.off}}<sc-if value="{{x.sub}}" hint-placeholder-val="{{ false }}"><div style="color: #5F6C80; font-size: 12px">{{x.sub}}</div></sc-if></td><td class="r">{{x.ded}}</td><td><span class="{{x.pillCls}}">{{x.pill}}</span></td><td class="r" style="padding-right: 20px">{{x.left}}</td></tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <div style="display: flex; gap: 10px; align-items: flex-start; padding: 12px 20px 16px; color: #46546A; font-size: 13px"><dc-import name="Icon" glyph="{{pg.howGlyph}}" tone="muted" size="18" hint-size="18px,18px"></dc-import><span>{{pg.howText}} <a href="{{pg.howHref}}" style="font-weight: 600">{{pg.howLink}}</a></span></div>
+            </section>
+
+            <section aria-labelledby="ha-ea-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="statutory" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ha-ea-h" class="h2">Employment Act checks</h2><span class="hint">Warnings only: they never stop an advance.</span></div>
+              <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+                <sc-for list="{{pg.checks}}" as="c" hint-placeholder-count="3"><li style="{{c.style}}"><dc-import name="Icon" glyph="{{c.glyph}}" tone="{{c.tone}}" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1; min-width: 0"><b>{{c.head}}</b> {{c.text}}</span></li></sc-for>
+              </ul>
+              <sc-if value="{{pg.hidden}}" hint-placeholder-val="{{ false }}"><span class="hint">Pay figures are hidden: they need the Payroll figures right (Admin › Users and access).</span></sc-if>
+            </section>
+
+            <section aria-labelledby="ha-bk-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="books" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ha-bk-h" class="h2">Booking</h2><span class="cp mute">{{pg.kindLabel}}</span></div>
+              <p style="margin: 0; color: #46546A; font-size: 13px">{{pg.bookText}}</p>
+              <sc-for list="{{pg.vouchers}}" as="v" hint-placeholder-count="1">
+                <div style="border: 1px solid #E3E7ED; border-radius: 12px; overflow: hidden">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; background: #FAFBFC; border-bottom: 1px solid #E3E7ED"><b>{{v.code}}</b><span style="color: #5F6C80; font-size: 12px">{{v.when}}</span><span class="pl ok" style="margin-left: auto"><dc-import name="Icon" glyph="check" tone="ok" size="14" hint-size="14px,14px"></dc-import>Posted</span></div>
+                  <table class="tbl"><caption class="sr">{{v.code}} lines</caption><thead><tr><th scope="col">Account</th><th scope="col" class="r">Debit</th><th scope="col" class="r">Credit</th></tr></thead><tbody><sc-for list="{{v.rows}}" as="y" hint-placeholder-count="2"><tr><td>{{y.acct}}</td><td class="r">{{y.dr}}</td><td class="r">{{y.cr}}</td></tr></sc-for></tbody></table>
+                </div>
+              </sc-for>
+              <sc-if value="{{pg.bookStatus}}" hint-placeholder-val="{{ false }}"><div style="{{pg.bookStatusStyle}}"><dc-import name="Icon" glyph="{{pg.bookGlyph}}" tone="{{pg.bookTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{pg.bookStatus}}</span></div></sc-if>
+            </section>
+
+            <section aria-labelledby="ha-hist-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 10px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="history" tone="muted" size="20" hint-size="20px,20px"></dc-import><h2 id="ha-hist-h" class="h2">History</h2><span class="hint">Who is declared, not verified, until logins exist.</span></div>
+              <ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column">
+                <sc-for list="{{pg.hist}}" as="h" hint-placeholder-count="3"><li class="{{h.cls}}" style="display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 4px 14px; padding: 10px 0; border-top: 1px solid #EEF1F5; font-size: 13px"><span style="color: #5F6C80">{{h.when}}</span><span><b>{{h.what}}</b><span style="display: block; color: #46546A">{{h.detail}}</span></span></li></sc-for>
+              </ol>
+            </section>
+          </div>
+
+          <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+            <section aria-labelledby="ha-ap-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="approval" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ha-ap-h" class="h2">Approval</h2></div>
+              <dl class="fact"><sc-for list="{{pg.apFacts}}" as="f" hint-placeholder-count="4"><dt>{{f.k}}</dt><dd>{{f.v}}</dd></sc-for></dl>
+              <sc-if value="{{pg.apNote}}" hint-placeholder-val="{{ false }}"><div role="note" style="{{pg.apNoteStyle}}"><dc-import name="Icon" glyph="{{pg.apNoteGlyph}}" tone="{{pg.apNoteTone}}" size="18" hint-size="18px,18px"></dc-import><span>{{pg.apNote}}</span></div></sc-if>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px 14px"><sc-for list="{{pg.apLinks}}" as="a" hint-placeholder-count="2"><a href="{{a.href}}" style="font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">{{a.label}}</a></sc-for></div>
+            </section>
+
+            <section aria-labelledby="ha-pay-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="toPay" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ha-pay-h" class="h2">Payment</h2><sc-if value="{{pg.payPill}}" hint-placeholder-val="{{ false }}"><span class="{{pg.payPillCls}}" style="margin-left: auto">{{pg.payPill}}</span></sc-if></div>
+              <dl class="fact"><sc-for list="{{pg.payFacts}}" as="f" hint-placeholder-count="3"><dt>{{f.k}}</dt><dd>{{f.v}}</dd></sc-for></dl>
+              <div style="display: flex; flex-wrap: wrap; gap: 4px 14px"><sc-for list="{{pg.payLinks}}" as="a" hint-placeholder-count="2"><a href="{{a.href}}" style="font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">{{a.label}}</a></sc-for></div>
+            </section>
+
+            <section aria-labelledby="ha-who-h" class="card" style="padding: 16px 20px; display: flex; flex-direction: column; gap: 8px">
+              <div style="display: flex; gap: 10px; align-items: center"><dc-import name="Icon" glyph="staff" tone="brand" size="20" hint-size="20px,20px"></dc-import><h2 id="ha-who-h" class="h2">Person</h2></div>
+              <b>{{pg.whoName}}</b>
+              <span style="color: #46546A; font-size: 13px">{{pg.whoMeta}}</span>
+              <sc-if value="{{pg.whoLeft}}" hint-placeholder-val="{{ false }}"><span class="cp bad" style="align-self: flex-start">{{pg.whoLeft}}</span></sc-if>
+              <a href="{{pg.whoHref}}" style="font-size: 13px; font-weight: 600; min-height: 32px; display: inline-flex; align-items: center">Open the staff record, Claims and advances tab</a>
+            </section>
+          </div>
+        </div>
+      </sc-if>
+    </main>
+
+    <div role="status" aria-live="polite" style="position: fixed; left: 0; right: 0; bottom: 24px; z-index: 60; display: flex; justify-content: center; padding: 0 16px; pointer-events: none">
+      <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}"><div class="{{toastCls}}" onMouseEnter="{{toastHold}}" onFocus="{{toastHold}}" onMouseLeave="{{toastRelease}}" onBlur="{{toastRelease}}" style="pointer-events: auto; max-width: 660px; display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 12px; background: #0F1A2B; color: #FFFFFF; font-size: 14px; box-shadow: 0 12px 32px rgba(13, 27, 46, .28)"><dc-import name="Icon" glyph="check" tone="dok" size="20" hint-size="20px,20px"></dc-import><span>{{toastMsg}}</span>
+        <sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{undo}}" style="height: 32px; padding: 0 10px; border-radius: 8px; border: 0; background: #22375A; color: #D6E2FB; font: 600 13px Inter, sans-serif; cursor: pointer; outline-color: #8DB0FA">Undo</button></sc-if>
+        <button type="button" onClick="{{toastClose}}" aria-label="Dismiss" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; outline-color: #8DB0FA"><dc-import name="Icon" glyph="close" tone="dmuted" size="16" hint-size="16px,16px"></dc-import></button></div></sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{dlg.show}}" hint-placeholder-val="{{ false }}">
+    <div aria-hidden="true" class="{{dlg.dimCls}}" onClick="{{dlg.close}}" style="position: fixed; inset: 0; z-index: 50; background: rgba(13,27,46,.45)"></div>
+    <div style="position: fixed; inset: 0; z-index: 51; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none">
+      <div role="dialog" aria-modal="true" aria-labelledby="ha-dlg-title" aria-describedby="ha-dlg-desc" tabindex="-1" class="{{dlg.panelCls}}" onKeyDown="{{dlg.key}}" onAnimationEnd="{{dlg.onAnim}}" style="{{dlg.panelStyle}}">
+        <div style="display: flex; gap: 12px; align-items: flex-start; padding: 20px 60px 14px 22px; border-bottom: 1px solid #EEF1F5">
+          <span style="{{dlg.plate}}"><dc-import name="Icon" glyph="{{dlg.glyph}}" tone="{{dlg.tone}}" size="22" hint-size="22px,22px"></dc-import></span>
+          <div><h2 id="ha-dlg-title" tabindex="-1" style="margin: 0; font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; font-weight: 600">{{dlg.title}}</h2><p id="ha-dlg-desc" style="margin: 4px 0 0; color: #46546A; font-size: 13px">{{dlg.desc}}</p></div>
+        </div>
+        <button type="button" class="hs" onClick="{{dlg.close}}" aria-label="Close" style="position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer"><dc-import name="Icon" glyph="close" tone="muted" size="18" hint-size="18px,18px"></dc-import></button>
+
+        <sc-if value="{{dlg.refused}}" hint-placeholder-val="{{ false }}">
+          <div id="ha-refused" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 14px 22px; background: #FDF3F2; border-bottom: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="22" hint-size="22px,22px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">{{dlg.refusedHead}}</b><div style="color: #46546A; font-size: 13px">{{dlg.refusedText}}</div></div></div>
+        </sc-if>
+
+        <!-- new advance form -->
+        <sc-if value="{{dlg.isNew}}" hint-placeholder-val="{{ false }}">
+          <form id="ha-form" onSubmit="{{nf.submit}}" noValidate="{{ true }}" style="padding: 16px 22px; display: flex; flex-direction: column; gap: 14px">
+            <sc-if value="{{nf.errOn}}" hint-placeholder-val="{{ false }}">
+              <div id="ha-errsum" role="alert" tabindex="-1" class="ex" style="display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 12px; background: #FDF3F2; border: 1px solid #F5C2BB"><dc-import name="Icon" glyph="alert" tone="bad" size="20" hint-size="20px,20px"></dc-import><div style="flex: 1; min-width: 0"><b style="color: #8E1A10">{{nf.errTitle}}</b>
+                <ul style="margin: 4px 0 0; padding-left: 18px; font-size: 13px"><sc-for list="{{nf.errList}}" as="e" hint-placeholder-count="2"><li><a href="{{e.href}}">{{e.text}}</a></li></sc-for></ul></div></div>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ha-who" class="lb">Person <span>Required</span></label>
+              <select id="ha-who" class="in" value="{{nf.who}}" onChange="{{nf.onWho}}" disabled="{{nf.saving}}" aria-invalid="{{nf.whoInv}}" aria-describedby="{{nf.whoBy}}" style="padding: 0 8px"><sc-for list="{{nf.people}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+              <sc-if value="{{nf.whoErr}}" hint-placeholder-val="{{ false }}"><span id="ha-who-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{nf.whoErr}}</span></sc-if>
+              <span id="ha-who-hint" class="hint">{{nf.whoHint}}</span>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="ha-amt" class="lb">Amount (RM) <span>Required</span></label>
+                <input id="ha-amt" type="text" inputMode="decimal" class="in" value="{{nf.amt}}" onChange="{{nf.onAmt}}" disabled="{{nf.saving}}" aria-invalid="{{nf.amtInv}}" aria-describedby="{{nf.amtBy}}" autoComplete="off" style="text-align: right">
+                <sc-if value="{{nf.amtErr}}" hint-placeholder-val="{{ false }}"><span id="ha-amt-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{nf.amtErr}}</span></sc-if>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="ha-per" class="lb">Monthly deduction (RM) <span>Required</span></label>
+                <input id="ha-per" type="text" inputMode="decimal" class="in" value="{{nf.per}}" onChange="{{nf.onPer}}" disabled="{{nf.saving}}" aria-invalid="{{nf.perInv}}" aria-describedby="{{nf.perBy}}" autoComplete="off" style="text-align: right">
+                <sc-if value="{{nf.perErr}}" hint-placeholder-val="{{ false }}"><span id="ha-per-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{nf.perErr}}</span></sc-if>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="ha-from" class="lb">First deduction</label>
+                <select id="ha-from" class="in" value="{{nf.from}}" onChange="{{nf.onFrom}}" disabled="{{nf.saving}}" aria-describedby="ha-until" style="padding: 0 8px"><sc-for list="{{nf.months}}" as="o" hint-placeholder-count="4"><option value="{{o.v}}">{{o.l}}</option></sc-for></select>
+                <span id="ha-until" class="hint" aria-live="polite">{{nf.untilText}}</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="ha-payby" class="lb">Pay by <span>Optional</span></label>
+                <input id="ha-payby" type="date" class="in" min="2026-11-18" value="{{nf.payBy}}" onChange="{{nf.onPayBy}}" disabled="{{nf.saving}}" aria-describedby="ha-payby-hint">
+                <span id="ha-payby-hint" class="hint">The due date it takes in To pay once approved. Before the first deduction.</span>
+              </div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ha-note" class="lb">Note <span>Optional, up to 300 characters</span></label>
+              <input id="ha-note" type="text" class="in" value="{{nf.note}}" onChange="{{nf.onNote}}" disabled="{{nf.saving}}" maxLength="300" autoComplete="off">
+            </div>
+            <sc-for list="{{nf.warns}}" as="w" hint-placeholder-count="1">
+              <div role="note" class="ex" style="{{w.style}}"><dc-import name="Icon" glyph="{{w.glyph}}" tone="{{w.tone}}" size="18" hint-size="18px,18px"></dc-import><span style="flex: 1; min-width: 0"><b>{{w.head}}</b> {{w.text}}</span></div>
+            </sc-for>
+            <span class="hint">No interest: an advance is paid back at its amount. Entered by {{nf.by}} (declared, not verified until logins exist).</span>
+          </form>
+        </sc-if>
+
+        <!-- withdraw -->
+        <sc-if value="{{dlg.isWd}}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 16px 22px; display: flex; flex-direction: column; gap: 12px">
+            <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #46546A"><sc-for list="{{wd.points}}" as="p" hint-placeholder-count="3"><li>{{p.text}}</li></sc-for></ul>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <label for="ha-reason" class="lb">Reason <span>Required</span></label>
+              <textarea id="ha-reason" rows="3" class="in" value="{{wd.reason}}" onChange="{{wd.onReason}}" disabled="{{wd.saving}}" aria-invalid="{{wd.reasonInv}}" aria-describedby="{{wd.reasonBy}}" style="height: auto; padding: 10px 12px; resize: vertical"></textarea>
+              <sc-if value="{{wd.reasonErr}}" hint-placeholder-val="{{ false }}"><span id="ha-reason-err" class="err"><dc-import name="Icon" glyph="alert" tone="bad" size="15" hint-size="15px,15px"></dc-import>{{wd.reasonErr}}</span></sc-if>
+              <span id="ha-reason-hint" class="hint">Kept on the advance and shown in the list. Withdrawn by Aisha Rahman (declared, not verified).</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="padding: 14px 22px; border-top: 1px solid #EEF1F5; background: #FAFBFC; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+          <sc-if value="{{dlg.asking}}" hint-placeholder-val="{{ false }}">
+            <div role="group" aria-labelledby="ha-ask-q" class="ex" style="flex: 1; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: flex-end">
+              <span id="ha-ask-q" style="font-weight: 600; margin-right: auto">{{dlg.askText}}</span>
+              <button type="button" id="ha-keep" class="sec hs" onClick="{{dlg.keep}}">Keep editing</button>
+              <button type="button" class="dng hd" onClick="{{dlg.discard}}">Discard</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{dlg.notAsking}}" hint-placeholder-val="{{ true }}">
+            <button type="button" class="sec hs" onClick="{{dlg.close}}" disabled="{{dlg.saving}}">Cancel</button>
+            <sc-if value="{{dlg.isNew}}" hint-placeholder-val="{{ false }}"><button type="submit" form="ha-form" id="ha-save" class="btn hb busy" disabled="{{dlg.saving}}" aria-busy="{{dlg.busy}}" style="min-width: 140px"><sc-if value="{{dlg.saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true"></span></sc-if><sc-if value="{{dlg.idle}}" hint-placeholder-val="{{ true }}"><dc-import name="Icon" glyph="check" tone="white" size="16" hint-size="16px,16px"></dc-import></sc-if>{{dlg.goLabel}}</button></sc-if>
+            <sc-if value="{{dlg.isWd}}" hint-placeholder-val="{{ false }}"><button type="button" id="ha-dlg-go" class="dng hd" onClick="{{wd.go}}" disabled="{{dlg.saving}}" aria-busy="{{dlg.busy}}" style="min-width: 150px"><sc-if value="{{dlg.saving}}" hint-placeholder-val="{{ false }}"><span class="spin" aria-hidden="true" style="border-color: rgba(176,25,15,.3); border-top-color: #B0190F"></span></sc-if>{{dlg.goLabel}}</button></sc-if>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","default":"list","options":["list","new","over-month","over-half","errors","saving","refused","discard","draft","select","waiting","approved","paid","leaver","withdraw","withdraw-errors","withdraw-refused","withdrawn","kept-here","no-figures","excel","empty","loading","error","many"],"section":"State to show"},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.initial((p && p.view) || 'list'); }
+  componentDidMount() {
+    if (this.state.dlg) this.focusId(this.state.dlg.refused ? 'ha-refused' : (this.state.dlg.tried && this.state.dlg.kind === 'new') ? 'ha-errsum' : 'ha-dlg-title');
+    if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000);
+  }
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._to); clearTimeout(this._sv); }
+  componentDidUpdate(pp, prev) {
+    if (pp && pp.view !== this.props.view) { clearTimeout(this._sv); this.setState(this.initial(this.props.view || 'list')); return; }
+    if (!prev) return;
+    const st = this.state;
+    if (!prev.dlg && st.dlg) { this.focusId('ha-dlg-title'); return; }
+    if (prev.dlg && !st.dlg) { const o = this._opener; this._opener = null; if (this._upFocus) { const id = this._upFocus; this._upFocus = null; if (this.focusId(id)) return; } if (o && o.isConnected && o.focus) o.focus({ preventScroll: true }); else this.focusId('ha-h1'); return; }
+    if (this._upFocus) { const id = this._upFocus; this._upFocus = null; this.focusId(id); }
+  }
+  focusId(id) { const e = id && document.getElementById(id); if (e && e.focus) { e.focus({ preventScroll: true }); return true; } return false; }
+
+  // ---- sample data: scope/samples.md sections 5, 11 and 12 (today Wed 18 Nov 2026) ----
+  STAFF(co) {
+    if (co === 'AI') return [['A001', 'Faizal', 'Mohd Faizal bin Yusof', 'Farm manager', 5800], ['A002', 'Pei Shan', 'Chong Pei Shan', 'Accounts assistant', 4200], ['A003', 'Priya', 'Priya Subramaniam', 'Quality officer', 4600],
+      ['A004', 'Jun Wei', 'Lee Jun Wei', 'Logistics coordinator', 3900], ['A005', 'Rina', 'Rina Santoso', 'Farm supervisor', 2400]]
+      .map(([no, who, full, job, basic]) => ({ no, who, full, job, bank: 'their own bank account', basic }));
+    return [['S001', 'Aisha', 'Aisha Rahman', 'HR and finance executive', 'Maybank ····2210', 8600], ['S002', 'Wei Ming', 'Ong Wei Ming', 'Sales executive', 'CIMB ····8841', 7800],
+      ['S003', 'Aina', 'Nurul Aina binti Hashim', 'HR and admin executive', 'Maybank ····5532', 7000], ['S004', 'Hafiz', 'Mohd Hafiz bin Rosli', 'Operations executive', 'Public Bank ····0917', 5700],
+      ['S005', 'Khadijah', 'Nor Khadijah binti Omar', 'Customer service executive', 'Maybank ····7764', 5500], ['S006', 'Kah Seng', 'Wong Kah Seng', 'IT support', 'RHB ····3390', 7800],
+      ['S007', 'Jia Hui', 'Goh Jia Hui', 'Marketing executive', 'Maybank ····6128', 3400], ['S008', 'Izzati', 'Nur Izzati binti Kamal', 'Office assistant', 'Bank Islam ····4405', 2800],
+      ['S009', 'Daniel', 'Daniel Lee Chee Keong', 'Accounts assistant', 'Maybank ····8073', 3500]]
+      .map(([no, who, full, job, bank, basic]) => ({ no, who, full, job, bank, basic }));
+  }
+  person(no) { return this.STAFF('AISB').concat(this.STAFF('AI')).find(p => p.no === no) || null; }
+  blankF() { return { who: '', amt: '', per: '', from: '2026-12', payBy: '', note: '' }; }
+  sampleF() { return { who: 'S009', amt: '4,000.00', per: '1,000.00', from: '2026-12', payBy: '', note: 'Asked for in writing on Tue 17 Nov' }; }
+  initial(view) {
+    const base = { view, co: 'AISB', user: 'aisha', world: 'today', mode: 'list', id: '', stages: {}, whys: {}, added: null, tab: 'all', sel: {}, flash: { id: '', n: 0 },
+      q: '', load: 'ok', many: false, manyShown: 25, dlg: null, closing: false, toast: null, say: '', pillN: 0, histFlash: 0 };
+    const NF = this.sampleF(), snap = { world: 'snap' };
+    const D = (f, x) => ({ kind: 'new', f: { ...NF, ...f }, tried: false, saving: false, refused: false, ask: false, ...(x || {}) });
+    const W = x => ({ kind: 'wd', reason: '', tried: false, saving: false, refused: false, ask: false, ...(x || {}) });
+    const pg = id => ({ mode: 'page', id });
+    const set = {
+      list: {}, 'no-figures': { user: 'aina' },
+      new: { ...snap, dlg: { kind: 'new', f: this.blankF(), tried: false, saving: false, refused: false, ask: false } },
+      'over-month': { ...snap, dlg: D({}) }, 'over-half': { ...snap, dlg: D({ per: '2,000.00' }) },
+      errors: { ...snap, dlg: D({ who: '', per: '5,000.00' }, { tried: true }) },
+      saving: { ...snap, dlg: D({}, { tried: true, saving: true }) }, refused: { ...snap, dlg: D({}, { tried: true, refused: true }) },
+      discard: { ...snap, dlg: D({}, { ask: true }) },
+      draft: { ...snap, added: { code: 'SA-2611-002', f: NF }, flash: { id: 'SA-2611-002', n: 1 },
+        toast: { msg: 'Draft saved: SA-2611-002, Salary advance - Daniel, RM 4,000.00. Tick it to print its approval form.', undo: { kind: 'new', f: NF }, n: 1 } },
+      select: { ...snap, added: { code: 'SA-2611-002', f: NF }, tab: 'draft', sel: { 'SA-2611-002': true } },
+      waiting: pg('SA-2611-002'), approved: pg('SA-2611-001'), paid: { ...pg('SA-2611-001'), stages: { 'SA-2611-001': 'paid' } }, leaver: pg('SA-2606-001'),
+      withdraw: { ...pg('SA-2611-002'), dlg: W() }, 'withdraw-errors': { ...pg('SA-2611-002'), dlg: W({ tried: true }) },
+      'withdraw-refused': { ...pg('SA-2611-002'), dlg: W({ reason: 'Daniel no longer needs it', tried: true, refused: true }) },
+      withdrawn: { ...pg('SA-2611-002'), stages: { 'SA-2611-002': 'withdrawn' }, whys: { 'SA-2611-002': 'Daniel no longer needs it' } },
+      'kept-here': { co: 'AI', world: 'kh' }, empty: { co: 'AI' },
+      excel: { toast: { msg: 'Excel file ready: Advances AISB 18 Nov 2026.xlsx, 3 advances with amount, monthly deduction, repaid and balance left. It holds every advance, whatever the filter.', undo: null, n: 1 } },
+      loading: { load: 'loading' }, error: { load: 'error' }, many: { many: true }
+    }[view] || {};
+    return { ...base, ...set };
+  }
+  fmt(n) { return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  num(s) { const v = parseFloat(String(s == null ? '' : s).replace(/,/g, '')); return isNaN(v) ? 0 : v; }
+  MN() { return ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; }
+  ymLabel(ym) { const [y, m] = ym.split('-').map(Number); return this.MN()[m - 1].slice(0, 3) + ' ' + y; }
+  ymLong(ym) { const [y, m] = ym.split('-').map(Number); return this.MN()[m - 1] + ' ' + y; }
+  nextYm(ym) { let [y, m] = ym.split('-').map(Number); m++; if (m > 12) { m = 1; y++; } return y + '-' + String(m).padStart(2, '0'); }
+  plan(amt, per, from) {
+    const out = []; let left = Math.round(amt * 100) / 100, ym = from, i = 0;
+    if (!(amt > 0) || !(per > 0)) return out;
+    while (left > 0.004 && i < 120) { const d = Math.min(per, left); left = Math.round((left - d) * 100) / 100; out.push({ ym, d, left }); ym = this.nextYm(ym); i++; }
+    return out;
+  }
+  // the advances shown, by company and by the moment drawn
+  advs(st) {
+    const P = this.person.bind(this);
+    if (st.co === 'AI') {
+      if (st.world !== 'kh') return [];
+      const ai = [];
+      if (st.added) { const f = st.added.f, by = st.added.by || 'Aisha Rahman'; ai.push(this.dress(st, { id: st.added.code, co: 'AI', p: P(f.who), amt: this.num(f.amt), per: this.num(f.per), from: f.from, st: 'draft', entered: 'Mon 7 Dec 2026', by, hist: [{ when: 'Mon 7 Dec', what: 'Entered as a draft', detail: 'By ' + by + '.' + (f.note ? ' Note: ' + f.note + '.' : '') }] })); }
+      return ai.concat([this.dress(st, { id: 'SA-2612-001', co: 'AI', p: { no: 'A003', who: 'Priya', full: 'Priya Subramaniam', job: 'Quality officer', bank: 'the bank account on her staff record', basic: 4600 },
+        amt: 1200, per: 400, from: '2027-01', st: 'paid', entered: 'Tue 1 Dec 2026',
+        form: { code: 'AF-2612-001', by: 'Hassan Ismail', on: '2 Dec 2026', how: 'Digitally signed PDF, signer matched automatically', check: '—' },
+        paid: { on: 'Fri 4 Dec 2026', ref: 'Paid from To pay', from: 'AI\'s bank account' },
+        hist: [{ when: 'Fri 4 Dec', what: 'Paid', detail: 'From To pay. PV2612-001 posted: Advances to staff (Priya Subramaniam) / Bank.' }, { when: 'Wed 2 Dec', what: 'Approved on AF-2612-001', detail: 'Hassan Ismail, AI\'s only approver. Digitally signed PDF.' }, { when: 'Tue 1 Dec', what: 'Entered as a draft', detail: 'By Aisha Rahman.' }] })]);
+    }
+    const out = [];
+    if (st.world === 'today') out.push({ id: 'SA-2611-002', co: 'AISB', p: P('S009'), amt: 4000, per: 1000, from: '2026-12', st: 'wait', entered: 'Tue 17 Nov 2026',
+      form: { code: 'AF-2611-005', check: 'W4N-7ZKC', printed: 'Tue 17 Nov', with: 'This advance and CL-2611-001 (Kah Seng\'s claim), RM 4,145.00' },
+      hist: [{ when: 'Tue 17 Nov', what: 'Printed on AF-2611-005', detail: 'With CL-2611-001, Kah Seng\'s claim, RM 4,145.00 in all. By Aisha Rahman.' }, { when: 'Tue 17 Nov', what: 'Entered as a draft', detail: 'By Aisha Rahman. Asked for in writing that day.' }] });
+    if (st.added) {
+      const f = st.added.f, p = P(f.who), by = st.added.by || 'Aisha Rahman';
+      out.push({ id: st.added.code, co: 'AISB', p, amt: this.num(f.amt), per: this.num(f.per), from: f.from, st: 'draft', entered: st.world === 'snap' ? 'Tue 17 Nov 2026' : 'Wed 18 Nov 2026', note: f.note, by,
+        hist: [{ when: st.world === 'snap' ? 'Tue 17 Nov' : 'Wed 18 Nov', what: 'Entered as a draft', detail: 'By ' + by + '.' + (f.note ? ' Note: ' + f.note + '.' : '') }] });
+    }
+    out.push({ id: 'SA-2611-001', co: 'AISB', p: P('S004'), amt: 1500, per: 500, from: '2026-11', st: 'approved', entered: 'Mon 2 Nov 2026', due: 'Fri 20 Nov',
+      form: { code: 'AF-2611-001', check: 'C8W-3JTP', printed: 'Mon 2 Nov', by: 'Rajesh Kumar', on: '3 Nov 2026', up: 'Tue 3 Nov 2026', how: 'Digitally signed PDF, signer matched automatically' },
+      paid: { on: 'Fri 20 Nov 2026', ref: 'IBG 2011305', from: 'Maybank current ····4417' },
+      hist: [{ when: 'Tue 3 Nov, 15:13', what: 'Moved to To pay', detail: 'Due Fri 20 Nov, before the first deduction on Tue 24 Nov.' },
+        { when: 'Tue 3 Nov, 15:12', what: 'Approved on AF-2611-001', detail: 'Rajesh Kumar, date on the form 3 Nov 2026. Digitally signed PDF, matched automatically.' },
+        { when: 'Mon 2 Nov', what: 'Printed on AF-2611-001', detail: 'On its own, RM 1,500.00. By Aisha Rahman.' },
+        { when: 'Mon 2 Nov, 10:30', what: 'Entered as a draft', detail: 'By Aisha Rahman. Asked for on 2 Nov.' }] });
+    out.push({ id: 'SA-2606-001', co: 'AISB', p: { no: 'S010', who: 'Kavitha', full: 'Kavitha Nair', job: 'Marketing executive', bank: 'Maybank ····1196', basic: 3200, left: true }, amt: 2400, per: 400, from: '2026-07', st: 'closed', entered: 'Jun 2026', repaid: 2000, collect: 400,
+      hist: [{ when: 'Mon 31 Aug', what: 'Closed at leaving', detail: 'RM 1,600.00 taken from her August final pay, the 50% limit on RM 3,200.00 of wages. RM 400.00 left to collect, on her record and in the audit pack.',
+          hide: 'RM 1,600.00 taken from her August final pay, within the 50% limit. RM 400.00 left to collect, on her record and in the audit pack.' },
+        { when: 'Fri 31 Jul', what: 'Repaid RM 400.00', detail: 'From the July salary payment.' },
+        { when: 'Jun 2026', what: 'Paid and set up', detail: 'In Recurring, RM 400.00 a month from July 2026, before approval forms were kept.' }] });
+    return out.map(a => this.dress(st, a));
+  }
+  dress(st, a) {
+    const c = { ...a };
+    if (st.stages[c.id]) c.st = st.stages[c.id];
+    if (st.whys[c.id]) c.why = st.whys[c.id];
+    c.repaid = c.repaid || 0;
+    c.left = c.st === 'closed' ? c.collect : c.st === 'withdrawn' ? 0 : c.amt - c.repaid;
+    c.plan = this.plan(c.amt, c.per, c.from);
+    c.title = 'Salary advance - ' + (c.p ? c.p.who : '…');
+    return c;
+  }
+  tabOf(a) { return a.st; }
+  startToast(ms) {
+    clearTimeout(this._tt); clearTimeout(this._to);
+    this._tt = setTimeout(() => { if (!this.state.toast) return; this.setState({ toast: { ...this.state.toast, out: true } }); this._to = setTimeout(() => this.setState({ toast: null }), 200); }, ms || 6000);
+  }
+  toastPart(msg, undo) { this.startToast(undo ? 15000 : 6000); return { toast: { msg, undo: undo || null, n: ((this.state.toast && this.state.toast.n) || 0) + 1 } }; }
+
+  // Employment Act warnings for one advance (scope 5.5): warnings only
+  checks(a, hide) {
+    const out = [], b = a.p ? a.p.basic : 0, him = a.p && /^(S002|S004|S006|S009|A001|A004)$/.test(a.p.no) ? 'his' : 'her';
+    const look = t => ({ warn: ['#FFFBF2', '#F3D9A6', '#6B3A00', 'alert', 'warn'], ok: ['#F0FBF5', '#BFE8D0', '#0A6B3D', 'check', 'ok'], info: ['#F5F6F8', '#E3E7ED', '#25324A', 'help', 'muted'] }[t]);
+    const row = (t, head, text) => { const l = look(t); return { head, text, glyph: l[3], tone: l[4], style: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px;background:' + l[0] + ';border:1px solid ' + l[1] + ';color:' + l[2] }; };
+    if (!b) return out;
+    if (a.st === 'closed') {
+      out.push(row('info', 'Final pay within the 50% limit.', hide ? 'The most the limit allowed was taken from her final pay.' : 'RM 1,600.00 was taken from her August final pay: 50% of RM 3,200.00 of wages, the most the limit allowed.'));
+      out.push(row('warn', 'RM 400.00 is still to collect.', 'It stays on her record and in the audit pack until it is received.'));
+      return out;
+    }
+    const pct = Math.round(a.per / b * 100);
+    out.push(a.amt > b ? row('warn', 'More than one month\'s pay.', hide ? 'The advance is larger than ' + him + ' last month\'s wages.' : 'RM ' + this.fmt(a.amt) + ' is more than ' + him + ' pay for one month, RM ' + this.fmt(b) + ' (basic salary).')
+      : row('ok', 'Within one month\'s pay.', hide ? '' : 'RM ' + this.fmt(a.amt) + ' against RM ' + this.fmt(b) + ' (basic salary).'));
+    out.push(a.per > b / 2 ? row('warn', 'Over 50% of wages in a month.', (hide ? 'The monthly deduction is more than half of ' + him + ' wages.' : 'RM ' + this.fmt(a.per) + ' a month is ' + pct + '% of ' + him + ' wages (RM ' + this.fmt(b) + ').') + ' A month\'s deductions, not counting EPF, SOCSO, EIS, Lindung 24 Jam, PCB or zakat, should stay within 50% of wages.')
+      : row('ok', 'Within the 50% limit.', hide ? 'With any other deductions that month.' : 'RM ' + this.fmt(a.per) + ' a month is ' + pct + '% of ' + him + ' wages (RM ' + this.fmt(b) + '), with any other deductions that month.'));
+    out.push(row('info', 'No interest.', 'An advance is paid back at its amount.'));
+    return out;
+  }
+
+  renderVals() {
+    const st = this.state, isAI = st.co === 'AI', aina = st.user === 'aina', runsPay = !isAI;
+    const all = this.advs(st);
+    const isList = st.mode === 'list', isPage = st.mode === 'page';
+    const showLoading = isList && st.load === 'loading', showError = isList && st.load === 'error';
+    const showEmpty = isList && !showLoading && !showError && all.length === 0;
+    const showList = isList && !showLoading && !showError && all.length > 0;
+    const PILL = { draft: ['pl mute', 'edit', 'muted', 'Draft'], wait: ['pl warn', 'clock', 'warn', 'Waiting for approval'], approved: ['pl ok', 'check', 'ok', 'Approved'], paid: ['pl ok', 'payment', 'ok', 'Paid'],
+      notapproved: ['pl bad', 'close', 'bad', 'Not approved'], withdrawn: ['pl mute', 'undo', 'muted', 'Withdrawn'], closed: ['pl mute', 'logout', 'muted', 'Closed at leaving'] };
+    const openPage = id => { this._upFocus = 'ha-h1'; this.setState({ mode: 'page', id, say: 'Opened ' + id }); };
+    // ---- list ----
+    const qq = st.q.trim().toLowerCase();
+    const found = all.filter(a => !qq || (a.id + ' ' + a.title + ' ' + (a.p ? a.p.full + ' ' + a.p.no : '')).toLowerCase().includes(qq));
+    const shown = found.filter(a => st.tab === 'all' || this.tabOf(a) === st.tab);
+    const T = [['all', 'All'], ['draft', 'Draft'], ['wait', 'Waiting for approval'], ['approved', 'Approved'], ['paid', 'Paid'], ['notapproved', 'Not approved'], ['withdrawn', 'Withdrawn'], ['closed', 'Closed']];
+    const order = T.map(t => t[0]);
+    const pick = (k, focus) => { if (focus) this._upFocus = 'ha-tab-' + k; this.setState({ tab: k, pillN: this.state.pillN + 1, say: T[order.indexOf(k)][1] + ' advances' }); };
+    const tabs = T.map(([k, label]) => {
+      const n = k === 'all' ? found.length : found.filter(a => this.tabOf(a) === k).length;
+      return { id: 'ha-tab-' + k, label, n: String(n), sr: ', ' + n + (n === 1 ? ' advance' : ' advances'), cntCls: 'cnt' + (n && (k === 'wait' || k === 'draft') ? ' on' : ''),
+        sel: st.tab === k ? 'true' : 'false', ti: st.tab === k ? '0' : '-1', pick: () => pick(k, false),
+        key: e => { const i = order.indexOf(k); let j = -1;
+          if (e.key === 'ArrowRight') j = (i + 1) % order.length; else if (e.key === 'ArrowLeft') j = (i + order.length - 1) % order.length; else if (e.key === 'Home') j = 0; else if (e.key === 'End') j = order.length - 1;
+          if (j < 0) return; if (e.preventDefault) e.preventDefault(); pick(order[j], true); } };
+    });
+    const rowOf = a => {
+      const p = PILL[a.st], on = !!st.sel[a.id], last = a.plan.length ? a.plan[a.plan.length - 1].ym : a.from;
+      let form = '—', formSub = '', formHref = '', pay = '', payPill = '', payPillCls = '', payHref = '', payLink = '';
+      const lk = (h, l) => aina ? ['', ''] : [h, l];
+      if (a.st === 'draft') { formSub = 'Not on a form yet'; pay = 'Reaches To pay once approved'; }
+      else if (a.st === 'wait') { form = a.form.code; formHref = aina ? '' : 'Approvals.dc.html'; formSub = 'Printed ' + a.form.printed + ', waiting for the signed form'; pay = 'Reaches To pay once approved'; }
+      else if (a.st === 'approved') { form = a.form.code; formHref = aina ? '' : 'Approvals.dc.html'; formSub = 'Signed by ' + a.form.by + ', ' + a.form.on.replace(' 2026', ''); pay = 'In To pay · due ' + a.due; [payHref, payLink] = lk('ToPay.dc.html', 'Pay on To pay'); }
+      else if (a.st === 'paid') { form = a.form.code; formHref = aina ? '' : 'Approvals.dc.html'; formSub = 'Signed by ' + a.form.by + ', ' + a.form.on.replace(' 2026', ''); pay = 'Paid ' + a.paid.on.replace(' 2026', ''); [payHref, payLink] = lk('PaymentsRegister.dc.html', 'Payments register'); }
+      else if (a.st === 'withdrawn') { form = a.form ? a.form.code : '—'; formHref = a.form && !aina ? 'Approvals.dc.html' : ''; formSub = 'Left out: withdrawn'; pay = '—'; payPill = 'Reason: ' + a.why; payPillCls = 'pl mute'; }
+      else if (a.st === 'closed') { formSub = 'Before approval forms were kept'; pay = 'Paid Jun 2026'; payPill = 'Left 31 Aug 2026'; payPillCls = 'pl mute'; }
+      const hide = aina;
+      const flag = a.st === 'closed' || a.st === 'withdrawn' || !a.p ? '' : a.amt > a.p.basic ? 'More than one month\'s pay' + (hide ? '' : ' (RM ' + this.fmt(a.p.basic) + ')') : a.per > a.p.basic / 2 ? 'Over 50% of wages a month' : '';
+      return { id: a.id, title: a.title, who: a.p ? a.p.who : '', whoHref: 'HrStaffRecord.dc.html' + (a.p ? '#' + a.p.no + '-claims' : ''), no: a.p ? a.p.no + (a.p.left ? ' · left 31 Aug 2026' : '') : '', flag,
+        cls: 'hr' + (st.flash.id === a.id ? (st.flash.n % 2 ? ' fa' : ' fb') : ''), rowStyle: on ? 'background:#F3F6FE' : '',
+        canSel: a.st === 'draft', on, selLabel: 'Select ' + a.id + ', ' + (a.p ? a.p.who : '') + ', RM ' + this.fmt(a.amt),
+        toggle: e => { const v = !!(e && e.target && e.target.checked); this.setState({ sel: { ...this.state.sel, [a.id]: v } }); },
+        open: () => openPage(a.id), openLabel: 'Open ' + a.id + ', ' + a.title,
+        per: this.fmt(a.per) + ' a month', months: a.st === 'closed' ? 'Jul 2026, then her final pay' : this.ymLabel(a.from) + ' to ' + this.ymLabel(last),
+        pillCls: p[0], pillGlyph: p[1], pillTone: p[2], pill: p[3],
+        form, formHref, noForm: !formHref, formSub, pay, payPill, payPillCls, payHref, payLink,
+        amt: this.fmt(a.amt), left: a.st === 'withdrawn' ? '—' : this.fmt(a.left), collect: a.st === 'closed' ? 'To collect' : '' };
+    };
+    const rows = shown.map(rowOf);
+    // summary cards
+    const sum = l => 'RM ' + this.fmt(l.reduce((s, a) => s + a.amt, 0));
+    const cnt = l => l.length ? l.length + ' · ' + sum(l) : '0';
+    const box = 'border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:4px;min-width:0;text-decoration:none;color:#0F1A2B;background:#FFFFFF;border:1px solid #E3E7ED;text-align:left;font:inherit;cursor:pointer';
+    const plainBox = box.replace(';cursor:pointer', '');
+    const draftL = all.filter(a => a.st === 'draft'), waitL = all.filter(a => a.st === 'wait'), apprL = all.filter(a => a.st === 'approved');
+    const owedL = all.filter(a => a.st === 'paid' || a.st === 'closed');
+    const card = (o, href) => aina && href ? { ...o, isLink: false, isBtn: false, isPlain: true, box: plainBox, go: 'On ' + o.place + ', in Payments (not in your access)' } : { ...o, isLink: !!href, isBtn: !href, isPlain: false, href: href || '', box };
+    const first = draftL.length
+      ? card({ label: 'Drafts, not on a form', glyph: 'edit', tone: 'muted', value: cnt(draftL), note: 'Tick them to print one approval form', go: 'Open Approvals, To print', place: 'Approvals' }, 'Approvals.dc.html')
+      : card({ label: 'Waiting for approval', glyph: 'clock', tone: 'warn', value: cnt(waitL), note: waitL.length ? 'On AF-2611-005, printed Tue 17 Nov' : 'Nothing waiting', go: 'Open Approvals', place: 'Approvals' }, 'Approvals.dc.html');
+    const owedTotal = owedL.reduce((s, a) => s + a.left, 0);
+    const sums = [first,
+      card({ label: 'Approved, in To pay', glyph: 'toPay', tone: 'brand', value: cnt(apprL), note: apprL.length ? 'Due Fri 20 Nov, before the first deduction on Tue 24 Nov' : 'Nothing to pay', go: 'Open To pay', place: 'To pay' }, 'ToPay.dc.html'),
+      isAI ? card({ label: 'Owed by staff', glyph: 'advance', tone: 'brand', value: 'RM ' + this.fmt(owedTotal), note: 'Priya, repaid from January 2027. Matches Advances to staff.', go: 'Open SA-2612-001', open: () => openPage('SA-2612-001') })
+        : card({ label: 'Owed by staff', glyph: 'advance', tone: 'bad', value: 'RM ' + this.fmt(owedTotal), note: 'RM 400.00 to collect from Kavitha Nair, who left on 31 Aug. Hafiz\'s RM 1,500.00 counts once it is paid.', go: 'Open SA-2606-001', open: () => openPage('SA-2606-001') })];
+    // Kept here check (AI, once it has a chart)
+    const kh = { on: isAI && st.world === 'kh', result: 'Matches', rows: [{ who: 'Priya Subramaniam (A003)', here: '1,200.00', books: '1,200.00', res: 'Matches' }] };
+    // selection
+    const selL = all.filter(a => st.sel[a.id] && a.st === 'draft'), selN = selL.length;
+    const bulk = { on: selN > 0, text: selN + ' selected · ' + sum(selL), label: 'Print approval form for ' + selN + (selN === 1 ? ' advance' : ' advances') + ' · ' + sum(selL),
+      note: isAI ? 'AI\'s only approver, Hassan Ismail, is printed on it. To print it with other requests, use Payments › Approvals, To print.' : 'AISB\'s approvers Hassan Ismail, Tan Mei Ling and Rajesh Kumar are printed on it; any one signature approves it. To print it with other requests, such as Kah Seng\'s claim CL-2611-001, use Payments › Approvals, To print.' };
+    const many = st.many ? { on: true, off: st.manyShown >= 60, label: st.manyShown >= 60 ? 'All 60 shown' : 'Show 25 more', more: () => this.setState({ manyShown: Math.min(60, this.state.manyShown + 25), say: 'Showing ' + Math.min(60, this.state.manyShown + 25) + ' of 60 advances' }),
+      note: 'Many rows: 60 is an example count for a stress case, not a figure from the samples. The board draws the sample advances as the first rows. The header stays at the top while the list scrolls, and the Excel file always holds every advance.' }
+      : { on: false, off: true, label: '', more: () => {}, note: '' };
+    const tabName = T[order.indexOf(st.tab)][1];
+    // note strip above the list
+    let note = null;
+    if (st.world === 'snap') note = st.added
+      ? ['history', 'warn', 'Drawn as on Tue 17 Nov 2026, just after SA-2611-002 was saved as a draft.', 'Daniel asked for RM 4,000.00 that day. Next it was printed with Kah Seng\'s claim CL-2611-001 on AF-2611-005 (keyed check W4N-7ZKC).']
+      : ['history', 'warn', 'Drawn as on Tue 17 Nov 2026, before SA-2611-002 was entered.', 'Daniel asked for RM 4,000.00 that day. After it was saved, it was printed with Kah Seng\'s claim CL-2611-001 on AF-2611-005 (keyed check W4N-7ZKC).'];
+    else if (st.world === 'kh') note = ['history', 'warn', 'An example from later, once Agrinexus International has a chart of accounts with an Advances to staff account.', 'Today AI has no chart and no advances. Priya\'s advance and its figures are examples, not from the samples.'];
+    else if (aina) note = ['eyeOff', 'muted', 'Seen as Nurul Aina: HR, without the Payroll figures right.', 'Amounts and schedules show; pay figures in the warnings are hidden. Approvals and To pay are Payments pages, so their names show without links.'];
+    const noteStyle = note && note[1] === 'muted' ? 'background:#F5F6F8;border:1px solid #E3E7ED;color:#25324A' : 'background:#FFFBF2;border:1px solid #F3D9A6;color:#6B3A00';
+    const helpText = 'An advance is a request: it goes on an approval form, any one approver\'s signature approves it, and once approved it waits on To pay with its own due date. Approval never blocks paying. ' +
+      (runsPay ? 'Each month\'s repayment comes off the pay as a deduction line on the payslip (HR › Payroll), and the balance left goes down. ' : 'Each month\'s repayment comes off the recurring salary payment, so the payment is lower. ') +
+      'A person who leaves with a balance has it taken from the final pay, within the 50% limit; anything left is kept as an amount to collect. ' +
+      (isAI ? 'AI is Kept here: paying posts a payment voucher to Advances to staff.' : 'AISB is Kept in SQL Account: each payment is matched to SQL\'s voucher as today, and nothing is posted here.');
+    // ---- page ----
+    const pg = isPage ? this.pageVals(st, all, PILL, aina) : this.emptyPage();
+    // ---- dialogs ----
+    const d = st.dlg, isNew = !!d && d.kind === 'new', isWd = !!d && d.kind === 'wd';
+    const nf = this.formVals(st, isNew ? d : null, aina);
+    const pa = isWd ? all.find(a => a.id === st.id) : null;
+    const reasonErr = isWd && d.tried && !d.reason.trim() ? 'Say why it is withdrawn.' : '';
+    const wd = { reason: isWd ? d.reason : '', reasonInv: reasonErr ? 'true' : 'false', reasonErr, reasonBy: ['ha-reason-hint', reasonErr ? 'ha-reason-err' : ''].filter(Boolean).join(' '), saving: !!(isWd && d.saving),
+      onReason: ev => { const v = ev && ev.target ? ev.target.value : ''; if (this.state.dlg) this.setState({ dlg: { ...this.state.dlg, reason: v, refused: false } }); },
+      points: (pa && pa.st === 'wait' ? ['It is cancelled before payment, kept and never deleted. It shows in the list as Withdrawn.', 'AF-2611-005 still approves CL-2611-001 when it comes back signed; this advance is left out.', 'No deduction is made from ' + (pa.p ? pa.p.who + '\'s' : 'the') + ' pay.']
+        : ['It is cancelled before payment, kept and never deleted.', 'It never reaches To pay, and nothing comes off the pay.']).map(text => ({ text })),
+      go: () => this.wdGo() };
+    const dlg = { show: !!d, isNew, isWd, dimCls: st.closing ? 'dim-out' : 'dim-in', panelCls: st.closing ? 'dr-out' : 'dr-in',
+      panelStyle: 'pointer-events:auto;position:relative;width:100%;max-width:' + (isNew ? 640 : 540) + 'px;max-height:100%;overflow-y:auto;box-sizing:border-box;background:#FFFFFF;border:1px solid #E3E7ED;border-radius:16px;box-shadow:0 16px 40px rgba(13,27,46,.18);display:flex;flex-direction:column',
+      plate: 'flex:none;width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:' + (isWd ? '#EEF1F5' : '#EAF0FD'),
+      glyph: isWd ? 'undo' : 'advance', tone: isWd ? 'muted' : 'brand',
+      title: isWd ? 'Withdraw ' + (pa ? pa.id : '') + '?' : 'New salary advance',
+      desc: isWd ? (pa ? pa.title + ', RM ' + this.fmt(pa.amt) + '.' : '') : (isAI ? 'Agrinexus International' : 'AISB Sdn Bhd') + '. Saving makes a draft; a draft goes on an approval form, and once approved it is paid from To pay.',
+      refused: !!(d && d.refused), refusedHead: isWd ? 'Nothing was withdrawn' : 'Nothing was saved',
+      refusedText: isWd ? 'SA-2611-002 was changed on Approvals a moment ago: AF-2611-005 has just been uploaded. Close this, reload the advance to see it, then withdraw it again if it is still needed. Your reason is kept.'
+        : 'Daniel\'s advances were changed in another window after this form was opened: Nurul Aina entered SA-2611-002 for him a moment ago, RM 4,000.00. Close this and open it in the list; save this one only if Daniel asked for a second advance. What you typed is kept.',
+      saving: !!(d && d.saving), idle: !(d && d.saving), busy: d && d.saving ? 'true' : 'false',
+      goLabel: d && d.saving ? (isWd ? 'Withdrawing…' : 'Saving…') : isWd ? 'Withdraw' : 'Save draft',
+      asking: !!(d && d.ask), notAsking: !(d && d.ask), askText: isWd ? 'Discard your changes?' : 'Discard this new advance?',
+      keep: () => { this._upFocus = isWd ? 'ha-reason' : 'ha-save'; if (this.state.dlg) this.setState({ dlg: { ...this.state.dlg, ask: false } }); },
+      discard: () => this.closeDlg({ say: isWd ? 'Not withdrawn' : 'New advance discarded' }),
+      close: () => this.askClose(),
+      onAnim: ev => { if (this.state.closing && ev && ev.target === ev.currentTarget) this.finishClose(); },
+      key: ev => {
+        if (!ev) return;
+        if (ev.key === 'Escape') { if (ev.preventDefault) ev.preventDefault(); if (ev.stopPropagation) ev.stopPropagation(); const dd = this.state.dlg; if (dd && dd.ask) { this._upFocus = dd.kind === 'wd' ? 'ha-reason' : 'ha-save'; this.setState({ dlg: { ...dd, ask: false } }); } else this.askClose(); return; }
+        if (ev.key !== 'Tab' || !ev.currentTarget || !ev.currentTarget.querySelectorAll) return;
+        const fs = [...ev.currentTarget.querySelectorAll('button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')];
+        if (!fs.length) return;
+        const f0 = fs[0], fl = fs[fs.length - 1], ae = document.activeElement, inside = ev.currentTarget.contains(ae);
+        if (ev.shiftKey && (!inside || ae === f0 || ae === ev.currentTarget || (ae && ae.id === 'ha-dlg-title'))) { ev.preventDefault(); fl.focus(); }
+        else if (!ev.shiftKey && (!inside || ae === fl)) { ev.preventDefault(); f0.focus(); }
+      } };
+    const t = st.toast;
+    const cantNew = isAI && st.world !== 'kh';
+    return {
+      sbCo: isAI ? 'ai' : 'aisb', sbKind: isAI ? 'here' : 'sqlPayroll', sbAccess: aina ? 'hrOnly' : 'full', tbUser: aina ? 'aina' : 'aisha',
+      tbSub: isPage ? pg.code : 'Advances', say: st.say, coName: isAI ? 'Agrinexus International' : 'AISB Sdn Bhd',
+      onTopCo: code => { const k = String(code).toUpperCase(); if ((k === 'AISB' || k === 'AI') && k !== this.state.co) this.setState({ ...this.initial(k === 'AI' ? 'empty' : 'list'), say: 'Showing ' + k + ' advances' }); },
+      isList, isPage, showLoading, showError, showEmpty, showList,
+      cantNew, newBy: cantNew && showEmpty ? 'ha-nonew' : '', excelOff: !showList,
+      openNew: ev => { if (cantNew) return; this._opener = (ev && ev.currentTarget) || document.activeElement; this.setState({ dlg: { kind: 'new', f: this.blankF(), tried: false, saving: false, refused: false, ask: false }, closing: false }); },
+      doExcel: () => { const m = 'Excel file ready: Advances ' + this.state.co + ' 18 Nov 2026.xlsx, ' + all.length + (all.length === 1 ? ' advance' : ' advances') + ' with amount, monthly deduction, repaid and balance left' + (aina ? '; pay figures left out' : '') + '. It holds every advance, whatever the filter.'; this.setState({ say: m, ...this.toastPart(m, null) }); },
+      retry: () => { this._upFocus = 'ha-h1'; this.setState({ load: 'ok', say: 'Advances loaded' }); },
+      emptyText: 'Agrinexus International has no salary advances. A new one needs AI\'s chart of accounts first: paying an advance posts it to Advances to staff, and AI has no chart yet.',
+      emptyChart: isAI,
+      noteOn: !!note && showList, noteGlyph: note ? note[0] : 'history', noteTone: note ? note[1] : 'warn', noteHead: note ? note[2] : '', noteText: note ? note[3] : '', noteStyle,
+      sums, kh, countText: st.many ? '60 advances' : (qq || st.tab !== 'all') ? rows.length + ' of ' + all.length + ' shown' : all.length + (all.length === 1 ? ' advance' : ' advances'),
+      q: st.q, onQ: e => this.setState({ q: e && e.target ? e.target.value : '' }),
+      tabs, panelBy: 'ha-tab-' + st.tab, panelCls: st.pillN % 2 ? 'swapA' : 'swapB',
+      bulk, clearSel: () => this.setState({ sel: {}, say: 'Selection cleared' }),
+      caption: 'Salary advances, ' + tabName.toLowerCase(), rows, scrollStyle: st.many ? 'max-height:520px;overflow:auto' : 'overflow-x:auto',
+      noRows: showList && rows.length === 0,
+      noRowsText: qq ? 'No advances match “' + st.q.trim() + '”.' : st.tab === 'draft' ? 'No draft advances. An advance is a draft until it is printed on an approval form.' : st.tab === 'paid' ? 'No advance is paid and being repaid yet. SA-2611-001 is approved and waiting in To pay.' : 'No ' + tabName.toLowerCase() + ' advances.',
+      clearFilters: () => { this._upFocus = 'ha-list-h'; this.setState({ tab: 'all', q: '', pillN: this.state.pillN + 1, say: 'Showing all advances' }); },
+      footText: st.many ? 'Showing ' + st.manyShown + ' of 60 advances' : 'Showing ' + rows.length + ' of ' + all.length + (all.length === 1 ? ' advance' : ' advances') + (rows.length ? ' · amount RM ' + this.fmt(shown.reduce((s, a) => s + a.amt, 0)) : ''),
+      many, helpText,
+      pg, backToList: () => { const id = this.state.id; this._upFocus = 'ha-list-h'; this.setState({ mode: 'list', flash: { id, n: this.state.flash.n + 1 }, say: 'Back to the advances list' }); },
+      openWithdraw: ev => { this._opener = (ev && ev.currentTarget) || document.activeElement; this.setState({ dlg: { kind: 'wd', reason: '', tried: false, saving: false, refused: false, ask: false }, closing: false }); },
+      dlg, nf, wd,
+      toastOn: !!t, toastMsg: t ? t.msg : '', toastUndo: !!(t && t.undo), toastCls: t ? (t.out ? 'tOut' : (t.n % 2 ? 'tA' : 'tB')) : '',
+      toastHold: () => clearTimeout(this._tt), toastRelease: () => { if (this.state.toast) this.startToast(this.state.toast.undo ? 15000 : 6000); },
+      toastClose: () => { clearTimeout(this._tt); this.setState({ toast: null }); },
+      undo: () => this.undo()
+    };
+  }
+
+  emptyPage() {
+    return { example: '', coName: '', code: '', pillCls: 'pl mute', pillGlyph: 'edit', pillTone: 'muted', pill: '', locked: false, title: '', amt: '', perText: '', canWithdraw: false, canPrint: false, canPay: false, canCollect: false,
+      steps: [], schedNote: '', totals: [], sched: [], howGlyph: 'payroll', howText: '', howHref: 'HrAdvances.dc.html', howLink: '', checks: [], hidden: false, kindLabel: '', bookText: '', vouchers: [], bookStatus: '',
+      bookStatusStyle: '', bookGlyph: 'clock', bookTone: 'muted', hist: [], apFacts: [], apNote: '', apNoteStyle: '', apNoteGlyph: 'help', apNoteTone: 'muted', apLinks: [], payFacts: [], payLinks: [], payPill: '', payPillCls: '',
+      whoName: '', whoHref: 'HrStaffRecord.dc.html', whoMeta: '', whoLeft: '' };
+  }
+  pageVals(st, all, PILL, aina) {
+    const a = all.find(x => x.id === st.id) || all[0];
+    if (!a) return this.emptyPage();
+    const isAI = a.co === 'AI', p = PILL[a.st], F = (k, v) => ({ k, v }), who = a.p ? a.p.who : '';
+    const S = (name, k, text) => {
+      const look = { done: ['#E3F7EC', 'check', 'ok', 'Done'], now: ['#EAF0FD', 'clock', 'brand', 'Now'], later: ['#EEF1F5', 'clock', 'muted', 'Later'], stop: ['#EEF1F5', 'close', 'muted', 'Stopped'], bad: ['#FDE6E3', 'alert', 'bad', 'Open'] }[k];
+      return { name, text, glyph: look[1], tone: look[2], sr: ' (' + look[3] + ')',
+        box: 'display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:12px;background:#FFFFFF;border:1px solid ' + (k === 'now' ? '#C9D7F7' : k === 'bad' ? '#F5C2BB' : '#E3E7ED'),
+        dot: 'flex:none;width:28px;height:28px;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;background:' + look[0] };
+    };
+    const ent = 'Entered ' + a.entered.replace(' 2026', '') + ' by ' + (a.by || 'Aisha Rahman'), rec = isAI ? 'Posted here' : 'Matched to SQL\'s voucher';
+    let steps;
+    if (a.st === 'draft') steps = [S('1 Request', 'done', ent), S('2 Approve', 'now', 'Not on a form yet'), S('3 Pay', 'later', 'Reaches To pay once approved'), S('4 Record', 'later', rec)];
+    else if (a.st === 'wait') steps = [S('1 Request', 'done', ent), S('2 Approve', 'now', 'On ' + a.form.code + ', printed ' + a.form.printed), S('3 Pay', 'later', 'Reaches To pay once approved'), S('4 Record', 'later', rec)];
+    else if (a.st === 'approved') steps = [S('1 Request', 'done', ent), S('2 Approve', 'done', a.form.by + ', ' + a.form.on.replace(' 2026', '')), S('3 Pay', 'now', 'In To pay, due ' + a.due), S('4 Record', 'later', rec)];
+    else if (a.st === 'paid') steps = [S('1 Request', 'done', ent), S('2 Approve', 'done', a.form.by + ', ' + a.form.on.replace(' 2026', '')), S('3 Pay', 'done', 'Paid ' + a.paid.on.replace(' 2026', '')), isAI ? S('4 Record', 'done', 'PV2612-001 posted here') : S('4 Record', 'now', 'Waiting for SQL record')];
+    else if (a.st === 'withdrawn') steps = [S('1 Request', 'done', ent), S('2 Approve', 'stop', 'Withdrawn: ' + a.why), S('3 Pay', 'stop', 'Nothing to pay'), S('4 Record', 'stop', 'Nothing to record')];
+    else steps = [S('1 Request', 'done', 'Set up in June 2026, in Recurring'), S('2 Approve', 'stop', 'Before approval forms were kept'), S('3 Pay', 'done', 'Paid in June 2026'), S('4 Record', 'bad', 'RM 400.00 to collect')];
+    // schedule
+    const PAYDAY = { '2026-11': 'Tue 24 Nov' };
+    let sched;
+    if (a.st === 'closed') {
+      sched = [{ m: 'Jul 2026', off: 'The July salary payment', sub: '', ded: '400.00', pill: 'Repaid', pillCls: 'pl ok', left: '2,000.00', rowStyle: '' },
+        { m: 'Aug 2026', off: 'Her August final pay', sub: aina ? 'Within the 50% limit' : 'The 50% limit on RM 3,200.00 of wages', ded: '1,600.00', pill: 'Repaid', pillCls: 'pl ok', left: '400.00', rowStyle: '' },
+        { m: 'After leaving', off: 'To collect from her', sub: 'Not covered by her final pay', ded: '400.00', pill: 'To collect', pillCls: 'pl bad', left: '400.00', rowStyle: 'background:#FDF3F2' }];
+    } else {
+      const started = a.st === 'approved' || a.st === 'paid';
+      sched = a.plan.map((x, i) => ({ m: this.ymLabel(x.ym), off: isAI ? 'The ' + this.ymLong(x.ym) + ' salary payment' : 'The ' + this.ymLong(x.ym) + ' pay',
+        sub: PAYDAY[x.ym] ? 'Pay day ' + PAYDAY[x.ym] : '', ded: this.fmt(x.d), pill: a.st === 'withdrawn' ? 'Cancelled' : started && i === 0 ? 'Next' : 'To come', pillCls: a.st === 'withdrawn' ? 'pl mute' : started && i === 0 ? 'pl info' : 'pl mute',
+        left: a.st === 'withdrawn' ? '—' : this.fmt(x.left), rowStyle: started && i === 0 ? 'background:#F7F9FE' : '' }));
+    }
+    const tbox = (i, last) => 'display:flex;flex-direction:column;gap:2px;padding:12px 20px' + (last ? '' : ';border-right:1px solid #EEF1F5');
+    const totals = [{ k: 'Amount', v: 'RM ' + this.fmt(a.amt) }, { k: 'Repaid so far', v: 'RM ' + this.fmt(a.repaid) }, { k: a.st === 'closed' ? 'To collect' : 'Balance left', v: a.st === 'withdrawn' ? '—' : 'RM ' + this.fmt(a.left) }]
+      .map((x, i) => ({ ...x, box: tbox(i, i === 2), vStyle: 'font-family:\'Space Grotesk\',Inter,sans-serif;font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;color:' + (i === 2 && a.st === 'closed' ? '#B0190F' : '#0F1A2B') }));
+    const last = a.plan.length ? a.plan[a.plan.length - 1].ym : a.from;
+    const schedNote = a.st === 'closed' ? 'The plan was RM 400.00 a month to Dec 2026; it closed when she left.' : (a.plan.length === 1 ? '1 deduction of RM ' + this.fmt(a.plan[0].d) + ', in ' + this.ymLabel(a.from) : a.plan.length + ' deductions of RM ' + this.fmt(a.per) + ', ' + this.ymLabel(a.from) + ' to ' + this.ymLabel(last)) + (a.st === 'draft' || a.st === 'wait' ? '. They start once it is approved and paid.' : '.');
+    const howText = a.st === 'closed' ? 'What is still owed is kept on her record and in the audit pack. Money she pays back is recorded as money in on the Payments register, then linked here.'
+      : isAI ? 'AI doesn\'t run payroll in this app: each deduction comes off the recurring salary payment, as today, so the payment is lower.'
+      : 'AISB runs payroll in this app: each deduction is a line on the payslip, and the balance left goes down when the run is paid.';
+    // approval card
+    const look = t => ({ warn: ['#FFFBF2', '#F3D9A6', '#6B3A00', 'alert', 'warn'], bad: ['#FDF3F2', '#F5C2BB', '#8E1A10', 'alert', 'bad'], info: ['#EAF0FD', '#C9D7F7', '#1D2F5C', 'help', 'brand'], ok: ['#F0FBF5', '#BFE8D0', '#0A6B3D', 'check', 'ok'] }[t]);
+    const L = (label, href) => ({ label, href });
+    // the printed form opens on the state drawn for that form (PrintApprovalForm reads the hash on first load)
+    const pfHref = code => 'PrintApprovalForm.dc.html' + ({ 'AF-2611-005': '#claim-advance', 'AF-2611-001': '#advance' }[code] || '');
+    const pay = aina ? [] : null;
+    let apFacts, apNote, apTone, apLinks;
+    if (a.st === 'draft') { apFacts = [F('Form', 'Not on a form yet'), F('Approvers', 'Hassan Ismail, Tan Mei Ling, Rajesh Kumar')]; apNote = 'Any one signature approves the form.'; apTone = 'info'; apLinks = [L('Print approval form', 'PrintApprovalForm.dc.html'), L('Approvals, To print', 'Approvals.dc.html')]; }
+    else if (a.st === 'wait') { apFacts = [F('Form', a.form.code), F('Keyed check', a.form.check), F('Printed', a.form.printed + ', by Aisha Rahman'), F('On the form', a.form.with), F('Approvers', 'Hassan Ismail, Tan Mei Ling, Rajesh Kumar')];
+      apNote = 'Waiting for the signed form. Any one signature approves it. The warning about one month\'s pay is printed on the form for the approver.'; apTone = 'info';
+      apLinks = [L('Upload the signed form', 'ApprovalUpload.dc.html'), L('Open on Approvals', 'Approvals.dc.html'), L('See the printed form', pfHref(a.form.code))]; }
+    else if (a.st === 'approved' || a.st === 'paid') {
+      apFacts = isAI ? [F('Form', a.form.code), F('Signed by', a.form.by + ', AI\'s only approver'), F('Date on form', a.form.on), F('How', a.form.how)]
+        : [F('Form', a.form.code), F('Keyed check', a.form.check + ', matches the advance as it is now'), F('Signed by', a.form.by), F('Date on form', a.form.on), F('Uploaded', a.form.up), F('How', a.form.how)];
+      apNote = 'Approved and locked. Changing its amount, payee or schedule sends it back to Draft and needs a new form.'; apTone = 'ok';
+      apLinks = [L('Open on Approvals', 'Approvals.dc.html'), L('See the printed form', pfHref(a.form.code))]; }
+    else if (a.st === 'withdrawn') { apFacts = [F('Form', a.form.code + ', this advance left out'), F('Reason', '“' + a.why + '”'), F('Withdrawn by', 'Aisha Rahman, Wed 18 Nov')]; apNote = 'Kept, never deleted. CL-2611-001 on the same form is not affected.'; apTone = 'info'; apLinks = [L('Approvals, Not approved and Withdrawn', 'Approvals.dc.html')]; }
+    else { apFacts = [F('Form', 'None: set up in June 2026'), F('Why', 'Approval forms are kept from October 2026')]; apNote = 'It is not on the Paid without approval on file list, which starts with October 2026.'; apTone = 'info'; apLinks = [L('Audit pack, HR pages', 'AuditPackHR.dc.html')]; }
+    if (aina) { apLinks = apLinks.filter(x => x.href !== 'Approvals.dc.html' && x.href !== 'ApprovalUpload.dc.html'); }
+    const apLook = look(apTone);
+    // payment card
+    const bank = a.p ? a.p.bank : '';
+    let payFacts, payLinks, payPill = '', payPillCls = '';
+    if (a.st === 'draft' || a.st === 'wait') { payFacts = [F('To pay', 'Not yet: it reaches To pay once approved'), F('Pay to', bank + ', ' + who + ' (from the staff record)')]; payLinks = [L('To pay', 'ToPay.dc.html')]; }
+    else if (a.st === 'approved') { payFacts = [F('In To pay', 'Since Tue 3 Nov'), F('Due', 'Fri 20 Nov, before the first deduction on Tue 24 Nov'), F('Pay to', bank + ', ' + who)]; payPill = 'Due in 2 days'; payPillCls = 'pl warn'; payLinks = [L('Pay it on To pay', 'ToPay.dc.html'), L('Open the payment', 'Payment.dc.html')]; }
+    else if (a.st === 'paid') { payFacts = isAI ? [F('Paid', a.paid.on), F('How', a.paid.ref), F('Pay to', bank)] : [F('Paid', a.paid.on), F('Bank reference', a.paid.ref), F('From', a.paid.from), F('Entered by', 'Aisha Rahman, on To pay')]; payPill = 'Paid'; payPillCls = 'pl ok'; payLinks = [L('Open the payment', 'Payment.dc.html'), L('Payments register', 'PaymentsRegister.dc.html')]; }
+    else if (a.st === 'withdrawn') { payFacts = [F('To pay', 'Nothing to pay: it never reached To pay')]; payLinks = [L('To pay', 'ToPay.dc.html')]; }
+    else { payFacts = [F('Paid', 'June 2026, before the first month tracked here (September 2026)'), F('Pay to', bank), F('To collect', 'RM 400.00')]; payPill = 'To collect'; payPillCls = 'pl bad'; payLinks = [L('Payments register', 'PaymentsRegister.dc.html')]; }
+    if (aina) { payFacts = payFacts.concat([F('Access', 'To pay and the register are Payments pages, not in your access')]); payLinks = []; }
+    // booking
+    let bookText, bookStatus = '', bookGlyph = 'clock', bookTone = 'warn', vouchers = [];
+    if (isAI) {
+      bookText = 'Agrinexus International is Kept here. Paying the advance posted a payment voucher to Advances to staff, one line per person. Each repayment takes it off that line inside the month\'s salary journal.';
+      vouchers = [{ code: 'PV2612-001', when: 'On payment · AI\'s own series', rows: [{ acct: 'Advances to staff (Priya Subramaniam)', dr: '1,200.00', cr: '' }, { acct: 'Bank', dr: '', cr: '1,200.00' }] }];
+      bookStatus = 'Balance left RM 1,200.00 equals Priya\'s line in Advances to staff: matches.'; bookGlyph = 'check'; bookTone = 'ok';
+    } else {
+      bookText = 'AISB is Kept in SQL Account: the payment is matched to SQL\'s payment voucher, as today. Nothing is posted here.';
+      if (a.st === 'paid') bookStatus = 'Waiting for SQL record: Fetch from SQL exports links it once SQL has the payment voucher.';
+      if (a.st === 'closed') { bookStatus = 'Paid in June 2026, before the first month tracked here. The amount to collect is in the audit pack.'; bookGlyph = 'help'; bookTone = 'muted'; }
+    }
+    const bookLook = bookTone === 'ok' ? 'background:#F0FBF5;border:1px solid #BFE8D0;color:#0A6B3D' : bookTone === 'muted' ? 'background:#F5F6F8;border:1px solid #E3E7ED;color:#25324A' : 'background:#FFFBF2;border:1px solid #F3D9A6;color:#6B3A00';
+    // history
+    let hist = a.hist.slice();
+    if (a.st === 'paid' && !isAI) hist.unshift({ when: 'Fri 20 Nov', what: 'Paid', detail: 'On To pay by Aisha Rahman, ref ' + a.paid.ref + ', ' + a.paid.from + '.' });
+    if (a.st === 'withdrawn') hist.unshift({ when: 'Wed 18 Nov', what: 'Withdrawn', detail: 'By Aisha Rahman. Reason: “' + a.why + '”.' });
+    hist = hist.map((h, i) => ({ when: h.when, what: h.what, detail: aina && h.hide ? h.hide : h.detail, cls: i === 0 && st.histFlash ? (st.histFlash % 2 ? 'fa blk' : 'fb blk') : '' }));
+    const ex = a.st === 'paid' && !isAI ? 'An example: SA-2611-001 once it is paid from To pay on its due date, Fri 20 Nov. Today it is approved and waiting in To pay. The bank reference is an example.'
+      : a.st === 'withdrawn' ? 'An example: what SA-2611-002 shows if it is withdrawn. Today it is waiting for approval on AF-2611-005.'
+      : isAI ? 'An example from later, once Agrinexus International has a chart of accounts with an Advances to staff account. The advance and its figures are examples, not from the samples.' : '';
+    const nL = a.plan.length;
+    return {
+      example: ex, coName: isAI ? 'Agrinexus International' : 'AISB Sdn Bhd', code: a.id, title: a.title,
+      pillCls: p[0] + (st.pillN % 2 ? ' swapA' : ' swapB'), pillGlyph: p[1], pillTone: p[2], pill: p[3], locked: a.st === 'approved',
+      amt: 'RM ' + this.fmt(a.amt), perText: a.st === 'closed' ? 'RM 400.00 a month from Jul 2026, closed at leaving' : 'RM ' + this.fmt(a.per) + ' a month, ' + this.ymLabel(a.from) + ' to ' + this.ymLabel(last),
+      canWithdraw: a.st === 'wait' || a.st === 'draft', canPrint: a.st === 'draft', canPay: a.st === 'approved' && !aina, canCollect: a.st === 'closed' && !aina,
+      steps, schedNote, totals, sched, howGlyph: a.st === 'closed' ? 'advance' : isAI ? 'recurring' : 'payroll', howText,
+      howHref: a.st === 'closed' ? 'AuditPackHR.dc.html' : isAI ? 'Recurring.dc.html' : 'PayrollRun.dc.html', howLink: a.st === 'closed' ? 'Audit pack, HR pages' : isAI ? 'Payments › Recurring' : 'HR › Payroll',
+      checks: this.checks(a, aina), hidden: aina,
+      kindLabel: isAI ? 'Kept here' : 'Kept in SQL Account', bookText, vouchers, bookStatus, bookGlyph, bookTone,
+      bookStatusStyle: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px;' + bookLook,
+      hist, apFacts, apNote, apLinks, apNoteGlyph: apLook[3], apNoteTone: apLook[4],
+      apNoteStyle: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;font-size:13px;background:' + apLook[0] + ';border:1px solid ' + apLook[1] + ';color:' + apLook[2],
+      payFacts, payLinks, payPill, payPillCls,
+      whoName: a.p ? a.p.full + ' (' + a.p.who + ')' : '', whoHref: 'HrStaffRecord.dc.html' + (a.p ? '#' + a.p.no + '-claims' : ''), whoMeta: a.p ? a.p.no + ' · ' + a.p.job + ' · paid to ' + a.p.bank : '',
+      whoLeft: a.p && a.p.left ? 'Left Mon 31 Aug 2026, resigned · record kept until 31 Dec 2033' : ''
+    };
+  }
+
+  // ---- new advance form ----
+  formErrs(f) {
+    const E = {};
+    if (!f.who) E.who = 'Choose who the advance is for.';
+    const amt = this.num(f.amt), per = this.num(f.per);
+    if (!String(f.amt).trim()) E.amt = 'Enter the amount of the advance.'; else if (!(amt > 0)) E.amt = 'Give an amount above 0, like 1,500.00.';
+    if (!String(f.per).trim()) E.per = 'Enter the monthly deduction.'; else if (!(per > 0)) E.per = 'Monthly deduction: give an amount above 0.'; else if (amt > 0 && per > amt) E.per = 'The monthly deduction can\'t be more than the advance (RM ' + this.fmt(amt) + ').';
+    return E;
+  }
+  formVals(st, d, aina) {
+    const f = d ? d.f : this.blankF(), E = d && d.tried ? this.formErrs(f) : {}, p = this.person(f.who), saving = !!(d && d.saving);
+    const amt = this.num(f.amt), per = this.num(f.per), plan = this.plan(amt, per, f.from);
+    const set = patch => { if (!this.state.dlg) return; this.setState({ dlg: { ...this.state.dlg, f: { ...this.state.dlg.f, ...patch }, refused: false } }); };
+    const v = ev => ev && ev.target ? ev.target.value : '';
+    const by = (k, hint) => [hint || '', E[k] ? 'ha-' + k + '-err' : ''].filter(Boolean).join(' ');
+    const errList = ['who', 'amt', 'per'].filter(k => E[k]).map(k => ({ text: E[k], href: '#ha-' + k }));
+    const n = errList.length;
+    const months = ['2026-11', '2026-12', '2027-01', '2027-02', '2027-03'].map(ym => ({ v: ym, l: this.ymLong(ym) + (ym === '2026-11' ? ' (pay day Tue 24 Nov)' : '') }));
+    const lastP = plan.length ? plan[plan.length - 1] : null;
+    const untilText = plan.length === 1 ? '1 deduction, in ' + this.ymLabel(f.from) + '.' : plan.length ? plan.length + ' deductions: ' + this.ymLabel(f.from) + ' to ' + this.ymLabel(lastP.ym) + (plan.length > 1 && lastP.d !== per ? ', the last one RM ' + this.fmt(lastP.d) : '') + '.' : 'The last month follows from the amount and the monthly deduction.';
+    const warns = [];
+    const W = (head, text) => ({ head, text, glyph: 'alert', tone: 'warn', style: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;font-size:13px;background:#FFFBF2;border:1px solid #F3D9A6;color:#6B3A00' });
+    if (p && amt > p.basic) warns.push(W('More than one month\'s pay.', (aina ? 'The advance is larger than ' + p.who + '\'s last month\'s wages (the figure needs the Payroll figures right).' : 'RM ' + this.fmt(amt) + ' is more than ' + p.who + '\'s pay for one month, RM ' + this.fmt(p.basic) + ' (basic salary).') + ' A warning only: it can still be saved, and the approver sees it on the form.'));
+    if (p && per > 0 && per <= amt && per > p.basic / 2) warns.push(W('Over 50% of wages in a month.', (aina ? 'The monthly deduction is more than half of ' + p.who + '\'s wages.' : 'RM ' + this.fmt(per) + ' a month is ' + Math.round(per / p.basic * 100) + '% of ' + p.who + '\'s wages (RM ' + this.fmt(p.basic) + ').') + ' A month\'s deductions, not counting EPF, SOCSO, EIS, Lindung 24 Jam, PCB or zakat, should stay within 50% of wages. A warning only.'));
+    return {
+      submit: ev => { if (ev && ev.preventDefault) ev.preventDefault(); this.save(); },
+      errOn: !!(d && d.tried) && n > 0, errTitle: 'Fix ' + n + (n === 1 ? ' thing' : ' things') + ' before saving', errList,
+      people: [{ v: '', l: 'Choose a person…' }].concat(this.STAFF(st.co).map(s => ({ v: s.no, l: s.who + ' · ' + s.no + ' · ' + s.full }))),
+      who: f.who, onWho: ev => set({ who: v(ev) }), whoInv: E.who ? 'true' : 'false', whoErr: E.who || '', whoBy: by('who', 'ha-who-hint'),
+      whoHint: p ? (aina ? 'Paid to ' + p.bank + ' (from the staff record). One month\'s pay is hidden: it needs the Payroll figures right.' : 'Paid to ' + p.bank + ' (from the staff record). One month\'s pay: RM ' + this.fmt(p.basic) + ' (basic salary).') : 'Staff in employment at ' + st.co + '.',
+      amt: f.amt, onAmt: ev => set({ amt: v(ev) }), amtInv: E.amt ? 'true' : 'false', amtErr: E.amt || '', amtBy: by('amt'),
+      per: f.per, onPer: ev => set({ per: v(ev) }), perInv: E.per ? 'true' : 'false', perErr: E.per || '', perBy: by('per'),
+      from: f.from, months, onFrom: ev => set({ from: v(ev) || '2026-12' }), untilText,
+      payBy: f.payBy, onPayBy: ev => set({ payBy: v(ev) }), note: f.note, onNote: ev => set({ note: v(ev) }),
+      warns, saving, by: aina ? 'Nurul Aina' : 'Aisha Rahman'
+    };
+  }
+  dirtyNew() { const d = this.state.dlg; return !!d && d.kind === 'new' && JSON.stringify(d.f) !== JSON.stringify(this.blankF()); }
+  save() {
+    const st = this.state, d = st.dlg; if (!d || d.saving) return;
+    const E = this.formErrs(d.f), n = Object.keys(E).length;
+    if (n) { this._upFocus = 'ha-errsum'; return this.setState({ dlg: { ...d, tried: true, refused: false }, say: 'Not saved: ' + n + (n === 1 ? ' thing' : ' things') + ' to fix' }); }
+    this.setState({ dlg: { ...d, tried: true, saving: true, refused: false } });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => {
+      const s2 = this.state, f = s2.dlg ? s2.dlg.f : d.f, p = this.person(f.who);
+      const code = s2.co === 'AI' ? 'SA-2612-002' : s2.world === 'today' ? 'SA-2611-003' : 'SA-2611-002';
+      const msg = 'Draft saved: ' + code + ', Salary advance - ' + (p ? p.who : '') + ', RM ' + this.fmt(this.num(f.amt)) + '. Tick it to print its approval form.';
+      this._upFocus = 'ha-list-h';
+      this.closeDlg({ added: { code, f, by: s2.user === 'aina' ? 'Nurul Aina' : 'Aisha Rahman' }, mode: 'list', tab: 'all', flash: { id: code, n: s2.flash.n + 1 }, say: msg, ...this.toastPart(msg, { kind: 'new', f }) });
+    }, 900);
+  }
+  askClose() {
+    const st = this.state, d = st.dlg; if (!d || d.saving) return;
+    const dirty = d.kind === 'new' ? this.dirtyNew() : !!d.reason.trim();
+    if (dirty && !d.ask) { this._upFocus = 'ha-keep'; return this.setState({ dlg: { ...d, ask: true } }); }
+    this.closeDlg();
+  }
+  closeDlg(patch) {
+    const st = this.state; if (!st.dlg || st.closing) return;
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (calm) return this.setState({ ...(patch || {}), dlg: null, closing: false });
+    this.setState({ ...(patch || {}), closing: true });
+    clearTimeout(this._t); this._t = setTimeout(() => this.finishClose(), 400);
+  }
+  finishClose() { clearTimeout(this._t); if (this.state.dlg) this.setState({ dlg: null, closing: false }); }
+  wdGo() {
+    const st = this.state, d = st.dlg; if (!d || d.saving) return;
+    if (!d.reason.trim()) { this._upFocus = 'ha-reason'; return this.setState({ dlg: { ...d, tried: true } }); }
+    this.setState({ dlg: { ...d, saving: true, refused: false } });
+    clearTimeout(this._sv);
+    this._sv = setTimeout(() => {
+      const s2 = this.state, why = s2.dlg ? s2.dlg.reason.trim() : d.reason.trim(), id = s2.id;
+      const snap = { stages: s2.stages, whys: s2.whys };
+      const msg = 'Withdrawn: ' + id + '. It stays in the list as Withdrawn; AF-2611-005 still covers CL-2611-001.';
+      this._upFocus = 'ha-h1';
+      this.closeDlg({ stages: { ...s2.stages, [id]: 'withdrawn' }, whys: { ...s2.whys, [id]: why }, pillN: s2.pillN + 1, histFlash: s2.histFlash + 1, say: msg, ...this.toastPart(msg, { kind: 'page', snap }) });
+    }, 900);
+  }
+  undo() {
+    const t = this.state.toast; if (!t || !t.undo) return; clearTimeout(this._tt);
+    if (t.undo.kind === 'new') { this._opener = document.getElementById('ha-new'); return this.setState({ added: null, toast: null, sel: {}, dlg: { kind: 'new', f: t.undo.f, tried: false, saving: false, refused: false, ask: false }, closing: false, say: 'Undone: the draft was removed. What you typed is back in the form.' }); }
+    this._upFocus = 'ha-h1';
+    this.setState({ ...t.undo.snap, toast: null, pillN: this.state.pillN + 1, histFlash: 0, say: 'Undone: the advance is back as it was' });
+  }
+}
+</script>
+</body>
+</html>
