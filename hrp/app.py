@@ -321,41 +321,33 @@ def _set_up(c, eid, month):
 
 
 def _budget(c, eid, month, as_at):
-    """A month's payments out, split at the date the bank balance was taken (as_at): what is still to be paid from that
-    balance (to_pay, part paid ones with only the rest, due what that is the rest of, and estimate set while the lines
-    linked so far fall short of one), with its total per currency, and what was paid by then and so is already out of
-    it. Money received is left out."""
-    to_pay, paid, totals = [], [], {}
-    for p in c.execute(
-            """SELECT p.*, py.bank_details FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
-               WHERE p.entity_id = ? AND p.month = ? AND p.direction = 'out' ORDER BY p.due_date, p.id""", (eid, month)):
-        left = db.still_to_pay(c, p, as_at)
-        row = {k: p[k] for k in ("id", "description", "amount", "currency", "amount_is_estimate", "due_date", "paid_date",
-                                 "bank_details")}
-        if left == 0 and p["paid_date"]:
-            paid.append(row)
-        else:
-            found = db.linked_total(c, p)
-            to_pay.append({**row, "to_pay": left, "due": db.budgeted_at(c, p, found), "estimate": db.open_estimate(c, p, found)})
-            totals[p["currency"]] = round(totals.get(p["currency"], 0) + (left or 0), 2)
-    return to_pay, paid, totals
+    """A month's payments out with no stored budget, split at the balance date (budget.worked_out)."""
+    return stored.worked_out(c, eid, month, as_at)
 
 
 @app.get("/api/budget")
 def budget():
     """The month's stored budget when it has one (as at the date asked for, else the one kept with it), else the list worked
-    out from its payments, which can be set up (POST /api/budget/setup)."""
+    out from its payments, which can be set up (POST /api/budget/setup). The ringgit bank balance is read only from the
+    stored budget (balance: None while none is entered, and always for a month not set up); funds_to_request is what is
+    still to pay in ringgit less that balance, None while there is no balance (never worked out from a blank as 0). bank:
+    the company's own account the balance is for, from Setup (budget.bank_account), which names the bank on the page."""
     eid, month = int(request.args["entity"]), month_from(request.args.get("month"))
     c = con()
     e = entity(c, eid)
     hdr = stored.header(c, eid, month)
     as_at = day_from(request.args["as_at"]) if request.args.get("as_at") else stored.default_as_at(hdr)
+    balance = stored.balance_of(hdr)
     out = {"entity": dict(e), "month": month, "label": db.month_label(month), "set_up": _set_up(c, eid, month), "as_at": as_at,
-           "stored": bool(hdr)}
+           "stored": bool(hdr), "balance": balance, "bank": stored.bank_account(c, eid), "today": date.today().isoformat()}
     if hdr:
-        return jsonify({**out, "saved_as_at": hdr["as_at"], "balance": hdr["balance"], **stored.view(c, eid, month, as_at)})
+        v = stored.view(c, eid, month, as_at)
+        # Funds to request only when the balance is for this date: a balance kept for another date is never set against
+        # what is still to pay now (None, and the page says which date the balance is for).
+        return jsonify({**out, "saved_as_at": hdr["as_at"], **v,
+                        "funds_to_request": stored.funds_to_request(v["totals"], stored.balance_for(hdr, as_at))})
     to_pay, paid, totals = _budget(c, eid, month, as_at)
-    return jsonify({**out, "to_pay": to_pay, "paid": paid, "totals": totals,
+    return jsonify({**out, "saved_as_at": None, "to_pay": to_pay, "paid": paid, "totals": totals, "funds_to_request": None,
                     "previous": bool(stored.header(c, eid, db.shift_month(month, -1)))})
 
 
@@ -435,8 +427,9 @@ def budget_delete_line(lid):
 
 @app.get("/api/overview")
 def overview():
-    """as_at_<company id>: the date of the bank balance on that company's Budget page (default today). One that can't
-    be read is taken as today too, so a bad date kept in the browser can't hide the whole page. A month marked as filed
+    """Each company's budget is as at the date of the bank balance kept with its stored budget (default today).
+    as_at_<company id> still asks for another date (the page no longer sends one since slice 8; tests do); one that can't
+    be read is taken as that default, so a bad date can't hide the whole page. A month marked as filed
     (closed_at) is done with: what is past due, missing or left to explain in it isn't counted."""
     month = month_from(request.args.get("month"))
     c = con()
@@ -2742,7 +2735,8 @@ def export_month():
 @app.get("/api/export/budget.xlsx")
 @audited_read("budget export")
 def export_budget():
-    """The month's stored budget as an Excel file; the usual error when none is set up."""
+    """The month's budget as an Excel file: the stored budget, or the list worked out from the payments while none is set
+    up (reports.budget_workbook)."""
     c = con()
     e = _entity_arg(c)
     month = month_from(request.args.get("month"))
@@ -2753,6 +2747,16 @@ def export_budget():
         return err(str(ex), 404)
     return send_file(io.BytesIO(reports.workbook_bytes(wb)), mimetype=XLSX, as_attachment=True,
                      download_name=reports.budget_report_name(e, month))
+
+
+@app.get("/api/export/recurring.xlsx")
+@audited_read("recurring payments export")
+def export_recurring():
+    """The company's recurring payments as an Excel file (reports.recurring_workbook)."""
+    c = con()
+    e = _entity_arg(c)
+    return send_file(io.BytesIO(reports.workbook_bytes(reports.recurring_workbook(c, e))), mimetype=XLSX, as_attachment=True,
+                     download_name=reports.recurring_report_name(e))
 
 
 @app.get("/api/export/books/<report>.xlsx")

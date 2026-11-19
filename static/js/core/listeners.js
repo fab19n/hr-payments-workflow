@@ -94,6 +94,7 @@ document.addEventListener("change", ev => {
     state.trail.f[k] = v; return refreshTrailList();
   }
   if (ev.target.id === "trailShow") return trailShow(ev.target.checked);
+  if (ev.target.id === "rc-stopped") return rcPick("stopped", ev.target.checked);  // Payments › Recurring: Show stopped
   if (ev.target.matches?.("[data-setup-stopped]")) { state.setup.stopped = ev.target.checked; return LIST_REDRAW["setup-" + state.setup.kind]?.(); }
   if (ev.target.matches?.("[data-setup-deleted]")) { state.setup.deleted = ev.target.checked; return drawDeleted(ev.target.dataset.setupDeleted); }
   if (ev.target.id === "cl-from" && ev.target.closest?.("#chkForm")) return chkMonth();

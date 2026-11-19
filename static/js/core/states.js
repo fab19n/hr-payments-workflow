@@ -94,6 +94,12 @@ function manyRows({ shown = 0, total = 0, step = 25, what = "entries", attr = "d
 }
 const slice = (rows, shown) => rows.slice(0, Math.max(0, shown));
 
+// "Best done on a computer" (MobileDesktopOnly.dc.html), for a wide table that can't fit a phone: shown only at narrow widths
+// (app.css .desk-note), above the table, which then scrolls sideways inside its own frame, never the page.
+function desktopNote(screen, reason) {
+  return `<div class="desk-note noprint" role="note">${icon("laptop")}<div><b>Best done on a computer</b><span>${esc(reason || `${screen} works best on a wide screen.`)}</span></div></div>`;
+}
+
 /* A page a company does not use. Switching company while on it lands on that company's Overview and says why in a toast;
    reaching it any other way (a link) shows the card. Add a page here when it depends on a company setting. */
 const PAGE_RULES = {

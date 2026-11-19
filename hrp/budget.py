@@ -22,6 +22,45 @@ def default_as_at(hdr):
     return hdr["as_at"] if hdr and hdr["as_at"] else date.today().isoformat()
 
 
+def balance_of(hdr):
+    """The ringgit bank balance the budget is worked out from: the one kept with the stored budget, else None (not
+    entered). A month with no stored budget has none: the stored budget is the one place the balance is kept."""
+    return hdr["balance"] if hdr and hdr["balance"] is not None else None
+
+
+def balance_for(hdr, as_at):
+    """The stored balance when it is for the date the budget is worked out at (its own date, or it has none yet, so it
+    is taken as at the page's date); None otherwise, so a balance is never set against what is still to pay at another
+    date."""
+    bal = balance_of(hdr)
+    if bal is None or (hdr["as_at"] and hdr["as_at"] != as_at):
+        return None
+    return bal
+
+
+def funds_to_request(totals, balance):
+    """What is still to pay in ringgit less the bank balance, at least 0; None while no balance is entered (the funds
+    to request can't be worked out then, and a blank balance is never taken as 0). Callers pass balance_for(), so a
+    balance kept for another date gives None too."""
+    if balance is None:
+        return None
+    return max(0.0, round((totals.get("MYR") or 0) - balance, 2))
+
+
+def bank_account(con, eid):
+    """The company's own account the ringgit balance is for (Setup › Bank accounts): its cash book account when that is
+    in ringgit, else its first ringgit account in use; with the company's other accounts in use (another currency). Its
+    label names the bank on the Budget page and its print: nothing about a bank is fixed in the app."""
+    accts = con.execute("SELECT * FROM accounts WHERE entity_id = ? ORDER BY active DESC, cash_book DESC, sort, id", (eid,)).fetchall()
+    live = [a for a in accts if a["active"] is None or a["active"]]
+    myr = next((a for a in live if (a["currency"] or "MYR") == "MYR"), None)
+    live_ids = {a["id"] for a in live}
+    stopped = None if myr else next((a for a in accts if a["id"] not in live_ids and (a["currency"] or "MYR") == "MYR"), None)
+    pick = lambda a: {k: a[k] for k in ("id", "label", "bank", "number", "currency")}
+    return {"account": pick(myr) if myr else None, "stopped": pick(stopped) if stopped else None,
+            "others": [pick(a) for a in live if (a["currency"] or "MYR") != "MYR"]}
+
+
 def lines(con, eid, month):
     return con.execute("SELECT * FROM budget_lines WHERE entity_id = ? AND month = ? ORDER BY sort, id", (eid, month)).fetchall()
 
@@ -87,6 +126,17 @@ def line_left(con, line, pay, as_at):
     return left if left > MATCHED else 0
 
 
+def paid_by(con, pay, paid, as_at):
+    """What of a linked payment was paid by as_at, by the rule line_left uses: with bank lines linked, those dated by
+    then; without, all of it once its paid date is by then, else nothing."""
+    if not pay or paid is None:
+        return 0
+    if db.linked_total(con, pay) is not None:
+        return round(sum(-r[0] for r in con.execute(
+            "SELECT amount FROM statement_lines WHERE payment_id = ? AND txn_date <= ?", (pay["id"], as_at))), 2)
+    return paid if pay["paid_date"] and pay["paid_date"] <= as_at else 0
+
+
 def payment_left(con, pay, as_at):
     """What of a payment is still to pay as at a date: by its budget line when the month's stored budget has one for it,
     else by the payment itself (db.still_to_pay)."""
@@ -96,6 +146,25 @@ def payment_left(con, pay, as_at):
 
 def _add(totals, cur, n):
     totals[cur] = round(totals.get(cur, 0) + (n or 0), 2)
+
+
+def worked_out(con, eid, month, as_at):
+    """A month with no stored budget: its payments out, split at the date the bank balance was taken (as_at): what is
+    still to be paid from that balance (to_pay, part paid ones with only the rest, due what that is the rest of, and
+    estimate set while the lines linked so far fall short of one), with its total per currency, and what was paid by
+    then and so is already out of it. Money received is left out."""
+    to_pay, paid, totals = [], [], {}
+    for p in _out_payments(con, eid, month):
+        left = db.still_to_pay(con, p, as_at)
+        row = {k: p[k] for k in ("id", "description", "amount", "currency", "amount_is_estimate", "due_date", "paid_date",
+                                 "bank_details")}
+        if left == 0 and p["paid_date"]:
+            paid.append(row)
+        else:
+            found = db.linked_total(con, p)
+            to_pay.append({**row, "to_pay": left, "due": db.budgeted_at(con, p, found), "estimate": db.open_estimate(con, p, found)})
+            _add(totals, p["currency"], left)
+    return to_pay, paid, totals
 
 
 def view(con, eid, month, as_at):
@@ -114,11 +183,12 @@ def view(con, eid, month, as_at):
         left = line_left(con, ln, pay, as_at)
         done = left == 0 and bool(pay and pay["paid_date"])
         cur = ln["currency"]
-        s = sums.setdefault(cur, {"budget": 0, "paid": 0, "diff": 0})
+        s = sums.setdefault(cur, {"budget": 0, "paid": 0, "diff": 0, "paid_by": 0})
         _add(s, "budget", ln["amount"])
         if paid is not None:
             _add(s, "paid", paid)
             _add(s, "diff", st["diff"])
+            _add(s, "paid_by", paid_by(con, pay, paid, as_at))  # paid against the budget by the balance date (Budget vs paid)
         _add(in_balance if done else to_pay, cur, ln["amount"] if done else left)
         out.append({**{k: ln[k] for k in ("id", "description", "details", "amount", "currency", "payment_id")},
                     "paid": paid, "status": st, "to_pay": left, "in_balance": done,

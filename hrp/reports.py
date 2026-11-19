@@ -236,24 +236,70 @@ def month_report_name(entity, month):
     return f"{entity['code']} {month} month report.xlsx"
 
 
+NO_BALANCE = "Not entered"
+NOT_WORKED_OUT = "Not worked out, bank balance not entered"
+
+
+def bank_words(bank):
+    """The company's own ringgit account as the budget names it: its label; a stopped one said so; none set up."""
+    bank = bank or {}
+    if bank.get("account"):
+        return bank["account"]["label"]
+    if bank.get("stopped"):
+        return f"{bank['stopped']['label']} (stopped)"
+    return "No ringgit account set up"
+
+
+def _budget_head(ws, entity, month, as_at, balance, totals, bank, saved=None):
+    """Rows 1 to 4 of a budget sheet: the title, the bank balance (Not entered while there is none) with the company's own
+    account it is for, the date, and the funds to request (not worked out while no balance is entered, nor when the
+    balance kept is for another date than as_at: saved is the date kept with it)."""
+    other = balance is not None and saved and saved != as_at
+    _put(ws, 1, 1, f"{entity['name']} - Budget for {db.month_label(month)}", bold=True)
+    _put(ws, 2, 1, "Bank balance", bold=True)
+    if other:
+        _put(ws, 2, 2, f"Not entered for this date: the balance kept is as at {db.day_label(saved)}")
+    else:
+        _put(ws, 2, 2, NO_BALANCE if balance is None else balance, None if balance is None else MONEY)
+    _put(ws, 3, 1, "As at", bold=True)
+    _put(ws, 3, 2, _day(as_at), DAY)
+    _put(ws, 2, 4, "Bank account", bold=True)
+    _put(ws, 2, 5, bank_words(bank))
+    funds = None if other else stored.funds_to_request(totals, balance)
+    _put(ws, 4, 1, "Funds to request", bold=True)
+    if other:
+        _put(ws, 4, 2, f"Not worked out: the balance is for {db.day_label(saved)}; open the budget as at that date to see funds to request")
+    else:
+        _put(ws, 4, 2, NOT_WORKED_OUT if funds is None else funds, None if funds is None else MONEY)
+    for r in (2, 3, 4):
+        ws.cell(row=r, column=2).alignment = Alignment(horizontal="left")
+
+
 def budget_workbook(con, entity, month, as_at=None):
-    """The month's stored budget as a workbook, or LookupError when none is set up."""
+    """The month's budget as a workbook: the stored budget's lines, or for a month with no stored budget the list worked
+    out from its payments (still to pay after the balance date, then what was already paid by then)."""
     hdr = stored.header(con, entity["id"], month)
-    if not hdr:
-        raise LookupError(f"No budget is set up for {db.month_label(month)} yet.")
+    bank = stored.bank_account(con, entity["id"])
     as_at = as_at or stored.default_as_at(hdr)
-    v = stored.view(con, entity["id"], month, as_at)
-    desc = {p["id"]: p["description"] for p in con.execute("SELECT id, description FROM payments WHERE entity_id = ? AND month = ?",
-                                                           (entity["id"], month))}
     wb = Workbook()
     ws = wb.active
     ws.title = "Budget"
-    _put(ws, 1, 1, f"{entity['name']} - Budget for {db.month_label(month)}", bold=True)
-    _put(ws, 2, 1, "Bank balance", bold=True)
-    _put(ws, 2, 2, hdr["balance"], MONEY)
-    _put(ws, 3, 1, "As at", bold=True)
-    _put(ws, 3, 2, _day(as_at), DAY)
-    ws.cell(row=2, column=2).alignment = ws.cell(row=3, column=2).alignment = Alignment(horizontal="left")
+    if not hdr:
+        to_pay, paid, totals = stored.worked_out(con, entity["id"], month, as_at)
+        _budget_head(ws, entity, month, as_at, None, totals, bank)
+        rows = [(i, p["description"] + (" (EST)" if p["amount_is_estimate"] or p["estimate"] is not None else ""), p["bank_details"] or "",
+                 p["currency"], p["to_pay"], _day(p["due_date"]), "Still to pay") for i, p in enumerate(to_pay, 1)]
+        rows += [(len(to_pay) + i, p["description"], p["bank_details"] or "", p["currency"], p["amount"], _day(p["paid_date"]),
+                  "Already paid (in the balance)") for i, p in enumerate(paid, 1)]
+        top = 6
+        _table(ws, top, ["No.", "Description", "Details", "Currency", "Amount", "Payment on / paid on", "Counted as"], rows,
+               [6, 44, 36, 9, 14, 16, 28], {5: MONEY, 6: DAY})
+        _put(ws, 5, 1, "Not set up yet: worked out from the month's payments.")
+        return wb
+    v = stored.view(con, entity["id"], month, as_at)
+    desc = {p["id"]: p["description"] for p in con.execute("SELECT id, description FROM payments WHERE entity_id = ? AND month = ?",
+                                                           (entity["id"], month))}
+    _budget_head(ws, entity, month, as_at, stored.balance_of(hdr), v["totals"], bank, hdr["as_at"])
     rows = [(i, x["description"], x["details"] or "", x["currency"], x["amount"], x["paid"], x["status"]["text"],
              desc.get(x["payment_id"], "")) for i, x in enumerate(v["lines"], 1)]
     top = 5
@@ -272,6 +318,40 @@ def budget_workbook(con, entity, month, as_at=None):
 
 def budget_report_name(entity, month):
     return f"{entity['code']} {month} budget.xlsx"
+
+
+def recurring_workbook(con, entity):
+    """The company's recurring payments as a workbook: every field of the Recurring page's form, its type in Setup's words,
+    its account, and its salary advances, in use first."""
+    R = rulebook.get(con)
+    accts = {a["id"]: a for a in con.execute("SELECT * FROM accounts WHERE entity_id = ?", (entity["id"],))}
+    has_party = bool(con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'parties'").fetchone())
+    parties = {p["id"]: p for p in con.execute("SELECT id, name, sql_code FROM parties")} if has_party else {}
+    rows = []
+    for p in con.execute("SELECT * FROM payees WHERE entity_id = ? ORDER BY active DESC, sort, name", (entity["id"],)).fetchall():
+        a = accts.get(p["account_id"])
+        pt = parties.get(p["party_id"]) if "party_id" in p.keys() else None
+        adv = "; ".join(f"{x['monthly_deduction']:,.2f} a month, {x['start_month']} to {x['end_month']}"
+                        for x in con.execute("SELECT * FROM advances WHERE payee_id = ? ORDER BY start_month, id", (p["id"],)))
+        rows.append((p["name"], "Money in" if (p["direction"] or "out") == "in" else "Money out", R.categories.get(p["category"], p["category"]),
+                     p["desc_template"], "The following month" if p["month_offset"] else "The payroll month", p["due_day"],
+                     p["amount"], a["currency"] if a else "MYR", "Yes, estimate" if p["amount_varies"] else "No, fixed",
+                     a["label"] if a else "", p["bank_details"] or "", p["reference"] or "", p["match_words"] or "",
+                     (pt["name"] + (f" ({pt['sql_code']})" if pt["sql_code"] else "")) if pt else "",
+                     _day(p["start_date"]), _day(p["end_date"]), "Active" if p["active"] else "Stopped", p["notes"] or "", adv))
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Recurring payments"
+    _put(ws, 1, 1, f"{entity['name']} - Recurring payments", bold=True)
+    _table(ws, 3, ["Payee", "Money", "Type", "Description each month", "Paid in", "Day of month", "Usual amount", "Currency",
+                   "Amount changes monthly", "Pay from / paid into", "Bank details", "Account / ref no.", "Words on the bank statement",
+                   "Supplier or customer", "Start date", "Last day", "Status", "Notes", "Salary advances"], rows,
+           [28, 11, 22, 30, 18, 8, 14, 9, 14, 22, 26, 18, 24, 24, 12, 12, 10, 30, 36], {7: MONEY, 15: DAY, 16: DAY})
+    return wb
+
+
+def recurring_report_name(entity):
+    return f"{entity['code']} recurring payments.xlsx"
 
 
 # ---------- auditor package ----------

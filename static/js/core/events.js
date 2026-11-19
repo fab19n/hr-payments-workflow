@@ -102,6 +102,9 @@ document.addEventListener("click", async ev => {
       t.disabled = true;
       try { return await (ds.chkPreview ? chkSave(true) : ds.chkCopyPreview ? chkCopySave(true) : remSave(true)); } finally { if (t.isConnected) t.disabled = false; }
     }
+    if (ds.rcType) return rcPick("type", ds.rcType);  // Payments › Recurring: the type filter, Show more, Clear (pages/recurring.js)
+    if (ds.rcMore) return rcPick("more");
+    if (ds.rcClear) return rcPick("clear");
     if (ds.payeeAct) return await payeeAct(ds.payeeAct, +ds.payeeId, t);
     if (ds.advAdd) return await advAdd(+ds.advAdd, t);
     if (ds.advSave) return await advSave(+ds.advSave, t);

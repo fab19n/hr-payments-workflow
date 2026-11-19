@@ -934,3 +934,154 @@ a.stat:hover { border-color: var(--accent-solid); background: var(--accent-soft)
   .search-box { flex: 1 1 200px; }
   .cl-card .task { padding: 12px 14px; }
 }
+
+/* Budget and Recurring (slice 8): Budget.dc.html, Recurring.dc.html. Tokens only, so light and dark both come from the token
+   block; the print sheet is always light, as it prints. */
+.bud, .rc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; min-width: 0; }
+.bud-head .pg-words, .rc .pg-words { gap: 6px; }
+.bud-lede, .rc-lede { margin: 0; color: var(--ink-2); max-width: 680px; }
+.bud-lede.small { font-size: 13px; }
+.bud-notset { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 16px 20px; border-radius: 16px; }
+.bud-notset > div { flex: 1 1 360px; min-width: 0; display: grid; gap: 2px; }
+.bud-notset > .glyph { width: 22px; height: 22px; }
+.bud-notset .note { color: var(--ink-2); font-size: 13px; }
+.bud-bal { padding: 20px 22px; gap: 14px; }
+.bud-bal-row { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.bud-bank { display: flex; align-items: center; gap: 12px; flex: 1 1 220px; min-height: 44px; min-width: 0; }
+.bud-plate, .rc-plate { width: 44px; height: 44px; border-radius: 12px; background: var(--accent-soft); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.bud-plate .glyph, .rc-plate .glyph { width: 24px; height: 24px; }
+.bud-f { flex: 0 1 220px; min-width: 0; }
+.bud-f label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.bud-f input { min-height: 44px; font-size: 15px; }
+.bud-f input.num { text-align: right; }
+.ok-tick { display: inline-flex; align-items: center; gap: 4px; color: var(--ok); font-size: 12px; font-weight: 600; animation: cl-unfold var(--t-base) both; }
+.ok-tick .glyph { width: 14px; height: 14px; }
+.bud-bal .banner { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.bud-bal .banner .glyph { width: 18px; height: 18px; flex: none; }
+.bud-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.stat.bud-stat { background: var(--surface); border-radius: 14px; padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bud-stat .t { color: var(--ink-2); font-weight: 500; font-size: 14px; }
+.bud-stat b.v { font-family: var(--f-display); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; overflow-wrap: anywhere; }
+.bud-stat b.v-words { font-family: var(--f-body); font-size: 15px; font-weight: 600; margin-top: 4px; }
+.bud-stat .n { color: var(--muted); font-size: 13px; }
+.bud-funds.bad { background: var(--bad-wash); border-color: var(--bad-line); }
+.bud-funds.bad .t { color: var(--bad); font-weight: 600; }
+.bud-funds.ok { background: var(--ok-wash); border-color: var(--ok-line); }
+.bud-funds.ok .t { color: var(--ok); font-weight: 600; }
+.bud-funds .row { margin-top: 8px; }
+.bud-bvp { padding: 16px 20px; gap: 10px; }
+.bud-bvp-t { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.bud-bvp h2, .bud-sec-h h2 { font-size: 15px; }
+.bud-bvp dl { margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px 20px; }
+.bud-bvp dt { color: var(--ink-2); font-size: 13px; }
+.bud-bvp dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.note.small, .muted.small { font-size: 12px; }
+.bud-split { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.bud-main { flex: 3 1 600px; min-width: 0; display: grid; gap: 24px; }
+.bud-side { flex: 2 1 300px; min-width: 0; display: grid; gap: 24px; }
+.bud-lines, .bud-nib, .bud-chart, .bud-paid, .rc-card { padding: 0; gap: 0; overflow: clip; }
+.bud-lines-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 20px; }
+.bud-lines-top h2 { font-size: 17px; }
+.bud-lines-top h2:focus { outline: none; }
+.bud-lines-top .row.tight { flex-wrap: wrap; }
+/* A wide table scrolls inside its frame; the frame holds its hidden labels (.sr-only), so they can't widen the page. */
+.bud .tbl-wrap, .rc .tbl-wrap { position: relative; }
+.bud-all { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; font-weight: 600; }
+.bud-all input, .bud-tbl input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent-solid); }
+.bud-unlinked { padding: 10px 20px; background: var(--warn-wash); border-top: 1px solid var(--warn-line); border-bottom: 1px solid var(--warn-line); color: var(--warn); font-size: 13px; }
+.bud-cur { border-top: 1px solid var(--line); }
+.bud-cur-h { padding: 10px 20px; font-weight: 600; background: var(--btn-off); }
+.bud-tbl { min-width: 1040px; font-size: 13px; }
+.bud-tbl td { vertical-align: top; }
+.bud-tbl td.bl-no { padding-top: 14px; }
+.bud-tbl .cell[data-f=description] { min-width: 16ch; }
+.bl-paid { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; font-variant-numeric: tabular-nums; }
+.bl-act { justify-content: flex-end; flex-wrap: nowrap; }
+.ghost.icon-only { width: 36px; padding: 0; justify-content: center; }
+tr.tot td { background: var(--btn-off); font-weight: 600; }
+.bud-foot { display: flex; gap: 10px; align-items: flex-start; padding: 12px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.bud-foot .glyph { width: 18px; height: 18px; flex: none; }
+.bud-sec-h { display: flex; align-items: center; gap: 10px; padding: 16px 20px; }
+.bud-sec-h .glyph { width: 20px; height: 20px; color: var(--accent); }
+.bud-nib > .note, .bud-chart > .card-in { padding: 0 20px 10px; }
+.bud-nib .tbl-wrap { padding-bottom: 6px; }
+.bud-paid-btn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 16px 20px; border: 0; background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; font-size: 15px; cursor: pointer; text-align: left; }
+.bud-paid-btn:hover { background: var(--hover); }
+.bud-paid-btn > span:first-of-type { flex: 1; }
+.bud-paid-btn > .glyph { width: 20px; height: 20px; color: var(--ok); }
+.bud-paid-btn .muted { font-weight: 500; font-variant-numeric: tabular-nums; }
+.bud-paid .chev { display: inline-flex; transition: transform var(--t-base); }
+.bud-paid .chev.on { transform: rotate(90deg); }
+.bud-paid .chev .glyph { width: 18px; height: 18px; color: var(--muted); }
+.bud-paid-list { border-top: 1px solid var(--hairline); animation: cl-unfold var(--t-base) both; }
+.bud-paid-list > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 20px; border-bottom: 1px solid var(--hairline); }
+.bud-paid-list b { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bud-help { display: flex; flex-direction: row; gap: 12px; padding: 18px 20px; }
+.bud-help .glyph { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.bud-help p { margin: 0; color: var(--ink-2); font-size: 13px; }
+/* Best done on a computer: only at narrow widths, where the wide table can't fit (MobileDesktopOnly.dc.html) */
+.desk-note { display: none; gap: 10px; align-items: flex-start; margin: 0 20px 12px; padding: 10px 14px; border-radius: 12px; background: var(--accent-soft); color: var(--ink); font-size: 13px; }
+.desk-note .glyph { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.desk-note > div { display: grid; gap: 2px; }
+.desk-note b { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+@media (max-width: 700px) { .desk-note { display: flex; } }
+/* The print preview: the sheet as it prints */
+.bud-preview { display: flex; flex-direction: column; gap: 16px; align-items: center; }
+.bud-preview-top, .bud-preview > .note { width: 794px; max-width: 100%; }
+.bud-preview-top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.bud-preview-top h1:focus { outline: none; }
+.sheet { width: 794px; max-width: 100%; box-sizing: border-box; padding: 40px 44px; color-scheme: light; background: var(--surface); color: var(--ink); box-shadow: 0 8px 30px var(--shadow); border-radius: 4px;
+  display: flex; flex-direction: column; gap: 14px; font-size: 12px; overflow-x: auto; }
+.sheet table { width: 100%; border-collapse: collapse; }
+.sheet th { text-align: left; padding: 5px 8px; border-bottom: 1.5px solid var(--ink); font-weight: 700; background: transparent; color: var(--ink); }
+.sheet td { padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink); background: transparent; }
+.sheet .num { text-align: right; font-variant-numeric: tabular-nums; }
+.sheet tr.tot td { background: transparent; }
+.sheet-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-end; border-bottom: 2px solid var(--ink); padding-bottom: 8px; }
+.sheet-co { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-2); }
+.sheet-title { font-family: var(--f-display); font-size: 22px; font-weight: 700; }
+.sheet-at, .sheet-foot { color: var(--ink-2); }
+.sheet-at { text-align: right; }
+.sheet-foot { font-size: 11px; }
+.sheet-figs { display: flex; flex-wrap: wrap; gap: 6px 28px; }
+.sheet-th { font-weight: 700; margin-bottom: 4px; }
+@media print { .sheet { box-shadow: none; width: auto; padding: 0; overflow: visible; } }
+/* Recurring */
+.rc-top { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--hairline); }
+.rc-top .listbar { flex: 1 1 260px; max-width: 480px; }
+.rc-check { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; font-size: 13px; color: var(--ink-2); margin-left: auto; }
+.rc-check input, .rc-top label.row input { width: 18px; height: 18px; accent-color: var(--accent-solid); }
+.rc-top label.row { font-size: 13px; color: var(--ink-2); min-height: 32px; }
+.rc-chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--hairline); }
+.rc-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: 99px; border: 1px solid var(--control-border); background: var(--surface);
+  color: var(--ink-2); font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; transition: background-color var(--t-fast), color var(--t-fast), border-color var(--t-fast); }
+.rc-chip:hover { color: var(--ink); background: var(--hover); }
+.rc-chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.rc-chip[aria-pressed="true"] .tab-n { color: inherit; opacity: .8; }
+.rc-tbl { min-width: 860px; }
+.rc-tbl th { background: var(--btn-off); }
+.rc-tbl th button.sorth { min-height: 36px; }
+.rc-tbl td { vertical-align: top; }
+.rc-tbl tr.rc-stopped td { color: var(--muted); }
+.rc-name { display: flex; align-items: flex-start; gap: 10px; }
+.rc-glyph .glyph { width: 20px; height: 20px; color: var(--accent); margin-top: 1px; }
+.rc-stopped .rc-glyph .glyph { color: var(--muted); }
+td.rc-inflow { color: var(--ok); }
+.rc-status { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.rc-in { display: inline-flex; align-items: center; gap: 4px; min-height: 24px; font-size: 12px; font-weight: 600; color: var(--ok); }
+.rc-in .glyph { width: 14px; height: 14px; }
+.rc-card .many { border-top: 1px solid var(--line); }
+.rc-deleted:empty { display: none; }
+.rc-result h3 { display: flex; align-items: center; gap: 8px; }
+.rc-result h3 .glyph { width: 18px; height: 18px; color: var(--ok); }
+.rc-dhead { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.rc-form { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.rc-form .span { grid-column: 1 / -1; }
+.rc-form .field > span:first-child { font-weight: 600; color: var(--ink-2); }
+.rc-form input.num { text-align: right; }
+.req { font-weight: 500; font-size: 12px; color: var(--muted); margin-left: 6px; }
+.rc-used { display: grid; gap: 8px; }
+.adv h3 { display: flex; align-items: center; gap: 8px; }
+.adv h3 .glyph { width: 18px; height: 18px; color: var(--accent); }
+.ghost.danger-text { color: var(--bad); }
+@media (max-width: 520px) { .rc-form { grid-template-columns: minmax(0, 1fr); } .rc-check { margin-left: 0; } .sheet { padding: 20px 16px; } }

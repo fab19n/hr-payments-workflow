@@ -1,8 +1,9 @@
 "use strict";
 /* ---------------- Overview ---------------- */
 async function viewOverview(main) {
-  const asAt = state.meta.entities.map(e => [e.id, storedAsAt(e.id, state.month)]).filter(([, d]) => d).map(([id, d]) => `&as_at_${id}=${d}`).join("");
-  const [ov, next] = await Promise.all([api(`/api/overview?month=${state.month}${asAt}`), loadNext(null)]);
+  // Each company's budget is as at the date of the bank balance kept with its stored budget (else today): the server reads it
+  // from the records, so the Overview and the Budget page agree (slice 8: nothing is kept in this browser).
+  const [ov, next] = await Promise.all([api(`/api/overview?month=${state.month}`), loadNext(null)]);
   const cards = ov.entities.map(x => {
     const budget = (cur, n) => `<div class="stat"><b class="mono">${Math.round(n).toLocaleString("en-MY")}</b><span>budget as at ${shortDate(x.budget_as_at)} (${cur === "MYR" ? "RM" : esc(cur)})</span></div>`;
     if (!x.set_up && !x.payments && !x.tasks) return notSetUp(x.entity, ov.month);
