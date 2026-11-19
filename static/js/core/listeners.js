@@ -129,7 +129,7 @@ document.addEventListener("visibilitychange", async () => {
   if (document.hidden || !state.meta) return;
   try {
     if (dayKey() === state.day) return await refreshNext(true);
-    await render();
+    await render(); syncAddr();
   } catch (e) { toast(e.message, true); }
 });
 

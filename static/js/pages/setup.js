@@ -325,7 +325,7 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
   const r = isNew ? { record: fresh, used_by: [], locked: {}, can_delete: false, notes: [] } : await api(`/api/setup/${kind}/${id}`);
   const rec = r.record || {}, locked = r.locked || {}, fields = spec.fields || [];
   const stopped = !isNew && (rec.status === "stopped" || !isActive(rec));
-  state.openPayment = null; state.why = null; state.setup.id = id;
+  state.openPayment = null; state.why = null; state.setup.id = id; syncAddr();
   const name = isNew ? `New ${lowerFirst(spec.label)}` : rec[spec.name_field] || "(no name)";
   const allNotes = [...(r.notes || []), ...(notes || []).filter(n => !(r.notes || []).includes(n))];
   const tidy = kind === "entities" && !isNew && rec.first_month;

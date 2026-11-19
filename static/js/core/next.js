@@ -5,26 +5,11 @@
 // (only the lines to explain, for filter to_explain), or another page: the Budget page as at the day a row counts (as_at)
 // when it has one. The page starts at the top; what is brought into view once it is drawn (a marked item, the
 // statement) goes after that.
-async function goTo(g) {
-  if (!(await closeDrawer())) return;
-  const tasks = g.task_ids || (g.task_id ? [g.task_id] : null);
-  if (g.entity_id) state.entity = g.entity_id;
-  if (g.month && g.view !== "books") state.month = g.month;  // the Books page has no payroll month; other pages keep theirs
-  state.view = g.view;
-  state.openPayment = g.payment_id || null;
-  state.asAt = g.view === "budget" ? g.as_at || null : null;
-  state.mark = g.view !== "entity" ? null : g.payment_ids ? { pay: p => g.payment_ids.includes(p.id) }
-    : tasks ? { task: t => tasks.includes(t.id) } : g.filter ? markFor(g.filter) : null;
-  state.focusBank = g.view === "bank" ? { account: g.account_id || null } : null;
-  if (g.view === "books" && g.tab) {  // Next up's statutory rows open the Statutory tab on their month to today
-    const B = state.books;
-    if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "", party: null });
-    B.tab = g.tab;
-    if (g.from || g.to) { B.from = g.from || null; B.to = g.to || null; }
-  }
-  if (g.view === "bank") state.bankOnly = g.filter === "to_explain";
-  window.scrollTo?.(0, 0);
-  renderNav(); return render();
+// The place goes in the address (core/router.js linkPlace and applyPlace hold what each of these keys does: the company and
+// month, the payment to open as the id, and mark, pay, task, as_at, filter, account, tab, from and to as the filters).
+function goTo(g) {
+  const place = linkPlace(g);
+  return place ? navigate(place, { link: true }) : Promise.resolve(false);
 }
 
 // What a count stands for on the month page: the checklist items and payments to mark (a row of Next up names its own,

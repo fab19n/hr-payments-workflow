@@ -145,13 +145,11 @@ function renderNav() {
     : g ? `${g[0]} › ${g[1].find(v => v[0] === state.view)[1]}` : "";
 }
 
-async function go(view, entity) {
-  if (!(await closeDrawer())) return;
-  state.view = view; state.bankOnly = false; state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; if (entity) state.entity = +entity;
-  if (!state.entity) state.entity = firstEntityId();
-  if (view === "setup") state.setup.id = null;  // the section stays, so Setup opens where it was left
-  state.payeeSaved = null;
-  renderNav(); render();
+// Opens a page (core/router.js writes its address first): searches and the bank review start again; Setup stays on its
+// section. Resolves false when you kept editing an open drawer.
+function go(view, entity) {
+  const place = goPlace(view, entity);
+  return place ? navigate(place, { fresh: true }) : Promise.resolve(false);
 }
 
 async function render() {
@@ -169,18 +167,8 @@ async function render() {
   if (fresh) main.classList.add("loading");
   const slow = fresh ? setTimeout(() => { if (seq === render.n) main.innerHTML = loadingSkeleton(3); }, 300) : null;
   try {
-    if (state.view === "overview") await viewOverview(main);
-    else if (state.view === "entity") await viewEntity(main);
-    else if (state.view === "budget") await viewBudget(main);
-    else if (state.view === "payroll") await viewPayroll(main);
-    else if (state.view === "bank") await viewBank(main);
-    else if (state.view === "sql") await viewSql(main);
-    else if (state.view === "books") await viewBooks(main);
-    else if (state.view === "payees") await viewPayees(main);
-    else if (state.view === "audit") await viewAudit(main);
-    else if (state.view === "settings") await viewSettings(main);
-    else if (state.view === "trail") await viewTrail(main);
-    else if (state.view === "setup") await viewSetup(main);
+    const draw = ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
+    if (draw) await draw(main);
     if (state.view === "overview") trailNotice();
     render.last = key;
   } catch (e) { render.last = null; main.innerHTML = appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true }); }

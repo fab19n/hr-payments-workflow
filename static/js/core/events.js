@@ -24,10 +24,10 @@ document.addEventListener("click", async ev => {
     if (ds.nextAll) { const k = nextScope() || 0; state.nextAll[k] = !state.nextAll[k]; return refreshNext(); }
     if (ds.savedBalance) return render();
     if (ds.nextBackup) {
-      state.view = "settings"; renderNav(); await render(); $("#bkPw")?.focus();  // the password is typed there; a plain backup is not offsite
+      await go("settings"); $("#bkPw")?.focus();  // the password is typed there; a plain backup is not offsite
       return;
     }
-    if (ds.pickEntity) { if (!(await closeDrawer())) return; state.entity = +ds.pickEntity; return render(); }
+    if (ds.pickEntity) { if (!(await closeDrawer())) return; state.entity = +ds.pickEntity; state.addr.id = null; state.addr.params = {}; return redraw(); }
     if (ds.fix) return fixIt(ds.fix, +ds.id);
     if (ds.closeMonth) return await markFiled(ds.closeMonth === "built");
     if (ds.reopenMonth) {
@@ -41,12 +41,13 @@ document.addEventListener("click", async ev => {
     if (t.id === "prevMonth" || t.id === "nextMonth" || t.id === "thisMonth") {
       if (!(await closeDrawer())) return;
       state.month = t.id === "thisMonth" ? currentCycle() : shiftMonth(state.month, t.id === "prevMonth" ? -1 : 1);
-      renderNav(); return render();
+      state.addr.params = state.view === "bank" && state.addr.params.filter ? { filter: state.addr.params.filter } : {};  // the filters were used up; the to-explain list stays
+      return redraw();
     }
     if (t.id === "closeDrawer") return closeDrawer();
     if (ds.setupKind) {
       if (!(await closeDrawer())) return;
-      Object.assign(state.setup, { kind: ds.setupKind, id: null }); renderNav(); return render();
+      Object.assign(state.setup, { kind: ds.setupKind, id: null }); return redraw();
     }
     if (ds.setupNew) return await openSetup(ds.setupNew, "new");
     if (ds.setupPaste) return openPaste(ds.setupPaste);
@@ -130,7 +131,7 @@ document.addEventListener("click", async ev => {
     }
     if (t.id === "addPayment") return addPaymentDrawer();
     if (ds.explain) return explainLine(+ds.explain);
-    if (ds.rcAcct) { Object.assign(state.recon, { account: +ds.rcAcct, year: null, open: null, rv: null }); return render(); }
+    if (ds.rcAcct) { Object.assign(state.recon, { account: +ds.rcAcct, year: null, open: null, rv: null }); state.addr.params.account = String(ds.rcAcct); syncAddr(); return render(); }
     if (ds.rcYear) { Object.assign(state.recon, { year: ds.rcYear, open: null }); return drawRecon(); }
     if (ds.rcOpen) { state.recon.open = state.recon.open === ds.rcOpen ? null : ds.rcOpen; return drawRecon(); }
     if (ds.rcReview) return openReview(+ds.rcReview);

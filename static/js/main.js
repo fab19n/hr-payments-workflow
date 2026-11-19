@@ -5,5 +5,5 @@
   state.entity = firstEntityId();
   paintOrg();
   await openCycleMonths();
-  renderNav(); render();
+  await routerBoot();  // the address in the bar is the place; with none, the Overview
 })();

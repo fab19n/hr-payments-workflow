@@ -135,6 +135,7 @@ async function closeDrawer(force) {
   if (!force && drawerDirty() && !(await mayLeave())) return false;
   hideDrawer(); state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
   Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null, paste: null });
+  if (state.addr.id || state.setup.id != null) { state.addr.id = null; state.setup.id = null; syncAddr(); }  // a closed drawer is not in the address
   return true;
 }
 

@@ -35,13 +35,13 @@ async function viewBooks(main) {
   view.addEventListener("click", ev => {
     const t = ev.target.closest("button"); if (!t) return;
     const ds = t.dataset;
-    if (ds.bkTab) { B.tab = ds.bkTab; B.party = null; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === B.tab))); return drawBooks(); }
-    if (ds.bkShow) { B.from = $("#bkFrom").value || null; B.to = $("#bkTo").value || null; return drawBooks(); }
-    if (ds.bkYear) { B.from = B.to = null; return drawBooks(); }
-    if (ds.bkAcct) { B.tab = "ledger"; B.account = ds.bkAcct; view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === "ledger"))); return drawBooks(); }
+    if (ds.bkTab) { B.tab = ds.bkTab; B.party = null; syncAddr(); view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === B.tab))); return drawBooks(); }
+    if (ds.bkShow) { B.from = $("#bkFrom").value || null; B.to = $("#bkTo").value || null; syncAddr(); return drawBooks(); }
+    if (ds.bkYear) { B.from = B.to = null; syncAddr(); return drawBooks(); }
+    if (ds.bkAcct) { B.tab = "ledger"; B.account = ds.bkAcct; syncAddr(); view.querySelectorAll("[data-bk-tab]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.bkTab === "ledger"))); return drawBooks(); }
     if (ds.bkAll) { B.account = null; return drawBooks(); }
     if (ds.bkDoc) return booksDoc(t);
-    if (ds.bkSide) { B.side = ds.bkSide; B.party = null; return drawBooks(); }
+    if (ds.bkSide) { B.side = ds.bkSide; B.party = null; syncAddr(); return drawBooks(); }
     if (ds.bkParty) { B.party = ds.bkParty; return drawBooks(); }
     if (ds.bkPartyBack) { B.party = null; return drawBooks(); }
     if (ds.stUse) return statutoryUse(t);

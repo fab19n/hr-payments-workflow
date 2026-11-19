@@ -233,7 +233,7 @@ after it a note.
   entries keep their code, payment method, cheque number, document key and currency, so a supplier's code matches its
   vouchers first.
 - Tests on made-up data only, safe to keep in git, each run as `.venv\Scripts\python -m synthetic_tests.<name>`:
-  audit_trail_test, before_tracking_test, books_excel_test, books_test, checklist_equivalence_test, checklist_test, dialog_shell_test,
+  addresses_test, audit_trail_test, before_tracking_test, books_excel_test, books_test, checklist_equivalence_test, checklist_test, dialog_shell_test,
   extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, myinvois_amount_test,
   myinvois_test, pack_check_test, parties_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,

@@ -135,7 +135,7 @@ check("an explained or open row has no payment id", R[4].get("payment_id", "miss
       (R[4].get("payment_id", "missing"), R[5].get("payment_id", "missing")))
 
 BANK_TEXT = part(r"^const bankText = .*?;$", "the search text of a bank line (bankText)")
-BY_KEY = re.search(r'by: \["text", (.+?)\] \},', part(r"^  bank: \{.*?\n  sql:", "the bank list's sorts")).group(1)
+BY_KEY = re.search(r'by: \["text", (.+?)\] \},', part(r"^const SORTS = .*?^  bank: \{.*?\n  sql:", "the bank list's sorts")).group(1)
 page = node(f"""
 const fmtDate = x => x;
 {LT_BLOCK}
