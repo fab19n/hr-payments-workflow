@@ -11,6 +11,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 from pathlib import Path
 
@@ -341,7 +342,7 @@ check("nor in its profit and loss account", not any(b["kind"] == "section" for b
 check("the routes write nothing", q("SELECT COUNT(*) AS n FROM audit_row")[0]["n"] == trail_before)
 
 # ---------- 6. the page ----------
-js = (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the Books page has the Profit and loss and Balance sheet tabs, reading the routes",
       'data-bk-tab="pl"' in js and 'data-bk-tab="bs"' in js and "/api/books/profit-and-loss" in js and "/api/books/balance-sheet" in js
       and 'id="bkMonths"' in js and "data-bk-acct" in js)

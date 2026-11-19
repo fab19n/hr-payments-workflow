@@ -26,6 +26,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 import zipfile
 from datetime import date, datetime
@@ -342,7 +343,7 @@ check("and in the audit trail, with the row as it was", len(dels) == 1 and json.
       and "sql-names" in dels[0]["action"], dels)
 check("the next fetch holds the file again, as from a company not in Setup",
       file_in(preview(), "stranger.xlsx")["status"] == "unknown_company")
-js = Path(__file__).resolve().parents[1].joinpath("static", "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the page's Remove asks for a second click, saying under the list that the files are held again on the next Fetch",
       "data-sql-name-remove" in js and 'btn.textContent = "Click again to remove"' in js
       and 'files printing it are held again on the next Fetch, until Take it for is clicked again.`' in js

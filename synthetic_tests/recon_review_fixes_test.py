@@ -20,6 +20,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 from pathlib import Path
 
@@ -35,7 +36,7 @@ assert config.DATA_DIR == tmp, "the test must never open the real records folder
     {"code": "EXR", "name": "Example Review Sdn Bhd", "accounts": [{"label": "Main", "bank": "Example Bank", "number": "000-222"}]},
 ]}), encoding="utf-8")
 
-APP_JS = (Path(__file__).resolve().parent.parent / "static" / "app.js").read_text(encoding="utf-8")
+APP_JS = app_source()
 
 
 def check(name, ok, detail=""):

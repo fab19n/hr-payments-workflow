@@ -15,6 +15,7 @@ import os
 import sqlite3
 import stat
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 import zipfile
 from datetime import date, datetime
@@ -605,7 +606,7 @@ check("so is a From date after the To date", "after" in j("get", f"/api/books/le
 check("the routes write nothing", q("SELECT COUNT(*) AS n FROM audit_row")[0]["n"] == trail_before)
 
 # ---------- 9. the page ----------
-js = (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the SQL page's card is called Journals and invoices", "<h2>Journals and invoices</h2>" in js and "Journals and customer invoices" not in js
       and "Customer Invoice listings to see them here" not in js)
 check("the sidebar has Accounting › Books", '["Accounting", [["books", "Books"]]]' in js and "viewBooks(main)" in js
@@ -744,7 +745,7 @@ check("the ledger of a control account is followed by the customers' codes the t
       [x["code"] for x in d["accounts"]] == ["300-0000", *row["rolled"]] and d["accounts"][0]["subs"] == row["rolled"]
       and sum(x["closing_sen"] for x in d["accounts"]) == row["closing_sen"] == S(2100)
       and any("together they close at 2,100.00" in n for n in d["accounts"][0]["notes"]), str([x["notes"] for x in d["accounts"]]))
-js = (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the page offers a doc no.'s lines only for SQL's documents, and words books kept here apart",
       'r.origin === "sql" ? `<button type="button" class="linkish mono" data-bk-doc=' in js
       and "sqlCheckBanner(ent()?.uses_sql ? d.check : null)" in js and "The books kept here for this company" in js

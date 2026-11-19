@@ -11,7 +11,8 @@ Run: .venv\\Scripts\\python -m synthetic_tests.statutory_test
 import json
 import os
 import sqlite3
-import sys
+import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 from datetime import date
 from pathlib import Path
@@ -430,7 +431,7 @@ check("an employer's share put on another kind's employer account is named, with
       and "EPF's employer share account is 900-E001" in p5[0]["text"], p5)
 d5 = j("get", f"/api/statutory?entity={EXO}&from=2026-09&to=2026-09")
 check("the page is given it", [p["doc_no"] for p in d5["postings"]] == ["PV-X10"]
-      and "Employer's share on another account" in (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8"), d5.get("postings"))
+      and "Employer's share on another account" in app_source(), d5.get("postings"))
 
 # ---------- 7b. the check as an Excel file ----------
 
@@ -454,7 +455,7 @@ check("and the summary and the payment posted to another kind's account",
 r = c.get(BASE + f"/api/export/books/statutory-payables.xlsx?entity_id={EXO}&from=2026-13", headers=H)
 check("a month that isn't one is refused", r.status_code == 400 and "isn't a month" in r.get_json()["error"])
 check("the Books page's Excel button offers it on the statutory tab",
-      "statutory: `statutory-payables.xlsx?" in (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8"))
+      "statutory: `statutory-payables.xlsx?" in app_source())
 
 # ---------- 8. every account stopped ----------
 

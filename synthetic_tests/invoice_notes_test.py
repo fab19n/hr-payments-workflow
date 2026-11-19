@@ -27,7 +27,8 @@ import json
 import os
 import sqlite3
 import subprocess
-import sys
+import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 import zipfile
 from pathlib import Path
@@ -351,7 +352,7 @@ check("and says which credit notes weren't printed and why", "CN-00002" in notte
 check("the credit note in the zip is the credit note", "Credit Note" in text_of(z.read(next(n for n in names if n.startswith("CN-00001")))))
 r = c.get(BASE + f"/api/invoices/{ROWS['CN-00001']}.pdf?entity_id={EXH}", headers=H)
 check("one credit note opens as a PDF", r.status_code == 200 and r.data[:4] == b"%PDF")
-js = (Path(__file__).resolve().parent.parent / "static" / "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the page's buttons name debit and credit notes", 'DN: "debit note", CN: "credit note"' in js and "All invoices, debit and credit notes of" in js)
 
 # ---------- 3. a self-billed e-Invoice in another currency ----------

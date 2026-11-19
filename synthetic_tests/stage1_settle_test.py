@@ -29,6 +29,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 import zipfile
 from datetime import date, datetime
@@ -343,7 +344,7 @@ check("the SQL books item is done, counting the cash sale as checked by its line
                                   "SQL's trial balance)"), why)
 d = j("get", f"/api/sql/entries?entity={EID}")["ledger"]["orphans"]
 check("the SQL page has the group of its own", [x["doc_no"] for x in d["own_lines"]] == ["CS2610-001"], d)
-src = (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8")
+src = app_source()
 check("the page says plainly how those are checked", ledger.OWN_LINES_WORDS in src
       and ledger.OWN_LINES_WORDS == "No listing this app reads yet: checked by their account lines and SQL's trial balance")
 # A document of a bank, general, sales or purchase section with no listing is still asked for one.
@@ -622,7 +623,7 @@ back = october()
 check("Un-ignore brings it back into the bank reconciliation, and says the month moved",
       back["out"] == before["out"] and [m["month"] for m in u["recon_changed"]] == ["2026-10"]
       and q("SELECT status, deleted_in_sql FROM sql_entries WHERE doc_no = 'PV2610-077'")[0] == {"status": "unlinked", "deleted_in_sql": None}, u)
-check("the page says it after the toast", "reconMoved(r)" in (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8"))
+check("the page says it after the toast", "reconMoved(r)" in app_source())
 j("post", "/api/sql/entries/deleted", json={"ids": pv77["ids"]})
 check("confirmed again, out again", october()["out"] == after["out"])
 

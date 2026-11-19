@@ -246,6 +246,8 @@ Exit: both suites pass (38 synthetic, 23 local), and the settings test proves a 
   Statutory payables; switching to a company without the page lands on its Overview with the toast; the menu for a
   Kept here company. Click-through: a normal month's work inside the new shell, then again at phone width.
 
+**Step 0a done (19 November).** `static/app.js` is now 22 plain scripts under `static/js/` (`core/`: base, shell, next, events, listeners; `pages/`: one per page, with Setup in four parts; `main.js` last), loaded in order by `index.html`. They are contiguous slices of the old file, so joined they are byte for byte the old `app.js` (checked), and nothing was reordered. The names say where the code is today; the finer split into util, api, state, ui and router comes with 0c to 0e, as those parts are rewritten. Tests that read the page script as text use `synthetic_tests/appsource.py` (`app_source`, `app_files`, `app_bundle`), which reads the list from the `<script>` tags in `index.html`. New files under `static/js/` must be added to that list, in load order.
+
 ---
 
 **Slice 1 · Overview** (M, `slice-1-overview`)

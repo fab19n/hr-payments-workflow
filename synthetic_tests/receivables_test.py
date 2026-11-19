@@ -11,6 +11,7 @@ import re
 import sqlite3
 import subprocess
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 from datetime import date
 from pathlib import Path
@@ -353,7 +354,7 @@ check("a date that isn't one is refused in words", "isn't a date" in j("get", f"
 check("the routes write nothing", q("SELECT COUNT(*) AS n FROM audit_row")[0]["n"] == trail_before)
 
 # ---------- 8. the page ----------
-js = (config.PROGRAM_DIR / "static" / "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the Books page has the Customers and suppliers tab, reading the routes",
       'data-bk-tab="parties"' in js and "/api/books/parties" in js and "/api/books/party?" in js
       and 'data-bk-side="customers"' in js and 'data-bk-side="suppliers"' in js and "data-bk-party=" in js

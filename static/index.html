@@ -31,6 +31,28 @@
 <aside id="drawer" class="drawer" hidden></aside>
 <div id="toast" class="toast" hidden></div>
 <input type="file" id="filePick" hidden multiple>
-<script src="/static/app.js"></script>
+<!-- The page script, in the order it runs (plain scripts, no build step; they share one scope). -->
+<script src="/static/js/core/base.js"></script>
+<script src="/static/js/core/shell.js"></script>
+<script src="/static/js/core/next.js"></script>
+<script src="/static/js/pages/overview.js"></script>
+<script src="/static/js/pages/company.js"></script>
+<script src="/static/js/pages/budget.js"></script>
+<script src="/static/js/pages/bank.js"></script>
+<script src="/static/js/pages/sql.js"></script>
+<script src="/static/js/pages/books.js"></script>
+<script src="/static/js/pages/recurring.js"></script>
+<script src="/static/js/pages/audit.js"></script>
+<script src="/static/js/pages/payroll.js"></script>
+<script src="/static/js/pages/packcheck.js"></script>
+<script src="/static/js/pages/backup.js"></script>
+<script src="/static/js/pages/setup.js"></script>
+<script src="/static/js/pages/setup-paste.js"></script>
+<script src="/static/js/pages/setup-checklist.js"></script>
+<script src="/static/js/pages/setup-reminders.js"></script>
+<script src="/static/js/pages/trail.js"></script>
+<script src="/static/js/core/events.js"></script>
+<script src="/static/js/core/listeners.js"></script>
+<script src="/static/js/main.js"></script>
 </body>
 </html>

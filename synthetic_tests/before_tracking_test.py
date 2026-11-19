@@ -20,6 +20,7 @@ import os
 import re
 import sqlite3
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 import zipfile
 from datetime import date, datetime
@@ -435,7 +436,7 @@ check("September, before tracking, still counts its 2 bank lines to explain", se
 write("signed off before tracking", ("UPDATE statements SET reconciled_at = '2026-11-14', reconciled_how = 'before_tracking' WHERE id = ?", (ST,)))
 sep = {x["entity"]["code"]: x for x in j("get", "/api/overview?month=2026-09")["entities"]}["EXH"]
 check("once its statement is signed off, they aren't counted", sep["unmatched_lines"] == 0, str(sep["unmatched_lines"]))
-js = (Path(__file__).resolve().parent.parent / "static" / "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the Overview keeps the bank lines and payment pills beside the grey pill for such a month",
       "flags.splice(0, flags.length, BEFORE_PILL, ...kept)" in js and "bank lines not explained`, true)" in js)
 

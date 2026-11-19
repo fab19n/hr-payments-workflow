@@ -13,6 +13,7 @@ import json
 import os
 import sqlite3
 import sys
+from synthetic_tests.appsource import app_source  # noqa: E402
 import tempfile
 from pathlib import Path
 
@@ -274,6 +275,6 @@ r = db.connect()
 v = audit.verify(r)
 r.close()
 check("the audit trail still checks out at the end", v["ok"], v)
-js = (Path(__file__).resolve().parent.parent / "static" / "app.js").read_text(encoding="utf-8")
+js = app_source()
 check("the page has no Use <month> as the financial year button", "data-fy-use" not in js and "fyUse" not in js and "fy-start" not in js)
 print("\nAll checks passed. Records folder used:", tmp)
