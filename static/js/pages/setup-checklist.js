@@ -53,8 +53,8 @@ function ruleHtml(rule) {
 
 // The drawer of one checklist item (id "new" to add one). keep: what was typed and not saved, when it is drawn again
 // after a stop or use again; saved: what the last save did.
-function openChecklist(id, { force = false, keep = {}, saved = null } = {}) {
-  if (!force && !mayLeave()) return;
+async function openChecklist(id, { force = false, keep = {}, saved = null } = {}) {
+  if (!force && !(await mayLeave())) return;
   const S = state.setup, d = S.chk;
   if (!d) return;
   const isNew = id === "new", it = isNew ? null : (d.items || []).find(x => x.id === +id);
@@ -96,7 +96,7 @@ function openChecklist(id, { force = false, keep = {}, saved = null } = {}) {
     ${whyForm()}
     ${termsHtml(it, h => `${h.title}, due the ${dueText(h)}${asList(h.docs).length ? `, ${asList(h.docs).map(chkDocName).join(", ")}` : ""}`)}
     ${histSection("checklist_items", it.id)}`}`;
-  $("#drawer").hidden = false;
+  showDrawer();
   if (!isNew) S.chkOpen.filled = termInputs("cl-");  // as filled in, before what was typed is put back
   watchDrawer(keep);
   setupPaint();  // after keep, as what it put back may show or hide parts
@@ -186,8 +186,8 @@ async function chkAct(act, btn) {
 }
 
 // Copy another company's checklist, for a company with no item in use.
-function openChkCopy({ force = false } = {}) {
-  if (!force && !mayLeave()) return;
+async function openChkCopy({ force = false } = {}) {
+  if (!force && !(await mayLeave())) return;
   const S = state.setup, d = S.chk, others = d?.others || [];
   if (!others.length) return;
   const code = d.code || ent()?.code || "";
@@ -202,7 +202,7 @@ function openChkCopy({ force = false } = {}) {
       <label class="field"><span>Why are you making this change? (optional)</span><input id="cl-reason" maxlength="500" autocomplete="off"></label>
       <div class="row" style="grid-column:1/-1"><button class="ghost" type="button" data-chk-copy-preview="1">Preview</button><button class="btn" type="submit">Copy</button></div></form>
     <div id="cl-preview" data-preview-out></div>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   watchDrawer();
 }
 async function chkCopySave(preview) {

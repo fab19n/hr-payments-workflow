@@ -20,10 +20,8 @@ async function api(path, opts = {}) {
   return data;
 }
 
-function toast(msg, bad) {
-  const t = $("#toast"); t.textContent = msg; t.className = "toast" + (bad ? " bad" : ""); t.hidden = false;
-  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.hidden = true, bad ? 6000 : 2500);
-}
+// toast(message, bad, opts): opts { title, body, glyph, undo: fn, action: {label, fn}, ms, progress }. Drawn by toastShow() in core/states.js.
+function toast(msg, bad, opts) { return toastShow(msg, bad, opts); }
 // Money received shows with a green +, so it can't be read as a payment.
 const signed = (n, cur, dir) => n == null || dir !== "in" ? money(n, cur) : `<span class="recv">+${money(n, cur)}</span>`;
 // A due date's totals: money out, then money received, each currency apart; never added together.

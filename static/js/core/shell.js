@@ -145,8 +145,8 @@ function renderNav() {
     : g ? `${g[0]} › ${g[1].find(v => v[0] === state.view)[1]}` : "";
 }
 
-function go(view, entity) {
-  if (!closeDrawer()) return;
+async function go(view, entity) {
+  if (!(await closeDrawer())) return;
   state.view = view; state.bankOnly = false; state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; if (entity) state.entity = +entity;
   if (!state.entity) state.entity = firstEntityId();
   if (view === "setup") state.setup.id = null;  // the section stays, so Setup opens where it was left
@@ -157,6 +157,17 @@ function go(view, entity) {
 async function render() {
   const main = $("#main");
   if (dayKey() !== state.day) await newDay();
+  // A page the company does not use. Switching company while on it: that company's Overview instead, and the toast says why.
+  // Reaching it any other way (a link): the card that says it is not used, with a way to a company that does.
+  const gone = unusedPage(), switched = render.company !== undefined && render.company !== state.entity;
+  render.company = state.entity;
+  if (gone && switched) { const e = ent(); state.view = "entity"; renderNav(); switchedNote(gone, e); }
+  else if (gone) { render.n = (render.n || 0) + 1; render.last = null; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return; }
+  // A page that takes visible time: the old page stays, slightly dimmed, and a skeleton comes after 0.3 s (never a flash);
+  // drawing the same page again keeps what is there.
+  const seq = render.n = (render.n || 0) + 1, key = `${state.view}:${state.entity}`, fresh = render.last !== key;
+  if (fresh) main.classList.add("loading");
+  const slow = fresh ? setTimeout(() => { if (seq === render.n) main.innerHTML = loadingSkeleton(3); }, 300) : null;
   try {
     if (state.view === "overview") await viewOverview(main);
     else if (state.view === "entity") await viewEntity(main);
@@ -171,7 +182,9 @@ async function render() {
     else if (state.view === "trail") await viewTrail(main);
     else if (state.view === "setup") await viewSetup(main);
     if (state.view === "overview") trailNotice();
-  } catch (e) { main.innerHTML = `<div class="card"><b>Couldn't load this page.</b><div class="note">${esc(e.message)}</div></div>`; }
+    render.last = key;
+  } catch (e) { render.last = null; main.innerHTML = appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true }); }
+  finally { clearTimeout(slow); if (seq === render.n) main.classList.remove("loading"); dlgRestore(); }
 }
 
 function entityPicker() {

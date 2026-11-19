@@ -114,13 +114,26 @@ function watchDrawer(keep = {}) {
 }
 // A reason typed in the Why box and not used yet.
 const reasonTyped = () => !!$("#su-reason")?.value.trim() && !$("#setupWhy").hidden;
-const drawerDirty = () => !$("#drawer").hidden && (Object.keys(unsavedEdits()).length > 0 || !!state.drawerDirty?.() || reasonTyped());
-const mayLeave = () => !drawerDirty() || confirm("Discard your changes?");
+const drawerDirty = () => drawerShown() && (Object.keys(unsavedEdits()).length > 0 || !!state.drawerDirty?.() || reasonTyped());
+// Asks before edits not saved yet are lost. Resolves true when there are none, or when you choose to discard them. Two asks
+// at once (Escape twice) share one dialog.
+let leavePending = null;
+async function mayLeave() {
+  if (!drawerDirty()) return true;
+  const name = ($("#drawerTitle")?.textContent || "").trim();
+  leavePending ||= ask(name ? `You have unsaved changes on “${name}”. Closing now loses them.` : "You have unsaved changes. Closing now loses them.", {
+    title: "Discard your changes?", yes: "Discard", no: "Keep editing", danger: true, tone: "warn", glyph: "edit",
+    note: "Escape, a click outside the dialog, Cancel, changing page or month, and opening another payment all ask this first.",
+    closing: { glyph: "alert", text: "Discarded changes can't be recovered." } })
+    .finally(() => { leavePending = null; });
+  return leavePending;
+}
 
-// False when you choose to keep changes not saved yet; force closes it anyway (the payment was removed).
-function closeDrawer(force) {
-  if (!force && !mayLeave()) return false;
-  $("#drawer").hidden = true; state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
+// Resolves false when you choose to keep changes not saved yet; force closes it anyway (the payment was removed). With
+// nothing to ask it closes at once, before the first await.
+async function closeDrawer(force) {
+  if (!force && drawerDirty() && !(await mayLeave())) return false;
+  hideDrawer(); state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
   Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null, paste: null });
   return true;
 }
@@ -174,7 +187,7 @@ function openPayment(id, keep = {}) {
     <div><h3>Bank statement</h3>${lines}${over}${est}</div>
     ${histSection("payments", p.id)}
     <div class="row"><button class="btn danger small" id="deletePayment">Remove this payment</button></div>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   state.payLoaded = payFormValues();
   for (const [k, v] of Object.entries(keep)) { const el = $("#" + k); if (el) el[el.type === "checkbox" ? "checked" : "value"] = v; }
 }

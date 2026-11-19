@@ -78,6 +78,9 @@
   --toast-edge: light-dark(#0F1A2B, #2C3A52);
   --shadow: light-dark(rgba(13, 27, 46, .18), rgba(0, 0, 0, .5));
   --toast-shadow: light-dark(rgba(13, 27, 46, .22), rgba(0, 0, 0, .4));
+  --toast-ok: #5BD49A; --toast-brand: var(--focus-night); --toast-bad: #F58C80;   /* glyph tones on the dark toast, in both themes */
+  --toast-btn: light-dark(var(--night-line), #1B2A4A); --toast-btn-ink: light-dark(#D6E2FB, var(--focus-night));   /* Undo and the way-on chip */
+  --scrim: light-dark(rgba(13, 27, 46, .45), rgba(0, 0, 0, .6));   /* the dim behind a dialog */
 
   /* Motion: hover, press and focus colour; menus; dialogs in and out; progress bars; a row that just changed */
   --t-fast: 120ms ease-out;
@@ -313,6 +316,48 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-solid); }
 /* Drawer (the side panel for a record) */
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100vw); background: var(--surface); border-left: 1px solid var(--line);
   box-shadow: -8px 0 24px var(--shadow); z-index: 20; overflow-y: auto; padding: 18px 20px 40px; display: grid; gap: 16px; align-content: start; }
+/* Dialogs (step 0c): the drawer is a modal over a dim; ask() draws a centred confirm over its own dim. Motion: design/motion-keyboard-spec.md section 3. */
+@keyframes dimIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes dimOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes popIn { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes popOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes drawerIn { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }   /* the side panel slides, a little */
+@keyframes drawerOut { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(16px); } }
+.dim-in { animation: dimIn .2s ease-out both; }
+.dim-out { animation: dimOut .15s ease-in both; }
+.dr-in { animation: popIn var(--t-enter) both; }
+.dr-out { animation: popOut var(--t-exit) both; }
+.drawer.dr-in { animation-name: drawerIn; }
+.drawer.dr-out { animation-name: drawerOut; }
+.dim { position: fixed; inset: 0; z-index: 19; background: var(--scrim); }   /* behind the drawer (z-index 20) */
+.drawer:focus, .cfm:focus, .drawer h1:focus, .drawer h2:focus, .drawer h3:focus, .cfm h2:focus { outline: none; }   /* focus lands here, but only a control shows a ring */
+.dlg-layer { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: 16px; }   /* above the toast (30) */
+.dlg-layer > .dim { z-index: 0; }
+.cfm { position: relative; z-index: 1; width: min(440px, 100%); box-sizing: border-box; display: grid; gap: 14px; padding: 22px; background: var(--raised);
+  border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 16px 40px var(--shadow); max-height: calc(100vh - 32px); overflow-y: auto; }
+.cfm-head { display: flex; gap: 12px; align-items: flex-start; padding-right: 28px; }
+.cfm-text { min-width: 0; display: grid; gap: 4px; }
+.cfm-text h2 { font-size: 1rem; }
+.cfm-body { display: grid; gap: 6px; color: var(--ink-2); font-size: 13px; overflow-wrap: anywhere; }
+.cfm-body p { margin: 0; }
+.cfm-text h2 + .cfm-body { margin-top: 0; }
+.cfm-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.cfm-x { position: absolute; top: 12px; right: 12px; width: 32px; padding: 0; border-color: transparent; background: transparent; }
+.cfm-x .glyph { width: 18px; height: 18px; color: var(--muted); }
+.cfm-actions .btn.ghost { padding: 0 14px; }
+.cfm-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
+.cfm-list li { display: flex; gap: 8px; align-items: center; min-width: 0; overflow-wrap: anywhere; }
+.cfm-list .glyph { width: 16px; height: 16px; }
+.cfm-list .warn .glyph { color: var(--warn); }
+.cfm-list .muted .glyph { color: var(--muted); }
+.cfm-note { padding: 10px 12px; border-radius: 10px; background: var(--btn-off); font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+.cfm-close { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.cfm-close .glyph { width: 16px; height: 16px; }
+.plate { width: 40px; height: 40px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.plate .glyph { width: 22px; height: 22px; }
+.plate.brand { background: var(--accent-soft); color: var(--accent); }
+.plate.warn { background: var(--warn-soft); color: var(--warn); --glyph-tint: var(--tint-warn); }
+.plate.bad { background: var(--bad-soft); color: var(--bad); --glyph-tint: var(--tint-bad); }
 /* Explain bank line: the line stays in sight while the list scrolls */
 .ex-head { position: sticky; top: -18px; z-index: 2; background: var(--surface); margin: -18px -20px 0; padding: 18px 20px 12px; border-bottom: 1px solid var(--line); display: grid; gap: 10px; }
 .ex-line { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; overflow-wrap: anywhere; }
@@ -327,12 +372,90 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent-solid); }
 .ex-all { flex-wrap: nowrap; align-items: flex-start; gap: 8px; font-size: .86rem; }
 .ex-all span { flex: 1; min-width: 0; }
 .ex-all input { width: auto; }
-/* Toast: dark on light, a raised panel on dark; errors are red */
-.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--toast-bg); color: var(--toast-ink); border: 1px solid var(--toast-edge);
-  padding: 12px 12px 12px 14px; border-radius: 12px; box-shadow: 0 10px 28px var(--toast-shadow); z-index: 30; max-width: 90vw; animation: rise var(--t-enter) both; }
-.toast.bad { border-color: var(--bad-line); }   /* an error keeps the toast surface; only its edge turns red */
-@keyframes rise { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translateX(-50%); } }
-@keyframes toastOut { to { opacity: 0; transform: translate(-50%, 8px); } }   /* for the page to play when it hides a toast */
+/* States and toasts (step 0c) */
+/* Toast stack: one container at the bottom right (bottom centre on a phone), the toasts stacked in it. Dark on light, a raised panel on dark;
+   the glyph's colour says the kind (ok, brand, bad); an error also gets a red edge, in the dark theme only */
+.toast-stack { position: fixed; right: 16px; bottom: 16px; left: auto; z-index: 30; width: min(380px, calc(100vw - 32px)); display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+@media (max-width: 700px) { .toast-stack { right: auto; left: 50%; transform: translateX(-50%); bottom: calc(var(--tabbar-h, 0px) + 16px); } }   /* --tabbar-h: the phone tab bar's height, set with the phone layout (step 0d) */
+.toast { display: flex; gap: 12px; align-items: flex-start; pointer-events: auto; background: var(--toast-bg); color: var(--toast-ink); border: 1px solid var(--toast-edge);
+  padding: 12px 12px 12px 14px; border-radius: 12px; box-shadow: 0 10px 28px var(--toast-shadow); max-width: 100%; animation: rise var(--t-enter) both; }
+.toast.bad { border-color: light-dark(var(--toast-edge), var(--bad-line)); }
+.toast.out { animation: toastOut var(--t-base) both; }
+.toast-glyph { margin-top: 1px; color: var(--toast-ok); --glyph-tint: var(--night-line); display: inline-flex; }
+.toast.brand .toast-glyph { color: var(--toast-brand); }
+.toast.bad .toast-glyph { color: var(--toast-bad); }
+.toast-glyph .glyph { width: 20px; height: 20px; }
+.toast-text { flex: 1; min-width: 0; overflow-wrap: anywhere; display: grid; gap: 2px; }
+.toast-text b { font-size: 13px; }
+.toast-body { font-size: 13px; color: var(--night-ink); white-space: pre-line; }
+.toast-text b + .toast-body { font-size: 12px; }
+.toast-bar { height: 4px; border-radius: 2px; background: var(--night-line); overflow: hidden; margin-top: 6px; }
+.toast-bar > span { display: block; height: 100%; background: var(--focus-night); transition: width var(--t-progress); }
+.toast-btn, .toast-x { flex: none; min-height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--toast-ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background-color var(--t-fast); }
+.toast-btn { padding: 0 10px; background: var(--toast-btn); color: var(--toast-btn-ink); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; box-sizing: border-box; }
+.toast-btn .glyph { width: 14px; height: 14px; }
+.toast-act { margin-top: 6px; justify-self: start; }   /* a way on sits under the text, not beside it */
+.toast-x { width: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+.toast-btn:hover, .toast-x:hover { background: var(--night-hover); }
+.toast-btn:focus-visible, .toast-x:focus-visible { outline: 2px solid var(--focus-night); outline-offset: 2px; }
+@keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
+/* The cards: empty, could not load, loading; a refusal in place; the count under a long list */
+.state { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 32px 28px; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; min-height: 260px; justify-content: center; min-width: 0; }
+.state.bad { border-color: var(--bad-line); }
+.state.compact { min-height: 0; gap: 10px; padding: 22px 12px; border: 0; border-radius: 12px; background: var(--btn-off); }
+.state.compact .state-plate { width: 48px; height: 48px; border-radius: 14px; }
+.state.compact .state-plate .glyph { width: 26px; height: 26px; }
+.state.compact b { font-size: 15px; }
+.state.stopped { flex-direction: row; text-align: left; gap: 28px; padding: 28px; min-height: 0; justify-content: flex-start; }
+.state.stopped .state-plate { width: 84px; height: 84px; border-radius: 24px; flex: none; }
+.state.stopped .state-plate .glyph { width: 44px; height: 44px; }
+.stopped-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.stopped-text h2 { font-size: 20px; }
+.stopped-text p { max-width: none; }
+.stopped-text ol { margin: 0; padding-left: 20px; font-size: 13px; display: grid; gap: 4px; }
+.stopped .state-actions { justify-content: flex-start; align-items: center; }
+.state-note { flex: 1 1 200px; font-size: 12px; color: var(--muted); }
+@media (max-width: 560px) { .state.stopped { flex-direction: column; text-align: center; } .stopped-text { align-items: center; } }
+.state h2 { font-size: 1.125rem; }
+.state p { margin: 0; color: var(--ink-2); font-size: 13px; max-width: 60ch; overflow-wrap: anywhere; }
+.state-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.state-plate { width: 64px; height: 64px; border-radius: 20px; display: inline-flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); }
+.state-plate .glyph { width: 34px; height: 34px; }
+.state-plate.ok { background: var(--ok-wash); color: var(--ok); --glyph-tint: var(--tint-ok); }
+.state-plate.warn { background: var(--warn-soft); color: var(--warn); --glyph-tint: var(--tint-warn); }
+.state-plate.mute { background: var(--mute-soft); color: var(--muted); --glyph-tint: var(--tint-mute); }
+.state-plate.bad { background: var(--bad-soft); color: var(--bad); --glyph-tint: var(--tint-bad); }
+#main.loading { opacity: .6; transition: opacity var(--t-fast); }   /* the old page, slightly dimmed, while the next one is asked for */
+.skel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.skel-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sk-stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.sk-stat .sk-s1, .sk-stat .sk-s3 { height: 10px; border-radius: 5px; }
+.sk-stat .sk-s2 { height: 24px; }
+.skel-table { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.sk-thead, .sk-trow { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.sk-thead { padding: 12px 16px; background: var(--btn-off); }
+.sk-trow:last-child { border-bottom: 0; }
+.sk-gap { flex: 1; }
+.sk-t0 { height: 10px; border-radius: 5px; }
+.sk-t1 { height: 12px; border-radius: 5px; }
+.skel .sk-title { height: 18px; width: 40%; }
+.sk-row { display: flex; gap: 12px; align-items: center; }
+.sk-plate { width: 36px; height: 36px; border-radius: 10px; flex: none; }
+.sk-lines { flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.sk-lines .sk { height: 12px; border-radius: 5px; }
+.sk-lines .sk-sub { height: 10px; }
+.sk-pill { width: 80px; height: 22px; border-radius: 999px; flex: none; }
+.refused { display: flex; gap: 12px; align-items: flex-start; padding: 14px 18px; background: var(--bad-wash); border-bottom: 1px solid var(--bad-line); border-radius: 0; }   /* a banner across the top of the form */
+.refused > .glyph { width: 22px; height: 22px; color: var(--bad); }
+.refused-text { flex: 1; min-width: 0; }
+.refused b { color: light-dark(#8E1A10, var(--bad)); }
+.refused-why { color: var(--ink-2); font-size: 13px; overflow-wrap: anywhere; }
+.refused-go { flex: none; align-self: center; white-space: nowrap; text-decoration: none; border-color: var(--bad-line); color: light-dark(#8E1A10, var(--bad)); }
+.field-err { display: flex; gap: 6px; align-items: center; margin-top: 4px; color: var(--bad); font-size: 13px; font-weight: 500; }
+.field-err .glyph { width: 15px; height: 15px; }
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad); }
+.many { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--btn-off); }
+.many span { font-size: 13px; color: var(--ink-2); }
 .line-desc { font-size: .84rem; }
 .empty { padding: 18px; text-align: center; color: var(--muted); }
 .cell { border-radius: 8px; padding: 3px 8px; min-height: 32px; width: 100%; min-width: 7ch; }
@@ -536,7 +659,7 @@ table.ar th.ar-age, table.ar td.ar-age { background: var(--bg); }  /* the ageing
 /* Print: the colours are always the light ones, whatever the screen theme is (the tokens above switch on color-scheme only) */
 @media print {
   :root:root, :root[data-theme] { color-scheme: light; }
-  .side, .top, .noprint, .drawer, .toast { display: none !important; }
+  .side, .top, .noprint, .drawer, .toast-stack { display: none !important; }
   body { display: block; background: #fff; color: #000; }
   .card { border: 0; padding: 0; }
   main { padding: 0; }

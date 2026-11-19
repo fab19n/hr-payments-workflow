@@ -1,6 +1,6 @@
 "use strict";
-function addPaymentDrawer() {
-  if (!mayLeave()) return;
+async function addPaymentDrawer() {
+  if (!(await mayLeave())) return;
   state.openPayment = null; state.drawerDirty = null;
   const e = ent(), acct = defaultAccount(e)?.id;
   $("#drawer").innerHTML = `
@@ -15,7 +15,7 @@ function addPaymentDrawer() {
       <label class="field" style="grid-column:1/-1"><span>Account</span><select id="ap-acct">${pickAccounts(e).map(a => acctOption(a, acct)).join("")}</select></label>
       <div class="row"><button class="btn" type="submit">Add payment</button></div>
     </form>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   pairTypeDir($("#ap-cat"), $("#ap-dir"), { keep: oneOffType() });  // Received offers the types of money received; Paid out, the one-off default again
 }
 
@@ -43,10 +43,10 @@ document.addEventListener("drop", async ev => {
   try { await uploadFiles([...ev.dataTransfer.files], { payment_id: state.openPayment, doc_type: s.dataset.slot }); } catch (e) { toast(e.message, true); }
 });
 // Escape closes the drawer (asking first if something typed would be lost); in the reason box it closes only that.
-document.addEventListener("keydown", ev => {
-  if (ev.key !== "Escape") return;
+document.addEventListener("keydown", async ev => {
+  if (ev.key !== "Escape" || DLG.asking) return;  // a confirm on top takes the Escape itself
   if (ev.target.closest?.("#setupWhy")) return hideWhy();
-  closeDrawer();
+  await closeDrawer();
 });
 document.addEventListener("input", ev => {
   const id = ev.target.dataset?.search;

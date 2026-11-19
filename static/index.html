@@ -30,10 +30,12 @@
   <main id="main"></main>
 </div>
 <aside id="drawer" class="drawer" hidden></aside>
-<div id="toast" class="toast" hidden></div>
+<div id="toast" class="toast-stack" aria-live="polite"></div>
 <input type="file" id="filePick" hidden multiple>
 <!-- The page script, in the order it runs (plain scripts, no build step; they share one scope). -->
 <script src="/static/js/core/base.js"></script>
+<script src="/static/js/core/dialog.js"></script>
+<script src="/static/js/core/states.js"></script>
 <script src="/static/js/core/shell.js"></script>
 <script src="/static/js/core/next.js"></script>
 <script src="/static/js/pages/overview.js"></script>

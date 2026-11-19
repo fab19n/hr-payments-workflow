@@ -192,7 +192,7 @@ async function viewStoredBudget(main, d, here) {
     try { const r = await call(); await refresh(); if (then) then(r); } catch (e) { toast(e.message, true); try { await refresh(); } catch {} }
   };
   const header = body => api("/api/budget/header", { json: { entity_id: eid, month, ...body } });
-  const remove = (ids, text) => confirm(text) && change(() => api("/api/budget/lines/delete", { json: { ids } }));
+  const remove = async (ids, title, text) => (await ask(text, { title, yes: "Delete", no: "Cancel", danger: true, tone: "bad", glyph: "trash" })) && change(() => api("/api/budget/lines/delete", { json: { ids } }));
 
   $("#bud-bal").addEventListener("input", upd);
   $("#bud-bal").addEventListener("change", () => change(() => header({ balance: $("#bud-bal").value, ...(d.saved_as_at ? { as_at: d.saved_as_at } : {}) })));
@@ -219,9 +219,9 @@ async function viewStoredBudget(main, d, here) {
     if (t.dataset.addPayment) return change(() => api("/api/budget/lines", { json: { entity_id: eid, month, payment_id: +t.dataset.addPayment } }));
     if (t.dataset.del) {
       const x = d.lines.find(l => l.id === +t.dataset.del);
-      return remove([+t.dataset.del], `Delete ${x?.description ? `"${x.description}"` : "this line"} from the budget? The payment itself is not changed.`);
+      return remove([+t.dataset.del], `Delete ${x?.description ? `\u201c${x.description}\u201d` : "this line"} from the budget?`, "The payment itself is not changed.");
     }
-    if (t.id === "bud-delsel") return remove([...sel], `Delete ${sel.size} selected line${sel.size === 1 ? "" : "s"} from the budget? The payments themselves are not changed.`);
+    if (t.id === "bud-delsel") return remove([...sel], `Delete ${sel.size} selected line${sel.size === 1 ? "" : "s"} from the budget?`, "The payments themselves are not changed.");
   });
   draw();
 }

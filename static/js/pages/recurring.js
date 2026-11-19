@@ -110,7 +110,7 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
     ${id === "new" || !(["salary", "director"].includes(p.category) || p.advances?.length) ? "" : advancesHtml(p)}
     ${acts}
     ${id === "new" ? "" : histSection("payees", p.id)}`;
-  $("#drawer").hidden = false;
+  showDrawer();
   watchDrawer(keep);
   // Money in offers the types of money received, money out the others; a type chosen sets the way the money goes.
   const labels = () => { const into = $("#py-dir").value === "in"; $("#py-acct-lbl").textContent = into ? "Paid into" : "Pay from"; $("#py-off-lbl").textContent = into ? "Received in" : "Paid in"; };

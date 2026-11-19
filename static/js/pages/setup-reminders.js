@@ -21,8 +21,8 @@ async function setupReminders(box) {
 }
 
 // The drawer of one reminder (id "new" to add one); keep and saved as for a checklist item.
-function openReminder(id, { force = false, keep = {}, saved = null } = {}) {
-  if (!force && !mayLeave()) return;
+async function openReminder(id, { force = false, keep = {}, saved = null } = {}) {
+  if (!force && !(await mayLeave())) return;
   const S = state.setup, d = S.rem;
   if (!d) return;
   const isNew = id === "new", r = isNew ? null : (d.rules || []).find(x => x.id === +id);
@@ -65,7 +65,7 @@ function openReminder(id, { force = false, keep = {}, saved = null } = {}) {
     ${whyForm()}
     ${termsHtml(r, h => `${h.title}, ${lowerFirst(remDays(h.days, kind))}${h.salary_over == null || h.salary_over === "" ? "" : `, ${lowerFirst(remSalary(h.salary_over))}`}`)}
     ${histSection("people_tasks", r.id)}`}`;
-  $("#drawer").hidden = false;
+  showDrawer();
   if (!isNew) S.remOpen.filled = termInputs("rm-");  // as filled in, before what was typed is put back
   watchDrawer(keep);
   setupPaint();

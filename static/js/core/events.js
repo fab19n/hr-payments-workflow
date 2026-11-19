@@ -7,6 +7,9 @@ document.addEventListener("click", async ev => {
   if (ds.sort) return sortClick(ds.sort, ds.col, t);
   try {
     if (ds.view) return go(ds.view, ds.entity);
+    if (ds.goField) { ev.preventDefault(); const f = document.getElementById(ds.goField); f?.scrollIntoView?.({ block: "center" }); return f?.focus?.(); }
+    if (ds.copyDetails !== undefined) return copyDetails(ds.copyDetails);
+    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return render(); }
     if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
     if (ds.restore) return await openRestore(+ds.restore, ds.restoreTitle);
     if (ds.restoreGo) return restoreGo(+ds.restoreGo, t);
@@ -24,7 +27,7 @@ document.addEventListener("click", async ev => {
       state.view = "settings"; renderNav(); await render(); $("#bkPw")?.focus();  // the password is typed there; a plain backup is not offsite
       return;
     }
-    if (ds.pickEntity) { if (!closeDrawer()) return; state.entity = +ds.pickEntity; return render(); }
+    if (ds.pickEntity) { if (!(await closeDrawer())) return; state.entity = +ds.pickEntity; return render(); }
     if (ds.fix) return fixIt(ds.fix, +ds.id);
     if (ds.closeMonth) return await markFiled(ds.closeMonth === "built");
     if (ds.reopenMonth) {
@@ -36,13 +39,13 @@ document.addEventListener("click", async ev => {
       toast(`${monthName(state.month)} is set up`); return render();
     }
     if (t.id === "prevMonth" || t.id === "nextMonth" || t.id === "thisMonth") {
-      if (!closeDrawer()) return;
+      if (!(await closeDrawer())) return;
       state.month = t.id === "thisMonth" ? currentCycle() : shiftMonth(state.month, t.id === "prevMonth" ? -1 : 1);
       renderNav(); return render();
     }
     if (t.id === "closeDrawer") return closeDrawer();
     if (ds.setupKind) {
-      if (!closeDrawer()) return;
+      if (!(await closeDrawer())) return;
       Object.assign(state.setup, { kind: ds.setupKind, id: null }); renderNav(); return render();
     }
     if (ds.setupNew) return await openSetup(ds.setupNew, "new");
@@ -69,7 +72,7 @@ document.addEventListener("click", async ev => {
     if (ds.setupAct) return await setupAct(ds.setupAct, t);
     if (ds.whyCancel) return hideWhy();
     if (ds.reqScope) {
-      if (!closeDrawer()) return;
+      if (!(await closeDrawer())) return;
       state.setup.reqScope = ds.reqScope === "all" ? null : +ds.reqScope; return render();
     }
     if (ds.reqEdit) return openRequired(ds.reqEdit);
@@ -96,13 +99,13 @@ document.addEventListener("click", async ev => {
     if (ds.payment) {
       // Clicking the open payment again keeps what was typed in it.
       const same = +ds.payment === state.openPayment && !$("#drawer").hidden;
-      if (!same && !mayLeave()) return;
+      if (!same && !(await mayLeave())) return;
       return openPayment(+ds.payment, same ? unsavedEdits() : {});
     }
     // A payment's document box (data-upload: its type) or a checklist item's (data-task-upload, with data-type).
     if (ds.upload || ds.taskUpload) {
       const files = await pickFile(!ds.replaces); if (!files.length) return;
-      if (ds.replaces && !confirm(`Replace "${ds.name}" with "${files[0].name}"? The old file is taken out of the audit pack.`)) return;
+      if (ds.replaces && !(await ask(`Replace \u201c${ds.name}\u201d with \u201c${files[0].name}\u201d? The old file is taken out of the audit pack.`, { title: `Replace \u201c${ds.name}\u201d?`, yes: "Replace file", no: "Cancel", tone: "brand", glyph: "document", closing: "You can replace it again at any time." }))) return;
       const owner = ds.taskUpload ? { task_id: +ds.taskUpload } : { payment_id: state.openPayment };
       // awaited, so a file refused reaches the message below
       return await uploadFiles(files, { ...owner, doc_type: ds.upload || ds.type, replaces: ds.replaces });
@@ -112,7 +115,7 @@ document.addEventListener("click", async ev => {
       return await uploadFiles(files, { payment_id: state.openPayment, doc_type: $("#extraType").value });
     }
     if (ds.removeDoc) {
-      if (!confirm(`Remove "${ds.name}"? It is taken off here and left out of the audit pack; the file itself is kept on this PC.`)) return;
+      if (!(await ask("It is left out of the audit pack; the file itself is kept on this PC.", { title: `Remove \u201c${ds.name}\u201d?`, yes: "Remove document", no: "Cancel", danger: true, tone: "bad", glyph: "trash", closing: "You can add the file to the payment again." }))) return;
       await api(`/api/documents/${ds.removeDoc}/remove`, { json: {} }); toast(`Removed ${ds.name}`); return render();
     }
     if (t.id === "deletePayment") {
@@ -246,7 +249,7 @@ document.addEventListener("click", async ev => {
         : `${r.doc_no} unlinked from ${r.payment}; it's back under ${list}`); return render();
     }
     if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.kind === "journal" || r.kind === "invoice" ? "Journals and invoices" : r.before_tracking ? "Before tracking" : "SQL entries not linked"}${reconMoved(r)}`); return render(); }
-    if (ds.editPayee) { if (!mayLeave()) return; return await editPayee(ds.editPayee); }
+    if (ds.editPayee) { if (!(await mayLeave())) return; return await editPayee(ds.editPayee); }
     if (ds.addMonth) {
       const r = await api(`/api/payees/${ds.addMonth}/add-to-month`, { json: { month: state.month } });
       toast(r.opened ? `${monthName(state.month)} is set up: its checklist and recurring payments were added` : `Added to ${monthName(state.month)}`);
@@ -264,7 +267,7 @@ document.addEventListener("click", async ev => {
       window.open(r.url, "_blank"); return render();
     }
     if (t.id === "auditorPack") {
-      if (!confirm("The auditor package holds staff pay, bank and ID details. It stays on this PC until you send it. Build it now?")) return;
+      if (!(await ask("The auditor package holds staff pay, bank and ID details. It stays on this PC until you send it. Build it now?", { title: "Build the auditor package?", yes: "Build package", no: "Cancel", tone: "warn", glyph: "pack" }))) return;
       t.disabled = true; t.textContent = "Building…"; $("#packOut").hidden = true;
       try {
         const r = await api("/api/auditor-export", { json: { entity_id: state.entity, month: state.month } });
@@ -326,7 +329,7 @@ document.addEventListener("change", async ev => {
     if (t.dataset.task) {
       // A tick by hand while something is still missing asks first, naming it.
       const task = state.data.tasks.find(x => x.id === +t.dataset.task);
-      if (t.checked && task?.lacking.length && !confirm(`${task.lacking.join(". ")}.\n\nTick anyway?`)) { t.checked = false; return; }
+      if (t.checked && task?.lacking.length && !(await ask(`${task.lacking.join(". ")}.`, { title: "Tick anyway?", yes: "Tick anyway", no: "Cancel", tone: "warn", glyph: "checklist", note: "It stays marked Ticked by hand until the missing item is added.", closing: "You can untick it at any time." }))) { t.checked = false; return; }
       await api(`/api/tasks/${t.dataset.task}`, { json: { done: t.checked } }); render();
     }
     if (t.dataset.sqlRow) {
@@ -417,7 +420,7 @@ document.addEventListener("submit", async ev => {
     try {
       await api("/api/payments", { json: { entity_id: state.entity, month: state.month, description: $("#ap-desc").value.trim(), category: $("#ap-cat").value,
         amount: $("#ap-amt").value === "" ? null : +$("#ap-amt").value, account_id: +$("#ap-acct").value, due_date: $("#ap-due").value, direction: $("#ap-dir").value } });
-      closeDrawer(); toast("Payment added"); render();
+      await closeDrawer(); toast("Payment added"); render();
     } catch (e) { toast(e.message, true); }
   }
 });

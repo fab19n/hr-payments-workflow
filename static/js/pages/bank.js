@@ -379,7 +379,7 @@ function explainLine(lineId) {
     <div class="card"><h3>No documents needed</h3>
       <label class="field"><span>Reason</span><input id="ex-note" placeholder="e.g. bank charges, own-account transfer"></label>
       <button class="ghost" id="ex-none">Mark as no documents needed</button></div>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   const paint = () => {
     const rows = LT.linkList(l, V.d.payments, pick.q, pick.all);
     $("#ex-count").textContent = `${rows.length} payment${rows.length === 1 ? "" : "s"}${pick.q ? " found" : ", likeliest first"}`;
@@ -392,7 +392,7 @@ function explainLine(lineId) {
   $("#ex-q").oninput = e => { pick.q = e.target.value; paint(); };
   $("#ex-all").onchange = e => { pick.all = e.target.checked; paint(); };
   $("#ex-list").onclick = e => { const b = e.target.closest("[data-ex-pay]"); if (b) { pick.id = +b.dataset.exPay; paint(); } };
-  const done = async (body) => { try { await api(`/api/statement-lines/${lineId}`, { json: body }); closeDrawer(); toast("Line explained"); render(); } catch (e) { toast(e.message, true); } };
+  const done = async (body) => { try { await api(`/api/statement-lines/${lineId}`, { json: body }); await closeDrawer(); toast("Line explained"); render(); } catch (e) { toast(e.message, true); } };
   $("#ex-link").onclick = () => pick.id ? done({ payment_id: pick.id }) : toast("Choose a payment first.", true);
   $("#ex-create").onclick = () => { if (!$("#ex-desc").value.trim()) return toast("Give the payment a description.", true); done({ create_payment: { description: $("#ex-desc").value.trim(), category: $("#ex-cat").value } }); };
   $("#ex-none").onclick = () => done({ status: "no_docs", note: $("#ex-note").value.trim() });

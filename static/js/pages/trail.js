@@ -192,9 +192,9 @@ function historyHtml(h) {
 const histSection = (tbl, key) => `<details class="hist" data-hist="${tbl}:${key}"><summary><h3>History</h3></summary><div class="hist-body"></div></details>`;
 
 async function openHistory(tbl, key, title) {
-  if (!closeDrawer()) return;
+  if (!(await closeDrawer())) return;
   $("#drawer").innerHTML = `<div class="row spread"><div><div class="eyebrow">History</div><h2>${esc(title || "Record")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div><div id="histOnly" class="note">Loading…</div>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   try { const h = await api(`/api/audit/record/${encodeURIComponent(tbl)}/${encodeURIComponent(key)}`); if ($("#histOnly")) $("#histOnly").outerHTML = `<div>${historyHtml(h)}</div>`; }
   catch (e) { if ($("#histOnly")) $("#histOnly").textContent = e.message; }
 }
@@ -229,13 +229,13 @@ async function drawDeleted(kind) {
 // Put it back (from the audit trail, a record's History or Show deleted): a drawer shows what it would do first (a
 // preview: nothing is kept), or why it can't be put back; Put it back then asks why.
 async function openRestore(rowId, title) {
-  if (!closeDrawer()) return;
+  if (!(await closeDrawer())) return;
   $("#drawer").innerHTML = `<div class="ex-head"><div class="row spread"><div><div class="eyebrow">Put back</div><h2>${esc(title || "Deleted record")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
     <div id="rsBody"><div class="note">Loading…</div></div>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   let p;
   try { p = await api(`/api/setup/restore/${rowId}`, { json: { preview: true } }); }
-  catch (e) { if ($("#rsBody")) $("#rsBody").innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; return; }
+  catch (e) { if ($("#rsBody")) $("#rsBody").innerHTML = refusedNote(e.message, { title: "It can't be put back" }); return; }
   if (!$("#rsBody")) return;
   const del = p.deleted || {}, a = p.affected || {};
   const touches = (p.lines || []).length || +a.tasks || +a.payments;

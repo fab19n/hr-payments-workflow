@@ -314,7 +314,7 @@ async function afterSetupChange(kind) {
 // The drawer of one company or bank account (id "new" to add one). keep: what was typed in it and not saved yet, when
 // it is drawn again after a stop or use again; notes: what the server said about the save just made.
 async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}) {
-  if (!force && !mayLeave()) return;
+  if (!force && !(await mayLeave())) return;
   const spec = state.setup.types?.kinds?.[kind];
   if (!spec) return;
   const isNew = id === "new", e = ent();
@@ -345,7 +345,7 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
     ${kind === "entities" ? `<div id="suPrint"></div><div id="suNames"></div>` : ""}
     ${whyForm()}
     ${histSection(spec.table, id)}`}`;
-  $("#drawer").hidden = false;
+  showDrawer();
   state.setup.drawer = { kind, id, locked, loaded: formValues(fields, "su-") };
   watchDrawer(keep);
   if (kind === "entities" && !isNew) { drawPrintSettings(id); drawSqlNames(id); }

@@ -21,8 +21,8 @@ function pasteCounts(c = {}, preview) {
 }
 
 // The drawer: paste the text, Read the list (a preview, nothing saved), check the columns and each row, then Save.
-function openPaste(kind, { force = false } = {}) {
-  if (!force && !mayLeave()) return;
+async function openPaste(kind, { force = false } = {}) {
+  if (!force && !(await mayLeave())) return;
   const spec = state.setup.types?.kinds?.[kind], e = ent();
   if (!spec) return;
   if (spec.per_entity && !e) return toast("Add a company first.", true);
@@ -42,7 +42,7 @@ function openPaste(kind, { force = false } = {}) {
       <div id="ps-preview" class="paste-out" style="grid-column:1/-1"></div>
       <label class="field" style="grid-column:1/-1"><span>Why are you making this change? (optional)</span><input id="ps-reason" maxlength="500" autocomplete="off"></label>
       <div class="row" style="grid-column:1/-1"><button class="btn" type="submit" id="ps-save" disabled>Save</button><span class="note" id="ps-save-note">Read the list first.</span></div></form>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   watchDrawer();
   $("#ps-text").focus();
 }
@@ -265,8 +265,8 @@ async function setupRequired(box) {
 
 // The drawer of one payment type's documents, for the scope showing: the document types in use in pack order, ticked
 // when in the set; the month the change starts; its history.
-function openRequired(key, { force = false, keep = {} } = {}) {
-  if (!force && !mayLeave()) return;
+async function openRequired(key, { force = false, keep = {} } = {}) {
+  if (!force && !(await mayLeave())) return;
   const S = state.setup, d = S.req, t = d?.types.find(x => x.key === key);
   if (!t) return;
   const co = d.scope != null ? state.meta.entities.find(e => e.id === +d.scope) : null;
@@ -292,7 +292,7 @@ function openRequired(key, { force = false, keep = {} } = {}) {
     ${t.follows_other ? `<div class="note">This type has no documents set of its own, so it needs what Other needs. Saving gives it its own set.</div>` : ""}
     ${isActive(t) ? "" : `<div class="note">This type is stopped. Its payments still need the documents set for it.</div>`}
     <div><h3>History</h3>${hist ? `<ul class="used">${hist}</ul>` : `<div class="note">Nothing recorded yet.</div>`}</div>`;
-  $("#drawer").hidden = false;
+  showDrawer();
   watchDrawer(keep);
 }
 

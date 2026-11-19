@@ -233,12 +233,12 @@ after it a note.
   entries keep their code, payment method, cheque number, document key and currency, so a supplier's code matches its
   vouchers first.
 - Tests on made-up data only, safe to keep in git, each run as `.venv\Scripts\python -m synthetic_tests.<name>`:
-  audit_trail_test, before_tracking_test, books_excel_test, books_test, checklist_equivalence_test, checklist_test,
+  audit_trail_test, before_tracking_test, books_excel_test, books_test, checklist_equivalence_test, checklist_test, dialog_shell_test,
   extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, myinvois_amount_test,
   myinvois_test, pack_check_test, parties_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
   recon_review_fixes_test, restore_test, seed_names_test, settings_isolation_test, setup_test, sql_books_item_test,
-  sql_exports_test, sql_typed_ref_test, stage1_leftovers_test, stage1_settle_test, statements_test, statutory_test, trail_view_test and types_test.
+  sql_exports_test, sql_typed_ref_test, stage1_leftovers_test, stage1_settle_test, states_test, statements_test, statutory_test, trail_view_test and types_test.
   `synthetic_tests.masters_equivalence_test --golden <file>` also compares this code's results with a snapshot taken on
   older code (`--write-golden <file>` on that code makes one); `synthetic_tests.checklist_equivalence_test --golden
   <file>` does the same for update 21.

@@ -5,8 +5,8 @@
 // (only the lines to explain, for filter to_explain), or another page: the Budget page as at the day a row counts (as_at)
 // when it has one. The page starts at the top; what is brought into view once it is drawn (a marked item, the
 // statement) goes after that.
-function goTo(g) {
-  if (!closeDrawer()) return;
+async function goTo(g) {
+  if (!(await closeDrawer())) return;
   const tasks = g.task_ids || (g.task_id ? [g.task_id] : null);
   if (g.entity_id) state.entity = g.entity_id;
   if (g.month && g.view !== "books") state.month = g.month;  // the Books page has no payroll month; other pages keep theirs
