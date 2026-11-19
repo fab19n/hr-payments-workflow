@@ -186,7 +186,8 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await run("routerBoot()"); await settle();
 
   // ---- the table ----
-  ok("ROUTES has the twelve old page keys", same(run("Object.keys(ROUTES)"), ["overview", "entity", "budget", "payees", "bank", "sql", "books", "payroll", "audit", "trail", "settings", "setup"]), run("Object.keys(ROUTES)"));
+  ok("ROUTES holds the twelve old page keys first, then the twelve the menu adds (0e)", same(run("Object.keys(ROUTES)"), ["overview", "entity", "budget", "payees", "bank", "sql", "books", "payroll", "audit", "trail", "settings", "setup",
+    "staff", "leave", "claims", "approvals", "topay", "einvoices", "parties", "statutory", "sales", "purchases", "journals", "close"]), run("Object.keys(ROUTES)"));
   ok("with no address the Overview opens and its address is written in place of the empty one", loc.hash === "#/all/2026-10/overview" && E.hist.e.length === 1 && E.got().view === "overview" && E.drawn() === 1, JSON.stringify(E.got()));
   ok("the hashchange listener is on", E.handlers.length === 1);
 
@@ -251,6 +252,44 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   ok("a company code is found whatever its capitals, and written as the company has it", loc.hash === "#/AAA/2026-10/payments/budget" && E.got().entity === 1, loc.hash);
   await visit("#/CCC/2026-10/payments/budget");
   ok("a stopped company's address still opens", E.got().entity === 3 && E.got().view === "budget");
+
+  // ---- the pages the menu adds (0e): their addresses round-trip; the interim landings apply today's page and tab ----
+  const NEWPAGES = [["staff", 1, "#/AAA/hr/staff", null], ["leave", 1, "#/AAA/hr/leave", null], ["claims", 1, "#/AAA/hr/claims", null], ["approvals", 1, "#/AAA/payments/approvals", null],
+    ["topay", 1, "#/AAA/payments/to-pay", null], ["einvoices", 1, "#/AAA/2026-10/accounting/einvoices", "2026-10"], ["parties", 1, "#/AAA/2026-10/accounting/parties", "2026-10"],
+    ["statutory", 1, "#/AAA/2026-10/accounting/statutory", "2026-10"], ["sales", 2, "#/BBB/accounting/sales", null], ["purchases", 2, "#/BBB/accounting/purchases", null],
+    ["journals", 2, "#/BBB/accounting/journals", null], ["close", 2, "#/BBB/accounting/period-close", null]];
+  for (const [view, ent, want, month] of NEWPAGES) {
+    await run(`go("${view}", ${ent})`); await settle();
+    const g = E.got(), back = run(`parseAddr(${JSON.stringify(want)})`);
+    ok(`go("${view}") writes ${want} and shows that page`, g.hash === want && g.view === view && g.entity === ent, JSON.stringify(g));
+    ok(`${want} reads back to the same page, company and month, and writes itself again`, back && back.view === view && back.entity === ent && back.month === month && run(`addrOf(parseAddr(${JSON.stringify(want)}))`) === want, JSON.stringify(back));
+  }
+  await run(`go("staff", 1)`); await settle();
+  ok("a Coming soon page says so, names what it will do, and offers the Overview", /Staff is coming soon/.test(E.body.querySelector("#main").innerHTML) && /data-view="overview"/.test(E.body.querySelector("#main").innerHTML));
+  await run(`go("sales", 2)`); await settle();
+  ok("a Kept here placeholder is drawn for a company kept here, with its menu links as real addresses", /Sales is not built yet/.test(E.body.querySelector("#main").innerHTML) && /Kept here/.test(E.body.querySelector("#main").innerHTML)
+    && /href="#\/BBB\/2026-10\/accounting\/parties"/.test(E.body.querySelector("#main").innerHTML), E.body.querySelector("#main").innerHTML.slice(0, 300));
+  for (const [a, label] of [["#/AAA/accounting/sales", "Sales"], ["#/AAA/accounting/purchases", "Purchases"], ["#/AAA/accounting/journals", "Journals"], ["#/AAA/accounting/period-close", "Period close"]]) {
+    await visit("#/AAA/2026-10/payments/budget"); clearToasts(); await visit(a); const t = toasts();
+    ok(`${a} for a company Kept in SQL Account: the Overview and the existing toast (the 0c rule)`, E.got().view === "overview" && t.length === 1 && t[0].includes(`${label} ${label === "Period close" ? "isn't" : "aren't"} used for AAA (Kept in SQL Account)`) && loc.hash === "#/all/2026-10/overview", t.slice(-1) + loc.hash);
+  }
+  await visit("#/AAA/2026-10/accounting/parties");
+  ok("Customers and suppliers lands on Books, Customers and suppliers tab, customers side, and keeps its own address", run("state.view") === "parties" && run("state.books.tab") === "parties" && run("state.books.side") === "customers" && loc.hash === "#/AAA/2026-10/accounting/parties", loc.hash);
+  await visit("#/AAA/2026-10/accounting/parties?tab=suppliers");
+  ok("...the suppliers side by its filter", run("state.books.side") === "suppliers" && loc.hash === "#/AAA/2026-10/accounting/parties?tab=suppliers", loc.hash);
+  await visit("#/AAA/2026-10/accounting/statutory?from=2026-01-01&to=2026-02-01");
+  ok("Statutory payables lands on the Books Statutory tab with its dates", run("state.view") === "statutory" && run("state.books.tab") === "statutory" && run("state.books.from") === "2026-01-01" && run("state.books.to") === "2026-02-01"
+    && loc.hash === "#/AAA/2026-10/accounting/statutory?from=2026-01-01&to=2026-02-01", loc.hash);
+  await run(`state.books.tab = "tb"; syncAddr()`);
+  ok("a Books tab picked on it makes the page Books again, with the Books address", run("state.view") === "books" && loc.hash === "#/AAA/accounting/books?tab=tb&from=2026-01-01&to=2026-02-01", loc.hash);
+  { run("__drawn.length = 0"); await visit("#/AAA/2026-10/accounting/einvoices");
+    ok("e-Invoices for a company Kept in SQL Account draws today's SQL import page, once, and says where to scroll once", run("__drawn").length === 1 && run("__drawn")[0] === "einvoices:1:2026-10" && run("state.landAt") === null && loc.hash === "#/AAA/2026-10/accounting/einvoices", run("__drawn") + loc.hash);
+    run("__drawn.length = 0"); await visit("#/BBB/2026-10/accounting/einvoices");
+    ok("...for a company kept here a Coming soon page and no SQL page", run("__drawn").length === 0 && /e-Invoices is coming soon/.test(E.body.querySelector("#main").innerHTML) && loc.hash === "#/BBB/2026-10/accounting/einvoices"); }
+  await visit("#/AAA/2026-10/payments/checklist");
+  ok("Monthly checklist is the register's page until slice 2 (the address is tidied in place)", loc.hash === "#/AAA/2026-10/payments/register" && E.got().view === "entity");
+  for (const bad of ["#/AAA/2026-10/hr/staff", "#/AAA/hr/staff/S1", "#/all/hr/staff", "#/AAA/accounting/parties", "#/AAA/2026-10/accounting/statutory/x", "#/AAA/2026-10/accounting/sales"])
+    ok(`${bad} is not an address`, run(`parseAddr(${JSON.stringify(bad)})`) === null, run(`JSON.stringify(parseAddr(${JSON.stringify(bad)}))`));
 
   // ---- Back and Forward ----
   await visit("#/AAA/2026-10/payments/register"); await visit("#/AAA/2026-10/accounting/bank?account=5"); await visit("#/BBB/2026-09/overview");

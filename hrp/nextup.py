@@ -28,6 +28,15 @@ DEADLINES, SUBMIT, PEOPLE = checklistbook.DEADLINES, checklistbook.SUBMIT, check
 # audit pack items are due that month; these for a company without them.
 STATEMENT_DUE, CLOSE_DUE = (1, 5), (1, 10)
 BACKED_UP = "Backup created: "  # how a backup is logged (app.backup)
+# The menu item each rule's rows belong to (what the row asks the person to do), for the menu's badges: PAGE is the page key
+# (hrp/pages.py) and AREA the menu area it is in. Rule 1, 2 and 10 are the monthly checklist's items (joiner and leaver filings
+# are on it, as design/canvas/Sidebar.dc.html counts them), 3, 4, 5 and 8 payments (the register), 15 the payroll check (HR),
+# 6 and 9 the bank, 7 the SQL import, 14 the statutory payables (Accounting), 11 and 12 the audit pack, 13 the backup (Admin).
+AREAS = ("hr", "payments", "accounting", "admin")
+PAGE = {1: "payments/checklist", 2: "payments/checklist", 3: "payments/register", 4: "payments/register", 5: "payments/register",
+        6: "accounting/bank", 7: "accounting/sql", 8: "payments/register", 9: "accounting/bank", 10: "payments/checklist",
+        11: "admin/audit-pack", 12: "admin/audit-pack", 13: "admin/backup", 14: "accounting/statutory", 15: "hr/payroll"}
+AREA = {rule: page.split("/")[0] for rule, page in PAGE.items()}
 
 
 def window(con, today):
@@ -52,7 +61,7 @@ def older_open(con, today, entity_id=None):
 
 def items(con, today, entity_id=None):
     """The list for the day given (a date), for one company with entity_id: one row per thing to do, {key, rule (1-15),
-    entity_id, entity, month, text (one sentence), due (a date, or None), state (overdue, today, soon: within SOON
+    area (hr, payments, accounting or admin: the menu area it belongs to), page (its menu item, a key of hrp/pages.py), entity_id, entity, month, text (one sentence), due (a date, or None), state (overdue, today, soon: within SOON
     days, or later), priority (1-3), amount, currency, go: where it is done {view, entity_id, month, and payment_id
     (payment_ids for a row of several), task_id (task_ids for a row of several), account_id or filter, as_at for the
     Budget page}}. Most urgent first: by priority, then overdue before today before soon before later, then by due
@@ -97,7 +106,7 @@ def upcoming(con, today, entity_id=None):
 
 
 def _row(rule, e, month, text, due, priority, go, key, amount=None, currency=None):
-    return {"key": f"{rule}:{e['id'] if e else '-'}:{month or '-'}:{key}", "rule": rule, "entity_id": e and e["id"],
+    return {"key": f"{rule}:{e['id'] if e else '-'}:{month or '-'}:{key}", "rule": rule, "area": AREA[rule], "page": PAGE[rule], "entity_id": e and e["id"],
             "entity": e and e["code"], "month": month, "text": text, "due": due, "priority": priority,
             "amount": amount, "currency": currency if amount is not None else None,
             "go": dict(go, entity_id=e and e["id"], month=month)}

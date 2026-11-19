@@ -64,6 +64,7 @@ function nextRow(r) {
 function nextCard(res, scope) {
   if (res.error) return `<div class="card noprint"><h2>Next up</h2><div class="note">Couldn't work out what to do next: ${esc(res.error)}</div></div>`;
   state.next = new Map(res.items.map(r => [r.key, r]));
+  if (!scope) state.menuNext = { items: res.items, at: Date.now() };  // the side menu's numbers count these rows (core/menu.js)
   const limit = scope ? 3 : 7, many = !scope && state.meta.entities.length > 1;
   const all = state.nextAll[scope || 0];  // Show all is kept for each list: the Overview's and each company's
   const rows = (all ? res.items : res.items.slice(0, limit)).map(nextRow).join("");
@@ -81,6 +82,6 @@ function nextCard(res, scope) {
 async function refreshNext(keepOnError) {
   if (!["overview", "entity"].includes(state.view)) return;
   const scope = nextScope(), res = await loadNext(scope), box = $("#nextUp");
-  if (box && scope === nextScope() && !(keepOnError && res.error)) box.innerHTML = nextCard(res, scope);
+  if (box && scope === nextScope() && !(keepOnError && res.error)) { box.innerHTML = nextCard(res, scope); if (!scope) renderNav(); }
 }
 

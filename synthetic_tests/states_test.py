@@ -213,6 +213,15 @@ const key = (k, extra = {}) => dispatch(document.activeElement, { type: "keydown
   ok("Escape elsewhere leaves a toast", toasts().length === 1);
   const ev = dispatch(toasts()[0].querySelector(".toast-x"), { type: "keydown", key: "Escape" });
   ok("Escape on a toast dismisses it and goes no further", toasts().length === 0 && ev.defaultPrevented);
+  // a toast that names an element to refocus (the company switch toast: the company button)
+  { const cb = new Node("button"); cb.id = "tb-mb-company"; body.appendChild(cb);
+    run(`toast("Switched", false, { refocus: "#tb-mb-company" })`);
+    toasts()[0].querySelector(".toast-x").focus();
+    dispatch(toasts()[0].querySelector(".toast-x"), { type: "keydown", key: "Escape" });
+    ok("Escape on a toast that names an element puts the focus back on it", document.activeElement === cb, document.activeElement && document.activeElement.id);
+    run(`toast("Switched again", false, { refocus: "not a selector" })`);
+    ok("a refocus that is not an id selector is ignored", toasts().length === 1);
+    toasts()[0].querySelector(".toast-x").click(); cb.remove(); }
   // timers
   run(`toast("Soon gone", false, { ms: 40 })`);
   await sleep(120);
@@ -305,7 +314,7 @@ const key = (k, extra = {}) => dispatch(document.activeElement, { type: "keydown
   ok("the toast says Switched to BB", toasts().length === 1 && toasts()[0].querySelector("b").text === "Switched to BB", texts());
   ok("and why, in the board's words", toasts()[0].textContent.includes("SQL import isn't used for BB (Kept here). Showing BB's Overview."), texts());
   ok("it is a status, not an error", toasts()[0].getAttribute("role") === "status" && !toasts()[0].classList.contains("bad"));
-  ok("the sidebar follows the page", nav.innerHTML.includes('data-entity="2"'));
+  ok("the sidebar follows the page", /data-menu="payments\/register"[^>]*aria-current="page"/.test(nav.innerHTML));
   run(`state.view = "sql"; state.entity = 1;`); await run("render()");
   for (const t of [...toasts()]) t.querySelector('[data-toast-act="close"]').click();
   run(`state.entity = 2;`); await run("render()");

@@ -14,7 +14,7 @@ from pathlib import Path, PureWindowsPath
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
-from . import (appsettings, audit, auditpack, auditread, books, booksexcel, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, recon, reports,
+from . import (appsettings, audit, auditpack, auditread, books, booksexcel, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, pages, recon, reports,
                monthly, myinvois, packcheck, partybook, payrollcheck, receivables, restore, rulebook, rules, setupfile, sqlfetch,
                sqlimport, statements, statutory)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
@@ -181,6 +181,9 @@ def meta():
     R = rulebook.get(c)
     for e in ents:
         e["accounts"] = rows(c.execute("SELECT * FROM accounts WHERE entity_id = ? ORDER BY sort, id", (e["id"],)))
+        e["kind"] = pages.kind_of(e["uses_sql"])
+        e["kind_label"] = pages.KINDS[e["kind"]]
+        e["pages"] = pages.pages_for(e["kind"])
     return jsonify({
         "entities": ents, "doc_types": R.doc_types, "categories": R.categories,
         "category_info": {k: {"active": t["active"], "direction": t["direction"], "system": t["system"]} for k, t in R.types.items()},

@@ -6,6 +6,13 @@ document.addEventListener("click", async ev => {
   const ds = t.dataset;
   if (ds.sort) return sortClick(ds.sort, ds.col, t);
   try {
+    if (ds.menu) { if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return; ev.preventDefault(); return menuGo(ds.menu); }  // a menu link: the app opens it; a new-tab click is the browser's
+    if (ds.menuFold) return menuFoldToggle(ds.menuFold);
+    if (ds.tbToggle) return tbToggle(ds.tbToggle);  // the top bar: the company and account menus (core/topbar.js)
+    if (ds.tbAway) return tbClose(false);
+    if (ds.tbPick) return tbPick(ds.tbPick);
+    if (ds.tbAdd) { ev.preventDefault(); return tbAddCompany(); }
+    if (ds.tbGo) { ev.preventDefault(); tbClose(false); return menuGo(ds.tbGo); }
     if (ds.view) return go(ds.view, ds.entity);
     if (ds.goField) { ev.preventDefault(); const f = document.getElementById(ds.goField); f?.scrollIntoView?.({ block: "center" }); return f?.focus?.(); }
     if (ds.copyDetails !== undefined) return copyDetails(ds.copyDetails);

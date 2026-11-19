@@ -98,18 +98,24 @@ const slice = (rows, shown) => rows.slice(0, Math.max(0, shown));
    reaching it any other way (a link) shows the card. Add a page here when it depends on a company setting. */
 const PAGE_RULES = {
   sql: { name: "SQL import", used: e => !!e.uses_sql,
-    why: e => `${e.name} is Kept here, so there is nothing to import for it. Switch to a company that is Kept in SQL Account to import SQL listings.` }
+    why: e => `${e.name} is Kept here, so there is nothing to import for it. Switch to a company that is Kept in SQL Account to import SQL listings.` },
 };
+// The Kept here group's four pages are for a company kept here; a Kept in SQL Account company keeps these in SQL Account.
+for (const [view, name, plural] of [["sales", "Sales", true], ["purchases", "Purchases", true], ["journals", "Journals", true], ["close", "Period close", false]])
+  PAGE_RULES[view] = { name, plural, used: e => !e.uses_sql, glyph: "books",
+    why: e => `${name} is for companies kept here. ${e.name} is Kept in SQL Account, so its books stay in SQL Account and this app checks them against it. There is nothing to show for ${e.code}.` };
+const keptLabel = e => e.uses_sql ? "Kept in SQL Account" : "Kept here";
 // The page's name when the company doesn't use it, else null.
 const unusedPage = (view = state.view, e = state.meta && ent()) => { const r = PAGE_RULES[view]; return r && e && !r.used(e) ? r.name : null; };
-function switchedNote(name, e) {
-  toast(`${name} isn't used for ${e.code} (Kept here). Showing ${e.code}'s Overview.`, false, { title: `Switched to ${e.code}`, glyph: "company", tone: "brand" });
+// name: the page's name; plural: it is a plural noun (Sales, Journals: "aren't used", as the States board words it).
+function switchedNote(name, e, plural) {
+  toast(`${name} ${plural ? "aren't" : "isn't"} used for ${e.code} (${keptLabel(e)}). Showing ${e.code}'s Overview.`, false, { title: `Switched to ${e.code}`, glyph: "company", tone: "brand", refocus: "#tb-mb-company" });
 }
 // The card: what the page is, why this company has no use for it, and a way to a company that does.
 function unusedCard(view = state.view, e = ent()) {
   const r = PAGE_RULES[view]; if (!r || !e) return "";
   const other = (state.meta?.entities || []).find(x => x.id !== e.id && isActive(x) && r.used(x));
-  return emptyState({ glyph: "database", tone: "mute", title: `${r.name} isn't used for ${e.code}`, body: r.why(e),
+  return emptyState({ glyph: r.glyph || "database", tone: "mute", title: `${r.name} ${r.plural ? "aren't" : "isn't"} used for ${e.code}`, body: r.why(e),
     action: other ? { label: `Go to ${other.code}`, attr: "data-pick-entity", value: other.id, ghost: true } : null });
 }
 
@@ -128,7 +134,7 @@ function toastShow(msg, bad, opts) {
     clearTimeout(toastShow.timer); toastShow.timer = setTimeout(() => box.hidden = true, bad ? 6000 : 2500);
     return null;
   }
-  const t = { id: ++TOASTS.n, bad: !!bad, leaving: false, hover: false, focus: false, timer: null, safety: null,
+  const t = { id: ++TOASTS.n, refocus: /^#[\w-]+$/.test(opts.refocus || "") ? opts.refocus : null, bad: !!bad, leaving: false, hover: false, focus: false, timer: null, safety: null,
     ms: opts.ms != null ? opts.ms : bad ? 0 : opts.undo || opts.action ? 8000 : 4000, el: document.createElement("div") };
   const el = t.el, title = opts.title ? esc(opts.title) : "", body = esc(opts.title ? (opts.body != null ? opts.body : msg) : msg);
   const tone = bad ? "bad" : ["ok", "brand", "bad"].includes(opts.tone) ? opts.tone : "ok";
@@ -190,6 +196,7 @@ function toastRefocus(t) {
   const next = TOASTS.list[TOASTS.list.length - 1];
   const x = next && next.el.querySelector(".toast-x");
   const drawer = dlgDrawerOpen() ? $("#drawer") : null;
-  const to = out(x) ? x : drawer || (out(DLG.click) ? DLG.click : $("#main"));
+  const back = t.refocus ? $(t.refocus) : null;   // the company switch toast: Esc or Dismiss puts the focus back on the company button
+  const to = back && !TOASTS.list.length ? back : out(x) ? x : drawer || (out(DLG.click) ? DLG.click : $("#main"));
   if (to && to.focus) { if (to === $("#main")) dlgSet(to, "tabindex", "-1"); to.focus({ preventScroll: true }); }
 }

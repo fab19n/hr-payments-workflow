@@ -13,7 +13,7 @@
    navigate. Known departure from the design: Setup is #/admin/setup[/<kind>[/<id>]] with today's server kind names; the design's
    #/<CODE>/admin/setup/<group>/<page> (companies, hr/approvers) comes with the Setup HR group. Where the page has no real location or history (the test stand-ins) a place is applied with no address. */
 
-// The five areas of the menu. The menu itself comes in step 0e; the addresses are final now.
+// The areas of the menu (core/menu.js draws it): the first word of an address after the company and month.
 const AREAS = ["payments", "accounting", "hr", "admin"];
 const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const IDS_RE = /^\d{1,9}(,\d{1,9}){0,199}$/;
@@ -38,6 +38,22 @@ const ROUTES = {
   trail: { area: "admin", page: "audit-trail", company: "none", month: false, params: [], draw: () => viewTrail },
   settings: { area: "admin", page: "backup", company: "none", month: false, params: [], draw: () => viewSettings },
   setup: { area: "admin", page: "setup", company: "none", month: false, params: [], draw: () => viewSetup },
+  // The pages the menu adds (step 0e). Staff, Leave, Claims and advances, Approvals and To pay are not built yet (Coming soon); e-Invoices,
+  // Customers and suppliers and Statutory payables land on today's SQL import page and Books tabs until slices 6 and 7 (their address
+  // stays their own: applyPlace puts the tab or the part in the state, and placeFromState gives the Books address when the tab moves on);
+  // Sales, Purchases, Journals and Period close are the Kept here placeholders. pages/placeholders.js draws them.
+  staff: { area: "hr", page: "staff", company: "one", month: false, params: [], draw: () => viewStaff },
+  leave: { area: "hr", page: "leave", company: "one", month: false, params: [], draw: () => viewLeave },
+  claims: { area: "hr", page: "claims", company: "one", month: false, params: [], draw: () => viewClaims },
+  approvals: { area: "payments", page: "approvals", company: "one", month: false, params: [], draw: () => viewApprovals },
+  topay: { area: "payments", page: "to-pay", company: "one", month: false, params: [], draw: () => viewToPay },
+  einvoices: { area: "accounting", page: "einvoices", company: "one", month: true, params: [], draw: () => viewEinvoices },
+  parties: { area: "accounting", page: "parties", company: "one", month: true, params: ["tab"], draw: () => viewBooks },
+  statutory: { area: "accounting", page: "statutory", company: "one", month: true, params: ["from", "to"], draw: () => viewBooks },
+  sales: { area: "accounting", page: "sales", company: "one", month: false, params: [], draw: () => viewSales },
+  purchases: { area: "accounting", page: "purchases", company: "one", month: false, params: [], draw: () => viewPurchases },
+  journals: { area: "accounting", page: "journals", company: "one", month: false, params: [], draw: () => viewJournals },
+  close: { area: "accounting", page: "period-close", company: "one", month: false, params: [], draw: () => viewPeriodClose },
 };
 const ROUTER = { at: null, busy: 0, i: 0 };  // at: the address last written or applied; busy: our own change is going on, so a hashchange or a sync is not a new place; i: the number of the history entry on show
 const placeLoc = () => typeof window !== "undefined" && window.location && typeof window.location.hash === "string" ? window.location : null;
@@ -122,11 +138,15 @@ function parseAddr(hash) {
 // The place the state is in now: what addrOf needs to write the address of the page on show. Books and Setup keep their
 // own state (the tab, dates, section and record), so those are read live; the other filters are what the place asked for.
 function placeFromState() {
+  // Customers and suppliers and Statutory payables are Books tabs for now: once the tab moves on, the page is Books.
+  if ((state.view === "parties" || state.view === "statutory") && state.books.tab !== state.view) state.view = "books";
   const v = state.view, R = ROUTES[v] || ROUTES.overview, p = { view: R === ROUTES[v] ? v : "overview", entity: null, month: null, sub: null, id: null, params: {} };
   if (R.company !== "none") p.entity = v === "overview" && state.addr.all ? "all" : state.entity;
   if (R.month) p.month = state.month;
   if (v === "entity") { p.id = state.addr.id; p.params = state.addr.params; }
   else if (v === "books") { const B = state.books, same = B.entity === state.entity; p.params = { tab: booksTab(B), from: same ? B.from : null, to: same ? B.to : null }; }
+  else if (v === "parties") p.params = state.books.side === "suppliers" ? { tab: "suppliers" } : {};
+  else if (v === "statutory") { const B = state.books, same = B.entity === state.entity; p.params = { from: same ? B.from : null, to: same ? B.to : null }; }
   else if (v === "setup") { p.sub = state.setup.kind; p.id = state.setup.id; }
   else p.params = state.addr.params;
   return p;
@@ -145,7 +165,7 @@ function writeAddr(addr, replace) {
 }
 const entryNo = () => { const s = window.history && window.history.state; return s && typeof s.i === "number" ? s.i : null; };
 // The address follows the state when a page changes something an address holds (a tab, a section, an account, the month).
-function syncAddr(replace = true) { if (!ROUTER.busy) writeAddr(currentAddr(), replace); }
+function syncAddr(replace = true) { if (!ROUTER.busy) { writeAddr(currentAddr(), replace); if (state.meta) renderNav(); } }  // the menu lights the page the tab or section moved to
 // After a page was drawn: the address says what is really on show (a page the company does not use, a month moved on).
 function settleAddr() { const a = currentAddr(); if (a && placeLoc() && placeLoc().hash !== a) writeAddr(a, true); }
 
@@ -160,7 +180,7 @@ async function applyPlace(place, opts = {}) {
     if (opts.bad) { toast("That address isn't used here. Showing the Overview."); place = homePlace(); }
     else if (opts.fromAddress) {
       const gone = e && unusedPage(place.view, e);
-      if (gone) { switchedNote(gone, e); place = { ...homePlace(), month: place.month || state.month }; }
+      if (gone) { switchedNote(gone, e, PAGE_RULES[place.view]?.plural); place = { ...homePlace(), month: place.month || state.month }; }
     }
     const v = place.view, R = ROUTES[v], p = cleanParams(v, place.params), B = state.books;
     state.view = v;
@@ -181,6 +201,13 @@ async function applyPlace(place, opts = {}) {
       if (B.tab === "parties") B.side = p.tab;
       if (p.from || p.to || opts.fromAddress) { B.from = p.from || null; B.to = p.to || null; }
     }
+    else if (v === "books" && (B.tab === "parties" || B.tab === "statutory")) B.tab = "tb";  // Books itself (the menu's item) opens on the Trial balance, not on the tab Customers and suppliers or Statutory payables set
+    if (v === "parties" || v === "statutory") {  // today's Books page on that tab
+      if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "", party: null });
+      B.tab = v;
+      if (v === "parties") B.side = p.tab === "suppliers" ? "suppliers" : "customers"; else { B.from = p.from || null; B.to = p.to || null; }
+    }
+    state.landAt = v === "einvoices" ? "sqlEinvoices" : null;  // the part of the SQL page to bring into view once it is drawn
     if (v === "setup") { if (place.sub) state.setup.kind = place.sub; state.setup.id = null; }
     if (opts.write) writeAddr(currentAddr(), opts.replace);
     if (opts.link) window.scrollTo?.(0, 0);

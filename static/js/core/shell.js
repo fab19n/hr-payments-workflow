@@ -124,25 +124,13 @@ function budgetChart(d) {
     ${bars}</svg></div>${more ? `<div class="note">${more.trim()}</div>` : ""}</div>`;
 }
 
+// The side menu (core/menu.js); the top bar (core/topbar.js) holds the month label, the heading above the page, the company switcher and
+// the account menu, and is drawn with it.
 function renderNav() {
-  const btn = (v, label, on, extra = "") => `<button data-view="${v}"${extra} class="${on ? "on" : ""}">${icon(v)}<span>${label}</span></button>`;
-  const items = [`<div class="group">Dashboard</div>`, btn("overview", "Overview", state.view === "overview"), `<div class="group">Companies</div>`];
-  // Stopped companies stay in the records (history needs them) but not in the sidebar.
-  for (const e of state.meta.entities.filter(isActive))
-    items.push(btn("entity", `${esc(e.code)} <small>${esc(e.short_name || e.name.replace(/ (Sdn Bhd|Ltd)$/i, ""))}</small>`, state.view === "entity" && state.entity === e.id, ` data-entity="${e.id}"`));
-  for (const [group, views] of VIEWS) {
-    items.push(`<div class="group">${group}</div>`);
-    for (const [v, l] of views) items.push(btn(v, l, state.view === v));
-  }
-  $("#nav").innerHTML = items.join("");
-  $("#monthLabel").textContent = monthName(state.month) + " payroll";
-  const crumb = $("#pageTitle");
-  if (!crumb) return;
-  const g = VIEWS.find(x => x[1].some(v => v[0] === state.view));
-  crumb.textContent = state.view === "overview" ? "Dashboard › Overview"
-    : state.view === "entity" ? `Companies › ${state.meta.entities.find(e => e.id === state.entity)?.code || ""}`
-    : state.view === "setup" ? `Setup${setupSpec() ? " › " + sectionLabel(setupSpec()) : ""}`
-    : g ? `${g[0]} › ${g[1].find(v => v[0] === state.view)[1]}` : "";
+  const nav = $("#nav");
+  if (!nav) return;
+  menuPaint(nav);
+  renderTopbar();
 }
 
 // Opens a page (core/router.js writes its address first): searches and the bank review start again; Setup stays on its
@@ -159,7 +147,7 @@ async function render() {
   // Reaching it any other way (a link): the card that says it is not used, with a way to a company that does.
   const gone = unusedPage(), switched = render.company !== undefined && render.company !== state.entity;
   render.company = state.entity;
-  if (gone && switched) { const e = ent(); state.view = "entity"; renderNav(); switchedNote(gone, e); }
+  if (gone && switched) { const e = ent(); const was = state.view; state.view = "entity"; renderNav(); switchedNote(gone, e, PAGE_RULES[was]?.plural); }
   else if (gone) { render.n = (render.n || 0) + 1; render.last = null; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return; }
   // A page that takes visible time: the old page stays, slightly dimmed, and a skeleton comes after 0.3 s (never a flash);
   // drawing the same page again keeps what is there.
@@ -172,7 +160,7 @@ async function render() {
     if (state.view === "overview") trailNotice();
     render.last = key;
   } catch (e) { render.last = null; main.innerHTML = appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true }); }
-  finally { clearTimeout(slow); if (seq === render.n) main.classList.remove("loading"); dlgRestore(); }
+  finally { clearTimeout(slow); if (seq === render.n) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } } dlgRestore(); }  // the menu's numbers follow the Next up rows this page may have just read
 }
 
 function entityPicker() {

@@ -11,21 +11,26 @@
 <body>
 <aside class="side">
   <div class="brand">
-    <div class="eyebrow" id="orgName" hidden></div>
-    <div class="name">HR Payments</div>
+    <svg class="mark" viewBox="0 0 36 36" role="img" aria-label="HR Payments"><rect width="36" height="36" rx="10" fill="#2450B8"/><rect x="9" y="9" width="18" height="18" rx="4" fill="#5C83E0"/><path d="M13 15h10M13 19h6" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none"/><circle cx="24" cy="23" r="3" fill="#FFFFFF"/></svg>
+    <div class="words">
+      <div class="name">HR Payments</div>
+      <div class="eyebrow" id="orgName" hidden></div>
+    </div>
   </div>
-  <nav id="nav" class="nav"></nav>
-  <div class="side-foot"><button type="button" class="ghost small noprint" id="themeBtn">Theme: Auto</button><span class="muted">Records stay on this PC</span></div>
+  <nav id="nav" class="nav" aria-label="Main"></nav>
+  <div class="side-foot"><div class="foot-card"><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="/static/icons.svg#i-verified"/></svg><b>Records stay on this PC</b></div></div>
 </aside>
 <div class="content">
-  <header class="top">
-    <div id="pageTitle" class="crumb"></div>
-    <div class="month-pick">
-      <button id="prevMonth" aria-label="Previous month">‹</button>
-      <div id="monthLabel" class="label"></div>
-      <button id="nextMonth" aria-label="Next month">›</button>
-      <button id="thisMonth" class="ghost">Current</button>
+  <header class="top" id="topbar">
+    <nav class="crumbs" aria-label="Breadcrumb"><div id="pageTitle" class="crumb"></div></nav>
+    <div class="tb-slot tb-company" id="tbCompany"></div>
+    <div class="month-pick" role="group" aria-label="Month">
+      <button type="button" id="prevMonth" aria-label="Previous month"><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="/static/icons.svg#i-chevronLeft"/></svg></button>
+      <div class="month-now"><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="/static/icons.svg#i-calendar"/></svg><span id="monthLabel" class="label" aria-live="polite"></span></div>
+      <button type="button" id="nextMonth" aria-label="Next month"><svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><use href="/static/icons.svg#i-chevronRight"/></svg></button>
+      <button type="button" id="thisMonth" class="ghost small" hidden>Current</button>
     </div>
+    <div class="tb-slot tb-user" id="tbUser"></div>
   </header>
   <main id="main"></main>
 </div>
@@ -37,6 +42,8 @@
 <script src="/static/js/core/dialog.js"></script>
 <script src="/static/js/core/states.js"></script>
 <script src="/static/js/core/router.js"></script>
+<script src="/static/js/core/menu.js"></script>
+<script src="/static/js/core/topbar.js"></script>
 <script src="/static/js/core/shell.js"></script>
 <script src="/static/js/core/next.js"></script>
 <script src="/static/js/pages/overview.js"></script>
@@ -50,6 +57,7 @@
 <script src="/static/js/pages/payroll.js"></script>
 <script src="/static/js/pages/packcheck.js"></script>
 <script src="/static/js/pages/backup.js"></script>
+<script src="/static/js/pages/placeholders.js"></script>
 <script src="/static/js/pages/setup.js"></script>
 <script src="/static/js/pages/setup-paste.js"></script>
 <script src="/static/js/pages/setup-checklist.js"></script>

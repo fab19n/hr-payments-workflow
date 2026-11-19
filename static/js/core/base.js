@@ -117,15 +117,9 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 
 // month and day are set in start(), once the settings (the rollover day) are loaded.
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
-  nextAll: {}, bankOnly: false, addr: { all: true, id: null, params: {} }, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "", months: false, side: "customers", party: null }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
+  nextAll: {}, menuNext: null, menuFold: null, landAt: null, bankOnly: false, addr: { all: true, id: null, params: {} }, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "", months: false, side: "customers", party: null }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
   setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null } };
-// Sidebar sections; companies are listed between Dashboard and Monthly work.
-// The Payroll check sits under Monthly work until the redesign moves it to HR.
-const VIEWS = [["Monthly work", [["budget", "Budget"], ["payroll", "Payroll check"], ["bank", "Bank statements"], ["sql", "SQL import"], ["payees", "Recurring"]]],
-  ["Accounting", [["books", "Books"]]],
-  ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
-  ["Setup", [["setup", "Setup"]]]];
 // Glyphs come from the one sprite, /static/icons.svg (80 two-tone glyphs; the colour is the text colour, the tint is
 // --glyph-tint). A page key maps to its glyph name; a name the sprite has is used as it is.
 const GLYPH = { entity: "company", sql: "database", payees: "recurring", audit: "pack", settings: "vault", setup: "sliders" };
