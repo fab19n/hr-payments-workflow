@@ -128,19 +128,8 @@ const VIEWS = [["Monthly work", [["budget", "Budget"], ["payroll", "Payroll chec
   ["Accounting", [["books", "Books"]]],
   ["Filing", [["audit", "Audit pack"], ["trail", "Audit trail"], ["settings", "Backup"]]],
   ["Setup", [["setup", "Setup"]]]];
-const ICON = {
-  overview: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-  entity: '<path d="M4 21V5l8-3v19M12 9h8v12M8 8h.01M8 12h.01M8 16h.01M16 13h.01M16 17h.01M2 21h20"/>',
-  budget: '<path d="M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12M16 14h.01"/>',
-  bank: '<path d="M3 10h18M5 10v8M9.5 10v8M14.5 10v8M19 10v8M2 21h20M12 3l9 5H3z"/>',
-  sql: '<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>',
-  books: '<path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6zM7 8h2M15 8h2M7 12h2M15 12h2"/>',
-  payees: '<path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',
-  payroll: '<path d="M4 3h16v18H4zM4 9h16M4 15h16M10 3v18M14 12l1.5 1.5L18 11"/>',
-  audit: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM14 3v6h6M9 15l2 2 4-4"/>',
-  settings: '<path d="M3 4h18v4H3zM5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8M10 12h4"/>',
-  trail: '<path d="M12 3l8 3v6c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V6zM9 12l2 2 4-4"/>',
-  setup: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
-};
-const icon = v => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[v]}</svg>`;
+// Glyphs come from the one sprite, /static/icons.svg (80 two-tone glyphs; the colour is the text colour, the tint is
+// --glyph-tint). A page key maps to its glyph name; a name the sprite has is used as it is.
+const GLYPH = { entity: "company", sql: "database", payees: "recurring", audit: "pack", settings: "vault", setup: "sliders" };
+const icon = (v, cls = "") => `<svg class="glyph${cls ? " " + cls : ""}" viewBox="0 0 24 24" aria-hidden="true"><use href="/static/icons.svg#i-${GLYPH[v] || v}"/></svg>`;
 
