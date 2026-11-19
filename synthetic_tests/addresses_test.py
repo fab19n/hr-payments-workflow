@@ -157,7 +157,7 @@ const document = {
   vm.runInContext(fs.readFileSync(appPath, "utf8"), ctx);
   for (const [id, tag] of [["nav", "nav"], ["monthLabel", "span"], ["pageTitle", "span"], ["main", "main"]]) { const n = new Node(tag); n.id = id; body.appendChild(n); }
   run(`globalThis.__drawn = []; globalThis.__opened = [];
-    for (const v of ["Overview", "Entity", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
+    for (const v of ["Overview", "Entity", "Checklist", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
       globalThis["view" + v] = async main => { globalThis.__drawn.push(state.view + ":" + state.entity + ":" + state.month); };
     trailNotice = () => {};
     openSetup = async (kind, id) => { globalThis.__opened.push([kind, id]); state.setup.id = id; syncAddr(); };
@@ -186,8 +186,8 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await run("routerBoot()"); await settle();
 
   // ---- the table ----
-  ok("ROUTES holds the twelve old page keys first, then the twelve the menu adds (0e)", same(run("Object.keys(ROUTES)"), ["overview", "entity", "budget", "payees", "bank", "sql", "books", "payroll", "audit", "trail", "settings", "setup",
-    "staff", "leave", "claims", "approvals", "topay", "einvoices", "parties", "statutory", "sales", "purchases", "journals", "close"]), run("Object.keys(ROUTES)"));
+  ok("ROUTES holds the twelve old page keys first, then the twelve the menu adds (0e), then the Monthly checklist (slice 2)", same(run("Object.keys(ROUTES)"), ["overview", "entity", "budget", "payees", "bank", "sql", "books", "payroll", "audit", "trail", "settings", "setup",
+    "staff", "leave", "claims", "approvals", "topay", "einvoices", "parties", "statutory", "sales", "purchases", "journals", "close", "checklist"]), run("Object.keys(ROUTES)"));
   ok("with no address the Overview opens and its address is written in place of the empty one", loc.hash === "#/all/2026-10/overview" && E.hist.e.length === 1 && E.got().view === "overview" && E.drawn() === 1, JSON.stringify(E.got()));
   ok("the hashchange listener is on", E.handlers.length === 1);
 
@@ -217,7 +217,9 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     ["#/BBB/2026-08/payments/register/77", s => s.view === "entity" && s.entity === 2 && s.month === "2026-08" && s.open === 77],
     ["#/AAA/2026-10/payments/register?mark=past_legal", s => s.view === "entity" && s.markPay],
     ["#/AAA/2026-10/payments/register?pay=21,22", s => s.view === "entity" && s.markIds === "21,22"],
-    ["#/AAA/2026-10/payments/register?task=11", s => s.view === "entity" && s.markTask],
+    ["#/AAA/2026-10/payments/checklist?task=11", s => s.view === "checklist" && s.markTask],
+    ["#/AAA/2026-10/payments/checklist?tab=missing", s => s.view === "checklist" && s.tab2 === "missing"],
+    ["#/AAA/2026-10/payments/register?tab=nosql", s => s.view === "entity" && s.tab2 === "nosql"],
     ["#/AAA/2026-10/payments/budget?as_at=2026-10-05", s => s.view === "budget" && s.asAt === "2026-10-05"],
     ["#/AAA/2026-10/payments/recurring", s => s.view === "payees"],
     ["#/AAA/2026-10/accounting/bank?filter=to_explain&account=5", s => s.view === "bank" && s.bankOnly && s.focus === 5],
@@ -238,7 +240,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const snap = () => run(`({ view: state.view, entity: state.entity, month: state.month, open: state.openPayment, markPay: !!state.mark?.pay, markTask: !!state.mark?.task,
     markIds: state.mark?.pay ? [1, 2, 21, 22, 23].filter(i => state.mark.pay({ id: i })).join(",") : "", asAt: state.asAt, bankOnly: state.bankOnly, focus: state.focusBank?.account ?? null,
     tab: state.books.tab, side: state.books.side, from: state.books.from, to: state.books.to, kind: state.setup.kind, setupId: state.setup.id, all: state.addr.all,
-    opened: (__opened[__opened.length - 1] || []).join(":") })`);
+    opened: (__opened[__opened.length - 1] || []).join(":"), tab2: state.addr.params.tab || null })`);
   for (const [a, test] of ADDRS) {
     run("__opened.length = 0");
     const n0 = E.hist.e.length, d0 = E.drawn();
@@ -247,7 +249,13 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     ok(`a hashchange to ${a} applies it, once, and leaves the address as typed`, test(s) && E.drawn() === d0 + 1 && loc.hash === a && E.hist.e.length === n0 + 1, JSON.stringify(s) + " " + loc.hash);
   }
   await visit("#/AAA/2026-10/payments/checklist");
-  ok("the checklist address opens the register and is tidied in place", loc.hash === "#/AAA/2026-10/payments/register" && E.got().view === "entity" && E.hist.e.length === E.hist.i + 1, loc.hash);
+  ok("the checklist address opens the Monthly checklist (slice 2) and stays as typed", loc.hash === "#/AAA/2026-10/payments/checklist" && E.got().view === "checklist" && E.hist.e.length === E.hist.i + 1, loc.hash);
+  await visit("#/AAA/2026-10/payments/register?task=11");
+  ok("an old register address naming checklist items opens them on the Monthly checklist, the address tidied", loc.hash === "#/AAA/2026-10/payments/checklist?task=11" && E.got().view === "checklist" && run("!!state.mark?.task"), loc.hash);
+  await visit("#/AAA/2026-10/payments/register?tab=missing");
+  ok("a tab of another page is not a register tab", loc.hash === "#/AAA/2026-10/payments/register", loc.hash);
+  await visit("#/AAA/2026-10/payments/checklist?tab=nosql");
+  ok("...nor a register tab a checklist one", loc.hash === "#/AAA/2026-10/payments/checklist", loc.hash);
   await visit("#/aaa/2026-10/payments/budget");
   ok("a company code is found whatever its capitals, and written as the company has it", loc.hash === "#/AAA/2026-10/payments/budget" && E.got().entity === 1, loc.hash);
   await visit("#/CCC/2026-10/payments/budget");
@@ -287,7 +295,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     run("__drawn.length = 0"); await visit("#/BBB/2026-10/accounting/einvoices");
     ok("...for a company kept here a Coming soon page and no SQL page", run("__drawn").length === 0 && /e-Invoices is coming soon/.test(E.body.querySelector("#main").innerHTML) && loc.hash === "#/BBB/2026-10/accounting/einvoices"); }
   await visit("#/AAA/2026-10/payments/checklist");
-  ok("Monthly checklist is the register's page until slice 2 (the address is tidied in place)", loc.hash === "#/AAA/2026-10/payments/register" && E.got().view === "entity");
+  ok("Monthly checklist is its own page from slice 2", loc.hash === "#/AAA/2026-10/payments/checklist" && E.got().view === "checklist");
   for (const bad of ["#/AAA/2026-10/hr/staff", "#/AAA/hr/staff/S1", "#/all/hr/staff", "#/AAA/accounting/parties", "#/AAA/2026-10/accounting/statutory/x", "#/AAA/2026-10/accounting/sales"])
     ok(`${bad} is not an address`, run(`parseAddr(${JSON.stringify(bad)})`) === null, run(`JSON.stringify(parseAddr(${JSON.stringify(bad)}))`));
 
@@ -379,13 +387,15 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
   // ---- Next up's go shapes ----
   const GOS = [
-    [{ view: "entity", task_id: 11 }, "#/AAA/2026-10/payments/register?task=11"],
-    [{ view: "entity", task_id: 11, task_ids: [11, 12] }, "#/AAA/2026-10/payments/register?task=11,12"],
+    [{ view: "entity", task_id: 11 }, "#/AAA/2026-10/payments/checklist?task=11", "checklist"],
+    [{ view: "entity", task_id: 11, task_ids: [11, 12] }, "#/AAA/2026-10/payments/checklist?task=11,12", "checklist"],
     [{ view: "entity", payment_id: 21 }, "#/AAA/2026-10/payments/register/21"],
     [{ view: "entity", payment_ids: [21, 22] }, "#/AAA/2026-10/payments/register?pay=21,22"],
     [{ view: "entity", filter: "past_legal" }, "#/AAA/2026-10/payments/register?mark=past_legal"],
     [{ view: "entity", filter: "in-part_paid" }, "#/AAA/2026-10/payments/register?mark=in-part_paid"],
-    [{ view: "entity", filter: "overdue_tasks" }, "#/AAA/2026-10/payments/register?mark=overdue_tasks"],
+    [{ view: "entity", filter: "overdue_tasks" }, "#/AAA/2026-10/payments/checklist?mark=overdue_tasks", "checklist"],
+    [{ view: "entity", filter: "part_paid", tab: "attention" }, "#/AAA/2026-10/payments/register?mark=part_paid&tab=attention"],
+    [{ view: "checklist", tab: "missing" }, "#/AAA/2026-10/payments/checklist?tab=missing"],
     [{ view: "entity" }, "#/AAA/2026-10/payments/register"],
     [{ view: "bank" }, "#/AAA/2026-10/accounting/bank"],
     [{ view: "bank", account_id: 5 }, "#/AAA/2026-10/accounting/bank?account=5"],
@@ -397,21 +407,23 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
     [{ view: "payroll" }, "#/AAA/2026-10/hr/payroll/workbook"],
     [{ view: "settings", entity_id: null, month: null }, "#/admin/backup"],
   ];
-  for (const [g0, want] of GOS) {
-    const g = { entity_id: 1, month: "2026-10", ...g0 }, p = run(`linkPlace(${JSON.stringify(g)})`), a = run(`addrOf(linkPlace(${JSON.stringify(g)}))`), q = run(`parseAddr(${JSON.stringify(a)})`);
+  for (const [g0, want, lands] of GOS) {
+    const g = { entity_id: 1, month: "2026-10", ...g0, view: lands || g0.view }, p = run(`linkPlace(${JSON.stringify({ entity_id: 1, month: "2026-10", ...g0 })})`), a = run(`addrOf(linkPlace(${JSON.stringify({ entity_id: 1, month: "2026-10", ...g0 })}))`), q = run(`parseAddr(${JSON.stringify(a)})`);
     ok(`Next up go ${JSON.stringify(g0)} is ${want}`, a === want, a);
     ok(`...and ${a} reads back to the same place`, q && q.view === g.view && same(q.params, run(`cleanParams(${JSON.stringify(g.view)}, ${JSON.stringify(p.params)})`)) && String(q.id ?? "") === String(p.id ?? "")
        && (["settings", "trail", "setup"].includes(g.view) ? q.entity === null : q.entity === 1) && (["settings", "books"].includes(g.view) ? q.month === null : q.month === "2026-10"), JSON.stringify(q));
     await visit("#/BBB/2026-03/overview");
-    await run(`goTo(${JSON.stringify(g)})`); await settle();
+    await run(`goTo(${JSON.stringify({ entity_id: 1, month: "2026-10", ...g0 })})`); await settle();
     const s = snap();
     ok(`goTo(${JSON.stringify(g0)}) lands there and writes it`, loc.hash === want && s.view === g.view && (g.view === "settings" || s.entity === 1) && (["settings", "books"].includes(g.view) || s.month === "2026-10")
        && (g0.payment_id ? s.open === 21 : s.open == null) && (g0.payment_ids ? s.markIds === "21,22" : g0.filter === "overdue_tasks" ? s.markTask && !s.markPay : g0.filter && g.view === "entity" ? s.markPay : g0.task_id ? s.markTask : true)
+       && (g0.tab ? s.tab2 === g0.tab : true)
        && (g.view === "bank" ? s.bankOnly === (g0.filter === "to_explain") && s.focus === (g0.account_id || null) : true)
        && (g.view === "budget" ? s.asAt === g0.as_at : true) && (g.view === "books" ? s.tab === "statutory" && s.from === g0.from && s.to === g0.to : true), JSON.stringify(s) + loc.hash);
   }
-  for (const [kind, want] of [["paid_missing", "#/AAA/2026-10/admin/audit-pack"], ["unmatched_lines", "#/AAA/2026-10/accounting/bank?filter=to_explain"], ["not_in_sql", "#/AAA/2026-10/accounting/sql"],
-    ["part_paid", "#/AAA/2026-10/payments/register?mark=part_paid"], ["overdue_tasks", "#/AAA/2026-10/payments/register?mark=overdue_tasks"], ["not_on_statement", "#/AAA/2026-10/payments/register?mark=not_on_statement"]]) {
+  for (const [kind, want] of [["paid_missing", "#/AAA/2026-10/admin/audit-pack"], ["unmatched_lines", "#/AAA/2026-10/accounting/bank?filter=to_explain"], ["not_in_sql", "#/AAA/2026-10/payments/register?tab=nosql"],
+    ["part_paid", "#/AAA/2026-10/payments/register?mark=part_paid&tab=attention"], ["overdue_tasks", "#/AAA/2026-10/payments/checklist?mark=overdue_tasks"], ["not_on_statement", "#/AAA/2026-10/payments/register?mark=not_on_statement"],
+    ["docs_missing", "#/AAA/2026-10/payments/checklist?tab=missing"]]) {
     await run(`state.month = "2026-10"; pillGo(${JSON.stringify(kind)}, 1)`); await settle();
     ok(`the Overview count ${kind} goes to ${want}`, loc.hash === want, loc.hash);
   }

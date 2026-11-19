@@ -7,7 +7,7 @@ async function addPaymentDrawer() {
     <div class="row spread"><h2>Add a payment</h2><button class="ghost small" id="closeDrawer">Close</button></div>
     <div class="note">For ad hoc payments, claims and receipts in ${monthName(state.month)}.</div>
     <form class="form" id="addForm" style="grid-template-columns:1fr 1fr">
-      <label class="field" style="grid-column:1/-1"><span>Description</span><input id="ap-desc" required placeholder="e.g. Oct 2026 Claims - Soon"></label>
+      <label class="field" style="grid-column:1/-1"><span>Description</span><input id="ap-desc" required placeholder="e.g. Oct 2026 Claims - staff"></label>
       <label class="field"><span>Type</span><select id="ap-cat">${typeOptions(oneOffType(), "out")}</select></label>
       <label class="field"><span>Money</span><select id="ap-dir"><option value="out">Paid out</option><option value="in">Received</option></select></label>
       <label class="field"><span>Amount</span><input id="ap-amt" type="number" step="0.01"></label>
@@ -31,7 +31,8 @@ function dropHint() {
   if (state.view === "bank") return "Drop the statement PDF on the Choose file button under Statement PDF.";
   if (state.view === "sql") return "Drop the SQL export on the Choose file button under SQL export.";
   if (state.view === "payroll") return "Drop the payroll workbook on the Choose file button above Check the workbook.";
-  if (state.view === "entity") return "Open the payment and drop the file on a document box, or use the + buttons on the checklist.";
+  if (state.view === "entity") return "Open the payment and drop the file on a document box. A checklist item's documents go on the Monthly checklist page.";
+  if (state.view === "checklist") return "Use the + buttons on an item to file its documents.";
   return "Open a payment on the company's page and drop the file on a document box.";
 }
 document.addEventListener("drop", async ev => {
@@ -40,11 +41,26 @@ document.addEventListener("drop", async ev => {
   const s = ev.target.closest?.("[data-slot]");
   if (!s || !state.openPayment) return toast(dropHint());
   s.classList.remove("drag");
+  if (state.data?.closed_at) return toast(`${state.data.label} is filed, so its payments are read-only. Reopen it on the Monthly checklist to add a file.`);
   try { await uploadFiles([...ev.dataTransfer.files], { payment_id: state.openPayment, doc_type: s.dataset.slot }); } catch (e) { toast(e.message, true); }
 });
+// Tabs (design/motion-keyboard-spec.md section 5): on a tab of the Payments register or the Monthly checklist, the arrow keys
+// (wrapping), Home and End pick the tab and move the focus to it.
+document.addEventListener("keydown", ev => {
+  const t = ev.target, ds = t?.dataset || {}, kind = "regTab" in ds ? "regTab" : "clTab" in ds ? "clTab" : null;
+  if (!kind || t.getAttribute?.("role") !== "tab" || !["ArrowRight", "ArrowLeft", "Home", "End"].includes(ev.key)) return;
+  ev.preventDefault();
+  const list = [...(t.parentNode?.querySelectorAll?.('[role="tab"]') || [])], i = list.indexOf(t), last = list.length - 1;
+  if (i < 0) return;
+  const to = ev.key === "ArrowRight" ? (i === last ? 0 : i + 1) : ev.key === "ArrowLeft" ? (i === 0 ? last : i - 1) : ev.key === "Home" ? 0 : last;
+  (kind === "regTab" ? regPick : clPick)(list[to].dataset[kind], true);
+});
+// The register's search: each key narrows the list (the box keeps the focus); Escape empties it first.
+document.addEventListener("input", ev => { if (ev.target.id === "regQ") regSearch(ev.target.value); });
 // Escape closes the drawer (asking first if something typed would be lost); in the reason box it closes only that.
 document.addEventListener("keydown", async ev => {
   if (ev.key !== "Escape" || DLG.asking) return;  // a confirm on top takes the Escape itself
+  if (ev.target.id === "regQ" && ev.target.value) { ev.target.value = ""; return regSearch(""); }
   if (ev.target.closest?.("#setupWhy")) return hideWhy();
   await closeDrawer();
 });

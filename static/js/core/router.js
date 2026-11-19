@@ -17,17 +17,21 @@
 const AREAS = ["payments", "accounting", "hr", "admin"];
 const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const IDS_RE = /^\d{1,9}(,\d{1,9}){0,199}$/;
-// The filters an address may carry, and what each may hold. Nothing else is read from or written to an address.
+// The tabs a page's address may name (All, the first tab, is left out of the address): the Payments register's and the Monthly
+// checklist's (slice 2); any other page with a tab filter is Books or its Customers and suppliers part.
+const PAGE_TABS = { entity: ["unpaid", "attention", "nosql", "complete"], checklist: ["open", "done", "missing"] };
+const BOOKS_TABS = ["tb", "gl", "pl", "bs", "customers", "suppliers", "statutory"];
+// The filters an address may carry, and what each may hold (for the page given). Nothing else is read from or written to an address.
 const PARAM_RULES = {
   mark: v => /^[a-z0-9][a-z0-9_-]{0,40}$/.test(v), pay: v => IDS_RE.test(v), task: v => IDS_RE.test(v),
   as_at: v => DATE_RE.test(v), filter: v => v === "to_explain", account: v => /^\d{1,9}$/.test(v),
-  tab: v => ["tb", "gl", "pl", "bs", "customers", "suppliers", "statutory"].includes(v), from: v => DATE_RE.test(v), to: v => DATE_RE.test(v),
+  tab: (v, view) => (PAGE_TABS[view] || BOOKS_TABS).includes(v), from: v => DATE_RE.test(v), to: v => DATE_RE.test(v),
 };
 // view (the page's key in state.view) -> its address. company: "any" (a code or all), "one" (a code) or "none"; month: the
 // page is one month's. The draw function is looked up when it is wanted: the page scripts come after this one.
 const ROUTES = {
   overview: { area: null, page: "overview", company: "any", month: true, params: [], draw: () => viewOverview },
-  entity: { area: "payments", page: "register", alias: ["checklist"], company: "one", month: true, params: ["mark", "pay", "task"], draw: () => viewEntity },
+  entity: { area: "payments", page: "register", company: "one", month: true, params: ["mark", "pay", "tab"], draw: () => viewEntity },
   budget: { area: "payments", page: "budget", company: "one", month: true, params: ["as_at"], draw: () => viewBudget },
   payees: { area: "payments", page: "recurring", company: "one", month: true, params: [], draw: () => viewPayees },
   bank: { area: "accounting", page: "bank", company: "one", month: true, params: ["filter", "account"], draw: () => viewBank },
@@ -54,6 +58,8 @@ const ROUTES = {
   purchases: { area: "accounting", page: "purchases", company: "one", month: false, params: [], draw: () => viewPurchases },
   journals: { area: "accounting", page: "journals", company: "one", month: false, params: [], draw: () => viewJournals },
   close: { area: "accounting", page: "period-close", company: "one", month: false, params: [], draw: () => viewPeriodClose },
+  // Slice 2: the Monthly checklist, split from the company month page (the register keeps the key entity). pages/checklist.js draws it.
+  checklist: { area: "payments", page: "checklist", company: "one", month: true, params: ["mark", "task", "tab"], draw: () => viewChecklist },
 };
 const ROUTER = { at: null, busy: 0, i: 0 };  // at: the address last written or applied; busy: our own change is going on, so a hashchange or a sync is not a new place; i: the number of the history entry on show
 const placeLoc = () => typeof window !== "undefined" && window.location && typeof window.location.hash === "string" ? window.location : null;
@@ -66,7 +72,7 @@ const booksTab = B => B.tab === "ledger" ? "gl" : B.tab === "parties" ? (B.side 
 // Only the filters this page has, and only valid ones; in the table's order.
 function cleanParams(view, raw) {
   const out = {};
-  for (const k of ROUTES[view]?.params || []) { const v = raw?.[k]; if (v != null && v !== "" && PARAM_RULES[k](String(v))) out[k] = String(v); }
+  for (const k of ROUTES[view]?.params || []) { const v = raw?.[k]; if (v != null && v !== "" && PARAM_RULES[k](String(v), view)) out[k] = String(v); }
   return out;
 }
 
@@ -132,6 +138,9 @@ function parseAddr(hash) {
     const eq = part.indexOf("=");
     try { raw[decodeURIComponent(eq < 0 ? part : part.slice(0, eq))] = eq < 0 ? "" : decodeURIComponent(part.slice(eq + 1)); } catch { /* a malformed pair is left out */ }
   }
+  // A register address of before slice 2 that names checklist items (?task=, the checklist was part of that page) opens them on
+  // the Monthly checklist, marked.
+  if (view === "entity" && !id && raw.task != null && PARAM_RULES.task(String(raw.task))) { view = "checklist"; delete raw.pay; }
   return { view, entity, month, sub, id, params: cleanParams(view, raw) };
 }
 
@@ -187,10 +196,10 @@ async function applyPlace(place, opts = {}) {
     if (place.entity && place.entity !== "all") state.entity = +place.entity;
     if (!state.entity) state.entity = firstEntityId();
     if (R.month && MONTH_RE.test(place.month || "")) state.month = place.month;
-    if (opts.fresh) { state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; state.payeeSaved = null; }
+    if (opts.fresh) { state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; state.payeeSaved = null; state.reg = null; state.cl = null; }
     state.addr = { all: place.entity === "all", id: v === "entity" && place.id ? String(place.id) : null, params: p };
     state.openPayment = state.addr.id ? +state.addr.id : null;
-    state.mark = v !== "entity" ? null : p.pay ? { pay: x => p.pay.split(",").map(Number).includes(x.id) }
+    state.mark = v !== "entity" && v !== "checklist" ? null : p.pay ? { pay: x => p.pay.split(",").map(Number).includes(x.id) }
       : p.task ? { task: t => p.task.split(",").map(Number).includes(t.id) } : p.mark ? markFor(p.mark) : null;
     state.asAt = v === "budget" ? p.as_at || null : null;
     state.bankOnly = v === "bank" && p.filter === "to_explain";
@@ -276,14 +285,18 @@ function goPlace(view, entity) {
   const id = entity ? +entity : view === "overview" ? "all" : state.entity ?? firstEntityId();
   return { view, entity: id, month: state.month, sub: view === "setup" ? state.setup.kind : null, id: null, params: {} };
 }
+// Next up rows and the Overview's counts say view "entity" (the company month page of before slice 2): one about checklist items
+// (task_id, task_ids, or a count of them such as overdue_tasks) lands on the Monthly checklist, the rest on the Payments register.
 function linkPlace(g) {
-  const R = ROUTES[g.view];
-  if (!R) return null;
+  let view = g.view;
   const tasks = g.task_ids || (g.task_id ? [g.task_id] : null), params = {};
-  if (g.view === "entity") { if (g.payment_ids) params.pay = g.payment_ids.join(","); else if (tasks) params.task = tasks.join(","); else if (g.filter) params.mark = g.filter; }
-  if (g.view === "budget" && g.as_at) params.as_at = g.as_at;
-  if (g.view === "bank") { if (g.account_id) params.account = String(g.account_id); if (g.filter === "to_explain") params.filter = "to_explain"; }
-  if (g.view === "books") { if (g.tab) params.tab = g.tab; if (g.from) params.from = g.from; if (g.to) params.to = g.to; }
-  return { view: g.view, entity: g.entity_id || (g.view === "overview" ? "all" : state.entity ?? firstEntityId()), month: g.view === "books" ? null : g.month || state.month,
-    sub: null, id: g.view === "entity" && g.payment_id ? g.payment_id : null, params };
+  if (view === "entity" && (tasks || (g.filter && MARKS[g.filter]?.task))) view = "checklist";
+  if (!ROUTES[view]) return null;
+  if (view === "entity") { if (g.payment_ids) params.pay = g.payment_ids.join(","); else if (g.filter) params.mark = g.filter; if (g.tab) params.tab = g.tab; }
+  if (view === "checklist") { if (tasks) params.task = tasks.join(","); else if (g.filter) params.mark = g.filter; if (g.tab) params.tab = g.tab; }
+  if (view === "budget" && g.as_at) params.as_at = g.as_at;
+  if (view === "bank") { if (g.account_id) params.account = String(g.account_id); if (g.filter === "to_explain") params.filter = "to_explain"; }
+  if (view === "books") { if (g.tab) params.tab = g.tab; if (g.from) params.from = g.from; if (g.to) params.to = g.to; }
+  return { view, entity: g.entity_id || (view === "overview" ? "all" : state.entity ?? firstEntityId()), month: view === "books" ? null : g.month || state.month,
+    sub: null, id: view === "entity" && g.payment_id ? g.payment_id : null, params };
 }

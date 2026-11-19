@@ -229,11 +229,15 @@ def month_view():
     e = entity(c, eid)
     today = date.today().isoformat()
     tasks = rows(c.execute("SELECT * FROM tasks WHERE entity_id = ? AND month = ? ORDER BY due_date, sort", (eid, month)))
+    checks, replaced = _payroll_checks(c, eid, month), _replaced(c, eid, month)
     for t in tasks:
         t["evidence"] = db.evidence(c, task=t)
         t.update(db.task_status(c, e, t, t["evidence"]))
         t["required_docs"] = json.loads(t["required_docs"])
         t["documents"] = docs_for(c, "task_id", t["id"])
+        for d in t["documents"]:  # the workbook the Payroll check filed, and the earlier ones it replaced (the checklist shows them)
+            d["from_check"] = d["id"] in checks
+            d["earlier"] = _earlier(d, replaced, checks)
         t["sql_docs"] = _taken_back(c, rows(c.execute(
             """SELECT id, entity_id, doc_no, doc_type, amount, einvoice, einvoice_status, einvoice_link FROM sql_entries
                WHERE task_id = ? ORDER BY doc_date""", (t["id"],))))
@@ -261,9 +265,47 @@ def month_view():
         for x in journals:
             del x["dockey"]
         p["not_in_sql"] = db.not_in_sql(e, p)
+    latest = payrollcheck.latest(c, eid, month) if payrollcheck.ready(c) else None
     return jsonify({"entity": dict(e), "month": month, "label": db.month_label(month), "tasks": tasks, "payments": pays,
                     "set_up": _set_up(c, eid, month), "before_first": db.before_tracking(e, month),
-                    "closed_at": db.closed_at(c, eid, month)})
+                    "closed_at": db.closed_at(c, eid, month),
+                    # The month's latest payroll workbook check, for the salary rows of the Payments register (no report, no names).
+                    "payroll_check": {k: latest[k] for k in ("id", "checked_at", "to_fix", "to_check", "notes")} if latest else None})
+
+
+def _payroll_checks(c, eid, month):
+    """The month's payroll workbook checks by the document each filed: {document id: {checked_at, to_fix, to_check, notes}}."""
+    if not payrollcheck.ready(c):
+        return {}
+    return {r["document_id"]: {k: r[k] for k in ("checked_at", "to_fix", "to_check", "notes")} for r in c.execute(
+        "SELECT document_id, checked_at, to_fix, to_check, notes FROM payroll_checks WHERE entity_id = ? AND month = ?",
+        (eid, month)) if r["document_id"] is not None}
+
+
+def _replaced(c, eid, month):
+    """The month's checklist documents that a later one replaced, in one read: {id of the one that replaced it: [rows]}, newest
+    first."""
+    out = {}
+    for r in c.execute("""SELECT id, original_name, uploaded_at, replaced_by FROM documents
+                          WHERE replaced_by IS NOT NULL AND task_id IN (SELECT id FROM tasks WHERE entity_id = ? AND month = ?)
+                          ORDER BY uploaded_at DESC, id DESC""", (eid, month)):
+        out.setdefault(r["replaced_by"], []).append(r)
+    return out
+
+
+def _earlier(d, replaced, checks):
+    """The documents a current document replaced, every branch (one check can retire several), newest first: {name, uploaded_at,
+    replaced_at, check (what the Payroll check found in it, or None)}. Names only: the files stay in the records and the audit trail."""
+    out, todo, seen = [], [(d["id"], d["uploaded_at"])], set()
+    while todo:
+        cur, at = todo.pop(0)
+        for old in replaced.get(cur, []):
+            if old["id"] in seen:  # damaged records: never loop
+                continue
+            seen.add(old["id"])
+            out.append({"name": old["original_name"], "uploaded_at": old["uploaded_at"], "replaced_at": at, "check": checks.get(old["id"])})
+            todo.append((old["id"], old["uploaded_at"]))
+    return sorted(out, key=lambda x: x["uploaded_at"] or "", reverse=True)
 
 
 def _taken_back(c, docs):

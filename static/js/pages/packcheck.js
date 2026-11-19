@@ -49,10 +49,10 @@ async function markFiled(afterBuild) {
   if (await ask("A backup keeps the filed month safe if this PC fails. You'll be asked for the backup password next.", { title: `${r.label} is filed. Make an encrypted backup now?`, yes: "Make a backup", no: "Not now", safe: "yes", tone: "brand", glyph: "vault", closing: "Not now changes nothing; back up any time from Backup." })) { await go("settings"); $("#bkPw")?.focus(); }
 }
 
-// A line of Before you print opens the screen that fixes it, for this company and month: the payment's drawer, the
-// checklist item on the month page, the Bank statements page on that account, or the SQL page.
+// A line of Before you print opens the screen that fixes it, for this company and month: the payment's drawer on the Payments
+// register, the item on the Monthly checklist, the Bank statements page on that account, or the SQL page.
 function fixIt(where, id) {
-  const view = { payment: "entity", task: "entity", account: "bank", sql: "sql" }[where];
+  const view = { payment: "entity", task: "checklist", account: "bank", sql: "sql" }[where];
   return goTo({ view, payment_id: where === "payment" ? id : null, task_id: where === "task" ? id : null, account_id: where === "account" ? id : null });
 }
 

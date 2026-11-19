@@ -30,14 +30,16 @@ async function viewOverview(main) {
     if (x.before_first) flags.splice(0, flags.length, BEFORE_PILL, ...kept);
     if (!flags.length) flags.push(x.closed_at ? `<span class="pill ok">Filed ${shortDate(x.closed_at)}</span>` : `<span class="pill ok">Nothing overdue</span>`);
     if (!x.set_up && !x.before_first) flags.push(`<span class="pill grey">Month not set up</span>`);
+    // Slice 2: the checklist figure opens the Monthly checklist, the payments ones the Payments register on their tab.
+    const to = (view, tab) => esc(addrOf({ view, entity: x.entity.id, month: ov.month, params: tab ? { tab } : {} }) || "#/");
     return `<div class="card">
       <div class="row spread"><div><div class="eyebrow">${esc(x.entity.code)}</div><h2>${esc(x.entity.name)}</h2></div>
       <button class="btn small" data-view="entity" data-entity="${x.entity.id}">Open ${esc(x.entity.code)}</button></div>
       <div class="stats">
-        <div class="stat"><b>${x.tasks_done}/${x.tasks}</b><span>checklist done</span></div>
-        <div class="stat"><b>${outDone}/${outAll}</b><span>payments fully documented</span></div>
+        <a class="stat" href="${to("checklist")}"><b>${x.tasks_done}/${x.tasks}</b><span>checklist done</span></a>
+        <a class="stat" href="${to("entity", "complete")}"><b>${outDone}/${outAll}</b><span>payments fully documented</span></a>
         ${x.receipts.payments ? `<div class="stat"><b>${x.receipts.complete}/${x.receipts.payments}</b><span>receipts fully documented</span></div>` : ""}
-        <div class="stat"><b>${x.planned - x.receipts.planned}</b><span>not paid yet</span></div>
+        <a class="stat" href="${to("entity", "unpaid")}"><b>${x.planned - x.receipts.planned}</b><span>not paid yet</span></a>
         ${x.receipts.payments ? `<div class="stat"><b>${x.receipts.planned}</b><span>not received yet</span></div>` : ""}
         ${budget("MYR", x.budget.MYR || 0)}${Object.entries(x.budget).filter(([cur]) => cur !== "MYR").map(([cur, n]) => budget(cur, n)).join("")}
       </div>

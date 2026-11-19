@@ -1,6 +1,9 @@
 "use strict";
 /* ---------------- Events ---------------- */
 document.addEventListener("click", async ev => {
+  // The pick box of a register row (and the cell around it) picks the payment for the bulk bar; it doesn't open it.
+  const g = ev.target, gd = g.dataset || {};
+  if ("regPick" in gd || "regPickAll" in gd || (g.tagName === "TD" && /\breg-pick\b/.test(g.className || ""))) return;
   const t = ev.target.closest("button, tr[data-payment], a");
   if (!t) return;
   const ds = t.dataset;
@@ -27,7 +30,7 @@ document.addEventListener("click", async ev => {
     if (t.id === "trailAccept") return trailAccept(t);
     if (ds.pill) return pillGo(ds.pill, +ds.entity);
     if (ds.nextGo) { const r = state.next?.get(ds.nextGo); return r && goTo(r.go); }
-    if (ds.older) { const [e, m] = ds.older.split(" "); return goTo({ view: "entity", entity_id: +e, month: m }); }
+    if (ds.older) { const [e, m] = ds.older.split(" "); return goTo({ view: state.view === "checklist" ? "checklist" : "entity", entity_id: +e, month: m }); }
     if (ds.nextAll) { const k = nextScope() || 0; state.nextAll[k] = !state.nextAll[k]; return refreshNext(); }
     if (ds.savedBalance) return render();
     if (ds.nextBackup) {
@@ -104,6 +107,16 @@ document.addEventListener("click", async ev => {
     if (ds.advSave) return await advSave(+ds.advSave, t);
     if (ds.advDel) return advDelete(+ds.advDel, t);
     if (t.id === "printPage") return window.print();
+    // The Payments register and the Monthly checklist (pages/company.js, pages/checklist.js): tabs and figures, sort, Show more,
+    // Clear search, the bulk bar; the checklist's filters, Show more and the earlier files of a document.
+    if (ds.regTab) return regPick(ds.regTab, t.getAttribute?.("role") === "tab");
+    if (ds.regSort) return regSortClick(ds.regSort);
+    if (ds.regMore) return regMore();
+    if (ds.regClear) { regSearch(""); const q = $("#regQ"); if (q) { q.value = ""; q.focus?.(); } return; }
+    if (ds.regBulk) return await regBulk(ds.regBulk);
+    if (ds.clTab) return clPick(ds.clTab, t.getAttribute?.("role") === "tab");
+    if (ds.clMore) return clMore();
+    if (ds.clHist) return clHist(+ds.clHist);
     if (ds.payment) {
       // Clicking the open payment again keeps what was typed in it.
       const same = +ds.payment === state.openPayment && !$("#drawer").hidden;
@@ -321,6 +334,9 @@ document.addEventListener("change", async ev => {
     if (t.dataset.rvSel) { RV().sel[t.dataset.rvSel] = t.checked; return paintBar(); }
     if (t.dataset.invMonth) { state.invMonth = t.value; const box = $("#invPrint"); if (box) box.innerHTML = invoicePrintBar(state.invPrint); return; }
     if (t.dataset.rvKeep) { RV().keep[t.dataset.rvKeep] = t.checked; return; }
+    if (t.dataset.regPick) return regPickOne(+t.dataset.regPick, t.checked);
+    if (t.dataset.regPickAll) return regPickAll(t.checked);
+    if (t.id === "regBulkDate") { regState().date = t.value; return; }
     // Move setup: the links save what is chosen.
     if (t.id === "mv-from") { state.setup.move.from = t.value; $("#mvTemplate").href = moveHref("template", t.value ? `&entity=${t.value}` : ""); return; }
     if (t.id === "mv-payees") {

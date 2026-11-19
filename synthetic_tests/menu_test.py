@@ -7,7 +7,7 @@ Overview of All companies (the SQL kind when a company in use is, else the Kept 
 numbers); areas, items and order as design/canvas/Sidebar.dc.html; Calendar and reminders and Salary advances are no items; the number on an
 area counts the Next up rows of that area for the company on show (red with the alert mark when one is overdue; none when 0; the rows
 with no company count for every company; Overview counts all); every item has a route and its address round-trips (Monthly checklist
-is the register's alias); the page on show is the one item marked aria-current; items are links with their address and a click opens
+is its own page from slice 2); the page on show is the one item marked aria-current; items are links with their address and a click opens
 the page without the browser following the link (a modified click is left to the browser); groups fold and the one holding the page
 stays open; the five Coming soon pages, the four Kept here placeholders and the interim landings (e-Invoices, Customers and suppliers,
 Statutory payables) land on the right existing page and tab; a page the company does not use still gets the 0c rule.
@@ -157,7 +157,7 @@ const document = {
   vm.runInContext(fs.readFileSync(appPath, "utf8"), ctx);
   for (const [id, tag] of [["nav", "nav"], ["monthLabel", "span"], ["pageTitle", "span"], ["main", "main"]]) { const n = new Node(tag); n.id = id; body.appendChild(n); }
   run(`globalThis.__drawn = []; globalThis.__opened = [];
-    for (const v of ["Overview", "Entity", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
+    for (const v of ["Overview", "Entity", "Checklist", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
       globalThis["view" + v] = async main => { globalThis.__drawn.push(state.view + ":" + state.entity + ":" + state.month); };
     trailNotice = () => {};
     openSetup = async (kind, id) => { globalThis.__opened.push([kind, id]); state.setup.id = id; syncAddr(); };
@@ -277,7 +277,7 @@ const ENTS = [{ id: 1, code: "AAA", name: "Alpha Test Sdn Bhd", short_name: "Alp
   ok("an item for a page one kind uses goes to a company that uses it, from All companies (SQL import to AAA, Sales to BBB)", run(`menuHref(MENU_BY_PAGE["accounting/sql"])`).startsWith("#/AAA/") && run(`menuHref(MENU_BY_PAGE["accounting/sales"])`).startsWith("#/BBB/"));
 
   // ---- the page on show is the item marked ----
-  const VIEWS = [["overview", "#/all/2026-10/overview", "overview"], ["entity", "#/AAA/2026-10/payments/register", "payments/register"], ["budget", "#/AAA/2026-10/payments/budget", "payments/budget"],
+  const VIEWS = [["overview", "#/all/2026-10/overview", "overview"], ["entity", "#/AAA/2026-10/payments/register", "payments/register"], ["checklist", "#/AAA/2026-10/payments/checklist", "payments/checklist"], ["budget", "#/AAA/2026-10/payments/budget", "payments/budget"],
     ["payees", "#/AAA/2026-10/payments/recurring", "payments/recurring"], ["bank", "#/AAA/2026-10/accounting/bank", "accounting/bank"], ["sql", "#/AAA/2026-10/accounting/sql", "accounting/sql"],
     ["books", "#/AAA/accounting/books?tab=pl", "accounting/books"], ["payroll", "#/AAA/2026-10/hr/payroll/workbook", "hr/payroll"], ["audit", "#/AAA/2026-10/admin/audit-pack", "admin/audit-pack"],
     ["trail", "#/admin/audit-trail", "admin/audit-trail"], ["settings", "#/admin/backup", "admin/backup"], ["setup", "#/admin/setup", "admin/setup"], ["staff", "#/AAA/hr/staff", "hr/staff"],
@@ -327,7 +327,7 @@ const ENTS = [{ id: 1, code: "AAA", name: "Alpha Test Sdn Bhd", short_name: "Alp
     ok("so is a middle click", !ev3.defaultPrevented && E.got().view === "staff"); }
   { const c = nav().querySelectorAll("a[data-menu]").find(x => x.getAttribute("data-menu") === "payments/checklist");
     E.dispatch(c, { type: "click", button: 0 }); await settle();
-    ok("Monthly checklist opens today's register page", E.got().view === "entity" && loc.hash === "#/AAA/2026-10/payments/register", loc.hash); }
+    ok("Monthly checklist opens its own page (slice 2)", E.got().view === "checklist" && loc.hash === "#/AAA/2026-10/payments/checklist", loc.hash); }
 
   // ---- folding ----
   const fold = async key => { const b = new E.Node("button"); b.setAttribute("data-menu-fold", key); b.dataset.menuFold = key; E.body.appendChild(b); E.dispatch(b, { type: "click", button: 0 }); await settle(); b.remove(); };

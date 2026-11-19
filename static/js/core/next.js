@@ -33,12 +33,17 @@ function flash(els) {
   setTimeout(() => els.forEach(x => x.classList.remove("focus")), 3000);
 }
 
-// A count pill on the Overview goes to what it counts, for its company and the month on show.
+// A count pill on the Overview goes to what it counts, for its company and the month on show: the Payments register on its tab
+// (Not in SQL; Needs attention for part paid) with the payments marked, the Monthly checklist with the items marked or on its Missing
+// documents filter (docs_missing: checklist items whose documents are missing), the Bank page's lines to explain, or the Audit pack.
 function pillGo(kind, entity) {
   const g = { entity_id: entity, month: state.month };
   if (kind === "paid_missing") return goTo({ ...g, view: "audit" });
   if (kind === "unmatched_lines") return goTo({ ...g, view: "bank", filter: "to_explain" });
-  if (kind === "not_in_sql") return goTo({ ...g, view: "sql" });
+  if (kind === "not_in_sql") return goTo({ ...g, view: "entity", tab: "nosql" });
+  if (kind === "docs_missing") return goTo({ ...g, view: "checklist", tab: "missing" });
+  if (MARKS[kind]?.task) return goTo({ ...g, view: "checklist", filter: kind });
+  if (kind === "part_paid" || kind === "in-part_paid") return goTo({ ...g, view: "entity", filter: kind, tab: "attention" });
   return goTo({ ...g, view: "entity", filter: kind });
 }
 
@@ -46,7 +51,7 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const dayLabel = iso => { const [y, m, d] = iso.split("-").map(Number); return `${WEEKDAYS[new Date(y, m - 1, d).getDay()]} ${d} ${MONTHS[m - 1]}`; };
 // The list is for one company (its id) or both. A list that can't be read says so, and the page still shows.
 const loadNext = scope => api(`/api/next${scope ? `?entity_id=${scope}` : ""}`).catch(e => ({ error: e.message }));
-const nextScope = () => state.view === "entity" ? state.entity : null;
+const nextScope = () => state.view === "entity" || state.view === "checklist" ? state.entity : null;
 const DUE_WORD = { overdue: "Overdue", today: "Today", soon: "Due", later: "Due" };
 const DUE_TONE = { overdue: "bad", today: "warn", soon: "warn", later: "grey" };
 const dueTag = r => r.due ? `<span class="pill ${DUE_TONE[r.state]}">${DUE_WORD[r.state]} ${shortDate(r.due)}</span>` : "";
@@ -77,11 +82,27 @@ function nextCard(res, scope) {
     ${older ? `<div class="note">Older months still open: ${older}</div>` : ""}</div>`;
 }
 
-// Reads the list again and redraws the card alone (after a backup, or when the tab comes back into view). With keepOnError,
-// a list that can't be read leaves the card as it was.
+// The Payments register and the Monthly checklist have no Next up card (slice 2): a link to the company's to-dos on the Overview
+// stands for it, with how many there are and how many are overdue, and the company's older months still open as one muted line.
+function todoLinks(res) {
+  const e = ent();
+  if (!e) return "";
+  const href = esc(addrOf({ view: "overview", entity: e.id, month: state.month }) || "#/"), code = esc(e.code);
+  if (res.error) return `<a class="pg-link" href="${href}">${icon("sparkflag")}To-dos for ${code} on the Overview</a>`;
+  const n = res.items.length, over = res.items.filter(r => r.state === "overdue").length;
+  const older = (res.older_open_months || []).map(o => `<button class="link" data-older="${o.entity_id} ${o.month}">${esc(o.label)}</button>`).join(", ");
+  return `<a class="pg-link" href="${href}" id="todoLink">${icon("sparkflag")}${n ? `${n} to-do${n === 1 ? "" : "s"} for ${code} on the Overview${over ? `, ${over} overdue` : ""}`
+    : `Nothing to do for ${code} on the Overview`}</a>${older ? `<div class="note">Older months still open: ${older}</div>` : ""}`;
+}
+
+// Reads the list again and redraws the card alone (after a backup, or when the tab comes back into view), or on the register and
+// the checklist the to-dos link. With keepOnError, a list that can't be read leaves it as it was.
 async function refreshNext(keepOnError) {
-  if (!["overview", "entity"].includes(state.view)) return;
-  const scope = nextScope(), res = await loadNext(scope), box = $("#nextUp");
-  if (box && scope === nextScope() && !(keepOnError && res.error)) { box.innerHTML = nextCard(res, scope); if (!scope) renderNav(); }
+  if (!["overview", "entity", "checklist"].includes(state.view)) return;
+  const scope = nextScope(), res = await loadNext(scope);
+  if (scope !== nextScope() || (keepOnError && res.error)) return;
+  const box = $("#nextUp"), todo = $("#todoBox");
+  if (box && !scope) { box.innerHTML = nextCard(res, scope); renderNav(); }
+  else if (todo && scope) todo.innerHTML = todoLinks(res);
 }
 

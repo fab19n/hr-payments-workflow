@@ -794,3 +794,143 @@ table.ar th.ar-age, table.ar td.ar-age { background: var(--bg); }  /* the ageing
 .pc-chip.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-solid); }
 #pc-f-h { margin: 0 0 8px; }
 #pcRefused:empty { display: none; }
+
+/* Payments register and Monthly checklist (slice 2): PaymentsRegister.dc.html, DarkCompany.dc.html, MonthlyChecklist.dc.html.
+   Tokens only, so light and dark both come from the token block. */
+.pg-head { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+.pg-id { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.pg-plate { width: 56px; height: 56px; border-radius: 16px; background: var(--accent-soft); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; flex: none; }
+.pg-plate .glyph { width: 30px; height: 30px; }
+.pg-words { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.pg-eyebrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 12px; }
+.pg-code { font-weight: 700; letter-spacing: .06em; color: var(--accent); }
+.kind-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 22px; padding: 0 8px; border-radius: 8px; font-weight: 600; font-size: 12px;
+  background: var(--mute-soft); color: var(--mute-ink); border: 1px solid var(--btn2-border); }
+.kind-chip.sql { background: var(--accent-soft); color: var(--accent); border-color: var(--info-line); }
+.kind-chip .glyph { width: 14px; height: 14px; }
+.state-pill { gap: 6px; min-height: 22px; }
+.state-pill .dot { width: 6px; height: 6px; border-radius: 99px; background: currentColor; }
+.pg-words h1 { font-size: 1.75rem; letter-spacing: -.01em; }
+.pg-words h1:focus { outline: none; }
+.pg-month { color: var(--muted); font-weight: 500; }
+.pg-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: 13px; }
+.pg-todo { display: contents; }
+.pg-todo .note { font-size: 13px; }
+a.pg-link { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-weight: 600; text-decoration: none; color: var(--accent); }
+a.pg-link:hover { text-decoration: underline; }
+a.pg-link .glyph { width: 14px; height: 14px; }
+a.pg-link.small { font-size: 12px; padding: 0 4px; }
+.pg-actions { gap: 8px; }
+.pg-actions .glyph, .bulk-bar .glyph { width: 18px; height: 18px; }
+.banner.filed > div { flex: 1 1 420px; min-width: 0; display: grid; gap: 2px; }
+.banner.filed > .glyph { width: 24px; height: 24px; }
+.banner.ro-note { color: var(--ok); }
+.banner.ro-note .glyph { width: 16px; height: 16px; flex: none; }
+
+/* The figures: each one a button that picks its tab */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.kpi { display: flex; gap: 14px; align-items: center; text-align: left; padding: 16px 18px; border-radius: 14px; font: inherit; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); min-width: 0; }
+button.kpi { cursor: pointer; transition: background-color var(--t-fast), border-color var(--t-fast); }
+button.kpi:hover { background: var(--hover); }
+button.kpi[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent-solid); box-shadow: inset 0 0 0 1px var(--accent-solid); }
+.kpi > .glyph { width: 28px; height: 28px; flex: none; }
+.kpi.ok > .glyph { color: var(--ok); --glyph-tint: var(--tint-ok); }
+.kpi.warn > .glyph { color: var(--warn); --glyph-tint: var(--tint-warn); }
+.kpi-t { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.kpi-t b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.kpi-t > span { color: var(--muted); font-size: 13px; }
+.kpi-t > span.kpi-hint { color: var(--accent); font-size: 12px; font-weight: 600; }
+.kpi-t > span.kpi-hint.muted { color: var(--muted); font-weight: 500; }
+
+/* The list card: its title, tabs and search, the note under them */
+.reg-card, .cl-card { padding: 0; gap: 0; overflow: clip; }
+.reg-top, .cl-top { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--hairline); }
+.reg-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.reg-title > .glyph { width: 22px; height: 22px; color: var(--accent); align-self: center; }
+.reg-title .note { font-size: 13px; }
+.reg-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.reg-note { margin: 0; padding: 8px 20px; border-bottom: 1px solid var(--hairline); background: var(--btn-off); color: var(--ink-2); font-size: 13px; }
+.segtabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px; background: var(--seg-track); border-radius: 10px; max-width: 100%; }
+.segtab { min-height: 32px; padding: 0 10px; border-radius: 7px; border: 0; background: transparent; color: var(--ink-2); font: inherit; font-weight: 600; font-size: 13px;
+  cursor: pointer; white-space: nowrap; transition: background-color var(--t-fast), box-shadow var(--t-fast), color var(--t-fast); }
+.segtab:hover { color: var(--ink); }
+.segtab[aria-selected="true"] { background: var(--seg-thumb); color: var(--ink); box-shadow: 0 1px 2px var(--shadow); }
+.segtab .tab-n { color: var(--muted); font-weight: 500; }
+@media (forced-colors: active) { .segtab[aria-selected="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; } }
+.search-box { display: flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 10px; border: 1px solid var(--control-border); border-radius: 10px; background: var(--field-bg); }
+.search-box:focus-within { outline: 2px solid var(--focus); outline-offset: 1px; }
+.search-box .glyph { width: 16px; height: 16px; color: var(--muted); }
+.search-box input { border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; width: 170px; min-height: 34px; }
+#regPanel:focus-visible, #clPanel:focus-visible { outline-offset: -2px; }
+.list-empty { margin: 16px 20px; }
+
+/* The payments table */
+.reg-tbl { min-width: 860px; }
+.reg-tbl th { background: var(--btn-off); }
+.reg-tbl th button.sorth { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; }
+.reg-tbl th button.sorth .glyph { width: 14px; height: 14px; }
+.reg-tbl th.num button.sorth { margin-left: auto; }
+.reg-tbl td, .reg-tbl th { padding-left: 12px; padding-right: 12px; }
+.reg-tbl tr.picked td { background: var(--accent-soft); }
+.reg-pick { width: 44px; }
+.reg-pick input { width: 18px; height: 18px; margin: 7px; cursor: pointer; }
+button.pname { border: 0; background: transparent; padding: 0; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+button.pname:hover { color: var(--accent); text-decoration: underline; }
+td.nowrap { white-space: nowrap; color: var(--ink-2); }
+a.pc-link { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 12px; font-weight: 600; text-decoration: none; }
+a.pc-link .glyph { width: 14px; height: 14px; }
+a.pc-link.ok { color: var(--ok); }
+a.pc-link.bad { color: var(--bad); }
+a.pc-link:hover { text-decoration: underline; }
+.reg-card .many { border-top: 1px solid var(--line); }
+
+/* The bulk bar: picked payments, paid together */
+.bulk-bar { position: sticky; bottom: 16px; z-index: 4; margin: 12px 16px 16px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--info-line);
+  background: var(--raised); box-shadow: 0 12px 32px var(--shadow); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.bulk-date { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.bulk-date input { min-height: 34px; padding: 0 10px; border: 1px solid var(--control-border); border-radius: 9px; background: var(--field-bg); color: var(--ink); font: inherit; }
+.bulk-clear { margin-left: auto; }
+.bulk-err { width: 100%; margin: 0; display: flex; gap: 6px; align-items: center; color: var(--bad); font-size: 13px; }
+.bulk-err .glyph { width: 15px; height: 15px; }
+
+/* The checklist: progress, sections, items */
+.cl-progress { display: flex; align-items: center; gap: 12px; min-width: 260px; flex: 1 1 320px; }
+.cl-progress h2 { white-space: nowrap; }
+.cl-progress .bar { flex: 1; min-width: 80px; }
+.bar.ok i { background: var(--ok); }
+.cl-count { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cl-sh { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 10px 20px; background: var(--btn-off); border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
+.cl-sh h3 { font-family: var(--f-body); font-size: 13px; color: var(--ink-2); }
+.cl-sh .muted { font-size: 12px; }
+.cl-card .task { padding: 14px 20px; border-top: 1px solid var(--hairline); }
+.cl-card .cl-sh + .task { border-top: 0; }
+.cl-card .task.waits { background: var(--btn-off); }
+.cl-card .task .t { font-weight: 600; }
+.cl-card .task .t label { cursor: pointer; }
+.cl-card .task input[type=checkbox]:disabled + div .t label { cursor: default; }
+.cl-card .task .num { text-align: right; font-size: 13px; }
+.note.lock { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
+.note.lock .glyph { width: 14px; height: 14px; }
+.chip.file { border-color: var(--ok-line); background: var(--ok-soft); color: var(--ok); white-space: normal; flex-wrap: wrap; }
+.chip.file a { color: var(--ink); font-weight: 500; }
+.chip.file .glyph { width: 14px; height: 14px; }
+.chip-note { color: var(--ink-2); font-weight: 500; }
+.cl-hist { display: grid; gap: 4px; margin-top: 4px; }
+.cl-hist-b { justify-self: start; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 12px; font-weight: 600; text-decoration: none; }
+.cl-hist-b .chev { display: inline-flex; transition: transform var(--t-base); }
+.cl-hist-b .chev.on { transform: rotate(90deg); }
+.cl-hist-b .glyph { width: 14px; height: 14px; }
+.cl-hist-list { list-style: none; margin: 0; padding: 0 0 0 22px; display: grid; gap: 4px; animation: cl-unfold var(--t-base) both; }
+.cl-hist-list li { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--ink-2); }
+.cl-hist-list .glyph { width: 14px; height: 14px; flex: none; color: var(--muted); }
+.cl-hist-list s { color: var(--ink); text-decoration-color: var(--muted); }
+@keyframes cl-unfold { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+a.stat { color: inherit; text-decoration: none; }
+a.stat:hover { border-color: var(--accent-solid); background: var(--accent-soft); }
+@media (max-width: 700px) {
+  .pg-words h1 { font-size: 1.4rem; }
+  .search-box input { width: 100%; }
+  .search-box { flex: 1 1 200px; }
+  .cl-card .task { padding: 12px 14px; }
+}

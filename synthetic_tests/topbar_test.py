@@ -154,7 +154,7 @@ const document = {
   vm.runInContext(fs.readFileSync(appPath, "utf8"), ctx);
   for (const [id, tag] of [["nav", "nav"], ["monthLabel", "span"], ["pageTitle", "span"], ["main", "main"]]) { const n = new Node(tag); n.id = id; body.appendChild(n); }
   run(`globalThis.__drawn = []; globalThis.__opened = [];
-    for (const v of ["Overview", "Entity", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
+    for (const v of ["Overview", "Entity", "Checklist", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
       globalThis["view" + v] = async main => { globalThis.__drawn.push(state.view + ":" + state.entity + ":" + state.month); };
     trailNotice = () => {};
     openSetup = async (kind, id) => { globalThis.__opened.push([kind, id]); state.setup.id = id; syncAddr(); };

@@ -20,7 +20,7 @@ const MENU = [
     { page: "payments/approvals", view: "approvals", label: "Approvals", glyph: "approval" },
     { page: "payments/to-pay", view: "topay", label: "To pay", glyph: "toPay" },
     { page: "payments/register", view: "entity", label: "Payments register", glyph: "payment" },
-    { page: "payments/checklist", view: "entity", label: "Monthly checklist", glyph: "checklist", alias: "checklist" },  // until slice 2 splits it from the register: the register's page
+    { page: "payments/checklist", view: "checklist", label: "Monthly checklist", glyph: "checklist" },
     { page: "payments/budget", view: "budget", label: "Budget", glyph: "budget" },
     { page: "payments/recurring", view: "payees", label: "Recurring", glyph: "recurring" }] },
   { key: "accounting", label: "Accounting", items: [
@@ -44,7 +44,7 @@ const MENU = [
 const menuItems = g => [...g.items, ...(g.sub ? g.sub.items : [])];
 const MENU_ALL = MENU.flatMap(menuItems);
 const MENU_BY_PAGE = Object.fromEntries(MENU_ALL.map(i => [i.page, i]));
-// The page on show lights its item; Monthly checklist is an alias of the register until slice 2, so the register's item is the one.
+// The page on show lights its item (an item marked alias shares another's page and never lights).
 const MENU_BY_VIEW = {};
 for (const g of MENU) for (const i of menuItems(g)) if (!i.alias && !(i.view in MENU_BY_VIEW)) MENU_BY_VIEW[i.view] = { item: i, area: g };
 const MENU_HERE = ["accounting/sales", "accounting/purchases", "accounting/journals", "accounting/period-close"];  // a server that gives no pages: the Kept here group is for companies kept here
