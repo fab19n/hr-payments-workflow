@@ -696,11 +696,7 @@ def update_payment(pid):
             return err(f"This payment is money {p['direction']}, so choose a payment type for money {p['direction']}.")
     if "account_id" in sets:
         acct = own_account(c, entity(c, p["entity_id"]), sets["account_id"])
-        sets["account_id"] = acct["id"] if acct else None
-        if acct is None and p["account_id"] is not None:
-            # Its books and bank lines are on that account: a payment once on an account moves to another, never to none.
-            return err("A payment's bank account can be changed to another of the company's accounts, but not taken off. "
-                       "Choose the account it was paid from.")
+        sets["account_id"] = acct["id"] if acct else None   # 0 or blank takes it off its bank account
         # Any of the company's accounts may be chosen, in another currency too (a ringgit bill paid from a foreign
         # currency account); the payment keeps its own currency, as before.
     if b.get("amount_confirmed") or ("amount" in sets and _amount_changed(p["amount"], sets["amount"])):
@@ -719,16 +715,20 @@ def update_payment(pid):
 
 
 def _account_moved(c, p, new_id):
-    """The payment p (as it was) is now on the bank account new_id (update_payment never lets a payment that had an
-    account go to none). Its bank lines on any other account's statements are taken off it and left to explain, but not
-    marked as undone by a person, so moving it back finds them again; the new account's statements are looked at for its
-    line (a line once undone from it there may be matched again: moving it there is the person's say). Then the
-    reconciliation of both the old and the new account is checked again for the months the payment's paid date falls in,
-    before and after: a sign-off there goes, so the month is reviewed again (one signed off before tracking stays)."""
-    pid, why = p["id"], f"payment {p['description']} moved to another bank account"
+    """The payment p (as it was) is now on the bank account new_id, or (None) taken off its bank account. Moved, its bank
+    lines on any other account's statements are taken off it; taken off, only its lines on the old account's statements
+    are (a line elsewhere stays as it is). Freed lines are left to explain, but not marked as undone by a person, so
+    putting the payment back finds them again. Moved, the new account's statements are looked at for its line (a line
+    once undone from it there may be matched again: moving it there is the person's say). Then the reconciliation of the
+    old and the new side is checked again for the months the payment's paid date falls in, before and after: a sign-off
+    there goes, so the month is reviewed again (one signed off before tracking stays). A side with no account is the
+    company's one account in the payment's currency, by the books' rule (none when it has several)."""
+    pid = p["id"]
+    why = f"payment {p['description']} {'moved to another bank account' if new_id else 'taken off its bank account'}"
     on_line = """SELECT l.id FROM statement_lines l JOIN statements s ON s.id = l.statement_id
                  WHERE l.payment_id = ? AND s.account_id {} ?"""
-    freed = [r["id"] for r in c.execute(on_line.format("<>"), (pid, new_id))] if new_id else []
+    freed = ([r["id"] for r in c.execute(on_line.format("<>"), (pid, new_id))] if new_id
+             else [r["id"] for r in c.execute(on_line.format("="), (pid, p["account_id"]))] if p["account_id"] else [])
     if freed:
         c.execute(f"UPDATE statement_lines SET payment_id = NULL, status = 'unmatched' WHERE id IN ({', '.join('?' * len(freed))})", freed)
         recon.line_changed(c, freed, keep_before_tracking=True)
@@ -744,9 +744,9 @@ def _account_moved(c, p, new_id):
     now_ = c.execute("SELECT paid_date FROM payments WHERE id = ?", (pid,)).fetchone()
     months = [d[:7] for d in (p["paid_date"], now_["paid_date"]) if d]
     # A payment with no account is in the books of the company's one account in its currency, when it has just one
-    # (as the accounts are now); with several, no book counted it, so the old side has nothing to check again.
-    old = p["account_id"] or recon.sole_account(c, p["entity_id"], p["currency"] or "MYR")
-    recon.recheck(c, [old, new_id], months, why)
+    # (as the accounts are now); with several, no book counts it, so that side has nothing to check again.
+    sole = lambda: recon.sole_account(c, p["entity_id"], p["currency"] or "MYR")
+    recon.recheck(c, [p["account_id"] or sole(), new_id or sole()], months, why)
 
 
 def _amount_changed(old, new):

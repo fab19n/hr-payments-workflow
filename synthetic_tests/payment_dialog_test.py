@@ -4,7 +4,8 @@
    account's statement is taken off it (left to explain, its confirmation gone) and that statement's sign-off goes; the
    new account's statement is looked at for its line, and that statement's sign-off goes too. A third account, and a
    save that leaves the account as it was, change nothing. Moved back, its old line is linked again with its paid date.
-   Taking the account off is refused; an account in another currency is accepted, rechecking both. A payment with no account is rechecked in
+   An account in another currency is accepted, rechecking both; taking the account off frees only the old
+   account's lines and rechecks it. A payment with no account is rechecked in
    the books of the company's one account in its currency; a line already linked on the new account keeps its
    confirmation.
 2. The document viewer shows only a PDF or an image inline: any other file is served as a download, even when it is
@@ -136,7 +137,7 @@ check("moved back, its line on Alpha is linked to it again", line(L_A)["payment_
 check("...and the paid date is the Alpha line's again", pa == {"paid_date": "2026-10-19", "paid_source": "bank"}, pa)
 check("...and its Beta line is left to explain", line(L_B)["payment_id"] is None, line(L_B))
 
-# A payment's account can't be taken off once set; it can be moved to an account in another currency (a ringgit bill
+# A payment can be moved to an account in another currency (a ringgit bill
 # paid from a foreign currency account), keeping its own currency, and both accounts are checked again.
 con = db.connect()
 con.arm("user", "test: a made-up dollar account and its October statement")
@@ -146,14 +147,39 @@ S_D = con.execute("""INSERT INTO statements (account_id, month, opening, closing
 con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'review' WHERE id = ?", (NOW, S_A))
 con.commit()
 con.close()
-r = call("patch", f"/api/payments/{P}", expect=400, json={"account_id": None}).get_json()
-check("taking the account off a payment is refused", "not taken off" in r.get("error", ""), r)
-check("...and leaves the payment on Alpha", q("SELECT account_id FROM payments WHERE id = ?", (P,))[0]["account_id"] == A)
 call("patch", f"/api/payments/{P}", json={"account_id": USD})
 pd_ = q("SELECT account_id, currency FROM payments WHERE id = ?", (P,))[0]
 check("a ringgit payment moved to the company's dollar account is accepted, and stays a ringgit payment",
       pd_ == {"account_id": USD, "currency": "MYR"}, pd_)
 check("...and both accounts' October reconciliations are checked again", not signed(S_A) and not signed(S_D), (signed(S_A), signed(S_D)))
+
+# A payment taken off its bank account (account 0 or blank): accepted; only its lines on the old account's statements
+# are freed (not marked as undone by a person), a line on another account's statement linked to another payment stays,
+# and the old account's month is checked again.
+con = db.connect()
+con.arm("user", "test: a made-up payment to take off its account")
+PT = con.execute("""INSERT INTO payments (entity_id, month, account_id, category, description, amount, due_date, paid_date, paid_source,
+                    direction, created_at) VALUES (?, '2026-10', ?, 'other', 'Test Payee L courier', 55, '2026-10-14', '2026-10-14', 'bank', 'out', ?)""",
+                 (EID, A, NOW)).lastrowid
+L_T = con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_date, description, amount, balance, payment_id, status, confirmed_at)
+                     VALUES (?, 9, '2026-10-14', 'TEST PAYEE L COURIER', -55, 4525, ?, 'matched', ?)""", (S_A, PT, NOW)).lastrowid
+L_TB = con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_date, description, amount, balance, payment_id, status)
+                      VALUES (?, 9, '2026-10-15', 'TEST PAYEE L COURIER FEE', -5, 4995, ?, 'matched')""", (S_B, PT)).lastrowid
+con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'review' WHERE id IN (?, ?)", (NOW, S_A, S_G))
+con.commit()
+con.close()
+call("patch", f"/api/payments/{PT}", json={"account_id": 0})
+check("a payment can be taken off its bank account (account 0)", q("SELECT account_id FROM payments WHERE id = ?", (PT,))[0]["account_id"] is None)
+lt = line(L_T)
+check("...its line on the old account's statement is freed, not marked as undone by a person",
+      lt["payment_id"] is None and lt["status"] == "unmatched" and lt["undone_payment_id"] is None, lt)
+check("...a line on another account's statement, linked to another payment, is untouched",
+      line(L_G)["payment_id"] == OTHER and line(L_G)["confirmed_at"] and signed(S_G), (line(L_G), signed(S_G)))
+check("...and the old account's month is checked again", not signed(S_A))
+check("...its line on a statement of an account it isn't on stays linked: only the old account's lines are freed",
+      line(L_TB)["payment_id"] == PT, line(L_TB))
+call("patch", f"/api/payments/{P}", json={"account_id": ""})
+check("a blank account takes it off too", q("SELECT account_id FROM payments WHERE id = ?", (P,))[0]["account_id"] is None)
 
 # The old account is checked again on its own: a payment with no bank line (its paid date typed in) moved from Alpha to
 # Beta frees no line, yet Alpha's month loses its sign-off (its books no longer count the payment).
