@@ -9,8 +9,8 @@ area counts the Next up rows of that area for the company on show (red with the 
 with no company count for every company; Overview counts all); every item has a route and its address round-trips (Monthly checklist
 is its own page from slice 2); the page on show is the one item marked aria-current; items are links with their address and a click opens
 the page without the browser following the link (a modified click is left to the browser); groups fold and the one holding the page
-stays open; the five Coming soon pages, the four Kept here placeholders and the interim landings (e-Invoices, Customers and suppliers,
-Statutory payables) land on the right existing page and tab; a page the company does not use still gets the 0c rule.
+stays open; the five Coming soon pages, the four Kept here placeholders and the interim landings (Customers and suppliers,
+Statutory payables) land on the right existing page and tab, and e-Invoices on its own page (slice 6); a page the company does not use still gets the 0c rule.
 
 Run: .venv\\Scripts\\python -m synthetic_tests.menu_test
 """
@@ -157,7 +157,7 @@ const document = {
   vm.runInContext(fs.readFileSync(appPath, "utf8"), ctx);
   for (const [id, tag] of [["nav", "nav"], ["monthLabel", "span"], ["pageTitle", "span"], ["main", "main"]]) { const n = new Node(tag); n.id = id; body.appendChild(n); }
   run(`globalThis.__drawn = []; globalThis.__opened = [];
-    for (const v of ["Overview", "Entity", "Checklist", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
+    for (const v of ["Overview", "Entity", "Checklist", "Budget", "Payees", "Bank", "Sql", "Einvoices", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
       globalThis["view" + v] = async main => { globalThis.__drawn.push(state.view + ":" + state.entity + ":" + state.month); };
     trailNotice = () => {};
     openSetup = async (kind, id) => { globalThis.__opened.push([kind, id]); state.setup.id = id; syncAddr(); };
@@ -364,7 +364,7 @@ const ENTS = [{ id: 1, code: "AAA", name: "Alpha Test Sdn Bhd", short_name: "Alp
   await showOn("#/AAA/2026-10/payments/register"); run("__drawn.length = 0");
   { const click = async page => { E.dispatch(nav().querySelectorAll("a[data-menu]").find(x => x.getAttribute("data-menu") === page), { type: "click", button: 0 }); await settle(); };
     await click("accounting/einvoices");
-    ok("the e-Invoices item opens today's SQL import page (its MyInvois part), at its own address", run("__drawn").includes("einvoices:1:2026-10") && loc.hash === "#/AAA/2026-10/accounting/einvoices", loc.hash);
+    ok("the e-Invoices item opens its own page (slice 6), at its own address", run("__drawn").includes("einvoices:1:2026-10") && run("ROUTES.einvoices.draw() !== viewSql") && loc.hash === "#/AAA/2026-10/accounting/einvoices", loc.hash);
     await click("accounting/parties");
     ok("the Customers and suppliers item opens Books on its parties tab", run("state.books.tab") === "parties" && run("__drawn").pop() === "parties:1:2026-10" && loc.hash === "#/AAA/2026-10/accounting/parties", loc.hash);
     await click("accounting/statutory");

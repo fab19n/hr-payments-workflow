@@ -1,7 +1,7 @@
 "use strict";
 /* ---------------- Coming soon pages and the Kept here placeholders (step 0e) ----------------
    comingSoon(main, { title, glyph, body }) is the one function for a page that is not built yet (Staff, Leave, Claims and
-   advances, Approvals, To pay, and e-Invoices for a company kept here): the States pattern, one sentence about what the page
+   advances, Approvals and To pay): the States pattern, one sentence about what the page
    will do, no date. keptHerePage(kind) is design/canvas/AccountingKeptHere.dc.html for Sales, Purchases, Journals and Period
    close: what will be there, how it connects, the rules every document follows. A company Kept in SQL Account has no use for
    those four (PAGE_RULES in core/states.js gives it the "isn't used" card). */
@@ -14,15 +14,6 @@ const viewLeave = async main => comingSoon(main, { title: "Leave", glyph: "leave
 const viewClaims = async main => comingSoon(main, { title: "Claims and advances", glyph: "claim", body: "Staff claims and salary advances, from the request to the payment." });
 const viewApprovals = async main => comingSoon(main, { title: "Approvals", glyph: "approval", body: "The forms that wait for a signed approval before a payment is made." });
 const viewToPay = async main => comingSoon(main, { title: "To pay", glyph: "toPay", body: "What is approved and waiting to be paid, in one list." });
-
-// e-Invoices: today's SQL import page, brought to its MyInvois part; a company kept here has no e-Invoices of its own yet.
-async function viewEinvoices(main) {
-  if (!ent()?.uses_sql) return comingSoon(main, { title: "e-Invoices", glyph: "verified", body: "Each invoice issued from here, with its MyInvois record and whether LHDN has validated it." });
-  await viewSql(main);
-  const at = state.landAt;
-  state.landAt = null;  // brought into view once, when the address is opened; a redraw after a change stays where it is
-  if (at) $("#" + at)?.scrollIntoView?.({ block: "start" });
-}
 
 const KEPT_HERE = {
   sales: { title: "Sales", intro: "Everything a Kept here company sells: invoices out, the notes that correct them, and the money that comes in against them.",

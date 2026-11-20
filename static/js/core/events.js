@@ -204,7 +204,6 @@ document.addEventListener("click", async ev => {
     }
     // The SQL import page (pages/sql.js): Import says what it did in place of the preview, Fetch reads the folder.
     if (t.id === "sqlApply") return await sqlApply(t);
-    if (ds.miFilter) { state.miFilter = ds.miFilter; const box = $("#miBox"); if (box) box.innerHTML = myinvoisBox(state.miData); return; }
     if (ds.sqlLines) return await sqlLinesToggle(t, ds.sqlLines);
     if (t.id === "sqlFetch") return await sqlFetch();
     if (ds.sqlTake != null) {  // an export from a company not in Setup: taken only when the owner says whose it is
@@ -314,7 +313,6 @@ document.addEventListener("change", async ev => {
   try {
     // Only the statements are drawn again, so the account and file chosen for an import stay.
     if (t.dataset.rvSel) { RV().sel[t.dataset.rvSel] = t.checked; return paintBar(); }
-    if (t.dataset.invMonth) { state.invMonth = t.value; const box = $("#invPrint"); if (box) box.innerHTML = invoicePrintBar(state.invPrint); return; }
     if (t.dataset.rvKeep) { RV().keep[t.dataset.rvKeep] = t.checked; return; }
     if (t.dataset.pairTick) return await pairTick(t);   // a No money moved pair confirmed or not (pages/bank.js)
     if (t.dataset.regPick) return regPickOne(+t.dataset.regPick, t.checked);

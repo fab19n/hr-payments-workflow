@@ -407,12 +407,16 @@ if o:
     check("Journals and invoices: its note, the supplier's invoice named as one, the checklist column",
           "Journals, customer invoices and supplier invoices, kept on file against their checklist item." in P
           and re.search(r"EXAMPLE CLEANER - OCTOBER<div class=\"note small\">Supplier invoice", P) is not None and "<th>Checklist item</th>" in P)
+    check("...without the e-Invoice column (its status and PDF are on the e-Invoices page), as the SqlBooks board draws it",
+          '<th class="num">Amount (RM)</th><th>Checklist item</th>' in P and "<th>e-Invoice</th>" not in P and "PDF</a>" not in P)
     check("the checks against SQL's reports name each section in words, never the raw key (the fix of section 4.1)",
           "<td>the Bank Journal</td>" in P and "<td>the General Journal</td>" in P and "<td>bank</td>" not in P and "<td>general</td>" not in P)
     check("...the listing entry missing from SQL's journal: Deleted in SQL, named for its voucher; the folded list of documents no listing reads",
           'aria-label="Deleted in SQL: PV2610-202">Deleted in SQL</button>' in P and 'data-sq-fold="own" aria-expanded="false"' in P and "No listing this app reads yet · 1" in P)
     check("...and the wide tables carry the 'best done on a computer' note", "Best done on a computer" in P)
-    check("the e-Invoices card is still on this page until it has its own (slice 6)", 'id="sqlEinvoices"' in P)
+    check("the e-Invoices card and its print bar have left this page for their own (slice 6), and the lede says so",
+          'id="sqlEinvoices"' not in P and 'id="invPrint"' not in P and "From MyInvois" not in P
+          and "The e-Invoices this fetch reads, and the printed invoices, have their own page:" in P and 'data-menu="accounting/einvoices">e-Invoices</a>' in P)
     check("Imported files: each with its counts", "Imported files" in P and "8 entries, 0 linked" in P)
     check("Use another folder opens the box with its help, and the focus goes to it",
           'id="sqlDir"' in o["folderOpen"] and "Save folder" in o["folderOpen"] and "The full path, starting with the drive letter." in o["folderOpen"] and o["folderFocus"] == "sqlDir")

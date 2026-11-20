@@ -4,7 +4,8 @@
    Built to design/canvas/Sql.dc.html (the top half: the three steps, Fetch and its folder, paste or choose a file with drag
    and drop, the result: reading, what the fetch found, the preview, nothing new, the journal lines, imported) and
    SqlBooks.dc.html (the lower half: Changed in SQL, the entry lists, Journals and invoices, the checks against SQL's
-   reports, and the account lines a pill opens). The e-Invoices card stays as it was until it gets its own page (slice 6).
+   reports, and the account lines a pill opens). The e-Invoices this fetch reads, and the printed invoices, have their own
+   page since slice 6 (pages/einvoices.js).
    What the page keeps while it is on one company: sqState(). The preview read but not imported yet: state.sqlPreview. */
 
 const SQL_FIELD_LABELS = { doc_no: "Doc No", date: "Date", description: "Description", payee: "Payee / name", amount: "Amount", debit: "Debit", credit: "Credit",
@@ -380,9 +381,10 @@ function sqJournalHtml(p) {
 // After Import: what was done, in place of the preview, with the way to what is left to do.
 function sqDoneHtml(x) {
   const [glyph, label, to, go] = { import: ["verified", "Import result", "sql-unlinked-h", "See entries not linked"], reports: ["sheet", "Account lines kept", "sql-checks-h", "See Checks against SQL's reports"],
-    lines: ["bank", "Journal lines kept", "sql-docs-h", "See the journal"], einv: ["verified", "MyInvois e-Invoices kept", "sqlEinvoices", "See e-Invoices"] }[x.kind];
+    lines: ["bank", "Journal lines kept", "sql-docs-h", "See the journal"], einv: ["verified", "MyInvois e-Invoices kept", null, "See e-Invoices"] }[x.kind];
   return `<section class="sq-done" aria-label="${label}"><span class="sq-plate ok">${icon(glyph)}</span><div class="sq-grow" role="status"><b>${esc(x.title)}</b><div class="note">${esc(x.text)}</div></div>
-    <div class="sq-done-go">${x.changed ? `<button type="button" class="ghost" data-sq-jump="sb-changed-h">See Changed in SQL</button>` : ""}<button type="button" class="btn" data-sq-jump="${to}">${go}${icon("arrow")}</button>
+    <div class="sq-done-go">${x.changed ? `<button type="button" class="ghost" data-sq-jump="sb-changed-h">See Changed in SQL</button>` : ""}${x.kind === "einv" ? `<a class="btn" href="${esc(menuHref(MENU_BY_PAGE["accounting/einvoices"]))}" data-menu="accounting/einvoices">${go}${icon("arrow")}</a>`
+      : `<button type="button" class="btn" data-sq-jump="${to}">${go}${icon("arrow")}</button>`}
       <button type="button" class="ghost icon-only" data-sq-done-close="1" aria-label="Close this message">${icon("close")}</button></div></section>`;
 }
 function sqReadingHtml(from) {
@@ -479,7 +481,7 @@ function sqDocsHtml(d) {
     const linkable = x.kind === "journal" && x.bank_move != null && !x.before_tracking && !x.payment_id;
     return `<tr><td class="mono sq-no">${esc(x.doc_no)}</td><td class="nowrap">${shortDate(x.doc_date)}</td>
       <td>${esc(x.description)}${sub ? `<div class="note small">${esc(sub)}</div>` : ""}${sqlCodes(x)}<div class="sq-pills">${fresh != null && x.import_id === fresh ? `<span class="pill">Just imported</span>` : ""}${linesPill(d.lines, x)}</div></td>
-      <td class="num">${sqAmt(x.amount)}</td><td>${einvPill(x)}${invoiceBtn(x)}</td>
+      <td class="num">${sqAmt(x.amount)}</td>
       <td>${x.task_title ? `<span class="pill ok">${icon("checklist")}${esc(x.task_title.split(":")[0])} (${esc(sqMonth(x.task_month))})</span>` : x.before_tracking ? `<span class="pill grey">${icon("history")}Before tracking</span>` : `<span class="muted">—</span>`}
         ${x.kind === "journal" && x.bank_move != null ? `<div class="note">Moves ${money(Math.abs(x.bank_move))} ${x.bank_move > 0 ? "into" : "out of"} the bank, so it counts in the bank reconciliation.</div>` : ""}
         ${x.payment_id ? `<div class="sq-link"><span class="note">${x.kind === "journal" ? "Payment" : "Receipt"}: ${esc(x.payment_desc)}</span><button type="button" class="ghost small" data-sql-unlink="${x.id}" aria-label="Unlink ${esc(x.doc_no)}">Unlink</button></div>`
@@ -487,19 +489,8 @@ function sqDocsHtml(d) {
   }).join("");
   return `<section class="card sq-card" id="sql-docs" aria-labelledby="sql-docs-h">
     ${sqHead("sql-docs-h", "receipt", "brand", "Journals and invoices", null, "Journals, customer invoices and supplier invoices, kept on file against their checklist item. A journal that moves the bank counts in the bank reconciliation.")}
-    <div id="invPrint" class="sq-print">${invoicePrintBar(d.invoice_print)}</div>
-    <div class="tbl-wrap sq-tw"><table class="sq-tbl sq-dtbl"><thead><tr><th>Doc no.</th><th>Date</th><th>Description</th><th class="num">Amount (RM)</th><th>e-Invoice</th><th>Checklist item</th></tr></thead><tbody>
-      ${rows || `<tr><td colspan="6" class="empty">Fetch SQL's Journal Voucher and Customer Invoice listings on this page to see them here.</td></tr>`}</tbody></table></div></section>`;
-}
-// The e-Invoices card, as it was before this page was rebuilt: it moves to its own page with slice 6.
-function sqEinvoicesHtml(d) {
-  return `<div class="card" id="sqlEinvoices"><h2>e-Invoices</h2><div class="note">Every SQL document with an e-Invoice, and whether LHDN has validated it. Where a copy of SQL's MyInvois Transaction screen was read, what MyInvois says is shown beside it.</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Date</th><th>Description</th><th class="num">Amount</th><th>Status</th><th>MyInvois</th><th></th></tr></thead><tbody>
-      ${d.einvoices.map(x => `<tr><td class="mono">${esc(x.doc_no)}</td><td>${shortDate(x.doc_date)}</td><td>${esc(x.payee || x.description)}</td><td class="num">${money(x.amount)}</td><td>${einvPill(x)}</td>
-        <td>${x.myinvois ? `<span class="mono">${esc(x.myinvois.uuid)}</span><div class="note">${esc(x.myinvois.type || "")} · ${esc(x.myinvois.status)}${x.myinvois.validated_at ? ` · validated ${esc(x.myinvois.validated_at)}` : ""}</div>` : `<span class="muted">—</span>`}</td>
-        <td><div class="row" style="gap:6px">${x.payment_id ? `<button class="ghost small" data-sql-unlink="${x.id}">Unlink</button>` : ""}${invoiceBtn(x)}</div></td></tr>`).join("") || `<tr><td colspan="7" class="empty">None imported yet.</td></tr>`}
-      </tbody></table></div>
-      <div id="miBox">${myinvoisBox(d.myinvois)}</div></div>`;
+    <div class="tbl-wrap sq-tw"><table class="sq-tbl sq-dtbl"><thead><tr><th>Doc no.</th><th>Date</th><th>Description</th><th class="num">Amount (RM)</th><th>Checklist item</th></tr></thead><tbody>
+      ${rows || `<tr><td colspan="5" class="empty">Fetch SQL's Journal Voucher and Customer Invoice listings on this page to see them here.</td></tr>`}</tbody></table></div></section>`;
 }
 function sqImportsHtml(d) {
   const S = sqState(), glyph = n => /^SQL listing pasted/.test(n) ? "clipboard" : /^SQL (exports|reports) fetched/.test(n) ? "folder" : "document";
@@ -514,8 +505,6 @@ async function viewSql(main) {
   if (!e.uses_sql) { main.innerHTML = unusedCard("sql", e); return; }  // render() shows this card before; kept for a direct call
   const d = await api(`/api/sql/entries?entity=${state.entity}`);
   state.sqData = d;
-  state.miData = d.myinvois;
-  state.invPrint = d.invoice_print;
   const S = sqState();
   // A question asked before (Create payments for all, Ignore all) never comes back armed; an import's result stays only while
   // the page is drawn again after it, not when it is opened again from another page.
@@ -526,7 +515,7 @@ async function viewSql(main) {
     .replace('data-count="sql"', 'id="sq-count" data-count="sql"');
   main.innerHTML = `<div class="sq" id="sq">
     <div class="pg-head"><div class="pg-words"><span class="eyebrow">${esc(e.code)} · ${esc(keptLabel(e))}</span><h1 id="pg-h1" tabindex="-1">SQL import</h1>
-      <p class="sq-lede">Fetch (or paste) each SQL listing for the month: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to the payments in HR Payments; customer invoices are filed against their checklist item of their own month and linked to the money in they are for, and a payroll journal against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine.</p></div></div>
+      <p class="sq-lede">Fetch (or paste) each SQL listing for the month: <b>Cash Book</b>, <b>Receipt Voucher</b>, <b>Payment Voucher</b>, <b>Journal</b> and <b>Customer Invoice</b>. Payments and receipts are matched to the payments in HR Payments; customer invoices are filed against their checklist item of their own month and linked to the money in they are for, and a payroll journal against Salary PVs in SQL. A document that appears in two listings is only kept once, so overlap is fine. The e-Invoices this fetch reads, and the printed invoices, have their own page: <a href="${esc(menuHref(MENU_BY_PAGE["accounting/einvoices"]))}" data-menu="accounting/einvoices">e-Invoices</a>.</p></div></div>
     <div id="sq-steps">${sqStepsHtml()}</div>
     <section class="card sq-card sq-fetch" id="sq-fetch" aria-labelledby="sq-fetch-h">${sqFetchInner()}</section>
     <section class="card sq-card sq-bring" id="sql-paste" aria-label="Bring in one listing yourself">${sqBringInner()}</section>
@@ -535,7 +524,6 @@ async function viewSql(main) {
     <div id="sqlEntries" class="sq">${sqEntriesHtml(d)}</div>
     ${sqDocsHtml(d)}
     <div id="sq-checks-wrap" class="sq">${sqlChecksCard(d)}</div>
-    ${sqEinvoicesHtml(d)}
     ${sqImportsHtml(d)}</div>`;
   // A listing pasted but not imported yet stays, with links picked by hand, while you tidy the entries below.
   const box = $("#sqlPaste");

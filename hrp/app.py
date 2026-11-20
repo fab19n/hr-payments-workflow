@@ -18,6 +18,7 @@ from flask import Flask, abort, g, jsonify, make_response, request, send_file
 from . import (appsettings, audit, auditpack, auditread, books, booksexcel, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, pages, recon, reports,
                monthly, myinvois, packcheck, partybook, payrollcheck, receivables, restore, rulebook, rules, setupfile, sqlfetch,
                sqlimport, statements, statutory, bankrecpdf, formcode)
+from . import einvoicebook
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -3643,6 +3644,32 @@ def invoices_zip():
     what = "Invoices" if kind == "customer" else "Self-billed invoices"
     return send_file(io.BytesIO(data), mimetype="application/zip", as_attachment=True,
                      download_name=f"{e['code']} {what} {month}.zip")
+
+
+@app.get("/api/einvoices")
+def einvoices():
+    """Accounting › e-Invoices: a company's e-Invoices issued, received and self-billed, the valid ones received that SQL's
+    books don't have, the copies of MyInvois read, and what its printed invoices lack (einvoicebook.lists). Read-only."""
+    c = con()
+    e = entity(c, id_from(request.args.get("entity") or request.args.get("entity_id") or ""))
+    out = einvoicebook.lists(c, e)
+    months = invoicepdf.print_months(c, e["id"]) if out["printing"] else {}
+    # How many documents each month's zip holds, as the zip itself counts them (invoicepdf.month_documents).
+    counts = {k: {m: len(invoicepdf.month_documents(c, e["id"], m, k)) for m in months.get(k, [])} for k in invoicepdf.KINDS}
+    out["print"] = ({"missing": invoicepdf.missing_settings(c, e), "months": months, "counts": counts,
+                     "fonts": invoicepdf.font_notes(), "too_long": invoicepdf.setup_cuts(c, e)} if out["printing"] else None)
+    return jsonify(out)
+
+
+@app.get("/api/export/einvoices.xlsx")
+@audited_read("e-Invoices export")
+def export_einvoices():
+    """The e-Invoices page's lists as an Excel file, for a month (month=YYYY-MM) or every month (no month)."""
+    c = con()
+    e = _entity_arg(c)
+    month = month_from(request.args["month"]) if request.args.get("month") else None
+    return send_file(io.BytesIO(reports.workbook_bytes(einvoicebook.workbook(c, e, month))), mimetype=XLSX, as_attachment=True,
+                     download_name=einvoicebook.report_name(e, month))
 
 
 def _print_settings(c, e):
