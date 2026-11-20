@@ -10,7 +10,11 @@ The functions that only read are year_view, month_summary, review and not_reconc
 called with the request's connection; they log what they do in plain words and leave the commit to the caller.
 Nothing here posts anything to SQL Account.
 """
+import json
 import math
+import re
+import sqlite3
+import weakref
 from datetime import date, timedelta
 
 from . import db, statements
@@ -478,8 +482,14 @@ def _status(st, counts, book, signed):
 STATUS_WORDS = {"to_import": "To import", "to_review": "To review", "difference": "Difference", "reconciled": "Reconciled"}
 
 
-def why_not(con, ent, acct, month, st, counts, book):
-    """What stops the month being signed off, as short phrases; empty when nothing does."""
+def _pl(n, word, words=None):
+    return f"{n} {word if n == 1 else (words or word + 's')}"
+
+
+def why_not(con, ent, acct, month, st, counts, book, pairs=None):
+    """What stops the month being signed off, as short phrases; empty when nothing does. Besides the books agreeing with
+    the bank: every line explained and confirmed, every line linked to several payments adding up, and every No money
+    moved pair nil and confirmed. pairs: no_money_pairs already worked out."""
     why = []
     if not adds_up(con, st):
         why.append("the statement doesn't add up (opening plus lines is not the closing balance)")
@@ -487,6 +497,18 @@ def why_not(con, ent, acct, month, st, counts, book):
         why.append(f"{counts['to_explain']} line{'s' if counts['to_explain'] > 1 else ''} to explain")
     if counts["to_confirm"]:
         why.append(f"{counts['to_confirm']} line{'s' if counts['to_confirm'] > 1 else ''} to confirm")
+    short = short_lines(con, st)
+    if short:
+        why.append(_pl(len(short), "line") + " matched, but the amounts differ")
+    if pairs is None:
+        pairs = no_money_pairs(con, ent, acct, month, book.get("movements"))
+    bad = [p for p in pairs if not p["nil"]]
+    if bad:
+        why.append(f"{_pl(len(bad), 'pair')} under No money moved {'isn' if len(bad) == 1 else 'aren'}'t nil "
+                   f"({_money(sum(abs(p['net']) for p in bad), acct['currency'])} left)")
+    todo = [p for p in pairs if p["nil"] and not p["confirmed_at"]]
+    if todo:
+        why.append(f"{_pl(len(todo), 'pair')} under No money moved to confirm")
     if book["state"] != "ok":
         why.append(book["note"][0].lower() + book["note"][1:])
     else:
@@ -564,7 +586,8 @@ def year_view(con, ent, acct, year, today=None):
                      "reconciled_how": st["reconciled_how"] if st and status == "reconciled" else None,
                      "document_id": st["document_id"] if st else None, "before_tracking": db.before_tracking(ent, m),
                      "book_changed": changed if status == "reconciled" else None, "listing_docs": mv.get("listing_docs") or 0,
-                     "gone_docs": mv.get("gone_docs") or 0})
+                     "gone_docs": mv.get("gone_docs") or 0, "locked": bool(st and st["reconciled_at"]),
+                     "reopened_at": (reopens(con, st["id"]) or [{}])[0].get("at") if st and not st["reconciled_at"] else None})
     listing_months = sum(1 for r in rows if r["listing_docs"])
     return {"account": {"id": acct["id"], "label": acct["label"], "currency": acct["currency"]}, "year": year, "years": years,
             "rows": rows, "openings": [dict(r) for r in con.execute(
@@ -580,23 +603,134 @@ def _line_row(l, why):
     return {"line_id": l["id"], "date": l["txn_date"], "description": l["description"], "amount": l["amount"], "why": why}
 
 
-def _lists(con, ent, acct, month, st, mv):
+def _links_of(con, st):
+    """{line id: [(payment id, the part of the line it stands for)]} for the lines of a statement, each line's own payment
+    first."""
+    out = {}
+    if not st:
+        return out
+    for r in con.execute(f"""SELECT k.line_id, k.payment_id, k.amount, (k.payment_id = l.payment_id) AS own FROM {db.line_links(con)} k
+                             JOIN statement_lines l ON l.id = k.line_id WHERE k.statement_id = ? ORDER BY k.line_id, own DESC, k.payment_id""",
+                         (st["id"],)):
+        out.setdefault(r["line_id"], []).append((r["payment_id"], r["amount"]))
+    return out
+
+
+def _parted(con, st):
+    """The ids of the statement's lines with a link that stands for a part of the line (not the whole line)."""
+    if not st or not db.has_line_links(con):
+        return set()
+    return {r[0] for r in con.execute("""SELECT k.line_id FROM statement_line_payments k JOIN statement_lines l ON l.id = k.line_id
+                                         WHERE l.statement_id = ? AND k.amount IS NOT NULL""", (st["id"],))}
+
+
+def short_lines(con, st):
+    """The lines of a statement linked to several payments whose parts don't add up to the line (a bulk transfer linked
+    to some of the payments it paid): [{line_id, date, description, amount, linked, gap (line less the parts)}]."""
+    out = []
+    if not st:
+        return out
+    links = _links_of(con, st)
+    parted = _parted(con, st)
+    for l in con.execute("SELECT * FROM statement_lines WHERE statement_id = ? ORDER BY line_no", (st["id"],)):
+        its = links.get(l["id"]) or []
+        # several payments, or one left with the part it stood for when another was taken off the line
+        if len(its) > 1 or l["id"] in parted:
+            total = _r(sum(a for _, a in its))
+            if abs(total - l["amount"]) > TOL:
+                out.append({"line_id": l["id"], "date": l["txn_date"], "description": l["description"], "amount": l["amount"],
+                            "linked": total, "gap": _r(l["amount"] - total)})
+    return out
+
+
+def _item_key(i):
+    """How a book entry is named in a No money moved pair: an SQL document by its number, a payment by its id."""
+    if i["kind"] == "sql" and i.get("ref"):
+        return "sql:" + str(i["ref"]).strip().upper()
+    return f"{i['kind']}:{i['id']}"
+
+
+def _has_pairs(con):
+    return con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'recon_pairs'").fetchone() is not None
+
+
+def no_money_pairs(con, ent, acct, month, mv=None):
+    """The pairs of book entries of the month that cancel each other out and never touched the bank (a voucher and its
+    reversal; a receipt and a payment for the same amount on the same day), found as the SQL import page finds a
+    correction (sqlimport.CORRECTION_WORDS, or an in and an out of one amount on one day): [{key, docs [{key, kind, ref,
+    date, description, amount}], net, nil, reason (as kept, else the one filled in from the documents), suggested,
+    confirmed_at}]. An entry whose payment is on a bank line moved money, so it is never one of a pair."""
+    from .sqlimport import CORRECTION_WORDS
+    mv = mv or movements(con, ent, acct, month)
+    on_line = {r[0] for r in con.execute(f"SELECT DISTINCT payment_id FROM {db.line_links(con)}")}
+    cands = [i for i in mv["items"] if i["kind"] in ("sql", "payment") and abs(i["amount"]) >= TOL
+             and not (i["payment_id"] and i["payment_id"] in on_line)]
+    cands.sort(key=lambda i: (i["date"] or "", str(i.get("ref") or ""), i["id"]))
+    used, found = set(), []
+
+    def name(i):
+        return (i.get("ref") or i.get("description") or "").strip()
+    # A reversal or contra that names another entry of the month, whatever the amounts (one keyed wrongly isn't nil).
+    for i in cands:
+        if _item_key(i) in used or not CORRECTION_WORDS.search(i["description"] or ""):
+            continue
+        text = (i["description"] or "").upper()
+        other = next((o for o in cands if o is not i and _item_key(o) not in used and o.get("ref")
+                      and str(o["ref"]).strip().upper() in text and (o["amount"] > 0) != (i["amount"] > 0)), None)
+        if other:
+            used |= {_item_key(i), _item_key(other)}
+            found.append((other, i, "reversal"))
+    # An in and an out of the same amount on the same day.
+    for i in cands:
+        if _item_key(i) in used:
+            continue
+        other = next((o for o in cands if o is not i and _item_key(o) not in used and o["date"] == i["date"]
+                      and abs(abs(o["amount"]) - abs(i["amount"])) < TOL and (o["amount"] > 0) != (i["amount"] > 0)), None)
+        if other:
+            used |= {_item_key(i), _item_key(other)}
+            found.append((i, other, "same day"))
+    kept = {}
+    if found and _has_pairs(con):
+        kept = {r["pair_key"]: r for r in con.execute("SELECT * FROM recon_pairs WHERE account_id = ? AND month = ?", (acct["id"], month))}
+    out = []
+    for a, b, how in found:
+        docs = [{"key": _item_key(x), "kind": x["kind"], "ref": x.get("ref"), "date": x["date"], "description": x["description"] or "",
+                 "amount": x["amount"]} for x in (a, b)]
+        key = "|".join(sorted(d["key"] for d in docs))
+        net = _r(a["amount"] + b["amount"])
+        same = a["date"] == b["date"]
+        if how == "reversal":
+            why = (f"Reversal: {name(b)} reverses {name(a)} ({(a['description'] or '').strip() or 'no description'})"
+                   f"{' the same day' if same else ''}; no money moved")
+        else:
+            why = f"{name(a)} and {name(b)} are money in and out of the same amount on {db.day_label(a['date'])}; no money moved"
+        k = kept.get(key)
+        out.append({"key": key, "docs": docs, "net": net, "nil": abs(net) <= TOL, "suggested": why,
+                    "reason": (k["reason"] if k and k["reason"] else why), "confirmed_at": k["confirmed_at"] if k else None})
+    return out
+
+
+def _lists(con, ent, acct, month, st, mv, pairs=None):
     """The lists of a reconciliation statement. books_only: what the books hold for the month that no line of this
     statement is linked to. bank_only: the statement's lines the month's books don't hold. Both with a note saying why.
     differ: payments the books and the statement both hold, for different amounts (a payment of 18,000 with only
-    a line of 8,000 linked so far): {description, ref, book, bank, amount (bank minus book)}."""
+    a line of 8,000 linked so far): {description, ref, book, bank, amount (bank minus book)}. A line linked to several
+    payments counts the part each stands for. The entries of a No money moved pair (pairs, from no_money_pairs) are
+    listed there, not in books_only."""
     lines = con.execute("SELECT * FROM statement_lines WHERE statement_id = ? ORDER BY line_no", (st["id"],)).fetchall() if st else []
-    on_stmt = {l["payment_id"] for l in lines if l["payment_id"]}
+    links = _links_of(con, st)
+    on_stmt = {pid for its in links.values() for pid, _ in its}
     in_books = {i["payment_id"] for i in mv["items"] if i["payment_id"]}
     bank_items = {i["line_id"] for i in mv["items"] if i.get("line_id")}  # charges and transfers counted from the statement
+    paired = {d["key"] for p in (pairs if pairs is not None else no_money_pairs(con, ent, acct, month, mv)) for d in p["docs"]}
     books_only = []
     for i in mv["items"]:
         pid = i["payment_id"]
-        if (pid and pid in on_stmt) or i.get("line_id"):
+        if (pid and pid in on_stmt) or i.get("line_id") or _item_key(i) in paired:
             continue
         if pid:
             elsewhere = con.execute(
-                """SELECT s.month FROM statement_lines l JOIN statements s ON s.id = l.statement_id WHERE l.payment_id = ?
+                f"""SELECT s.month FROM {db.line_links(con)} l JOIN statements s ON s.id = l.statement_id WHERE l.payment_id = ?
                    ORDER BY s.month LIMIT 1""", (pid,)).fetchone()
             why = f"On the {db.month_label(elsewhere['month'])} statement" if elsewhere else "Not on a bank statement yet (not cleared?)"
         elif i["status"] == "ignored":
@@ -610,6 +744,17 @@ def _lists(con, ent, acct, month, st, mv):
     bank_only = []
     for l in lines:
         pid = l["payment_id"]
+        its = links.get(l["id"]) or []
+        if len(its) > 1:
+            # A line paying several payments: the part of each the month's books don't hold is on the statement only.
+            for p_id, part in its:
+                if p_id in in_books:
+                    continue
+                p = con.execute("SELECT description, paid_date FROM payments WHERE id = ?", (p_id,)).fetchone()
+                why = (f"Part for {p['description']}: payment is dated {db.day_label(p['paid_date'])}, in another month"
+                       if p and p["paid_date"] else f"Part for {p['description'] if p else 'a payment'}: not in this month's books")
+                bank_only.append(dict(_line_row(l, why), amount=_r(part), kind="line"))
+            continue
         if (pid and pid in in_books) or l["id"] in bank_items:
             continue
         if not pid:
@@ -624,9 +769,9 @@ def _lists(con, ent, acct, month, st, mv):
             why = f"Payment is dated {db.day_label(p['paid_date'])}, in another month" if p and p["paid_date"] else "Payment has no paid date"
         bank_only.append(dict(_line_row(l, why), kind="line"))
     bank_sum, book_sum, named = {}, {}, {}
-    for l in lines:
-        if l["payment_id"]:
-            bank_sum[l["payment_id"]] = bank_sum.get(l["payment_id"], 0) + l["amount"]
+    for its in links.values():
+        for p_id, part in its:
+            bank_sum[p_id] = bank_sum.get(p_id, 0) + part
     for i in mv["items"]:
         if i["payment_id"]:
             book_sum[i["payment_id"]] = book_sum.get(i["payment_id"], 0) + i["amount"]
@@ -640,6 +785,60 @@ def _lists(con, ent, acct, month, st, mv):
     return books_only, bank_only, differ
 
 
+def _lock_fields(st):
+    """What a statement's lock says: locked (signed off, so its lines and its payments' bank fields can't change), when
+    and how, the note the app wrote at sign-off, the free note and the declared Prepared by."""
+    keys = st.keys()
+    note = st["sign_note"] if "sign_note" in keys else None
+    try:
+        lines = json.loads(note) if note else []
+    except ValueError:
+        lines = [note]
+    return {"locked": bool(st["reconciled_at"]), "locked_at": st["reconciled_at"], "locked_how": st["reconciled_how"],
+            "sign_note": lines if st["reconciled_at"] else [], "free_note": st["reconciled_note"] if st["reconciled_at"] else None,
+            "prepared_by": (st["prepared_by"] if "prepared_by" in keys else None) if st["reconciled_at"] else None}
+
+
+def reopens(con, statement_id):
+    """The times a statement's sign-off was reopened, newest first: [{at, reason, was_at, was_how}]."""
+    if not con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'recon_reopens'").fetchone():
+        return []
+    return [dict(r) for r in con.execute("SELECT at, reason, was_at, was_how FROM recon_reopens WHERE statement_id = ? ORDER BY id DESC",
+                                         (statement_id,))]
+
+
+def statement_code(con, ent, acct, month):
+    """The printed reconciliation statement's code: BR-yymm-<company code>-<last 4 digits of the account number>."""
+    from . import formcode
+    return formcode.code("BR", month, ent["code"], acct["number"], acct["id"])
+
+
+def recon_task(con, ent, month, code=None):
+    """The month's bank reconciliation checklist item (the one shown done by the statements being reconciled), where
+    the signed statement is filed as a document: {id, title, documents [{id, original_name, uploaded_at}]}, or None.
+    code: one statement's code (BR-...): only the documents filed for it (their name starts with it; the page names the
+    signed copy so when it is uploaded), as the item is shared by every account of the company."""
+    t = None
+    if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'checklist_items'").fetchone():
+        t = con.execute("""SELECT t.* FROM tasks t JOIN checklist_items ci ON ci.entity_id = t.entity_id AND ci.code = t.code
+                           WHERE t.entity_id = ? AND t.month = ? AND ci.completion = 'reconciled' ORDER BY t.id LIMIT 1""",
+                        (ent["id"], month)).fetchone()
+    t = t or con.execute("SELECT * FROM tasks WHERE entity_id = ? AND month = ? AND code = 'recon'", (ent["id"], month)).fetchone()
+    if not t:
+        return None
+    docs = [dict(d) for d in con.execute("""SELECT id, original_name, uploaded_at FROM documents WHERE task_id = ? AND replaced_by IS NULL
+                                            AND removed_at IS NULL ORDER BY id""", (t["id"],))]
+    if code:
+        docs = [d for d in docs if d["original_name"].upper().startswith(code.upper())]
+    return {"id": t["id"], "title": t["title"], "documents": docs}
+
+
+def _gl_or_none(con, acct):
+    """The bank account's GL code (bank_gl_code), or None on records not updated to update 26 (no GL codes kept)."""
+    from . import ledger
+    return bank_gl_code(con, acct) if ledger.ready(con) else None
+
+
 def month_summary(con, ent, acct, month):
     """The panel of a month: statement figures, book against bank, line counts, the reconciliation statement and
     whether it can be signed off. statement is None while not imported (the books' side is still shown)."""
@@ -650,7 +849,8 @@ def month_summary(con, ent, acct, month):
     changed = _changed(con, ent, acct, month, st, book)
     signed = _signed(st, book, changed)
     status = _status(st, counts, book, signed)
-    books_only, bank_only, differ = _lists(con, ent, acct, month, st, mv)
+    pairs = no_money_pairs(con, ent, acct, month, mv)
+    books_only, bank_only, differ = _lists(con, ent, acct, month, st, mv, pairs)
     diff = _difference(st, book)
     n, nw, g = mv.get("listing_docs") or 0, mv.get("newer_docs") or 0, mv.get("gone_docs") or 0
     notes = []
@@ -677,9 +877,17 @@ def month_summary(con, ent, acct, month):
            "reconciliation": None, "reconciled_at": None, "reconciled_how": None, "reconciled_note": None,
            "can_sign": False, "why_not": ["the statement isn't imported yet"],
            "listing_docs": n, "gone_docs": g, "listing_note": listing_note, "sql_check": sql_check(con, ent, acct, month, book),
-           "book_changed": changed if signed else None, "can_reconfirm": False, "reconfirm_why": None}
+           "book_changed": changed if signed else None, "can_reconfirm": False, "reconfirm_why": None,
+           "pairs": pairs, "short_lines": [], "locked": False, "locked_at": None, "locked_how": None, "sign_note": [],
+           "prepared_by": None, "free_note": None, "reopens": reopens(con, st["id"]) if st else [],
+           "statement_code": statement_code(con, ent, acct, month),
+           "recon_task": recon_task(con, ent, month, statement_code(con, ent, acct, month)),
+           "source_text": "SQL cash book" if mv["source"] == "sql" else "payments recorded here",
+           "bank_gl": _gl_or_none(con, acct) if mv["source"] == "sql" else None}
     if not st:
         return out
+    out.update(_lock_fields(st))
+    out["short_lines"] = short_lines(con, st)
     lines = con.execute("SELECT amount FROM statement_lines WHERE statement_id = ?", (st["id"],)).fetchall()
     out["statement"] = {"id": st["id"], "opening": st["opening"], "closing": st["closing"], "document_id": st["document_id"],
                         "money_in": _r(sum(l["amount"] for l in lines if l["amount"] > 0)),
@@ -691,8 +899,8 @@ def month_summary(con, ent, acct, month):
         # Confirming again keeps the sign-off, so it is offered only while the new figures still agree with the bank.
         ok = diff is not None and abs(diff) <= TOL
         out["can_reconfirm"] = ok
-        out["reconfirm_why"] = None if ok else (f"The new book closing differs from the bank by {_money(diff, acct['currency'])}: undo the "
-                                                "sign-off and review the month." if diff is not None else "The book closing can't be worked out.")
+        out["reconfirm_why"] = None if ok else (f"The new book closing differs from the bank by {_money(diff, acct['currency'])}: reopen "
+                                                "the month and review it." if diff is not None else "The book closing can't be worked out.")
     if book["state"] == "ok" and diff is not None:
         brought = _r(st["opening"] - book["opening"])
         b_out = _r(-sum(i["amount"] for i in books_only if i["amount"] < 0))
@@ -701,10 +909,10 @@ def month_summary(con, ent, acct, month):
         d_net = _r(sum(i["amount"] for i in differ))
         out["reconciliation"] = {"brought_forward": brought, "books_out": b_out, "books_in": b_in, "bank_net": x_net,
                                  "differ": d_net, "other": _r(diff - brought - b_out + b_in - x_net - d_net)}
-    left = why_not(con, ent, acct, month, st, counts, book)
-    out["why_not"], out["can_sign"] = left, not left
+    left = why_not(con, ent, acct, month, st, counts, dict(book, movements=mv), pairs)
+    out["why_not"], out["can_sign"] = left, not left and not out["locked"]
     # Before tracking: the statement adding up and (the books agreeing, or a note), the person's tick is asked for on top.
-    out["can_sign_before_tracking"] = out["before_tracking"] and out["statement"]["adds_up"]
+    out["can_sign_before_tracking"] = out["before_tracking"] and out["statement"]["adds_up"] and not out["locked"]
     out["book_matches"] = diff is not None and abs(diff) <= TOL
     return out
 
@@ -717,6 +925,8 @@ def date_gap(con, line, payment_id):
     have no date of their own for it (a date that came from a bank line is the bank's)."""
     if not payment_id:
         return 0, None, None
+    if "id" in line.keys() and con.execute(f"SELECT COUNT(*) FROM {db.line_links(con)} WHERE line_id = ?", (line["id"],)).fetchone()[0] > 1:
+        return 0, None, None  # a line paying several payments keeps each one's own date
     d = date.fromisoformat(line["txn_date"])
     vs = [r["doc_date"] for r in con.execute(
         "SELECT doc_date FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')", (payment_id,))]
@@ -737,6 +947,8 @@ def review(con, ent, st):
     acct = _acct(con, st["account_id"])
     summary = month_summary(con, ent, acct, st["month"])
     sugg = statements.suggest(con, ent["id"], st["id"])
+    links = _links_of(con, st)
+    short = {x["line_id"]: x for x in short_lines(con, st)}
     rows = []
     for l in con.execute("SELECT * FROM statement_lines WHERE statement_id = ? ORDER BY line_no", (st["id"],)).fetchall():
         pid = l["payment_id"]
@@ -744,19 +956,29 @@ def review(con, ent, st):
                "balance": l["balance"], "status": l["status"], "note": l["note"], "confirmed_at": l["confirmed_at"],
                "state": "matched" if pid else "explained" if l["status"] == "no_docs" else "open",
                "payment_id": pid, "payment": None, "payment_desc": None, "vouchers": [], "suggestions": sugg.get(l["id"], []),
-               "gap_days": 0, "book_date": None, "book_date_kind": None, "needs_date_tick": False}
+               "gap_days": 0, "book_date": None, "book_date_kind": None, "needs_date_tick": False, "group": None, "short": None}
+        its = links.get(l["id"]) or []
+        if len(its) > 1 or l["id"] in short:
+            # One line paying several payments (a bulk transfer): each with the part of the line it stands for (or one
+            # left with its part when the others were taken off: the line is short until it is linked again).
+            row["group"] = [dict(con.execute("SELECT id, description, month, amount, currency, direction FROM payments WHERE id = ?",
+                                             (p_id,)).fetchone(), part=_r(part)) for p_id, part in its]
+            row["short"] = short.get(l["id"])
         if pid:
             p = con.execute("SELECT id, description, month, amount, currency, paid_date, direction FROM payments WHERE id = ?", (pid,)).fetchone()
             row["payment"], row["payment_desc"] = dict(p), p["description"]
+            if row["group"]:
+                row["payment_desc"] = f"Linked to {_pl(len(row['group']), 'payment')}"
             row["vouchers"] = [dict(r) for r in con.execute(
                 """SELECT doc_no, doc_date, doc_type FROM sql_entries WHERE payment_id = ? AND COALESCE(kind, 'payment') IN ('payment', 'journal')
                    ORDER BY doc_date""", (pid,))]
-            row["gap_days"], row["book_date"], row["book_date_kind"] = date_gap(con, l, pid)
-            row["needs_date_tick"] = bool(row["gap_days"]) and not l["confirmed_at"]  # a confirmed line had its tick then
+            if not row["group"]:  # a line paying several payments has no one date to keep (it is linked from the dialog)
+                row["gap_days"], row["book_date"], row["book_date_kind"] = date_gap(con, l, pid)
+                row["needs_date_tick"] = bool(row["gap_days"]) and not l["confirmed_at"]  # a confirmed line had its tick then
         rows.append(row)
     pays = [dict(p) for p in con.execute(
-        """SELECT p.id, p.month, p.description, p.amount, p.currency, p.direction, p.due_date, p.paid_date,
-                  (SELECT SUM(ABS(s.amount)) FROM statement_lines s WHERE s.payment_id = p.id) AS linked,
+        f"""SELECT p.id, p.month, p.description, p.amount, p.currency, p.direction, p.due_date, p.paid_date,
+                  (SELECT SUM(ABS(s.amount)) FROM {db.line_links(con)} s WHERE s.payment_id = p.id) AS linked,
                   CASE WHEN p.paid_source IN ('bank', 'sql') THEN NULL ELSE p.paid_date END AS typed_date
            FROM payments p WHERE p.account_id = ? AND p.month BETWEEN ? AND ? ORDER BY p.due_date, p.id""",
         (st["account_id"], db.shift_month(st["month"], -1), st["month"]))]
@@ -845,7 +1067,8 @@ def _linked_amounts(con, parts):
     ids = list(parts)
     for i in range(0, len(ids), 500):
         chunk = ids[i:i + 500]
-        for r in con.execute(f"SELECT payment_id, amount FROM statement_lines WHERE payment_id IN ({','.join('?' * len(chunk))}) ORDER BY id", chunk):
+        for r in con.execute(f"SELECT payment_id, amount FROM {db.line_links(con)} WHERE payment_id IN ({','.join('?' * len(chunk))}) "
+                             "ORDER BY line_id", chunk):
             out.setdefault(r["payment_id"], []).append(r["amount"])
     return out
 
@@ -883,10 +1106,474 @@ def _lines_of(con, st, ids):
     return [found[i] for i in dict.fromkeys(ids)]
 
 
-def line_changed(con, line_ids, keep_before_tracking=False):
-    """A bank line's link or explanation changed or was taken off: its confirmation goes, and the sign-off of its
-    statement with it (logged when either was there). keep_before_tracking: a statement signed off before tracking
-    keeps its sign-off (a payment moved to another account: its books are not reviewed here, as recheck says)."""
+# ---------- the lock: a signed-off month ----------
+
+class Locked(ReconError):
+    """A change refused because it would change a month that is signed off (locked)."""
+
+
+def lock_words(st, what):
+    return (f"{st['label']} {db.month_label(st['month'])} is marked reconciled and locked, so {what}. "
+            "Reopen the month on Bank and reconciliation first (it asks for a reason).")
+
+
+def refuse_locked(con, statement_ids, what="its bank lines can't change"):
+    """Refuses (Locked) when any of these statements is signed off: a signed-off month is locked until it is reopened."""
+    ids = sorted({int(i) for i in statement_ids if i})
+    for sid in ids:
+        st = con.execute("SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.id = ?", (sid,)).fetchone()
+        if st and st["reconciled_at"]:
+            raise Locked(lock_words(st, what))
+
+
+def refuse_locked_lines(con, line_ids, what="its bank lines can't be linked, explained, confirmed or undone"):
+    """Refuses (Locked) a change to bank lines of a signed-off month."""
+    ids = [int(i) for i in line_ids if i]
+    if not ids:
+        return
+    sids = {r[0] for r in con.execute(f"SELECT DISTINCT statement_id FROM statement_lines WHERE id IN ({','.join('?' * len(ids))})", ids)}
+    refuse_locked(con, sids, what)
+
+
+def is_locked(st):
+    return bool(st and st["reconciled_at"])
+
+
+def book_source(con, ent, acct):
+    """'sql' when the account's books are the company's SQL cash book, else 'payments' (the payments recorded here)."""
+    return "sql" if ent["uses_sql"] and acct["id"] == _primary(con, ent) else "payments"
+
+
+BANK_FIELDS = ("account_id", "paid_date", "amount", "direction", "currency")
+
+
+def _same(a, b):
+    if isinstance(a, (int, float)) and isinstance(b, (int, float)) and not isinstance(a, bool):
+        return abs(float(a) - float(b)) < 0.005
+    return (a if a not in ("", None) else None) == (b if b not in ("", None) else None)
+
+
+def carried_signed(con, acct_id, month):
+    """The statements of later months of the account that are signed off and whose books carry on from this month's
+    closing (the account's books have an opening at or before the month, and none is typed in between): a change to
+    this month's books changes their opening. Their ids."""
+    anchors = sorted(r[0] for r in con.execute("SELECT month FROM book_openings WHERE account_id = ?", (acct_id,)))
+    if not any(a <= month for a in anchors):
+        return []  # no books run through this month, so nothing carries on from it
+    nxt = next((a for a in anchors if a > month), None)
+    return [r[0] for r in con.execute("""SELECT id FROM statements WHERE account_id = ? AND month > ? AND (? IS NULL OR month < ?)
+                                         AND reconciled_at IS NOT NULL ORDER BY month""", (acct_id, month, nxt, nxt))]
+
+
+def book_month_locked(con, acct_id, month):
+    """The signed-off statements a change to the account's books in this month would change: the month's own, and the
+    later ones carrying on from it. Their ids (empty when none)."""
+    st = _stmt(con, acct_id, month)
+    return ([st["id"]] if st and st["reconciled_at"] else []) + carried_signed(con, acct_id, month)
+
+
+def signed_figures(con, scope=None):
+    """What every signed-off statement's book side is now, for a change that isn't to one payment or line (Setup's bank
+    accounts, the first month tracked, a book opening) to compare after: {statement id: (book source, before tracking,
+    book state, opening, in, out, closing)}, whatever the book source (an SQL cash book's opening too). scope: {account
+    id: the earliest month}, only those accounts' statements from that month on (None: every one)."""
+    out = {}
+    rows = con.execute("""SELECT s.id, s.month, s.account_id FROM statements s WHERE s.reconciled_at IS NOT NULL
+                          ORDER BY s.account_id, s.month""").fetchall()
+    by = {}
+    for r in rows:
+        if scope is None or (r["account_id"] in scope and r["month"] >= scope[r["account_id"]]):
+            by.setdefault(r["account_id"], []).append(r)
+    for aid, sts in by.items():
+        a = _acct(con, aid)
+        ent = _ent(con, a["entity_id"]) if a else None
+        if not a or not ent:
+            continue
+        table = book_table(con, ent, a, sts[-1]["month"])
+        for st in sts:
+            b = table.get(st["month"]) or {"state": "needs_opening"}
+            src = book_source(con, ent, a)
+            # before tracking matters to the SQL cash book only (its receipts and payments count by listing amounts then)
+            out[st["id"]] = (src, src == "sql" and bool(db.before_tracking(ent, st["month"])), b["state"],
+                             b.get("opening"), b.get("in"), b.get("out"), b.get("closing"))
+    return out
+
+
+# ---------- the central guard: a signed-off month's figures never change ----------
+
+# The tables whose rows the guard reads the audit trail of, to find the accounts a transaction touched.
+GUARD_TBLS = ("payments", "statement_lines", "statement_line_payments", "statements", "book_openings", "accounts", "entities",
+              "recon_pairs")
+# A payment's columns the books read: a change to any other (notes, a reference) touches no book.
+_PAY_KEYS = ("id", "entity_id", "account_id", "paid_date", "amount", "direction", "currency")
+_ALL = "0000-00"  # every month of the account
+
+
+def _touched(con, since):
+    """The accounts the transaction in progress wrote something their books or lines depend on, read from the audit
+    trail's rows after since: {account id: the earliest month touched (_ALL for every month)}. A payment touches the
+    account it is on, before and after (or, with none, the company's accounts in its currency) from its paid month; a
+    line or link its statement's account from the earlier of its date and its statement's month; a statement, book
+    opening or pair its account from its month; a change to an account or a company every account of that company.
+    None when the trail isn't kept here (old records): then every account counts."""
+    if not getattr(con, "audited", lambda: False)() or not con.execute(
+            "SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'audit\\_%\\_i' ESCAPE '\\'").fetchone():
+        return None
+    # Worked out once per transaction and carried on from the last row read (a bulk step asks again after each item):
+    # started afresh when the transaction is another, or rows read before may be gone. A rollback to a savepoint takes
+    # rows back and their ids are used again, so rows at or below the last id read could be new ones: the connection's
+    # rollbacks are watched (_watch_rollbacks), and the last row read must still be the very same row (its fingerprint:
+    # id, time, table, row, change), or everything from the transaction's start is read again.
+    since = since or 0
+    _watch_rollbacks(con)
+    top = con.execute("SELECT COALESCE(MAX(id), 0) FROM audit_row").fetchone()[0]
+    cache = getattr(con, "_touch_cache", None)
+    if (not cache or cache["since"] != since or top < cache["last"]
+            or cache["last"] > since and _row_print(con, cache["last"]) != cache["print"]):
+        cache = {"since": since, "last": since, "print": None, "out": {}, "gone": {}, "lines": {}}
+    out, gone, lines = cache["out"], cache["gone"], cache["lines"]
+
+    def add(aid, month):
+        if aid is None:
+            return
+        month = month or _ALL
+        out[aid] = min(out.get(aid, "9999-99"), month)
+
+    def company(eid, currency=None):
+        for r in con.execute("SELECT id FROM accounts WHERE entity_id = ? AND (? IS NULL OR currency = ?)", (eid, currency, currency)):
+            add(r[0], _ALL if currency is None else None)
+
+    rows = [(r["tbl"], *(json.loads(x) if x else {} for x in (r["before"], r["after"]))) for r in con.execute(
+        f"SELECT tbl, before, after FROM audit_row WHERE id > ? AND id <= ? AND op IN ('insert', 'update', 'delete') "
+        f"AND tbl IN ({','.join('?' * len(GUARD_TBLS))}) ORDER BY id", (cache["last"], top, *GUARD_TBLS))]
+    # Statements and lines as the transaction saw them, so a line of a statement deleted with it (or a link of a line
+    # deleted) is still placed: their before images.
+    for t, b, a in rows:
+        for x in (b, a):
+            if x and x.get("id") and t == "statements":
+                gone[x["id"]] = (x.get("account_id"), x.get("month"))
+            if x and x.get("id") and t == "statement_lines":
+                lines[x["id"]] = (x.get("statement_id"), x.get("txn_date"))
+
+    def statement(sid, txn=None):
+        st = con.execute("SELECT account_id, month FROM statements WHERE id = ?", (sid,)).fetchone() if sid else None
+        acct, month = (st["account_id"], st["month"]) if st else gone.get(sid, (None, None))
+        if acct:
+            add(acct, min(month or "9999-99", (txn or month or "9999-99")[:7]))
+
+    for t, b, a in rows:
+        imgs = [x for x in (b, a) if x]
+        if t == "payments":
+            if b and a and all(b.get(k) == a.get(k) for k in _PAY_KEYS):
+                continue
+            for x in imgs:
+                if not x.get("paid_date"):
+                    continue
+                if x.get("account_id"):
+                    add(x["account_id"], x["paid_date"][:7])
+                elif x.get("entity_id"):
+                    for acc in con.execute("SELECT id FROM accounts WHERE entity_id = ? AND currency = ?", (x["entity_id"], x.get("currency") or "MYR")):
+                        add(acc[0], x["paid_date"][:7])
+        elif t == "statement_lines":
+            for x in imgs:
+                statement(x.get("statement_id"), x.get("txn_date"))
+        elif t == "statement_line_payments":
+            for x in imgs:
+                l = con.execute("SELECT statement_id, txn_date FROM statement_lines WHERE id = ?", (x.get("line_id"),)).fetchone()
+                sid, txn = (l["statement_id"], l["txn_date"]) if l else lines.get(x.get("line_id"), (None, None))
+                statement(sid, txn)
+        elif t in ("statements", "book_openings", "recon_pairs"):
+            for x in imgs:
+                add(x.get("account_id"), x.get("month"))
+        elif t == "accounts":
+            for x in imgs:
+                add(x.get("id"), _ALL)
+                if x.get("entity_id"):
+                    company(x["entity_id"])
+        elif t == "entities":
+            for x in imgs:
+                if x.get("id"):
+                    company(x["id"])
+    cache["last"], cache["print"] = top, (_row_print(con, top) if top > since else None)
+    try:
+        con._touch_cache = cache
+    except AttributeError:
+        pass
+    return dict(out)
+
+
+def _row_print(con, row_id):
+    """What makes one audit row that very row, to tell it from a row written with its id after a rollback."""
+    r = con.execute("SELECT id, at, tbl, row_key, op, before, after FROM audit_row WHERE id = ?", (row_id,)).fetchone()
+    return tuple(r) if r else None
+
+
+def _watch_rollbacks(con):
+    """Forgets what the guard read on this connection whenever it runs a ROLLBACK, of the whole transaction or to a
+    savepoint, however it is run (a cursor, executemany, plain SQL): SQLite's statement trace sees every one."""
+    if getattr(con, "_rollback_watch", False):
+        return
+    ref = weakref.ref(con)
+
+    def seen(sql):
+        if sql and sql.lstrip()[:8].upper() == "ROLLBACK":
+            c = ref()
+            if c is not None:
+                c._touch_cache = None
+    try:
+        con.set_trace_callback(seen)
+        con._rollback_watch = True
+    except (AttributeError, sqlite3.ProgrammingError):  # a plain or closed connection: the fingerprint still checks
+        pass
+
+
+def guard_reset(con):
+    """After a ROLLBACK TO: the rows the guard read since may be gone, and their ids used again; it reads afresh."""
+    try:
+        con._touch_cache = None
+    except AttributeError:
+        pass
+
+def guard_figures(con, scope=None):
+    """What a signed-off statement holds, for the guard to compare: {statement id: (reconciled_at, figures)}, for the
+    accounts in scope ({account id: the earliest month}: only their statements from that month on; None: every one).
+    figures: the book source, before tracking (for an SQL cash book, whose receipts and payments count by listing
+    amounts then), for books kept here the book state, opening, in, out, closing and every entry the month's books count
+    with its amount (an SQL cash book's figures move with SQL itself, asked to be confirmed again, so they aren't held
+    here), and on both every line (its payment, status, note, confirmation) and every link of a line to a payment."""
+    out = {}
+    if scope is not None and not scope:
+        return out
+    rows = con.execute("SELECT id, month, account_id, reconciled_at FROM statements WHERE reconciled_at IS NOT NULL "
+                       "ORDER BY account_id, month").fetchall()
+    by = {}
+    for r in rows:
+        if scope is None or (r["account_id"] in scope and r["month"] >= scope[r["account_id"]]):
+            by.setdefault(r["account_id"], []).append(r)
+    links = db.line_links(con)
+    for aid, sts in by.items():
+        a = _acct(con, aid)
+        ent = _ent(con, a["entity_id"]) if a else None
+        if not a or not ent:
+            continue
+        src = book_source(con, ent, a)
+        table = book_table(con, ent, a, sts[-1]["month"]) if src == "payments" else {}
+        for st in sts:
+            b = table.get(st["month"]) or {"state": "needs_opening"}
+            fig = (src, src == "sql" and bool(db.before_tracking(ent, st["month"])))
+            if src == "payments":
+                fig += (b["state"], b.get("opening"), b.get("in"), b.get("out"), b.get("closing"),
+                        tuple(sorted((i["kind"], i["id"], i["amount"]) for i in (b.get("movements") or {}).get("items", []))))
+            fig += (tuple(tuple(x) for x in con.execute(
+                        "SELECT id, payment_id, status, COALESCE(note, ''), confirmed_at IS NOT NULL FROM statement_lines "
+                        "WHERE statement_id = ? ORDER BY id", (st["id"],))),
+                    tuple(tuple(x) for x in con.execute(
+                        f"SELECT line_id, payment_id, amount FROM {links} WHERE statement_id = ? ORDER BY line_id, payment_id", (st["id"],))))
+            out[st["id"]] = (st["reconciled_at"], fig)
+    return out
+
+
+class _Guard:
+    """The backstop of the lock, at the commit every write of a request goes through (audit.Connection): a statement
+    signed off before the transaction and still signed off with the same sign-off after it must hold exactly the same
+    figures. A sign-off or a reopen changes the sign-off itself, so it is never caught; pinning payments to the account
+    that already counted them moves no figure. Anything else that would move one is refused, the whole transaction
+    rolled back, whatever route it came from. Only the accounts the transaction touched are worked out (_touched, from
+    the audit trail, so a write through a cursor or any statement form is seen too), each from the earliest month
+    touched; "before" is read from the records as last committed, through a read-only connection."""
+
+    def check(self, con):
+        hit = _guard_hit(con)
+        if hit:
+            raise Locked(lock_words(hit, "this change can't be saved: it would change the figures of that month"))
+
+
+GUARD = _Guard()
+
+
+def _committed():
+    """A read-only connection to records.db as last committed (the transaction in progress isn't seen)."""
+    import sqlite3
+    from pathlib import Path
+    from .config import DB_PATH
+    r = sqlite3.connect(f"file:{Path(DB_PATH).as_posix()}?mode=ro", uri=True, timeout=5)
+    r.row_factory = sqlite3.Row
+    return r
+
+
+def _guard_hit(con):
+    """The first signed-off statement (by month) of the accounts the transaction touched whose figures differ from the
+    records as last committed, as a row with the account's label; or None."""
+    import sqlite3
+    scope = _touched(con, getattr(con, "_mark", 0))
+    if scope is not None and not scope:
+        return None
+    # Nothing signed off among those statements (as the transaction sees them, and no statement's sign-off touched):
+    # nothing to compare.
+    stmts_touched = con.execute("SELECT 1 FROM audit_row WHERE id > ? AND tbl = 'statements' LIMIT 1", (getattr(con, "_mark", 0),)).fetchone()
+    if scope is not None and not stmts_touched and not any(r["month"] >= scope[r["account_id"]] for r in con.execute(
+            f"SELECT account_id, month FROM statements WHERE reconciled_at IS NOT NULL AND account_id IN ({','.join('?' * len(scope))})",
+            tuple(scope))):
+        return None
+    try:
+        r = _committed()
+        try:
+            before = guard_figures(r, scope)
+        finally:
+            r.close()
+    except sqlite3.OperationalError as ex:
+        # The records as last committed can't be read just now (another program holds them): the guard never fails a
+        # change for its own sake. The per-route checks of the lock still applied; this is said in the activity log.
+        db.log(con, f"The bank reconciliation lock's final check couldn't read the records ({ex}); the change was saved on "
+                    "the checks made along the way")
+        return None
+    if not before:
+        return None
+    now = guard_figures(con, scope)
+    # A sign-off changes only by sign_off, sign_off_before_tracking and reopen (they name the statement on the
+    # connection: _allow); any other way a signed-off month loses or changes its sign-off is refused like a figure.
+    # Allowed: a statement whose sign-off is now exactly what the app's own sign-off or reopen wrote (_allow); a later
+    # write over it in the same transaction makes it another change, refused like any other.
+    allowed = getattr(con, "_recon_signoffs", None) or {}
+    hit = [sid for sid, (at, fig) in before.items()
+           if (sid not in now or now[sid][0] != at) and not (sid in allowed and (now[sid][0] if sid in now else None) == allowed[sid])
+           or sid in now and now[sid][0] == at and now[sid][1] != fig]
+    if not hit:
+        return None
+    return con.execute("""SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id
+                          WHERE s.id IN (SELECT value FROM json_each(?)) ORDER BY s.month LIMIT 1""", (json.dumps(hit),)).fetchone()
+
+
+def _allow(con, statement_id):
+    """Says on the connection, right after the app's own sign-off or reopen wrote it, that this statement's sign-off is
+    now this value (its reconciled_at, None once reopened): the guard lets exactly that through, for this transaction
+    (audit.Connection forgets it at the commit or a rollback)."""
+    at = con.execute("SELECT reconciled_at FROM statements WHERE id = ?", (statement_id,)).fetchone()
+    try:
+        con._recon_signoffs = {**(getattr(con, "_recon_signoffs", None) or {}), statement_id: at[0] if at else None}
+    except AttributeError:  # a plain sqlite3 connection (no guard on it either)
+        pass
+
+
+def guard_ok(con):
+    """For a bulk step tried inside a savepoint (one match, one link of an import): False when what the transaction did
+    so far changes a signed-off month's figures, so the caller undoes just that step. True on a connection without the
+    guard."""
+    return getattr(con, "guard", None) is None or _guard_hit(con) is None
+
+
+def sole_map(con):
+    """{(company id, currency): the company's one account in that currency (sole_account), or None} for every company
+    and currency it has accounts in."""
+    out = {}
+    for r in con.execute("SELECT entity_id, currency, COUNT(*) AS n, MIN(id) AS id FROM accounts GROUP BY entity_id, currency"):
+        out[(r["entity_id"], r["currency"])] = r["id"] if r["n"] == 1 else None
+    return out
+
+
+def pin_no_account(con, before_sole, before_ids):
+    """After a Setup change to bank accounts: the payments with no account of each company and currency whose one
+    account (before_sole) no longer counts them (another account in that currency was added, put back or switched to
+    it) are set to that account, where their books already counted them, so no book figure moves. Logged. before_ids:
+    the account ids there were before, to name the new ones. Returns how many payments were set."""
+    now = sole_map(con)
+    total = 0
+    for (eid, cur), acct_id in before_sole.items():
+        if not acct_id or now.get((eid, cur)) == acct_id or not _acct(con, acct_id):
+            continue
+        n = con.execute("UPDATE payments SET account_id = ? WHERE entity_id = ? AND account_id IS NULL AND COALESCE(currency, 'MYR') = ?",
+                        (acct_id, eid, cur)).rowcount
+        if n:
+            new = [r["label"] for r in con.execute(
+                f"""SELECT label FROM accounts WHERE entity_id = ? AND currency = ? AND id NOT IN ({','.join('?' * len(before_ids)) or 'NULL'})
+                    ORDER BY id""", (eid, cur, *before_ids))]
+            label = _acct(con, acct_id)["label"]
+            db.log(con, f"{n} payment{'s' if n > 1 else ''} with no bank account {'were' if n > 1 else 'was'} set to {label}, the account "
+                        f"their books already counted them in, before {' and '.join(new) if new else 'the bank accounts were changed'}"
+                        f"{' was added' if new else ''}")
+            total += n
+    return total
+
+
+def refuse_figures_changed(con, before, what):
+    """Refuses (Locked) when a signed-off statement's book side (signed_figures) is no longer what it was."""
+    now = signed_figures(con)
+    hit = sorted((sid for sid in before if now.get(sid) != before[sid]),
+                 key=lambda sid: con.execute("SELECT month FROM statements WHERE id = ?", (sid,)).fetchone()[0])
+    if hit:
+        st = con.execute("SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.id = ?", (hit[0],)).fetchone()
+        raise Locked(lock_words(st, what))
+
+
+def refuse_carried(con, acct_id, month, what):
+    """Refuses (Locked) a change to an account's books in a month when a later signed-off month carries on from it."""
+    refuse_locked(con, carried_signed(con, acct_id, month), what)
+
+
+def payment_lock(con, before, after, what=None):
+    """Refuses (Locked) a change to a payment's bank fields (BANK_FIELDS: its account, paid date, amount, direction,
+    currency) that would change a signed-off month: before and after are the payment as it is and as it would be (dicts
+    or rows with entity_id and those fields; None for a payment not there yet or being removed). Locked are: the months
+    whose statement holds a line linked to it, and the months whose books count it (the payments recorded here, by its
+    account, or the company's one account in its currency, and paid date, before and after). A payment moved to
+    another account, or taken off its account, also refuses when either account's statement is signed off for a month
+    its paid date falls in, whatever its books are (the move frees and finds its lines, as _account_moved does)."""
+    before = dict(before) if before is not None else None
+    after = dict(after) if after is not None else None
+    if before and after and all(_same(before.get(k), after.get(k)) for k in BANK_FIELDS):
+        return
+    moved = before and after and not _same(before.get("account_id"), after.get("account_id"))
+    only_moved = moved and all(_same(before.get(k), after.get(k)) for k in BANK_FIELDS if k != "account_id")
+    new_id = after.get("account_id") if after else None
+    if only_moved and not new_id and before.get("account_id") \
+            and sole_account(con, before["entity_id"], before.get("currency") or "MYR") == before["account_id"]:
+        return  # taken off the company's only account in its currency: its books and bank lines stay as they are
+    sids = set()
+    if before and before.get("id"):
+        linked = con.execute(f"""SELECT DISTINCT k.statement_id, s.account_id FROM {db.line_links(con)} k JOIN statements s ON s.id = k.statement_id
+                                 WHERE k.payment_id = ?""", (before["id"],)).fetchall()
+        # Only moved: the lines freed are those on other accounts than the new one (taken off: on the old account).
+        sids |= {r[0] for r in linked if not only_moved or (r[1] != new_id if new_id else r[1] == before.get("account_id"))}
+    # The account whose books count a state: its own, or for one with no account the company's one account in its
+    # currency. Put on that account from none (or the other way) it is counted in the same books: no book changes.
+    eff = lambda x: x.get("account_id") or sole_account(con, x["entity_id"], x.get("currency") or "MYR")
+    if moved and _same(eff(before), eff(after)):
+        moved = False
+        if only_moved:
+            refuse_locked(con, sids, what or f"the bank account of {before.get('description') or 'this payment'} can't change")
+            return
+    # A payment with no amount isn't in any month's books (movements counts amounts only), so its paid date moves none.
+    states = [x for x in (before, after) if x and x.get("amount") is not None]
+    months = [x["paid_date"][:7] for x in states if x.get("paid_date")]
+    carried = []
+    for x in states:
+        acct_id = x.get("account_id") or sole_account(con, x["entity_id"], x.get("currency") or "MYR")
+        if not acct_id:
+            continue
+        a = _acct(con, acct_id)
+        if not a:
+            continue
+        mine = months if moved else ([x["paid_date"][:7]] if x.get("paid_date") else [])
+        if book_source(con, _ent(con, a["entity_id"]), a) != "payments":
+            continue  # the SQL cash book's figures come from SQL, not from the payment (its lines are checked above)
+        books_here = True
+        for m in mine:
+            st = _stmt(con, acct_id, m)
+            if st:
+                sids.add(st["id"])
+            if books_here:  # a later month carrying on from this one's closing changes with it
+                carried.extend((m, sid) for sid in carried_signed(con, acct_id, m))
+    desc = (before or after or {}).get("description") or "this payment"
+    refuse_locked(con, sids, what or f"the bank account, paid date and amount of {desc} can't change")
+    for m, sid in carried:
+        refuse_locked(con, [sid], f"{desc} can't change in {db.month_label(m)}, whose closing balance it carries on from")
+
+
+def line_changed(con, line_ids):
+    """A bank line's link or explanation changed or was taken off: its confirmation goes (logged). A signed-off month is
+    locked, so a change to one of its lines is refused before it is made (refuse_locked_lines); a line of one reaching
+    here is refused too, and the caller rolls back."""
+    refuse_locked_lines(con, line_ids)
     done = {}
     for lid in line_ids:
         l = con.execute("SELECT l.id, l.statement_id, l.confirmed_at FROM statement_lines l WHERE l.id = ?", (lid,)).fetchone()
@@ -894,16 +1581,10 @@ def line_changed(con, line_ids, keep_before_tracking=False):
             continue
         if l["confirmed_at"]:
             con.execute("UPDATE statement_lines SET confirmed_at = NULL WHERE id = ?", (lid,))
-            done.setdefault(l["statement_id"], [0, False])[0] += 1
-        done.setdefault(l["statement_id"], [0, False])
-    for sid, (n, _) in done.items():
+            done[l["statement_id"]] = done.get(l["statement_id"], 0) + 1
+    for sid, n in done.items():
         st = con.execute("SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.id = ?", (sid,)).fetchone()
-        if st["reconciled_at"] and not (keep_before_tracking and st["reconciled_how"] == "before tracking"):
-            con.execute(f"UPDATE statements SET reconciled_at = NULL, reconciled_how = NULL, reconciled_note = NULL{_rule_set(con)} WHERE id = ?", (sid,))
-            db.log(con, f"Removed the reconciled sign-off of {_name(st, st['month'])}: a bank line was changed"
-                   + (f" ({n} confirmation{'s' if n > 1 else ''} cleared)" if n else ""))
-        elif n:
-            db.log(con, f"Cleared the confirmation of {n} bank line{'s' if n > 1 else ''} on {_name(st, st['month'])}: changed")
+        db.log(con, f"Cleared the confirmation of {n} bank line{'s' if n > 1 else ''} on {_name(st, st['month'])}: changed")
 
 
 def sole_account(con, entity_id, currency):
@@ -915,18 +1596,16 @@ def sole_account(con, entity_id, currency):
 
 
 def recheck(con, account_ids, months, why):
-    """The books of these accounts changed in these months (a payment moved from one bank account to another): the
-    sign-off of each of their statements for those months goes, so the month is reviewed again (logged, with why). A
-    month signed off before tracking keeps its state: its books are not reviewed here."""
+    """The books of these accounts would change in these months (a payment moved from one bank account to another):
+    refused (Locked) when any of their statements for those months is signed off, as the month is locked. Until slice 4
+    this took the sign-off away; a locked month is now reopened, with a reason, before anything in it changes."""
+    sids = []
     for aid in dict.fromkeys(a for a in account_ids if a):
         for month in sorted(set(m for m in months if m)):
-            st = con.execute("SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id "
-                             "WHERE s.account_id = ? AND s.month = ?", (aid, month)).fetchone()
-            if not st or not st["reconciled_at"] or st["reconciled_how"] == "before tracking":
-                continue
-            con.execute(f"UPDATE statements SET reconciled_at = NULL, reconciled_how = NULL, reconciled_note = NULL{_rule_set(con)} WHERE id = ?",
-                        (st["id"],))
-            db.log(con, f"Removed the reconciled sign-off of {_name(st, month)}: {why}")
+            st = _stmt(con, aid, month)
+            if st:
+                sids.append(st["id"])
+    refuse_locked(con, sids, f"it can't change ({why})")
 
 
 def _confirm(con, l):
@@ -942,6 +1621,7 @@ def _confirm(con, l):
 def confirm_lines(con, st, ids):
     """A person confirms lines that are linked or explained. Returns how many were newly confirmed. A line whose bank date
     differs from the voucher's or payment's is refused: it is confirmed with its tick (apply)."""
+    refuse_locked(con, [st["id"]], "its lines can't be confirmed")
     a = _acct(con, st["account_id"])
     lines = _lines_of(con, st, ids)
     for l in lines:
@@ -958,6 +1638,7 @@ def confirm_lines(con, st, ids):
 def confirm_matched(con, st):
     """Confirm every matched or explained line not confirmed yet, except those whose bank date differs from the voucher's
     or payment's: each of those needs its own tick (apply). Returns (confirmed, left for a date tick)."""
+    refuse_locked(con, [st["id"]], "its lines can't be confirmed")
     todo, skipped = [], 0
     for l in con.execute("SELECT * FROM statement_lines WHERE statement_id = ? AND confirmed_at IS NULL ORDER BY line_no", (st["id"],)):
         if l["payment_id"] or l["status"] != "unmatched":
@@ -974,7 +1655,8 @@ def apply_rows(con, ent, st, rows, checked, change):
     no_docs (with note), or nothing for a line already linked or explained, which is just confirmed. keep_date: the tick
     needed when the bank's date differs from the voucher's or payment's date (the payment keeps that date, the bank's
     doesn't replace it). change(con, line, body) is the endpoint's own way to link, create or explain a line.
-    Returns {linked, created, explained, confirmed}."""
+    Returns {linked, created, explained, confirmed}. A signed-off month is locked: refused."""
+    refuse_locked(con, [st["id"]], "its lines can't be linked, explained, confirmed or undone")
     if not checked:
         raise ReconError("Tick \"I've checked these rows\" first.")
     if not isinstance(rows, list) or not rows:
@@ -1031,8 +1713,11 @@ def apply_rows(con, ent, st, rows, checked, change):
         fresh = con.execute("SELECT * FROM statement_lines WHERE id = ?", (l["id"],)).fetchone()
         gap, when, kind = date_gap(con, fresh, fresh["payment_id"])
         if gap and kind == "voucher":
-            # The tick says keep the voucher's date: linking gave the payment the bank's.
+            # The tick says keep the voucher's date: linking gave the payment the bank's. A paid date that would change
+            # a signed-off month's books is refused (the caller rolls back).
+            was = con.execute("SELECT * FROM payments WHERE id = ?", (fresh["payment_id"],)).fetchone()
             con.execute("UPDATE payments SET paid_date = ?, paid_source = 'sql' WHERE id = ?", (when, fresh["payment_id"]))
+            payment_lock(con, was, con.execute("SELECT * FROM payments WHERE id = ?", (fresh["payment_id"],)).fetchone())
         n["confirmed"] += _confirm(con, fresh)
     db.log(con, f"Applied {len(plan)} row{'s' if len(plan) > 1 else ''} on {_name(a, st['month'])} (checked by a person): "
                 f"{n['linked']} linked, {n['created']} payment{'s' if n['created'] != 1 else ''} created, {n['explained']} explained, "
@@ -1040,25 +1725,144 @@ def apply_rows(con, ent, st, rows, checked, change):
     return n
 
 
-def sign_off(con, ent, st):
-    """Mark the statement reconciled: it adds up, every line is confirmed, and the books agree with the bank."""
+def _has_signoff_cols(con):
+    return "sign_note" in {r[1] for r in con.execute("PRAGMA table_info(statements)")}
+
+
+def _clean_text(v, limit, what):
+    v = (v or "").strip() if isinstance(v, str) or v is None else None
+    if v is None:
+        raise ReconError(f"The {what} couldn't be read.")
+    if len(v) > limit:
+        raise ReconError(f"Keep the {what} to {limit} characters.")
+    return v
+
+
+def sign_note_lines(con, ent, acct, month, s=None):
+    """The note the app writes at sign-off, as the month stands: each confirmed No money moved pair with its reason and
+    amounts, each line explained without documents, and anything left as a reconciling item. A list of sentences."""
+    s = s or month_summary(con, ent, acct, month)
+    st = _stmt(con, acct["id"], month)
+
+    def amt(n):
+        return ("+" if n > 0 else "−") + f"{abs(n):,.2f}"
+    pr = [p for p in s["pairs"] if p["confirmed_at"]]
+    out = ["No money moved: " + (" ".join(
+        " and ".join(f"{d['ref'] or d['description']} {d['description'] if d['ref'] else ''} {amt(d['amount'])}".replace("  ", " ")
+                     for d in p["docs"]) + f", net nil. Reason: {p['reason'].strip().rstrip('.')}." for p in pr) if pr else "none.")]
+    nd = con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND status = 'no_docs' AND payment_id IS NULL ORDER BY line_no""",
+                     (st["id"],)).fetchall() if st else []
+    out.append("Explained without documents: " + ("; ".join(
+        f"{db.short_day(l['txn_date'])} {l['description'].replace(' | ', ' · ')} {amt(l['amount'])}" + (f", {l['note']}" if l["note"] else "")
+        for l in nd) + "." if nd else "none."))
+    left = [f"{db.short_day(x['date'])} {(x.get('ref') + ' ') if x.get('ref') else ''}{x['description']} {amt(x['amount'])}, {x['why'][0].lower() + x['why'][1:]}"
+            for x in s["books_only"]] + [f"{db.short_day(x['date'])} {x['description'].replace(' | ', ' · ')} {amt(x['amount'])}, "
+                                         f"{x['why'][0].lower() + x['why'][1:]}" for x in s["bank_only"] if not x["why"].startswith(("No payment needed", "No documents needed"))]
+    out.append("Reconciling items left: " + ("; ".join(left) + "." if left else "none."))
+    return out
+
+
+def sign_off(con, ent, st, note=None, prepared_by=None):
+    """Mark the statement reconciled: it adds up, every line is confirmed, every No money moved pair is nil and
+    confirmed, and the books agree with the bank. The month is locked from then on. Kept with it: the note the app
+    writes as the month stands (sign_note_lines), the optional free note and the name of who prepared it (declared, not
+    verified)."""
     a = _acct(con, st["account_id"])
+    if st["reconciled_at"]:
+        raise ReconError(f"{_name(a, st['month'])} is already marked reconciled.")
+    note = _clean_text(note, 500, "note")
+    prepared_by = _clean_text(prepared_by, 80, "Prepared by name")
     s = month_summary(con, ent, a, st["month"])
     if not s["can_sign"]:
         raise ReconError("Can't mark it reconciled yet: " + "; ".join(s["why_not"]) + ".")
-    con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'review', reconciled_note = NULL WHERE id = ?", (db.now(), st["id"]))
+    con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'review', reconciled_note = ? WHERE id = ?",
+                (db.now(), note or None, st["id"]))
+    _allow(con, st["id"])  # the app's own sign-off: the lock's guard lets exactly this one through
     if _has_rule(con):  # signed off with receipts and payments counted by their bank lines
         con.execute("UPDATE statements SET book_rule_at = reconciled_at WHERE id = ?", (st["id"],))
+    lines = sign_note_lines(con, ent, a, st["month"], s)
+    if _has_signoff_cols(con):
+        con.execute("UPDATE statements SET sign_note = ?, prepared_by = ? WHERE id = ?", (json.dumps(lines), prepared_by or None, st["id"]))
     db.log(con, f"Marked {_name(a, st['month'])} as reconciled: book closing {_money(s['book']['closing'], a['currency'])} "
-                f"= bank closing {_money(st['closing'], a['currency'])}")
+                f"= bank closing {_money(st['closing'], a['currency'])}. The month is locked"
+                + (f". Prepared by {prepared_by} (declared)" if prepared_by else "") + (f". Note: {note}" if note else "")
+                + ". Sign-off note: " + " ".join(lines))
 
 
-def undo_sign_off(con, st):
+def later_signed(con, acct, month):
+    """The first later month of the account that is signed off and carries on from this month's closing (no book
+    opening typed in between), as its statement row with the account's label; or None. None too when the account's books
+    don't run through this month (no opening at or before it): nothing carries on from it."""
+    if not con.execute("SELECT 1 FROM book_openings WHERE account_id = ? AND month <= ?", (acct["id"], month)).fetchone():
+        return None
+    anchors = {r[0] for r in con.execute("SELECT month FROM book_openings WHERE account_id = ? AND month > ?", (acct["id"], month))}
+    for st in con.execute("SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.account_id = ? AND s.month > ? "
+                          "ORDER BY s.month", (acct["id"], month)).fetchall():
+        if any(month < m <= st["month"] for m in anchors):
+            return None  # its books start afresh from an opening typed in after this month
+        if st["reconciled_at"]:
+            return st
+    return None
+
+
+def reopen(con, ent, st, reason):
+    """Reopen a signed-off month, with a reason (required): the sign-off goes, so the month's lines can change again and
+    it needs the sign-off again. Kept: the reopening and its reason, with the sign-off it undid (its date, how, notes and
+    Prepared by), in recon_reopens and the activity log, and so in the audit trail. Refused while a later month of the
+    account that carries on from this one's closing is signed off: that one is reopened first."""
     a = _acct(con, st["account_id"])
+    reason = _clean_text(reason, 300, "reason")
+    if not reason:
+        raise ReconError("Say why you're reopening this month.")
     if not st["reconciled_at"]:
-        raise ReconError("This month isn't marked as reconciled.")
-    con.execute(f"UPDATE statements SET reconciled_at = NULL, reconciled_how = NULL, reconciled_note = NULL{_rule_set(con)} WHERE id = ?", (st["id"],))
-    db.log(con, f"Undid the reconciled sign-off of {_name(a, st['month'])}")
+        raise ReconError(f"{_name(a, st['month'])} isn't marked as reconciled, so there is nothing to reopen.")
+    later = later_signed(con, a, st["month"])
+    if later:
+        raise ReconError(f"{db.month_label(later['month'])} is marked reconciled and carries on from {db.month_label(st['month']).split(' ')[0]}'s "
+                         f"closing balance, so this month can't be reopened on its own. Reopen {db.month_label(later['month'])} first.")
+    keys = st.keys()
+    was_note = st["sign_note"] if "sign_note" in keys else None
+    was_by = st["prepared_by"] if "prepared_by" in keys else None
+    if con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'recon_reopens'").fetchone():
+        con.execute("""INSERT INTO recon_reopens (statement_id, at, reason, was_at, was_how, was_note, was_sign_note, was_prepared_by)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (st["id"], db.now(), reason, st["reconciled_at"], st["reconciled_how"], st["reconciled_note"], was_note, was_by))
+    extra = ", sign_note = NULL, prepared_by = NULL" if _has_signoff_cols(con) else ""
+    con.execute(f"UPDATE statements SET reconciled_at = NULL, reconciled_how = NULL, reconciled_note = NULL{_rule_set(con)}{extra} WHERE id = ?",
+                (st["id"],))
+    _allow(con, st["id"])  # the app's own reopen: the lock's guard lets exactly this one through
+    old = " ".join(json.loads(was_note)) if was_note else ""
+    db.log(con, f"Reopened {_name(a, st['month'])}: {reason}. It was marked reconciled on {db.day_label(st['reconciled_at'][:10])}"
+                f" ({st['reconciled_how'] or 'review'})" + (f" by {was_by} (declared)" if was_by else "")
+                + (f"; its note: {st['reconciled_note']}" if st["reconciled_note"] else "") + (f"; its sign-off note: {old}" if old else "")
+                + ". It needs the sign-off again")
+
+
+def confirm_pair(con, ent, acct, month, key, reason, on=True):
+    """Confirm (on) or unconfirm a No money moved pair of the month, with its reason (required to confirm; kept with the
+    sign-off). Refused in a locked month, for a pair that isn't there now, and for one that isn't nil."""
+    st = _stmt(con, acct["id"], month)
+    if st:
+        refuse_locked(con, [st["id"]], "its No money moved pairs can't change")
+    if not _has_pairs(con):
+        raise ReconError("The records need update 40 for No money moved pairs. Restart the app.")
+    pair = next((p for p in no_money_pairs(con, ent, acct, month) if p["key"] == key), None)
+    if not pair:
+        raise ReconError("That pair isn't in this month's books any more, so nothing was changed.")
+    reason = _clean_text(reason if reason is not None else pair["reason"], 300, "reason")
+    title = " and ".join(d["ref"] or d["description"] for d in pair["docs"])
+    if on:
+        if not reason:
+            raise ReconError("Give the pair a reason first: it is kept with the sign-off.")
+        if not pair["nil"]:
+            raise ReconError(f"The two entries don't cancel: {_money(abs(pair['net']), acct['currency'])} is left. A pair that isn't nil can't "
+                             "be confirmed, and the remainder stays a difference to explain until the entry is corrected.")
+    con.execute("""INSERT INTO recon_pairs (account_id, month, pair_key, reason, confirmed_at) VALUES (?, ?, ?, ?, ?)
+                   ON CONFLICT (account_id, month, pair_key) DO UPDATE SET reason = excluded.reason, confirmed_at = excluded.confirmed_at""",
+                (acct["id"], month, key, reason or None, db.now() if on else None))
+    db.log(con, (f"Confirmed the No money moved pair {title} on {_name(acct, month)}: {reason}" if on
+                 else f"Took back the confirmation of the No money moved pair {title} on {_name(acct, month)}"))
+    return {"title": title}
 
 
 def confirm_book_change(con, ent, st):
@@ -1082,12 +1886,16 @@ def confirm_book_change(con, ent, st):
                 f"before; in {_money(n['in'], cur)}, out {_money(n['out'], cur)}, closing {_money(n['closing'], cur)} now")
 
 
-def sign_off_before_tracking(con, ent, st, note, checked):
+def sign_off_before_tracking(con, ent, st, note, checked, prepared_by=None):
     """Mark a month before the company's first tracked month as reconciled: the statement adds up, the books agree
-    with the bank or a note says why not, and a person ticks that it was reconciled outside this app."""
+    with the bank or a note says why not, and a person ticks that it was reconciled outside this app. The month is
+    locked from then on, as any month signed off."""
     a = _acct(con, st["account_id"])
+    if st["reconciled_at"]:
+        raise ReconError(f"{_name(a, st['month'])} is already marked reconciled.")
     if not db.before_tracking(ent, st["month"]):
         raise ReconError("Only a month before tracking began can be marked reconciled this way.")
+    prepared_by = _clean_text(prepared_by, 80, "Prepared by name")
     if not checked:
         raise ReconError("Tick that this month was reconciled before tracking began.")
     if not adds_up(con, st):
@@ -1099,7 +1907,11 @@ def sign_off_before_tracking(con, ent, st, note, checked):
         raise ReconError("The books don't agree with the bank here, so say in a short note how it was reconciled.")
     con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'before tracking', reconciled_note = ? WHERE id = ?",
                 (db.now(), note or None, st["id"]))
-    db.log(con, f"Marked {_name(a, st['month'])} as reconciled before tracking" + (f": {note}" if note else ""))
+    _allow(con, st["id"])  # the app's own sign-off before tracking: the lock's guard lets exactly this one through
+    if _has_signoff_cols(con) and prepared_by:
+        con.execute("UPDATE statements SET prepared_by = ? WHERE id = ?", (prepared_by, st["id"]))
+    db.log(con, f"Marked {_name(a, st['month'])} as reconciled before tracking" + (f": {note}" if note else "")
+           + (f". Prepared by {prepared_by} (declared)" if prepared_by else "") + ". The month is locked")
 
 
 def set_book_opening(con, ent, acct, month, amount):
@@ -1117,9 +1929,19 @@ def set_book_opening(con, ent, acct, month, amount):
         raise ReconError("Choose the month the account's books start from: between January 2015 and a year from now.")
     if acct["entity_id"] != ent["id"]:
         raise ReconError("That account isn't this company's.")
+    # The opening changes this month's books and every later month's up to the next opening typed: a signed-off one
+    # among them is locked. One that moves no figure (the same amount again) is saved. The book side is compared
+    # whatever the book source: guard_figures leaves an SQL cash book's figures out (they move with SQL), but a book
+    # opening typed here moves them as well.
+    scope = {acct["id"]: month}  # the account's signed-off months from this one on (this one included)
+    before = signed_figures(con, scope)
     was = con.execute("SELECT amount FROM book_openings WHERE account_id = ? AND month = ?", (acct["id"], month)).fetchone()
     con.execute("INSERT INTO book_openings (account_id, month, amount, set_at) VALUES (?, ?, ?, ?) "
                 "ON CONFLICT (account_id, month) DO UPDATE SET amount = excluded.amount, set_at = excluded.set_at",
                 (acct["id"], month, amount, db.now()))
+    now = signed_figures(con, scope)
+    hit = sorted((con.execute("SELECT month FROM statements WHERE id = ?", (sid,)).fetchone()[0] for sid in before if now.get(sid) != before[sid]))
+    if hit:
+        raise Locked(lock_words({"label": acct["label"], "month": hit[0]}, "a book opening that changes it can't be saved"))
     db.log(con, f"Set the book opening of {acct['label']} for {db.month_label(month)} to {_money(amount, acct['currency'])}"
            + (f" (was {_money(was['amount'], acct['currency'])})" if was else ""))

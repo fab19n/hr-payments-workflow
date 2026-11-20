@@ -30,6 +30,9 @@ TABLE_LABELS = {
     "ledger_lines": ("Account line", "account lines"), "ledger_openings": ("Opening balance", "opening balances"),
     "myinvois_docs": ("MyInvois e-Invoice", "MyInvois e-Invoices"),
     "payroll_checks": ("Payroll check", "payroll checks"),
+    "statement_line_payments": ("Bank line link", "bank line links"),
+    "recon_pairs": ("No money moved pair", "no money moved pairs"),
+    "recon_reopens": ("Month reopened", "months reopened"),
     # events
     "pack": ("Audit pack", "audit packs"), "backup": ("Backup", "backups"), "export": ("Export", "exports"),
     "settings": ("Setting", "settings"), "audit": ("Audit trail", "audit trail notes"), "read": ("Opened file", "opened files"),
@@ -65,6 +68,10 @@ FIELD_LABELS = {
     "from_sql": "Issued by SQL Account", "legal_due_offset": "Legal deadline in", "legal_due_day": "Legal deadline day",
     "system": "Used by the app", "payment_type": "Payment type", "from_month": "From", "to_month": "Until",
     "docs": "Documents", "set_at": "Set",
+    # the bank reconciliation's sign-off, links, pairs and reopenings (update 39 to 41)
+    "line_id": "Bank line", "sign_note": "Sign-off note", "prepared_by": "Prepared by", "pair_key": "Pair",
+    "reason": "Reason", "was_at": "Was reconciled", "was_how": "Was reconciled how", "was_note": "Note it had",
+    "was_sign_note": "Sign-off note it had", "was_prepared_by": "Prepared by then",
     # a payroll workbook check (payrollcheck.save)
     "document_id": "Document", "filename": "File", "checked_at": "Checked", "workbook_month": "Month the workbook is for",
     "to_fix": "To fix before paying", "to_check": "To check", "to_pay_sen": "Total to pay (sen)", "report": "Report",

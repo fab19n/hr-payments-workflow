@@ -326,7 +326,7 @@ check("nor one whose figures didn't change (before tracking)", err["error"].star
 s = summary("2026-12")
 check("a signed-off month whose new figures differ from the bank keeps its sign-off, but can't be confirmed as it is",
       s["status"] == "reconciled" and s["book_changed"]["new"]["closing"] == 53990 and not s["can_reconfirm"]
-      and "undo the sign-off and review the month" in s["reconfirm_why"], (s["status"], s["book_changed"], s["reconfirm_why"]))
+      and "reopen the month and review it" in s["reconfirm_why"], (s["status"], s["book_changed"], s["reconfirm_why"]))  # Reopen month replaced Undo sign-off (slice 4)
 err = j("post", "/api/recon/confirm-book", expect=400, json={"entity_id": EID, "statement_id": S_DEC})
 check("confirming it is refused with the reason", "differs from the bank by" in err["error"]
       and q("SELECT book_rule_at FROM statements WHERE id = ?", (S_DEC,))[0]["book_rule_at"] is None, err)

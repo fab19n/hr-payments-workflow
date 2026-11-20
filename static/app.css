@@ -624,6 +624,61 @@ table.rv-sort th { border-bottom: 0; padding: 0 14px 0 0; }
   .rv-bank { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); padding-top: 8px; order: -1; }
   .rv-bar { gap: 6px 14px; }
 }
+/* Bank and reconciliation (slice 4): the lock, the sign-off note and form, Reopen month, No money moved, the print preview */
+.bk-lock .glyph, .bk-co .glyph, .bk-print .glyph { width: 14px; height: 14px; }
+.pill.bk-lock, .bk-co .pill { display: inline-flex; align-items: center; gap: 5px; }
+.bk-co { gap: 6px 10px; align-items: center; }
+.bk-status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.bk-sign { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.bk-signform { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 10px 14px; }
+.bk-signform textarea { width: 100%; min-height: 56px; resize: vertical; }
+.bk-note { display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.bk-note ul { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.bk-filed { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; font-size: .9rem; }
+.bk-filed span { flex: 1 1 280px; min-width: 0; overflow-wrap: anywhere; }
+.bk-reopened, .bk-locked { display: flex; align-items: flex-start; gap: 10px; }
+.bk-reopened > div, .bk-locked > div { flex: 1 1 260px; min-width: 0; display: grid; gap: 2px; }
+.bk-locked .glyph, .bk-reopened .glyph { width: 20px; height: 20px; flex: none; }
+.bk-chips { gap: 6px; flex-wrap: wrap; }
+.bk-chips .chip { overflow-wrap: anywhere; }
+.bk-short { padding: 8px 12px; }
+.bk-sqlnote { color: var(--ink-2); }
+.bk-pairs { display: grid; gap: 10px; margin-top: 14px; }
+.bk-pair { display: grid; gap: 8px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
+.bk-pair.warn { border-left: 4px solid var(--warn); }
+.bk-pair.bad { border-left: 4px solid var(--bad); }
+.bk-pair.ok { border-color: var(--ok-line); }
+.bk-pair .field input { width: 100%; }
+.bk-pair .pill, .bk-print .pill { display: inline-flex; align-items: center; gap: 4px; }
+.bk-tick { font-weight: 600; gap: 8px; align-items: center; }
+.bk-tick input { width: 17px; height: 17px; accent-color: var(--accent-solid); }
+.bk-run { display: grid; gap: 4px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: .9rem; }
+.bk-run:empty { display: none; }
+.bk-run.warn { border-color: var(--warn-line); background: var(--warn-wash); }
+.bk-box { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 8px; vertical-align: -3px;
+  border-radius: 4px; border: 1px solid var(--control-border); background: var(--surface); color: var(--surface); }
+.ex-pay.on .bk-box { background: var(--accent-solid); border-color: var(--accent-solid); }
+.bk-box .glyph { width: 12px; height: 12px; }
+.bk-dlg { display: grid; gap: 10px; }
+.bk-dlg textarea { width: 100%; resize: vertical; }
+.bk-dlg-actions { justify-content: flex-end; gap: 8px; }
+.bk-print { display: grid; gap: 12px; }
+.bk-sheet { display: grid; gap: 8px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.bk-sheet h3 { margin: 8px 0 0; }
+.bk-sheet-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 20px; }
+.bk-sheet-head > div:first-child { flex: 1 1 280px; min-width: 0; display: grid; gap: 2px; overflow-wrap: anywhere; }
+.bk-sheet-title { font-size: 1.1rem; }
+.bk-code { display: grid; gap: 4px; justify-items: end; text-align: right; }
+.bk-signline { padding: 6px 10px; border: 1px solid var(--ink-2); border-radius: 6px; font-weight: 600; font-size: .9rem; }
+.bk-signline.open { border-width: 2px; font-weight: 700; }
+.bk-sheet tr.bk-sum td, .bk-sheet tr.bk-head td { font-weight: 600; }
+.bk-sheet tr.bk-sum td { border-top: 1px solid var(--ink-2); }
+.bk-sheet tr.bk-item td:nth-child(3) { padding-left: 22px; }
+.bk-signers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 20px; }
+@media (max-width: 700px) {
+  .bk-signform { grid-template-columns: minmax(0, 1fr); }
+  .bk-code { justify-items: start; text-align: left; }
+}
 
 /* Audit trail: the entries list, an entry's changes, a record's history */
 .banner.bad { background: var(--bad-wash); border-color: var(--bad-line); color: var(--bad); display: grid; justify-items: start; gap: 4px; }

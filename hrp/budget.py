@@ -121,7 +121,7 @@ def line_left(con, line, pay, as_at):
     if db.linked_total(con, pay) is None:
         return 0 if pay["paid_date"] and pay["paid_date"] <= as_at else line["amount"]
     by_then = sum(-r[0] for r in con.execute(
-        "SELECT amount FROM statement_lines WHERE payment_id = ? AND txn_date <= ?", (pay["id"], as_at)))
+        f"SELECT amount FROM {db.line_links(con)} WHERE payment_id = ? AND txn_date <= ?", (pay["id"], as_at)))
     left = round(line["amount"] - by_then, 2)
     return left if left > MATCHED else 0
 
@@ -133,7 +133,7 @@ def paid_by(con, pay, paid, as_at):
         return 0
     if db.linked_total(con, pay) is not None:
         return round(sum(-r[0] for r in con.execute(
-            "SELECT amount FROM statement_lines WHERE payment_id = ? AND txn_date <= ?", (pay["id"], as_at))), 2)
+            f"SELECT amount FROM {db.line_links(con)} WHERE payment_id = ? AND txn_date <= ?", (pay["id"], as_at))), 2)
     return paid if pay["paid_date"] and pay["paid_date"] <= as_at else 0
 
 

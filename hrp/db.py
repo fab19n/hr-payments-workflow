@@ -366,7 +366,87 @@ MIGRATIONS = [
     #     filed as the month's payroll document and the report it gave (IC numbers masked). Made empty. Nothing else in
     #     the records changes.
     lambda con: _payroll_checks(con),
+    # 39. A bank line can stand for several payments (one bulk transfer paying eight people): a table of the payments
+    #     each line is linked to, with the share of the line each one is (empty: the whole line). Every line linked to a
+    #     payment until now is copied in as it is, and triggers keep the table in step with each line's own payment, so a
+    #     line linked to one payment works as before. Nothing else in the records changes.
+    lambda con: _line_links(con),
+    # 40. The pairs of book entries where no money moved (a voucher and its reversal), confirmed on the bank review with
+    #     their reason, by account and month. Made empty. Nothing else in the records changes.
+    lambda con: _recon_pairs(con),
+    # 41. The sign-off of a bank reconciliation keeps the note the app writes as the month stood and the name of the
+    #     person who declared they prepared it; each reopening of a signed-off month is kept with its reason and the
+    #     sign-off it undid; and the key the printed forms' check is worked out with is kept apart (made on the first
+    #     form printed, never copied into the audit trail or a setup file). Empty to begin with. Nothing else changes.
+    lambda con: _recon_signoff(con),
 ]
+
+LINE_LINKS = """
+CREATE TABLE IF NOT EXISTS statement_line_payments (
+  line_id INTEGER NOT NULL REFERENCES statement_lines(id) ON DELETE CASCADE,
+  payment_id INTEGER NOT NULL REFERENCES payments(id),
+  amount REAL,
+  PRIMARY KEY (line_id, payment_id)
+)"""
+# A line's own payment (statement_lines.payment_id) is always one of its links: set, it is added; changed, the old one
+# goes; cleared, every link of the line goes (the line is to explain again). A payment removed takes its links with it.
+LINE_LINK_TRIGGERS = """
+CREATE TRIGGER IF NOT EXISTS line_link_insert AFTER INSERT ON statement_lines WHEN NEW.payment_id IS NOT NULL
+BEGIN
+  INSERT OR IGNORE INTO statement_line_payments (line_id, payment_id, amount) VALUES (NEW.id, NEW.payment_id, NULL);
+END;
+CREATE TRIGGER IF NOT EXISTS line_link_update AFTER UPDATE OF payment_id ON statement_lines WHEN NEW.payment_id IS NOT OLD.payment_id
+BEGIN
+  DELETE FROM statement_line_payments WHERE line_id = NEW.id AND (NEW.payment_id IS NULL OR payment_id = OLD.payment_id);
+  INSERT OR IGNORE INTO statement_line_payments (line_id, payment_id, amount) SELECT NEW.id, NEW.payment_id, NULL
+    WHERE NEW.payment_id IS NOT NULL;
+END;
+CREATE TRIGGER IF NOT EXISTS line_link_payment_gone BEFORE DELETE ON payments
+BEGIN
+  DELETE FROM statement_line_payments WHERE payment_id = OLD.id;
+END;
+"""
+
+
+def _line_links(con):
+    con.execute(LINE_LINKS)
+    con.execute("CREATE INDEX IF NOT EXISTS statement_line_payments_pay ON statement_line_payments (payment_id)")
+    audit.refresh(con)  # the new table is captured from here on, so the links copied in are in the trail
+    con.execute("""INSERT OR IGNORE INTO statement_line_payments (line_id, payment_id, amount)
+                   SELECT id, payment_id, NULL FROM statement_lines WHERE payment_id IS NOT NULL""")
+    for stmt in LINE_LINK_TRIGGERS.strip().split("END;"):
+        if stmt.strip():
+            con.execute(stmt + "END;")
+
+
+def _recon_pairs(con):
+    con.execute("""CREATE TABLE IF NOT EXISTS recon_pairs (
+      id INTEGER PRIMARY KEY, account_id INTEGER NOT NULL REFERENCES accounts(id), month TEXT NOT NULL, pair_key TEXT NOT NULL,
+      reason TEXT, confirmed_at TEXT, UNIQUE (account_id, month, pair_key))""")
+
+
+def _recon_signoff(con):
+    add_column(con, "statements", "sign_note", "TEXT")
+    add_column(con, "statements", "prepared_by", "TEXT")
+    con.execute("""CREATE TABLE IF NOT EXISTS recon_reopens (
+      id INTEGER PRIMARY KEY, statement_id INTEGER NOT NULL REFERENCES statements(id) ON DELETE CASCADE, at TEXT NOT NULL,
+      reason TEXT NOT NULL, was_at TEXT, was_how TEXT, was_note TEXT, was_sign_note TEXT, was_prepared_by TEXT)""")
+    con.execute("CREATE TABLE IF NOT EXISTS form_keys (id INTEGER PRIMARY KEY CHECK (id = 1), secret TEXT NOT NULL, created_at TEXT NOT NULL)")
+
+
+def has_line_links(con):
+    """True once update 39 has made the table of the payments each bank line is linked to."""
+    return con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'statement_line_payments'").fetchone() is not None
+
+
+def line_links(con):
+    """A subquery of every link from a bank line to a payment: (line_id, payment_id, amount, txn_date, statement_id),
+    amount being the part of the line the payment stands for (the whole line, signed as on the statement, unless the
+    line pays several payments). Records not updated to update 39 hold one payment per line, read from the line."""
+    if has_line_links(con):
+        return ("(SELECT k.line_id, k.payment_id, COALESCE(k.amount, l.amount) AS amount, l.txn_date, l.statement_id "
+                "FROM statement_line_payments k JOIN statement_lines l ON l.id = k.line_id)")
+    return "(SELECT id AS line_id, payment_id, amount, txn_date, statement_id FROM statement_lines WHERE payment_id IS NOT NULL)"
 
 
 def _payroll_checks(con):
@@ -1012,8 +1092,8 @@ def linked_total(con, pay):
     bank CR 36.25) counts that fee back once the lines linked hold all that reached the bank (one net line, or the
     amount and the fee line): the customer paid the whole amount, and SQL already shows the charge."""
     lines = con.execute(
-        """SELECT l.amount, a.currency FROM statement_lines l JOIN statements s ON s.id = l.statement_id
-           JOIN accounts a ON a.id = s.account_id WHERE l.payment_id = ?""", (pay["id"],)).fetchall()
+        f"""SELECT k.amount, a.currency FROM {line_links(con)} k JOIN statements s ON s.id = k.statement_id
+           JOIN accounts a ON a.id = s.account_id WHERE k.payment_id = ?""", (pay["id"],)).fetchall()
     if not lines or any(l["currency"] != pay["currency"] for l in lines):
         return None
     sign = -1 if pay["direction"] == "out" else 1
@@ -1135,7 +1215,7 @@ def _own_evidence(con, pay=None, task=None):
     if einv:
         out["einvoice"] = _einvoice_proof(einv)
     if pay:
-        lines = con.execute("""SELECT l.txn_date, s.month FROM statement_lines l JOIN statements s ON s.id = l.statement_id
+        lines = con.execute(f"""SELECT l.txn_date, s.month FROM {line_links(con)} l JOIN statements s ON s.id = l.statement_id
                                WHERE l.payment_id = ? ORDER BY l.txn_date""", (pay["id"],)).fetchall()
         if lines:
             mons = list(dict.fromkeys(calendar.month_abbr[int(l["month"][5:7])] for l in lines))
@@ -1269,7 +1349,7 @@ def payment_flag(con, ent, pay, today):
     if con.execute("""SELECT 1 FROM statements s JOIN accounts a ON a.id = s.account_id
                       WHERE a.entity_id = ? AND a.currency = ? AND s.month = ?""",
                    (ent["id"], pay["currency"], due_on[:7])).fetchone():
-        if con.execute("SELECT 1 FROM statement_lines WHERE payment_id = ?", (pay["id"],)).fetchone():
+        if con.execute(f"SELECT 1 FROM {line_links(con)} WHERE payment_id = ?", (pay["id"],)).fetchone():
             return _flag("not_paid", not_paid, "grey", deadline.strip() or None)  # its paid date was cleared by hand
         other_way = ("enter the date it was received if it came in another way" if money_in
                      else "enter the paid date if it went out another way")
@@ -1605,6 +1685,6 @@ def still_to_pay(con, pay, as_at):
     due = budgeted_at(con, pay, found)
     sign = -1 if pay["direction"] == "out" else 1
     by_then = sum(sign * r[0] for r in con.execute(
-        "SELECT amount FROM statement_lines WHERE payment_id = ? AND txn_date <= ?", (pay["id"], as_at)))
+        f"SELECT amount FROM {line_links(con)} WHERE payment_id = ? AND txn_date <= ?", (pay["id"], as_at)))
     left = round(due - by_then, 2)
     return left if left > 0.01 else 0

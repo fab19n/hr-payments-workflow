@@ -108,7 +108,7 @@ def _gather(con, entity, month):
         docs = auditpack._docs(con, "payment_id", p["id"])
         have = {d["doc_type"] for d in docs}
         entries = con.execute("SELECT doc_no FROM sql_entries WHERE payment_id = ? ORDER BY doc_date, id", (p["id"],)).fetchall()
-        lines = con.execute("SELECT txn_date FROM statement_lines WHERE payment_id = ? ORDER BY txn_date", (p["id"],)).fetchall()
+        lines = con.execute(f"SELECT txn_date FROM {db.line_links(con)} WHERE payment_id = ? ORDER BY txn_date", (p["id"],)).fetchall()
         on_file = [_short(d["doc_type"], R) for d in sorted(docs, key=lambda d: R.order(d["doc_type"]))]
         on_file += [ev[t]["text"] for t in R.required_docs(p["category"], entity["uses_sql"], p["month"], p["entity_id"])
                     if t in ev and t not in have]
@@ -167,11 +167,12 @@ def month_workbook(con, entity, month, files=None):
     ws = wb.create_sheet("Bank lines")
     brows = []
     for a in recon:
-        pay_of = {p["id"]: p["description"] for p in con.execute(
-            "SELECT id, description FROM payments WHERE id IN (SELECT payment_id FROM statement_lines WHERE statement_id = ?)",
-            (a["statement"]["id"] if a["statement"] else 0,))}
+        pay_of = {}
+        for p in con.execute(f"""SELECT k.line_id, p.description FROM {db.line_links(con)} k JOIN payments p ON p.id = k.payment_id
+                                 WHERE k.statement_id = ? ORDER BY k.line_id, p.id""", (a["statement"]["id"] if a["statement"] else 0,)):
+            pay_of.setdefault(p["line_id"], []).append(p["description"])  # a line paying several payments names them all
         for l in a["lines"]:
-            what = pay_of.get(l["payment_id"]) or ("No documents needed" if l["status"] == "no_docs" else "To explain")
+            what = "; ".join(pay_of.get(l["id"], [])) or ("No documents needed" if l["status"] == "no_docs" else "To explain")
             brows.append((a["label"], a["currency"], _day(l["txn_date"]), l["description"], l["amount"], l["balance"], what, l["note"] or ""))
     first, last = _table(ws, 1, ["Account", "Currency", "Date", "Description", "Amount", "Balance", "Matched payment", "Note"], brows,
                          [26, 9, 12, 50, 14, 14, 42, 30], {3: DAY, 5: MONEY, 6: MONEY})
@@ -224,6 +225,75 @@ def month_workbook(con, entity, month, files=None):
     summary.column_dimensions["C"].width = 16
     _print_setup(summary, 1)
     return wb
+
+
+def recon_workbook(con, entity, acct, month):
+    """An account's month on Bank and reconciliation as a workbook: Summary, Lines (each statement line with what explains
+    it, a line paying several payments naming them all), No money moved (the pairs), In the books not on the statement,
+    On the statement not in the books, Amounts differ, and Reopened (each reopening with its reason). Returns (wb, name)."""
+    from . import recon as rc
+    s = rc.month_summary(con, entity, acct, month)
+    cur = acct["currency"]
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Summary"
+    b = s["book"]
+    cells = [("Company", entity["name"]), ("Account", acct["label"]), ("Currency", cur), ("Month", db.month_label(month)),
+             ("Statement code", s["statement_code"]), ("Status", s["status_text"]),
+             ("Locked", (f"Yes, since {s['locked_at'][:10]}" if s["locked"] else "No")),
+             ("Bank closing", s["bank_closing"]), ("Book closing", b["closing"] if b["state"] == "ok" else b["note"]),
+             ("Difference (bank less books)", s["difference"]), ("Not ready because", "; ".join(s["why_not"]) if not s["locked"] else ""),
+             ("Prepared by (declared)", s["prepared_by"] or ""), ("Note", s["free_note"] or ""),
+             ("Sign-off note", " ".join(s["sign_note"]))]
+    for i, (k, v) in enumerate(cells, 1):
+        _put(ws, i, 1, k, bold=True)
+        _put(ws, i, 2, v, MONEY if isinstance(v, float) else None)
+        ws.cell(row=i, column=2).alignment = Alignment(horizontal="left", wrap_text=True, vertical="top")
+    ws.column_dimensions["A"].width = 30
+    ws.column_dimensions["B"].width = 90
+    _print_setup(ws, 1)
+
+    st = s["statement"]
+    lines = con.execute("SELECT * FROM statement_lines WHERE statement_id = ? ORDER BY line_no", (st["id"],)).fetchall() if st else []
+    by = {}
+    for r in con.execute(f"""SELECT k.line_id, k.amount, p.description FROM {db.line_links(con)} k JOIN payments p ON p.id = k.payment_id
+                             WHERE k.statement_id = ? ORDER BY k.line_id, p.id""", (st["id"] if st else 0,)):
+        by.setdefault(r["line_id"], []).append(r)
+    rows = []
+    for l in lines:
+        its = by.get(l["id"], [])
+        what = ("; ".join(f"{x['description']} ({abs(x['amount']):,.2f})" for x in its) if len(its) > 1 else its[0]["description"] if its
+                else "No documents needed" + (f": {l['note']}" if l["note"] else "") if l["status"] == "no_docs" else "To explain")
+        rows.append((_day(l["txn_date"]), l["description"].replace(" | ", " · "), l["amount"], l["balance"], what,
+                     "Confirmed" if l["confirmed_at"] else "Not confirmed" if its or l["status"] == "no_docs" else "", _day(l["confirmed_at"][:10]) if l["confirmed_at"] else None))
+    ws = wb.create_sheet("Lines")
+    _table(ws, 1, ["Date", "Description", "Amount", "Balance", "Explained by", "Confirmed", "Confirmed on"], rows,
+           [12, 50, 14, 14, 60, 14, 13], {1: DAY, 3: MONEY, 4: MONEY, 7: DAY})
+
+    ws = wb.create_sheet("No money moved")
+    prow = []
+    for p in s["pairs"]:
+        for d in p["docs"]:
+            prow.append(("Net nil" if p["nil"] else f"Net {abs(p['net']):,.2f}, not nil", d["ref"] or "", _day(d["date"]), d["description"],
+                         d["amount"] if d["amount"] > 0 else None, -d["amount"] if d["amount"] < 0 else None, p["reason"],
+                         ("Confirmed " + p["confirmed_at"][:10]) if p["confirmed_at"] else "Not confirmed"))
+    _table(ws, 1, ["Pair", "Document", "Date", "Description", "Money in", "Money out", "Reason", "Confirmed"], prow,
+           [18, 16, 12, 40, 14, 14, 60, 22], {3: DAY, 5: MONEY, 6: MONEY})
+
+    for title, items in (("In the books, not on stmt", s["books_only"]), ("On the stmt, not in books", s["bank_only"])):
+        ws = wb.create_sheet(title)
+        _table(ws, 1, ["Date", "Reference", "Description", "Amount", "Why"],
+               [(_day(x["date"]), x.get("ref") or "", (x.get("description") or "").replace(" | ", " · "), x["amount"], x["why"]) for x in items],
+               [12, 16, 50, 14, 60], {1: DAY, 4: MONEY})
+    ws = wb.create_sheet("Amounts differ")
+    _table(ws, 1, ["Payment", "Reference", "Books", "Statement", "Difference"],
+           [(x["description"], x["ref"] or "", x["book"], x["bank"], x["amount"]) for x in s["differ"]],
+           [50, 20, 14, 14, 14], {3: MONEY, 4: MONEY, 5: MONEY})
+    ws = wb.create_sheet("Reopened")
+    _table(ws, 1, ["Reopened", "Reason", "It was reconciled on", "How"],
+           [(x["at"][:16].replace("T", " "), x["reason"], (x["was_at"] or "")[:10], x["was_how"] or "") for x in s["reopens"]],
+           [18, 70, 20, 16])
+    return wb, safe(f"{entity['code']} {acct['label']} {month} bank reconciliation", 120) + ".xlsx"
 
 
 def workbook_bytes(wb):

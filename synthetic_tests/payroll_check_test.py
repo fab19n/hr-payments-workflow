@@ -640,13 +640,13 @@ def q(sql, args=()):
 
 
 full = db.MIGRATIONS[:]
-check("update 38 is the payroll checks", len(full) == 38)
+check("update 38 is the payroll checks", len(full) >= 38)  # later updates (39 on, slice 4) come after it
 db.MIGRATIONS[:] = full[:37]
 db.init()
 check("below update 38 there is no payroll checks table", not q("SELECT 1 FROM sqlite_master WHERE name = 'payroll_checks'"))
 db.MIGRATIONS[:] = full
 trail = db.init()
-check("update 38 runs", q("PRAGMA user_version")[0]["user_version"] == 38)
+check("update 38 runs", q("PRAGMA user_version")[0]["user_version"] == len(full) >= 38)
 check("the payroll checks table is made empty, with its audit triggers",
       q("SELECT COUNT(*) AS n FROM payroll_checks")[0]["n"] == 0
       and q("SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'audit_payroll_checks%'")[0]["n"] >= 3)

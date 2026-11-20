@@ -664,7 +664,7 @@ function sqDone(p, res) {
   // Vouchers edited in SQL: one linked to nothing replaced its earlier entry; one linked waits under Changed in SQL.
   const edits = `${res.replaced?.length ? `. Changed in SQL, listed once at the new figure: ${res.replaced.join(", ")}` : ""}${res.changed_linked ? `. ${res.changed_linked} linked ${res.changed_linked === 1 ? "voucher was" : "vouchers were"} changed in SQL: see Changed in SQL` : ""}`;
   return { kind: "import", src, changed: !!res.changed_linked, title: `Imported ${res.added} entries`,
-    text: `${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${einv ? `. ${einv}` : ""}${edits}${moved}.` };
+    text: `${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${einv ? `. ${einv}` : ""}${edits}${moved}${heldNote(res.held)}.` };
 }
 async function sqlApply(t) {
   const p = state.sqlPreview;
@@ -734,7 +734,7 @@ async function sqAsk(what) {
   try {
     if (what === "all-yes") {
       const r = await api("/api/sql/entries/create-all", { json: { entity_id: state.entity } });
-      toast(`Created ${r.created} payments from SQL${r.linked ? `; ${r.linked} linked to existing payments with the same SQL number` : ""}${r.left ? `; ${r.left} left for you to check (number already linked, changed in SQL?)` : ""}${r.corrections.length ? `; ${r.corrections.length} left out as probably corrections (no money moved)` : ""}; ${r.bank_lines_matched} bank lines matched`);
+      toast(`Created ${r.created} payments from SQL${r.linked ? `; ${r.linked} linked to existing payments with the same SQL number` : ""}${r.left ? `; ${r.left} left for you to check (number already linked, changed in SQL?)` : ""}${r.corrections.length ? `; ${r.corrections.length} left out as probably corrections (no money moved)` : ""}; ${r.bank_lines_matched} bank lines matched${heldNote(r.held)}`);
     } else {
       const r = await api("/api/sql/entries/ignore", { json: { ids: state.sqlCorrections } });
       toast(r.ignored === 1 ? "1 entry ignored; it is listed under Ignored" : `${r.ignored} entries ignored; they are listed under Ignored`);

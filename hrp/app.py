@@ -10,13 +10,14 @@ import sqlite3
 import zipfile
 from datetime import date, datetime
 from pathlib import Path, PureWindowsPath
+from urllib.parse import quote
 
 import pyzipper
 from flask import Flask, abort, g, jsonify, make_response, request, send_file
 
 from . import (appsettings, audit, auditpack, auditread, books, booksexcel, checklistbook, config, budget as stored, db, finstatements, invoicepdf, ledger, masters, nextup, pages, recon, reports,
                monthly, myinvois, packcheck, partybook, payrollcheck, receivables, restore, rulebook, rules, setupfile, sqlfetch,
-               sqlimport, statements, statutory)
+               sqlimport, statements, statutory, bankrecpdf, formcode)
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -90,7 +91,14 @@ def con():
             # Looking at a page never changes the records, so another website can't make it do so through a link.
             g.con.execute("PRAGMA query_only = ON")
         else:
+            # The lock's backstop reads the records as last committed through a second connection, so this one keeps
+            # its changes in memory until the commit (a spill would lock records.db against that read). Set before the
+            # first write: arm() below starts the transaction.
+            g.con.execute("PRAGMA cache_spill = OFF")
             g.con.arm(**_trail_context())
+            # Whatever this request writes, a signed-off month's figures stay as they were, or the commit is refused
+            # and undone (recon.GUARD).
+            g.con.guard = recon.GUARD
     return g.con
 
 
@@ -257,7 +265,9 @@ def month_view():
         p["flag"] = db.payment_flag(c, e, p, today)
         p["documents"] = docs_for(c, "payment_id", p["id"])
         p["required"] = rulebook.get(c).required_docs(p["category"], e["uses_sql"], p["month"], p["entity_id"])
-        p["bank_lines"] = rows(c.execute("SELECT id, txn_date, amount, description FROM statement_lines WHERE payment_id = ?", (p["id"],)))
+        # (a line paying several payments shows the part of it this payment is)
+        p["bank_lines"] = rows(c.execute(f"""SELECT l.id, l.txn_date, k.amount, l.description FROM {db.line_links(c)} k
+                                            JOIN statement_lines l ON l.id = k.line_id WHERE k.payment_id = ?""", (p["id"],)))
         p["bank_total"] = db.linked_total(c, p)
         p["sql_entries"] = rows(c.execute(
             "SELECT id, doc_no, doc_date, amount, direction, kind FROM sql_entries WHERE payment_id = ? ORDER BY doc_date, id", (p["id"],)))
@@ -567,7 +577,11 @@ def set_first_month(eid):
     month = request.get_json().get("month") or None
     if month:
         month_from(month)
+    before = recon.signed_figures(c)
     c.execute("UPDATE entities SET first_month = ? WHERE id = ?", (month, eid))
+    # Months before tracking count SQL's cash book by listing amounts, and may be signed off the before-tracking way: a
+    # change that alters a signed-off month's book figures is refused (the month is locked; _recon_refused undoes it).
+    recon.refuse_figures_changed(c, before, "the first month tracked can't change in a way that alters its book figures")
     db.log(c, f"First month tracked for {e['code']}: {db.month_label(month) if month else 'none (no limit)'}")
     c.commit()
     return jsonify({"ok": True})
@@ -672,6 +686,15 @@ def create_payment():
         return err("Choose one of the payment types in use.")
     # Money in or out as posted (the page sends its type's, older callers may pair them freely); else the type's.
     way = b.get("direction") if b.get("direction") in ("in", "out") else rulebook.get(c).direction(cat)
+    if b.get("paid_date"):
+        # A payment paid in a signed-off month would change its books, which are locked until the month is reopened.
+        try:
+            recon.payment_lock(c, None, {"entity_id": e["id"], "account_id": acct["id"] if acct else None, "paid_date": b.get("paid_date"),
+                                         "currency": acct["currency"] if acct else "MYR", "amount": b.get("amount"), "direction": way,
+                                         "description": b["description"]},
+                               f"a payment paid in it can't be added")
+        except recon.ReconError as ex:
+            return err(str(ex))
     cur = c.execute(
         """INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date,
            paid_source, direction, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
@@ -705,9 +728,20 @@ def update_payment(pid):
     if "paid_date" in sets and sets["paid_date"] != p["paid_date"]:
         sets["paid_source"] = "manual" if sets["paid_date"] else None
     if sets:
-        c.execute(f"UPDATE payments SET {', '.join(k + ' = ?' for k in sets)} WHERE id = ?", (*sets.values(), pid))
-        if "account_id" in sets and sets["account_id"] != p["account_id"]:
-            _account_moved(c, p, sets["account_id"])
+        # A signed-off month is locked: its payments' bank fields (account, paid date, amount) don't change until the
+        # month is reopened (recon.payment_lock). Refused before anything is written.
+        after = dict(p)
+        after.update({k: v for k, v in sets.items() if k in recon.BANK_FIELDS})
+        try:
+            recon.payment_lock(c, p, after)
+            c.execute(f"UPDATE payments SET {', '.join(k + ' = ?' for k in sets)} WHERE id = ?", (*sets.values(), pid))
+            if "account_id" in sets and sets["account_id"] != p["account_id"]:
+                _account_moved(c, p, sets["account_id"])
+                # the move may have found a line that gives it another paid date: checked as it ends up
+                recon.payment_lock(c, p, c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone())
+        except recon.ReconError as ex:
+            c.rollback()
+            return err(str(ex))
         named = [PAY_FIELD_NAMES[k] for k in sets if k in PAY_FIELD_NAMES] + (["amount confirmed"] if b.get("amount_confirmed") else [])
         db.log(c, f"Updated payment: {p['description']} ({', '.join(named)})")
     c.commit()
@@ -719,38 +753,54 @@ def _account_moved(c, p, new_id):
     lines on any other account's statements are taken off it; taken off, only its lines on the old account's statements
     are (a line elsewhere stays as it is). Freed lines are left to explain, but not marked as undone by a person, so
     putting the payment back finds them again. Moved, the new account's statements are looked at for its line (a line
-    once undone from it there may be matched again: moving it there is the person's say). Then the reconciliation of the
-    old and the new side is checked again for the months the payment's paid date falls in, before and after: a sign-off
-    there goes, so the month is reviewed again (one signed off before tracking stays). A side with no account is the
-    company's one account in the payment's currency, by the books' rule (none when it has several)."""
+    once undone from it there may be matched again: moving it there is the person's say; a signed-off statement is
+    locked and not looked at). The months the payment's paid date falls in, before and after, on the old and the new
+    side, must not be signed off: a signed-off month is locked, so the move is refused (recon.payment_lock refuses it
+    before the payment is changed; recon.recheck and recon.line_changed refuse it here too, and the caller rolls back).
+    A side with no account is the company's one account in the payment's currency, by the books' rule (none when it
+    has several)."""
     pid = p["id"]
     sole = lambda: recon.sole_account(c, p["entity_id"], p["currency"] or "MYR")
     if not new_id and p["account_id"] and sole() == p["account_id"]:
         # Taken off the company's only account in its currency: the books still count it on that account, so its bank
         # lines there stay linked and nothing needs checking again.
         return
-    why = f"payment {p['description']} {'moved to another bank account' if new_id else 'taken off its bank account'}"
-    on_line = """SELECT l.id FROM statement_lines l JOIN statements s ON s.id = l.statement_id
-                 WHERE l.payment_id = ? AND s.account_id {} ?"""
+    on_line = f"""SELECT l.line_id AS id FROM {db.line_links(c)} l JOIN statements s ON s.id = l.statement_id
+                 WHERE l.payment_id = ? AND s.account_id {{}} ?"""
     freed = ([r["id"] for r in c.execute(on_line.format("<>"), (pid, new_id))] if new_id
              else [r["id"] for r in c.execute(on_line.format("="), (pid, p["account_id"]))] if p["account_id"] else [])
     if freed:
-        c.execute(f"UPDATE statement_lines SET payment_id = NULL, status = 'unmatched' WHERE id IN ({', '.join('?' * len(freed))})", freed)
-        recon.line_changed(c, freed, keep_before_tracking=True)
+        recon.refuse_locked_lines(c, freed, f"{p['description']} can't move off its bank lines there")
+        unlink_payment(c, pid, freed)
+        recon.line_changed(c, freed)
         _after_unlink(c, pid)
     if new_id:
         had = {r["id"] for r in c.execute(on_line.format("="), (pid, new_id))}
         c.execute("""UPDATE statement_lines SET undone_payment_id = NULL WHERE undone_payment_id = ? AND payment_id IS NULL
-                     AND statement_id IN (SELECT id FROM statements WHERE account_id = ?)""", (pid, new_id))
+                     AND statement_id IN (SELECT id FROM statements WHERE account_id = ? AND reconciled_at IS NULL)""", (pid, new_id))
         for s in c.execute("SELECT id FROM statements WHERE account_id = ?", (new_id,)).fetchall():
             statements.auto_match(c, s["id"], {pid})
-        recon.line_changed(c, [r["id"] for r in c.execute(on_line.format("="), (pid, new_id)) if r["id"] not in had],
-                           keep_before_tracking=True)
-    now_ = c.execute("SELECT paid_date FROM payments WHERE id = ?", (pid,)).fetchone()
-    months = [d[:7] for d in (p["paid_date"], now_["paid_date"]) if d]
+        recon.line_changed(c, [r["id"] for r in c.execute(on_line.format("="), (pid, new_id)) if r["id"] not in had])
     # A payment with no account is in the books of the company's one account in its currency, when it has just one
-    # (as the accounts are now); with several, no book counts it, so that side has nothing to check again.
-    recon.recheck(c, [p["account_id"] or sole(), new_id or sole()], months, why)
+    # (as the accounts are now); with several, no book counts it. The books of both sides were checked against the lock
+    # before the move and after it (recon.payment_lock in update_payment, which leaves a payment with no amount, or one
+    # put on the account that already counts it, alone); the guard at the commit holds anything else.
+
+
+def unlink_payment(c, pid, line_ids):
+    """Takes the payment off these bank lines: a line it alone stands for (or whose own payment it is) is left to explain;
+    a line paying several payments keeps the others (the next one becomes the line's own payment). Lines are not marked
+    as undone by a person. The caller clears their confirmations (recon.line_changed)."""
+    for lid in line_ids:
+        l = c.execute("SELECT payment_id FROM statement_lines WHERE id = ?", (lid,)).fetchone()
+        rest = [r[0] for r in c.execute("SELECT payment_id FROM statement_line_payments WHERE line_id = ? AND payment_id <> ? ORDER BY payment_id",
+                                        (lid, pid))] if db.has_line_links(c) else []
+        if not rest:
+            c.execute("UPDATE statement_lines SET payment_id = NULL, status = 'unmatched' WHERE id = ?", (lid,))
+            continue
+        c.execute("DELETE FROM statement_line_payments WHERE line_id = ? AND payment_id = ?", (lid, pid))
+        if l["payment_id"] == pid:
+            c.execute("UPDATE statement_lines SET payment_id = ? WHERE id = ?", (rest[0], lid))
 
 
 def _amount_changed(old, new):
@@ -775,10 +825,16 @@ def delete_payment(pid):
     before = [r["doc_no"] for r in on_it if r["kind"] not in ("invoice", "journal")
               and db.entry_before_tracking(ent, r["description"], r["doc_date"])]
     try:
+        # A signed-off month is locked: a payment on one of its lines, or counted in its books, isn't removed.
+        recon.payment_lock(c, p, None, f"{p['description']} can't be removed")
         # Its bank lines go back to the lines waiting to be explained, marked so matching again doesn't give them to
         # another payment, and its SQL vouchers back under 'not linked'. Documents taken off it or replaced stay on
-        # record, noting the payment they were filed on.
-        freed = [r["id"] for r in c.execute("SELECT id FROM statement_lines WHERE payment_id = ?", (pid,))]
+        # record, noting the payment they were filed on. A line paying several payments keeps the others.
+        freed = [r[0] for r in c.execute(f"SELECT line_id FROM {db.line_links(c)} WHERE payment_id = ?", (pid,))]
+        shared = [lid for lid in freed if db.has_line_links(c) and c.execute(
+            "SELECT COUNT(*) FROM statement_line_payments WHERE line_id = ?", (lid,)).fetchone()[0] > 1]
+        if shared:
+            unlink_payment(c, pid, shared)
         lines = c.execute("UPDATE statement_lines SET payment_id = NULL, status = 'unmatched', undone_payment_id = ? "
                           "WHERE payment_id = ?", (pid, pid)).rowcount
         recon.line_changed(c, freed)
@@ -793,6 +849,9 @@ def delete_payment(pid):
                   + (f"; {lines} bank line{'s' if lines > 1 else ''} back to explain" if lines else "")
                   + (f"; the {kept} document{'s' if kept > 1 else ''} taken off it kept on record" if kept else ""))
         c.commit()
+    except recon.ReconError as ex:
+        c.rollback()
+        return err(str(ex))
     except sqlite3.Error:
         c.rollback()
         return err("This payment couldn't be removed, so nothing was changed. Try again, or set its amount to 0 and add a note.")
@@ -1201,18 +1260,73 @@ def update_line(lid):
     l = c.execute(
         """SELECT l.*, s.month, s.account_id, a.entity_id FROM statement_lines l JOIN statements s ON s.id = l.statement_id
            JOIN accounts a ON a.id = s.account_id WHERE l.id = ?""", (lid,)).fetchone() or abort(404)
-    removed = change_line(c, l, b)
+    try:
+        removed = change_line(c, l, b)
+    except recon.ReconError as ex:
+        c.rollback()
+        return err(str(ex))
     c.commit()
     return jsonify({"ok": True, "removed": removed})
 
 
+def _link_several(c, l, ids):
+    """Links one bank line to several payments of its account (a bulk transfer that paid them all): each stands for its
+    own amount of the line, and takes the line's date as its paid date (a date typed in stays). Their amounts may come
+    to more or less than the line: the line then shows as matched, but the amounts differ, until it is linked again."""
+    try:
+        ids = list(dict.fromkeys(int(x) for x in ids))
+    except (TypeError, ValueError):
+        raise recon.ReconError("The payments chosen couldn't be read.")
+    pays = []
+    for pid in ids:
+        p = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone()
+        if not p or p["entity_id"] != l["entity_id"] or p["account_id"] not in (None, l["account_id"]):
+            raise recon.ReconError("A payment chosen isn't one of this account's payments, so nothing was linked.")
+        if p["amount"] is None:
+            raise recon.ReconError(f"{p['description']} has no amount yet, so its part of the line can't be told. Give it an amount first.")
+        pays.append(p)
+    sign = 1 if l["amount"] > 0 else -1
+    c.execute("DELETE FROM statement_line_payments WHERE line_id = ?", (l["id"],))
+    c.execute("UPDATE statement_lines SET payment_id = NULL WHERE id = ?", (l["id"],))
+    c.execute("UPDATE statement_lines SET payment_id = ?, status = 'matched', note = CASE WHEN status = 'no_docs' THEN NULL ELSE note END "
+              "WHERE id = ?", (pays[0]["id"], l["id"]))
+    for p in pays:
+        c.execute("""INSERT INTO statement_line_payments (line_id, payment_id, amount) VALUES (?, ?, ?)
+                     ON CONFLICT (line_id, payment_id) DO UPDATE SET amount = excluded.amount""", (l["id"], p["id"], sign * abs(p["amount"])))
+        c.execute("""UPDATE payments SET paid_date = ?, paid_source = 'bank'
+                     WHERE id = ? AND (paid_date IS NULL OR paid_source IN ('bank', 'sql'))""", (l["txn_date"], p["id"]))
+    total = round(sum(abs(p["amount"]) for p in pays), 2)
+    db.log(c, f"Linked bank line {db.short_day(l['txn_date'])} {l['amount']:,.2f} to {len(pays)} payments together "
+              f"({total:,.2f}): " + "; ".join(p["description"] for p in pays))
+
+
 def change_line(c, l, b):
-    """Link a bank line to a payment, create a payment for it, undo it, or mark it as needing no documents (what the
-    body b says), logging it. A change to the line's link or explanation clears its confirmation and its statement's
-    sign-off. Returns the description of a payment removed because nothing is linked to it now, else None. The caller
+    """Link a bank line to a payment (or to several: payment_ids), create a payment for it, undo it, or mark it as
+    needing no documents (what the body b says), logging it. A change to the line's link or explanation clears its
+    confirmation; a line of a signed-off month is locked, so the change is refused (recon.Locked, the caller rolls
+    back). Returns the description of a payment removed because nothing is linked to it now, else None. The caller
     commits."""
     lid = l["id"]
-    if b.get("create_payment"):
+    recon.refuse_locked_lines(c, [lid])
+    before = [r[0] for r in c.execute(f"SELECT payment_id FROM {db.line_links(c)} WHERE line_id = ?", (lid,))]
+    ids = b.get("payment_ids")
+    if isinstance(ids, list) and len(ids) == 1:
+        b = {"payment_id": ids[0]}
+    if len(before) > 1 and (b.get("create_payment") or "status" in b):
+        raise recon.ReconError(f"The line of {db.short_day(l['txn_date'])} ({l['amount']:,.2f}) is linked to {len(before)} payments: "
+                               "undo that first to explain it another way.")
+    # Every payment the change can touch, as it is now: linking or undoing rewrites their paid dates and amounts, which
+    # must not change a signed-off month's books (checked at the end, so the whole change rolls back).
+    touched = set(before)
+    for x in ([b.get("payment_id")] if b.get("payment_id") else []) + (ids if isinstance(ids, list) else []):
+        try:
+            touched.add(int(x))
+        except (TypeError, ValueError):
+            pass
+    snap = {r["id"]: dict(r) for pid in touched for r in [c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone()] if r}
+    if isinstance(ids, list) and len(ids) > 1:
+        _link_several(c, l, ids)
+    elif b.get("create_payment"):
         cp = b["create_payment"]
         if cp.get("month"):
             month_from(cp["month"])
@@ -1225,11 +1339,15 @@ def change_line(c, l, b):
              valid_cat(c, cp.get("category", "other"), "in" if l["amount"] > 0 else "out"), cp["description"],
              abs(l["amount"]), l["account_id"], l["txn_date"], l["txn_date"], "in" if l["amount"] > 0 else "out", db.now()))
         c.execute("UPDATE statement_lines SET payment_id = ?, status = 'matched' WHERE id = ?", (cur.lastrowid, lid))
+        snap.setdefault(cur.lastrowid, None)  # a new payment: checked against the lock as one added (its month carried on?)
         db.log(c, f"Created payment from bank line {l['txn_date']} {l['amount']:,.2f}: {cp['description']}")
     elif "payment_id" in b:
         if b["payment_id"]:
             pid = int(b["payment_id"])
             c.execute("UPDATE statement_lines SET payment_id = ?, status = 'matched' WHERE id = ?", (pid, lid))
+            if len(before) > 1:  # a line that paid several payments now stands for this one alone, in whole
+                c.execute("DELETE FROM statement_line_payments WHERE line_id = ? AND payment_id <> ?", (lid, pid))
+                c.execute("UPDATE statement_line_payments SET amount = NULL WHERE line_id = ?", (lid,))
             # The latest date of the lines that paid it, as matching gives; it wins over an SQL voucher's, and a date
             # typed in stays.
             paid = statements.paying_dates(c, pid)
@@ -1256,19 +1374,34 @@ def change_line(c, l, b):
             db.log(c, f"Marked bank line {db.short_day(l['txn_date'])} {l['amount']:,.2f} as needing no documents"
                    + (f": {b['note']}" if b.get("note") else ""))
     now_ = c.execute("SELECT payment_id, status FROM statement_lines WHERE id = ?", (lid,)).fetchone()
-    new = now_["payment_id"]
-    if (now_["payment_id"], now_["status"]) != (l["payment_id"], l["status"]):
+    after = [r[0] for r in c.execute(f"SELECT payment_id FROM {db.line_links(c)} WHERE line_id = ?", (lid,))]
+    if (now_["payment_id"], now_["status"]) != (l["payment_id"], l["status"]) or sorted(after) != sorted(before):
         recon.line_changed(c, [lid])
     removed = None
-    if l["payment_id"] and l["payment_id"] != new:
-        p = c.execute("SELECT * FROM payments WHERE id = ?", (l["payment_id"],)).fetchone()
-        if _made_from_lines(c, p, l):
+    for old in [x for x in before if x not in after]:
+        p = c.execute("SELECT * FROM payments WHERE id = ?", (old,)).fetchone()
+        if not p:
+            continue
+        if len(before) == 1 and _made_from_lines(c, p, l):
             # Left with no line, it would only be a blank payment past due.
             c.execute("DELETE FROM payments WHERE id = ?", (p["id"],))
             db.log(c, f"Removed the payment made from bank lines, as none is linked to it now: {p['description']} ({p['month']})")
             removed = p["description"]
         else:
             _after_unlink(c, p["id"])
+    for pid, was in snap.items():
+        now_row = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone()
+        if was is not None or now_row is not None:
+            recon.payment_lock(c, was, now_row)
+    # A line explained without documents counts in the books of an account kept here: marking or unmarking it in an
+    # open month changes the opening of a signed-off later month that carries on from it.
+    if (l["status"] == "no_docs" and not l["payment_id"]) != (now_["status"] == "no_docs" and not now_["payment_id"]):
+        a = c.execute("SELECT * FROM accounts WHERE id = ?", (l["account_id"],)).fetchone()
+        if recon.book_source(c, entity(c, a["entity_id"]), a) == "payments":
+            # the books count the line in the month of its own date, which may not be its statement's month
+            recon.refuse_locked(c, recon.book_month_locked(c, a["id"], l["txn_date"][:7]),
+                                f"the line of {db.short_day(l['txn_date'])} can't be marked or unmarked as needing no documents "
+                                f"(the books of {db.month_label(l['txn_date'][:7])} count it)")
     return removed
 
 
@@ -1281,7 +1414,7 @@ def _made_from_lines(c, p, l):
             and (p["due_date"] == l["txn_date"] or c.execute(
                 "SELECT 1 FROM statement_lines WHERE undone_payment_id = ? AND txn_date = ?", (p["id"], p["due_date"])).fetchone()))
     return made and not any(c.execute(f"SELECT 1 FROM {t} WHERE payment_id = ?", (p["id"],)).fetchone()
-                            for t in ("statement_lines", "sql_entries", "documents"))
+                            for t in (db.line_links(c), "sql_entries", "documents"))
 
 
 @app.get("/api/statement-suggestions")
@@ -1401,14 +1534,81 @@ def recon_apply():
 
 @app.post("/api/recon/sign-off")
 def recon_sign_off():
+    """Mark a month reconciled (recon.sign_off), with an optional note and the name of who prepared it (declared). The
+    month is locked from then on."""
     e, st = _recon_statement()
-    return _recon_do(lambda c: recon.sign_off(c, e, st))
+    b = request.get_json(silent=True) or {}
+    return _recon_do(lambda c: recon.sign_off(c, e, st, b.get("note"), b.get("prepared_by")))
 
 
-@app.post("/api/recon/undo-sign-off")
-def recon_undo_sign_off():
+# Reopen month replaces Undo sign-off (slice 4): the old /api/recon/undo-sign-off route is retired, not kept beside it.
+@app.post("/api/recon/reopen")
+def recon_reopen():
+    """Reopen a signed-off month, with a reason (recon.reopen): logged, and it needs the sign-off again."""
     e, st = _recon_statement()
-    return _recon_do(lambda c: recon.undo_sign_off(c, st))
+    b = request.get_json(silent=True) or {}
+    return _recon_do(lambda c: recon.reopen(c, e, st, b.get("reason")))
+
+
+@app.post("/api/recon/pair")
+def recon_pair():
+    """Confirm (confirmed true) or unconfirm a No money moved pair of an account's month, with its reason."""
+    e, a = _recon_account()
+    b = request.get_json(silent=True) or {}
+    month = month_from(b.get("month"))
+    key = b.get("key")
+    if not isinstance(key, str) or not key:
+        return err("Say which pair.")
+    return _recon_do(lambda c: recon.confirm_pair(c, e, a, month, key, b.get("reason"), b.get("confirmed") is not False))
+
+
+@app.post("/api/recon/print")
+def recon_print():
+    """Prepare the printed reconciliation statement of an account's month (bankrecpdf): works out its code and keyed
+    check, making the key for the checks on the first form ever printed (logged), and logs the printing. Returns what
+    the print preview shows and the address of the PDF."""
+    e, a = _recon_account()
+    b = request.get_json(silent=True) or {}
+    month = month_from(b.get("month"))
+    by = (b.get("printed_by") or "").strip()[:80] if isinstance(b.get("printed_by"), str) else ""
+
+    def go(c):
+        data = bankrecpdf.statement(c, e, a, month, make_key=True, printed_by=by or None)
+        db.log(c, f"Printed the bank reconciliation statement {data['code']} ({a['label']}, {db.month_label(month)}), check {data['check']}"
+                  + (f", by {by} (declared)" if by else ""))
+        return {"preview": bankrecpdf.preview(data),
+                "url": f"/api/recon/statement.pdf?entity_id={e['id']}&account_id={a['id']}&month={month}"
+                       + (f"&printed_by={quote(by)}" if by else "")}
+    return _recon_do(go)
+
+
+@app.get("/api/recon/statement.pdf")
+@audited_read("bank reconciliation statement")
+def recon_statement_pdf():
+    """The printed reconciliation statement of an account's month as a PDF (bankrecpdf), worked out as the month stands.
+    Read-only: the key for its check is made when it is printed (POST /api/recon/print)."""
+    e, a = _recon_account()
+    month = month_from(request.args.get("month"))
+    c = con()
+    try:
+        data = bankrecpdf.statement(c, e, a, month, printed_by=(request.args.get("printed_by") or "").strip()[:80] or None)
+    except formcode.NoKey as ex:
+        return err(str(ex) + " Press Print the reconciliation statement on Bank and reconciliation.", 409)
+    pdf = bankrecpdf.render(data)
+    return send_file(io.BytesIO(pdf), mimetype="application/pdf", download_name=bankrecpdf.file_name(data),
+                     as_attachment=request.args.get("download") == "1")
+
+
+@app.get("/api/export/recon.xlsx")
+@audited_read("bank reconciliation export")
+def export_recon():
+    """An account's month on Bank and reconciliation as an Excel file: the lines with what explains each, the No money
+    moved pairs, the two lists of outstanding items and the reopenings (reports.recon_workbook)."""
+    e, a = _recon_account()
+    month = month_from(request.args.get("month"))
+    c = con()
+    wb, name = reports.recon_workbook(c, e, a, month)
+    return send_file(io.BytesIO(reports.workbook_bytes(wb)), mimetype=XLSX, as_attachment=True, download_name=name)
 
 
 @app.post("/api/recon/confirm-book")
@@ -1422,7 +1622,7 @@ def recon_confirm_book():
 def recon_before_tracking():
     e, st = _recon_statement()
     b = request.get_json()
-    return _recon_do(lambda c: recon.sign_off_before_tracking(c, e, st, b.get("note"), b.get("checked") is True))
+    return _recon_do(lambda c: recon.sign_off_before_tracking(c, e, st, b.get("note"), b.get("checked") is True, b.get("prepared_by")))
 
 
 @app.get("/api/open-payments")
@@ -1813,7 +2013,7 @@ def sql_apply():
     money_in = {x[0] for x in c.execute("SELECT id FROM payments WHERE entity_id = ? AND direction = 'in'", (eid,))}
     sqlimport.propose(c, eid, recs)  # for the checklist task of journals and invoices
     added = linked = skipped = revived = 0
-    touched = set()
+    touched, held = set(), []  # held: entries a lock kept from linking to their payment
     einv_ready = myinvois.ready(c)
     can_supersede = sqlimport.supersede_ready(c)
     for r in recs:
@@ -1886,7 +2086,14 @@ def sql_apply():
         if pid and r["kind"] == "invoice":
             linked += 1  # the invoice is the receipt's sales invoice; nothing is added to its SQL ref (that is the OR's)
         elif pid:
-            _add_sql_ref(c, pid, r["doc_no"], r["amount"], r.get("einvoice"), r["date"], cur.lastrowid)
+            # A link that would change a signed-off month's books (the lock) isn't made: the entry is imported not
+            # linked, for a person to link once the month is reopened, and the import says so.
+            _, why = _held_by_lock(c, lambda: _add_sql_ref(c, pid, r["doc_no"], r["amount"], r.get("einvoice"), r["date"], cur.lastrowid), [pid])
+            if why:
+                c.execute("UPDATE sql_entries SET payment_id = NULL, status = 'unlinked' WHERE id = ?", (cur.lastrowid,))
+                held.append({"doc_no": r["doc_no"], "why": why})
+                db.log(c, f"Imported SQL entry {r['doc_no']} not linked: {why}")
+                continue
             linked += 1
             touched.add(int(pid))
     c.execute("UPDATE sql_imports SET entries = ?, linked = ? WHERE id = ?", (added, linked, imp))
@@ -1934,7 +2141,7 @@ def sql_apply():
     _pending_sql.pop(b["token"], None)
     _preview_made.pop(b["token"], None)
     return jsonify({"added": added, "linked": linked, "skipped": skipped, "bank_lines_matched": matched,
-                    "recon_changed": changed or [], **({"replaced": replaced} if replaced else {}),
+                    "recon_changed": changed or [], **({"replaced": replaced} if replaced else {}), **({"held": held} if held else {}),
                     **({"changed_linked": waiting} if waiting else {}), **({"ledger": kept} if kept else {}), **({"myinvois": einv} if einv else {})})
 
 
@@ -2403,6 +2610,61 @@ def _as_voucher(c, s, strict=True):
     return {**dict(s), "amount": round(abs(move), 2), "direction": "in" if move > 0 else "out"}
 
 
+def _pays_now(c, pids):
+    """The payments with these ids as they are now: {id: row as a dict} (ids of none are left out)."""
+    out = {}
+    for pid in pids:
+        try:
+            pid = int(pid)
+        except (TypeError, ValueError):
+            continue
+        r = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone()
+        if r:
+            out[pid] = dict(r)
+    return out
+
+
+def _lock_pays(c, snap, new=()):
+    """Refuses (recon.Locked) when a payment in snap (as it was), or one made since (new: their ids), now has a paid
+    date, amount or account that changes a signed-off month's books (recon.payment_lock). The caller rolls back."""
+    for pid, was in snap.items():
+        recon.payment_lock(c, was, c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone())
+    for pid in new:
+        if pid and pid not in snap:
+            recon.payment_lock(c, None, c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone())
+
+
+def _held_by_lock(c, run, pids):
+    """Runs run() (which returns the ids of payments it made, or None) inside a savepoint, and undoes just that part
+    when it would change a signed-off month's books: returns (its result, None), or (None, the lock's sentence)."""
+    if not c.in_transaction:
+        c.execute("BEGIN")
+    c.execute("SAVEPOINT held_by_lock")
+    snap = _pays_now(c, pids)
+    try:
+        made = run()
+        _lock_pays(c, snap, made or ())
+        if not recon.guard_ok(c):  # the central guard's own test, so one item is held, not the whole request
+            raise recon.Locked("It would change the figures of a month that is marked reconciled and locked. "
+                               "Reopen that month on Bank and reconciliation first.")
+    except recon.Locked as ex:
+        c.execute("ROLLBACK TO held_by_lock")
+        recon.guard_reset(c)
+        c.execute("RELEASE held_by_lock")
+        return None, str(ex)
+    c.execute("RELEASE held_by_lock")
+    return made, None
+
+
+@app.errorhandler(recon.ReconError)
+def _recon_refused(ex):
+    """A change the bank reconciliation refuses (a signed-off month is locked) that a route didn't catch itself: what
+    the request changed is undone, and the sentence says why."""
+    if "con" in g:
+        g.con.rollback()
+    return err(str(ex))
+
+
 def _link_entry(c, s, pid):
     if s["kind"] == "invoice":  # a customer invoice stays an invoice; it is the receipt's sales invoice, not a voucher
         c.execute("UPDATE sql_entries SET payment_id = ? WHERE id = ?", (pid, s["id"]))
@@ -2429,26 +2691,36 @@ def sql_create_all():
     by_ref, done = sqlimport.payments_by_ref(c, eid), set(sqlimport.linked_vouchers(c, eid))
     corrections = sqlimport.corrections(c, eid)
     created = linked = left = 0
-    skipped = []
+    skipped, held = [], []
     for s in unlinked:
         no = s["doc_no"].upper()
         if no in done:
             left += 1  # its number is already linked: changed in SQL since, for a person to check
             continue
-        # A voucher already named on a payment (its number typed in the SQL ref box) is linked, not added again.
+        # A voucher already named on a payment (its number typed in the SQL ref box) is linked, not added again. One
+        # whose link or new payment would change a signed-off month's books is left for a person (the lock), and said.
         if no in by_ref:
-            _link_entry(c, s, by_ref[no]["id"])
+            _, why = _held_by_lock(c, lambda: _link_entry(c, s, by_ref[no]["id"]), [by_ref[no]["id"]])
+            if why:
+                held.append({"doc_no": s["doc_no"], "why": why})
+                continue
             linked += 1
         elif s["id"] in corrections:
             skipped.append(s["doc_no"])  # probably a correction (no money moved): for a person to ignore
             continue
         else:
-            _payment_from_entry(c, s)
+            _, why = _held_by_lock(c, lambda: [_payment_from_entry(c, s)], [])
+            if why:
+                held.append({"doc_no": s["doc_no"], "why": why})
+                continue
             created += 1
         done.add(no)
+    for h in held:
+        db.log(c, f"Left SQL entry {h['doc_no']} not linked: {h['why']}")
     matched = _rematch(c, eid)  # the new payments can now explain bank lines imported earlier
     c.commit()
-    return jsonify({"created": created, "linked": linked, "left": left, "corrections": skipped, "bank_lines_matched": matched})
+    return jsonify({"created": created, "linked": linked, "left": left, "corrections": skipped, "bank_lines_matched": matched,
+                    **({"held": held} if held else {})})
 
 
 @app.post("/api/sql/entries/ignore")
@@ -2538,6 +2810,9 @@ def sql_entry_update(sid):
     c = con()
     s = c.execute("SELECT * FROM sql_entries WHERE id = ?", (sid,)).fetchone() or abort(404)
     matched = 0
+    # A link that gives a payment of an account kept here a paid date or amount in a signed-off month is refused (the
+    # lock), with everything this request did undone (_recon_refused).
+    snap, made = _pays_now(c, [b.get("payment_id"), s["payment_id"]]), []
     if s["kind"] == "journal" and (b.get("payment_id") or "create_payment" in b):
         try:
             _as_voucher(c, s)
@@ -2561,6 +2836,7 @@ def sql_entry_update(sid):
         matched = _match_payments(c, s["entity_id"], {int(b["payment_id"])})
     elif "create_payment" in b:
         pid = _payment_from_entry(c, _as_voucher(c, s), b["create_payment"].get("category"))
+        made.append(pid)
         matched = _match_payments(c, s["entity_id"], {pid})
     elif b.get("status") == "ignored":
         if s["status"] != "unlinked":
@@ -2571,6 +2847,7 @@ def sql_entry_update(sid):
             return err(f"{s['doc_no']} can't be ignored: {what}.")
         c.execute("UPDATE sql_entries SET status = 'ignored' WHERE id = ?", (sid,))
         db.log(c, f"Ignored SQL entry {s['doc_no']}")
+    _lock_pays(c, snap, made)
     c.commit()
     return jsonify({"ok": True, "bank_lines_matched": matched})
 
@@ -2594,6 +2871,7 @@ def sql_entry_move_link(sid):
     o, n = pair
     pid = o["payment_id"]
     p = c.execute("SELECT * FROM payments WHERE id = ?", (pid,)).fetchone()
+    snap = _pays_now(c, [pid])  # checked against the lock before the commit (_recon_refused undoes it all)
     follow = bool(b.get("update_amount"))
     if follow and not db.same_amount(p["amount"], o["amount"]):
         return err(f"The payment's amount ({(p['amount'] or 0):,.2f}) isn't {o['doc_no']}'s old amount ({o['amount']:,.2f}), "
@@ -2617,6 +2895,7 @@ def sql_entry_move_link(sid):
         db.log(c, f"Changed the amount of payment '{p['description']}' from {o['amount']:,.2f} to {n['amount']:,.2f}, "
                   f"as {o['doc_no']} was changed in SQL")
     matched = _match_payments(c, s["entity_id"], {pid})
+    _lock_pays(c, snap)
     c.commit()
     return jsonify({"ok": True, "doc_no": n["doc_no"], "payment": p["description"], "amount_changed": amount_changed,
                     "bank_lines_matched": matched})
@@ -2628,7 +2907,9 @@ def sql_entry_unlink(sid):
     s = c.execute("SELECT * FROM sql_entries WHERE id = ?", (sid,)).fetchone() or abort(404)
     if not s["payment_id"]:
         return err(f"{s['doc_no']} isn't linked to a payment.")
+    snap = _pays_now(c, [s["payment_id"]])
     desc, removed = _unlink_entry(c, s)
+    _lock_pays(c, snap)  # its paid date or amount going back must not change a signed-off month's books
     c.commit()
     # Whether it goes back under Before tracking on the SQL page rather than SQL entries not linked (the toast says so).
     before = s["kind"] not in ("invoice", "journal") and db.entry_before_tracking(entity(c, s["entity_id"]), s["description"], s["doc_date"])
@@ -3069,12 +3350,31 @@ def set_sql_exports_dir():
     return jsonify({"sql_exports_dir": sqlfetch.folder_of(SETTINGS), "default": not path})
 
 
-def _setup_call(fn, preview=None):
+def _setup_call(fn, preview=None, books=False):
     """Runs a Setup change; a refusal comes back as its plain sentence. preview: the change is made, what it did is
-    returned, and it is all undone."""
+    returned, and it is all undone. books: the change may alter which bank account's books count a payment (bank
+    accounts added, put back, their currency or the cash book changed): it is refused when a signed-off month's book
+    figures would change (recon.refuse_figures_changed), as such a month is locked."""
     c = con()
     try:
+        if books:
+            before = recon.signed_figures(c)
+            sole, ids = recon.sole_map(c), [r[0] for r in c.execute("SELECT id FROM accounts")]
         out = fn(c)
+        if books and recon.signed_figures(c) != before:
+            # A new account in a currency (added, put back, switched to it) stops the company's one account there from
+            # counting the payments with no account: they are set to that account, which their books already counted
+            # them in, so nothing signed off moves. What still moves (an account with signed-off months stopped,
+            # deleted or switched to another currency, the cash book changed) is refused.
+            recon.pin_no_account(c, sole, ids)
+            recon.refuse_figures_changed(c, before, "a change in Setup that alters its book figures (which account counts a "
+                                                    "payment with none of its own, which is the cash book, whether the company is kept "
+                                                    "in SQL Account, or its first month tracked) can't be saved")
+    except recon.ReconError as x:
+        c.rollback()
+        rulebook.forget(c)
+        checklistbook.forget(c)
+        return err(str(x), 409)
     except masters.Refused as x:
         c.rollback()
         rulebook.forget(c)
@@ -3238,7 +3538,7 @@ def setup_restore(row_id):
     preview = b.get("preview") is True
     if not preview:
         _reason()
-    return _setup_call(lambda c: restore.put_back(c, row_id), preview=preview)
+    return _setup_call(lambda c: restore.put_back(c, row_id), preview=preview, books=True)
 
 
 @app.get("/api/setup/<kind>")
@@ -3259,7 +3559,7 @@ def setup_create(kind):
     def run(c):
         rid = masters.create(c, kind, b.get("fields"), entity_id=b.get("entity_id") if isinstance(b.get("entity_id"), int) else None)
         return {"id": rid, **masters.record(c, kind, rid)}
-    return _setup_call(run)
+    return _setup_call(run, books=kind in ("accounts", "entities"))
 
 
 @app.patch("/api/setup/<kind>/<int:rid>")
@@ -3269,7 +3569,7 @@ def setup_update(kind, rid):
     def run(c):
         notes = masters.update(c, kind, rid, b.get("fields"))
         return {**masters.record(c, kind, rid), "notes": notes}
-    return _setup_call(run)
+    return _setup_call(run, books=kind in ("accounts", "entities"))
 
 
 @app.post("/api/setup/<kind>/<int:rid>/<act>")
@@ -3277,13 +3577,13 @@ def setup_active(kind, rid, act):
     if act not in ("stop", "use"):
         return err("There is no such action.", 404)
     _reason()
-    return _setup_call(lambda c: (masters.set_active(c, kind, rid, act == "use"), masters.record(c, kind, rid))[1])
+    return _setup_call(lambda c: (masters.set_active(c, kind, rid, act == "use"), masters.record(c, kind, rid))[1], books=kind in ("accounts", "entities"))
 
 
 @app.delete("/api/setup/<kind>/<int:rid>")
 def setup_delete(kind, rid):
     _reason()
-    return _setup_call(lambda c: (masters.delete(c, kind, rid), {"ok": True})[1])
+    return _setup_call(lambda c: (masters.delete(c, kind, rid), {"ok": True})[1], books=kind in ("accounts", "entities"))
 
 
 # ---------- printed invoices (invoicepdf) ----------

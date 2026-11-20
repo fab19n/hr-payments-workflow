@@ -161,7 +161,7 @@ document.addEventListener("click", async ev => {
     }
     if (t.id === "addPayment") return addPaymentDrawer();
     if (ds.explain) return explainLine(+ds.explain);
-    if (ds.rcAcct) { Object.assign(state.recon, { account: +ds.rcAcct, year: null, open: null, rv: null }); state.addr.params.account = String(ds.rcAcct); syncAddr(); return render(); }
+    if (ds.rcAcct) { Object.assign(state.recon, { account: +ds.rcAcct, year: null, open: null, rv: null, print: null }); state.addr.params.account = String(ds.rcAcct); syncAddr(); return render(); }
     if (ds.rcYear) { Object.assign(state.recon, { year: ds.rcYear, open: null }); return drawRecon(); }
     if (ds.rcOpen) { state.recon.open = state.recon.open === ds.rcOpen ? null : ds.rcOpen; return drawRecon(); }
     if (ds.rcReview) return openReview(+ds.rcReview);
@@ -173,12 +173,29 @@ document.addEventListener("click", async ev => {
       return reloadReview();
     }
     if (t.id === "rvApply") { t.disabled = true; try { return await rvApply(); } finally { t.disabled = false; } }
-    if (ds.rcSign) return rcAct("sign-off", { statement_id: +ds.rcSign }, "Marked as reconciled.");
-    if (ds.rcUndo) return rcAct("undo-sign-off", { statement_id: +ds.rcUndo }, "Sign-off undone.");
-    if (ds.rcReconfirm) return rcAct("confirm-book", { statement_id: +ds.rcReconfirm }, "Sign-off confirmed again with the new book figures.");
+    // Bank and reconciliation (pages/bank.js): Mark reconciled with its note and Prepared by; Reopen month (a reason is
+    // asked for in a dialog; it replaces Undo sign-off); the print preview of the reconciliation statement.
+    // Each runs once at a time: the button is off (and says it is busy) until the server has answered.
+    const busy = async run => { t.disabled = true; t.setAttribute?.("aria-busy", "true");
+      try { return await run(); } finally { if (t.isConnected !== false) { t.disabled = false; t.removeAttribute?.("aria-busy"); } } };
+    if (ds.rcSign) {
+      const id = ds.rcSign;
+      return await busy(() => rcSign(+id, document.querySelector(`[data-rc-free="${id}"]`)?.value.trim() || "",
+        document.querySelector(`[data-rc-by="${id}"]`)?.value.trim() || ""));
+    }
+    if (ds.rcReopen) return reopenDialog(+ds.rcReopen);
+    if (t.id === "bk-dlg-go") return await reopenGo(t);
+    if (t.id === "bk-dlg-cancel") return closeDrawer();
+    if (ds.rcPrint) return await busy(() => openPrint(ds.rcPrint));
+    if (ds.rcPrintBack) { state.recon.print = null; return drawRecon(); }
+    if (ds.rcSigned) return await busy(() => rcSignedUpload(+ds.rcSigned, ds.code));
+    if (ds.rcReconfirm) return await busy(() => rcAct("confirm-book", { statement_id: +ds.rcReconfirm }, "Sign-off confirmed again with the new book figures."));
     if (ds.rcBefore) {
       const id = ds.rcBefore, tick = document.querySelector(`[data-rc-before-tick="${id}"]`)?.checked === true;
-      return rcAct("before-tracking", { statement_id: +id, checked: tick, note: document.querySelector(`[data-rc-note="${id}"]`)?.value || "" }, "Marked as reconciled before tracking.");
+      const by = document.querySelector(`[data-rc-by="${id}"]`)?.value.trim() || "", label = rcShown()?.label || "The month";
+      keepPreparedBy(by);
+      return await busy(() => rcAct("before-tracking", { statement_id: +id, checked: tick, note: document.querySelector(`[data-rc-note="${id}"]`)?.value || "", prepared_by: by },
+        `Marked as reconciled before tracking. ${label} is locked.`));
     }
     if (ds.unlink) {
       const r = await api(`/api/statement-lines/${ds.unlink}`, { json: { payment_id: null } });
@@ -299,6 +316,7 @@ document.addEventListener("change", async ev => {
     if (t.dataset.rvSel) { RV().sel[t.dataset.rvSel] = t.checked; return paintBar(); }
     if (t.dataset.invMonth) { state.invMonth = t.value; const box = $("#invPrint"); if (box) box.innerHTML = invoicePrintBar(state.invPrint); return; }
     if (t.dataset.rvKeep) { RV().keep[t.dataset.rvKeep] = t.checked; return; }
+    if (t.dataset.pairTick) return await pairTick(t);   // a No money moved pair confirmed or not (pages/bank.js)
     if (t.dataset.regPick) return regPickOne(+t.dataset.regPick, t.checked);
     if (t.dataset.regPickAll) return regPickAll(t.checked);
     if (t.id === "regBulkDate") { regState().date = t.value; return; }

@@ -33,7 +33,9 @@ GROUPS = (("payments", "Payments", "to payments"), ("documents", "Documents", "t
           ("packs", "Packs built since for this month", None))
 RULE_TABLES = ("required_sets", "checklist_terms", "checklist_items")
 TYPE_TABLES = ("payment_types", "doc_types", "app_settings")
-OWN_TABLES = ("payments", "tasks", "months", "statements", "statement_lines", "documents", "sql_entries", "accounts")
+OWN_TABLES = ("payments", "tasks", "months", "statements", "statement_lines", "documents", "sql_entries", "accounts",
+              # the bank reconciliation's links from lines to payments, No money moved pairs and reopenings (updates 39 to 41)
+              "statement_line_payments", "recon_pairs", "recon_reopens")
 # What the pack's books pages read (auditpack.books_checks): SQL's reports kept, their documents and openings, the chart
 # of accounts and the statutory accounts. The account lines are left out: a document changed in SQL comes in as a new
 # version of its ledger_docs row, which is counted.
@@ -157,6 +159,11 @@ def _changes(con, ent, month, after_id, token):
     stmt_docs = held(stmts, "document_id")
     stmt_docs |= ids("SELECT document_id FROM statements WHERE id IN (SELECT value FROM json_each(?))", (json.dumps(sorted(stmt_ids)),))
     lines = [r for r in by.get("statement_lines", []) if _any(r, lambda i: i.get("statement_id") in stmt_ids)]
+    line_ids = held(lines) | ids("SELECT id FROM statement_lines WHERE statement_id IN (SELECT value FROM json_each(?))",
+                                 (json.dumps(sorted(stmt_ids)),))
+    lines += [r for r in by.get("statement_line_payments", []) if _any(r, lambda i: i.get("line_id") in line_ids)]
+    lines += [r for r in by.get("recon_pairs", []) if _any(r, lambda i: i.get("month") == month and i.get("account_id") in accts)]
+    lines += [r for r in by.get("recon_reopens", []) if _any(r, lambda i: i.get("statement_id") in stmt_ids)]
     docs = [r for r in by.get("documents", []) if _any(r, lambda i: i.get("doc_type") != "sqlexport" and i.get("task_id") not in pack_items and (
         i.get("payment_id") in month_pay or i.get("task_id") in task_ids or i.get("statement_id") in stmt_ids or i.get("id") in stmt_docs
         or (mine(i) and i.get("month") == month and not i.get("payment_id") and not i.get("task_id"))))]

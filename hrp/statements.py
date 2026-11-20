@@ -141,22 +141,28 @@ def auto_match(con, statement_id, only=None):
     or freed by removing its payment, is left for a person to explain.
     """
     from . import recon
+    from .db import line_links
     st = con.execute("SELECT * FROM statements WHERE id = ?", (statement_id,)).fetchone()
+    if st["reconciled_at"]:
+        return 0  # a signed-off month is locked: nothing on it is matched until it is reopened
     lines = con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND payment_id IS NULL AND status = 'unmatched'
                            AND undone_payment_id IS NULL""", (statement_id,)).fetchall()
     # Lines classify marked as the bank's own charges, not confirmed yet: one may be the fee of a document's other line.
     fees = con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND payment_id IS NULL AND status = 'no_docs'
                           AND note = 'Bank charge' AND confirmed_at IS NULL AND undone_payment_id IS NULL""", (statement_id,)).fetchall()
     pays = con.execute(
-        """SELECT p.*, py.match_words, py.name AS payee_name FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
+        f"""SELECT p.*, py.match_words, py.name AS payee_name FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
            WHERE p.account_id = ? AND p.month BETWEEN ? AND ? AND p.amount IS NOT NULL
-           AND NOT EXISTS (SELECT 1 FROM statement_lines s WHERE s.payment_id = p.id)
+           AND NOT EXISTS (SELECT 1 FROM {line_links(con)} s WHERE s.payment_id = p.id)
            ORDER BY p.amount_is_estimate, p.due_date""",  # firm amounts first, so estimates can't take their lines
         (st["account_id"], shift(st["month"], -1), st["month"])).fetchall()
     if only is not None:
         pays = [p for p in pays if p["id"] in only]
     acct = con.execute("SELECT entity_id FROM accounts WHERE id = ?", (st["account_id"],)).fetchone()
     parts = recon.bank_parts(con, acct["entity_id"], [p["id"] for p in pays]) if acct and pays else {}
+    # whether the account's books are the payments recorded here (they count a line needing no documents by its date)
+    payments_book = bool(acct) and recon.book_source(con, con.execute("SELECT * FROM entities WHERE id = ?", (acct["entity_id"],)).fetchone(),
+                                                     con.execute("SELECT * FROM accounts WHERE id = ?", (st["account_id"],)).fetchone()) == "payments"
     from datetime import date as _d
 
     def gap(p, chosen):
@@ -186,8 +192,12 @@ def auto_match(con, statement_id, only=None):
             break
         _, p, chosen = best
         remaining.remove(p)
+        # A payment whose paid date or amount the match would change in a signed-off month's books (or one carrying on
+        # from them) is left alone: the month is locked. Tried inside a savepoint, so a refusal undoes only this match.
+        if not con.in_transaction:
+            con.execute("BEGIN")
+        con.execute("SAVEPOINT auto_match_one")
         for l in chosen:
-            taken.add(l["id"])
             # A fee line classify had marked as a bank charge is the document's own line now: its note goes.
             con.execute("""UPDATE statement_lines SET payment_id = ?, status = 'matched',
                            note = CASE WHEN status = 'no_docs' THEN NULL ELSE note END WHERE id = ?""", (p["id"], l["id"]))
@@ -196,6 +206,21 @@ def auto_match(con, statement_id, only=None):
             con.execute("UPDATE payments SET paid_date = ?, paid_source = 'bank' WHERE id = ?",
                         (max(l["txn_date"] for l in paying), p["id"]))
         take_line_total(con, p["id"])
+        try:
+            recon.payment_lock(con, p, con.execute("SELECT * FROM payments WHERE id = ?", (p["id"],)).fetchone())
+            # A bank charge line taken as the payment's fee line leaves the books it was counted in (by its date).
+            for l in chosen:
+                if l["status"] == "no_docs" and payments_book:
+                    recon.refuse_locked(con, recon.book_month_locked(con, st["account_id"], l["txn_date"][:7]))
+            if not recon.guard_ok(con):
+                raise recon.Locked("a signed-off month's figures would change")
+        except recon.Locked:
+            con.execute("ROLLBACK TO auto_match_one")
+            recon.guard_reset(con)
+            con.execute("RELEASE auto_match_one")
+            continue
+        con.execute("RELEASE auto_match_one")
+        taken.update(l["id"] for l in chosen)
         matched += len(chosen)
     return matched
 
@@ -220,8 +245,9 @@ def take_line_total(con, payment_id):
 
 def paying_dates(con, payment_id):
     """The dates of the bank lines linked that paid the payment: money going its way, not a refund or a charge."""
+    from .db import line_links
     return [r[0] for r in con.execute(
-        """SELECT l.txn_date FROM statement_lines l JOIN payments p ON p.id = l.payment_id
+        f"""SELECT l.txn_date FROM {line_links(con)} l JOIN payments p ON p.id = l.payment_id
            WHERE p.id = ? AND (l.amount < 0) = (p.direction = 'out')""", (payment_id,))]
 
 
@@ -236,6 +262,13 @@ def classify(con, statement_id):
     st = con.execute("""SELECT s.*, a.entity_id, a.label FROM statements s JOIN accounts a ON a.id = s.account_id
                         WHERE s.id = ?""", (statement_id,)).fetchone()
     marked = 0
+    if st["reconciled_at"]:
+        return marked  # a signed-off month is locked: its lines stay as they are until it is reopened
+    from . import recon
+    acct = con.execute("SELECT * FROM accounts WHERE id = ?", (st["account_id"],)).fetchone()
+    ent = con.execute("SELECT * FROM entities WHERE id = ?", (st["entity_id"],)).fetchone()
+    # A line explained without documents counts in the books of an account kept here (recon.movements, by its date).
+    payments_book = recon.book_source(con, ent, acct) == "payments"
     # Also revisits transfers marked before the other account's statement arrived, to fill in the other side.
     for l in con.execute("""SELECT * FROM statement_lines WHERE statement_id = ? AND payment_id IS NULL AND undone_payment_id IS NULL
                             AND (status = 'unmatched' OR note LIKE '%not imported yet%')""", (statement_id,)).fetchall():
@@ -255,6 +288,8 @@ def classify(con, statement_id):
                     else "Own-account transfer (other account's statement not imported yet)")
         else:
             continue
+        if payments_book and recon.book_month_locked(con, st["account_id"], l["txn_date"][:7]):
+            continue  # it would enter the books of a signed-off month (or one carrying on from this): left to explain
         con.execute("UPDATE statement_lines SET status = 'no_docs', note = ? WHERE id = ?", (note, l["id"]))
         marked += 1
     return marked
@@ -395,8 +430,8 @@ def suggest(con, entity_id, statement_id=None):
         # A payment paid in several lines (Maybank splits large transfers) stays open for the amount its linked lines
         # don't cover yet; one fully covered, or with no amount to compare, is not offered.
         pays = con.execute(
-            """SELECT p.*, py.match_words, py.name AS payee_name,
-                      (SELECT SUM(ABS(s.amount)) FROM statement_lines s WHERE s.payment_id = p.id) AS linked
+            f"""SELECT p.*, py.match_words, py.name AS payee_name,
+                      (SELECT SUM(ABS(s.amount)) FROM {recon.db.line_links(con)} s WHERE s.payment_id = p.id) AS linked
                FROM payments p LEFT JOIN payees py ON py.id = p.payee_id
                WHERE p.account_id = ? AND p.month BETWEEN ? AND ?""",
             (st["account_id"], shift(st["month"], -1), st["month"])).fetchall()

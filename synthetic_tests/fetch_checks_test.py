@@ -523,6 +523,6 @@ check("update 36 marks a voucher already listed twice as replaced by its later e
 
 with db.connect() as con:
     v = con.execute("PRAGMA user_version").fetchone()[0]
-check("the records are at the latest update, 38", v == len(db.MIGRATIONS) == 38, v)
+check("the records are at the latest update", v == len(db.MIGRATIONS) >= 41, v)  # 41 since slice 4's bank reconciliation updates
 
 print(f"\nAll {len(passed)} checks passed. Records folder used: {tmp}")

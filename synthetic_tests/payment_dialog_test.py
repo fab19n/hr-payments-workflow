@@ -1,20 +1,21 @@
 """The payment dialog's server checks (slice 3), on made-up records only.
 
-1. Moving a payment to another bank account rechecks the reconciliation of both accounts: its bank line on the old
-   account's statement is taken off it (left to explain, its confirmation gone) and that statement's sign-off goes; the
-   new account's statement is looked at for its line, and that statement's sign-off goes too. A third account, and a
-   save that leaves the account as it was, change nothing. Moved back, its old line is linked again with its paid date.
-   An account in another currency is accepted, rechecking both; taking the account off frees only the old
-   account's lines and rechecks it. A payment with no account is rechecked in
-   the books of the company's one account in its currency; a line already linked on the new account keeps its
-   confirmation.
+1. Moving a payment to another bank account: its bank line on the old account's statement is taken off it (left to
+   explain, its confirmation gone); the new account's statement is looked at for its line. A third account, and a save
+   that leaves the account as it was, change nothing. Moved back, its old line is linked again with its paid date. An
+   account in another currency is accepted; taking the account off frees only the old account's lines. A line already
+   linked on the new account keeps its confirmation. Since slice 4 a signed-off month is locked: until slice 4 a move
+   took the sign-off of both sides away; now the move is refused, with nothing changed, while the month its paid date
+   falls in is signed off on either side (a month signed off before tracking too), and goes through once it is reopened.
+   A payment with no account counts in the books of the company's one account in its currency, so that side's lock
+   counts too; with two accounts in that currency no book counts it, and nothing is locked on that side.
 2. The document viewer shows only a PDF or an image inline: any other file is served as a download, even when it is
    asked for inline.
 3. The month's payments say when a linked SQL voucher was edited in SQL since (the dialog's note), in the SQL import
    page's words; a payment whose voucher is unchanged says nothing.
 
 Made-up company EXP (kept here, not in SQL) with three ringgit accounts, Alpha, Beta and Gamma, and October 2026
-statements on each, all signed off; made-up company EXQ (kept in SQL Account) with two linked vouchers, one of them
+statements on each, signed off and reopened as each check needs; made-up company EXQ (kept in SQL Account) with two linked vouchers, one of them
 fetched again from SQL at another amount.
 
 Run: .venv\\Scripts\\python -m synthetic_tests.payment_dialog_test
@@ -109,28 +110,53 @@ con.close()
 
 signed = lambda sid: bool(q("SELECT reconciled_at FROM statements WHERE id = ?", (sid,))[0]["reconciled_at"])
 line = lambda lid: q("SELECT * FROM statement_lines WHERE id = ?", (lid,))[0]
+acct_of = lambda pid: q("SELECT account_id FROM payments WHERE id = ?", (pid,))[0]["account_id"]
+
+
+def setsign(*sids, on=True, how="review"):
+    """Signs the statements off (on) or reopens them, straight in the records (the reopen route is checked elsewhere)."""
+    c2 = db.connect()
+    c2.arm("user", "test: made-up sign-offs")
+    c2.execute(f"UPDATE statements SET reconciled_at = ?, reconciled_how = ? WHERE id IN ({','.join('?' * len(sids))})",
+               (NOW if on else None, how if on else None, *sids))
+    c2.commit()
+    c2.close()
+
+
+def locked_out(pid, body, what):
+    """The PATCH is refused because a month is locked, and nothing about the payment changed."""
+    before = q("SELECT * FROM payments WHERE id = ?", (pid,))[0]
+    lines = q("SELECT id, payment_id, confirmed_at FROM statement_lines ORDER BY id")
+    r = call("patch", f"/api/payments/{pid}", 400, json=body).get_json()
+    check(what, "is marked reconciled and locked" in r["error"] and "Reopen the month" in r["error"]
+          and q("SELECT * FROM payments WHERE id = ?", (pid,))[0] == before
+          and q("SELECT id, payment_id, confirmed_at FROM statement_lines ORDER BY id") == lines, r)
+
 
 # A save that names the same account changes nothing.
 call("patch", f"/api/payments/{P}", json={"account_id": A, "notes": "same account"})
 check("a save that keeps the account leaves both reconciliations signed off", signed(S_A) and signed(S_B) and signed(S_G))
 check("... and the bank line stays linked and confirmed", line(L_A)["payment_id"] == P and line(L_A)["confirmed_at"])
 
-# Moving it from Alpha to Beta.
+# Moving it from Alpha to Beta: refused while either side's October is signed off (slice 4: it used to take the sign-offs
+# away); once both are reopened it goes through.
+locked_out(P, {"account_id": B}, "moving it off Alpha is refused while Alpha's October is signed off: the month is locked")
+setsign(S_A, on=False)
+locked_out(P, {"account_id": B}, "...and while Beta's October, where its line would be found, is signed off")
+setsign(S_B, on=False)
 call("patch", f"/api/payments/{P}", json={"account_id": B})
-check("the payment is on Beta now", q("SELECT account_id FROM payments WHERE id = ?", (P,))[0]["account_id"] == B)
+check("the payment is on Beta now", acct_of(P) == B)
 la = line(L_A)
 check("its line on Alpha's statement is taken off it and left to explain",
       la["payment_id"] is None and la["status"] == "unmatched" and la["confirmed_at"] is None, la)
 check("...not marked as undone by a person, so moving the payment back can find it again", la["undone_payment_id"] is None, la)
-check("Alpha's October sign-off goes: its reconciliation is checked again", not signed(S_A))
 lb = line(L_B)
 check("Beta's statement is looked at: its line is linked to the payment", lb["payment_id"] == P and lb["status"] == "matched", lb)
-check("Beta's October sign-off goes too: its reconciliation is checked again", not signed(S_B))
 check("the paid date follows Beta's line", q("SELECT paid_date FROM payments WHERE id = ?", (P,))[0]["paid_date"] == "2026-10-21")
 check("Gamma, not involved, keeps its sign-off", signed(S_G) and line(L_G)["confirmed_at"])
 log = [r["what"] for r in q("SELECT what FROM activity ORDER BY id")]
-check("the activity log says both sign-offs were removed",
-      any("Alpha October 2026" in a and "sign-off" in a for a in log) and any("Beta October 2026" in a and "sign-off" in a for a in log), log[-6:])
+check("the activity log says the Alpha line's confirmation was cleared, and no sign-off was taken away",
+      any("Alpha October 2026" in a and "confirmation" in a for a in log) and not any("Removed the reconciled sign-off" in a for a in log), log[-6:])
 
 # Moved back from Beta to Alpha: its Alpha line is linked again and the paid date is the line's again.
 call("patch", f"/api/payments/{P}", json={"account_id": A})
@@ -149,11 +175,12 @@ S_D = con.execute("""INSERT INTO statements (account_id, month, opening, closing
 con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'review' WHERE id = ?", (NOW, S_A))
 con.commit()
 con.close()
+locked_out(P, {"account_id": USD}, "moving it to the dollar account is refused while either side's October is signed off")
+setsign(S_A, S_D, on=False)
 call("patch", f"/api/payments/{P}", json={"account_id": USD})
 pd_ = q("SELECT account_id, currency FROM payments WHERE id = ?", (P,))[0]
-check("a ringgit payment moved to the company's dollar account is accepted, and stays a ringgit payment",
+check("a ringgit payment moved to the company's dollar account is accepted once both are reopened, and stays a ringgit payment",
       pd_ == {"account_id": USD, "currency": "MYR"}, pd_)
-check("...and both accounts' October reconciliations are checked again", not signed(S_A) and not signed(S_D), (signed(S_A), signed(S_D)))
 
 # A payment taken off its bank account (account 0 or blank): accepted; only its lines on the old account's statements
 # are freed (not marked as undone by a person), a line on another account's statement linked to another payment stays,
@@ -170,21 +197,23 @@ L_TB = con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_da
 con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'review' WHERE id IN (?, ?)", (NOW, S_A, S_G))
 con.commit()
 con.close()
+locked_out(PT, {"account_id": 0}, "taking a payment off its account is refused while the old account's October is signed off")
+setsign(S_A, on=False)
 call("patch", f"/api/payments/{PT}", json={"account_id": 0})
-check("a payment can be taken off its bank account (account 0)", q("SELECT account_id FROM payments WHERE id = ?", (PT,))[0]["account_id"] is None)
+check("a payment can be taken off its bank account (account 0) once the month is reopened",
+      q("SELECT account_id FROM payments WHERE id = ?", (PT,))[0]["account_id"] is None)
 lt = line(L_T)
 check("...its line on the old account's statement is freed, not marked as undone by a person",
       lt["payment_id"] is None and lt["status"] == "unmatched" and lt["undone_payment_id"] is None, lt)
-check("...a line on another account's statement, linked to another payment, is untouched",
+check("...a line on another account's statement, linked to another payment, is untouched, its month still signed off",
       line(L_G)["payment_id"] == OTHER and line(L_G)["confirmed_at"] and signed(S_G), (line(L_G), signed(S_G)))
-check("...and the old account's month is checked again", not signed(S_A))
 check("...its line on a statement of an account it isn't on stays linked: only the old account's lines are freed",
       line(L_TB)["payment_id"] == PT, line(L_TB))
 call("patch", f"/api/payments/{P}", json={"account_id": ""})
 check("a blank account takes it off too", q("SELECT account_id FROM payments WHERE id = ?", (P,))[0]["account_id"] is None)
 
-# The old account is checked again on its own: a payment with no bank line (its paid date typed in) moved from Alpha to
-# Beta frees no line, yet Alpha's month loses its sign-off (its books no longer count the payment).
+# The old account is locked on its own: a payment with no bank line (its paid date typed in) moved from Alpha to Beta
+# frees no line, yet Alpha's books count it, so the move is refused while Alpha's month is signed off.
 con = db.connect()
 con.arm("user", "test: a made-up payment paid by hand")
 PM = con.execute("""INSERT INTO payments (entity_id, month, account_id, category, description, amount, due_date, paid_date, paid_source,
@@ -193,13 +222,20 @@ PM = con.execute("""INSERT INTO payments (entity_id, month, account_id, category
 con.execute("UPDATE statements SET reconciled_at = ?, reconciled_how = 'review' WHERE id = ?", (NOW, S_A))
 con.commit()
 con.close()
+locked_out(PM, {"account_id": B}, "a payment with no bank line can't move off Alpha while Alpha's month, whose books count it, is signed off")
+locked_out(PM, {"amount": 80}, "...nor can its amount change (a bank field of a locked month)")
+locked_out(PM, {"paid_date": "2026-11-02"}, "...nor its paid date")
+call("patch", f"/api/payments/{PM}", json={"notes": "a note is not a bank field"})
+check("...while a field the bank doesn't hold (its notes) can still be changed",
+      q("SELECT notes FROM payments WHERE id = ?", (PM,))[0]["notes"] == "a note is not a bank field")
+setsign(S_A, on=False)
 call("patch", f"/api/payments/{PM}", json={"account_id": B})
-check("a payment with no bank line moved off Alpha: Alpha's month is checked again on its own", not signed(S_A))
+check("...and once Alpha's month is reopened it moves", acct_of(PM) == B)
 
 # EXR: a payment with no account counts in the books of the company's one ringgit account, Only (the books' rule: a
-# company with exactly one account in that currency). Put on Only, Only's month is checked again; a line already linked
-# on Only keeps its confirmation (only lines the move links are changed). Once the company has a second ringgit account,
-# no book counts a payment with no account, so moving one has nothing to check again on the old side.
+# company with exactly one account in that currency). Put on Only, Only's month is locked while signed off; reopened, the
+# move goes through and a line already linked on Only keeps its confirmation (only lines the move links are changed).
+# Once the company has a second ringgit account, no book counts a payment with no account, so Only's lock doesn't apply.
 RID = q("SELECT id FROM entities WHERE code = 'EXR'")[0]["id"]
 ONLY = q("SELECT id FROM accounts WHERE entity_id = ?", (RID,))[0]["id"]
 con = db.connect()
@@ -221,8 +257,12 @@ L_NOV = con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_d
                        VALUES (?, 1, '2026-11-02', 'TEST PAYEE E RENT', -900, 1100, ?, 'matched', ?)""", (S_NOV, PN, NOW)).lastrowid
 con.commit()
 con.close()
+# The company's one ringgit account already counts a payment with no account, so putting it there changes no book:
+# accepted although that month is signed off (slice 4 review: a change that moves no figure isn't refused).
 call("patch", f"/api/payments/{PN}", json={"account_id": ONLY})
-check("a payment with no account put on the company's one account: that account's month is checked again", not signed(S_ONLY))
+check("a payment with no account put on the company's one account (whose books already count it) is accepted, its month still signed off",
+      acct_of(PN) == ONLY and signed(S_ONLY))
+setsign(S_ONLY, on=False)
 check("a line already linked on the new account keeps its confirmation and its statement's sign-off",
       line(L_NOV)["confirmed_at"] and signed(S_NOV), (line(L_NOV), signed(S_NOV)))
 con = db.connect()
@@ -233,9 +273,11 @@ PN2 = no_acct_pay("Test Payee F rates", "2026-10-09")
 con.commit()
 con.close()
 call("patch", f"/api/payments/{PN2}", json={"account_id": SECOND})
-check("with two ringgit accounts no book counted a payment with no account: moving one leaves Only's sign-off", signed(S_ONLY))
+check("with two ringgit accounts no book counted a payment with no account: moving one is accepted, Only stays signed off",
+      acct_of(PN2) == SECOND and signed(S_ONLY))
 
-# A line freed by a move, on a statement signed off before tracking: that sign-off stays (its books are not reviewed here).
+# A line on a statement signed off before tracking: that month is locked too (until slice 4 the line went and the
+# sign-off stayed). Reopened with a reason, the move frees the line.
 con = db.connect()
 con.arm("user", "test: a made-up month signed off before tracking")
 PBT = con.execute("""INSERT INTO payments (entity_id, month, account_id, category, description, amount, due_date, paid_date, paid_source,
@@ -247,9 +289,12 @@ L_GSEP = con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_
                         VALUES (?, 1, '2026-09-10', 'TEST PAYEE G REPAIRS', -150, 5000, ?, 'matched', ?)""", (S_GSEP, PBT, NOW)).lastrowid
 con.commit()
 con.close()
+locked_out(PBT, {"account_id": B}, "a move that would free a line of a month signed off before tracking is refused: that month is locked too")
+# Gamma has no book opening, so nothing carries on from September: it is reopened on its own though October is signed off.
+r = call("post", "/api/recon/reopen", json={"entity_id": EID, "statement_id": S_GSEP, "reason": "Test: the repair was paid from Beta"}).get_json()
 call("patch", f"/api/payments/{PBT}", json={"account_id": B})
-check("a line freed by a move on a month signed off before tracking: the line goes, the sign-off stays",
-      line(L_GSEP)["payment_id"] is None and signed(S_GSEP), (line(L_GSEP), signed(S_GSEP)))
+check("...reopened with a reason, the move frees the line",
+      r["ok"] and line(L_GSEP)["payment_id"] is None and not signed(S_GSEP), (line(L_GSEP), signed(S_GSEP)))
 
 # The document viewer: a PDF and an image inline; anything else only as a download.
 FILES = {"bill.pdf": b"%PDF-1.4\n% made-up test file\n", "slip.png": b"\x89PNG\r\n\x1a\n made-up", "listing.xml": b"<?xml version='1.0'?><x>made-up</x>",
@@ -334,6 +379,8 @@ TID = q("SELECT id FROM entities WHERE code = 'EXT'")[0]["id"]
 RM_ACCT = q("SELECT id FROM accounts WHERE entity_id = ?", (TID,))[0]["id"]
 con = db.connect()
 con.arm("user", "test: a made-up company with a ringgit and a dollar account")
+# kept here, so the ringgit account's books are the payments recorded here (an SQL cash book's come from SQL instead)
+con.execute("UPDATE entities SET uses_sql = 0 WHERE id = ?", (TID,))
 DOLLAR = con.execute("INSERT INTO accounts (entity_id, label, bank, number, currency) VALUES (?, 'Dollar', 'Example Bank', '000-999', 'USD')", (TID,)).lastrowid
 PU = con.execute("""INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date, paid_source,
                     direction, created_at) VALUES (?, '2026-10', ?, 'other', 'Test Payee N software', 300, 'MYR', '2026-10-18', '2026-10-18', 'manual', 'out', ?)""",
@@ -342,9 +389,11 @@ S_RM = con.execute("""INSERT INTO statements (account_id, month, opening, closin
                       VALUES (?, '2026-10', 500, 500, ?, 1, ?, 'review')""", (RM_ACCT, NOW, NOW)).lastrowid
 con.commit()
 con.close()
+locked_out(PU, {"account_id": 0}, "a ringgit payment taken off the dollar account: the company's one ringgit account would count it, "
+           "so it is refused while that account's month is signed off")
+setsign(S_RM, on=False)
 call("patch", f"/api/payments/{PU}", json={"account_id": 0})
-check("a ringgit payment taken off the dollar account: the company's one ringgit account now counts it, and is checked again",
-      not signed(S_RM))
+check("...and accepted once that month is reopened", acct_of(PU) is None)
 
 # ---------- the dialogs' page script, in Node on a stand-in page (no browser) ----------
 # A number or date the browser can't read is never sent as a blank; an edit clears a refusal shown in the payment dialog

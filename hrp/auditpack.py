@@ -12,7 +12,7 @@ from fpdf import FPDF
 from pypdf import PdfReader, PdfWriter
 from pypdf.errors import FileNotDecryptedError
 
-from . import audit, recon, rulebook, rules
+from . import audit, db, recon, rulebook, rules
 from .config import PACKS_DIR, PROGRAM_DIR
 from .db import (_listed, day_label, evidence, latest_pack, linked_total, money, month_label, month_statements, not_counted,
                  not_in_sql, payment_flag, payment_status, short_day, status_word, task_status, waits_for)
@@ -410,9 +410,9 @@ def reconciliation(con, entity, month):
     accts = con.execute("""SELECT * FROM accounts WHERE entity_id = ? AND (active = 1 OR id IN (SELECT account_id FROM statements
                            WHERE month = ?)) ORDER BY id""", (entity["id"], month)).fetchall()
     pays = con.execute(
-        """SELECT * FROM payments WHERE entity_id = ? AND paid_date IS NOT NULL AND paid_date <> ''
+        f"""SELECT * FROM payments WHERE entity_id = ? AND paid_date IS NOT NULL AND paid_date <> ''
            AND (substr(paid_date, 1, 7) = ? OR month = ?) AND NOT EXISTS
-           (SELECT 1 FROM statement_lines l WHERE l.payment_id = payments.id) ORDER BY paid_date, id""",
+           (SELECT 1 FROM {db.line_links(con)} l WHERE l.payment_id = payments.id) ORDER BY paid_date, id""",
         (entity["id"], month, month)).fetchall()
     out = []
     for a in accts:
@@ -446,7 +446,22 @@ def _reconciled(r, say, table, heading, cur):
     heading("Reconciled with the books")
     if r["status"] == "reconciled":
         how = "before tracking began" + (f" ({r['reconciled_note']})" if r["reconciled_note"] else "")             if r["reconciled_how"] == "before tracking" else "after checking every line"
-        say(f"Reconciled on {day_label(r['reconciled_at'][:10])}, {how}.")
+        say(f"Reconciled on {day_label(r['reconciled_at'][:10])}, {how}" + (f", prepared by {r['prepared_by']} (declared, not verified)"
+                                                                              if r.get("prepared_by") else "") + ". The month is locked.")
+    if r.get("locked"):
+        # The signed statement: its code, the note the app wrote at sign-off as the month stood, and the free note.
+        say(f"Reconciliation statement {r['statement_code']}" + (
+            f"; the signed copy is filed on the checklist item {r['recon_task']['title']}: "
+            + ", ".join(d["original_name"] for d in r["recon_task"]["documents"]) + "."
+            if r.get("recon_task") and r["recon_task"]["documents"] else f"; no signed copy of {r['statement_code']} is filed yet."))
+        if r.get("sign_note"):
+            heading("Sign-off note")
+            for line in r["sign_note"]:
+                say(line)
+            say(f"Note: {r['free_note']}." if r.get("free_note") and r.get("reconciled_how") != "before tracking" else "Note: none.")
+    for x in r.get("reopens") or []:
+        say(f"Reopened on {day_label(x['at'][:10])}: {x['reason']} (it was marked reconciled on {day_label(x['was_at'][:10]) if x['was_at'] else 'an earlier day'}).")
+    if r["status"] == "reconciled":
         ch = r.get("book_changed")
         if ch:
             o, n = ch["old"], ch["new"]

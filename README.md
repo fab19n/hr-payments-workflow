@@ -163,6 +163,13 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    when every document of the month is in SQL's journal and its listings, each balances and agrees with its listing,
    and SQL's trial balance agrees with the books here. The bank reconciliation counts each payment from its bank
    lines and, at the month's end, checks its book closing against SQL's balance on the bank account's GL code.
+   On **Bank and reconciliation** one statement line can be linked to several payments (a bulk transfer), with a
+   running total; book entries where **No money moved** (a voucher and its reversal) are confirmed with a reason; and a
+   month signed off (with an optional note, the note the app writes and a declared **Prepared by**) is **locked**: its
+   lines, matches, book opening and its payments' bank fields can't change until it is reopened with a reason
+   (**Reopen month**, logged). **Print the reconciliation statement** gives a PDF with the code
+   `BR-yymm-<company>-<last 4 digits>`, a keyed check and a QR (`hrp/bankrecpdf.py`, `hrp/formcode.py`); the signed copy
+   is filed on the month's bank reconciliation checklist item.
 7. **Audit pack** – **Before you print** lists what the month still needs: bank statements not imported, lines to
    explain, payments not complete and what each lacks, checklist documents missing, checklist items not done, payments
    paid but not in SQL (AISB), and files that won't print (emails, Excel, password PDFs, missing files). Click a line to
@@ -233,7 +240,7 @@ after it a note.
   entries keep their code, payment method, cheque number, document key and currency, so a supplier's code matches its
   vouchers first.
 - Tests on made-up data only, safe to keep in git, each run as `.venv\Scripts\python -m synthetic_tests.<name>`:
-  addresses_test, audit_trail_test, before_tracking_test, books_excel_test, books_test, budget_recurring_test, checklist_equivalence_test, checklist_test, dialog_shell_test,
+  addresses_test, audit_trail_test, bank_rec_guard_test, bank_rec_opening_test, bank_rec_page_test, bank_rec_print_test, bank_rec_test, before_tracking_test, books_excel_test, books_test, budget_recurring_test, checklist_equivalence_test, checklist_test, dialog_shell_test,
   extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, menu_test, meta_pages_test, myinvois_amount_test,
   myinvois_test, pack_check_test, parties_test, payment_dialog_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,

@@ -40,7 +40,9 @@ from .config import DATA_DIR
 GENESIS = "0" * 64
 HEAD_FILE = DATA_DIR / "audit-head.json"
 CTX = "(SELECT token FROM audit_context WHERE only = 1)"
-SKIP = ("audit_row", "audit_tx", "audit_context", "audit_sealed")  # the audit store itself
+# The audit store itself, and the key printed forms' checks are worked out with (form_keys, update 41): a copy of it in
+# the trail would let anyone who reads the trail forge a check. Its creation is logged as an activity row instead.
+SKIP = ("audit_row", "audit_tx", "audit_context", "audit_sealed", "form_keys")
 APPEND_ONLY = ("audit_row", "audit_tx", "activity", "audit_sealed", "ledger_lines")
 # Tables whose rows belong to a company through a parent row (the rest have entity_id, or are entities themselves).
 ENTITY_VIA = {
@@ -48,6 +50,10 @@ ENTITY_VIA = {
     "statements": "(SELECT entity_id FROM accounts WHERE id = {X}.account_id)",
     "statement_lines": "(SELECT a.entity_id FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.id = {X}.statement_id)",
     "book_openings": "(SELECT entity_id FROM accounts WHERE id = {X}.account_id)",
+    "statement_line_payments": "(SELECT a.entity_id FROM statement_lines l JOIN statements s ON s.id = l.statement_id "
+                               "JOIN accounts a ON a.id = s.account_id WHERE l.id = {X}.line_id)",
+    "recon_pairs": "(SELECT entity_id FROM accounts WHERE id = {X}.account_id)",
+    "recon_reopens": "(SELECT a.entity_id FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.id = {X}.statement_id)",
 }
 
 STORE = """
@@ -129,6 +135,10 @@ class Connection(sqlite3.Connection):
     _audit = False      # the audit store exists in this records.db (cached once true)
     _head = None        # the head entry to write to HEAD_FILE once the commit succeeds
     _head_noted = False  # a disagreement with the head file was already recorded on this connection
+    # A guard over what a transaction may change (recon.GUARD on the app's request connections): check(con) runs at
+    # every commit, before the seal, and raises to refuse the whole transaction (it is rolled back). It finds what the
+    # transaction wrote from this trail's own rows, so no way of writing (a cursor, any statement form) goes around it.
+    guard = None
 
     def audited(self):
         if not self._audit:
@@ -167,14 +177,23 @@ class Connection(sqlite3.Connection):
             self._put_token()
 
     def commit(self):
+        if self.guard is not None and self.in_transaction:
+            try:
+                self.guard.check(self)
+            except Exception:
+                self.rollback()
+                raise
         if self.audited():
             seal(self)
         super().commit()
+        self._recon_signoffs = None  # the app's own sign-off changes the guard let through are for one transaction only
         self._after_commit()
 
     def executescript(self, script):
         # executescript commits whatever is pending before it runs, outside commit(): seal first, so the context row is
         # never committed (a committed one would lend the app's token to another program's edits).
+        if self.guard is not None:  # a script commits by itself, past the guard: never on a guarded connection
+            raise sqlite3.ProgrammingError("executescript isn't allowed on a connection the bank reconciliation's lock guards.")
         if self.audited() and self.in_transaction:
             seal(self)
         cur = super().executescript(script)
@@ -201,6 +220,8 @@ class Connection(sqlite3.Connection):
     def rollback(self):
         super().rollback()
         self._head = None
+        self._touch_cache = None  # what a guard read of this transaction is gone
+        self._recon_signoffs = None
         if self.ctx and self.audited():
             self._put_token()
 
