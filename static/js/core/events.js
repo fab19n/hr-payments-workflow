@@ -185,41 +185,11 @@ document.addEventListener("click", async ev => {
       toast(r.removed ? `Undone. ${r.removed} was created from the bank statement and had nothing else on it, so it was removed too.` : "Undone. The line is waiting to be explained.");
       return render();
     }
-    if (t.id === "sqlApply") {
-      const p = state.sqlPreview; t.disabled = true;
-      const links = {}; for (const r of p.records) if (r.payment_id && (!r.exists || r.kind === "invoice")) links[r.row] = r.payment_id;
-      const res = await api("/api/sql/apply", { json: { token: p.token, header_row: p.header_row, mapping: p.mapping, links, journal_id: p.journal_lines?.chosen } });
-      state.sqlPreview = null; delete state.sqlPaste[state.entity];
-      if (res.journal_lines) { toast(`Kept ${res.journal_lines} journal lines.`); return render(); }
-      const kept = res.ledger?.files || [], docs = kept.filter(f => f.kind === "journal").reduce((a, f) => a + (f.summary?.docs || 0), 0),
-        diffs = kept.reduce((a, f) => a + (f.problems || 0), 0);
-      const lines = kept.length ? `Kept the account lines of ${plural(docs, "document")} from ${plural(kept.length, "report")} of SQL's${diffs ? `; ${plural(diffs, "difference")} from SQL's reports, listed under Checks against SQL's reports` : ""}` : "";
-      const moved = res.recon_changed?.length ? `. The bank reconciliation of signed-off ${res.recon_changed.map(m => monthName(m.month)).join(", ")} changed: it stays signed off; check it again` : "";
-      const mi = res.myinvois, miFilled = mi ? mi.notes.filter(x => x.includes("filled in from MyInvois")).length : 0;
-      const einv = mi ? `Kept ${plural(mi.files.reduce((a, f) => a + f.rows, 0), "MyInvois e-Invoice")} (${mi.files.reduce((a, f) => a + f.new, 0)} new, ${mi.files.reduce((a, f) => a + f.changed, 0)} changed); ${plural(miFilled, "SQL document")} filled in` : "";
-      if (!p.records.length && (kept.length || mi)) { toast([lines, einv].filter(Boolean).join(". ") + moved + "."); return render(); }
-      // Vouchers edited in SQL: one linked to nothing replaced its earlier entry; one linked waits under Changed in SQL.
-      const edits = `${res.replaced?.length ? `. Changed in SQL, listed once at the new figure: ${res.replaced.join(", ")}` : ""}${res.changed_linked ? `. ${res.changed_linked} linked ${res.changed_linked === 1 ? "voucher was" : "vouchers were"} changed in SQL: see Changed in SQL` : ""}`;
-      toast(`Imported ${res.added} entries; ${res.linked} linked to payments${res.skipped ? `, ${res.skipped} already imported` : ""}${matchedNote(res)}${lines ? `. ${lines}` : ""}${einv ? `. ${einv}` : ""}${edits}${moved}.`);
-      return render();
-    }
+    // The SQL import page (pages/sql.js): Import says what it did in place of the preview, Fetch reads the folder.
+    if (t.id === "sqlApply") return await sqlApply(t);
     if (ds.miFilter) { state.miFilter = ds.miFilter; const box = $("#miBox"); if (box) box.innerHTML = myinvoisBox(state.miData); return; }
-    if (ds.sqlLines) {
-      const row = t.closest("tr"), next = row?.nextElementSibling;
-      if (next?.classList.contains("sql-lines-row") && next.dataset.doc === ds.sqlLines) { next.remove(); return; }
-      if (next?.classList.contains("sql-lines-row")) next.remove();
-      const v = await api(`/api/ledger/doc?entity=${state.entity}&doc_no=${encodeURIComponent(ds.sqlLines)}`);
-      const tr = document.createElement("tr");
-      tr.className = "sql-lines-row"; tr.dataset.doc = ds.sqlLines;
-      tr.innerHTML = `<td colspan="${row.children.length}">${ledgerDocView(v)}</td>`;
-      row.after(tr); return;
-    }
-    if (t.id === "sqlFetch") {
-      t.disabled = true; t.textContent = "Reading the folder…";
-      try { renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, fetch: true } })); }
-      finally { t.disabled = false; t.textContent = "Fetch from SQL exports"; }
-      return $("#sqlPreview").scrollIntoView({ behavior: "smooth", block: "start" });
-    }
+    if (ds.sqlLines) return await sqlLinesToggle(t, ds.sqlLines);
+    if (t.id === "sqlFetch") return await sqlFetch();
     if (ds.sqlTake != null) {  // an export from a company not in Setup: taken only when the owner says whose it is
       if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = `Click again: "${ds.sqlTake}" is ${ent().code}`; return; }
       await api("/api/sql/take-company", { json: { entity_id: state.entity, company: ds.sqlTake } });
@@ -233,41 +203,26 @@ document.addEventListener("click", async ev => {
       toast(`${r.doc_no}: the link of ${r.payment} moved to the amount SQL gives now${r.amount_changed ? ", and the payment's amount changed with it" : "; the payment's amount is as it was"}${matchedNote(r)}`);
       return render();
     }
-    if (t.id === "sqlDirSave") {
-      const r = await api("/api/settings/sql-exports-dir", { json: { sql_exports_dir: $("#sqlDir").value } });
-      state.meta.sql_exports_dir = r.sql_exports_dir; state.meta.sql_exports_default = r.default;
-      toast(r.default ? "Reading your Downloads folder" : "Folder saved"); return render();
-    }
-    if (t.id === "sqlCancel") { state.sqlPreview = null; delete state.sqlPaste[state.entity]; $("#sqlPreview").innerHTML = ""; $("#sqlPaste").value = ""; return; }
-    if (t.id === "sqlCreateAll") {
-      if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = "Click again to create them all"; return; }
-      const r = await api("/api/sql/entries/create-all", { json: { entity_id: state.entity } });
-      toast(`Created ${r.created} payments from SQL${r.linked ? `; ${r.linked} linked to existing payments with the same SQL number` : ""}${r.left ? `; ${r.left} left for you to check (number already linked, changed in SQL?)` : ""}${r.corrections.length ? `; ${r.corrections.length} left out as probably corrections (no money moved)` : ""}; ${r.bank_lines_matched} bank lines matched`); return render();
-    }
-    if (t.id === "sqlIgnoreAll") {
-      if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = "Click again to ignore them all"; return; }
-      const r = await api("/api/sql/entries/ignore", { json: { ids: state.sqlCorrections } });
-      toast(r.ignored === 1 ? "1 entry ignored; it is listed under Ignored" : `${r.ignored} entries ignored; they are listed under Ignored`); return render();
-    }
+    if (t.id === "sqlDirSave") return await sqlDirSave();
+    if (t.id === "sqlCancel") return sqlCancel();
+    if (t.id === "sqlCreateAll") return await sqlCreateAll();   // asks first, in place (pages/sql.js sqAsk)
+    if (t.id === "sqlIgnoreAll") return await sqlIgnoreAll();
     if (t.id === "rematch") {
       const r = await api("/api/statements/rematch", { json: { entity_id: state.entity } });
       toast(`${r.matched} more bank lines matched; ${r.no_docs} marked as bank charges or own transfers`); return render();
     }
-    if (ds.sqlCreate) { const r = await api(`/api/sql/entries/${ds.sqlCreate}`, { json: { create_payment: {} } }); toast(`Payment created${matchedNote(r)}`); return render(); }
-    if (ds.sqlIgnore) { await api(`/api/sql/entries/${ds.sqlIgnore}`, { json: { status: "ignored" } }); return render(); }
+    if (ds.sqlCreate) return await sqlEntryCreate(+ds.sqlCreate);
+    if (ds.sqlIgnore) return await sqlEntryIgnore(+ds.sqlIgnore);
     if (ds.sqlIgnoreIds) {  // every row of a listing entry, so one listed on several rows leaves the list at once
       const r = await api("/api/sql/entries/ignore", { json: { ids: ds.sqlIgnoreIds.split(",").map(Number) } });
       toast(r.ignored === 1 ? "1 entry ignored; it is listed under Ignored" : `${r.ignored} entries ignored; they are listed under Ignored`); return render();
     }
     if (ds.sqlDeletedIds) {  // every row of the listing entry; kept, marked ignored, Un-ignore puts it back
       const r = await api("/api/sql/entries/deleted", { json: { ids: ds.sqlDeletedIds.split(",").map(Number) } });
+      state.sqlOpen.ignored = true;  // where it is listed now, with its Deleted in SQL pill
       toast(`${r.doc_nos.join(", ")} marked as deleted in SQL; listed under Ignored${reconMoved(r)}`); return render();
     }
-    if (ds.sqlLinkGo) {
-      const v = $(`select[data-sql-link="${ds.sqlLinkGo}"]`).value;
-      if (!v) return toast("Choose a payment first.", true);
-      const r = await api(`/api/sql/entries/${ds.sqlLinkGo}`, { json: { payment_id: +v } }); toast(`Linked${matchedNote(r)}`); return render();
-    }
+    if (ds.sqlLinkGo) return await sqlEntryLink(+ds.sqlLinkGo);
     if (ds.invSetup) { state.setup.kind = "entities"; return go("setup"); }
     if (ds.invImgUp) return printImage(ds.invImgUp, false);
     if (ds.invImgRemove) return printImage(ds.invImgRemove, true);
@@ -366,10 +321,7 @@ document.addEventListener("change", async ev => {
       if (t.checked && task?.lacking.length && !(await ask(`${task.lacking.join(". ")}.`, { title: "Tick anyway?", yes: "Tick anyway", no: "Cancel", tone: "warn", glyph: "checklist", note: "It stays marked Ticked by hand until the missing item is added.", closing: "You can untick it at any time." }))) { t.checked = false; return; }
       await api(`/api/tasks/${t.dataset.task}`, { json: { done: t.checked } }); render();
     }
-    if (t.dataset.sqlRow) {
-      const r = state.sqlPreview.records.find(x => x.row === +t.dataset.sqlRow); r.payment_id = t.value ? +t.value : null; r.picked = true;
-      $("#sqlApply").textContent = applyLabel(state.sqlPreview);
-    }
+    // A payment picked in the SQL preview (data-sql-row) is handled by pages/sql.js.
     if (t.id === "sqlJournalPick") {  // the note is worked out again for the journal chosen
       renderSqlPreview(await api("/api/sql/preview", { json: { token: state.sqlPreview.token, journal_id: t.value || null } }));
     }
@@ -428,19 +380,7 @@ document.addEventListener("submit", async ev => {
       toast("Book opening saved."); drawRecon();
     } catch (e) { toast(e.message, true); }
   }
-  if (ev.target.id === "sqlForm") {
-    ev.preventDefault();
-    const f = $("#sqlFile").files[0];
-    if (!f) return toast("Choose the SQL export file first.", true);
-    const fd = new FormData(); fd.append("file", f); fd.append("entity_id", state.entity);
-    try { renderSqlPreview(await api("/api/sql/preview", { form: fd })); } catch (e) { toast(e.message, true); }
-  }
-  if (ev.target.id === "sqlPasteForm") {
-    ev.preventDefault();
-    const text = $("#sqlPaste").value;
-    if (!text.trim()) return toast("Paste the rows copied from SQL first.", true);
-    try { renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, text } })); } catch (e) { toast(e.message, true); }
-  }
+  // The SQL import page's Read pasted rows and Read file: pages/sql.js (what is wrong is said under the box).
   if (ev.target.id === "addForm") {  // New payment's Add payment (pages/payment.js)
     ev.preventDefault();
     try { await npSave(); } catch (e) { toast(e.message, true); }

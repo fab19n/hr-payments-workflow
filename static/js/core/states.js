@@ -104,7 +104,7 @@ function desktopNote(screen, reason) {
    reaching it any other way (a link) shows the card. Add a page here when it depends on a company setting. */
 const PAGE_RULES = {
   sql: { name: "SQL import", used: e => !!e.uses_sql,
-    why: e => `${e.name} is Kept here, so there is nothing to import for it. Switch to a company that is Kept in SQL Account to import SQL listings.` },
+    why: e => `${e.name} is kept here, so there is nothing to import from SQL Account. Switch to a company that is Kept in SQL Account to import its SQL listings.` },
 };
 // The Kept here group's four pages are for a company kept here; a Kept in SQL Account company keeps these in SQL Account.
 for (const [view, name, plural] of [["sales", "Sales", true], ["purchases", "Purchases", true], ["journals", "Journals", true], ["close", "Period close", false]])

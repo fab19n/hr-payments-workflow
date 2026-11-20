@@ -1546,6 +1546,7 @@ def sql_preview():
     for r in recs:
         r["exists"] = bool(c.execute("SELECT 1 FROM sql_entries WHERE entity_id = ? AND doc_no = ? AND doc_date = ? AND amount = ?",
                                      (eid, r["doc_no"], r["date"], r["amount"])).fetchone())
+        r["label"] = sqlimport.doc_label(r["doc_type"], r["kind"])  # "Supplier invoice", "Customer invoice", "Journal"
         _note_linked(r, linked)
     if header_row >= 0:
         headers = [str(h) if h is not None else "" for h in rows_[header_row]]
@@ -2051,6 +2052,7 @@ def sql_entries():
            WHERE s.entity_id = ? ORDER BY s.doc_date DESC, s.id DESC LIMIT 300""", (eid,)))
     for x in other:  # a journal pasted again after a change in SQL is a new row: say when its number is already linked
         x["before_tracking"] = db.entry_before_tracking(e, x["description"], x["doc_date"])
+        x["label"] = sqlimport.doc_label(x["doc_type"], x["kind"])  # a supplier's invoice named as one
         if x["kind"] == "journal" and not x["payment_id"]:
             _note_linked(x, linked)
     _journal_moves(c, eid, other)

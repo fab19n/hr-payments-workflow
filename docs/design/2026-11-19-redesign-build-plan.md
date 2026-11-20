@@ -418,6 +418,8 @@ Exit: both suites pass (38 synthetic, 23 local), and the settings test proves a 
   `sql_exports_test`, `sql_books_item_test`, `fetch_checks_test`, `ledger_fetch_test`, `before_tracking_test`.
   Click-through: a fetch.
 
+**Slice 5 done (20 November).** **Accounting › SQL import** (`pages/sql.js`, which now also holds the preview code that was in `books.js`) follows Sql.dc.html and SqlBooks.dc.html: the three steps, Fetch with its folder row and Use another folder, what the fetch found (files read, files not used with a way on each), the preview (nothing saved yet, account lines, Columns read folded, the import note and Import in a bar that stays in view), Copy and paste or Choose an exported file (drag and drop, refusals under the box), the import result in place with Just imported, Find an SQL entry with the shared list bar and sortable columns, Changed in SQL, entries not linked (Create payments for all and Ignore all ask first, once), Linked, Ignored with a Deleted in SQL pill, Before tracking, Replaced, Journals and invoices, the checks with sections named in words, and Imported files. A failed fetch or paste keeps the preview and its picks. Undo says whether the payment made from an entry was removed or stays. Server: `sqlimport.doc_label` names supplier invoices, debit and credit notes (PI, SD, SC) as such. Tests: `sql_doc_labels_test` and `sql_page_test` (new); `books_test` and `states_test` updated. The e-Invoices card and print bar stay on this page until slice 6. Left: the kept-here card's second button (Open the Overview), and Imported files' list of files read (needs the server to link kept files to an import).
+
 ---
 
 **Slice 6 · e-Invoices** (M, `slice-6-einvoices`)

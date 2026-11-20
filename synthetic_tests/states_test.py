@@ -323,7 +323,7 @@ const key = (k, extra = {}) => dispatch(document.activeElement, { type: "keydown
   for (const t of [...toasts()]) t.querySelector('[data-toast-act="close"]').click();
   run(`state.view = "sql"; state.entity = 2;`); await run("render()");
   ok("a page reached by a link, not a company switch, shows the not-used card (no redirect, no toast)", run("state.view") === "sql" && main.innerHTML.includes("SQL import isn&#39;t used for BB") && toasts().length === 0, main.innerHTML.slice(0, 160));
-  ok("the card says why and has a ghost way to a company that uses it", main.innerHTML.includes("Beta Co is Kept here, so there is nothing to import for it.") && main.innerHTML.includes('data-pick-entity="1"') && main.innerHTML.includes("Go to AA"));
+  ok("the card says why and has a ghost way to a company that uses it", main.innerHTML.includes("Beta Co is kept here, so there is nothing to import from SQL Account.") && main.innerHTML.includes('data-pick-entity="1"') && main.innerHTML.includes("Go to AA"));
   ok("pages without a rule are never redirected", run(`unusedPage("budget", ent())`) === null && run(`unusedPage("sql", ent())`) === "SQL import");
 
   // ---- the compact empty block, the refusal banner, field marks ----

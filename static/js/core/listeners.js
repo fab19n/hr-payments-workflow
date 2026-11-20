@@ -12,7 +12,7 @@ document.addEventListener("dragleave", ev => ev.target.closest?.("[data-slot]")?
 function dropHint() {
   if (state.openPayment && !$("#drawer").hidden) return "Drop the file onto the payment, or onto one of its document boxes.";
   if (state.view === "bank") return "Drop the statement PDF on the Choose file button under Statement PDF.";
-  if (state.view === "sql") return "Drop the SQL export on the Choose file button under SQL export.";
+  if (state.view === "sql") return "Drop the SQL export on the file box under Choose an exported file.";
   if (state.view === "payroll") return "Drop the payroll workbook on the Choose file button above Check the workbook.";
   if (state.view === "entity") return "Open the payment and drop the file on a document box. A checklist item's documents go on the Monthly checklist page.";
   if (state.view === "checklist") return "Use the + buttons on an item to file its documents.";
@@ -64,8 +64,6 @@ document.addEventListener("paste", ev => {
   if (!text) return;
   ev.preventDefault(); ev.target.value = text; state.sqlPaste[state.entity] = text;
 });
-// Keeps the SQL page's lists open across a refresh (after Unlink); toggle doesn't bubble, so it is caught on the way down.
-document.addEventListener("toggle", ev => { const k = ev.target.dataset?.sqlOpen; if (k) state.sqlOpen[k] = ev.target.open; }, true);
 document.addEventListener("toggle", async ev => {
   const d = ev.target, k = d.dataset?.hist;
   if (!k || !d.open || d.dataset.loaded) return;

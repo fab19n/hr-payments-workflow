@@ -607,7 +607,7 @@ check("the routes write nothing", q("SELECT COUNT(*) AS n FROM audit_row")[0]["n
 
 # ---------- 9. the page ----------
 js = app_source()
-check("the SQL page's card is called Journals and invoices", "<h2>Journals and invoices</h2>" in js and "Journals and customer invoices" not in js
+check("the SQL page's card is called Journals and invoices", 'sqHead("sql-docs-h", "receipt", "brand", "Journals and invoices"' in js and "Journals and customer invoices" not in js
       and "Customer Invoice listings to see them here" not in js)
 check("the sidebar has Accounting › Books", '{ key: "accounting", label: "Accounting"' in js and '{ page: "accounting/books", view: "books", label: "Books"' in js and "viewBooks(main)" in js
       and "/api/books/trial-balance" in js and "/api/books/ledger" in js and "/api/ledger/doc" in js)
