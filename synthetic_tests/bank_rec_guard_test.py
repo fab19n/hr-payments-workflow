@@ -21,6 +21,7 @@ import re
 import sqlite3
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 
 tmp = Path(tempfile.mkdtemp(prefix="hrp-bank-rec-guard-test-"))
@@ -64,9 +65,14 @@ def _test_guard_raw():
                       [(imp, b["entity_id"], f"PV-{mode.upper()}-{n:05d}", "Test description " + "x" * 400, n + 1) for n in range(6000)])
         c.execute("UPDATE payments SET notes = 'Test big import' WHERE id = ?", (pid,))
         # Figure-neutral, on the signed-off account: the guard has to read the records as last committed to see that.
-        c.execute("UPDATE book_openings SET set_at = ? WHERE account_id = ? AND month = '2026-10'", (db.now(), b["account_id"]))
+        # (A time to the microsecond: db.now() is to the second, and the same second as the last save would change nothing.)
+        c.execute("UPDATE book_openings SET set_at = ? WHERE account_id = ? AND month = '2026-10'",
+                  (datetime.now().isoformat(timespec="microseconds"), b["account_id"]))
         if mode == "bigmove":
             c.execute("UPDATE payments SET amount = amount + 1 WHERE id = ?", (pid,))
+    elif mode == "touch":  # figure-neutral, on the signed-off account (the guard reads the records as last committed)
+        c.execute("UPDATE book_openings SET set_at = ? WHERE account_id = ? AND month = '2026-10'",
+                  (datetime.now().isoformat(timespec="microseconds"), b["account_id"]))
     elif mode == "savepoint":
         c.execute("SAVEPOINT test_guard")
         c.execute("UPDATE payments SET amount = amount + 1 WHERE id = ?", (pid,))
@@ -287,8 +293,22 @@ r = call("post", "/api/test-guard/raw", json={"payment_id": P_NOV, "mode": "big"
 recon._committed = _committed
 check("one request writing well over 2 MB (6,000 SQL entries, and a figure-neutral change on signed-off Main) is saved with the guard on",
       r.status_code == 200 and q("SELECT COUNT(*) AS n FROM sql_entries WHERE doc_no LIKE 'PV-BIG-%'")[0]["n"] == 6000, (r.status_code, r.data[:300]))
-check("...and the guard's final check read the records as last committed itself (it read them; no fall-back logged)",
-      _reads and not q("SELECT 1 FROM activity WHERE what LIKE 'The bank reconciliation lock''s final check couldn''t read%'"), _reads)
+check("...and the guard's final check did read the records as last committed for it (the change touched signed-off Main)",
+      _reads, "no committed read")
+
+
+def _cant_read():
+    raise sqlite3.OperationalError("database is locked")
+
+
+recon._committed = _cant_read
+set_was = q("SELECT set_at FROM book_openings WHERE account_id = ? AND month = '2026-10'", (MAIN,))[0]["set_at"]
+r = call("post", "/api/test-guard/raw", json={"payment_id": P_NOV, "mode": "touch", "entity_id": EID, "account_id": MAIN})
+recon._committed = _committed
+check("when the final check can't read the records as last committed, the change is refused (try again), not saved on "
+      "the route's own checks", r.status_code == 400 and "final check couldn't run just now (database is locked)" in r.get_json()["error"]
+      and q("SELECT set_at FROM book_openings WHERE account_id = ? AND month = '2026-10'", (MAIN,))[0]["set_at"] == set_was,
+      (r.status_code, r.data[:300]))
 r = call("post", "/api/test-guard/raw", json={"payment_id": P_NOV, "mode": "bigmove", "entity_id": EID, "account_id": MAIN})
 check("...while the same large transaction with a write that moves November is refused, all of it undone",
       r.status_code == 400 and "November 2026 is marked reconciled and locked" in r.get_json()["error"] and amount(P_NOV) == 200

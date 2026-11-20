@@ -1421,12 +1421,13 @@ def _guard_hit(con):
             before = guard_figures(r, scope)
         finally:
             r.close()
-    except sqlite3.OperationalError as ex:
-        # The records as last committed can't be read just now (another program holds them): the guard never fails a
-        # change for its own sake. The per-route checks of the lock still applied; this is said in the activity log.
-        db.log(con, f"The bank reconciliation lock's final check couldn't read the records ({ex}); the change was saved on "
-                    "the checks made along the way")
-        return None
+    except sqlite3.Error as ex:
+        # The records as last committed couldn't be read. That shouldn't happen: this connection holds only the
+        # reserved lock (no spill: app.con), which a reader shares with, and no other writer can be committing meanwhile
+        # (rollback journal). Should it happen all the same (a disk error, another program), the change is refused, not
+        # saved on the checks made along the way: the lock is never weaker for it.
+        raise ReconError(f"The bank reconciliation lock's final check couldn't run just now ({ex}), so nothing was saved. "
+                         "Try again.")
     if not before:
         return None
     now = guard_figures(con, scope)
