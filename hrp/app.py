@@ -40,8 +40,11 @@ def guard():
 def headers(resp):
     resp.headers["Cache-Control"] = "no-store"
     resp.headers["X-Content-Type-Options"] = "nosniff"
+    # A document shown in the payment dialog's viewer (a PDF, only ever inline for a PDF or an image) may be framed by the
+    # app's own page; nothing else may be framed at all.
+    framed = "'self'" if request.endpoint == "doc_file" else "'none'"
     resp.headers["Content-Security-Policy"] = ("default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
-                                               "frame-src 'self'; object-src 'self'; frame-ancestors 'none'")
+                                               f"frame-src 'self'; object-src 'self'; frame-ancestors {framed}")
     return resp
 
 
@@ -265,6 +268,15 @@ def month_view():
         for x in journals:
             del x["dockey"]
         p["not_in_sql"] = db.not_in_sql(e, p)
+        p["sql_changed"] = []
+    # A linked SQL voucher edited in SQL since it was linked (its newer entry waits on the SQL import page for the link to be
+    # moved): the payment dialog says so, in the SQL import page's words.
+    if e["uses_sql"] and pays:
+        by_id = {p["id"]: p for p in pays}
+        for x in sqlimport.changed_linked(c, eid):
+            if x["payment"]["id"] in by_id:
+                by_id[x["payment"]["id"]]["sql_changed"].append(
+                    {"doc_no": x["doc_no"], "words": x["words"], "version": (x["ledger"] or {}).get("version")})
     latest = payrollcheck.latest(c, eid, month) if payrollcheck.ready(c) else None
     return jsonify({"entity": dict(e), "month": month, "label": db.month_label(month), "tasks": tasks, "payments": pays,
                     "set_up": _set_up(c, eid, month), "before_first": db.before_tracking(e, month),
@@ -685,6 +697,12 @@ def update_payment(pid):
     if "account_id" in sets:
         acct = own_account(c, entity(c, p["entity_id"]), sets["account_id"])
         sets["account_id"] = acct["id"] if acct else None
+        if acct is None and p["account_id"] is not None:
+            # Its books and bank lines are on that account: a payment once on an account moves to another, never to none.
+            return err("A payment's bank account can be changed to another of the company's accounts, but not taken off. "
+                       "Choose the account it was paid from.")
+        # Any of the company's accounts may be chosen, in another currency too (a ringgit bill paid from a foreign
+        # currency account); the payment keeps its own currency, as before.
     if b.get("amount_confirmed") or ("amount" in sets and _amount_changed(p["amount"], sets["amount"])):
         # A figure typed in is confirmed: SQL and the bank no longer replace it, and undoing a link keeps it.
         sets.update(amount_is_estimate=0, planned_amount=None, planned_is_estimate=None, undo_link=None)
@@ -692,10 +710,43 @@ def update_payment(pid):
         sets["paid_source"] = "manual" if sets["paid_date"] else None
     if sets:
         c.execute(f"UPDATE payments SET {', '.join(k + ' = ?' for k in sets)} WHERE id = ?", (*sets.values(), pid))
+        if "account_id" in sets and sets["account_id"] != p["account_id"]:
+            _account_moved(c, p, sets["account_id"])
         named = [PAY_FIELD_NAMES[k] for k in sets if k in PAY_FIELD_NAMES] + (["amount confirmed"] if b.get("amount_confirmed") else [])
         db.log(c, f"Updated payment: {p['description']} ({', '.join(named)})")
     c.commit()
     return jsonify({"ok": True})
+
+
+def _account_moved(c, p, new_id):
+    """The payment p (as it was) is now on the bank account new_id (update_payment never lets a payment that had an
+    account go to none). Its bank lines on any other account's statements are taken off it and left to explain, but not
+    marked as undone by a person, so moving it back finds them again; the new account's statements are looked at for its
+    line (a line once undone from it there may be matched again: moving it there is the person's say). Then the
+    reconciliation of both the old and the new account is checked again for the months the payment's paid date falls in,
+    before and after: a sign-off there goes, so the month is reviewed again (one signed off before tracking stays)."""
+    pid, why = p["id"], f"payment {p['description']} moved to another bank account"
+    on_line = """SELECT l.id FROM statement_lines l JOIN statements s ON s.id = l.statement_id
+                 WHERE l.payment_id = ? AND s.account_id {} ?"""
+    freed = [r["id"] for r in c.execute(on_line.format("<>"), (pid, new_id))] if new_id else []
+    if freed:
+        c.execute(f"UPDATE statement_lines SET payment_id = NULL, status = 'unmatched' WHERE id IN ({', '.join('?' * len(freed))})", freed)
+        recon.line_changed(c, freed, keep_before_tracking=True)
+        _after_unlink(c, pid)
+    if new_id:
+        had = {r["id"] for r in c.execute(on_line.format("="), (pid, new_id))}
+        c.execute("""UPDATE statement_lines SET undone_payment_id = NULL WHERE undone_payment_id = ? AND payment_id IS NULL
+                     AND statement_id IN (SELECT id FROM statements WHERE account_id = ?)""", (pid, new_id))
+        for s in c.execute("SELECT id FROM statements WHERE account_id = ?", (new_id,)).fetchall():
+            statements.auto_match(c, s["id"], {pid})
+        recon.line_changed(c, [r["id"] for r in c.execute(on_line.format("="), (pid, new_id)) if r["id"] not in had],
+                           keep_before_tracking=True)
+    now_ = c.execute("SELECT paid_date FROM payments WHERE id = ?", (pid,)).fetchone()
+    months = [d[:7] for d in (p["paid_date"], now_["paid_date"]) if d]
+    # A payment with no account is in the books of the company's one account in its currency, when it has just one
+    # (as the accounts are now); with several, no book counted it, so the old side has nothing to check again.
+    old = p["account_id"] or recon.sole_account(c, p["entity_id"], p["currency"] or "MYR")
+    recon.recheck(c, [old, new_id], months, why)
 
 
 def _amount_changed(old, new):
@@ -795,7 +846,14 @@ def doc_file(did):
     p = path_of(d)
     if not p.exists():
         abort(404)
-    return send_file(p, as_attachment=request.args.get("download") == "1", download_name=d["original_name"])
+    # Only a PDF or an image is shown in the browser; any other file (a spreadsheet, an email, a text or XML file) is
+    # only ever a download, even when it is asked for inline, so nothing uploaded can run as a page of the app.
+    shown = INLINE_TYPES.get(Path(d["original_name"] or "").suffix.lower())
+    return send_file(p, mimetype=shown, as_attachment=not shown or request.args.get("download") == "1", download_name=d["original_name"])
+
+
+# The file types the document viewer shows inline, with the type they are served as.
+INLINE_TYPES = {".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"}
 
 
 @app.post("/api/documents/<int:did>/remove")

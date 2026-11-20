@@ -120,6 +120,8 @@ document.addEventListener("click", async ev => {
     if (ds.clTab) return clPick(ds.clTab, t.getAttribute?.("role") === "tab");
     if (ds.clMore) return clMore();
     if (ds.clHist) return clHist(+ds.clHist);
+    // The payment dialog's and the New payment dialog's own buttons (pages/payment.js).
+    if (await payClick(t, ds)) return;
     if (ds.payment) {
       // Clicking the open payment again keeps what was typed in it.
       const same = +ds.payment === state.openPayment && !$("#drawer").hidden;
@@ -127,6 +129,11 @@ document.addEventListener("click", async ev => {
       return openPayment(+ds.payment, same ? unsavedEdits() : {});
     }
     // A payment's document box (data-upload: its type) or a checklist item's (data-task-upload, with data-type).
+    // In the payment dialog each file gets its own row with its progress (pages/payment.js pdUpload).
+    if (ds.upload && !ds.taskUpload && state.openPayment && state.pay) {
+      const files = await pickFile(true); if (!files.length) return;
+      return await pdUpload(files.map(file => ({ file, type: ds.upload })));
+    }
     if (ds.upload || ds.taskUpload) {
       const files = await pickFile(!ds.replaces); if (!files.length) return;
       if (ds.replaces && !(await ask(`Replace \u201c${ds.name}\u201d with \u201c${files[0].name}\u201d? The old file is taken out of the audit pack.`, { title: `Replace \u201c${ds.name}\u201d?`, yes: "Replace file", no: "Cancel", tone: "brand", glyph: "document", closing: "You can replace it again at any time." }))) return;
@@ -135,8 +142,8 @@ document.addEventListener("click", async ev => {
       return await uploadFiles(files, { ...owner, doc_type: ds.upload || ds.type, replaces: ds.replaces });
     }
     if (t.id === "extraUpload") {
-      const files = await pickFile(); if (!files.length) return;
-      return await uploadFiles(files, { payment_id: state.openPayment, doc_type: $("#extraType").value });
+      const type = $("#extraType").value, files = await pickFile(); if (!files.length) return;
+      return await pdUpload(files.map(file => ({ file, type })));
     }
     if (ds.removeDoc) {
       if (!(await ask("It is left out of the audit pack; the file itself is kept on this PC.", { title: `Remove \u201c${ds.name}\u201d?`, yes: "Remove document", no: "Cancel", danger: true, tone: "bad", glyph: "trash", closing: "You can add the file to the payment again." }))) return;
@@ -396,17 +403,9 @@ document.addEventListener("submit", async ev => {
     finally { if (btn.isConnected) btn.disabled = false; }
     return;
   }
-  if (ev.target.id === "payForm") {
+  if (ev.target.id === "payForm") {  // the payment dialog's Save details (pages/payment.js)
     ev.preventDefault();
-    try {
-      // Only what was changed, so an untouched estimate stays an estimate
-      const now = payFormValues(), changed = {};
-      for (const k in now) if (now[k] !== state.payLoaded[k]) changed[k] = now[k];
-      if (!Object.keys(changed).length) return toast("Nothing has changed.");
-      await api(`/api/payments/${state.openPayment}`, { method: "PATCH", json: changed });
-      state.payLoaded = now;  // saved, so the refresh shows what the records now hold
-      toast("Saved"); render();
-    } catch (e) { toast(e.message, true); }
+    try { await paySave(); } catch (e) { toast(e.message, true); }
   }
   if (ev.target.id === "stmtForm") {
     ev.preventDefault();
@@ -442,13 +441,9 @@ document.addEventListener("submit", async ev => {
     if (!text.trim()) return toast("Paste the rows copied from SQL first.", true);
     try { renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, text } })); } catch (e) { toast(e.message, true); }
   }
-  if (ev.target.id === "addForm") {
+  if (ev.target.id === "addForm") {  // New payment's Add payment (pages/payment.js)
     ev.preventDefault();
-    try {
-      await api("/api/payments", { json: { entity_id: state.entity, month: state.month, description: $("#ap-desc").value.trim(), category: $("#ap-cat").value,
-        amount: $("#ap-amt").value === "" ? null : +$("#ap-amt").value, account_id: +$("#ap-acct").value, due_date: $("#ap-due").value, direction: $("#ap-dir").value } });
-      await closeDrawer(); toast("Payment added"); render();
-    } catch (e) { toast(e.message, true); }
+    try { await npSave(); } catch (e) { toast(e.message, true); }
   }
 });
 

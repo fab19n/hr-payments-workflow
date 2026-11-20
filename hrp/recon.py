@@ -883,9 +883,10 @@ def _lines_of(con, st, ids):
     return [found[i] for i in dict.fromkeys(ids)]
 
 
-def line_changed(con, line_ids):
+def line_changed(con, line_ids, keep_before_tracking=False):
     """A bank line's link or explanation changed or was taken off: its confirmation goes, and the sign-off of its
-    statement with it (logged when either was there)."""
+    statement with it (logged when either was there). keep_before_tracking: a statement signed off before tracking
+    keeps its sign-off (a payment moved to another account: its books are not reviewed here, as recheck says)."""
     done = {}
     for lid in line_ids:
         l = con.execute("SELECT l.id, l.statement_id, l.confirmed_at FROM statement_lines l WHERE l.id = ?", (lid,)).fetchone()
@@ -897,12 +898,35 @@ def line_changed(con, line_ids):
         done.setdefault(l["statement_id"], [0, False])
     for sid, (n, _) in done.items():
         st = con.execute("SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id WHERE s.id = ?", (sid,)).fetchone()
-        if st["reconciled_at"]:
+        if st["reconciled_at"] and not (keep_before_tracking and st["reconciled_how"] == "before tracking"):
             con.execute(f"UPDATE statements SET reconciled_at = NULL, reconciled_how = NULL, reconciled_note = NULL{_rule_set(con)} WHERE id = ?", (sid,))
             db.log(con, f"Removed the reconciled sign-off of {_name(st, st['month'])}: a bank line was changed"
                    + (f" ({n} confirmation{'s' if n > 1 else ''} cleared)" if n else ""))
         elif n:
             db.log(con, f"Cleared the confirmation of {n} bank line{'s' if n > 1 else ''} on {_name(st, st['month'])}: changed")
+
+
+def sole_account(con, entity_id, currency):
+    """The account whose books count the company's payments with no account in this currency, by the rule movements
+    uses: its one account in that currency (stopped ones counted too), as the accounts are now; None when it has none
+    or several (then no book counts them)."""
+    rows = con.execute("SELECT id FROM accounts WHERE entity_id = ? AND currency = ?", (entity_id, currency)).fetchall()
+    return rows[0]["id"] if len(rows) == 1 else None
+
+
+def recheck(con, account_ids, months, why):
+    """The books of these accounts changed in these months (a payment moved from one bank account to another): the
+    sign-off of each of their statements for those months goes, so the month is reviewed again (logged, with why). A
+    month signed off before tracking keeps its state: its books are not reviewed here."""
+    for aid in dict.fromkeys(a for a in account_ids if a):
+        for month in sorted(set(m for m in months if m)):
+            st = con.execute("SELECT s.*, a.label FROM statements s JOIN accounts a ON a.id = s.account_id "
+                             "WHERE s.account_id = ? AND s.month = ?", (aid, month)).fetchone()
+            if not st or not st["reconciled_at"] or st["reconciled_how"] == "before tracking":
+                continue
+            con.execute(f"UPDATE statements SET reconciled_at = NULL, reconciled_how = NULL, reconciled_note = NULL{_rule_set(con)} WHERE id = ?",
+                        (st["id"],))
+            db.log(con, f"Removed the reconciled sign-off of {_name(st, month)}: {why}")
 
 
 def _confirm(con, l):

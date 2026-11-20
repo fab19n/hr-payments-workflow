@@ -88,13 +88,17 @@ function dlgWire(d) {
 
 // Draws the drawer as a modal dialog (the opener has set its innerHTML): labelled by its first heading, the page behind it
 // inert, focus on the heading. Drawn again while open (another payment, a redraw after a save), it keeps its opener and its
-// place, and only takes the focus back if the redraw lost it.
-function showDrawer() {
+// place, and only takes the focus back if the redraw lost it. kind: "dialog" draws it as the centred payment dialog
+// (pages/payment.js), "new" as the narrower New payment dialog; anything else as the side panel.
+function showDrawer(kind) {
   const d = $("#drawer"); if (!d) return;
   dlgWire(d);
   const was = !d.hidden;
   clearTimeout(DLG.timer); DLG.closing = false;
-  d.classList.remove("dr-out"); d.hidden = false;
+  d.classList.remove("dr-out", "pay-dlg", "np-dlg"); d.hidden = false;
+  if (kind === "dialog" || kind === "new") d.classList.add("pay-dlg");
+  if (kind === "new") d.classList.add("np-dlg");
+  if (kind !== "dialog") d.classList.remove("pd-viewing");
   const dim = dlgDim();
   if (dim) { dim.classList.remove("dim-out"); dim.hidden = false; }
   if (!was) {

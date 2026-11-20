@@ -296,10 +296,10 @@ async function regBulk(what) {
   }
 }
 
-/* ---------------- Payment drawer ---------------- */
-// The drawer's inputs, by the field each one saves.
+/* ---------------- Drawers and the payment dialog ---------------- */
+// The payment dialog's inputs, by the field each one saves.
 const PAY_INPUTS = { amount: "pf-amount", paid_date: "pf-paid", bank_ref: "pf-bank", sql_ref: "pf-sql", einvoice_ref: "pf-einv",
-  notes: "pf-notes", difference_note: "pf-diff", amount_confirmed: "pf-confirm" };
+  notes: "pf-notes", difference_note: "pf-diff", amount_confirmed: "pf-confirm", account_id: "pf-acct" };
 
 // What has been typed in the payment drawer and not saved, as {input id: value}.
 function unsavedEdits() {
@@ -338,6 +338,9 @@ let leavePending = null;
 async function mayLeave() {
   if (!drawerDirty()) return true;
   const name = ($("#drawerTitle")?.textContent || "").trim();
+  // A new payment not added yet (NewPayment.dc.html): nothing of it is kept.
+  if (state.np && !state.openPayment) leavePending ||= ask("What you typed is not kept.", { title: "Discard this payment?", yes: "Discard",
+    no: "Keep editing", danger: true, tone: "warn", glyph: "edit" }).finally(() => { leavePending = null; });
   leavePending ||= ask(name ? `You have unsaved changes on “${name}”. Closing now loses them.` : "You have unsaved changes. Closing now loses them.", {
     title: "Discard your changes?", yes: "Discard", no: "Keep editing", danger: true, tone: "warn", glyph: "edit",
     note: "Escape, a click outside the dialog, Cancel, changing page or month, and opening another payment all ask this first.",
@@ -350,87 +353,19 @@ async function mayLeave() {
 // nothing to ask it closes at once, before the first await.
 async function closeDrawer(force) {
   if (!force && drawerDirty() && !(await mayLeave())) return false;
-  hideDrawer(); state.openPayment = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
+  hideDrawer(); state.openPayment = null; state.pay = null; state.np = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
   Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null, paste: null });
   if (state.addr.id || state.setup.id != null) { state.addr.id = null; state.setup.id = null; syncAddr(); }  // a closed drawer is not in the address
   return true;
 }
 
-// In a month marked as filed the payment is shown read-only: no field can be changed and no document added, replaced or taken off
-// until the month is reopened on the Monthly checklist.
-function openPayment(id, keep = {}) {
-  const p = state.data.payments.find(x => x.id === id);
-  if (!p) return closeDrawer(true);
-  state.openPayment = id; state.drawerDirty = null;
-  const ro = !!state.data.closed_at, off = ro ? " disabled" : "";
-  const dt = state.meta.doc_types;
-  const ofType = t => p.documents.filter(x => x.doc_type === t);
-  const required = p.required.map(t => slotHtml(t, ofType(t), p.evidence[t], p.not_counted[t], ro)).join("");
-  // The document types in use, but not the ones the app files itself (statements, reconciliations, SQL listings), and for
-  // a company not kept in SQL no SQL documents. Approval is the usual extra; where it is required already, Other, so a
-  // document added without a look at the list is never filed as a voucher.
-  const noSql = !state.data.entity.uses_sql;
-  const extraTypes = Object.keys(dt).filter(t => !p.required.includes(t) && docActive(t) && !["statement", "recon", "sqlexport"].includes(t) && !(noSql && docFromSql(t)));
-  const extraPick = ["approval", "other"].find(t => extraTypes.includes(t)) || extraTypes[0];
-  const extras = [...new Set(p.documents.map(x => x.doc_type).filter(t => !p.required.includes(t)))].map(t => slotHtml(t, ofType(t), null, null, ro)).join("");
-  const lines = p.bank_lines.length ? p.bank_lines.map(l => `<div class="line-desc mono">${shortDate(l.txn_date)} · ${(l.amount > 0) === (p.direction === "out") ? "−" : ""}${money(Math.abs(l.amount), p.currency)} · ${esc(l.description.split(" | ").slice(0, 2).join(" "))}</div>`).join("") : `<div class="note">${p.direction === "in" ? "No bank credit matched to this yet." : "Not matched to a bank statement line yet."}</div>`;
-  const gap = p.bank_total == null || p.amount == null ? 0 : p.amount - p.bank_total;
-  const short = gap > 0.01 ? `<div style="grid-column:1/-1"><b>Part paid: ${foundOf(p)}</b>
-      <div class="note">${p.difference_note ? "The difference is noted, so this payment counts as paid." : `${money(gap, p.currency)} isn't on the bank statement yet. Match the rest on the Bank statements page, or note why below.`}</div></div>
-      <label class="field" style="grid-column:1/-1"><span>Why the rest isn't on the bank statement</span><input id="pf-diff" value="${esc(p.difference_note || "")}" placeholder="e.g. balance paid in October"${off}></label>` : "";
-  const over = gap < -0.01 ? `<div class="note">The bank lines add up to ${money(p.bank_total, p.currency)}, ${money(-gap, p.currency)} more than the amount.</div>` : "";
-  const est = estimateShort(p) ? `<div class="note">Estimated at ${money(p.planned_amount, p.currency)}; the bank lines linked so far add up to ${money(p.bank_total, p.currency)}. If more was sent, link the rest on the Bank statements page. If not, confirm the amount above; until then the budget counts the estimate.</div>` : "";
-  const vouchers = p.sql_entries.map(x => `<div class="row spread"><span class="mono">${esc(x.doc_no)}${x.kind === "invoice" ? " (invoice)" : ""} · ${shortDate(x.doc_date)} · ${x.direction && x.direction !== p.direction ? "−" : ""}${money(x.amount, p.currency)}</span>
-    ${ro ? "" : `<button class="ghost small" data-sql-unlink="${x.id}">Unlink</button>`}</div>`).join("");
-  const lock = ro ? `<div class="banner ok ro-note">${icon("lock")}<span>${esc(state.data.label)} is filed, so this payment is read-only. <a href="${pageAddr("checklist", state.data)}">Reopen it on the Monthly checklist</a> to change it.</span></div>` : "";
-  $("#drawer").innerHTML = `
-    <div class="row spread"><div><div class="eyebrow">${esc(state.meta.categories[p.category] || p.category)} · due ${fmtDate(p.due_date)}</div><h2>${esc(p.description)}</h2></div>
-      <button class="ghost small" id="closeDrawer">Close</button></div>
-    ${p.flag ? `<div class="row">${flagPill(p.flag)}${p.flag.hint ? `<span class="note">${esc(p.flag.hint)}</span>` : ""}</div>` : ""}
-    ${p.bank_details || p.payee_ref ? `<div class="note">Pay to: <span class="mono">${esc(p.bank_details || "")} ${esc(p.payee_ref || "")}</span></div>` : ""}
-    ${lock}
-    <form class="form" id="payForm">
-      <label class="field"><span>Amount (${esc(p.currency)})</span><input id="pf-amount" type="number" step="0.01" value="${p.amount ?? ""}"${off}></label>
-      <label class="field"><span>${p.direction === "in" ? "Received on" : "Paid on"}</span><input id="pf-paid" type="date" value="${p.paid_date || ""}"${off}></label>
-      <label class="field"><span>Bank reference</span><input id="pf-bank" value="${esc(p.bank_ref || "")}"${off}></label>
-      <label class="field"><span>${state.data.entity.uses_sql ? (p.direction === "in" ? "SQL OR no." : "SQL PV / JV no.") : "Record ref"}</span><input id="pf-sql" value="${esc(p.sql_ref || "")}"${off}></label>
-      <label class="field"><span>e-Invoice UIN</span><input id="pf-einv" value="${esc(p.einvoice_ref || "")}"${off}></label>
-      <label class="field" style="grid-column:1/-1"><span>Notes</span><input id="pf-notes" value="${esc(p.notes || "")}"${off}></label>
-      ${short}
-      ${!ro && (p.amount_is_estimate || estimateShort(p)) ? `<label class="row" style="grid-column:1/-1;gap:6px;font-size:.85rem"><input type="checkbox" id="pf-confirm" style="accent-color:var(--accent)"> The amount above is the real figure, not an estimate</label>` : ""}
-      ${ro ? "" : `<div class="row"><button class="btn" type="submit">Save details</button></div>`}
-    </form>
-    <div><h3>Required documents</h3>${ro ? "" : `<div class="note">Drop files on a box, or click Upload. A file dropped on a box is added beside the ones already there; Replace swaps one and Remove takes one off. A box ticked from SQL or the bank statement needs no upload, but can still take a copy.</div>`}</div>
-    <div style="display:grid;gap:8px">${required}</div>
-    <div><h3>Other documents</h3></div>
-    <div style="display:grid;gap:8px">${extras}
-      ${extraTypes.length && !ro ? `<div class="row"><select id="extraType">${extraTypes.map(t => `<option value="${esc(t)}" ${t === extraPick ? "selected" : ""}>${esc(dt[t] || t)}</option>`).join("")}</select>
-      <button class="ghost small" id="extraUpload">Upload another document</button></div>` : ""}</div>
-    ${state.data.entity.uses_sql ? `<div><h3>SQL Account</h3>${vouchers ? vouchers + (p.evidence.einvoice && !p.required.includes("einvoice") ? `<div class="note chip have ev">✓ ${esc(p.evidence.einvoice.text)}</div>` : "") + (ro ? "" : `<div class="note">Linked by mistake? Unlink puts the voucher back under SQL entries not linked, and the amount and paid date back to what they were.</div>`) : `<div class="note">No SQL voucher linked yet.</div>`}</div>` : ""}
-    <div><h3>Bank statement</h3>${lines}${over}${est}</div>
-    ${histSection("payments", p.id)}
-    ${ro ? "" : `<div class="row"><button class="btn danger small" id="deletePayment">Remove this payment</button></div>`}`;
-  showDrawer();
-  state.payLoaded = payFormValues();
-  if (!ro) for (const [k, v] of Object.entries(keep)) { const el = $("#" + k); if (el) el[el.type === "checkbox" ? "checked" : "value"] = v; }
-}
-
+// The payment dialog (openPayment) and Add a payment are drawn by pages/payment.js.
 function payFormValues() {
+  const acct = $("#pf-acct");
   return { amount: $("#pf-amount").value === "" ? null : +$("#pf-amount").value, paid_date: $("#pf-paid").value,
     bank_ref: $("#pf-bank").value.trim(), sql_ref: $("#pf-sql").value.trim(), einvoice_ref: $("#pf-einv").value.trim(), notes: $("#pf-notes").value.trim(),
-    difference_note: $("#pf-diff")?.value.trim(), amount_confirmed: !!$("#pf-confirm")?.checked };
-}
-
-// One box per document of the type, then one to add another (several transfer slips for one payment, say). With none
-// uploaded, ev (what SQL or the bank statement already shows, e.g. PV2601-020) ticks the box, which can still take a file;
-// without it, why says why what SQL has doesn't count (an e-Invoice cancelled by a refund note). ro: a filed month (View only).
-function slotHtml(type, docs, ev, why, ro) {
-  const label = esc(state.meta.doc_types[type] || type);
-  if (!docs.length) return `<div class="slot ${ev ? "have" : "need"}" data-slot="${type}"><div class="lbl"><b>${label}</b><div class="file"${ev ? ` title="${esc(ev.text)}"` : ""}>${ev ? `✓ ${esc(ev.text)}` : "Not uploaded"}</div>${!ev && why ? `<div class="note">${esc(why.hint)}</div>` : ""}</div>${ro ? "" : `<button class="ghost small" data-upload="${type}">Upload</button>`}</div>`;
-  return docs.map(d => `<div class="slot have" data-slot="${type}"><div class="lbl"><b>${label}</b><div class="file">${esc(d.original_name)} · ${fmtDate(d.uploaded_at)}</div></div>
-    <a class="ghost small" href="/api/documents/${d.id}/file" target="_blank">View</a>${ro ? "" : `<button class="ghost small" data-upload="${type}" data-replaces="${d.id}" data-name="${esc(d.original_name)}">Replace</button>
-    <button class="ghost small" data-remove-doc="${d.id}" data-name="${esc(d.original_name)}">Remove</button>`}</div>`).join("")
-    + (ro ? "" : `<div class="slot add" data-slot="${type}"><button class="ghost small" data-upload="${type}">+ Add another ${type === "other" ? "document" : esc(docLabel(type))}</button></div>`);
+    difference_note: $("#pf-diff")?.value.trim(), amount_confirmed: !!$("#pf-confirm")?.checked,
+    ...(acct && acct.tagName === "SELECT" ? { account_id: acct.value === "" ? null : +acct.value } : {}) };
 }
 
 // The files picked, [] when cancelled; one only when replacing.

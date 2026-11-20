@@ -327,8 +327,9 @@ h, hd = o["here"], o["here_drawer"]
 check("a filed month says so and sends Reopen to the Monthly checklist", "was filed on" in h and "Reopen on the Monthly checklist" in h and f'href="#/EXH/{M}/payments/checklist"' in h)
 check("a filed month is read only: no Add a payment, no picking", 'id="addPayment"' not in h and "data-reg-pick" not in h)
 check("...and its payment opens read only: fields disabled, no upload, replace, remove, save or delete",
-      'id="pf-amount" type="number" step="0.01" value="45" disabled' in hd and "data-upload" not in hd and "data-remove-doc" not in hd
-      and "Save details" not in hd and "deletePayment" not in hd and "is filed, so this payment is read-only" in hd, hd[:500])
+      re.search(r'<input id="pf-amount" type="number" step="0\.01"[^>]* value="45" disabled>', hd) and "data-upload" not in hd and "data-remove-doc" not in hd
+      and "data-pd-menu" not in hd and "Save details" not in hd and "deletePayment" not in hd and "so this payment is read only" in hd
+      and "Read only: the month is filed" in hd, hd[:500])
 
 # ---------- the checklist ----------
 T = [t for t in month["tasks"] if not t["waiting"]]

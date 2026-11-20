@@ -1,33 +1,16 @@
 "use strict";
-async function addPaymentDrawer() {
-  if (!(await mayLeave())) return;
-  state.openPayment = null; state.drawerDirty = null;
-  const e = ent(), acct = defaultAccount(e)?.id;
-  $("#drawer").innerHTML = `
-    <div class="row spread"><h2>Add a payment</h2><button class="ghost small" id="closeDrawer">Close</button></div>
-    <div class="note">For ad hoc payments, claims and receipts in ${monthName(state.month)}.</div>
-    <form class="form" id="addForm" style="grid-template-columns:1fr 1fr">
-      <label class="field" style="grid-column:1/-1"><span>Description</span><input id="ap-desc" required placeholder="e.g. Oct 2026 Claims - staff"></label>
-      <label class="field"><span>Type</span><select id="ap-cat">${typeOptions(oneOffType(), "out")}</select></label>
-      <label class="field"><span>Money</span><select id="ap-dir"><option value="out">Paid out</option><option value="in">Received</option></select></label>
-      <label class="field"><span>Amount</span><input id="ap-amt" type="number" step="0.01"></label>
-      <label class="field"><span>Due date</span><input id="ap-due" type="date"></label>
-      <label class="field" style="grid-column:1/-1"><span>Account</span><select id="ap-acct">${pickAccounts(e).map(a => acctOption(a, acct)).join("")}</select></label>
-      <div class="row"><button class="btn" type="submit">Add payment</button></div>
-    </form>`;
-  showDrawer();
-  pairTypeDir($("#ap-cat"), $("#ap-dir"), { keep: oneOffType() });  // Received offers the types of money received; Paid out, the one-off default again
-}
+// Add a payment (the New payment dialog) is drawn by pages/payment.js.
 
-// Drag-and-drop files onto a document box in the payment drawer: each file is added, never replacing one. Files dropped
-// anywhere else would make the browser leave the app to show them, so that is stopped; a file box (on the Bank
-// statements and SQL import pages) still takes its file.
+// Drag-and-drop files onto a document box in the payment dialog: each file is added as that type, never replacing one;
+// files dropped anywhere else in the dialog wait for their type to be chosen. Files dropped anywhere else would make the
+// browser leave the app to show them, so that is stopped; a file box (on the Bank statements and SQL import pages) still
+// takes its file.
 const dragsFiles = ev => ev.dataTransfer?.types?.includes("Files") && !ev.target.closest?.("input[type=file]");
 document.addEventListener("dragover", ev => { if (!dragsFiles(ev)) return; ev.preventDefault(); ev.target.closest?.("[data-slot]")?.classList.add("drag"); });
 document.addEventListener("dragleave", ev => ev.target.closest?.("[data-slot]")?.classList.remove("drag"));
 // Where a file dropped in the wrong place can go, on the page showing.
 function dropHint() {
-  if (state.openPayment && !$("#drawer").hidden) return "Drop the file onto one of the document boxes.";
+  if (state.openPayment && !$("#drawer").hidden) return "Drop the file onto the payment, or onto one of its document boxes.";
   if (state.view === "bank") return "Drop the statement PDF on the Choose file button under Statement PDF.";
   if (state.view === "sql") return "Drop the SQL export on the Choose file button under SQL export.";
   if (state.view === "payroll") return "Drop the payroll workbook on the Choose file button above Check the workbook.";
@@ -38,11 +21,15 @@ function dropHint() {
 document.addEventListener("drop", async ev => {
   if (!dragsFiles(ev)) return;
   ev.preventDefault();
-  const s = ev.target.closest?.("[data-slot]");
-  if (!s || !state.openPayment) return toast(dropHint());
-  s.classList.remove("drag");
-  if (state.data?.closed_at) return toast(`${state.data.label} is filed, so its payments are read-only. Reopen it on the Monthly checklist to add a file.`);
-  try { await uploadFiles([...ev.dataTransfer.files], { payment_id: state.openPayment, doc_type: s.dataset.slot }); } catch (e) { toast(e.message, true); }
+  const s = ev.target.closest?.("[data-slot]"), inDlg = state.openPayment && state.pay && ev.target.closest?.("#drawer");
+  if (!inDlg) return toast(dropHint());
+  s?.classList.remove("drag");
+  if (state.data?.closed_at) return toast(`${state.data.label} is filed, so its payments are read only. Reopen it on the Monthly checklist to add a file.`);
+  const files = [...ev.dataTransfer.files];
+  try {
+    if (s) await pdUpload(files.map(file => ({ file, type: s.dataset.slot })));
+    else pdAskTypes(payOf(state.openPayment), files);
+  } catch (e) { toast(e.message, true); }
 });
 // Tabs (design/motion-keyboard-spec.md section 5): on a tab of the Payments register or the Monthly checklist, the arrow keys
 // (wrapping), Home and End pick the tab and move the focus to it.
@@ -62,6 +49,7 @@ document.addEventListener("keydown", async ev => {
   if (ev.key !== "Escape" || DLG.asking) return;  // a confirm on top takes the Escape itself
   if (ev.target.id === "regQ" && ev.target.value) { ev.target.value = ""; return regSearch(""); }
   if (ev.target.closest?.("#setupWhy")) return hideWhy();
+  if (payEscape()) return;   // in the payment dialog: an open menu, a question, the files waiting for their type, the viewer first
   await closeDrawer();
 });
 document.addEventListener("input", ev => {
