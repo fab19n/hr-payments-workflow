@@ -238,7 +238,7 @@ after it a note.
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, menu_test, meta_pages_test, myinvois_amount_test,
   myinvois_test, pack_check_test, parties_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
   recon_review_fixes_test, register_checklist_test, restore_test, seed_names_test, settings_isolation_test, setup_test, sql_books_item_test,
-  sql_exports_test, sql_typed_ref_test, stage1_leftovers_test, stage1_settle_test, states_test, statements_test, statutory_test, topbar_test, trail_view_test and types_test.
+  sql_doc_labels_test, sql_exports_test, sql_page_test, sql_typed_ref_test, stage1_leftovers_test, stage1_settle_test, states_test, statements_test, statutory_test, topbar_test, trail_view_test and types_test.
   `synthetic_tests.masters_equivalence_test --golden <file>` also compares this code's results with a snapshot taken on
   older code (`--write-golden <file>` on that code makes one); `synthetic_tests.checklist_equivalence_test --golden
   <file>` does the same for update 21.

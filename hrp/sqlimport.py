@@ -41,6 +41,18 @@ MONEY_OUT = {"PV", "SP", "PM"}         # payment voucher / supplier payment
 JOURNAL = {"JV", "JE"}
 SALES_DOCS = {"IV", "DN", "CN", "CF"}  # customer invoice, debit note, credit note, refund
 PURCHASE_DOCS = {"PI", "SD", "SC"}     # supplier invoice, debit note, credit note
+# What a document of each type is called on the SQL page (the preview's "kept on file" and Journals and invoices): a
+# supplier's documents are named as a supplier's, never as a customer invoice.
+DOC_LABELS = {"IV": "Customer invoice", "DN": "Customer debit note", "CN": "Customer credit note", "CF": "Customer refund",
+              "PI": "Supplier invoice", "SD": "Supplier debit note", "SC": "Supplier credit note",
+              "JV": "Journal", "JE": "Journal"}
+
+
+def doc_label(doc_type, kind=None):
+    """The words for a document's type ('Supplier invoice'); a journal or an invoice of a type not listed is named by its
+    kind, anything else (a voucher) by nothing."""
+    t = str(doc_type or "").strip().upper()
+    return DOC_LABELS.get(t) or {"journal": "Journal", "invoice": "Invoice"}.get(kind or "", "")
 
 
 class SqlImportError(ValueError):
