@@ -156,8 +156,8 @@ const document = {
   const run = code => vm.runInContext(code, ctx);
   vm.runInContext(fs.readFileSync(appPath, "utf8"), ctx);
   for (const [id, tag] of [["nav", "nav"], ["monthLabel", "span"], ["pageTitle", "span"], ["main", "main"]]) { const n = new Node(tag); n.id = id; body.appendChild(n); }
-  run(`globalThis.__drawn = []; globalThis.__opened = [];
-    for (const v of ["Overview", "Entity", "Checklist", "Budget", "Payees", "Bank", "Sql", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
+  run(`globalThis.__drawn = []; globalThis.__opened = []; globalThis.__realEinvoices = viewEinvoices;
+    for (const v of ["Overview", "Entity", "Checklist", "Budget", "Payees", "Bank", "Sql", "Einvoices", "Books", "Payroll", "Audit", "Trail", "Settings", "Setup"])
       globalThis["view" + v] = async main => { globalThis.__drawn.push(state.view + ":" + state.entity + ":" + state.month); };
     trailNotice = () => {};
     openSetup = async (kind, id) => { globalThis.__opened.push([kind, id]); state.setup.id = id; syncAddr(); };
@@ -291,9 +291,12 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await run(`state.books.tab = "tb"; syncAddr()`);
   ok("a Books tab picked on it makes the page Books again, with the Books address", run("state.view") === "books" && loc.hash === "#/AAA/accounting/books?tab=tb&from=2026-01-01&to=2026-02-01", loc.hash);
   { run("__drawn.length = 0"); await visit("#/AAA/2026-10/accounting/einvoices");
-    ok("e-Invoices for a company Kept in SQL Account draws today's SQL import page, once, and says where to scroll once", run("__drawn").length === 1 && run("__drawn")[0] === "einvoices:1:2026-10" && run("state.landAt") === null && loc.hash === "#/AAA/2026-10/accounting/einvoices", run("__drawn") + loc.hash);
-    run("__drawn.length = 0"); await visit("#/BBB/2026-10/accounting/einvoices");
-    ok("...for a company kept here a Coming soon page and no SQL page", run("__drawn").length === 0 && /e-Invoices is coming soon/.test(E.body.querySelector("#main").innerHTML) && loc.hash === "#/BBB/2026-10/accounting/einvoices"); }
+    ok("e-Invoices for a company Kept in SQL Account is its own page (slice 6), drawn once at its own address, not the SQL import page", run("__drawn").length === 1 && run("__drawn")[0] === "einvoices:1:2026-10" && run("ROUTES.einvoices.draw() === viewEinvoices") && run("ROUTES.einvoices.draw() !== viewSql") && loc.hash === "#/AAA/2026-10/accounting/einvoices", run("__drawn") + loc.hash);
+    run("__drawn.length = 0; globalThis.__stubEinvoices = viewEinvoices; viewEinvoices = __realEinvoices"); await visit("#/BBB/2026-10/accounting/einvoices"); run("viewEinvoices = __stubEinvoices");
+    ok("...for a company kept here the same page (it says the submission method is not decided), not Coming soon", run("__drawn").length === 0 && /Submission method not decided yet/.test(E.body.querySelector("#main").innerHTML) && !/coming soon/.test(E.body.querySelector("#main").innerHTML) && loc.hash === "#/BBB/2026-10/accounting/einvoices");
+    run("__drawn.length = 0"); await visit("#/AAA/2026-10/accounting/einvoices?tab=self-billed");
+    ok("...its tab is in the address", run("state.addr.params.tab") === "self-billed" && loc.hash === "#/AAA/2026-10/accounting/einvoices?tab=self-billed", loc.hash);
+    ok("...a tab it doesn't have is not kept", run(`JSON.stringify(parseAddr("#/AAA/2026-10/accounting/einvoices?tab=unpaid").params)`) === "{}" && run(`JSON.stringify(parseAddr("#/AAA/2026-10/accounting/einvoices?tab=received").params)`) === '{"tab":"received"}'); }
   await visit("#/AAA/2026-10/payments/checklist");
   ok("Monthly checklist is its own page from slice 2", loc.hash === "#/AAA/2026-10/payments/checklist" && E.got().view === "checklist");
   for (const bad of ["#/AAA/2026-10/hr/staff", "#/AAA/hr/staff/S1", "#/all/hr/staff", "#/AAA/accounting/parties", "#/AAA/2026-10/accounting/statutory/x", "#/AAA/2026-10/accounting/sales"])

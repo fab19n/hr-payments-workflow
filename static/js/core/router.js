@@ -19,7 +19,7 @@ const DATE_RE = /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, MONTH_RE = /^\d
 const IDS_RE = /^\d{1,9}(,\d{1,9}){0,199}$/;
 // The tabs a page's address may name (All, the first tab, is left out of the address): the Payments register's and the Monthly
 // checklist's (slice 2); any other page with a tab filter is Books or its Customers and suppliers part.
-const PAGE_TABS = { entity: ["unpaid", "attention", "nosql", "complete"], checklist: ["open", "done", "missing"] };
+const PAGE_TABS = { entity: ["unpaid", "attention", "nosql", "complete"], checklist: ["open", "done", "missing"], einvoices: ["received", "self-billed"] };
 const BOOKS_TABS = ["tb", "gl", "pl", "bs", "customers", "suppliers", "statutory"];
 // The filters an address may carry, and what each may hold (for the page given). Nothing else is read from or written to an address.
 const PARAM_RULES = {
@@ -42,16 +42,16 @@ const ROUTES = {
   trail: { area: "admin", page: "audit-trail", company: "none", month: false, params: [], draw: () => viewTrail },
   settings: { area: "admin", page: "backup", company: "none", month: false, params: [], draw: () => viewSettings },
   setup: { area: "admin", page: "setup", company: "none", month: false, params: [], draw: () => viewSetup },
-  // The pages the menu adds (step 0e). Staff, Leave, Claims and advances, Approvals and To pay are not built yet (Coming soon); e-Invoices,
-  // Customers and suppliers and Statutory payables land on today's SQL import page and Books tabs until slices 6 and 7 (their address
-  // stays their own: applyPlace puts the tab or the part in the state, and placeFromState gives the Books address when the tab moves on);
-  // Sales, Purchases, Journals and Period close are the Kept here placeholders. pages/placeholders.js draws them.
+  // The pages the menu adds (step 0e). Staff, Leave, Claims and advances, Approvals and To pay are not built yet (Coming soon);
+  // Customers and suppliers and Statutory payables land on today's Books tabs until slice 7 (their address stays their own: applyPlace
+  // puts the tab in the state, and placeFromState gives the Books address when the tab moves on); Sales, Purchases, Journals and
+  // Period close are the Kept here placeholders. pages/placeholders.js draws them. e-Invoices is its own page (slice 6, pages/einvoices.js).
   staff: { area: "hr", page: "staff", company: "one", month: false, params: [], draw: () => viewStaff },
   leave: { area: "hr", page: "leave", company: "one", month: false, params: [], draw: () => viewLeave },
   claims: { area: "hr", page: "claims", company: "one", month: false, params: [], draw: () => viewClaims },
   approvals: { area: "payments", page: "approvals", company: "one", month: false, params: [], draw: () => viewApprovals },
   topay: { area: "payments", page: "to-pay", company: "one", month: false, params: [], draw: () => viewToPay },
-  einvoices: { area: "accounting", page: "einvoices", company: "one", month: true, params: [], draw: () => viewEinvoices },
+  einvoices: { area: "accounting", page: "einvoices", company: "one", month: true, params: ["tab"], draw: () => viewEinvoices },
   parties: { area: "accounting", page: "parties", company: "one", month: true, params: ["tab"], draw: () => viewBooks },
   statutory: { area: "accounting", page: "statutory", company: "one", month: true, params: ["from", "to"], draw: () => viewBooks },
   sales: { area: "accounting", page: "sales", company: "one", month: false, params: [], draw: () => viewSales },
@@ -216,7 +216,6 @@ async function applyPlace(place, opts = {}) {
       B.tab = v;
       if (v === "parties") B.side = p.tab === "suppliers" ? "suppliers" : "customers"; else { B.from = p.from || null; B.to = p.to || null; }
     }
-    state.landAt = v === "einvoices" ? "sqlEinvoices" : null;  // the part of the SQL page to bring into view once it is drawn
     if (v === "setup") { if (place.sub) state.setup.kind = place.sub; state.setup.id = null; }
     if (opts.write) writeAddr(currentAddr(), opts.replace);
     if (opts.link) window.scrollTo?.(0, 0);

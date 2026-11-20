@@ -6,7 +6,7 @@ made-up records only.
    amounts print as positive figures, as SQL prints them. Refused as invoices are (no lines, lines that disagree with
    the listing). A credit note prints no bank details. Its Ref (the invoice it is set against) prints under Terms only
    when the listing gave it and that invoice is in the documents fetched.
-2. The SQL page's buttons say Debit note PDF and Credit note PDF; the month's zip of customer invoices holds the debit
+2. The e-Invoices page's buttons say Debit note PDF and Credit note PDF; the month's zip of customer invoices holds the debit
    and credit notes too, each named by its doc no.
 3. A self-billed e-Invoice in US dollars: the amount heading is in USD, the lines add up to MyInvois's total, and
    under the total a small line says it was paid as MYR <the voucher's total> by <the PV>. In ringgit, no such line.
@@ -353,7 +353,10 @@ check("the credit note in the zip is the credit note", "Credit Note" in text_of(
 r = c.get(BASE + f"/api/invoices/{ROWS['CN-00001']}.pdf?entity_id={EXH}", headers=H)
 check("one credit note opens as a PDF", r.status_code == 200 and r.data[:4] == b"%PDF")
 js = app_source()
-check("the page's buttons name debit and credit notes", 'DN: "debit note", CN: "credit note"' in js and "All invoices, debit and credit notes of" in js)
+ei = {x["doc_no"]: x for x in j("get", f"/api/einvoices?entity={EXH}")["issued"]}
+check("the e-Invoices page's PDF buttons name debit and credit notes, and its zip says it holds them",
+      (ei["DN-00001"]["what"], ei["CN-00001"]["what"], ei["IV-00001"]["what"]) == ("debit note", "credit note", "invoice")
+      and "SC-00001" not in ei and '`${what[0].toUpperCase()}${what.slice(1)} PDF`' in js and '"invoices, debit and credit notes"' in js, ei.keys())
 
 # ---------- 3. a self-billed e-Invoice in another currency ----------
 us = doc("PV2607-020")

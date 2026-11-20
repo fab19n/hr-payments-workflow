@@ -1524,3 +1524,48 @@ button.pill.pill-btn[aria-expanded="true"] .chev { transform: rotate(90deg); }
   .sq-bring-top, #sql-panel { padding-left: 16px; padding-right: 16px; }
   .sq-tabs { gap: 0 16px; }
 }
+
+/* Accounting › e-Invoices (slice 6, pages/einvoices.js; design/canvas/MyInvois.dc.html) */
+.ei-here { display: flex; flex-wrap: wrap; gap: 14px 16px; align-items: flex-start; padding: 20px 22px; }
+.ei-here h2 { font-size: 18px; }
+.ei-here .note { margin: 4px 0 0; color: var(--ink-2); }
+.ei-source { padding: 0; }
+.ei-src { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-start; padding: 14px 20px; }
+.ei-src > .glyph { width: 18px; height: 18px; color: var(--accent); flex: none; margin-top: 2px; }
+.ei-src p { flex: 1 1 420px; min-width: 0; margin: 0; color: var(--ink-2); font-size: 13px; overflow-wrap: anywhere; }
+.ei-src-go { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.ei-unused { padding: 0 20px 14px; display: grid; gap: 8px; }
+.ei-unused > button { justify-self: start; display: inline-flex; align-items: center; gap: 6px; color: var(--warn); }
+.ei-unused > button .glyph { width: 16px; height: 16px; }
+.ei-unused ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ei-unused li { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 13px; }
+.ei-unused li > div { flex: 1 1 320px; min-width: 0; overflow-wrap: anywhere; }
+.ei-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.ei-tabs { min-width: 0; }
+.ei-n { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 99px; font-size: 12px; font-weight: 600; background: var(--mute-soft); color: var(--ink-2); }
+.ei-tab[aria-selected="true"] .ei-n { background: var(--accent-soft); color: var(--accent); }
+.ei-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 0; }
+.ei-month { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.ei-month select { max-width: 100%; min-height: 34px; }
+.ei-print { display: grid; gap: 8px; }
+.ei-print-row { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+.ei-print-row .note { font-size: 13px; }
+.ei-done { display: inline-flex; align-items: center; gap: 5px; color: var(--ok); font-size: 13px; font-weight: 600; --glyph-tint: var(--tint-ok); }
+.ei-done .glyph { width: 16px; height: 16px; }
+.ei-set { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: flex-start; font-size: 13px; color: var(--ink-2); }
+.ei-set > .glyph { width: 16px; height: 16px; color: var(--warn); flex: none; margin-top: 2px; --glyph-tint: var(--tint-warn); }
+.ei-set > div { flex: 1 1 360px; min-width: 0; }
+.ei-set ul { margin: 4px 0 0; padding-left: 18px; }
+.ei-tbl td { vertical-align: top; }
+.ei-uuid { font-size: 12px; overflow-wrap: anywhere; }
+.ei-pdf { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.ei-pdf a .glyph { width: 16px; height: 16px; }
+.ei-pn-b { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px; border: 1px solid var(--warn-line); border-radius: 99px; background: var(--warn-soft); color: var(--warn);
+  font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; --glyph-tint: var(--tint-warn); }
+.ei-pn-b.bad { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); --glyph-tint: var(--tint-bad); }
+.ei-pn-b .glyph { width: 14px; height: 14px; }
+.ei-pn-list { margin: 6px 0 0; padding-left: 18px; max-width: 360px; font-size: 12px; color: var(--ink-2); animation: cl-unfold var(--t-base) both; }
+@media (max-width: 640px) {
+  .ei-bar { padding: 0 16px; }
+  .ei-src, .ei-unused { padding-left: 16px; padding-right: 16px; }
+}

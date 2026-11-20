@@ -21,7 +21,7 @@ Everything is stored in `C:\HR-Records`, not in this program folder:
 | `backups\` | Zip backups made from the Backup & log page |
 | `seed.json` | Starting payees and accounts, read once on first start. An optional `"names"` gives the real names for the made-up related company and tenant in the built-in checklists (`rules.PLACEHOLDERS`), so they never sit in the program |
 
-The app only listens on this PC (127.0.0.1) and contacts nothing on the internet itself. The MyInvois links on the SQL
+The app only listens on this PC (127.0.0.1) and contacts nothing on the internet itself. The MyInvois links on the e-Invoices
 page, and the QR codes on printed invoices, point to the tax authority's MyInvois site (myinvois.hasil.gov.my): your
 browser opens it only when you click a link or someone scans a code. Don't put `C:\HR-Records` inside OneDrive or
 Google Drive.
@@ -140,16 +140,18 @@ new day (a click, or coming back to the tab) sets up the new payroll month and m
    holds (`hrp/myinvois.py`): each e-Invoice is kept by its UUID, a later copy updates its status (an e-Invoice
    cancelled) and one it leaves out is kept. The company's own e-Invoices and self-billed PVs fill in the e-Invoice of the
    SQL document with the same number, so the checklist sees them validated (or cancelled); those received are matched to
-   supplier invoices and payment vouchers, and the valid ones not found in SQL's books are listed on the SQL page.
+   supplier invoices and payment vouchers, and the valid ones not found in SQL's books are listed on the
+   **Accounting › e-Invoices** page (`hrp/einvoicebook.py`), with the Issued, Received and Self-billed tabs for a month and
+   their Excel.
    e-Invoice details can still come from copy and paste of SQL's invoice grid.
 
    **Printed invoices** (`hrp/invoicepdf.py`): each customer invoice, debit note and credit note, and each payment voucher
-   with a self-billed e-Invoice, has a button on the SQL page that opens it as a PDF laid out as SQL Account prints it,
+   with a self-billed e-Invoice, has a button in the Print column of the e-Invoices page that opens it as a PDF laid out as SQL Account prints it,
    from SQL's account lines (fetch the GL Journal of Transaction covering its date first), with the company's header,
    footer, bank details, logo and signature from **Setup › Companies** and, once MyInvois validated it, the QR code with
-   its UUID and the time it was validated. **All invoices, debit and credit notes of** a month, and **All self-billed
-   invoices of** a month, download as one zip, with a note of any that couldn't be printed and why. A document that
-   can't be printed says why instead (no account lines yet, lines that disagree with the listing, a date that differs).
+   its UUID and the time it was validated. **All of the month**, on the Issued tab (its invoices, debit
+   and credit notes) or the Self-billed tab, downloads as one zip, with a note of any that couldn't be printed and why. Beside each PDF, its print note says what the
+   print check found (a line cut short, no QR code yet). A document that can't be printed says why instead (no account lines yet, lines that disagree with the listing, a date that differs).
 6. **Books and checks** – SQL Account stays the books: nothing here creates or changes an accounting entry for a company
    kept in SQL. The **Books** page shows the books mirrored from SQL's reports (`hrp/books.py`, `hrp/finstatements.py`,
    `hrp/receivables.py`): the **trial balance** (with opening balances, checked against SQL's own trial balance), the
@@ -234,7 +236,7 @@ after it a note.
   vouchers first.
 - Tests on made-up data only, safe to keep in git, each run as `.venv\Scripts\python -m synthetic_tests.<name>`:
   addresses_test, audit_trail_test, before_tracking_test, books_excel_test, books_test, budget_recurring_test, checklist_equivalence_test, checklist_test, dialog_shell_test,
-  extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
+  einvoices_groups_test, einvoices_page_test, extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, menu_test, meta_pages_test, myinvois_amount_test,
   myinvois_test, pack_check_test, parties_test, payment_dialog_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
   recon_review_fixes_test, register_checklist_test, restore_test, seed_names_test, settings_isolation_test, setup_test, sql_books_item_test,

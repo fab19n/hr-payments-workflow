@@ -395,57 +395,6 @@ async function booksDoc(t) {
   } catch (e) { toast(e.message, true); }
 }
 
-// What the copies of SQL's MyInvois Transaction screen say (d.myinvois from /api/sql/entries): every e-Invoice read,
-// filtered to issued, self-billed or received, the valid ones received that none of SQL's documents has, and the copy
-// read last. Nothing here can be changed: a newer copy saved in the exports folder and fetched updates it.
-const MI_WAYS = [["all", "All"], ["issued", "Issued"], ["self_billed", "Self-billed"], ["received", "Received"]];
-// A received e-Invoice matched by its amount alone (hrp/myinvois._by_amount) is a likely match, shown as such.
-const MI_HOW = { amount: "By amount", line: "By a line's amount", sum: "Paid together" };
-
-function myinvoisBox(m) {
-  if (!m) return "";
-  if (!m.rows.length) return `<h3>From MyInvois</h3><div class="note">No copy of MyInvois read yet. In SQL, open the MyInvois Transaction screen, click the grid, press <b>Ctrl+A</b> then <b>Ctrl+C</b>, paste it into a new Excel workbook with its headings and save it in the exports folder under any name, then use Fetch from SQL exports. The company's TIN must be in Setup › Companies.</div>`;
-  const f = state.miFilter || "all", shown = m.rows.filter(r => f === "all" || r.direction === f);
-  const party = r => r.direction === "issued" ? r.buyer_name : r.supplier_name;  // the other side: who it was issued to, or by
-  const src = m.sources[0];
-  return `<h3>From MyInvois</h3>
-    ${src ? `<div class="note">Read from <b>${esc(src.name)}</b> (saved ${esc(String(src.saved).replace("T", " "))}), on ${esc(String(src.read_at).replace("T", " "))}.</div>` : ""}
-    <div class="seg" role="group" aria-label="Which e-Invoices">${MI_WAYS.map(([v, l]) => `<button type="button" data-mi-filter="${v}" aria-pressed="${f === v}">${l}${v === "all" ? "" : ` (${m.counts[v] || 0})`}</button>`).join("")}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>UUID</th><th>Type</th><th>Status</th><th>Validated</th><th>Supplier or buyer</th><th class="num">Total</th><th>In SQL</th></tr></thead><tbody>
-    ${shown.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td class="mono">${r.long_id ? `<a href="${esc(`https://myinvois.hasil.gov.my/${r.uuid}/share/${r.long_id}`)}" target="_blank" rel="noopener noreferrer" title="Open it on MyInvois">${esc(r.uuid)} ↗</a>` : esc(r.uuid)}</td><td>${esc(r.type || "")}</td>
-      <td><span class="pill ${r.status === "Valid" ? "ok" : "warn"}">${esc(r.status)}</span></td><td>${esc(r.validated_at || "")}</td>
-      <td>${esc(party(r) || "")}</td><td class="num">${r.currency && r.currency !== "MYR" ? esc(r.currency) + " " : ""}${rmPlain(r.total_sen)}</td>
-      <td>${r.entry_doc_no ? `<span class="mono">${esc(r.entry_doc_no)}</span>${MI_HOW[r.matched_by] ? ` <span class="pill grey" title="A likely match, by amount only: check it">${MI_HOW[r.matched_by]}</span>` : ""}` : `<span class="muted">${r.direction === "other" ? "—" : "Not found"}</span>`}${r.print_entry ? invoiceBtn({ id: r.print_entry, print_kind: "self_billed" }) : ""}</td></tr>`).join("") || `<tr><td colspan="8" class="empty">None.</td></tr>`}
-    </tbody></table></div>
-    <h3>e-Invoices received but not found in SQL's books${m.unmatched.length ? ` (${m.unmatched.length})` : ""}</h3>
-    <div class="note">Valid e-Invoices issued to the company${m.since ? ` from ${esc(monthName(m.since))}` : ""} that no supplier invoice or payment voucher in SQL has, by the supplier's document number, its TIN and amount, or its amount alone (a whole voucher, or one line of a claim, dated near it). Check each one: it may still have to be entered in SQL.</div>
-    ${m.unmatched.length ? `<div class="tbl-wrap"><table><thead><tr><th>Doc No</th><th>Supplier</th><th>Supplier TIN</th><th>Issued</th><th class="num">Total</th></tr></thead><tbody>
-      ${m.unmatched.map(r => `<tr><td class="mono">${esc(r.doc_no)}</td><td>${esc(r.supplier_name || "")}</td><td class="mono">${esc(r.supplier_tin || "")}</td><td>${esc((r.issued_at || r.received_at || "").slice(0, 10))}</td>
-        <td class="num">${r.currency && r.currency !== "MYR" ? esc(r.currency) + " " : ""}${rmPlain(r.total_sen)}</td></tr>`).join("")}</tbody></table></div>` : `<div class="note">None: every valid e-Invoice received is in SQL's books.</div>`}`;
-}
-
-// Printed invoices (hrp/invoicepdf): a customer invoice, or a payment voucher with a self-billed e-Invoice, opens as PDF
-// in a new tab; one that can't be printed yet says why there.
-// The printed document's name by SQL's document type: a customer's debit or credit note prints as one, else an invoice.
-const PRINT_NAMES = { DN: "debit note", CN: "credit note" };
-const invoiceBtn = x => {
-  if (!x.print_kind) return "";
-  const what = x.print_kind === "self_billed" ? "self-billed invoice" : PRINT_NAMES[String(x.doc_type || "").toUpperCase()] || "invoice";
-  return `<div><a class="ghost small" href="/api/invoices/${+x.id}.pdf?entity_id=${state.entity}" target="_blank" rel="noopener" title="${esc(`The ${what}, laid out as SQL Account prints it`)}">${esc(what === "self-billed invoice" ? "Invoice" : what[0].toUpperCase() + what.slice(1))} PDF</a></div>`;
-};
-// All of a month's invoices as one zip, and the print settings the company still lacks (with the way to Setup).
-function invoicePrintBar(p) {
-  if (!p) return "";
-  const months = [...new Set([...(p.months.customer || []), ...(p.months.self_billed || [])])].sort().reverse();
-  if (!months.length) return "";
-  const sel = state.invMonth && months.includes(state.invMonth) ? state.invMonth : months[0];
-  const zip = (kind, label) => (p.months[kind] || []).includes(sel)
-    ? `<a class="ghost small" href="/api/invoices/month.zip?entity=${state.entity}&entity_id=${state.entity}&month=${esc(sel)}&kind=${kind}">${label} ${esc(monthName(sel))} (zip)</a>` : "";
-  return `<div class="row"><label class="row tight"><span class="muted">Print</span><select data-inv-month="1">${months.map(m => `<option value="${esc(m)}" ${m === sel ? "selected" : ""}>${esc(monthName(m))}</option>`).join("")}</select></label>
-      ${zip("customer", "All invoices, debit and credit notes of")}${zip("self_billed", "All self-billed invoices of")}</div>
-    ${p.missing.length ? `<div class="note"><b>Print settings:</b> invoices print without what is missing.<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul><button class="ghost small" type="button" data-inv-setup="1">Open Setup › Companies</button></div>` : ""}
-    ${fontNote(p.fonts)}${tooLongNote(p.too_long)}`;
-}
 // Which of the print settings are too long to print in full (their end is cut off), with where to shorten them.
 const tooLongNote = rows => rows && rows.length ? `<div class="note"><b>Too long to print in full:</b><ul>${rows.map(m => `<li>${esc(m)}</li>`).join("")}</ul></div>` : "";
 // Which of SQL's fonts this computer lacks and what invoices print instead (nothing when all are found).
