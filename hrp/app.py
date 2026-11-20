@@ -724,6 +724,11 @@ def _account_moved(c, p, new_id):
     there goes, so the month is reviewed again (one signed off before tracking stays). A side with no account is the
     company's one account in the payment's currency, by the books' rule (none when it has several)."""
     pid = p["id"]
+    sole = lambda: recon.sole_account(c, p["entity_id"], p["currency"] or "MYR")
+    if not new_id and p["account_id"] and sole() == p["account_id"]:
+        # Taken off the company's only account in its currency: the books still count it on that account, so its bank
+        # lines there stay linked and nothing needs checking again.
+        return
     why = f"payment {p['description']} {'moved to another bank account' if new_id else 'taken off its bank account'}"
     on_line = """SELECT l.id FROM statement_lines l JOIN statements s ON s.id = l.statement_id
                  WHERE l.payment_id = ? AND s.account_id {} ?"""
@@ -745,7 +750,6 @@ def _account_moved(c, p, new_id):
     months = [d[:7] for d in (p["paid_date"], now_["paid_date"]) if d]
     # A payment with no account is in the books of the company's one account in its currency, when it has just one
     # (as the accounts are now); with several, no book counts it, so that side has nothing to check again.
-    sole = lambda: recon.sole_account(c, p["entity_id"], p["currency"] or "MYR")
     recon.recheck(c, [p["account_id"] or sole(), new_id or sole()], months, why)
 
 

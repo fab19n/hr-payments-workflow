@@ -39,6 +39,8 @@ config.SETTINGS_FILE = tmp / "settings.json"  # never the program's own settings
     {"code": "EXP", "name": "Example Payments Sdn Bhd", "accounts": [{"label": "Alpha", "bank": "Example Bank", "number": "000-111"}]},
     {"code": "EXQ", "name": "Example Vouchers Sdn Bhd", "accounts": [{"label": "Main", "bank": "Example Bank", "number": "000-444"}]},
     {"code": "EXR", "name": "Example Rent Sdn Bhd", "accounts": [{"label": "Only", "bank": "Example Bank", "number": "000-666"}]},
+    {"code": "EXS", "name": "Example Solo Sdn Bhd", "accounts": [{"label": "Solo", "bank": "Example Bank", "number": "000-888"}]},
+    {"code": "EXT", "name": "Example Two Currencies Sdn Bhd", "accounts": [{"label": "Ringgit", "bank": "Example Bank", "number": "000-919"}]},
 ]}), encoding="utf-8")
 
 
@@ -303,6 +305,46 @@ check("a payment whose linked voucher was edited in SQL says so, in the SQL impo
 check("...and one whose voucher is unchanged says nothing", pays[P_SAME].get("sql_changed") == [], pays[P_SAME].get("sql_changed"))
 check("a company kept here has the list too, empty", all(p["sql_changed"] == [] for p in
                                                          call("get", f"/api/month?entity={EID}&month=2026-10").get_json()["payments"]))
+
+# Taken off the company's only ringgit account (EXS): the books still count the payment there, so its bank line stays
+# linked and confirmed and the month keeps its sign-off.
+SID_ = q("SELECT id FROM entities WHERE code = 'EXS'")[0]["id"]
+SOLO = q("SELECT id FROM accounts WHERE entity_id = ?", (SID_,))[0]["id"]
+con = db.connect()
+con.arm("user", "test: a made-up company with one account")
+PS = con.execute("""INSERT INTO payments (entity_id, month, account_id, category, description, amount, due_date, paid_date, paid_source,
+                    direction, created_at) VALUES (?, '2026-10', ?, 'other', 'Test Payee M cleaning', 120, '2026-10-16', '2026-10-16', 'bank', 'out', ?)""",
+                 (SID_, SOLO, NOW)).lastrowid
+S_SOLO = con.execute("""INSERT INTO statements (account_id, month, opening, closing, imported_at, check_ok, reconciled_at, reconciled_how)
+                        VALUES (?, '2026-10', 1000, 880, ?, 1, ?, 'review')""", (SOLO, NOW, NOW)).lastrowid
+L_SOLO = con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_date, description, amount, balance, payment_id, status, confirmed_at)
+                        VALUES (?, 1, '2026-10-16', 'TEST PAYEE M CLEANING', -120, 880, ?, 'matched', ?)""", (S_SOLO, PS, NOW)).lastrowid
+con.commit()
+con.close()
+call("patch", f"/api/payments/{PS}", json={"account_id": 0})
+ls = line(L_SOLO)
+check("taken off the company's only account in its currency: it has no account now",
+      q("SELECT account_id FROM payments WHERE id = ?", (PS,))[0]["account_id"] is None)
+check("...but the books still count it there: its line stays linked and confirmed, and the month keeps its sign-off",
+      ls["payment_id"] == PS and ls["confirmed_at"] and signed(S_SOLO), (ls, signed(S_SOLO)))
+
+# EXT: one ringgit account and a dollar account. A ringgit payment on the dollar account, taken off it, now counts in the
+# ringgit account's books, so that account's month is checked again.
+TID = q("SELECT id FROM entities WHERE code = 'EXT'")[0]["id"]
+RM_ACCT = q("SELECT id FROM accounts WHERE entity_id = ?", (TID,))[0]["id"]
+con = db.connect()
+con.arm("user", "test: a made-up company with a ringgit and a dollar account")
+DOLLAR = con.execute("INSERT INTO accounts (entity_id, label, bank, number, currency) VALUES (?, 'Dollar', 'Example Bank', '000-999', 'USD')", (TID,)).lastrowid
+PU = con.execute("""INSERT INTO payments (entity_id, month, account_id, category, description, amount, currency, due_date, paid_date, paid_source,
+                    direction, created_at) VALUES (?, '2026-10', ?, 'other', 'Test Payee N software', 300, 'MYR', '2026-10-18', '2026-10-18', 'manual', 'out', ?)""",
+                 (TID, DOLLAR, NOW)).lastrowid
+S_RM = con.execute("""INSERT INTO statements (account_id, month, opening, closing, imported_at, check_ok, reconciled_at, reconciled_how)
+                      VALUES (?, '2026-10', 500, 500, ?, 1, ?, 'review')""", (RM_ACCT, NOW, NOW)).lastrowid
+con.commit()
+con.close()
+call("patch", f"/api/payments/{PU}", json={"account_id": 0})
+check("a ringgit payment taken off the dollar account: the company's one ringgit account now counts it, and is checked again",
+      not signed(S_RM))
 
 # ---------- the dialogs' page script, in Node on a stand-in page (no browser) ----------
 # A number or date the browser can't read is never sent as a blank; an edit clears a refusal shown in the payment dialog
