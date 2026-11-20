@@ -188,7 +188,7 @@ check("a payment type renamed in Setup is named so everywhere", labels["utility"
 mk = lambda **b: j("post", "/api/payees", json={"entity_id": EXR, **b})["id"]
 p_sal = mk(name="Staff salaries - test", category="salary", amount=8000, due_day=25, month_offset=0, account_id=acct["EXR"]["MYR"])
 p_util = mk(name="Electricity - test", category="utility", amount=320, amount_varies=1, due_day=7, month_offset=1, account_id=acct["EXR"]["MYR"],
-            bank_details="Example utility account", reference="UT-0001", match_words="ELECTRIC TEST", notes="Estimated each month")
+            bank_details="Example utility account 000111229876", reference="UT-0001", match_words="ELECTRIC TEST", notes="Estimated each month")
 p_in = mk(name="Tenant rent - test", category="receipt", direction="in", amount=900, due_day=5, account_id=acct["EXR"]["MYR"])
 p_old = mk(name="Old storage - test", category="rental", amount=150, due_day=1, account_id=acct["EXR"]["MYR"])
 j("post", f"/api/payees/{p_old}/stop", json={"reason": "No longer used (test)"})
@@ -219,6 +219,8 @@ check("...each row as kept, its type in Setup's words",
       and u.get("Pay from / paid into") == "Ringgit current" and u.get("Words on the bank statement") == "ELECTRIC TEST"
       and by_name["Tenant rent - test"]["Money"] == "Money in" and by_name["Old storage - test"]["Status"] == "Stopped"
       and "100.00 a month" in by_name["Staff salaries - test"]["Salary advances"], u)
+check("...its bank details masked to the last 4, as the audit trail's export has them",
+      u.get("Bank details") == "••••9876" and "000111229876" not in str(rows) and "masked to the last 4" in str(rows[1][0]), (u.get("Bank details"), rows[1]))
 j("post", f"/api/payees/{p_new}/add-to-month", json={"month": M})
 check("Add to month adds its payment to the month", j("get", f"/api/payees?entity={EXR}&month={M}") and
       next(p for p in j("get", f"/api/payees?entity={EXR}&month={M}") if p["id"] == p_new)["in_month"] is True)

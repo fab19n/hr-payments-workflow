@@ -12,7 +12,7 @@ from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.properties import PageSetupProperties
 
-from . import auditpack, budget as stored, db, rulebook, rules
+from . import auditpack, auditread, budget as stored, db, rulebook, rules
 from .config import EXPORTS_DIR
 from .docstore import path_of, safe
 from pathlib import Path
@@ -322,7 +322,8 @@ def budget_report_name(entity, month):
 
 def recurring_workbook(con, entity):
     """The company's recurring payments as a workbook: every field of the Recurring page's form, its type in Setup's words,
-    its account, and its salary advances, in use first."""
+    its account, and its salary advances, in use first. Bank details are masked to the last 4 characters (auditread.mask),
+    since the file leaves the app."""
     R = rulebook.get(con)
     accts = {a["id"]: a for a in con.execute("SELECT * FROM accounts WHERE entity_id = ?", (entity["id"],))}
     has_party = bool(con.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'parties'").fetchone())
@@ -336,13 +337,14 @@ def recurring_workbook(con, entity):
         rows.append((p["name"], "Money in" if (p["direction"] or "out") == "in" else "Money out", R.categories.get(p["category"], p["category"]),
                      p["desc_template"], "The following month" if p["month_offset"] else "The payroll month", p["due_day"],
                      p["amount"], a["currency"] if a else "MYR", "Yes, estimate" if p["amount_varies"] else "No, fixed",
-                     a["label"] if a else "", p["bank_details"] or "", p["reference"] or "", p["match_words"] or "",
+                     a["label"] if a else "", auditread.mask("payees", "bank_details", p["bank_details"], False) or "", p["reference"] or "", p["match_words"] or "",
                      (pt["name"] + (f" ({pt['sql_code']})" if pt["sql_code"] else "")) if pt else "",
                      _day(p["start_date"]), _day(p["end_date"]), "Active" if p["active"] else "Stopped", p["notes"] or "", adv))
     wb = Workbook()
     ws = wb.active
     ws.title = "Recurring payments"
     _put(ws, 1, 1, f"{entity['name']} - Recurring payments", bold=True)
+    _put(ws, 2, 1, "Bank details are masked to the last 4 characters, as in the audit trail's export.")
     _table(ws, 3, ["Payee", "Money", "Type", "Description each month", "Paid in", "Day of month", "Usual amount", "Currency",
                    "Amount changes monthly", "Pay from / paid into", "Bank details", "Account / ref no.", "Words on the bank statement",
                    "Supplier or customer", "Start date", "Last day", "Status", "Notes", "Salary advances"], rows,
