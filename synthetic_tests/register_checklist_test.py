@@ -161,7 +161,10 @@ month = j("get", f"/api/month?entity={EXA}&month={M}")
 fixture = {"exa": EXA, "exh": EXH, "month": M, "routes": {
     "/api/meta": j("get", "/api/meta"), f"/api/month?entity={EXA}&month={M}": month, f"/api/month?entity={EXH}&month={M}": here,
     f"/api/next?entity_id={EXA}": j("get", f"/api/next?entity_id={EXA}"), f"/api/next?entity_id={EXH}": j("get", f"/api/next?entity_id={EXH}"),
-    "/api/next": j("get", "/api/next"), f"/api/overview?month={M}": j("get", f"/api/overview?month={M}")},
+    "/api/next": j("get", "/api/next"), f"/api/overview?month={M}": j("get", f"/api/overview?month={M}"),
+    # the Overview's cards (slice 1), each on its own route, for EXA's Overview
+    **{f"/api/overview/{k}?month={M}&entity_id={EXA}": j("get", f"/api/overview/{k}?month={M}&entity_id={EXA}")
+       for k in ("attention", "checklist", "due", "funds", "bank", "pl", "customers", "suppliers", "leave", "dates", "headcount", "requests", "rollover", "activity")}},
     "wb_doc": wb_docs[0]["id"], "salary": salary_pay, "unpaid": unpaid_pay, "nosql": nosql_pay, "here_pay": here_pay}
 fx = tmp / "fixture.json"
 fx.write_text(json.dumps(fixture), encoding="utf-8")
@@ -179,7 +182,7 @@ async function fetch(path, init = {}) {
     if (refuse.has(path)) return { ok: false, status: 400, json: async () => ({ error: "Refused for the test" }) };
     return { ok: true, status: 200, json: async () => ({ ok: true }) };
   }
-  const r = fx.routes[path] ?? (path.startsWith("/api/overview") ? fx.routes[`/api/overview?month=${fx.month}`] : path.startsWith("/api/audit/status") ? { ok: true } : undefined);
+  const r = fx.routes[path] ?? (path.startsWith("/api/overview?") ? fx.routes[`/api/overview?month=${fx.month}`] : path.startsWith("/api/audit/status") ? { ok: true } : undefined);
   if (r === undefined) return { ok: false, status: 404, json: async () => ({ error: "not stubbed: " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(r)) };
 }
@@ -240,7 +243,8 @@ const out = {};
     await run(`pillGo(${JSON.stringify(kind)}, ${fx.exa})`); await pause();
     out.pills[kind] = { view: run("state.view"), params: run("JSON.stringify(state.addr.params)"), addr: run("currentAddr()") };
   }
-  out.overview = await show("overview", fx.exa);
+  await show("overview", fx.exa); await run("OV.done");
+  out.overview = ["attention", "checklist"].map(k => el("ov-c-" + k).innerHTML).join("");
   process.stdout.write(JSON.stringify(out));
 })().catch(e => { console.error(e && e.stack || e); process.exit(1); });
 """
@@ -380,8 +384,9 @@ check("...Not in SQL the register's Not in SQL tab", P_["not_in_sql"]["view"] ==
 check("...Part paid the Needs attention tab with them marked", P_["part_paid"]["addr"] == f"#/EXA/{M}/payments/register?mark=part_paid&tab=attention", P_["part_paid"])
 check("...overdue checklist items the Monthly checklist, marked", P_["overdue_tasks"]["view"] == "checklist" and P_["overdue_tasks"]["addr"] == f"#/EXA/{M}/payments/checklist?mark=overdue_tasks", P_["overdue_tasks"])
 check("...a past due word the register, marked", P_["not_on_statement"]["addr"] == f"#/EXA/{M}/payments/register?mark=not_on_statement", P_["not_on_statement"])
-check("the Overview's checklist figure opens the Monthly checklist, the payment figures the register's tabs",
-      f'href="#/EXA/{M}/payments/checklist"><b>' in o["overview"] and f'href="#/EXA/{M}/payments/register?tab=unpaid"><b>' in o["overview"], o["overview"][:400])
+check("the Overview's Checklist card opens the Monthly checklist, its Needs attention counters the register's tabs and the checklist's filter",
+      f'href="#/EXA/{M}/payments/checklist"' in o["overview"] and f'href="#/EXA/{M}/payments/register?tab=nosql"' in o["overview"]
+      and f'href="#/EXA/{M}/payments/checklist?tab=missing"' in o["overview"], o["overview"][:600])
 
 # ---------- one document can retire several (every branch is listed, newest first) ----------
 extra = upload("task_id", wb_task["id"], "payroll", "Payroll test by hand.xlsx")["id"]

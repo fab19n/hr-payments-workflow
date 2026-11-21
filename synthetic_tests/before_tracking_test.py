@@ -433,12 +433,15 @@ write("its lines", *[("INSERT INTO statement_lines (statement_id, line_no, txn_d
 sep = {x["entity"]["code"]: x for x in j("get", "/api/overview?month=2026-09")["entities"]}["EXH"]
 check("September, before tracking, still counts its 2 bank lines to explain", sep["before_first"] and sep["unmatched_lines"] == 2,
       str(sep["unmatched_lines"]))
+na = j("get", f"/api/overview/attention?month=2026-09&entity_id={EXH}")["companies"][0]
+check("...and so does the Overview's Needs attention card (slice 1), its other counters at zero", na["before_tracking"] and na["to_explain"] == 2
+      and not any(na[k] for k in ("past_due", "part_paid", "docs_missing", "not_in_sql")), na)
 write("signed off before tracking", ("UPDATE statements SET reconciled_at = '2026-11-14', reconciled_how = 'before_tracking' WHERE id = ?", (ST,)))
 sep = {x["entity"]["code"]: x for x in j("get", "/api/overview?month=2026-09")["entities"]}["EXH"]
 check("once its statement is signed off, they aren't counted", sep["unmatched_lines"] == 0, str(sep["unmatched_lines"]))
 js = app_source()
-check("the Overview keeps the bank lines and payment pills beside the grey pill for such a month",
-      "flags.splice(0, flags.length, BEFORE_PILL, ...kept)" in js and "bank lines not explained`, true)" in js)
+check("the Overview says only the lines to explain count in such a month",
+      "Before tracking: only the lines to explain count" in js and j("get", f"/api/overview/attention?month=2026-09&entity_id={EXH}")["companies"][0]["to_explain"] == 0)
 
 
 # ---------- unlinking says which list a voucher goes back to ----------

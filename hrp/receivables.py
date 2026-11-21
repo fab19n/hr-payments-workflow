@@ -366,6 +366,59 @@ def balances(con, eid, d_from=None, d_to=None, side=None):
             "ageing_note": FIFO_NOTE, "buckets": [{"key": b, "words": BUCKET_WORDS[b]} for b in BUCKETS], "notes": notes}
 
 
+OVERDUE = ("d31_60", "d61_90", "over_90")  # older than 30 days (the Overview's Customers overdue, slice 1)
+DUE_DAYS = 30  # SQL's exports carry no due dates: an invoice is taken as due 30 days after its date, as the ageing has it
+
+
+def _open_items(con, eid, side, as_at):
+    """{code: open items at the end of as_at} of the customers' (or suppliers') codes with something owed, settled first in,
+    first out (_Parties.ageing); codes in credit or with no opening kept are left out."""
+    P = _Parties(con, eid)
+    out = {}
+    for ctl, info in P.controls.items():
+        if info["side"] != side:
+            continue
+        for code in [ctl] + [m for m in info["members"] if m != ctl]:
+            ag = P.ageing(code, as_at, side)
+            if ag and not ag["credit"] and ag["items"]:
+                out[code] = ag["items"]
+    return out
+
+
+def customers_overdue(con, eid, as_at=None):
+    """The Overview's Customers overdue (slice 1; slice 7's Customers overdue view reuses it): what customers owe that is
+    older than 30 days at as_at (default today), inside the tracked period: the 31-60, 61-90 and over 90 days buckets.
+    Balances brought forward from before tracking (an opening with no invoices kept behind it, the brought forward bucket)
+    are never counted as overdue: they are given apart as before_tracking (owner, 19 November). Returns {as_at,
+    overdue_sen, overdue_count (customers' codes with something overdue), before_tracking_sen, before_tracking_count,
+    owed_sen (everything owed), count (codes owing anything)}, in sen."""
+    as_at = as_at or date.today().isoformat()
+    items = _open_items(con, eid, "customers", as_at)
+    over = {c: sum(i["open_sen"] for i in xs if i["bucket"] in OVERDUE) for c, xs in items.items()}
+    bf = {c: sum(i["open_sen"] for i in xs if i["bucket"] == "brought_forward") for c, xs in items.items()}
+    return {"as_at": as_at, "overdue_sen": sum(over.values()), "overdue_count": sum(1 for v in over.values() if v),
+            "before_tracking_sen": sum(bf.values()), "before_tracking_count": sum(1 for v in bf.values() if v),
+            "owed_sen": sum(i["open_sen"] for xs in items.values() for i in xs), "count": len(items)}
+
+
+def suppliers_due(con, eid, as_at=None, within=14):
+    """The Overview's Suppliers due: what is owed to suppliers at as_at (default today) that is overdue (a bill older than
+    30 days, as SQL's exports carry no due dates: due 30 days after its date) and what falls due within `within` days
+    (14). Balances brought forward from before tracking are given apart, never as overdue or due. Returns {as_at,
+    overdue_sen, overdue_count (bills), due_sen, due_count, before_tracking_sen, before_tracking_count, owed_sen,
+    count (suppliers' codes owed anything)}, in sen."""
+    as_at = as_at or date.today().isoformat()
+    by_code = _open_items(con, eid, "suppliers", as_at)
+    items = [i for xs in by_code.values() for i in xs]
+    over = [i for i in items if not i.get("brought_forward") and i["bucket"] in OVERDUE]
+    soon = [i for i in items if i["bucket"] == "current" and i["days"] is not None and i["days"] >= DUE_DAYS - within]
+    bf = [i for i in items if i["bucket"] == "brought_forward"]
+    return {"as_at": as_at, "overdue_sen": sum(i["open_sen"] for i in over), "overdue_count": len(over),
+            "due_sen": sum(i["open_sen"] for i in soon), "due_count": len(soon),
+            "before_tracking_sen": sum(i["open_sen"] for i in bf), "before_tracking_count": len(bf),
+            "owed_sen": sum(i["open_sen"] for i in items), "count": len(by_code)}
+
+
 def statement(con, eid, code, d_from=None, d_to=None):
     """One customer's or supplier's statement for a period: every line on its code with a running balance (debit above
     0, as in the ledger), its opening and closing, and the invoices still open at the To date with their age (settled

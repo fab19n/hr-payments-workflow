@@ -1076,9 +1076,16 @@ def coverage(s):
           and s["month"]["2:2026-08"]["before_first"] and grey("2:2026-08"))
     rows = [r for v in s["nextup"].values() for r in v["items"]]
     check("coverage: Next up rules 1 to 13", {r["rule"] for r in rows} >= set(range(1, 14)), sorted({r["rule"] for r in rows}))
-    check("coverage: Next up legal_soon, past_legal and not_on_statement (in and out)",
-          {k for k in ("legal_soon", "past_legal", "not_on_statement", "not_on_statement-in") if any(r["key"].endswith(":" + k) for r in rows)}
-          == {"legal_soon", "past_legal", "not_on_statement", "not_on_statement-in"})
+    check("coverage: Next up not_on_statement (in and out)",
+          {k for k in ("not_on_statement", "not_on_statement-in") if any(r["key"].endswith(":" + k) for r in rows)}
+          == {"not_on_statement", "not_on_statement-in"})
+    # The one-row rule (slice 1): a statutory payment not paid has one row of its own, Pay <it> for <month>, before its due
+    # date (rule 5) and overdue after it (rule 4, saying the legal deadline is past), in place of rule 4's legal_soon and
+    # past_legal rows.
+    stat = [r for r in rows if ":stat-" in r["key"]]
+    check("coverage: Next up's own row per unpaid statutory payment, before its due date and past the legal deadline",
+          {r["rule"] for r in stat} == {4, 5} and all(r["text"].startswith("Pay ") and " for " in r["text"] for r in stat)
+          and any("past the legal deadline" in r["text"] for r in stat), sorted({r["text"] for r in stat}))
     check("coverage: Next up has older months still open on a later date", any(v["older"] for v in s["nextup"].values()))
     check("coverage: Next up joins KWSP, PERKESO and e-PCB due the same day into one submit row",
           any(r["rule"] == 1 and re.match(r"^Submit \w{3} KWSP, PERKESO and e-PCB \(legal deadline \d+ \w{3}\)$", r["text"]) for r in rows),

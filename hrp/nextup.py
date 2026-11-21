@@ -140,8 +140,13 @@ def _company(con, e, months, past, today):
             tasks.append(t)
     B = checklistbook.get(con)
     rows = _deadlines(e, tasks, today, R, B) + _people(con, e, tasks, iso, B)
-    rows += _not_found(e, [x for x in pays if x["p"]["month"] in worked + past], iso, soon, R)
-    rows += _to_pay(con, e, pays, iso, ahead)
+    # The one-row rule (19 November): each statutory payment not paid yet has one row of its own, before and after its due
+    # date, and rules 3, 4 and 5 leave it out (rule 14 leaves out its kind and month, _statutory).
+    stat, own = _statutory_pays(con, e, pays, iso, ahead, worked + past, R)
+    rows += stat
+    rest = [x for x in pays if x["p"]["id"] not in own]
+    rows += _not_found(e, [x for x in rest if x["p"]["month"] in worked + past], iso, soon, R)
+    rows += _to_pay(con, e, rest, iso, ahead)
     for m in worked + past:
         mine = [x for x in pays if x["p"]["month"] == m]
         accts = db.month_statements(con, e, m)
@@ -275,14 +280,14 @@ def _kinds(ps, R=None):
 def _to_pay(con, e, pays, iso, ahead):
     """Rule 5: payments out not paid yet that fall due within AHEAD days, one row per month, due date and currency
     with what is still to pay (as the Budget page has it as at today, which Go opens; a stored budget counts its lines, and a payment with no line
-    counts as it is), how many are estimates and how many have no amount yet. A date shared by two months says which month each row is for."""
-    groups = {}
+    counts as it is), how many are estimates and how many have no amount yet. A date shared by two months says which month each row is for.
+    Statutory payments are not given here: each has a row of its own (_statutory_pays)."""
+    groups, rows = {}, []
     for x in pays:
         p = x["p"]
         if p["direction"] == "out" and not p["paid_date"] and iso <= p["due_date"] <= ahead:
             groups.setdefault((p["due_date"], p["currency"], p["month"]), []).append(p)
     shared = Counter(key[:2] for key in groups)
-    rows = []
     for (d, cur, m), ps in sorted(groups.items()):
         left = [budget.payment_left(con, p, iso) for p in ps]
         known = [v for v in left if v is not None]
@@ -297,6 +302,57 @@ def _to_pay(con, e, pays, iso, ahead):
                 + (f" ({', '.join(notes)})" if notes else ""))
         rows.append(_row(5, e, m, text, d, P1 if d == iso else P2, {"view": "budget", "as_at": iso}, f"{d}-{cur}", total, cur))
     return rows
+
+
+def _statutory_pays(con, e, pays, iso, ahead, open_months, R):
+    """The one-row rule (owner, 19 November): one row per statutory payment (a payment type with a legal deadline) not paid
+    yet, "Pay KWSP for October", from AHEAD days before its due date (rule 5) and on after it, overdue (rule 4), for as
+    long as it is not paid, in the months the list goes through (an overdue one in a month worked or older still open, as
+    rules 3 and 4 had it). What is still to pay follows (as the Budget page has it as at today), and once past due why it
+    still shows: past the legal deadline (penalty risk), not on the statement imported, or the legal deadline coming. The
+    row opens the payment. Returns (rows, the payment ids they stand for), which rules 3, 4 and 5 then leave out."""
+    rows, ids = [], set()
+    for x in pays:
+        p = x["p"]
+        if p["direction"] != "out" or p["paid_date"] or not db.legal_due(p, R):
+            continue
+        late = p["due_date"] < iso
+        if (late and p["month"] not in open_months) or (not late and p["due_date"] > ahead):
+            continue
+        ids.add(p["id"])
+        left = budget.payment_left(con, p, iso)
+        legal, f = db.legal_due(p, R), x["flag"] or {}
+        notes = (["no amount yet"] if left is None else ["estimate"] if p["amount_is_estimate"] else [])
+        if f.get("code") == "past_legal":
+            notes.append(f"past the legal deadline of {db.short_day(legal)}: penalty risk")
+        elif late and f.get("code") == "not_on_statement":
+            notes.append(f"not on the {_mon(p['due_date'])} statement: link its bank line or enter the paid date")
+        elif legal != p["due_date"]:
+            notes.append(f"legal deadline {db.short_day(legal)}")
+        text = (f"Pay {db._names([p], [p])} for {calendar.month_name[int(p['month'][5:7])]}"
+                + (f": {db.money(left, p['currency'])}" if left is not None else "") + (f" ({'; '.join(notes)})" if notes else ""))
+        rows.append(_row(4 if late else 5, e, p["month"], text, p["due_date"], P1, _pay_go([p]), f"stat-{p['id']}", left, p["currency"]))
+    return rows, ids
+
+
+# The kinds of statutory payable a payment to an authority pays: by the words of its name (statutory.kind_of_name), and
+# PERKESO collects EIS and SKBBK with SOCSO, so a payment named for SOCSO or PERKESO stands for all three.
+_COLLECTED_WITH = {"socso": ("socso", "eis", "skbbk")}
+
+
+def _unpaid_statutory(con, e):
+    """{(kind, payroll month)} of the company's statutory payments entered and not paid yet, in months open (not filed, not
+    before tracking): rule 14 says nothing about these, as their own payment row stands for them (the one-row rule). A
+    payment whose name names no kind stands for none, so rule 14 still shows."""
+    R, out = rulebook.get(con), set()
+    for p in con.execute("""SELECT p.*, y.name AS payee_name FROM payments p LEFT JOIN payees y ON y.id = p.payee_id
+                            WHERE p.entity_id = ? AND p.direction = 'out' AND p.paid_date IS NULL""", (e["id"],)):
+        if not db.legal_due(p, R) or db.before_tracking(e, p["month"]) or db.closed_at(con, e["id"], p["month"]):
+            continue
+        kind = statutory.kind_of_name(p["description"]) or statutory.kind_of_name(p["payee_name"])
+        for k in _COLLECTED_WITH.get(kind, (kind,) if kind else ()):
+            out.add((k, p["month"]))
+    return out
 
 
 def _statements(e, m, accts, pays, today, B=checklistbook.FROZEN):
@@ -459,15 +515,22 @@ def _checklist(e, m, tasks, B=checklistbook.FROZEN):
     return [_row(10, e, m, text, ts[0]["due_date"], P3, _task_go(ts), "checklist")]
 
 
-def _statutory(con, e, today):
+def _statutory(con, e, today, covered=None):
     """Rule 14: a statutory payable not paid by its due day, or paid short, in a month tracked (Accounting › Books ›
     Statutory, statutory.next_up): one row per account and month. Nothing until the company's statutory accounts are
     confirmed in Setup. Each row opens the tab on its own month to today's, so the month it names is listed there
-    whatever period the tab showed last (its default, this financial year, may start after it)."""
+    whatever period the tab showed last (its default, this financial year, may start after it). The one-row rule (19
+    November): a kind and month with a statutory payment entered and not paid yet (covered, _unpaid_statutory) has no row
+    here, as that payment's own row stands for it; the row shows when there is no payment to point at (paid short, or
+    never entered)."""
     if not statutory.ready(con):
         return []
     rows = []
-    for p in statutory.next_up(con, e["id"], today):
+    found = statutory.next_up(con, e["id"], today)
+    covered = _unpaid_statutory(con, e) if covered is None and found else covered or set()
+    for p in found:
+        if (p["kind"], p["month"]) in covered:
+            continue
         rows.append(_row(14, e, p["month"], f"{e['code']}: {p['text']} Check it on the Statutory tab.", p["due"], P1,
                          {"view": "books", "tab": "statutory", "from": f"{p['month']}-01", "to": today.isoformat()},
                          f"{p['kind']}:{p['payable_code']}",

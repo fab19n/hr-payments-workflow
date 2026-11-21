@@ -1,64 +1,318 @@
 "use strict";
-/* ---------------- Overview ---------------- */
-async function viewOverview(main) {
-  // Each company's budget is as at the date of the bank balance kept with its stored budget (else today): the server reads it
-  // from the records, so the Overview and the Budget page agree (slice 8: nothing is kept in this browser).
-  const [ov, next] = await Promise.all([api(`/api/overview?month=${state.month}`), loadNext(null)]);
-  const cards = ov.entities.map(x => {
-    const budget = (cur, n) => `<div class="stat"><b class="mono">${Math.round(n).toLocaleString("en-MY")}</b><span>budget as at ${shortDate(x.budget_as_at)} (${cur === "MYR" ? "RM" : esc(cur)})</span></div>`;
-    if (!x.set_up && !x.payments && !x.tasks) return notSetUp(x.entity, ov.month);
-    // The bar counts payments out; money received has its own figure beside it.
-    const outAll = x.payments - x.receipts.payments, outDone = x.complete - x.receipts.complete;
-    const pct = outAll ? Math.round(outDone / outAll * 100) : 0;
-    // Each count is a button to what it counts (pillGo).
-    const flags = [], kept = [], count = (kind, tone, text, stays) => {
-      const pill = `<button class="pillbtn" data-pill="${kind}" data-entity="${x.entity.id}" title="Show these"><span class="pill ${tone}">${text}</span></button>`;
-      flags.push(pill);
-      if (stays) kept.push(pill);  // still shown in a month before the first month tracked (below)
-    };
-    if (x.overdue_tasks) count("overdue_tasks", "bad", `${x.overdue_tasks} checklist overdue`);
-    if (x.due_today_tasks) count("due_today_tasks", "warn", `${x.due_today_tasks} checklist due today`);
-    for (const f of x.payment_flags) count(f.way === "in" ? `in-${f.code}` : f.code, f.tone, `${f.n} ${f.way === "in" ? "receipt" : "payment"}${f.n > 1 ? "s" : ""} ${esc(lowerFirst(f.text))}`, true);
-    if (x.part_paid) count("part_paid", "warn", `${x.part_paid} part paid`);
-    if (x.receipts.part_paid) count("in-part_paid", "warn", `${x.receipts.part_paid} part received`);
-    if (x.paid_missing) count("paid_missing", "warn", `${x.paid_missing} paid, documents missing`);
-    if (x.receipts.paid_missing) count("paid_missing", "warn", `${x.receipts.paid_missing} received, documents missing`);
-    if (x.unmatched_lines) count("unmatched_lines", "warn", `${x.unmatched_lines} bank lines not explained`, true);
-    if (x.not_in_sql) count("not_in_sql", "warn", `${x.not_in_sql} paid, not recorded in SQL`);
-    // A month filed is done with: the server counts nothing in it as to do. A month before the first month tracked
-    // isn't tracked here (no checklist or SQL counts, green is for what is done), so it shows its grey pill with only
-    // what still needs doing there: the bank lines to explain and the payments recorded in it.
-    if (x.before_first) flags.splice(0, flags.length, BEFORE_PILL, ...kept);
-    if (!flags.length) flags.push(x.closed_at ? `<span class="pill ok">Filed ${shortDate(x.closed_at)}</span>` : `<span class="pill ok">Nothing overdue</span>`);
-    if (!x.set_up && !x.before_first) flags.push(`<span class="pill grey">Month not set up</span>`);
-    // Slice 2: the checklist figure opens the Monthly checklist, the payments ones the Payments register on their tab.
-    const to = (view, tab) => esc(addrOf({ view, entity: x.entity.id, month: ov.month, params: tab ? { tab } : {} }) || "#/");
-    return `<div class="card">
-      <div class="row spread"><div><div class="eyebrow">${esc(x.entity.code)}</div><h2>${esc(x.entity.name)}</h2></div>
-      <button class="btn small" data-view="entity" data-entity="${x.entity.id}">Open ${esc(x.entity.code)}</button></div>
-      <div class="stats">
-        <a class="stat" href="${to("checklist")}"><b>${x.tasks_done}/${x.tasks}</b><span>checklist done</span></a>
-        <a class="stat" href="${to("entity", "complete")}"><b>${outDone}/${outAll}</b><span>payments fully documented</span></a>
-        ${x.receipts.payments ? `<div class="stat"><b>${x.receipts.complete}/${x.receipts.payments}</b><span>receipts fully documented</span></div>` : ""}
-        <a class="stat" href="${to("entity", "unpaid")}"><b>${x.planned - x.receipts.planned}</b><span>not paid yet</span></a>
-        ${x.receipts.payments ? `<div class="stat"><b>${x.receipts.planned}</b><span>not received yet</span></div>` : ""}
-        ${budget("MYR", x.budget.MYR || 0)}${Object.entries(x.budget).filter(([cur]) => cur !== "MYR").map(([cur, n]) => budget(cur, n)).join("")}
-      </div>
-      <div class="bar"><i style="width:${pct}%"></i></div>
-      <div class="row">${flags.join("")}</div>
-    </div>`;
+/* ---------------- Overview ----------------
+   design/canvas/Main.dc.html (DarkOverview.dc.html in the dark theme; card reference OverviewCards.dc.html), build plan
+   section 4.4. The top part: the audit trail notice (pages/trail.js puts it first), the date, the month's heading with Open
+   budget and Add a payment, the rollover banner, Next up with Go (core/next.js) and the older months still open, and
+   Recent activity. Below it 13 cards in four rows: Needs attention; Payments; Accounting; HR. The company switcher in the
+   top bar is the one company filter: All companies, or one company (the cards and Next up then show that company only).
+   Each card is read on its own route (/api/overview/<card>), drawn as soon as it comes, and one that fails says
+   "Could not load, try again" on its own card without hiding the others. A card shows one headline and one note; with All
+   companies a line per company, and the companies added up where they agree. Never a pay figure, an IC, a bank account
+   number or anything personal (the server gives counts and totals only). */
+const OV_ROWS = [
+  { key: "attention", ids: ["attention"] },
+  { key: "payments", head: m => `Payments · ${monthName(m)}`, ids: ["checklist", "due", "funds", "unapproved"] },
+  { key: "accounting", head: m => `Accounting · ${monthName(m)}, balances as at today`, ids: ["bank", "pl", "customers", "suppliers"] },
+  { key: "hr", head: () => "HR · today", note: "No pay, IC, leave type or medical detail", ids: ["leave", "dates", "headcount", "requests"] },
+];
+const OV = { seq: 0, data: {}, done: null, act: null, rollGone: {}, scope: null };
+// The company the switcher chose, or null for All companies.
+const ovScope = () => state.view === "overview" && !state.addr.all ? state.entity : null;
+const ovQuery = () => `month=${state.month}${ovScope() ? `&entity_id=${ovScope()}` : ""}`;
+const monthOnly = k => monthName(k).split(" ")[0];
+const r0 = n => Math.round(Math.abs(Number(n) || 0)).toLocaleString("en-MY");
+const curWord = c => c === "MYR" ? "RM" : c;
+const money0 = (n, c = "MYR") => `${curWord(c)} ${r0(n)}`;
+// Sums per currency, ringgit first: "RM 1,250.00 and USD 300.00".
+const sumsText = (sums, round) => Object.entries(sums || {}).sort((a, b) => (a[0] !== "MYR") - (b[0] !== "MYR"))
+  .map(([c, n]) => round ? money0(n, c) : money(n, c)).join(" and ");
+// A link to a page for a company and month, as an address (core/router.js).
+const ovHref = (view, entity, params = {}, month = state.month) => addrOf({ view, entity, month, sub: null, id: null, params }) || null;
+const WEEKDAY_LONG = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+function longDay(iso) { const [y, m, d] = iso.split("-").map(Number); return `${WEEKDAY_LONG[new Date(y, m - 1, d).getDay()]} ${d} ${monthName(iso.slice(0, 7))}`; }
+
+// ---------- the calm cards: per company, either { empty, short } or { u, n, head, headTone, line, lineTone, note, zero } ----------
+// u is the unit: the companies are added up (sum) only when every company shown has the same one; else the main company's
+// figure, its code in the note. asZero: an empty company that counts as none in a total. extra: a line of its own under the
+// note (Before tracking). bit: that company's sentence for "where the figures come from".
+const OV_CARDS = {
+  attention: { title: "Needs attention", glyph: "alert", tone: "bad", follows: true },
+  checklist: { title: "Checklist", glyph: "checklist", tone: "brand", follows: true, empty: "No checklist for this month yet",
+    open: "Open checklist", where: ", Payments, Monthly checklist",
+    href: c => ovHref("checklist", c.entity_id),
+    src: () => `Items ticked on the Monthly checklist for ${monthName(state.month)}, out of that month's total.`,
+    get: c => c.empty ? { empty: c.empty, short: "No checklist yet", note: c.tracked_from ? `Tracked from ${monthName(c.tracked_from)}` : "" }
+      : { u: "items", n: c.done, t: c.total, head: `${c.done} of ${c.total}`, line: `${c.done} of ${c.total}`,
+        note: c.total - c.done ? `${c.total - c.done} still to do` : `All done${c.filed_at ? `, filed ${shortDate(c.filed_at)}` : ""}` },
+    sum: L => { const n = L.reduce((s, x) => s + x.n, 0), t = L.reduce((s, x) => s + x.t, 0); return { head: `${n} of ${t}`, note: t - n ? `${t - n} still to do` : "All done" }; } },
+  due: { title: "Due and overdue", glyph: "clock", tone: "warn", today: true, empty: "Nothing due", open: "Open payments not paid", where: ", Payments, Payments register, Not paid",
+    href: c => ovHref("entity", c.entity_id, { tab: "unpaid" }, c.link_month || state.month),
+    src: () => "Payments out not paid yet, as at today: what is overdue, and what falls due in the next 7 days, from every month still open.",
+    get: c => {
+      const n = c.overdue.n, n2 = c.soon.n, soon = n2 ? `${n2} due in the next ${c.days} days` : `nothing due in the next ${c.days} days`;
+      const bit = `${c.code}: ${n} overdue${n && sumsText(c.overdue.sums) ? `, ${sumsText(c.overdue.sums)}` : ""}; ${soon}${n2 && sumsText(c.soon.sums) ? `, ${sumsText(c.soon.sums)}` : ""}.`;
+      if (!n && !n2) return { u: "n", n: 0, n2: 0, zero: true, head: "0 overdue", headTone: "muted", line: "None", note: soon };
+      return { u: "n", n, n2, head: `${n} overdue`, headTone: n ? "bad" : "", line: n ? `${sumsText(c.overdue.sums) || plural(n, "payment")} overdue` : `${n2} due`, lineTone: n ? "bad" : "",
+        note: soon + (n2 && sumsText(c.soon.sums, true) ? `, ${sumsText(c.soon.sums, true)}` : ""), bit };
+    },
+    sum: L => { const n = L.reduce((s, x) => s + x.n, 0), n2 = L.reduce((s, x) => s + x.n2, 0); return { head: `${n} overdue`, headTone: n ? "bad" : "muted", note: n2 ? `${n2} due in the next 7 days` : "nothing due in the next 7 days" }; } },
+  funds: { title: "Funds to request", glyph: "budget", tone: "brand", follows: true, empty: "Enter the bank balance to see funds to request", open: "Open Budget", where: ", Payments, Budget",
+    href: c => ovHref("budget", c.entity_id),
+    src: () => `From the Budget: what is still to pay for ${monthName(state.month)}, less the bank balance entered on the budget's balance date.`,
+    get: c => {
+      if (!c.set_up) return { empty: c.empty, short: "Not set up" };
+      if (c.funds == null) return { empty: c.empty, short: "Balance not entered", asZero: true };
+      return { u: "RM", n: c.funds, head: money0(c.funds), line: money(c.funds), note: c.funds ? "to cover what's still to pay" : "the balance covers what's still to pay",
+        bit: `${c.code}: still to pay ${money(c.still_to_pay)}, less ${money(c.balance)} in ${c.bank || "the bank"} on ${shortDate(c.as_at)}.` };
+    },
+    sum: L => ({ head: money0(L.reduce((s, x) => s + x.n, 0)), note: "to cover what's still to pay" }) },
+  unapproved: { title: "Paid without approval on file", glyph: "approval", tone: "bad", follows: true, hidden: true },
+  bank: { title: "Bank", glyph: "bank", tone: "brand", follows: true, empty: () => `No statement imported for ${monthName(state.month)}`, open: "Open bank", where: ", Accounting, Bank and reconciliation",
+    href: c => ovHref("bank", c.entity_id),
+    src: () => "Balances at the latest statement line; in and out are the month's statement lines.",
+    stale: cs => { const s = cs.filter(c => c.stale && c.runs_to).map(c => c.runs_to).sort()[0]; return s ? `Statement runs to ${shortDate(s)}` : ""; },
+    get: c => {
+      if (c.empty) return { empty: c.empty, short: "No statement" };
+      const curs = Object.keys(c.totals).sort((a, b) => (a !== "MYR") - (b !== "MYR")), u = curs[0], t = c.totals[u];
+      const more = curs.slice(1).map(k => money(c.totals[k].balance, k)).join(", ");
+      return { u: curs.join("+"), n: t.balance, inn: t.in, out: t.out, head: money0(t.balance, u), line: money(t.balance, u),
+        note: `in ${money0(t.in, u)} · out ${money0(t.out, u)}` + (more ? ` · also ${more}` : ""),
+        bit: `${c.code}: ${c.accounts.map(a => `${a.label} ${money(a.balance, a.currency)} on ${shortDate(a.date)}`).join("; ")}.` };
+    },
+    sum: L => { const u = L[0].u, s = k => L.reduce((t, x) => t + x[k], 0); return { head: money0(s("n"), u), note: `in ${money0(s("inn"), u)} · out ${money0(s("out"), u)}` }; } },
+  pl: { title: "Profit or loss", glyph: "chart", tone: "brand", follows: true, sql: true, empty: "No books yet", open: "Open Books", where: ", Accounting, Books, Profit and loss",
+    href: c => ovHref("books", c.entity_id, { tab: "pl" }),
+    src: cs => { const to = cs.map(c => c.sql_to).filter(Boolean).sort()[0]; return to ? `From SQL's books, journal to ${shortDate(to)}.` : "From the books."; },
+    stale: cs => { const s = cs.filter(c => c.stale).map(c => c.sql_to).sort()[0]; return s ? `SQL data runs to ${shortDate(s)}, fetch again` : ""; },
+    get: c => {
+      if (c.empty) return { empty: c.empty, short: c.empty === "No books yet" ? "No books yet" : "Nothing fetched" };
+      const word = sen => sen < 0 ? "Loss" : "Profit", ytd = c.ytd_sen == null ? "year to date can't be worked out" : `${word(c.ytd_sen)} ${money0(c.ytd_sen / 100)} year to ${c.upto < `${state.month}-01` || c.upto < lastDay(state.month) ? shortDate(c.upto) : "date"}`;
+      if (c.month_sen == null) return { u: "RM", n: 0, head: "—", headTone: "muted", line: "—", lineTone: "muted", note: ytd,
+        bit: c.upto < `${state.month}-01` ? `${c.code}: SQL's data runs to ${shortDate(c.sql_to)}, before ${monthName(state.month)}.` : `${c.code}: an opening balance is missing, so the month can't be worked out.` };
+      const m = c.month_sen / 100;
+      return { u: "RM", n: m, head: `${word(c.month_sen)} ${money0(m)}`, headTone: m < 0 ? "bad" : "", line: `${word(c.month_sen)} ${money(Math.abs(m))}`, lineTone: m < 0 ? "bad" : "", note: ytd };
+    },
+    sum: L => { const n = L.reduce((s, x) => s + x.n, 0); return { head: `${n < 0 ? "Loss" : "Profit"} ${money0(n)}`, headTone: n < 0 ? "bad" : "", note: "this month, the companies together" }; } },
+  customers: { title: "Customers overdue", glyph: "users", tone: "brand", today: true, sql: true, empty: "No balances", open: "Open customers", where: ", Accounting, Customers and suppliers, customers",
+    href: c => ovHref("parties", c.entity_id),
+    src: cs => { const to = cs.map(c => c.sql_to).filter(Boolean).sort()[0]; return `${to ? `As at ${shortDate(to)}, from SQL. ` : ""}Balances older than 30 days. Balances brought forward from before tracking are not counted as overdue: they show apart, as Before tracking.`; },
+    stale: cs => { const s = cs.filter(c => c.stale).map(c => c.sql_to).sort()[0]; return s ? `as at ${shortDate(s)}, fetch again` : ""; },
+    get: c => {
+      if (c.empty && !c.before_tracking_sen) return { empty: c.empty, short: c.empty === "No balances" ? "None" : "Nothing fetched", asZero: c.empty === "No balances" };
+      const n = c.overdue_sen / 100, bt = c.before_tracking_sen / 100, k = c.overdue_count;
+      const extra = bt ? `Before tracking ${money0(bt)}` : "";
+      return { u: "RM", n, k, bt, zero: !n && !bt, head: money0(n), headTone: n ? "bad" : "muted", line: n ? money(n) : "None", lineTone: n ? "bad" : "muted",
+        note: k ? `${plural(k, "balance")} over 30 days` : "no balances over 30 days", extra,
+        bit: bt ? `${c.code}: ${money(bt)} brought forward from before tracking (${plural(c.before_tracking_count, "balance")}), not counted as overdue.` : "" };
+    },
+    sum: L => { const n = L.reduce((s, x) => s + x.n, 0), k = L.reduce((s, x) => s + (x.k || 0), 0), bt = L.reduce((s, x) => s + (x.bt || 0), 0);
+      return { head: money0(n), headTone: n ? "bad" : "muted", note: `${plural(k, "balance")} over 30 days`, extra: bt ? `Before tracking ${money0(bt)}` : "" }; } },
+  suppliers: { title: "Suppliers due", glyph: "inbox", tone: "brand", today: true, sql: true, empty: "No balances", open: "Open suppliers", where: ", Accounting, Customers and suppliers, suppliers",
+    href: c => ovHref("parties", c.entity_id, { tab: "suppliers" }),
+    src: cs => { const to = cs.map(c => c.sql_to).filter(Boolean).sort()[0]; return `${to ? `As at ${shortDate(to)}, from SQL. ` : ""}Bills overdue, and bills due in the next 14 days (a bill is taken as due 30 days after its date: SQL's exports carry no due dates).`; },
+    stale: cs => { const s = cs.filter(c => c.stale).map(c => c.sql_to).sort()[0]; return s ? `as at ${shortDate(s)}, fetch again` : ""; },
+    get: c => {
+      if (c.empty && !c.before_tracking_sen) return { empty: c.empty, short: c.empty === "No balances" ? "None" : "Nothing fetched", asZero: c.empty === "No balances" };
+      const n = c.overdue_sen / 100, d = c.due_sen / 100, bt = c.before_tracking_sen / 100;
+      return { u: "RM", n, d14: d, bt, zero: !n && !d && !bt, head: `${money0(n)} overdue`, headTone: n ? "bad" : "muted", line: n ? `${money(n)} overdue` : "None", lineTone: n ? "bad" : "muted",
+        note: d ? `${money0(d)} due in the next ${c.days} days` : `none due in the next ${c.days} days`, extra: bt ? `Before tracking ${money0(bt)}` : "",
+        bit: c.overdue_count ? `${c.code}: ${plural(c.overdue_count, "bill")} overdue.` : "" };
+    },
+    sum: L => { const n = L.reduce((s, x) => s + x.n, 0), d = L.reduce((s, x) => s + (x.d14 || 0), 0), bt = L.reduce((s, x) => s + (x.bt || 0), 0);
+      return { head: `${money0(n)} overdue`, headTone: n ? "bad" : "muted", note: d ? `${money0(d)} due in the next 14 days` : "none due in the next 14 days", extra: bt ? `Before tracking ${money0(bt)}` : "" }; } },
+  // HR: the staff records come with slices 12 and 13, requests with slice 11. No link while empty.
+  leave: { title: "On leave", glyph: "leave", tone: "brand", today: true, empty: "Add your staff to see this", src: () => "From Leave, for today and this week. The type of leave is never shown.", get: c => ({ empty: c.empty, short: "No staff yet" }) },
+  dates: { title: "Dates coming up", glyph: "reminder", tone: "brand", today: true, empty: "Add your staff to see this", src: () => "Probation, contract, passport and permit dates in the next 60 days, counted with no names, and this month's birthdays and work anniversaries.", get: c => ({ empty: c.empty, short: "No staff yet" }) },
+  headcount: { title: "Headcount", glyph: "staff", tone: "brand", today: true, empty: "Add your staff to see this", src: () => "From Staff, as at today: people in employment, and joiners and leavers this month.", get: c => ({ empty: c.empty, short: "No staff yet" }) },
+  requests: { title: "Requests waiting", glyph: "claim", tone: "brand", today: true, empty: "Nothing waiting", src: () => "Waiting for approval on Approvals, and approved but not yet paid.", get: c => ({ empty: c.empty, short: "None" }) },
+};
+const lastDay = m => { const [y, mm] = m.split("-").map(Number); return `${m}-${String(new Date(y, mm, 0).getDate()).padStart(2, "0")}`; };
+
+// ---------- Needs attention: five counters per company, each opening its list ----------
+const OV_COUNTERS = [
+  ["past_due", "Past due", "bad", c => ovHref("entity", c.entity_id, { tab: "unpaid", mark: "past_due" })],
+  ["part_paid", "Part paid", "warn", c => ovHref("entity", c.entity_id, { tab: "attention", mark: "part_paid" })],
+  ["docs_missing", "Documents missing", "warn", c => ovHref("checklist", c.entity_id, { tab: "missing" })],
+  ["to_explain", "Lines to explain", "warn", c => ovHref("bank", c.entity_id, { filter: "to_explain" })],
+  ["not_in_sql", "Not in SQL", "warn", c => ovHref("entity", c.entity_id, { tab: "nosql" })],
+];
+function ovAttention(d) {
+  const all = !ovScope(), cs = d.companies;
+  const zero = c => OV_COUNTERS.every(([k]) => !c[k]);
+  if (cs.every(zero)) return ovBody("attention", `<div class="ovb"><span class="ove">Nothing needs attention</span>${cs.length === 1 && cs[0].filed ? `<span class="sub">${esc(monthName(state.month))} is filed</span>` : ""}</div>`, { empty: true });
+  const blocks = cs.map(c => {
+    const ctrs = OV_COUNTERS.filter(([k]) => c[k] != null).map(([k, label, tone, href]) => {
+      const n = c[k];
+      return `<a class="ctr" href="${esc(href(c) || "#/")}" id="ov-ctr-${k}-${c.entity_id}" aria-label="${esc(`${label}, ${n || "none"}${all ? `, ${c.code}` : ""}. Opens its list`)}"><b class="ctr-n${n ? " " + tone : ""}">${n}</b><span>${label}</span></a>`;
+    }).join("");
+    const note = c.filed ? "Filed: nothing in it counts as to do" : c.before_tracking ? "Before tracking: only the lines to explain count" : "";
+    return `<div class="ova">${all ? ovCo(c) : ""}<div class="ova-ctrs">${ctrs}</div>${note ? `<span class="sub">${note}</span>` : ""}</div>`;
   }).join("");
+  return ovBody("attention", blocks, { foot: "Each number opens its list, filtered" });
+}
+const ovCo = c => `<span class="ovco-head"><span class="cp ${c.kind === "sql" ? "info" : "mute"}">${esc(c.code)}</span><span class="sub">${esc(c.kind_label)}</span></span>`;
+
+// ---------- a card's frame ----------
+function ovFrame(id, inner, { tone, link } = {}) {
+  const C = OV_CARDS[id], t = tone || C.tone;
+  return `<article class="ovc${link ? " lk" : ""}${id === "attention" ? " ova-card" : ""}" aria-labelledby="ov-h-${id}">
+    <div class="ovt"><span class="ov-tile ${t}" aria-hidden="true">${icon(C.glyph)}</span><h3 id="ov-h-${id}" class="ovtt" tabindex="-1">${esc(C.title)}</h3>${C.today ? `<span class="tday">Today</span>` : C.follows ? `<span class="sub">${esc(monthName(state.month))}</span>` : ""}</div>
+    ${inner}</article>`;
+}
+function ovBody(id, inner, { empty, foot } = {}) {
+  return ovFrame(id, `${inner}${foot ? `<div class="ovf"><span class="sub">${esc(foot)}</span></div>` : ""}`, { tone: empty ? "muted" : undefined });
+}
+const ovLoading = id => ovFrame(id, `<div aria-busy="true" class="ov-sk"><span class="sr-only">Loading ${esc(OV_CARDS[id].title)}</span><div class="sk" style="width:60%"></div><div class="sk"></div></div>`, { tone: "muted" });
+const ovFailed = (id, why) => ovFrame(id, `<div class="ov-fail"><span role="alert">${icon("alert")}Could not load, try again</span>
+  <button type="button" class="ghost small" id="ov-retry-${id}" data-ov-retry="${id}" title="${esc(why || "")}">${icon("refresh")}Try again</button></div>
+  <div class="ovf"><span class="sub">The other cards are not affected</span></div>`, { tone: "bad" });
+
+// A calm card from the server's answer d, as Main.dc.html's card2 draws it.
+function ovCalm(id, d) {
+  const C = OV_CARDS[id], cs = d.companies, per = cs.map(c => ({ c, v: C.get(c) }));
+  const none = per.every(x => x.v.empty || x.v.zero), many = per.length > 1;
+  const live = per.filter(x => !x.v.empty);
+  const agree = live.length > 0 && per.every(x => !x.v.empty || x.v.asZero) && new Set(live.map(x => x.v.u)).size === 1;
+  const main = live.find(x => !x.v.zero) || live[0] || per[0];
+  const dEmpty = typeof C.empty === "function" ? C.empty() : C.empty;
+  let head = "", note = "", headTone = "", extra = "";
+  if (!none) {
+    if (many && agree && C.sum) { const s = C.sum(live.map(x => x.v)); head = s.head; note = s.note || ""; headTone = s.headTone || ""; extra = s.extra || ""; }
+    else { head = main.v.head; headTone = main.v.headTone || ""; note = main.v.note || ""; extra = main.v.extra || ""; if (many) note = main.c.code + (note ? " · " + note : " only"); }
+  }
+  const sentences = [...new Set(per.map(x => x.v.empty || dEmpty))];
+  const emptyText = sentences.length === 1 ? sentences[0] : (per[0]?.v.empty || dEmpty);
+  if (none && !many) note = per[0]?.v.empty && per[0].v.note || "";
+  const lines = many && (!none || sentences.length > 1) ? per.map(({ c, v }) =>
+    `<span class="ovr"><span class="ovco">${esc(c.code)}</span><b class="${v.empty || v.zero || v.lineTone === "muted" ? "muted" : v.lineTone === "bad" ? "bad" : ""}">${esc(v.empty ? v.short : v.line)}</b></span>`).join("") : "";
+  const stale = C.stale ? C.stale(cs) : "";
+  const target = C.href && (cs.find(c => { const v = C.get(c); return !v.empty && !v.zero; }) || cs[0]);
+  const href = target ? C.href(target) : null;
+  const source = [C.src ? C.src(cs) : "", ...per.map(x => x.v.bit).filter(Boolean)].join(" ");
+  const body = none
+    ? `<div class="ovb"><span class="ove">${esc(emptyText)}</span>${note ? `<span class="sub ovn">${esc(note)}</span>` : ""}</div>`
+    : `<div class="ovb"><b class="ovh ${headTone}">${esc(head)}</b>${note ? `<span class="sub ovn">${esc(note)}</span>` : ""}${extra ? `<span class="ov-bt">${esc(extra)}</span>` : ""}</div>`;
+  return ovFrame(id, `${body}${stale ? `<span class="ovw">${icon("clock")}${esc(stale)}</span>` : ""}${lines ? `<div class="ovk">${lines}</div>` : ""}
+    <div class="ovf">${href ? `<a class="ovo" id="ov-link-${id}" href="${esc(href)}">${esc(C.open)}<span class="sr-only">${esc(C.where || "")}</span><span aria-hidden="true">›</span></a>` : `<span></span>`}
+      ${source ? `<details class="ovtip"><summary aria-label="${esc(`Where the figures come from: ${C.title}`)}">${icon("help")}</summary><p>${esc(source)}</p></details>` : ""}</div>`,
+    { tone: none ? "muted" : undefined, link: !!href });
+}
+
+// Draws one card into its place, from what was read (d), its failure (err), or while it loads.
+function ovPaint(id) {
+  const slot = $(`#ov-c-${id}`);
+  let x = OV.data[id];
+  if (!slot) return;
+  const C = OV_CARDS[id];
+  if (x && x.d && !Array.isArray(x.d.companies)) x = OV.data[id] = { err: "The answer had no companies in it" };
+  else if (x && x.d && (C.hidden || x.d.companies.every(c => c.hidden))) { slot.innerHTML = ""; slot.hidden = true; return; }
+  slot.hidden = false;
+  let html;
+  try { html = !x || x.busy ? ovLoading(id) : x.err ? ovFailed(id, x.err) : id === "attention" ? ovAttention(x.d) : ovCalm(id, x.d); }
+  catch (e) { html = ovFailed(id, e.message); }  // an answer the card can't read fails that card alone
+  slot.innerHTML = html;
+}
+// Reads one card (its own route) and draws it; seq: the Overview drawn, so a late answer for a page since left is dropped.
+async function ovLoad(id, seq) {
+  OV.data[id] = { busy: true }; ovPaint(id);
+  let x;
+  try { x = { d: await api(`/api/overview/${id}?${ovQuery()}`) }; } catch (e) { x = { err: e.message || "Could not load" }; }
+  if (seq !== OV.seq || state.view !== "overview") return;
+  OV.data[id] = x; ovPaint(id);
+}
+// Try again on one card: only that card is read again; the focus goes to its link (else its heading) once it is back.
+async function ovRetry(id) {
+  if (!OV_CARDS[id]) return;
+  await ovLoad(id, OV.seq);
+  const first = OV.data[id]?.d?.companies?.[0];
+  ($(`#ov-link-${id}`) || (first && $(`#ov-ctr-past_due-${first.entity_id}`)) || $(`#ov-h-${id}`))?.focus?.({ preventScroll: true });
+}
+
+// ---------- Recent activity ----------
+const ovWhen = at => { const d = at.slice(0, 10); return d === dayKey() ? `today ${at.slice(11, 16)}` : shortDate(d); };
+function ovActHtml(r) {
+  if (!r) return `<div aria-busy="true" class="ov-sk act"><span class="sr-only">Loading recent activity</span><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>`;
+  if (r.error) return `<div role="alert" class="banner bad ov-act-err">${icon("alert")}<span><b>Couldn't load recent activity</b> The audit trail didn't answer: ${esc(r.error)}. The rest of the page still works.</span><button type="button" class="ghost small" data-ov-act-retry="1">Try again</button></div>`;
+  if (!r.items.length) return `<div class="ov-act-empty">${icon("trail")}<span>No activity for ${ovScope() ? esc(ent()?.code || "this company") : "these companies"} yet</span></div>`;
+  return `<ul class="ov-acts">${r.items.map(a => `<li><span>${esc(a.text)}</span><span class="sub">${esc([a.who, a.company, ovWhen(a.at)].filter(Boolean).join(" · "))}</span></li>`).join("")}</ul>`;
+}
+async function ovActivity(seq, focus) {
+  OV.act = null; const box = $("#ovAct"); if (box) box.innerHTML = ovActHtml(null);
+  let r;
+  try { r = await api(`/api/overview/activity?${ovQuery()}`); } catch (e) { r = { error: e.message }; }
+  if (!r.error && !Array.isArray(r.items)) r = { error: "The answer had no entries in it" };
+  if (seq !== OV.seq || state.view !== "overview") return;
+  OV.act = r; const b = $("#ovAct"); if (b) b.innerHTML = ovActHtml(r);
+  if (focus) $("#ov-act-h")?.focus?.({ preventScroll: true });
+}
+
+// ---------- the rollover banner ----------
+// Shown on the current payroll month when a company in view has the next month set up already: it names those companies and
+// counts only their Next up rows of the month on show (build plan 4.3). Dismiss hides it for this month and company choice.
+function ovRollover(ro, next) {
+  const key = `${state.month}:${ovScope() || "all"}`;
+  if (!ro || ro.error || !Array.isArray(ro.set_up) || next.error || OV.rollGone[key] || state.month !== currentCycle()) return "";
+  const inView = (state.meta.entities || []).filter(e => isActive(e) && (!ovScope() || e.id === ovScope()));
+  const named = inView.filter(e => ro.set_up.includes(e.id));
+  if (!named.length) return "";
+  const ids = new Set(named.map(e => e.id)), n = next.items.filter(r => r.month === state.month && ids.has(r.entity_id)).length;
+  if (!n) return "";
+  const nm = monthOnly(ro.next_month), title = named.length === inView.length ? `${nm} has started` : `${named.map(e => e.code).join(" and ")}'s ${nm} is set up`;
+  return `<div role="status" class="banner info ov-roll noprint" id="ovRoll">${icon("calendar")}<div class="ov-roll-text"><b>${esc(title)}</b>
+    <span>You are looking at ${esc(monthOnly(state.month))}, which is still open: ${plural(n, "thing")} left.</span></div>
+    <div class="row"><button type="button" class="btn" data-ov-roll="go">Go to ${esc(nm)}</button><button type="button" class="ghost" data-ov-roll="dismiss">Dismiss</button></div></div>`;
+}
+async function ovRoll(what) {
+  if (what === "dismiss") { OV.rollGone[`${state.month}:${ovScope() || "all"}`] = true; $("#ovRoll")?.remove?.(); const b = $("#ovRollBox"); if (b) b.innerHTML = ""; $("#ov-next-h")?.focus?.({ preventScroll: true }); return; }
+  if (!(await closeDrawer())) return;
+  state.month = shiftMonth(state.month, 1); state.addr.params = {};
+  return redraw();
+}
+
+// Next up's heading says whose rows it lists: the switcher's company, or All companies (core/next.js nextCard).
+function ovWho() {
+  const e = ovScope() ? ent() : null;
+  return `<span class="ov-who">${e ? `<span class="cp ${e.uses_sql ? "info" : "mute"}">${esc(e.code)}</span><span>${esc(keptLabel(e))} · the company button above changes it</span>`
+    : `<span class="cp mute">All companies</span><span>Pick one company with the company button above</span>`}</span>`;
+}
+
+// ---------- the page ----------
+async function viewOverview(main) {
+  const seq = ++OV.seq, scope = ovScope();
+  OV.data = {}; OV.act = null; OV.scope = scope;
+  const live = (state.meta.entities || []).filter(isActive);
+  if (!live.length) {
+    main.innerHTML = `<section class="card ov-first"><h2>Add your first company</h2><div class="note">There is no company yet, so there is nothing to work out. Records stay on this PC. Nothing is sent anywhere.</div>
+      <div class="row"><a class="btn" href="#/admin/setup/entities">${icon("plus")}Add your first company</a></div></section>`;
+    OV.done = Promise.resolve();
+    return;
+  }
+  const [next, ro] = await Promise.all([loadNext(null), api(`/api/overview/rollover?${ovQuery()}`).catch(e => ({ error: e.message }))]);
+  if (seq !== OV.seq) return;
+  // Nothing answered at all (the records can't be reached): the page's own Couldn't load card, not a page of failed cards.
+  if (next.error && ro.error) throw new Error(next.error);
+  const budgetTo = ovHref("budget", scope || state.entity || firstEntityId());
+  const rows = OV_ROWS.map(r => `<section class="ov-row" aria-labelledby="ov-row-${r.key}">
+      ${r.head ? `<div class="ov-row-head"><h2 id="ov-row-${r.key}" class="rh">${esc(r.head(state.month))}</h2>${r.note ? `<span class="sub">${esc(r.note)}</span>` : ""}</div>` : `<h2 id="ov-row-${r.key}" class="sr-only">Needs attention</h2>`}
+      <div class="${r.key === "attention" ? "ov-grid1" : "ovg"}">${r.ids.map(id => `<div class="ov-slot" id="ov-c-${id}"${OV_CARDS[id].hidden ? " hidden></div>" : `>${ovLoading(id)}</div>`}`).join("")}</div></section>`).join("");
   main.innerHTML = `
-    <div id="nextUp">${nextCard(next, null)}</div>
-    <div><div class="eyebrow">Payroll month</div><h1>${esc(ov.label)} cycle</h1>
-    <div class="note">Covers the payroll month's checklist and payments, including the bills and statutory payments paid early in the next month. Each item's due date is set in Setup › Monthly checklist.</div></div>
-    <div class="grid2">${cards}</div>
-    <div class="card"><h2>How a payment is completed</h2>
+    <div id="ovRollBox">${ovRollover(ro, next)}</div>
+    <div class="ov-head"><div class="ov-head-words"><span class="eyebrow">${esc(longDay(dayKey()))} · Payroll month</span><h1>${esc(monthName(state.month))} cycle</h1>
+      <p class="ov-lead">The month's checklist and payments, including bills and statutory payments paid early in ${esc(monthOnly(shiftMonth(state.month, 1)))}.</p></div>
+      <div class="row noprint">${budgetTo ? `<a class="ghost" href="${esc(budgetTo)}">${icon("budget")}Open budget</a>` : ""}<button type="button" class="btn" id="addPayment">${icon("plus")}Add a payment</button></div></div>
+    <div class="ov-top">
+      <div class="ov-next" id="nextUp">${nextCard(next, null)}</div>
+      <section class="card ov-act" aria-labelledby="ov-act-h"><div class="row spread"><div><h2 id="ov-act-h" tabindex="-1">Recent activity</h2><span class="sub">From the audit trail, newest first · no pay or personal details</span></div>
+        <a class="link" href="#/admin/audit-trail">Audit trail</a></div><div id="ovAct">${ovActHtml(null)}</div></section>
+    </div>
+    <div class="ov-rows">${rows}</div>
+    <details class="card ov-how"><summary><h2>How a payment is completed</h2></summary>
       <div class="row"><span class="pill grey">Not paid</span> → <span class="pill warn">Paid, documents missing</span> → <span class="pill ok">Complete</span></div>
       <div class="note">A payment becomes <b>Paid</b> when you enter the paid date or its bank statement line is matched. It becomes <b>Complete</b> when every required document is uploaded, or already shown by a linked SQL voucher, a validated e-Invoice or its bank statement line. Only complete payments are ready to file.</div>
       <div class="note">Past its due date and not paid yet, a payment says why: <b>Not on Oct statement</b> (or the month it fell due in) once that month's bank statement is imported without it; until then <b>Waiting for SQL record</b> while SQL isn't imported up to its due date, or else <b>Waiting for Oct statement</b>. A statutory payment not paid by the 15th of the next month shows <b>Past legal deadline</b>.</div>
       <div class="note">If the bank lines matched add up to less than the amount, it shows <b>Part paid</b> until the rest is matched, or you note why in the payment (e.g. balance paid in October).</div>
-      <div class="note">Money received (a tenant's rent, say) is set up on the Recurring page as <b>Money in</b>. It shows <b>Not received yet</b> until it is due, then <b>Waiting for Nov statement</b> or <b>Not on Nov statement</b> in the same way, and <b>Received 14 Nov</b> once a bank credit is matched or you enter the date. It is counted apart from the payments, and is never in the Budget.</div>
-    </div>`;
+      <div class="note">Money received (a tenant's rent, say) is set up on the Recurring page as <b>Money in</b>. It is counted apart from the payments, and is never in the Budget.</div>
+    </details>`;
+  const ids = OV_ROWS.flatMap(r => r.ids).filter(id => !OV_CARDS[id].hidden);
+  OV.done = Promise.all([...ids.map(id => ovLoad(id, seq)), ovActivity(seq)]);
 }
-

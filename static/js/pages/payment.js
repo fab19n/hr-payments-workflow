@@ -578,7 +578,7 @@ function pdMenuKey(ev) {
 }
 
 // ---------- Add a payment: the New payment dialog ----------
-const NP_LABEL = { desc: "Description", type: "Type", amt: "Amount", due: "Due date", acct: "Bank account" };
+const NP_LABEL = { co: "Company", desc: "Description", type: "Type", amt: "Amount", due: "Due date", acct: "Bank account" };
 // An amount as typed (1,250.00, RM 1250, or blank): the number, null for blank, NaN when it isn't one.
 function npAmount(s) {
   const t = String(s || "").trim().replace(/^(RM|[A-Z]{3})\s*/i, "");
@@ -586,20 +586,42 @@ function npAmount(s) {
   if (!/^(\d{1,3}(,\d{3})+|\d*)(\.\d*)?$/.test(t) || !/\d/.test(t)) return NaN;
   return Math.round(parseFloat(t.replace(/,/g, "")) * 100) / 100;
 }
+// From the Overview (slice 1) the dialog asks which company the payment is for: a payment belongs to one company's month, and its
+// bank accounts follow the company chosen. The switcher's company is chosen to start with; with All companies, none is.
+const npFromOverview = () => state.view === "overview";
+const npEnt = () => npFromOverview() ? state.meta.entities.find(x => x.id === state.np?.co) || null : ent();
+const npAcctOptions = e => { const accts = pickAccounts(e), acct = defaultAccount(e);
+  return accts.map(a => acctOption(a, acct?.id)).join("") || `<option value="">${e ? "No bank account set up yet" : "Choose a company first"}</option>`; };
+function npCompany(id) {
+  const N = state.np;
+  if (!N) return;
+  N.co = id ? +id : null;
+  const e = npEnt(), sel = $("#ap-acct");
+  if (sel) { sel.innerHTML = npAcctOptions(e); sel.disabled = !pickAccounts(e).length; }
+  const eb = pdQ("#np-eyebrow"); if (eb) eb.textContent = `From the Overview${e ? ` · ${e.code}` : ""} · ${monthName(state.month)}`;
+  N.acct0 = String($("#ap-acct")?.value || "");
+}
 async function addPaymentDrawer() {
   if (!(await mayLeave())) return;
   state.openPayment = null; state.pay = null; state.drawerDirty = null;
-  const e = ent(), acct = defaultAccount(e), accts = pickAccounts(e);
-  state.np = { dir: "out", tried: false, refused: null, saving: false };
+  const fromOv = npFromOverview(), co = fromOv ? (state.addr.all ? null : state.entity) : state.entity;
+  state.np = { dir: "out", tried: false, refused: null, saving: false, co };
+  const e = npEnt(), acct = defaultAccount(e), accts = pickAccounts(e);
   const today = dayKey(), cur = acct?.currency || "MYR";
+  const live = (state.meta.entities || []).filter(isActive);
+  const coField = fromOv ? `<div class="field"><label for="ap-co">Company <span class="req">Required</span></label>
+        <select id="ap-co" aria-required="true" aria-describedby="np-co-hint"><option value="" disabled${co ? "" : " selected"}>Choose a company</option>${live.map(x =>
+          `<option value="${x.id}"${x.id === co ? " selected" : ""}>${esc(x.code)} · ${esc(keptLabel(x))}</option>`).join("")}</select>
+        <span class="note" id="np-co-hint">A payment belongs to one company's month. Its bank accounts follow.</span></div>` : "";
   $("#drawer").innerHTML = `<form class="np" id="addForm" novalidate aria-describedby="np-sub">
     <div class="pd-head"><span class="plate brand">${icon("payment")}</span>
-      <div class="pd-words"><span class="eyebrow">${esc(e.code)} · ${esc(monthName(state.month))}</span>
+      <div class="pd-words"><span class="eyebrow" id="np-eyebrow">${fromOv ? `From the Overview${e ? ` · ${esc(e.code)}` : ""}` : esc(e.code)} · ${esc(monthName(state.month))}</span>
         <h2 id="drawerTitle" tabindex="-1">New payment</h2>
         <span id="np-sub" class="pd-sub">For one-off bills and money in, not coming from a request.</span></div>
       <button type="button" class="ghost small pd-x" id="closeDrawer" aria-label="Close">${icon("close")}</button></div>
     <div class="np-body">
       <div id="np-refused" tabindex="-1"></div><div id="np-summary"></div>
+      ${coField}
       <div class="field"><label for="ap-desc">Description <span class="req">Required</span></label>
         <input id="ap-desc" autocomplete="off" aria-required="true" placeholder="What it is, and who it is to or from"></div>
       <div class="field"><span id="np-dir-l">Money</span>
@@ -616,7 +638,7 @@ async function addPaymentDrawer() {
       <div class="field"><label for="ap-due">Due date</label><input id="ap-due" type="date" aria-describedby="np-due-hint">
         <span class="note" id="np-due-hint">Blank means today, ${esc(shortDate(today))}.</span></div>
       <div class="field"><label for="ap-acct">Bank account</label>
-        <select id="ap-acct" aria-describedby="np-acct-hint"${accts.length ? "" : " disabled"}>${accts.map(a => acctOption(a, acct?.id)).join("") || `<option value="">No bank account set up yet</option>`}</select>
+        <select id="ap-acct" aria-describedby="np-acct-hint"${accts.length ? "" : " disabled"}>${npAcctOptions(e)}</select>
         <span class="note" id="np-acct-hint"></span></div>
     </div>
     <div class="pd-foot"><span id="np-foot" class="pd-foot-note"></span>
@@ -628,18 +650,20 @@ async function addPaymentDrawer() {
   // Unsaved means something typed or chosen by hand: Paid out / Received alone (which sets the type to that way's
   // default) is not, so it never asks "Discard this payment?".
   // The account is compared with what its picker started on (a company whose only account is stopped starts on none).
-  const acct0 = String($("#ap-acct")?.value || "");
+  // From the Overview a company chosen by hand is unsaved too; its accounts then start on that company's usual one.
+  state.np.acct0 = String($("#ap-acct")?.value || "");
   state.drawerDirty = () => !!state.np && (!!$("#ap-desc")?.value.trim() || !!$("#ap-amt")?.value.trim() || !!$("#ap-due")?.value
-    || ($("#ap-cat")?.value || "") !== npDefault(state.np.dir) || String($("#ap-acct")?.value || "") !== acct0);
+    || ($("#ap-cat")?.value || "") !== npDefault(state.np.dir) || String($("#ap-acct")?.value || "") !== state.np.acct0 || (fromOv && state.np.co !== co));
   npFoot();
 }
 // The type a new payment starts on, as the drawer before had it: a one-off going out starts as a claim when claims are in
 // use (oneOffType), money in as Money received (defaultType).
 const npDefault = dir => dir === "in" ? defaultType("in") : oneOffType();
-const npAcct = () => { const v = +($("#ap-acct")?.value || 0); return (ent()?.accounts || []).find(a => a.id === v) || null; };
+const npAcct = () => { const v = +($("#ap-acct")?.value || 0); return (npEnt()?.accounts || []).find(a => a.id === v) || null; };
 // What is wrong with the form now: {field: message}.
 function npErrors() {
   const out = {}, cat = $("#ap-cat")?.value;
+  if (npFromOverview() && !npEnt()) out.co = "Choose a company.";
   if (!$("#ap-desc")?.value.trim()) out.desc = "Give the payment a description.";
   if (!cat || !catActive(cat) || catDir(cat) !== state.np.dir) out.type = "Choose one of the payment types in use.";
   if (Number.isNaN(npAmount($("#ap-amt")?.value))) out.amt = "Write the amount as a number, like 1250.00.";
@@ -651,20 +675,21 @@ function npErrors() {
 function npFoot() {
   const N = state.np;
   if (!N || !pdQ("#addForm")) return;
-  const errs = npErrors(), bad = Object.keys(errs), a = npAcct(), cur = a?.currency || "MYR", e = ent();
+  const errs = npErrors(), bad = Object.keys(errs), a = npAcct(), cur = a?.currency || "MYR", e = npEnt();
   const curEl = pdQ("#np-cur"); if (curEl) curEl.textContent = cur === "MYR" ? "RM" : cur;
   const ah = pdQ("#np-acct-hint");
-  if (ah) ah.textContent = !(e.accounts || []).some(isActive) ? `${e.code} has no bank account yet, so the payment is added without one.` : N.dir === "in" ? "The account the money comes into." : "The account the money goes out from.";
+  if (ah) ah.textContent = !e ? "The accounts show once a company is chosen." : !(e.accounts || []).some(isActive) ? `${e.code} has no bank account yet, so the payment is added without one.` : N.dir === "in" ? "The account the money comes into." : "The account the money goes out from.";
   const foot = pdQ("#np-foot");
-  if (foot) foot.textContent = N.saving ? `Adding the payment to ${monthName(state.month)}…` : N.refused ? "Nothing was added. Fix what the message says, then add it again."
+  if (foot) foot.textContent = N.saving ? `Adding the payment to ${e ? `${e.code}'s ` : ""}${monthName(state.month)}…` : N.refused ? "Nothing was added. Fix what the message says, then add it again."
     : !bad.length ? "It is added as not paid yet." : N.tried ? "Fix the fields above, then add it." : `Still needed: ${bad.map(k => k === "amt" ? "A valid amount" : NP_LABEL[k]).join(", ")}.`;
   const sub = pdQ("#np-submit"); if (sub) sub.setAttribute?.("aria-disabled", bad.length ? "true" : "false");
   if (!N.tried) return;
-  const ids = { desc: "ap-desc", type: "ap-cat", amt: "ap-amt", due: "ap-due" };
+  const ids = { co: "ap-co", desc: "ap-desc", type: "ap-cat", amt: "ap-amt", due: "ap-due" };
   for (const [k, id] of Object.entries(ids)) {
     const el = pdQ("#" + id), had = el?.getAttribute?.("aria-invalid") === "true";
+    if (k === "co" && !npFromOverview()) continue;
     if (errs[k] && !had) markField(id, errs[k]); else if (!errs[k] && had) { markField(id, ""); }
-    if (!errs[k] && el) el.setAttribute?.("aria-describedby", { desc: "", type: "np-type-hint", amt: "np-amt-hint", due: "np-due-hint" }[k]);
+    if (!errs[k] && el) el.setAttribute?.("aria-describedby", { co: "np-co-hint", desc: "", type: "np-type-hint", amt: "np-amt-hint", due: "np-due-hint" }[k]);
   }
   const sum = pdQ("#np-summary");
   if (sum) sum.innerHTML = bad.length && !N.refused ? `<div class="refused" role="alert">${icon("alert")}<span><b>${bad.length === 1 ? "1 field needs a fix." : `${bad.length} fields need a fix.`}</b> ${esc(bad.map(k => NP_LABEL[k]).join(", "))}.</span></div>` : "";
@@ -688,10 +713,10 @@ async function npSave() {
   const r0 = pdQ("#np-refused"); if (r0) r0.innerHTML = "";
   const errs = npErrors();
   npFoot();
-  const first = ["desc", "type", "amt", "due"].find(k => errs[k]);
-  if (first) return pdFocus("#" + { desc: "ap-desc", type: "ap-cat", amt: "ap-amt", due: "ap-due" }[first]);
-  const a = npAcct(), desc = $("#ap-desc").value.trim();
-  const body = { entity_id: state.entity, month: state.month, description: desc, category: $("#ap-cat").value, direction: N.dir,
+  const first = ["co", "desc", "type", "amt", "due"].find(k => errs[k]);
+  if (first) return pdFocus("#" + { co: "ap-co", desc: "ap-desc", type: "ap-cat", amt: "ap-amt", due: "ap-due" }[first]);
+  const a = npAcct(), desc = $("#ap-desc").value.trim(), e = npEnt();
+  const body = { entity_id: e.id, month: state.month, description: desc, category: $("#ap-cat").value, direction: N.dir,
     amount: npAmount($("#ap-amt").value), due_date: $("#ap-due").value || null, account_id: a ? a.id : null };
   N.saving = true; npBusy(true); npFoot();
   let r;
@@ -705,7 +730,7 @@ async function npSave() {
   const id = r.id;
   await closeDrawer(true);
   state.mark = { pay: x => x.id === id };
-  toast("Payment added", false, { undo: async () => {
+  toast(npFromOverview() ? `Payment added to ${e.code}'s ${monthName(state.month)}` : "Payment added", false, { undo: async () => {
     await api(`/api/payments/${id}`, { method: "DELETE", json: {} });
     toast("Undone. The payment is taken off again; the undo is a new entry in the audit trail.");
     await render();
@@ -759,6 +784,7 @@ if (document.addEventListener) {
       return;
     }
     if (t.closest?.("#payForm")) pdEdited(t);
+    if (t.id === "ap-co") npCompany(t.value);
     if (t.closest?.("#addForm")) npEdited();
   });
 }

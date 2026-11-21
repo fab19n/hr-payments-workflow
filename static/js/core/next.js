@@ -19,6 +19,8 @@ const MARKS = {
   due_today_tasks: { task: t => t.flag?.code === "due_today" },
   part_paid: { pay: p => p.direction !== "in" && p.status === "part_paid" },
   "in-part_paid": { pay: p => p.direction === "in" && p.status === "part_paid" },
+  // The Overview's Past due counter: payments not paid yet whose word is red (not on the statement imported, past the legal deadline).
+  past_due: { pay: p => !p.paid_date && p.flag?.tone === "bad" },
 };
 // A count of money received has in- in front of its word, so it marks the receipts alone.
 const markFor = key => MARKS[key] || (key.startsWith("in-") ? { pay: p => p.direction === "in" && p.flag?.code === key.slice(3) }
@@ -44,6 +46,7 @@ function pillGo(kind, entity) {
   if (kind === "docs_missing") return goTo({ ...g, view: "checklist", tab: "missing" });
   if (MARKS[kind]?.task) return goTo({ ...g, view: "checklist", filter: kind });
   if (kind === "part_paid" || kind === "in-part_paid") return goTo({ ...g, view: "entity", filter: kind, tab: "attention" });
+  if (kind === "past_due") return goTo({ ...g, view: "entity", filter: kind, tab: "unpaid" });
   return goTo({ ...g, view: "entity", filter: kind });
 }
 
@@ -52,6 +55,8 @@ const dayLabel = iso => { const [y, m, d] = iso.split("-").map(Number); return `
 // The list is for one company (its id) or both. A list that can't be read says so, and the page still shows.
 const loadNext = scope => api(`/api/next${scope ? `?entity_id=${scope}` : ""}`).catch(e => ({ error: e.message }));
 const nextScope = () => state.view === "entity" || state.view === "checklist" ? state.entity : null;
+// Which list's Show all a click turns: a company page's, else the Overview's for the company the switcher chose (ov<id>) or all.
+const nextAllKey = () => nextScope() || (state.view === "overview" && !state.addr.all ? `ov${state.entity}` : 0);
 const DUE_WORD = { overdue: "Overdue", today: "Today", soon: "Due", later: "Due" };
 const DUE_TONE = { overdue: "bad", today: "warn", soon: "warn", later: "grey" };
 const dueTag = r => r.due ? `<span class="pill ${DUE_TONE[r.state]}">${DUE_WORD[r.state]} ${shortDate(r.due)}</span>` : "";
@@ -67,17 +72,22 @@ function nextRow(r) {
 // The Next up card: 7 rows (3 on a company's page) and Show all, the older months still open as one muted line. Those
 // months are not read for the list, so with any open it says nothing is due in the recent ones, never All caught up.
 function nextCard(res, scope) {
-  if (res.error) return `<div class="card noprint"><h2>Next up</h2><div class="note">Couldn't work out what to do next: ${esc(res.error)}</div></div>`;
-  state.next = new Map(res.items.map(r => [r.key, r]));
+  const ov = !scope && state.view === "overview", who = ov && typeof ovWho === "function" ? ovWho() : "";
+  if (res.error) return `<div class="card noprint"><div class="next-head"><h2 id="ov-next-h" tabindex="-1">Next up</h2>${who}</div><div class="note">Couldn't work out what to do next: ${esc(res.error)}</div></div>`;
   if (!scope) state.menuNext = { items: res.items, at: Date.now() };  // the side menu's numbers count these rows (core/menu.js)
-  const limit = scope ? 3 : 7, many = !scope && state.meta.entities.length > 1;
-  const all = state.nextAll[scope || 0];  // Show all is kept for each list: the Overview's and each company's
-  const rows = (all ? res.items : res.items.slice(0, limit)).map(nextRow).join("");
-  const more = res.items.length > limit ? `<div><button class="link" data-next-all="1">${all ? "Show fewer" : `Show all ${res.items.length}`}</button></div>` : "";
-  const older = res.older_open_months.map(o => `<button class="link" data-older="${o.entity_id} ${o.month}">${esc(o.label)}${many
+  // On the Overview the top bar's switcher is the company filter: one company's rows (and those of no company, the backup).
+  const only = ov ? ovScope() : null;
+  const items = only ? res.items.filter(r => r.entity_id == null || r.entity_id === only) : res.items;
+  const olderOpen = only ? res.older_open_months.filter(o => o.entity_id === only) : res.older_open_months;
+  state.next = new Map(items.map(r => [r.key, r]));
+  const limit = scope ? 3 : 7, many = !scope && !only && state.meta.entities.length > 1;
+  const all = state.nextAll[nextAllKey()];  // Show all is kept for each list: the Overview's (per company chosen) and each company's
+  const rows = (all ? items : items.slice(0, limit)).map(nextRow).join("");
+  const more = items.length > limit ? `<div><button class="link" data-next-all="1">${all ? "Show fewer" : `Show all ${items.length}`}</button></div>` : "";
+  const older = olderOpen.map(o => `<button class="link" data-older="${o.entity_id} ${o.month}">${esc(o.label)}${many
     ? ` (${esc(state.meta.entities.find(e => e.id === o.entity_id)?.code)})` : ""}</button>`).join(", ");
-  return `<div class="card noprint"><h2>Next up <span class="muted">· ${esc(dayLabel(res.today))}</span></h2>
-    ${res.items.length ? `<div class="next-list">${rows}</div>${more}`
+  return `<div class="card noprint"><div class="next-head"><h2 id="ov-next-h" tabindex="-1">Next up <span class="muted">· ${esc(dayLabel(res.today))}</span></h2>${who}</div>
+    ${items.length ? `<div class="next-list">${rows}</div>${more}`
       : `<div class="banner ok"><b>${older ? "Nothing due in the recent months" : "All caught up"}</b>${res.next_due ? `<span>Next due ${shortDate(res.next_due.due)} · ${esc(res.next_due.text)}</span>` : ""}</div>`}
     ${older ? `<div class="note">Older months still open: ${older}</div>` : ""}</div>`;
 }

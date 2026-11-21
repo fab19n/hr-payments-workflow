@@ -19,6 +19,7 @@ from . import (appsettings, audit, auditpack, auditread, books, booksexcel, chec
                monthly, myinvois, packcheck, partybook, payrollcheck, receivables, restore, rulebook, rules, setupfile, sqlfetch,
                sqlimport, statements, statutory, bankrecpdf, formcode)
 from . import einvoicebook
+from . import overview as ovcards
 from .config import BACKUP_DIR, DATA_DIR, DB_PATH, EXPORTS_DIR, PACKS_DIR, SETTINGS, PROGRAM_DIR
 from .docstore import path_of, store, verify
 
@@ -503,6 +504,40 @@ def overview():
             **todo,
         })
     return jsonify({"month": month, "label": db.month_label(month), "entities": out})
+
+
+def _overview_scope(c):
+    """The company the Overview's switcher chose (entity_id), or None for all companies."""
+    return entity(c, id_from(request.args["entity_id"]))["id"] if request.args.get("entity_id") else None
+
+
+@app.get("/api/overview/rollover")
+def overview_rollover():
+    """The rollover banner: the month after the one on show and the companies in view that have it set up."""
+    c = con()
+    return jsonify(ovcards.rollover(c, month_from(request.args.get("month")), _overview_scope(c)))
+
+
+@app.get("/api/overview/activity")
+def overview_activity():
+    """Recent activity on the Overview: the newest changes from the audit trail, in words with no figure or name."""
+    c = con()
+    return jsonify({"items": ovcards.activity(c, _overview_scope(c))})
+
+
+@app.get("/api/overview/<card>")
+def overview_card(card):
+    """One Overview card (hrp/overview.py) for the month on show and the companies in view (entity_id: one company).
+    Each card is its own request, so one that fails says so on its own card and the others still show."""
+    if card not in ovcards.CARDS:
+        return err("There is no such card.", 404)
+    c = con()
+    month, scope = month_from(request.args.get("month")), _overview_scope(c)
+    try:
+        return jsonify(ovcards.card(c, card, month, scope))
+    except Exception as x:  # noqa: BLE001 - the card says it could not load; the page and the other cards carry on
+        app.logger.exception("Overview card %s failed", card)
+        return err(f"This card could not be worked out: {x}", 500)
 
 
 @app.get("/api/next")

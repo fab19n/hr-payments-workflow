@@ -31,7 +31,10 @@ document.addEventListener("click", async ev => {
     if (ds.pill) return pillGo(ds.pill, +ds.entity);
     if (ds.nextGo) { const r = state.next?.get(ds.nextGo); return r && goTo(r.go); }
     if (ds.older) { const [e, m] = ds.older.split(" "); return goTo({ view: state.view === "checklist" ? "checklist" : "entity", entity_id: +e, month: m }); }
-    if (ds.nextAll) { const k = nextScope() || 0; state.nextAll[k] = !state.nextAll[k]; return refreshNext(); }
+    if (ds.nextAll) { const k = nextAllKey(); state.nextAll[k] = !state.nextAll[k]; return refreshNext(); }
+    if (ds.ovRetry) return ovRetry(ds.ovRetry);  // the Overview (pages/overview.js): Try again on one card, on Recent activity; the rollover banner
+    if (ds.ovActRetry) return ovActivity(OV.seq, true);
+    if (ds.ovRoll) return ovRoll(ds.ovRoll);
     if (ds.savedBalance) return render();
     if (ds.nextBackup) {
       await go("settings"); $("#bkPw")?.focus();  // the password is typed there; a plain backup is not offsite
