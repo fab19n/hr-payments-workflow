@@ -139,8 +139,8 @@ def funds(con, e, month, today):
     """Funds to request for the month: what is still to pay in ringgit less the bank balance kept with the stored budget,
     on the budget's balance date (slice 8's rules: never worked out from a blank balance). bank: the label of the
     company's own account the balance is for (budget.bank_account), never its number. When what is still to pay is pay alone
-    (only pay-type payments left: a salary, a director's allowance), still_to_pay and the balance are not given, as either
-    with the funds figure would show that pay (pay_only)."""
+    (only pay-type payments left: a salary, a director's allowance), no figure is given at all (pay_only: funds,
+    still_to_pay and the balance None), as the funds less the balance the Bank card shows would give that pay."""
     eid = e["id"]
     if not _set_up(con, eid, month):
         return {"empty": NO_CHECKLIST, "set_up": False}
@@ -154,7 +154,9 @@ def funds(con, e, month, today):
     if bal is None:
         out["empty"] = "Enter the bank balance to see funds to request"
     if _pay_only(con, e, month, as_at, bool(hdr)):
-        out.update({"still_to_pay": None, "balance": None, "pay_only": True})
+        # The funds would be that pay less the balance, which the Bank card shows: no figure at all, only where to see it.
+        out.update({"still_to_pay": None, "balance": None, "funds": None, "pay_only": True,
+                    "empty": "Funds to request: salaries only, open the Budget"})
     return out
 
 

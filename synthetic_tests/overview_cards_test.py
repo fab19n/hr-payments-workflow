@@ -241,7 +241,8 @@ check("...when the only payment overdue is a salary, the card counts it and show
       dn["overdue"] == {"n": 1, "sums": {}, "pay_n": 1} and str(NPAY) not in json.dumps(dn), dn)
 fn = card("funds", EXN, "2026-11")
 check("Funds to request: with pay alone left to pay, neither what is still to pay nor the balance is given",
-      fn.get("pay_only") is True and fn["still_to_pay"] is None and fn["balance"] is None and fn["funds"] is not None
+      fn.get("pay_only") is True and fn["still_to_pay"] is None and fn["balance"] is None
+      and fn["funds"] is None and fn["empty"] == "Funds to request: salaries only, open the Budget"
       and not ({str(NPAY), f"{NPAY:,.2f}"} & set(re.findall(r"[\d,.]+", json.dumps(fn)))), fn)
 check("...while a month with other bills to pay gives them", not card("funds", EXA).get("pay_only") and card("funds", EXA)["still_to_pay"] is not None)
 
@@ -448,6 +449,7 @@ const slots = () => Object.fromEntries(fx.cards.map(k => [k, { html: el("ov-c-" 
   const pl = (m, y) => ({ month_sen: m, ytd_sen: y, upto: "2026-10-31", sql_to: "2026-11-17", fy_start: "2026-01-01", stale: false });
   out.t = {
     funds_unknown: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(null, { empty: "Enter the bank balance to see funds to request", still_to_pay: 80000, balance: null }))]),
+    funds_pay: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(null, { empty: "Funds to request: salaries only, open the Budget", pay_only: true, still_to_pay: null, balance: null }))]),
     funds_known: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(2000))]),
     bank_mixed: calm("bank", [co(1, "AAA", bank({ MYR: { balance: 80000, in: 100, out: 50 } })), co(2, "BBB", bank({ USD: { balance: 17480, in: 0, out: 0 } }))]),
     bank_both: calm("bank", [co(1, "AAA", bank({ MYR: { balance: 80000, in: 100, out: 50 }, USD: { balance: 100, in: 0, out: 0 } })),
@@ -575,6 +577,10 @@ check("Bank: each currency totalled on its own, never one label over two currenc
       head(t["bank_mixed"]) == ("RM 80,000", "in RM 100 · out RM 50 · also USD 17,480") and "MYR+USD" not in t["bank_mixed"], head(t["bank_mixed"]))
 check("...companies added up per currency (ringgit with ringgit, dollars with dollars)", head(t["bank_both"]) == ("RM 78,750", "in RM 100 · out RM 60 · also USD 150"), head(t["bank_both"]))
 check("...an overdrawn balance keeps its minus sign", head(t["bank_neg"])[0] == "-RM 1,250", head(t["bank_neg"]))
+check("...the company line shows it the same way (-RM 1,250.00, never RM -1,250.00)",
+      '<span class="ovco">BBB</span><b class="">-RM 1,250.00 · USD 50.00</b>' in t["bank_both"] and "RM -" not in t["bank_both"], t["bank_both"][-700:])
+check("Funds to request with a company whose left to pay is salaries only: no total, and why, never a figure for it",
+      head(t["funds_pay"]) == ("No total", "BBB: salaries only, open the Budget") and '<b class="muted">Salaries only</b>' in t["funds_pay"], head(t["funds_pay"]))
 check("Profit or loss: a company whose month can't be worked out is not counted as 0; the total says it leaves it out",
       head(t["pl_unknown"]) == ("Profit RM 1,500", "this month, the companies together · leaves out BBB: the month can&#39;t be worked out"), head(t["pl_unknown"]))
 check("...and with both known, the companies together", head(t["pl_known"])[0] == "Profit RM 1,000", head(t["pl_known"]))

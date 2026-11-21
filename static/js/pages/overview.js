@@ -24,6 +24,8 @@ const r0 = n => Math.round(Math.abs(Number(n) || 0)).toLocaleString("en-MY");
 const curWord = c => c === "MYR" ? "RM" : c;
 // Whole ringgit (or another currency), keeping the sign: an overdrawn balance reads -RM 1,250.
 const money0 = (n, c = "MYR") => `${Math.round(Number(n) || 0) < 0 ? "-" : ""}${curWord(c)} ${r0(n)}`;
+// The same with sen, the sign in front as money0 has it: -RM 1,250.00.
+const moneySigned = (n, c = "MYR") => Number(n) < 0 ? `-${money(-Number(n), c)}` : money(n, c);
 // Sums per currency, ringgit first: "RM 1,250.00 and USD 300.00".
 const sumsText = (sums, round) => Object.entries(sums || {}).sort((a, b) => (a[0] !== "MYR") - (b[0] !== "MYR"))
   .map(([c, n]) => round ? money0(n, c) : money(n, c)).join(" and ");
@@ -65,7 +67,9 @@ const OV_CARDS = {
     get: c => {
       if (!c.set_up) return { empty: c.empty, short: "Not set up" };
       // No balance entered: the funds are not known, so no total is drawn while any company's are (unknown).
-      if (c.funds == null) return { empty: c.empty, short: "Balance not entered", unknown: true };
+      // Pay alone left to pay (pay_only): no figure, as it would show that pay; only where to see it.
+      if (c.funds == null) return c.pay_only ? { empty: c.empty, short: "Salaries only", unknown: true, why: "salaries only, open the Budget" }
+        : { empty: c.empty, short: "Balance not entered", unknown: true };
       return { u: "RM", n: c.funds, head: money0(c.funds), line: money(c.funds), note: c.funds ? "to cover what's still to pay" : "the balance covers what's still to pay",
         bit: c.pay_only ? `${c.code}: what is still to pay is pay alone, so it is not shown here.`
           : `${c.code}: still to pay ${money(c.still_to_pay)}, less ${money(c.balance)} in ${c.bank || "the bank"} on ${shortDate(c.as_at)}.` };
@@ -81,7 +85,7 @@ const OV_CARDS = {
       if (c.empty) return { empty: c.empty, short: "No statement" };
       const { head, note } = bankWords(c.totals);
       const curs = bankCurs(c.totals);
-      return { u: "bank", totals: c.totals, head, line: curs.map(k => money(c.totals[k].balance, k)).join(" · "), note,
+      return { u: "bank", totals: c.totals, head, line: curs.map(k => moneySigned(c.totals[k].balance, k)).join(" · "), note,
         bit: `${c.code}: ${c.accounts.map(a => `${a.label} ${money(a.balance, a.currency)} on ${shortDate(a.date)}`).join("; ")}.` };
     },
     // Each currency is added up on its own, across the companies that hold it; never one currency into another.
@@ -198,10 +202,13 @@ function ovCalm(id, d) {
   // with it there is no total (partial "none"), or a total of the others that says it leaves that company out ("leave_out").
   const unknown = per.filter(x => x.v.unknown), known = live.filter(x => !x.v.unknown);
   if (!none && many && unknown.length && C.sum) {
-    const codes = unknown.map(x => x.c.code).join(" and ");
+    // each company with why its figure is not known (its own reason, else the card's), those with the same reason together
+    const whys = new Map();
+    for (const x of unknown) { const w = x.v.why || C.unknownWhy; whys.set(w, [...(whys.get(w) || []), x.c.code]); }
+    const said = [...whys].map(([w, cs]) => `${cs.join(" and ")}: ${w}`).join("; ");
     if (C.partial === "leave_out" && known.length && new Set(known.map(x => x.v.u)).size === 1) {
-      const s = C.sum(known.map(x => x.v)); head = s.head; headTone = s.headTone || ""; note = `${s.note || ""} · leaves out ${codes}: ${C.unknownWhy}`;
-    } else { head = "No total"; headTone = "muted"; note = `${codes}: ${C.unknownWhy}`; }
+      const s = C.sum(known.map(x => x.v)); head = s.head; headTone = s.headTone || ""; note = `${s.note || ""} · leaves out ${said}`;
+    } else { head = "No total"; headTone = "muted"; note = said; }
   } else if (!none) {
     if (many && agree && C.sum) { const s = C.sum(live.map(x => x.v)); head = s.head; note = s.note || ""; headTone = s.headTone || ""; extra = s.extra || ""; }
     else { head = main.v.head; headTone = main.v.headTone || ""; note = main.v.note || ""; extra = main.v.extra || ""; if (many) note = main.c.code + (note ? " · " + note : " only"); }
