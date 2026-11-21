@@ -155,9 +155,11 @@ async function render() {
   if (fresh) main.classList.add("loading");
   const slow = fresh ? setTimeout(() => { if (seq === render.n) main.innerHTML = loadingSkeleton(3); }, 300) : null;
   try {
-    const draw = ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
+    const first = firstRunDue();  // an install with no company yet (pages/firstrun.js) takes the Overview's place, with no shell around it
+    firstRunShell(first);
+    const draw = first ? viewFirstRun : ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
     if (draw) await draw(main);
-    if (state.view === "overview") trailNotice();
+    if (state.view === "overview" && !first) trailNotice();
     render.last = key;
   } catch (e) { render.last = null; main.innerHTML = appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true }); }
   finally { clearTimeout(slow); if (seq === render.n) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } } dlgRestore(); }  // the menu's numbers follow the Next up rows this page may have just read

@@ -52,6 +52,29 @@ document.addEventListener("keydown", async ev => {
   if (payEscape()) return;   // in the payment dialog: an open menu, a question, the files waiting for their type, the viewer first
   await closeDrawer();
 });
+// The record dialog of Setup: the note beside Save follows what is typed; Enter in the reason box makes the change it asks for and never
+// saves the record around it; the arrow keys, Home and End move between the rows of a list and between the tabs of a pair of sections.
+document.addEventListener("input", ev => { if (ev.target.closest?.("#setupForm")) suFoot(); });
+document.addEventListener("change", ev => { if (ev.target.closest?.("#setupForm")) suFoot(); });
+document.addEventListener("keydown", ev => {
+  if (ev.key === "Enter" && ev.target.id === "su-reason") { ev.preventDefault(); whySubmit().catch(e => toast(e.message, true)); return; }
+  const t = ev.target, ds = t?.dataset || {};
+  if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"].includes(ev.key)) return;
+  if ("setupOpen" in ds && t.closest?.("#setupList")) {
+    if (ev.key === "ArrowLeft" || ev.key === "ArrowRight") return;
+    const list = [...document.querySelectorAll("#setupList [data-setup-open]")], i = list.indexOf(t), to = ev.key === "Home" ? 0 : ev.key === "End" ? list.length - 1 : i + (ev.key === "ArrowDown" ? 1 : -1);
+    if (i < 0 || to < 0 || to >= list.length) return;
+    ev.preventDefault(); list[to].focus({ preventScroll: false }); return;
+  }
+  if ("setupKind" in ds && t.getAttribute?.("role") === "tab") {
+    if (ev.key === "ArrowUp" || ev.key === "ArrowDown") return;
+    const list = [...(t.parentNode?.querySelectorAll?.('[role="tab"]') || [])], i = list.indexOf(t), last = list.length - 1;
+    if (i < 0) return;
+    ev.preventDefault();
+    const to = ev.key === "ArrowRight" ? (i === last ? 0 : i + 1) : ev.key === "ArrowLeft" ? (i === 0 ? last : i - 1) : ev.key === "Home" ? 0 : last;
+    list[to].click();
+  }
+});
 document.addEventListener("input", ev => {
   const id = ev.target.dataset?.search;
   if (id) { listState(id).q = ev.target.value; LIST_REDRAW[id]?.(); }

@@ -104,6 +104,8 @@ function tbPlace(key) {
   if (key === "all") return { place: { ...homePlace(), month: state.month }, gone: null, e: null };
   const e = state.meta.entities.find(x => x.id === +key), v = state.view, hit = MENU_BY_VIEW[v];
   if (!e) return null;
+  // Setup's Matching words are for companies Kept in SQL Account: from them, a company Kept here lands on its Overview with the toast.
+  if (v === "setup" && !e.uses_sql && setupNeedsSql(state.setup.kind)) return { place: { view: "overview", entity: e.id, month: state.month, sub: null, id: null, params: {} }, gone: setupGroupOf(state.setup.kind) || "Matching words", view: v, e, plural: true };
   if (hit && !menuVisible(e).has(hit.item.page)) return { place: { view: "overview", entity: e.id, month: state.month, sub: null, id: null, params: {} }, gone: PAGE_RULES[v]?.name || hit.item.label, view: v, e };
   const p = placeFromState();
   p.entity = e.id; p.id = null;
@@ -116,7 +118,7 @@ async function tbPick(key) {
   if (key === "all" ? scope.all : !scope.all && scope.e && scope.e.id === +key) return;
   const r = tbPlace(key);
   if (!r) return;
-  if (await navigate(r.place, { fresh: true }) && r.gone) switchedNote(r.gone, r.e, PAGE_RULES[r.view]?.plural);
+  if (await navigate(r.place, { fresh: true }) && r.gone) switchedNote(r.gone, r.e, r.plural ?? PAGE_RULES[r.view]?.plural);
 }
 // No company yet: Setup > Companies, with its add form open.
 async function tbAddCompany() {

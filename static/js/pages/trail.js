@@ -203,58 +203,75 @@ async function openHistory(tbl, key, title) {
 // The "Show deleted" tick of a Setup section (kept for every section, as Show stopped is).
 const deletedToggle = kind => `<label class="row tight"><input type="checkbox" data-setup-deleted="${esc(kind)}" ${state.setup.deleted ? "checked" : ""}> Show deleted</label>`;
 
-// Show deleted: the section's records deleted in this app and not put back since, newest first, with when, who and why,
-// and Put it back, or why it can't be now.
+// Show deleted: the section's records deleted in this app and not put back since, newest first, with when, who and why, and Put it
+// back, or why it can't be now (design/canvas/Setup.dc.html).
 async function drawDeleted(kind) {
   const box = $("#setupDeleted");
   if (!box) return;
   if (!state.setup.deleted) { box.innerHTML = ""; return; }
   const per = ["accounts", "parties", "gl_accounts", "statutory_accounts", "checklist", "payees"].includes(kind);
   if (per && !state.entity) { box.innerHTML = ""; return; }
-  box.innerHTML = `<div class="note">Loading…</div>`;
+  box.innerHTML = `<div class="note" role="status">Loading…</div>`;
   try {
     const d = await api(`/api/setup/restore?kind=${encodeURIComponent(kind)}${per ? `&entity=${state.entity}` : ""}`);
     if ($("#setupDeleted") !== box) return;  // another page or section was drawn meanwhile
-    const row = r => `<tr><td>${esc(r.name)}</td><td>${esc(fmtWhen(r.at))}<div class="note">Entry ${esc(r.entry)}</div></td><td>${esc(r.actor || "")}</td><td>${esc(r.reason || "")}</td>
-      <td><div class="row tight">${r.problem ? "" : `<button class="ghost small" type="button" data-restore="${esc(r.row_id)}" data-restore-title="${esc(r.name)}">Put it back</button>`}
-        <button class="ghost small" type="button" data-hist-open="${esc(r.table)}:${esc(r.key)}" data-hist-title="${esc(r.name)}">History</button></div>
-        ${r.problem ? `<div class="note">${esc(r.problem)}</div>` : ""}</td></tr>`;
-    box.innerHTML = `<h2>Deleted ${esc(d.plural)}</h2>
+    const row = r => `<tr><td>${esc(r.name)}</td><td>${esc(fmtWhen(r.at))}<div class="note st-sub">Entry ${esc(r.entry)}</div></td><td>${esc(r.actor || "")}</td><td>${esc(r.reason || "")}</td>
+      <td><div class="row tight">${r.problem ? "" : `<button class="ghost small" type="button" data-restore="${esc(r.row_id)}" data-restore-title="${esc(r.name)}" aria-haspopup="dialog">${icon("undo")}Put it back</button>`}
+        <button class="ghost small" type="button" data-hist-open="${esc(r.table)}:${esc(r.key)}" data-hist-title="${esc(r.name)}" aria-haspopup="dialog">${icon("history")}History</button></div>
+        ${r.problem ? `<div class="note st-problem">${icon("lock")}<span>Can't be put back: ${esc(r.problem)}</span></div>` : ""}</td></tr>`;
+    box.innerHTML = `<section class="card st-deleted ex" id="st-del" aria-labelledby="st-del-h"><div class="row tight">${icon("trash")}<h2 id="st-del-h">Deleted ${esc(d.plural)}</h2></div>
       <div class="note">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Deleted</th><th>By</th><th>Why</th><th></th></tr></thead><tbody>
-        ${d.rows.map(row).join("") || `<tr><td colspan="5" class="empty">None deleted.</td></tr>`}</tbody></table></div>`;
+      <div class="tbl-wrap"><table class="st-table"><thead><tr><th scope="col">Name</th><th scope="col">Deleted</th><th scope="col">By</th><th scope="col">Why</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
+        ${d.rows.map(row).join("") || `<tr><td colspan="5" class="empty">None deleted.</td></tr>`}</tbody></table></div></section>`;
   } catch (e) { box.innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; }
 }
 
-// Put it back (from the audit trail, a record's History or Show deleted): a drawer shows what it would do first (a
-// preview: nothing is kept), or why it can't be put back; Put it back then asks why.
+// Put it back (from the audit trail, a record's History or Show deleted): a dialog shows what it would do first (a preview: nothing is
+// kept), or why it can't be put back; Put it back then needs a reason, asked in the dialog.
 async function openRestore(rowId, title) {
   if (!(await closeDrawer())) return;
-  $("#drawer").innerHTML = `<div class="ex-head"><div class="row spread"><div><div class="eyebrow">Put back</div><h2>${esc(title || "Deleted record")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
-    <div id="rsBody"><div class="note">Loading…</div></div>`;
-  showDrawer();
+  $("#drawer").innerHTML = `<div class="np st-form" id="restoreBox"><div class="pd-head"><span class="plate brand">${icon("undo")}</span>
+      <div class="pd-words"><span class="eyebrow" id="rs-eyebrow">Put back</span><h2 id="drawerTitle" tabindex="-1">${esc(title || "Deleted record")}</h2><span class="pd-sub" id="rs-sub"></span></div>
+      <button type="button" class="ghost small pd-x" id="closeDrawer" aria-label="Close">${icon("close")}</button></div>
+    <div class="np-body st-body" id="rsBody"><div class="note" role="status">Loading…</div></div>
+    <div class="pd-foot"><span class="pd-foot-note ro" id="rs-foot"></span><div class="pd-foot-acts" id="rsActs"><button type="button" class="ghost" data-su-close="1">Close</button></div></div></div>`;
+  showDrawer("setup");
+  watchDrawer();
   let p;
   try { p = await api(`/api/setup/restore/${rowId}`, { json: { preview: true } }); }
-  catch (e) { if ($("#rsBody")) $("#rsBody").innerHTML = refusedNote(e.message, { title: "It can't be put back" }); return; }
+  catch (e) { if (appStopped(e)) throw e; if ($("#rsBody")) $("#rsBody").innerHTML = refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." }); return; }
   if (!$("#rsBody")) return;
   const del = p.deleted || {}, a = p.affected || {};
   const touches = (p.lines || []).length || +a.tasks || +a.payments;
-  $("#rsBody").innerHTML = `<div class="note">${esc(p.label)} deleted ${esc(fmtWhen(del.at))}${del.actor ? ` by ${esc(del.actor)}` : ""}, in entry ${esc(del.entry)}${del.reason ? `. Why: ${esc(del.reason)}` : ""}.</div>
-    <div class="note">It comes back as it was when it was deleted, ${p.same_id ? "with the same number" : `as #${esc(p.id)}`}.</div>
-    ${(p.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("")}
+  $("#rs-eyebrow").textContent = `Put back · ${p.label}`;
+  $("#rs-sub").textContent = `Deleted ${fmtWhen(del.at)}${del.actor ? ` by ${del.actor}` : ""}, in entry ${del.entry}.`;
+  $("#rsBody").innerHTML = `<div id="rsErr"></div><div class="st-pb"><div>${esc(p.label)} deleted ${esc(fmtWhen(del.at))}${del.actor ? ` by ${esc(del.actor)}` : ""}, in entry ${esc(del.entry)}${del.reason ? `. Why: ${esc(del.reason)}` : ""}.</div>
+      <div class="row tight st-back">${icon("undo")}<span>It comes back as it was when it was deleted, ${p.same_id ? "with the same number." : `as #${esc(p.id)}.`}</span></div>
+      ${(p.notes || []).map(n => `<div class="row tight st-back">${icon("help")}<span>${esc(n)}</span></div>`).join("")}</div>
     ${touches ? effectCard(p, "Putting it back also changes", p.kind === "checklist" ? "checklist item" : "reminder") : `<div class="note">Nothing in the months already set up changes.</div>`}
-    <div class="row"><button class="btn" type="button" data-restore-go="${esc(rowId)}">Put it back</button>
-      <button class="ghost" type="button" data-hist-open="${esc(p.table)}:${esc(del.key)}" data-hist-title="${esc(title || p.name)}">History</button></div>
-    ${whyForm()}`;
+    <label class="field"><span>Why are you putting it back? <span class="req">Required</span></span><input id="pb-why" maxlength="500" autocomplete="off" aria-required="true" aria-describedby="pb-why-err" placeholder="Kept in the audit trail with the change">
+      <span class="field-err" id="pb-why-err" role="alert"></span></label>
+    <div class="row"><button class="ghost small" type="button" data-hist-open="${esc(p.table)}:${esc(del.key)}" data-hist-title="${esc(title || p.name)}">${icon("history")}History</button></div>`;
+  $("#rsActs").innerHTML = `<button type="button" class="ghost" data-su-close="1">Cancel</button><button type="button" class="btn" id="pb-go" data-restore-go="${esc(rowId)}">${icon("undo")}Put it back</button>`;
+  watchDrawer();
+  document.getElementById("pb-why")?.focus?.({ preventScroll: true });
 }
-function restoreGo(rowId, btn) {
-  return askWhy(btn, "Put it back", async reason => {
-    const r = await api(`/api/setup/restore/${rowId}`, { json: { reason } });
-    closeDrawer(true);
-    toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
-    if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);
-    return render();
-  });
+async function restoreGo(rowId, btn) {
+  const inp = $("#pb-why"), err = $("#pb-why-err"), reason = (inp?.value || "").trim();
+  if (!reason) {
+    if (err) err.innerHTML = `${icon("alert")}Say why you're making this change.`;
+    if (inp) { inp.setAttribute("aria-invalid", "true"); inp.focus(); }
+    return;
+  }
+  if (err) err.innerHTML = ""; if (inp?.removeAttribute) inp.removeAttribute("aria-invalid");
+  btn.disabled = true;
+  let r;
+  try { r = await api(`/api/setup/restore/${rowId}`, { json: { reason } }); }
+  catch (e) { if (appStopped(e)) throw e; if (btn.isConnected) btn.disabled = false; if ($("#rsErr")) $("#rsErr").innerHTML = refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." }); return; }
+  closeDrawer(true);
+  toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
+  if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);
+  return render();
 }
 
 // The Overview says when the trail needs attention (changes made outside the app, a records.db behind or rebuilt).

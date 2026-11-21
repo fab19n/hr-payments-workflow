@@ -4,13 +4,14 @@ document.addEventListener("click", async ev => {
   // The pick box of a register row (and the cell around it) picks the payment for the bulk bar; it doesn't open it.
   const g = ev.target, gd = g.dataset || {};
   if ("regPick" in gd || "regPickAll" in gd || (g.tagName === "TD" && /\breg-pick\b/.test(g.className || ""))) return;
-  const t = ev.target.closest("button, tr[data-payment], a");
+  const t = ev.target.closest("button, tr[data-payment], tr[data-setup-row], a");
   if (!t) return;
   const ds = t.dataset;
   if (ds.sort) return sortClick(ds.sort, ds.col, t);
   try {
     if (ds.menu) { if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return; ev.preventDefault(); return menuGo(ds.menu); }  // a menu link: the app opens it; a new-tab click is the browser's
     if (ds.menuFold) return menuFoldToggle(ds.menuFold);
+    if (ds.setupLink) { if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return; ev.preventDefault(); if (!(await closeDrawer())) return; return menuGo(SETUP_LINKS[ds.setupLink]); }  // Setup's link to a section that lives on another page
     if (ds.tbToggle) return tbToggle(ds.tbToggle);  // the top bar: the company and account menus (core/topbar.js)
     if (ds.tbAway) return tbClose(false);
     if (ds.tbPick) return tbPick(ds.tbPick);
@@ -60,6 +61,24 @@ document.addEventListener("click", async ev => {
       Object.assign(state.setup, { kind: ds.setupKind, id: null }); return redraw();
     }
     if (ds.setupNew) return await openSetup(ds.setupNew, "new");
+    if (ds.setupRow) return await openSetup(state.setup.kind, +ds.setupRow);
+    if (ds.suClose) return closeDrawer();
+    if (ds.whyGo) return await whySubmit();
+    if (ds.setupMore) {  // Show 25 more: the list is drawn again, and the focus goes to the first row that was not there
+      const id = "setup-" + ds.setupMore, was = state.setup.more?.[id] || SETUP_PAGE;
+      (state.setup.more ||= {})[id] = was + SETUP_PAGE; LIST_REDRAW[id]?.();
+      return document.querySelectorAll("#setupList [data-setup-open]")[was]?.focus?.({ preventScroll: true });
+    }
+    if (ds.setupClear) {
+      const id = "setup-" + ds.setupClear; listState(id).q = "";
+      const q = document.querySelector(`[data-search="${id}"]`); if (q) q.value = "";
+      LIST_REDRAW[id]?.(); return q?.focus?.();
+    }
+    if (ds.setupShowStopped) {
+      state.setup.stopped = true;
+      const c = document.querySelector("[data-setup-stopped]"); if (c) c.checked = true;
+      LIST_REDRAW["setup-" + ds.setupShowStopped]?.(); return c?.focus?.();
+    }
     if (ds.setupPaste) return openPaste(ds.setupPaste);
     if (ds.pasteRead) { t.disabled = true; try { return await pasteSave(true); } finally { if (t.isConnected) t.disabled = false; } }
     if (ds.setupOpen) return await openSetup(state.setup.kind, +ds.setupOpen);
@@ -97,7 +116,7 @@ document.addEventListener("click", async ev => {
     if (ds.remAct) return await remAct(ds.remAct, t);
     if (ds.movePick) { t.disabled = true; try { return await movePick(); } finally { if (t.isConnected) t.disabled = false; } }
     if (ds.moveGo) return askWhy(t, "Import it", moveImport);
-    if (ds.moveCancel) { Object.assign(state.setup.move, { file: null, preview: null }); hideWhy(); $("#mvPreview").innerHTML = ""; return; }
+    if (ds.moveCancel) { hideWhy(); Object.assign(state.setup.move, { file: null, preview: null, name: "", refused: "" }); return moveRepaint("mv-pick"); }
     if (ds.chkPreview || ds.chkCopyPreview || ds.remPreview) {
       t.disabled = true;
       try { return await (ds.chkPreview ? chkSave(true) : ds.chkCopyPreview ? chkCopySave(true) : remSave(true)); } finally { if (t.isConnected) t.disabled = false; }
@@ -239,7 +258,7 @@ document.addEventListener("click", async ev => {
       toast(`${r.doc_nos.join(", ")} marked as deleted in SQL; listed under Ignored${reconMoved(r)}`); return render();
     }
     if (ds.sqlLinkGo) return await sqlEntryLink(+ds.sqlLinkGo);
-    if (ds.invSetup) { state.setup.kind = "entities"; return go("setup"); }
+    if (ds.invSetup) return goSetupRecord("entities", state.entity);
     if (ds.invImgUp) return printImage(ds.invImgUp, false);
     if (ds.invImgRemove) return printImage(ds.invImgRemove, true);
     if (ds.sqlNameRemove) return await removeSqlName(t);

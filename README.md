@@ -229,6 +229,13 @@ after it a note.
   A record deleted in Setup can be put back (`hrp/restore.py`): **Put it back** on the delete in the Audit trail, or
   under **Show deleted** in its Setup list; previewed first, with a reason, refused when its key is taken or its company
   is gone.
+  The Setup pages (slice 9a; `static/js/pages/setup*.js`) share one menu (the server's groups, `hrp/masters.py` GROUPS: Matching
+  words are left out for a company Kept here, Recurring payments is a link to Payments › Recurring), one list (search, Show
+  stopped, Show deleted, 25 rows at a time) and one record dialog (the fields in groups, Where used, Stop using / Use again /
+  Delete, each asking why, and History). Printed invoices and Printed company names are only for a company Kept in SQL Account.
+  An install with no company opens on **First run** (`static/js/pages/firstrun.js`): import a setup file, or add the first
+  company and say where its books are kept. Its counts, and Move setup's, are the setup file's: a stopped record is counted,
+  a deleted one is not, and a company with no checklist in the file counts the starter checklist it will be given.
 - Payment types, document types and required documents (`hrp/rulebook.py`, update 20): kept in the records and edited
   in **Setup › Payments and documents**; required documents change from a payroll month on, for every company or one.
   Code asks `rulebook.get(con)` rather than `rules.py` for them (`rules.py` keeps the seed values).
@@ -246,7 +253,7 @@ after it a note.
   einvoices_groups_test, einvoices_page_test, extras_test, fetch_checks_test, financial_year_test, gl_reports_test, invoice_notes_test, invoice_pdf_test,
   journal_bank_test, ledger_fetch_test, ledger_store_test, masters_equivalence_test, menu_test, meta_pages_test, myinvois_amount_test,
   myinvois_test, pack_check_test, parties_test, payment_dialog_test, payroll_check_test, receivables_test, recon_bank_lines_fixes_test, recon_bank_lines_test,
-  recon_review_fixes_test, register_checklist_test, restore_test, seed_names_test, settings_isolation_test, setup_test, sql_books_item_test,
+  recon_review_fixes_test, register_checklist_test, restore_test, seed_names_test, settings_isolation_test, setup_page_test, setup_records_test, setup_test, sql_books_item_test,
   sql_doc_labels_test, sql_exports_test, sql_page_test, sql_typed_ref_test, stage1_leftovers_test, stage1_settle_test, states_test, statements_test, statutory_test, topbar_test, trail_view_test and types_test.
   `synthetic_tests.masters_equivalence_test --golden <file>` also compares this code's results with a snapshot taken on
   older code (`--write-golden <file>` on that code makes one); `synthetic_tests.checklist_equivalence_test --golden

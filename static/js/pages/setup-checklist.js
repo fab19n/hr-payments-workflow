@@ -5,7 +5,7 @@ const chkCompletion = k => (state.setup.chk?.completions || []).find(c => c.key 
 
 async function setupChecklist(box) {
   const S = state.setup, e = ent();
-  if (!e) { box.innerHTML = `<div class="card"><h1>Monthly checklist</h1><div class="note">Add a company first.</div></div>`; return; }
+  if (!e) { box.innerHTML = `${setupHead("checklist", setupSpec())}${emptyState({ glyph: "company", title: "Add a company first.", body: "Each company has its own monthly checklist. Once one is added, its checklist is set up here.", action: { label: "Go to Companies", attr: "data-setup-kind", value: "entities", glyph: "company" } })}`; return; }
   const d = S.chk = await api(`/api/setup/checklist?entity=${state.entity}`);
   const code = d.code || e.code, items = d.items || [];
   // A company added in Setup starts with the starter checklist: while it is untouched and no month is set up, a copy may replace it.
@@ -17,10 +17,9 @@ async function setupChecklist(box) {
       <td>${esc(chkCompletion(it.completion))}${it.completion === "payments" && rule?.name?.[1] ? `<div class="note">${esc(rule.name[1])}</div>` : ""}</td>
       <td>${docChips(asList(t.docs), chkDocName)}</td><td>${termPills(it, d.default_from)}</td></tr>`;
   };
-  box.innerHTML = `${entityPicker()}
-    <div class="card"><div class="row spread"><h1>Monthly checklist · ${esc(code)}</h1>
-      <div class="row">${copy ? `<button class="ghost" data-chk-copy="1">Copy from another company</button>` : ""}<button class="btn" data-chk-new="1">Add item</button></div></div>
-      <div class="note">What each month's checklist holds for ${esc(code)}, in order. Click an item to change it. A change starts from a payroll month you choose: the months before it keep the checklist they had, and filed months never change.</div>
+  box.innerHTML = `${setupHead("checklist", setupSpec(), { title: `Monthly checklist · ${code}`, intro: `What each month's checklist holds for ${code}, in order. Click an item to change it. A change starts from a payroll month you choose: the months before it keep the checklist they had, and filed months never change.`,
+      actions: `${copy ? `<button class="ghost" data-chk-copy="1">Copy from another company</button>` : ""}<button class="btn" data-chk-new="1">${icon("plus")}Add item</button>` })}
+    <div class="card">
       <div class="row">${deletedToggle("checklist")}</div>
       <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Due</th><th>Done when</th><th>Documents</th><th>Status</th></tr></thead><tbody>
         ${items.map(row).join("") || `<tr><td colspan="5" class="empty">${esc(code)} has no monthly checklist yet. Add an item${copy ? ", or copy another company's checklist" : ""}.</td></tr>`}

@@ -10,7 +10,7 @@
    A place is { view, entity (id, "all" or null), month, sub, id, params }: sub and id are the Setup section and record, or the
    payment to open on the register; params are the filters (mark, pay, task, as_at, filter, account, tab, from, to).
    navigate(place) writes the address and applies the place; applyPlace(place) sets the state and draws; go() and goTo() call
-   navigate. Known departure from the design: Setup is #/admin/setup[/<kind>[/<id>]] with today's server kind names; the design's
+   navigate. Setup's section for recurring payments (#/admin/setup/payees) is the Recurring page; goSetupRecord() (pages/setup.js) opens a Setup record by its address. Known departure from the design: Setup is #/admin/setup[/<kind>[/<id>]] with today's server kind names; the design's
    #/<CODE>/admin/setup/<group>/<page> (companies, hr/approvers) comes with the Setup HR group. Where the page has no real location or history (the test stand-ins) a place is applied with no address. */
 
 // The areas of the menu (core/menu.js draws it): the first word of an address after the company and month.
@@ -185,6 +185,8 @@ function settleAddr() { const a = currentAddr(); if (a && placeLoc() && placeLoc
 async function applyPlace(place, opts = {}) {
   ROUTER.busy++;
   try {
+    // Recurring payments has one home, Payments › Recurring: its old Setup address opens it there (Setup's menu links to it).
+    if (place.view === "setup" && place.sub === "payees" && (state.entity ?? firstEntityId()) != null) place = { view: "payees", entity: state.entity ?? firstEntityId(), month: state.month, sub: null, id: null, params: {} };
     let e = place.entity && place.entity !== "all" ? state.meta.entities.find(x => x.id === +place.entity) : null;
     if (opts.bad) { toast("That address isn't used here. Showing the Overview."); place = homePlace(); }
     else if (opts.fromAddress) {

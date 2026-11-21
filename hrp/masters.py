@@ -57,13 +57,15 @@ def _f(key, label, kind, **kw):
 KINDS = {
     "entities": {
         "label": "Company", "plural": "companies", "table": "entities", "per_entity": False, "name_field": "name",
-        "columns": [{"key": "code", "label": "Code"}, {"key": "name", "label": "Name"}, {"key": "first_month", "label": "First month tracked"}],
+        "columns": [{"key": "code", "label": "Code"}, {"key": "name", "label": "Name"}, {"key": "first_month", "label": "First month tracked"},
+                    {"key": "uses_sql", "label": "Books"}],
         "fields": [
             _f("code", "Code", "code", required=True, max=16,
-               hint="Short, capitals: AISB. Folders and audit packs are named by it."),
+               hint="Short, capitals: ABC. Shown in the company switcher; folders and audit packs are named by it."),
             _f("name", "Name", "text", required=True, wide=True),
-            _f("short_name", "Short name", "text", hint="Shown in the sidebar. Empty: the name without Sdn Bhd or Ltd."),
-            _f("uses_sql", "Kept in SQL Account", "bool", default=1, hint="Payments then need their PV, JV or OR from SQL."),
+            _f("short_name", "Short name", "text", hint="Shown in the company switcher's list beside the code. Empty: the name without Sdn Bhd or Ltd."),
+            _f("uses_sql", "Kept in SQL Account", "bool", default=1, wide=True,
+               hint="On: Kept in SQL Account, and payments need their PV, JV or OR from SQL. Off: Kept here, with no SQL import."),
             _f("first_month", "First month tracked", "month",
                hint="Months before it are never set up on their own and nothing in them counts as overdue. Empty: no limit."),
             _f("fy_start", "Financial year starts in", "select", options=[[n, name] for n, name in enumerate(MONTH_NAMES, 1)],
@@ -96,7 +98,7 @@ KINDS = {
             _f("bank", "Bank", "text"),
             _f("number", "Account number", "text", hint="Filled from the first statement imported if left empty."),
             _f("currency", "Currency", "code", required=True, max=3, hint="Three letters: MYR, USD, SGD."),
-            _f("cash_book", "Cash book account", "bool",
+            _f("cash_book", "Cash book account", "bool", wide=True,
                hint="The account SQL Account's cash book listing is for. Each company has one, in MYR."),
             _f("gl_code", "GL account code", "text", hint="The bank account's code in SQL Account's chart of accounts."),
             _f("sql_payment_method", "SQL payment method", "text", hint="As SQL Account names it on vouchers."),
@@ -108,7 +110,8 @@ KINDS = {
 }
 KINDS["payment_types"] = {
     "label": "Payment type", "plural": "payment types", "table": "payment_types", "per_entity": False, "name_field": "label",
-    "columns": [{"key": "key", "label": "Key"}, {"key": "label", "label": "Name"}, {"key": "direction", "label": "Money"}],
+    "columns": [{"key": "label", "label": "Name"}, {"key": "key", "label": "Key"}, {"key": "direction", "label": "Money"},
+                {"key": "legal_due_day", "label": "Legal deadline"}],
     "fields": [
         _f("key", "Key", "key", required=True, hint="Short, lower case: water_bill. Records refer to it, so it can't change once added."),
         _f("label", "Name", "text", required=True, wide=True),
@@ -122,14 +125,15 @@ KINDS["payment_types"] = {
 }
 KINDS["doc_types"] = {
     "label": "Document type", "plural": "document types", "table": "doc_types", "per_entity": False, "name_field": "label",
-    "columns": [{"key": "key", "label": "Key"}, {"key": "label", "label": "Name"}, {"key": "from_sql", "label": "From SQL"}],
+    "columns": [{"key": "label", "label": "Name"}, {"key": "key", "label": "Key"}, {"key": "from_sql", "label": "From SQL"},
+                {"key": "pack_order", "label": "Place in the pack"}],
     "fields": [
         _f("key", "Key", "key", required=True, hint="Short, lower case: tax_form. Stored file names begin with it, so it can't change once added."),
         _f("label", "Name", "text", required=True, wide=True),
         _f("singular", "One of them is called", "text", hint="In Next up and the audit pack: 1 tax form."),
         _f("plural", "Several of them are called", "text", hint="3 tax forms."),
         _f("pack_order", "Place in the audit pack", "number", hint="Lower comes first. Empty: after the others."),
-        _f("from_sql", "Issued by SQL Account", "bool", hint="Not asked for from a company that isn't kept in SQL Account."),
+        _f("from_sql", "Issued by SQL Account", "bool", wide=True, hint="Not asked for from a company that is Kept here."),
         _f("notes", "Notes", "textarea", wide=True),
     ],
 }
@@ -204,7 +208,8 @@ KINDS["parties"] = {
         _f("attention", "Attention", "text", hint="Printed as Attn on its invoices."),
         _f("phone", "Phone", "text"),
         _f("credit_term", "Terms", "text", max=40, hint="Its credit term as SQL prints it, e.g. 30 Days."),
-        _f("match_words", "Words in SQL descriptions", "words", wide=True, hint="Kept for reference; matching uses the code."),
+        _f("match_words", "Words in SQL descriptions", "words", wide=True,
+           hint="Kept for reference; matching uses the code. Separate the words with commas."),
         _f("notes", "Notes", "textarea", wide=True),
     ],
 }
@@ -260,6 +265,76 @@ GROUPS = [["Companies and banks", ["entities", "accounts", "gl_accounts", "statu
           ["Payments and documents", ["payment_types", "doc_types", "required"]],
           ["Monthly work", ["checklist", "reminders"]],
           ["Matching words", ["guess_words", "hint_words", "filing_words"]], ["General", ["settings", "move"]]]
+# How Setup draws each section (design/canvas/Setup*.dc.html): the glyph of its menu item, the sentence under its heading, the
+# groups of fields its record dialog shows (every field of the kind is in exactly one), and its Use again note (the Stop note is
+# STOPPED_NOTE). types() hands these to the page with the kinds.
+NAV = {
+    "entities": {"glyph": "company",
+                 "intro": "A stopped company leaves the company switcher and Next up. Everything recorded for it stays. Whether a company is Kept in SQL "
+                          "Account or Kept here is a setting here: nothing is fixed to one company.",
+                 "use": "In use again: back in the company switcher and Next up, and its months are set up again.",
+                 "groups": [["The company", ["code", "short_name", "name", "first_month", "fy_start"]],
+                            ["Registration and employer numbers", ["reg_no", "old_reg_no", "tin", "sst_no", "employer_kwsp", "employer_perkeso",
+                                                                   "employer_lhdn"]],
+                            ["Books", ["uses_sql", "sql_database"]],
+                            ["On printed invoices", ["address", "phone", "email", "website", "invoice_account_id", "sign_label"]],
+                            ["Notes", ["notes"]]]},
+    "accounts": {"glyph": "bank",
+                 "intro": "How each company's bank accounts are named here and in SQL Account. Each company has one cash book account, in MYR.",
+                 "use": "In use again: offered in the account lists, and months set up from now on ask for its statement.",
+                 "groups": [["The account", ["label", "bank", "number", "currency"]],
+                            ["SQL Account", ["cash_book", "gl_code", "sql_payment_method"]],
+                            ["Printed on invoices", ["bank_address", "swift_code"]],
+                            ["Notes", ["notes"]]]},
+    "gl_accounts": {"glyph": "trail",
+                    "intro": "Each company's chart of accounts in SQL Account, for reference: nothing is posted to it.",
+                    "use": "In use again: listed with the accounts in use.",
+                    "groups": [["The account", ["code", "name", "sql_type", "type", "special", "parent_code"]], ["Notes", ["notes"]]]},
+    "statutory_accounts": {"glyph": "vault",
+                           "intro": KINDS["statutory_accounts"]["help"],
+                           "use": "In use again: the statutory payables check reads this account again.",
+                           "groups": [["The account", ["kind", "label", "payable_code", "employer_code", "due_day", "sort"]], ["Notes", ["notes"]]]},
+    "parties": {"glyph": "users",
+                "intro": "Customers pay money in and suppliers are paid money out. Staff are not added here: they stay recurring payments.",
+                "use": "In use again: offered for recurring payments, and SQL entries carrying its code are matched to it.",
+                "groups": [["Who it is", ["name", "kind", "entity_id", "short_name"]],
+                           ["SQL Account", ["sql_code", "gl_code", "match_words"]],
+                           ["Tax numbers", ["tin", "brn"]],
+                           ["Printed on its invoices", ["address_1", "address_2", "address_3", "address_4", "attention", "phone", "credit_term"]],
+                           ["Notes", ["notes"]]]},
+    "payment_types": {"glyph": "payment",
+                      "intro": "The kinds of payment you record. Each can be money out or money in, with a legal deadline if it has one.",
+                      "use": "In use again: offered for new payments and recurring payments.",
+                      "groups": [["The type", ["key", "direction", "label", "plural"]], ["Legal deadline", ["legal_due_offset", "legal_due_day"]],
+                                 ["Notes", ["notes"]]]},
+    "doc_types": {"glyph": "document",
+                  "intro": "The kinds of document you file against a payment, in the order they go in the audit pack. The app's own types can't be deleted.",
+                  "use": "In use again: offered for uploads and required documents.",
+                  "groups": [["The type", ["key", "label", "singular", "plural"]], ["Audit pack and SQL Account", ["pack_order", "from_sql"]],
+                             ["Notes", ["notes"]]]},
+    "guess_words": {"glyph": "database",
+                    "intro": "When an SQL voucher is added as a payment, the first rule whose words appear in its description sets the type.",
+                    "use": "In use again: used to guess the type of SQL vouchers added as payments.",
+                    "groups": [["The rule", ["label", "words", "payment_type", "sort"]], ["Notes", ["notes"]]]},
+    "hint_words": {"glyph": "search",
+                   "intro": "A voucher must contain one of these words to be treated as salary. They act on SQL imports from now on; "
+                            "payments already added stay where they are.",
+                   "use": "In use again: used when matching estimated payments with SQL vouchers.",
+                   "groups": [["The rule", ["label", "payment_type", "words"]], ["Notes", ["notes"]]]},
+    "filing_words": {"glyph": "filter",
+                     "intro": "An SQL document with its code is filed here, before any words. They act on SQL imports from now on; "
+                              "documents already filed stay where they are.",
+                     "use": "In use again: SQL documents are filed on the checklist by these words.",
+                     "groups": [["The rule", ["label", "doc_kind", "direction", "words", "checklist_code", "party_id", "sort"]], ["Notes", ["notes"]]]},
+}
+# The glyphs of the sections that are not lists, and a section that lives on another page (Recurring payments has one home, the
+# Recurring page under Payments, so its Setup item is a link there).
+NAV_GLYPHS = {"payees": "recurring", "required": "upload", "checklist": "checklist", "reminders": "person", "settings": "sliders", "move": "archive"}
+NAV_LINKS = {"payees": "Opens Payments › Recurring"}
+# A group of the Setup menu for companies Kept in SQL Account only: its pages match SQL Account's vouchers and documents.
+SQL_ONLY_GROUPS = ("Matching words",)
+DELETE_NOTE = "It goes from the list. Show deleted keeps it for you, and it can be put back from there with its history."
+
 STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and its months aren't set up any more. Everything recorded stays.",
                 "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one.",
                 "payment_types": "Stopped: not offered for new payments or recurring payments. Payments of this type keep it.",
@@ -280,7 +355,21 @@ def types():
     kinds["checklist"] = {"label": "Monthly checklist", "bespoke": True, "per_entity": True, "table": "checklist_items"}
     kinds["reminders"] = {"label": "Joiner and leaver reminders", "bespoke": True, "table": "people_tasks"}
     kinds["move"] = {"label": "Move setup", "bespoke": True}  # export and import setup.json (setupfile)
-    return {"groups": GROUPS, "kinds": kinds}
+    for k, v in kinds.items():
+        d = NAV.get(k, {})
+        v["glyph"] = d.get("glyph") or NAV_GLYPHS.get(k, "sliders")
+        v["intro"] = d.get("intro") or v.get("help")
+        if d.get("groups"):
+            v["field_groups"] = d["groups"]
+        if k in STOPPED_NOTE:
+            v["stop_note"] = STOPPED_NOTE[k]
+        if d.get("use"):
+            v["use_note"] = d["use"]
+        v["delete_note"] = DELETE_NOTE
+        if k in NAV_LINKS:
+            v["link_note"] = NAV_LINKS[k]
+    # sql_only: groups of the menu that are for a company Kept in SQL Account (the page hides them for one Kept here)
+    return {"groups": GROUPS, "kinds": kinds, "sql_only": list(SQL_ONLY_GROUPS)}
 
 
 def spec(kind):

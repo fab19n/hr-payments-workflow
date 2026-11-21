@@ -11,8 +11,9 @@ async function setupReminders(box) {
       <td>${r.kind === "leaver" ? "Leaver" : "Joiner"}</td><td>${esc(remDays(t.days, r.kind))}</td><td>${esc(remSalary(t.salary_over))}</td>
       <td>${docChips(asList(t.docs), remDocName)}</td><td>${termPills(r, d.default_from)}</td></tr>`;
   };
-  box.innerHTML = `<div class="card"><div class="row spread"><h1>Joiner and leaver reminders</h1><button class="btn" data-rem-new="1">Add reminder</button></div>
-    <div class="note">A recurring salary's start date or last day adds these reminders to the checklist, each in the month it falls due, for every company. Click one to change it. A change applies to people starting (or leaving) from a month you choose, and filed months never change.</div>
+  box.innerHTML = `${setupHead("reminders", setupSpec(), { intro: "A recurring salary's start date or last day adds these reminders to the checklist, each in the month it falls due, for every company. Click one to change it. A change applies to people starting (or leaving) from a month you choose, and filed months never change.",
+      actions: `<button class="btn" data-rem-new="1">${icon("plus")}Add reminder</button>` })}
+    <div class="card">
     <div class="row">${deletedToggle("reminders")}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Reminder</th><th>For</th><th>When</th><th>Salary</th><th>Documents</th><th>Status</th></tr></thead><tbody>
       ${rules.map(row).join("") || `<tr><td colspan="6" class="empty">None yet.</td></tr>`}
