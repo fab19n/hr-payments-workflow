@@ -714,7 +714,7 @@ details.hist .hist-body { margin-top: 6px; }
 /* Setup: the sections on the left, the section on the right; one column on a narrow window */
 .setup-grid { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 22px; align-items: start; }
 .setup-main { display: grid; gap: 22px; min-width: 0; }
-.setup-nav { gap: 14px; position: sticky; top: 76px; padding: 12px 10px; }
+.setup-nav { gap: 14px; position: sticky; top: 76px; padding: 12px 10px; max-height: calc(100vh - 92px); overflow-y: auto; }   /* taller than the window: it scrolls in its own frame */
 .sn-group { display: grid; gap: 2px; }
 .setup-group { font-size: .68rem; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 0 10px 4px; }
 .setup-nav .sn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 38px; padding: 6px 10px; border: 0; border-radius: 9px; background: none;
@@ -728,7 +728,7 @@ details.hist .hist-body { margin-top: 6px; }
 .sn-note { font-size: 12px; font-weight: 500; color: var(--muted); }
 @media (max-width: 860px) {
   .setup-grid { grid-template-columns: minmax(0, 1fr); }
-  .setup-nav { position: static; display: flex; flex-wrap: wrap; gap: 4px; }
+  .setup-nav { position: static; display: flex; flex-wrap: wrap; gap: 4px; max-height: none; overflow: visible; }
   .sn-group { display: contents; }
   .setup-group { display: none; }
   .setup-nav .sn { width: auto; }
@@ -1681,6 +1681,7 @@ button.pill.pill-btn[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .st-pb { display: grid; gap: 8px; font-size: 13px; }
 .st-back { align-items: flex-start; flex-wrap: nowrap; }
 .st-back .glyph { width: 18px; height: 18px; color: var(--accent); margin-top: 1px; }
+.chip.off { text-decoration: line-through; color: var(--muted); background: transparent; border-style: dashed; }   /* a document a company Kept here is not asked for */
 .plate.mute { background: var(--mute-soft); color: var(--muted); --glyph-tint: var(--tint-mute); }
 /* Move setup */
 .st-move { gap: 16px; }

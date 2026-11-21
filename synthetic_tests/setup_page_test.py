@@ -39,13 +39,17 @@ config.SETTINGS_FILE = tmp / "settings.json"  # never the program's own settings
     {"code": "EXB", "name": "Example Beta Ltd", "uses_sql": False, "accounts": [{"label": "Current", "bank": "Example Bank", "number": "000-222"}]},
 ]}), encoding="utf-8")
 
-passed = []
+passed, failed = [], []
+KEEP_GOING = bool(os.environ.get("HRP_KEEP_GOING"))  # list every check that fails, not only the first (to see what a change fixes)
 
 
 def check(name, ok, detail=""):
     if not ok:
         print(f"FAIL {name}" + (f"\n     {str(detail)[:900]}" if detail else ""))
-        sys.exit(1)
+        if not KEEP_GOING:
+            sys.exit(1)
+        failed.append(name)
+        return
     passed.append(name)
     print(f"PASS {name}")
 
@@ -78,11 +82,20 @@ for code, name in (("420-1001", "EPF payable"), ("900-E001", "EPF employer expen
     call("post", "/api/setup/gl_accounts", json={"entity_id": EXA, "fields": {"code": code, "name": name}})
 st = call("post", "/api/setup/statutory_accounts", json={"entity_id": EXA, "fields": {"kind": "epf", "label": "EPF (KWSP)", "payable_code": "420-1001", "employer_code": "900-E001"}})
 call("post", f"/api/setup/statutory_accounts/{st['id']}/stop", json={"reason": "Not used any more"})
+temp = call("post", "/api/setup/accounts", json={"entity_id": EXB, "fields": {"label": "Temp stop", "bank": "Example Bank", "currency": "MYR"}})
+TEMP_BEFORE = call("get", f"/api/setup/accounts/{temp['id']}")
+call("post", f"/api/setup/accounts/{temp['id']}/stop", json={"reason": "Not needed"})
+TEMP_AFTER = call("get", f"/api/setup/accounts/{temp['id']}")
 spare = call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "Spare", "bank": "Example Bank", "currency": "MYR"}})
 call("delete", f"/api/setup/accounts/{spare['id']}", json={"reason": "Opened by mistake"})
 t1 = call("post", "/api/setup/doc_types", json={"fields": {"key": "tst_form", "label": "Test form"}})
 call("delete", f"/api/setup/doc_types/{t1['id']}", json={"reason": "Wrong name"})
 call("post", "/api/setup/doc_types", json={"fields": {"key": "tst_form", "label": "Test form again"}})
+
+dco = call("post", "/api/setup/entities", json={"fields": {"code": "EXD", "name": "Example Delta Ltd", "uses_sql": False}})
+call("delete", f"/api/setup/entities/{dco['id']}", json={"reason": "Added by mistake"})
+gsp = call("post", "/api/setup/gl_accounts", json={"entity_id": EXA, "fields": {"code": "999-001", "name": "Spare account"}})
+call("delete", f"/api/setup/gl_accounts/{gsp['id']}", json={"reason": "Not needed"})
 
 main = [r for r in call("get", f"/api/setup/accounts?entity={EXA}")["rows"] if r["label"] == "Main"][0]
 salary = [r for r in call("get", "/api/setup/payment_types")["rows"] if r["key"] == "salary"][0]
@@ -99,8 +112,10 @@ for p in ("/api/meta", "/api/setup/types", "/api/setup/entities", f"/api/setup/a
           "/api/setup/payment_types", "/api/setup/doc_types", "/api/setup/guess_words", f"/api/setup/accounts/{main['id']}",
           f"/api/setup/accounts/{old['id']}", f"/api/setup/entities/{EXA}", f"/api/setup/entities/{EXB}", f"/api/setup/entities/{EXA}/print",
           f"/api/setup/entities/{EXA}/sql-names", f"/api/setup/restore?kind=accounts&entity={EXA}", "/api/setup/restore?kind=doc_types",
-          f"/api/setup/payment_types/{salary['id']}", "/api/setup/import", "/api/setup/required?entity=", f"/api/setup/required?entity={EXA}", f"/api/setup/required?entity={EXB}"):
+          f"/api/setup/payment_types/{salary['id']}", "/api/setup/import", "/api/setup/required?entity=", f"/api/setup/required?entity={EXA}", f"/api/setup/required?entity={EXB}",
+          f"/api/setup/parties?entity={EXB}", "/api/setup/restore?kind=entities", f"/api/setup/restore?kind=gl_accounts&entity={EXA}"):
     fx(p)
+GET[f"/api/setup/accounts/{temp['id']}"] = TEMP_BEFORE
 restored = GET[f"/api/setup/restore?kind=accounts&entity={EXA}"]["rows"][0]
 taken = GET["/api/setup/restore?kind=doc_types"]["rows"][0]
 PREVIEW = call("post", f"/api/setup/restore/{restored['row_id']}", json={"preview": True})
@@ -124,15 +139,18 @@ const makeEl = id => { const set = new Set(); return ({ id, innerHTML: "", value
   removeAttribute(k) { delete this.attrs[k]; }, focus() { document.activeElement = this; }, querySelectorAll: () => [], querySelector: () => null, closest: () => null,
   contains: () => false, after() {}, isConnected: true, addEventListener() {}, removeEventListener() {} }); };
 const el = id => els[id] ||= makeEl(id);
-const document = { activeElement: null, body: { classList: { add() {}, remove() {} } }, querySelector: s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : null,
+const document = { activeElement: null, body: { classList: { add() {}, remove() {} } },
+  querySelector: s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : (m => m ? (sandbox.__tabs || {})[m[1]] || null : null)(/^\[role="tab"\]\[data-setup-kind="([a-z_]+)"\]$/.exec(s)),
   querySelectorAll: () => [], getElementById: id => els[id] || null, addEventListener(t, f) { (listeners[t] ||= []).push(f); } };
 async function fetch(path, init = {}) {
   const method = init.method || "GET", body = init.body && typeof init.body === "string" ? JSON.parse(init.body) : null;
   if (method !== "GET") {
     calls.push([method, path, body]);
+    if ((FX.fail || {})[path]) throw new TypeError("Failed to fetch");
     const hit = FX.post[path + (body && body.preview ? "?preview" : "")] || { status: 200, body: { ok: true } };
     return { ok: hit.status < 400, status: hit.status, json: async () => hit.body };
   }
+  if ((FX.fail || {})[path]) throw new TypeError("Failed to fetch");   // the app is not running
   const hit = FX.get[path];
   if (hit === undefined) return { ok: false, status: 404, json: async () => ({ error: "no fixture for " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(hit)) };
@@ -145,6 +163,7 @@ const ctx = vm.createContext(sandbox);
 const run = code => vm.runInContext(code, ctx);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const out = {};
+const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { out[name] = { error: String(e && e.stack || e).slice(0, 400) }; } };
 (async () => {
   run(files.map(f => fs.readFileSync(f, "utf8")).join("\n"));
   run(`state.meta = ${JSON.stringify(FX.get["/api/meta"])}; state.month = "2026-11"; state.day = dayKey(); state.entity = ${FX.EXA};
@@ -293,12 +312,202 @@ const out = {};
   out.frPost = calls.filter(x => x[1] === "/api/setup/entities");
   out.frDone = run(`FR.done`); out.frDoneHtml = run(`frHtml()`);
   run(`FR.done = null; state.meta.entities = [{ id: 1, code: "EXA", active: 1 }]`); out.frDueAfter = run(`firstRunDue()`);
+
+  FX.fail = {};
+  await view("accounts", FX.EXA);   // the page's own copy of the sections (the scenarios before this one left none)
+  const meta0 = JSON.parse(JSON.stringify(FX.get["/api/meta"]));
+  run(`state.meta = ${JSON.stringify(meta0)}; state.entity = ${FX.EXA}; state.view = "setup"`);
+
+  // 1. the page posts a words box left empty as an empty list: the server takes it as no words
+  await tryit("partyPost", async () => {
+    await run(`state.entity = ${FX.EXA}; openSetup("parties", "new")`); await sleep(20);
+    const spec = run(`state.setup.types.kinds.parties.fields.map(f => f.key)`);
+    for (const k of spec) { const e = el("su-" + k); e.value = ""; e.checked = false; }
+    el("su-name").value = "Test Party"; el("su-kind").value = "supplier"; el("su-entity_id").value = String(FX.EXA);
+    calls.length = 0;
+    await run(`setupSave()`);
+    return calls.filter(x => x[1] === "/api/setup/parties").map(x => x[2]);
+  });
+
+  // 3. a company Kept here that still has printed company names: only the names are listed, with Remove; the last one removed ends the section
+  await tryit("hereNames", async () => {
+    const path = `/api/setup/entities/${FX.EXB}/sql-names`, was = FX.get[path];
+    FX.get[path] = { ready: true, names: [{ id: 7, name: "EXAMPLE SWITCHED LTD (2026)", confirmed_at: "2026-11-01T10:00:00", confirmed_by: "tester" }] };
+    els.suPrint = undefined; els.suNames = undefined;
+    await run(`state.entity = ${FX.EXA}; openSetup("entities", ${FX.EXB})`); await sleep(60);
+    const r = { drawer: el("drawer").innerHTML, names: el("suNames").innerHTML, print: el("suPrint").innerHTML };
+    FX.post[`/api/setup/entities/${FX.EXB}/sql-names/7`] = { status: 200, body: { removed: "EXAMPLE SWITCHED LTD (2026)", ready: true, names: [] } };
+    sandbox.__nb = { dataset: { confirm: "1", sqlNameRemove: "7", sqlName: "EXAMPLE SWITCHED LTD (2026)" }, textContent: "" };
+    calls.length = 0;
+    await run(`removeSqlName(__nb)`);
+    r.removed = calls.filter(x => x[0] === "DELETE").map(x => x[1]); r.after = el("suNames").innerHTML;
+    FX.get[path] = was;
+    return r;
+  });
+
+  // 4. the stopped note once: a stopped record's dialog, and the dialog drawn again right after Stop using
+  await tryit("stopNote", async () => {
+    const path = `/api/setup/accounts/${FX.TEMP}`, before = FX.get[path];
+    await run(`state.entity = ${FX.EXB}; openSetup("accounts", ${FX.TEMP})`); await sleep(20);
+    const r = { open: el("drawer").innerHTML };
+    await run(`setupAct("stop", __btn)`);
+    FX.get[path] = FX.TEMP_AFTER;
+    el("su-reason").value = "Not needed"; await run(`whySubmit()`); await sleep(40);
+    r.afterStop = el("drawer").innerHTML;
+    FX.get[path] = before; run(`state.entity = ${FX.EXA}`);
+    return r;
+  });
+
+  // 5 and 6. First run: a file of rules alone is not an install ready to use; a failing network leaves the page usable
+  const withCompanies = list => { FX.get["/api/meta"] = { ...meta0, entities: list }; };
+  const co = (id, code, active) => ({ id, code, name: "Example " + code, uses_sql: 0, active, accounts: [] });
+  const setFile = (what, counts) => run(`state.view = "overview"; FR.file = { format: "hrp-setup" }; FR.preview = ${JSON.stringify({ what, made: "2026-11-14T10:00:00", counts, notes: [] })}; FR.name = "setup.json"; FR.busy = ""; FR.done = null; FR.note = null; FR.why = "";`);
+  await tryit("frTemplate", async () => {
+    withCompanies([]); setFile("template", [["payment types", 15]]); calls.length = 0;
+    await run(`frImport()`); const html = run(`frHtml()`);
+    return { done: run(`FR.done`), note: run(`FR.note`), due: run(`firstRunDue()`), html, posts: calls.filter(x => x[1] === "/api/setup/import").length };
+  });
+  await tryit("frCompanies", async () => {
+    const r = {};
+    withCompanies([co(1, "EXA", 1), co(2, "EXB", 1), co(3, "EXC", 0)]); setFile("full", [["companies", 3]]); await run(`frImport()`);
+    r.some = { done: run(`FR.done`), note: run(`FR.note`), html: run(`frHtml()`) };
+    withCompanies([co(1, "EXA", 1), co(2, "EXB", 1)]); setFile("full", [["companies", 2]]); await run(`frImport()`);
+    r.none = run(`FR.done`);
+    withCompanies([co(1, "EXA", 0)]); setFile("full", [["companies", 1]]); await run(`frImport()`);
+    r.one = run(`FR.done`);
+    // steps never link to "#/": with no address they are grey
+    run(`state.meta.entities = []; FR.done = { title: "x", body: "y" }; FR.note = null`);
+    r.noCompany = run(`frHtml()`);
+    return r;
+  });
+  await tryit("frFailImport", async () => {
+    withCompanies([]); setFile("full", [["companies", 2]]); run(`FR.why = "A reason I typed"`); FX.fail = { "/api/setup/import": true };
+    const threw = await run(`frImport().then(() => "ok", e => e.name)`); FX.fail = {};
+    return { threw, busy: run(`FR.busy`), why: run(`FR.why`), kept: run(`!!FR.preview`), html: run(`frHtml()`) };
+  });
+  await tryit("frFailAdd", async () => {
+    run(`FR.preview = null; FR.file = null; FR.addOpen = true; FR.tried = false; FR.code = "ABC"; FR.cname = "Example Co"; FR.reg = ""; FR.kind = "sql"; FR.busy = ""; FR.done = null; FR.note = null`);
+    FX.fail = { "/api/setup/entities": true };
+    const threw = await run(`frAddCompany().then(() => "ok", e => e.name)`); FX.fail = {};
+    const r = { threw, busy: run(`FR.busy`), html: run(`frHtml()`), open: run(`FR.addOpen`) };
+    // the company was added but the records could not be read again: the page is usable
+    withCompanies([co(1, "EXA", 1)]); FX.fail = { "/api/meta": true };
+    run(`FR.busy = ""; FR.code = "ABC"; FR.cname = "Example Co"; FR.kind = "sql"`);
+    r.threwMeta = await run(`frAddCompany().then(() => "ok", e => e.name)`); FX.fail = {}; r.busyMeta = run(`FR.busy`);
+    return r;
+  });
+  FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.code = ""; FR.cname = ""; FR.kind = ""; FR.tried = false`);
+
+  // 8. the rows shown stay shown across a redraw; they start again with another section or company
+  await tryit("moreKept", async () => {
+    const count = h => (h.match(/class="st-row/g) || []).length, r = {};   // the page drawn whole, or the list alone once Show more has redrawn it
+    await view("parties", FX.EXA); r.first = count(box().innerHTML);
+    await run(`click({ setupMore: "parties" })`); r.more = count(run(`__el("setupList").innerHTML`));
+    await run(`viewSetup(__el("main"))`); await sleep(20); r.redrawn = count(box().innerHTML);
+    await view("accounts", FX.EXA); await view("parties", FX.EXA); r.otherSection = count(box().innerHTML);
+    await run(`click({ setupMore: "parties" })`); await view("parties", FX.EXB); await view("parties", FX.EXA); r.otherCompany = count(box().innerHTML);
+    return r;
+  });
+
+  // 9. an arrow key on a tab strip: the tab now selected has the focus once the page is drawn again
+  await tryit("tabKey", async () => {
+    const mk = (kind, id) => ({ id, dataset: { setupKind: kind }, tagName: "BUTTON", getAttribute: k => k === "role" ? "tab" : null, closest: () => null, focus() { document.activeElement = this; } });
+    const a = mk("payment_types", "tab-a"), b = mk("doc_types", "tab-b"), strip = { querySelectorAll: () => [a, b] };
+    a.parentNode = strip; b.parentNode = strip;
+    b.click = () => run(`click({ setupKind: "doc_types" }, { getAttribute: k => k === "role" ? "tab" : null })`);
+    sandbox.__tabs = { payment_types: a, doc_types: b };
+    document.activeElement = a;
+    for (const f of listeners.keydown || []) f({ key: "ArrowRight", target: a, preventDefault() {} });
+    await sleep(120);
+    return { active: document.activeElement && document.activeElement.id, kind: run(`state.setup.kind`) };
+  });
+
+  // 10. one change per Enter: a double Enter sends it once, in the reason box and in Put it back
+  await tryit("double", async () => {
+    const r = {};
+    await run(`state.entity = ${FX.EXA}; openSetup("accounts", ${FX.OLD})`); await sleep(20);
+    calls.length = 0;
+    await run(`setupAct("delete", __btn)`); el("su-reason").value = "Opened by mistake";
+    const evs = [];
+    for (let i = 0; i < 2; i++) for (const f of listeners.keydown || []) evs.push(f({ key: "Enter", target: el("su-reason"), preventDefault() {} }));
+    await Promise.all(evs); await sleep(40);
+    r.deletes = calls.filter(x => x[0] === "DELETE").length;
+    await run(`openRestore(${FX.RESTORE}, "Spare")`); await sleep(20);
+    let clicks = 0; el("pb-go").click = () => { clicks++; };
+    for (const f of listeners.keydown || []) f({ key: "Enter", target: el("pb-why"), preventDefault() {} });
+    r.enterClicks = clicks;
+    el("pb-why").value = "It is the new account"; calls.length = 0;
+    await Promise.all([run(`restoreGo(${FX.RESTORE}, { disabled: false, isConnected: true })`), run(`restoreGo(${FX.RESTORE}, { disabled: false, isConnected: true })`)]);
+    r.restores = calls.filter(x => x[0] === "POST" && !(x[2] && x[2].preview)).length;
+    return r;
+  });
+
+  // 11. the old address of Recurring payments (a link, not a section) with no company opens the first section
+  await tryit("deadLink", async () => {
+    run(`state.meta.entities = []; state.entity = null; state.setup.kind = "payees"`);
+    await run(`viewSetup(__el("main"))`); await sleep(20);
+    const r = { kind: run(`state.setup.kind`), page: box().innerHTML };
+    run(`state.meta = ${JSON.stringify(meta0)}; state.entity = ${FX.EXA}`);
+    return r;
+  });
+
+  // 12. Open Setup > Bank accounts in a company's dialog opens that company's accounts, not the top bar's
+  await tryit("bankLink", async () => {
+    const path = `/api/setup/entities/${FX.EXA}/print`, was = FX.get[path];
+    FX.get[path] = { ...was, missing: ["The bank account Main has no bank address: add it in Setup › Bank accounts."] };
+    await run(`state.entity = ${FX.EXB}; openSetup("entities", ${FX.EXA})`); await sleep(60);
+    const r = { html: el("suPrint").innerHTML, before: run(`state.entity`) };
+    await run(`click({ setupKind: "accounts", setupEntity: "${FX.EXA}" })`); await sleep(20);
+    r.entity = run(`state.entity`); r.kind = run(`state.setup.kind`);
+    FX.get[path] = was; run(`state.entity = ${FX.EXA}`);
+    return r;
+  });
+
+  // 13. Required documents for a company Kept here: the documents SQL Account issues are greyed and said
+  await tryit("requiredHere", async () => {
+    const r = {};
+    run(`state.setup.kind = "required"; state.setup.reqScope = ${FX.EXB}`); await run(`setupRequired(__el("setupMain"))`); r.here = el("setupMain").innerHTML;
+    run(`state.setup.reqScope = null`); await run(`setupRequired(__el("setupMain"))`); r.all = el("setupMain").innerHTML;
+    return r;
+  });
+
+  // 15. Move setup: Export says what it is doing; right after an import the card links to the companies it added
+  await tryit("moveStates", async () => {
+    const r = {};
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    r.empty = (await view("move", FX.EXA)).page;
+    r.dayKey = run(`dayKey()`);
+    await run(`click({ moveExport: "template" })`); r.toastTemplate = el("toast").textContent;
+    run(`state.setup.move.payees = true`); await run(`click({ moveExport: "full" })`); r.toastFull = el("toast").textContent;
+    run(`state.setup.move.payees = false`); await run(`click({ moveExport: "full" })`); r.toastFullPlain = el("toast").textContent;
+    // an import is made: the next time the page is drawn it says so, and goes when the section is left
+    run(`state.setup.move.file = { format: "hrp-setup" }; state.setup.move.preview = {}`); calls.length = 0;
+    await run(`moveImport("A reason")`);
+    r.flag = run(`state.setup.move.justImported`); r.imported = calls.filter(x => x[1] === "/api/setup/import").map(x => x[2].reason);
+    FX.get["/api/setup/import"] = { empty: false, holding: [["companies", 3]] };
+    r.blocked = (await view("move", FX.EXA)).page;
+    await view("accounts", FX.EXA);
+    r.blockedLater = (await view("move", FX.EXA)).page;
+    return r;
+  });
+
+  // 16. Show deleted: a company as CODE · Name, a chart account with its code, each section by its own words
+  await tryit("deletedNames", async () => {
+    const r = {};
+    run(`state.setup.deleted = true`);
+    await run(`drawDeleted("entities")`); r.companies = el("setupDeleted").innerHTML;
+    run(`state.entity = ${FX.EXA}`); await run(`drawDeleted("gl_accounts")`); r.chart = el("setupDeleted").innerHTML;
+    FX.get["/api/setup/restore?kind=filing_words"] = { kind: "filing_words", table: "filing_words", plural: "SQL filing words", label: "SQL filing word", rows: [] };
+    await run(`drawDeleted("filing_words")`); r.filing = el("setupDeleted").innerHTML;
+    run(`state.setup.deleted = false`);
+    return r;
+  });
   process.stdout.write(JSON.stringify(out));
 })().catch(e => { console.error(e && e.stack || e); process.exit(1); });
 """
 
 fx_path = tmp / "fixtures.json"
-fx_path.write_text(json.dumps({"get": GET, "post": POST, "EXA": EXA, "EXB": EXB, "MAIN": main["id"], "OLD": old["id"], "SALARY": salary["id"], "RESTORE": restored["row_id"], "TAKEN": taken["row_id"]}), encoding="utf-8")
+fx_path.write_text(json.dumps({"get": GET, "post": POST, "EXA": EXA, "EXB": EXB, "MAIN": main["id"], "OLD": old["id"], "SALARY": salary["id"], "TEMP": temp["id"], "TEMP_AFTER": TEMP_AFTER, "RESTORE": restored["row_id"], "TAKEN": taken["row_id"]}), encoding="utf-8")
 probe = tmp / "probe.js"
 probe.write_text(PROBE, encoding="utf-8")
 files = [str(f) for f in app_files() if not str(f).endswith("main.js")]   # the page's own start-up is left out
@@ -318,7 +527,22 @@ def plain(v):
     return v
 
 
-o = plain(o)
+class Soft(dict):
+    """A probe answer that may be missing: a key not there reads as an empty answer, so every check runs (and with HRP_KEEP_GOING is listed)."""
+    def __missing__(self, k):
+        return Soft()
+
+    def count(self, *a):
+        return 0
+
+
+def soften(v):
+    if isinstance(v, dict):
+        return Soft({k: soften(x) for k, x in v.items()})
+    return [soften(x) for x in v] if isinstance(v, list) else v
+
+
+o = soften(plain(o))
 
 
 def has(html, *parts):
@@ -434,8 +658,8 @@ check("with a reason it is sent", [(x[1], x[2]) for x in o["putBackDone"]] == [(
 check("a record that can't be put back shows the reason in the dialog, nothing to press", has(o["putBackRefused"], "This can't be put back.") and "tst_form" in o["putBackRefused"], o["putBackRefused"][:500])
 
 # ---------- Required documents: no "posted here" choice yet ----------
-check("Required documents for a company Kept here says the payment voucher is required where the rules say so, and has no posted-here choice",
-      has(o["required"], "EXB is Kept here: the payment voucher is required where the rules above say so.") and "posted here" not in o["required"].lower()
+check("Required documents for a company Kept here says what it is not asked for, and has no posted-here choice",
+      has(o["required"], "EXB is Kept here:", "are issued by SQL Account, so they are not asked for while EXB is Kept here.") and "posted here" not in o["required"].lower()
       and has(o["requiredSql"], "EXA is Kept in SQL Account: its payment vouchers are issued by SQL Account and read in on the SQL import page.") and "posted here" not in o["requiredSql"].lower())
 
 # ---------- Open Setup from a print note ----------
@@ -476,8 +700,80 @@ check("a file that isn't JSON is told so, before the server is asked; one the se
       and o["readPosts"][0] == ["/api/setup/import", True, ["setup", "preview"]] and len(o["readPosts"]) == 1 and o["readOk"] == {"counts": 9, "setup": "hrp-setup"},
       (o["readBad"], o["readRefused"], o["readPosts"], o["readOk"]))
 
-# ---------- the layout keeps today's narrow rules ----------
+# ---------- review fixes ----------
+pp = o["partyPost"]
+check("Add customer or supplier: the page posts the words box left empty as an empty list (the server takes that as no words)",
+      len(pp) == 1 and pp[0]["fields"].get("match_words") == [] and pp[0]["fields"].get("name") == "Test Party" and pp[0]["entity_id"] == EXA, pp)
+hn = o["hereNames"]
+check("a company Kept here that still has printed company names lists them with Remove, says they are not used while it is Kept here, and draws nothing else of the print settings",
+      has(hn["drawer"], 'id="suNames"') and 'id="suPrint"' not in hn["drawer"] and "Printed invoices" not in hn["drawer"]
+      and has(hn["names"], "Printed company names", "EXAMPLE SWITCHED LTD (2026)", 'data-sql-name-remove="7"',
+              "These names were confirmed while this company was Kept in SQL Account. They are not used while it is Kept here; remove any you don't want.")
+      and "Take it for" not in hn["names"], hn["names"][:600])
+check("...and removing the last of them ends the section", hn["removed"] == [f"/api/setup/entities/{EXB}/sql-names/7"] and hn["after"] == "", (hn["removed"], hn["after"]))
+SN = "Stopped: hidden from the account lists"
+check("the stopped note is said once in a stopped record's dialog, and once in the dialog drawn again right after Stop using",
+      o["dlgStopped"].count(SN) == 1 and o["stopNote"]["open"].count(SN) == 0 and o["stopNote"]["afterStop"].count(SN) == 1,
+      (o["dlgStopped"].count(SN), o["stopNote"]["open"].count(SN), o["stopNote"]["afterStop"].count(SN)))
+ft = o["frTemplate"]
+check("First run after a file of rules alone (no company): the page stays, says rules came in and what is next, has no Open Overview, and the steps stay grey",
+      ft["done"] is None and ft["note"] == {"title": "Rules imported.", "body": "Now add your first company."} and ft["due"] is True and ft["posts"] == 1
+      and has(ft["html"], "Rules imported.", "Now add your first company.", 'class="banner info') and "Open Overview" not in ft["html"] and 'href="#/"' not in ft["html"]
+      and n(ft["html"], "After a company is added") == 5 and "setup was imported" not in ft["html"].lower() and "Setup imported" not in ft["html"], ft)
+fc = o["frCompanies"]
+check("after a file that adds companies the note says how many came in, and mentions stopped ones only when there are some",
+      fc["some"]["done"]["body"] == "3 companies came in, 1 of them stopped. Each change is noted in the audit trail." and fc["some"]["note"] is None
+      and fc["none"]["body"] == "2 companies came in. Each change is noted in the audit trail."
+      and fc["one"]["body"] == "1 company came in, and it is stopped. Each change is noted in the audit trail." and fc["some"]["done"]["title"] == "Setup imported.", fc)
+check("the steps of First run are links with an address of their own, never #/: with none they are grey, not a dead link",
+      has(fc["some"]["html"], "Open Overview", 'href="#/EXA/hr/staff"', 'href="#/admin/setup/accounts"', 'href="#/admin/backup"') and 'href="#/"' not in fc["some"]["html"]
+      and 'href="#/"' not in fc["noCompany"] and n(fc["noCompany"], "data-fr-step") == 2, (n(fc["noCompany"], "data-fr-step"), re.findall(r'href="[^"]*"', fc["noCompany"])))
+ff = o["frFailImport"]
+check("a network failure during Import leaves First run usable: nothing is busy, the file and what was typed stay, and Import can be pressed again",
+      ff["threw"] == "TypeError" and ff["busy"] == "" and ff["why"] == "A reason I typed" and ff["kept"] is True and "aria-busy" not in ff["html"] and "Importing</button>" not in ff["html"]
+      and 'data-fr-import="1" disabled' not in ff["html"] and 'data-fr-import="1"' in ff["html"], ff)
+fa = o["frFailAdd"]
+check("...and the same during Add company: the form stays open with its text, and Add company can be pressed again",
+      fa["threw"] == "TypeError" and fa["busy"] == "" and fa["open"] is True and has(fa["html"], 'value="ABC"', 'value="Example Co"', "Add company</button>")
+      and "aria-busy" not in fa["html"] and "Adding" not in fa["html"], fa)
+check("...and when the records can't be read again once the company was added", fa["threwMeta"] == "TypeError" and fa["busyMeta"] == "", (fa["threwMeta"], fa["busyMeta"]))
 css = (Path(__file__).resolve().parents[1] / "static" / "app.css").read_text(encoding="utf-8")
+check("the Setup menu is sticky but never taller than the window: it scrolls in its own frame, and under 860 pixels it is plain content with no height limit",
+      re.search(r"\.setup-nav \{[^}]*position: sticky;[^}]*max-height: calc\(100vh - 92px\);[^}]*overflow-y: auto;", css) is not None
+      and re.search(r"\.setup-nav \{ position: static;[^}]*max-height: none;[^}]*overflow: visible;", css) is not None)
+mk = o["moreKept"]
+check("the rows already shown stay shown when the list is drawn again (a save, a stop), and start again with another section or another company",
+      mk["first"] == 25 and mk["more"] == 30 and mk["redrawn"] == 30 and mk["otherSection"] == 25 and mk["otherCompany"] == 25, mk)
+check("an arrow key on a tab strip picks the next tab and the focus is on it once the page is drawn again", o["tabKey"] == {"active": "tab-b", "kind": "doc_types"}, o["tabKey"])
+check("Enter twice at once in the reason box makes the change once; Enter in the Put it back reason presses Put it back; two of those at once put it back once",
+      o["double"]["deletes"] == 1 and o["double"]["enterClicks"] == 1 and o["double"]["restores"] == 1, o["double"])
+dl = o["deadLink"]
+check("the old address of Recurring payments with no company opens the first section, not a page that says it isn't ready",
+      dl["kind"] == "entities" and "isn't ready" not in dl["page"] and "Companies" in dl["page"] and "Add company" in dl["page"], (dl["kind"], dl["page"][:200]))
+bl = o["bankLink"]
+check("Open Setup > Bank accounts in a company's dialog opens the accounts of that company, not of the company in the top bar",
+      has(bl["html"], f'data-setup-kind="accounts" data-setup-entity="{EXA}"') and bl["before"] == EXB and bl["entity"] == EXA and bl["kind"] == "accounts", bl)
+rq = o["requiredHere"]
+check("Required documents for a company Kept here greys the documents SQL Account issues and says so; the others stay; every company's table shows none greyed",
+      has(rq["here"], "Payment Voucher, Journal Voucher and Official Receipt are issued by SQL Account, so they are not asked for while EXB is Kept here. Where a type lists them below they are greyed.")
+      and n(rq["here"], r'class="chip off"') >= 3 and 'class="chip">' in rq["here"] and "where the rules above say so" not in rq["here"]
+      and 'class="chip off"' not in rq["all"], (n(rq["here"], r'class="chip off"'), re.findall(r"EXB is Kept here:[^<]*", rq["here"])))
+ms = o["moveStates"]
+check("Move setup's Export buttons are downloads that say so: the file's name, that it is noted in the audit trail, and recurring payments when ticked",
+      has(ms["empty"], 'data-move-export="template"', 'data-move-export="full"')
+      and ms["toastTemplate"] == f"Setup template {ms['dayKey']}.json is downloading. It is noted in the audit trail."
+      and ms["toastFull"] == f"Setup everything {ms['dayKey']}.json is downloading, with recurring payments. It is noted in the audit trail."
+      and ms["toastFullPlain"] == f"Setup everything {ms['dayKey']}.json is downloading. It is noted in the audit trail.", ms)
+check("right after an import Move setup's card says why another can't be made and links to the companies it added; the link goes once the section is left",
+      ms["flag"] is True and ms["imported"] == ["A reason"] and has(ms["blocked"], "Not for this install", "See the companies it added", 'data-setup-kind="entities"')
+      and "See the companies it added" not in ms["blockedLater"] and "Not for this install" in ms["blockedLater"], (ms["flag"], ms["imported"]))
+dn = o["deletedNames"]
+check("Show deleted names a company as CODE · Name, in the list and on its Put it back button, under the heading Deleted companies",
+      has(dn["companies"], "Deleted companies", "EXD · Example Delta Ltd", 'data-restore-title="EXD · Example Delta Ltd"'), dn["companies"][:500])
+check("...a chart account by its name with its code under it, under Deleted accounts; and Filing words is Filing words, as the menu says",
+      has(dn["chart"], "Deleted accounts", "Spare account", ">999-001<") and "Deleted filing words" in dn["filing"] and "SQL filing words" not in dn["filing"], (dn["chart"][:300], dn["filing"][:200]))
+
+# ---------- the layout keeps today's narrow rules ----------
 check("the form keeps Setup's 520-pixel rule: two columns, one under 520 pixels, in the new dialog too",
       "@media (max-width: 520px) { .setup-form { grid-template-columns: minmax(0, 1fr); } }" in css and ".setup-form { grid-template-columns: 1fr 1fr; }" in css
       and n(o["dlgAccount"], r'<div class="form setup-form">') >= 4 and not re.search(r'style="[^"]*(?<![-\w])width', o["dlgAccount"]), n(o["dlgAccount"], r'class="form setup-form"'))
@@ -486,4 +782,7 @@ check("the dialog fills the screen at phone width, as the other dialogs do, and 
 src = app_source()
 check("the page's heading scripts are in the page list, in order: First run after the Overview", src.index("function viewFirstRun") > src.index("async function viewOverview"))
 
+if failed:
+    print(f"\n{len(failed)} failed, {len(passed)} passed")
+    sys.exit(1)
 print(f"\n{len(passed)} checks passed")

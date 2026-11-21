@@ -58,6 +58,7 @@ document.addEventListener("input", ev => { if (ev.target.closest?.("#setupForm")
 document.addEventListener("change", ev => { if (ev.target.closest?.("#setupForm")) suFoot(); });
 document.addEventListener("keydown", ev => {
   if (ev.key === "Enter" && ev.target.id === "su-reason") { ev.preventDefault(); whySubmit().catch(e => toast(e.message, true)); return; }
+  if (ev.key === "Enter" && ev.target.id === "pb-why") { ev.preventDefault(); $("#pb-go")?.click?.(); return; }
   const t = ev.target, ds = t?.dataset || {};
   if (!["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"].includes(ev.key)) return;
   if ("setupOpen" in ds && t.closest?.("#setupList")) {

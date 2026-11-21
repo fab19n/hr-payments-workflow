@@ -232,7 +232,9 @@ after it a note.
   The Setup pages (slice 9a; `static/js/pages/setup*.js`) share one menu (the server's groups, `hrp/masters.py` GROUPS: Matching
   words are left out for a company Kept here, Recurring payments is a link to Payments › Recurring), one list (search, Show
   stopped, Show deleted, 25 rows at a time) and one record dialog (the fields in groups, Where used, Stop using / Use again /
-  Delete, each asking why, and History). Printed invoices and Printed company names are only for a company Kept in SQL Account.
+  Delete, each asking why, and History). Printed invoices and Printed company names are only for a company Kept in SQL Account; one switched to
+  Kept here that still has confirmed names lists them, to be removed. Where used lists everything that refers to a record, so Delete is
+  only offered when it can be made, and an optional words box left empty is no words.
   An install with no company opens on **First run** (`static/js/pages/firstrun.js`): import a setup file, or add the first
   company and say where its books are kept. Its counts, and Move setup's, are the setup file's: a stopped record is counted,
   a deleted one is not, and a company with no checklist in the file counts the starter checklist it will be given.

@@ -169,6 +169,8 @@ async function settingsSave() {
 // A signed-off bank reconciliation month an action moved, said after its toast (it stays signed off).
 const reconMoved = r => r.recon_changed?.length ? `. The bank reconciliation of signed-off ${r.recon_changed.map(m => monthName(m.month)).join(", ")} changed: it stays signed off; check it again` : "";
 const moveHref = (what, extra) => `/api/setup/export?what=${what}${extra}`;
+// What the Export buttons say once clicked (the file is saved by the browser; the server notes it in the audit trail).
+const moveExportNote = what => `Setup ${what === "template" ? "template" : "everything"} ${dayKey()}.json is downloading${what === "full" && state.setup.move?.payees ? ", with recurring payments" : ""}. It is noted in the audit trail.`;
 // What a setup file adds, as the server counts it (setupfile.load): the lists with something in them, with a capital.
 const moveCounts = p => (p.counts || []).filter(([, n]) => +n).map(([w, n]) => [w.charAt(0).toUpperCase() + w.slice(1), +n]);
 const moveCountsTable = p => `<div class="tbl-wrap"><table class="st-table st-counts"><thead><tr><th scope="col">What</th><th scope="col" class="num">How many</th></tr></thead><tbody>${moveCounts(p).map(([w, n]) => `<tr><td>${esc(w)}</td><td class="num">${n}</td></tr>`).join("")}</tbody></table></div>`;
@@ -193,13 +195,13 @@ async function setupMove(box) {
           <p class="note">The rules only: payment types, document types and the documents each needs, a starter checklist, the joiner and leaver reminders, the matching words and the general settings. No company, bank account, customer, supplier or person.</p>
           <label class="field"><span>Starter checklist</span><select id="mv-from" aria-describedby="mv-from-hint"><option value="">The one new companies get here</option>${list.map(e => `<option value="${e.id}"${String(e.id) === M.from ? " selected" : ""}>${esc(e.code)} · ${esc(e.name)}'s checklist</option>`).join("")}</select>
             <span class="note" id="mv-from-hint">Companies added in the other install start with it.</span></label>
-          <div class="row"><a class="btn" id="mvTemplate" href="${esc(moveHref("template", M.from ? `&entity=${M.from}` : ""))}">${icon("download")}Export template</a></div></div>
+          <div class="row"><a class="btn" id="mvTemplate" data-move-export="template" href="${esc(moveHref("template", M.from ? `&entity=${M.from}` : ""))}">${icon("download")}Export template</a></div></div>
         <div class="st-panel"><div class="row tight"><span class="plate brand">${icon("archive")}</span><h3>Everything</h3></div>
           <p class="note">The template, plus the companies, their bank accounts with the account numbers, charts of accounts, statutory accounts, customers and suppliers, each company's checklist, what its printed invoices need (address, bank details, logo and signature), and the printed company names confirmed. Keep the file safe.</p>
           <label class="row tight"><input type="checkbox" id="mv-payees"${M.payees ? " checked" : ""} aria-describedby="mv-warn"><span>Include recurring payments (staff names, amounts, bank details)</span></label>
           <div class="note warn" id="mv-warn"${M.payees ? "" : " hidden"}>${icon("lock")} <b>The file then holds personal data</b> (staff names, amounts and bank details). Keep it as safe as a backup and delete it once it has been imported.</div>
           <div class="note" id="mv-never">${icon("eyeOff")} <b>Never in the file:</b> staff records, and the secret behind the keyed check on printed forms. The other install makes its own secret, so a form printed here can't be matched there.</div>
-          <div class="row"><a class="btn" id="mvFull" href="${esc(moveHref("full", M.payees ? "&payees=1" : ""))}">${icon("download")}Export everything</a></div></div>
+          <div class="row"><a class="btn" id="mvFull" data-move-export="full" href="${esc(moveHref("full", M.payees ? "&payees=1" : ""))}">${icon("download")}Export everything</a></div></div>
       </div></section>
     <section class="card st-move" aria-labelledby="mv-imp-h"><div class="row tight st-sec-head">${icon("upload")}<h2 id="mv-imp-h" tabindex="-1">Import a setup file</h2></div>
       <div id="mvImport">${moveImportHtml()}</div></section>`;
@@ -209,7 +211,8 @@ function moveImportHtml() {
   const M = state.setup.move;
   if (!M.empty) return `<div class="st-blocked">${icon("lock")}<div><b>Not for this install</b>
     <p class="note">A setup file is imported only into new records, before any company is added. These hold ${esc(andList((M.holding || []).map(([w, n]) => `${n} ${w}`)))}.</p>
-    <p class="note">To start another install from this one, export above and import the file there.</p></div></div>`;
+    <p class="note">To start another install from this one, export above and import the file there.</p>
+    ${M.justImported ? `<button type="button" class="ghost small" data-setup-kind="entities">${icon("company")}See the companies it added</button>` : ""}</div></div>`;
   return `<p class="note">For a new install, before any company is added. A template's rules are added to the app's own; everything also adds its companies and what belongs to them. Each row is checked as Setup checks it, and nothing is saved unless every row passes.</p>
     <div id="mvPreview">${movePreviewHtml()}</div>${whyForm()}`;
 }
@@ -237,10 +240,11 @@ async function moveImport(reason) {
   if (!M?.file) return;
   try { await api("/api/setup/import", { json: { setup: M.file, reason } }); }
   catch (e) { if (appStopped(e)) throw e; Object.assign(M, { file: null, preview: null, refused: e.message }); moveRepaint("mv-refused"); return; }
-  Object.assign(M, { file: null, preview: null, name: "", refused: "" });
+  Object.assign(M, { file: null, preview: null, name: "", refused: "", justImported: true });
   state.meta = await api("/api/meta"); paintOrg();
   state.entity = firstEntityId(); state.setup.types = null;
-  toast("Setup imported"); renderNav(); return render();
+  toast("Setup imported"); renderNav(); await render();
+  document.getElementById("mv-imp-h")?.focus?.({ preventScroll: true });
 }
 
 /* Required documents: the documents each payment type needs before a payment counts as complete, for every company or
@@ -271,7 +275,13 @@ async function setupRequired(box) {
   const co = S.reqScope != null ? live.find(e => e.id === S.reqScope) : null;
   const scopeBtn = (v, label, on, title = "") => `<button class="${on ? "btn" : "ghost"} small" data-req-scope="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
   const types = [...d.types.filter(isActive), ...d.types.filter(t => !isActive(t))];
-  const chips = t => t.docs?.length ? `<div class="row" style="gap:4px">${t.docs.map(k => `<span class="chip">${esc(reqDocName(k))}</span>`).join("")}</div>` : `<span class="muted">None</span>`;
+  // A company Kept here is not asked for the documents SQL Account issues (rulebook.required_docs), so those are greyed in its table.
+  const notAsked = k => !!co && !co.uses_sql && (d.doc_types || []).some(x => x.key === k && +x.from_sql);
+  const chips = t => t.docs?.length ? `<div class="row" style="gap:4px">${t.docs.map(k => notAsked(k)
+    ? `<span class="chip off" title="Issued by SQL Account, so not asked for while ${esc(co.code)} is Kept here">${esc(reqDocName(k))}<span class="sr-only"> (not asked for)</span></span>`
+    : `<span class="chip">${esc(reqDocName(k))}</span>`).join("")}</div>` : `<span class="muted">None</span>`;
+  const sqlDocs = (d.doc_types || []).filter(x => +x.from_sql && isActive(x)).map(x => reqDocName(x.key).split(" (")[0]), sqlIssued = andList(sqlDocs), many = sqlDocs.length > 1;
+  const greyed = types.some(t => (t.docs || []).some(notAsked));
   const row = t => `<tr${isActive(t) ? "" : ` class="muted"`}>
       <td><b>${esc(t.label || t.key)}</b>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}</td>
       <td>${chips(t)}</td><td>${esc(reqSince(t))}</td>
@@ -281,7 +291,7 @@ async function setupRequired(box) {
     <div class="card">
     <div class="row noprint">${scopeBtn("all", "All companies", !co)}${live.map(e => scopeBtn(e.id, e.code, co?.id === e.id, e.name)).join("")}</div>
     ${co ? `<div class="note">${esc(co.code)} follows the documents set for all companies, unless it has its own set for a type.</div>
-    <div class="note">${esc(co.code)} is ${esc(keptLabel(co))}: ${co.uses_sql ? "its payment vouchers are issued by SQL Account and read in on the SQL import page." : "the payment voucher is required where the rules above say so. Documents issued by SQL Account are not asked for."}</div>` : ""}
+    <div class="note">${esc(co.code)} is ${esc(keptLabel(co))}: ${co.uses_sql ? "its payment vouchers are issued by SQL Account and read in on the SQL import page." : sqlIssued ? `${sqlIssued} ${many ? "are" : "is"} issued by SQL Account, so ${many ? "they are" : "it is"} not asked for while ${co.code} is Kept here.${greyed ? " Where a type lists them below they are greyed." : ""} Every other document a type needs is asked for.` : "nothing a type needs is issued by SQL Account, so every document in the table is asked for."}</div>` : ""}
     <div class="tbl-wrap"><table><thead><tr><th>Type of payment</th><th>Documents needed</th><th>In force</th>${co ? `<th>For ${esc(co.code)}</th>` : ""}<th></th></tr></thead><tbody>
       ${types.map(row).join("") || `<tr><td colspan="${co ? 5 : 4}" class="empty">No payment types yet.</td></tr>`}
     </tbody></table></div></div>`;

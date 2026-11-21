@@ -6,13 +6,13 @@
    Nothing here is new to the server: the import is POST /api/setup/import (a preview, then the import) and the company is POST
    /api/setup/entities, each audited like every Setup change. Departures from the board, kept for later slices: no Undo on the note
    (Undo is slice 10), no "Runs payroll in this app" tick (slice 15), no name or Sign out in the header (sign-in is slice 16). */
-const FR = { name: "", preview: null, file: null, error: "", refused: "", why: "", done: null, addOpen: false, busy: "", tried: false, kind: "", code: "", cname: "", reg: "", addError: "" };
+const FR = { name: "", preview: null, file: null, error: "", refused: "", why: "", done: null, note: null, addOpen: false, busy: "", tried: false, kind: "", code: "", cname: "", reg: "", addError: "" };
 
 // The page takes the place of the Overview while there is no company, and after one is added or a file imported, until Open Overview.
 const firstRunDue = () => state.view === "overview" && !!state.meta && (!(state.meta.entities || []).length || !!FR.done);
 // The shell (menu and top bar) has nothing to offer yet: the page has its own head.
 function firstRunShell(on) {
-  if (!on && FR.done && state.view !== "overview") FR.done = null;  // another page was opened: the note of what was done is over
+  if (!on && (FR.done || FR.note) && state.view !== "overview") FR.done = FR.note = null;  // another page was opened: the note of what was done is over
   const c = typeof document !== "undefined" ? document.body?.classList : null;
   if (on) c?.add?.("first-run"); else c?.remove?.("first-run");
 }
@@ -50,10 +50,12 @@ function frHtml() {
         ${bad.kind ? `<span class="field-err" id="fr-kind-err">${icon("alert")}${esc(bad.kind)}</span>` : ""}</fieldset>
       <div class="row"><button type="submit" class="btn"${add ? ` disabled aria-busy="true"` : ""}>${add ? `<span class="spin" aria-hidden="true"></span>Adding` : "Add company"}</button><button type="button" class="ghost" data-fr-add-cancel="1"${add ? " disabled" : ""}>Cancel</button></div></form>`;
   const steps = FR_STEPS.map(([glyph, title, body, where, href], i) => `<li class="fr-step"><span class="plate ${done ? "brand" : "mute"}">${icon(glyph)}</span><span class="fr-step-words"><b>${i + 1}. ${esc(title)}</b><span class="note">${esc(body)}</span></span>${done
-    ? `<a class="pill" href="${esc(href())}" data-fr-step="${esc(glyph)}">${esc(where)}</a>` : `<span class="pill grey">After a company is added</span>`}</li>`).join("");
+    ? (a => a && a !== "#/" ? `<a class="pill" href="${esc(a)}" data-fr-step="${esc(glyph)}">${esc(where)}</a>` : `<span class="pill grey">${esc(where)}</span>`)(href())
+    : `<span class="pill grey">After a company is added</span>`}</li>`).join("");
   return `<div class="fr-page"><header class="fr-top">${brand}<span class="fr-brand">HR Payments</span></header>
     <div class="fr-main"><div class="fr-head"><h1 id="fr-title" tabindex="-1">Welcome to HR Payments</h1>
       <p class="note">There is no company here yet. Start in one of two ways. Everything is kept on this PC, and each change is noted in the audit trail.</p></div>
+    ${!done && FR.note ? `<div class="banner info fr-done" role="status">${icon("help")}<span><b>${esc(FR.note.title)}</b> ${esc(FR.note.body)}</span></div>` : ""}
     ${done ? `<div class="banner ok fr-done" role="status">${icon("check")}<span><b>${esc(FR.done.title)}</b> ${esc(FR.done.body)}</span><button type="button" class="btn" data-fr-open="1">Open Overview</button></div>` : ""}
     <div class="fr-cards">
       <section class="card fr-card" aria-labelledby="fr-imp-h"><span class="plate brand">${icon("upload")}</span><h2 id="fr-imp-h">Import a setup file</h2>
@@ -75,7 +77,7 @@ function frPaint(focus) {
 }
 async function viewFirstRun(main) {
   main.innerHTML = frHtml();
-  if (FR.done) document.getElementById("fr-title")?.focus?.({ preventScroll: true });
+  if (FR.done || FR.note) document.getElementById("fr-title")?.focus?.({ preventScroll: true });
 }
 
 // Choose a setup file: it is read and previewed as Move setup does (nothing is saved), and its counts shown.
@@ -91,18 +93,27 @@ async function frImport() {
   if (!FR.file || FR.busy) return;
   FR.why = $("#fr-why")?.value || FR.why; FR.busy = "import"; frPaint();
   try {
-    await api("/api/setup/import", { json: { setup: FR.file, reason: FR.why.trim() || "Started this install from a setup file." } });
-  } catch (e) { if (appStopped(e)) throw e; Object.assign(FR, { busy: "", preview: null, file: null, refused: e.message }); frPaint("fr-imp-h"); return; }
-  const n = (FR.preview.counts || []).find(([w]) => /^compan/.test(w));
-  const body = `${n ? `${n[1]} ${n[1] === 1 ? "company" : "companies"} and their setup are ready` : "The setup is ready"}, with stopped companies kept as stopped. Each change is noted in the audit trail.`;
-  Object.assign(FR, { file: null, preview: null, name: "", why: "" });
-  await frFinish({ title: "Setup imported.", body });
+    try { await api("/api/setup/import", { json: { setup: FR.file, reason: FR.why.trim() || "Started this install from a setup file." } }); }
+    catch (e) { if (appStopped(e)) throw e; Object.assign(FR, { busy: "", preview: null, file: null, refused: e.message }); frPaint("fr-imp-h"); return; }
+    Object.assign(FR, { file: null, preview: null, name: "", why: "" });
+    await frFinish({ imported: true });
+  } finally { if (FR.busy) { FR.busy = ""; frPaint(); } }  // a network failure: the page is usable again, with what was typed
 }
-// A company or a file has made the install ready to use: the menu and the company switcher read the records again.
-async function frFinish(done) {
-  state.meta = await api("/api/meta"); paintOrg();
+// A company or a file has been added: the menu and the company switcher read the records again. The install is ready to use only when
+// there is a company now: a file of rules alone (a template) leaves the page as it was, with a note that says what is next.
+async function frFinish({ imported = false, code = "", kept = "" } = {}) {
+  try { state.meta = await api("/api/meta"); paintOrg(); }
+  catch (e) { FR.busy = ""; frPaint(); throw e; }
+  const list = state.meta.entities || [], n = list.length, stopped = list.filter(e => !isActive(e)).length;
+  Object.assign(FR, { busy: "", addOpen: false, refused: "", error: "" });
+  if (!n) FR.done = null, FR.note = { title: "Rules imported.", body: "Now add your first company." };
+  else {
+    FR.note = null;
+    const st = !stopped ? "" : stopped === n ? (n === 1 ? ", and it is stopped" : ", all of them stopped") : `, ${stopped} of them stopped`;
+    FR.done = imported ? { title: "Setup imported.", body: `${n} ${n === 1 ? "company" : "companies"} came in${st}. Each change is noted in the audit trail.` }
+      : { title: "Company added.", body: `${code} is ready: ${kept}. The next steps are open below.` };
+  }
   state.entity = firstEntityId(); state.setup.types = null; state.setup.kind = null;
-  Object.assign(FR, { busy: "", done, addOpen: false, refused: "", error: "" });
   renderNav();
   await render();
 }
@@ -112,13 +123,15 @@ async function frAddCompany() {
   if (!code || !name || !FR.kind) { frPaint(!code ? "fr-code" : !name ? "fr-name" : "fr-kind-sql"); return; }
   FR.busy = "add"; frPaint();
   try {
-    const fields = { code, name, uses_sql: FR.kind === "sql" ? 1 : 0 };
-    if (FR.reg.trim()) fields.reg_no = FR.reg.trim();
-    await api("/api/setup/entities", { json: { fields } });
-  } catch (e) { if (appStopped(e)) throw e; Object.assign(FR, { busy: "", addError: e.message }); frPaint("fr-code"); return; }
-  const kept = FR.kind === "sql" ? "Kept in SQL Account" : "Kept here";
-  Object.assign(FR, { tried: false, kind: "", code: "", cname: "", reg: "" });
-  await frFinish({ title: "Company added.", body: `${code} is ready: ${kept}. The next steps are open below.` });
+    try {
+      const fields = { code, name, uses_sql: FR.kind === "sql" ? 1 : 0 };
+      if (FR.reg.trim()) fields.reg_no = FR.reg.trim();
+      await api("/api/setup/entities", { json: { fields } });
+    } catch (e) { if (appStopped(e)) throw e; Object.assign(FR, { busy: "", addError: e.message }); frPaint("fr-code"); return; }
+    const kept = FR.kind === "sql" ? "Kept in SQL Account" : "Kept here";
+    Object.assign(FR, { tried: false, kind: "", code: "", cname: "", reg: "" });
+    await frFinish({ code, kept });
+  } finally { if (FR.busy) { FR.busy = ""; frPaint(); } }  // a network failure: the form is usable again, with what was typed
 }
 // Cancel on the form: a form with something typed in it asks first, as a dialog does.
 async function frAddCancel() {

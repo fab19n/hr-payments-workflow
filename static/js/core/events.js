@@ -58,7 +58,13 @@ document.addEventListener("click", async ev => {
     if (t.id === "closeDrawer") return closeDrawer();
     if (ds.setupKind) {
       if (!(await closeDrawer())) return;
-      Object.assign(state.setup, { kind: ds.setupKind, id: null }); return redraw();
+      // Open Setup > Bank accounts in a company's dialog: that company's accounts, not the top bar's
+      if (ds.setupEntity && (state.meta.entities || []).some(x => x.id === +ds.setupEntity)) state.entity = +ds.setupEntity;
+      Object.assign(state.setup, { kind: ds.setupKind, id: null });
+      await redraw();
+      // a tab chosen by key was drawn again with the page: the focus goes to the tab now selected
+      if (t.getAttribute?.("role") === "tab") document.querySelector(`[role="tab"][data-setup-kind="${ds.setupKind}"]`)?.focus?.({ preventScroll: true });
+      return;
     }
     if (ds.setupNew) return await openSetup(ds.setupNew, "new");
     if (ds.setupRow) return await openSetup(state.setup.kind, +ds.setupRow);
@@ -115,6 +121,7 @@ document.addEventListener("click", async ev => {
     if (ds.remOpen) return openReminder(+ds.remOpen);
     if (ds.remAct) return await remAct(ds.remAct, t);
     if (ds.movePick) { t.disabled = true; try { return await movePick(); } finally { if (t.isConnected) t.disabled = false; } }
+    if (ds.moveExport) return toast(moveExportNote(ds.moveExport));  // the download itself is the browser's
     if (ds.moveGo) return askWhy(t, "Import it", moveImport);
     if (ds.moveCancel) { hideWhy(); Object.assign(state.setup.move, { file: null, preview: null, name: "", refused: "" }); return moveRepaint("mv-pick"); }
     if (ds.chkPreview || ds.chkCopyPreview || ds.remPreview) {

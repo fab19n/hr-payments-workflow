@@ -215,11 +215,12 @@ async function drawDeleted(kind) {
   try {
     const d = await api(`/api/setup/restore?kind=${encodeURIComponent(kind)}${per ? `&entity=${state.entity}` : ""}`);
     if ($("#setupDeleted") !== box) return;  // another page or section was drawn meanwhile
-    const row = r => `<tr><td>${esc(r.name)}</td><td>${esc(fmtWhen(r.at))}<div class="note st-sub">Entry ${esc(r.entry)}</div></td><td>${esc(r.actor || "")}</td><td>${esc(r.reason || "")}</td>
+    const own = state.setup.types?.kinds?.[kind], plural = own?.deleted_plural || own?.plural || d.plural;  // the section's own words (Filing words, not SQL filing words)
+    const row = r => `<tr><td>${esc(r.name)}${r.code ? `<div class="note st-sub">${esc(r.code)}</div>` : ""}</td><td>${esc(fmtWhen(r.at))}<div class="note st-sub">Entry ${esc(r.entry)}</div></td><td>${esc(r.actor || "")}</td><td>${esc(r.reason || "")}</td>
       <td><div class="row tight">${r.problem ? "" : `<button class="ghost small" type="button" data-restore="${esc(r.row_id)}" data-restore-title="${esc(r.name)}" aria-haspopup="dialog">${icon("undo")}Put it back</button>`}
         <button class="ghost small" type="button" data-hist-open="${esc(r.table)}:${esc(r.key)}" data-hist-title="${esc(r.name)}" aria-haspopup="dialog">${icon("history")}History</button></div>
         ${r.problem ? `<div class="note st-problem">${icon("lock")}<span>Can't be put back: ${esc(r.problem)}</span></div>` : ""}</td></tr>`;
-    box.innerHTML = `<section class="card st-deleted ex" id="st-del" aria-labelledby="st-del-h"><div class="row tight">${icon("trash")}<h2 id="st-del-h">Deleted ${esc(d.plural)}</h2></div>
+    box.innerHTML = `<section class="card st-deleted ex" id="st-del" aria-labelledby="st-del-h"><div class="row tight">${icon("trash")}<h2 id="st-del-h">Deleted ${esc(plural)}</h2></div>
       <div class="note">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</div>
       <div class="tbl-wrap"><table class="st-table"><thead><tr><th scope="col">Name</th><th scope="col">Deleted</th><th scope="col">By</th><th scope="col">Why</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
         ${d.rows.map(row).join("") || `<tr><td colspan="5" class="empty">None deleted.</td></tr>`}</tbody></table></div></section>`;
@@ -257,6 +258,7 @@ async function openRestore(rowId, title) {
   document.getElementById("pb-why")?.focus?.({ preventScroll: true });
 }
 async function restoreGo(rowId, btn) {
+  if (restoreGo.busy) return;  // Enter pressed twice: it is put back once
   const inp = $("#pb-why"), err = $("#pb-why-err"), reason = (inp?.value || "").trim();
   if (!reason) {
     if (err) err.innerHTML = `${icon("alert")}Say why you're making this change.`;
@@ -264,10 +266,11 @@ async function restoreGo(rowId, btn) {
     return;
   }
   if (err) err.innerHTML = ""; if (inp?.removeAttribute) inp.removeAttribute("aria-invalid");
-  btn.disabled = true;
+  btn.disabled = true; restoreGo.busy = true;
   let r;
   try { r = await api(`/api/setup/restore/${rowId}`, { json: { reason } }); }
-  catch (e) { if (appStopped(e)) throw e; if (btn.isConnected) btn.disabled = false; if ($("#rsErr")) $("#rsErr").innerHTML = refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." }); return; }
+  catch (e) { if (btn.isConnected) btn.disabled = false; if (appStopped(e)) throw e; if ($("#rsErr")) $("#rsErr").innerHTML = refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." }); return; }
+  finally { restoreGo.busy = false; }
   closeDrawer(true);
   toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
   if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);

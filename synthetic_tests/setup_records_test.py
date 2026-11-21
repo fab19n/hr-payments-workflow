@@ -29,7 +29,7 @@ tmp = Path(tempfile.mkdtemp(prefix="hrp-setup-records-test-"))
 os.environ["HRP_DATA_DIR"] = str(tmp)
 CHILD = sys.argv[1:2] == ["--import"]  # part 4's new install: --import <setup.json> <what it holds afterwards>
 
-from hrp import config, db, masters, setupfile  # noqa: E402
+from hrp import config, db, masters, rulebook, rules, setupfile  # noqa: E402
 from hrp.app import app  # noqa: E402
 
 assert config.DATA_DIR == tmp, "the test must never open the real records folder"
@@ -42,13 +42,17 @@ if not CHILD:
         {"code": "EXB", "name": "Example Beta Ltd", "uses_sql": False, "accounts": [{"label": "Current", "bank": "Example Bank", "number": "000-222"}]},
     ]}), encoding="utf-8")
 
-passed = []
+passed, failed = [], []
+KEEP_GOING = bool(os.environ.get("HRP_KEEP_GOING"))  # list every check that fails, not only the first (to see what a change fixes)
 
 
 def check(name, ok, detail=""):
     if not ok:
-        print(f"FAIL {name}" + (f"\n     {detail}" if detail else ""))
-        sys.exit(1)
+        print(f"FAIL {name}" + (f"\n     {str(detail)[:600]}" if detail else ""))
+        if not KEEP_GOING:
+            sys.exit(1)
+        failed.append(name)
+        return
     passed.append(name)
     print(f"PASS {name}")
 
@@ -207,7 +211,11 @@ for code, name in (("420-1001", "EPF payable"), ("900-E001", "EPF employer expen
     call("post", "/api/setup/gl_accounts", json={"entity_id": EXA, "fields": {"code": code, "name": name}})
 call("post", "/api/setup/statutory_accounts", json={"entity_id": EXA, "fields": {"kind": "epf", "label": "EPF (KWSP)", "payable_code": "420-1001", "employer_code": "900-E001"}})
 call("post", "/api/setup/parties", json={"entity_id": EXA, "fields": {"name": "Test Supplier", "kind": "supplier", "sql_code": "400-T001"}})
-call("post", "/api/setup/parties", json={"entity_id": EXA, "fields": {"name": "Test Customer", "kind": "customer", "sql_code": "300-T001"}})
+# the page posts every field of the dialog, a words box left empty as an empty list: that is no words, not a refusal
+r = c.post(BASE + "/api/setup/parties", headers=H, json={"entity_id": EXA, "fields": {"name": "Test Customer", "kind": "customer", "sql_code": "300-T001", "match_words": []}})
+check("Add customer or supplier with the words box left empty (as the page posts it) is not refused", r.status_code == 200, r.get_json())
+if r.status_code != 200:  # (to see what else a change fixes, with HRP_KEEP_GOING: the customer is added without the box)
+    call("post", "/api/setup/parties", json={"entity_id": EXA, "fields": {"name": "Test Customer", "kind": "customer", "sql_code": "300-T001"}})
 full = call("get", "/api/setup/export?what=full&payees=1")
 check("the file holds the stopped company and not the deleted one", [e["code"] for e in full["entities"]] == ["EXA", "EXB", "EXC"]
       and [e["active"] for e in full["entities"]] == [1, 1, 0], [(e["code"], e["active"]) for e in full["entities"]])
@@ -238,4 +246,170 @@ check("...and, but for the starter checklists the import gives, both are what th
 check("the stopped company comes across as stopped, and nothing is left of the deleted one",
       got["codes"] == ["EXA", "EXB", "EXC"] and got["active"] == {"EXA": 1, "EXB": 1, "EXC": 0} and got["empty"] is False, got)
 
+
+# ---------- 5. review fixes ----------
+def write(why, *statements):
+    con = db.connect()
+    con.arm("user", f"test: {why}")
+    try:
+        for sql, args in statements:
+            con.execute(sql, args)
+        con.commit()
+    finally:
+        con.disarm()
+        con.close()
+
+
+class section:
+    """A part of the review fixes. With HRP_KEEP_GOING one that fails (or stops) is listed and the next still runs."""
+
+    def __init__(self, name):
+        self.name = name
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, et, ev, tb):
+        if et and KEEP_GOING and et is not SystemExit:
+            print(f"FAIL part: {self.name} -> {et.__name__}: {str(ev)[:300]}")
+            failed.append(self.name)
+            return True
+        return False
+
+
+# 1. Words in SQL descriptions is optional: left empty it is no words, on add and on edit; a matching-word rule still needs its words
+with section('1. Words in SQL descriptions is optional: left empty it is no words, o'):
+    for empty in ([], [" ", ""], ""):
+        tp = call("post", "/api/setup/parties", json={"entity_id": EXA, "fields": {"name": f"Words {len(passed)}", "kind": "supplier", "match_words": empty}})
+        check(f"a supplier added with its words box empty ({empty!r}) is added, with no words", q("SELECT match_words FROM parties WHERE id = ?", (tp["id"],))[0]["match_words"] is None
+              and call("get", f"/api/setup/parties/{tp['id']}")["record"]["match_words"] is None)
+    tw = call("post", "/api/setup/parties", json={"entity_id": EXA, "fields": {"name": "Words Test", "kind": "supplier", "match_words": ["tnb", "electric"]}})
+    check("words are kept as capitals", call("get", f"/api/setup/parties/{tw['id']}")["record"]["match_words"] == ["TNB", "ELECTRIC"])
+    call("patch", f"/api/setup/parties/{tw['id']}", json={"fields": {"match_words": []}})
+    check("clearing the box of a party that has words stores no words", q("SELECT match_words FROM parties WHERE id = ?", (tw["id"],))[0]["match_words"] is None
+          and call("get", f"/api/setup/parties/{tw['id']}")["record"]["match_words"] is None)
+    check("...and the list, the export and a record with no words all read as none",
+          all(r["match_words"] is None for r in call("get", f"/api/setup/parties?entity={EXA}")["rows"] if r["name"] in ("Words Test", "Test Customer"))
+          and all(p["match_words"] is None for p in call("get", "/api/setup/export?what=full")["parties"] if p["name"] in ("Words Test", "Test Customer")))
+    r = c.post(BASE + "/api/setup/guess_words", headers=H, json={"fields": {"label": "Empty", "words": [], "payment_type": "other"}})
+    check("a matching-word rule still needs words: an empty list is refused", r.status_code == 400 and "at least one word" in r.get_json()["error"], r.get_json())
+    rule = call("post", "/api/setup/guess_words", json={"fields": {"label": "Test rule", "words": ["levy"], "payment_type": "other"}})
+    r = c.patch(BASE + f"/api/setup/guess_words/{rule['id']}", headers=H, json={"fields": {"words": []}})
+    check("...and so is clearing the words of one", r.status_code == 400 and "at least one word" in r.get_json()["error"]
+          and call("get", f"/api/setup/guess_words/{rule['id']}")["record"]["words"] == ["LEVY"], r.get_json())
+
+# 2. Where used lists every record that refers to a company or a GL account, so Delete is not offered and then refused by the records
+with section('2. Where used lists every record that refers to a company or a GL acco'):
+    fk = {}
+    with sqlite3.connect(config.DB_PATH) as r:
+        for (t,) in r.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall():
+            for row in r.execute(f'PRAGMA foreign_key_list("{t}")').fetchall():
+                if row[2] == "entities":
+                    fk.setdefault(t, row[3])
+    listed = " ".join(u[2] for u in masters.USES["entities"])
+    GONE_WITH_IT = {"checklist_items", "required_sets"}  # deleted with the company, as no month was set up with them
+    check("every table with a foreign key to companies is in Where used for a company (or goes with it)", all(t in listed or t in GONE_WITH_IT for t in fk),
+          [t for t in fk if t not in listed and t not in GONE_WITH_IT])
+    NOW = "2026-11-21T10:00:00"
+    ROWS = {
+        "printed company name": ("sql_company_names", "(entity_id, name_key, name, confirmed_at) VALUES (?, 'k', 'EXAMPLE NAME (1)', ?)", (NOW,)),
+        "opening balance": ("ledger_openings", "(entity_id, account_code, as_of, source, set_at) VALUES (?, '100-000', '2026-01-01', 'here', ?)", (NOW,)),
+        "payroll workbook check": ("payroll_checks", "(entity_id, month, filename, checked_at, to_fix, to_check, notes, report) VALUES (?, '2026-10', 'x.xlsx', ?, 0, 0, 0, '{}')", (NOW,)),
+        "MyInvois document": ("myinvois_docs", "(entity_id, uuid, doc_no, status, total_sen, direction, as_at) VALUES (?, 'u1', 'D1', 'valid', 0, 'issued', ?)", (NOW,)),
+        "SQL account fetch": ("ledger_batches", "(entity_id, origin, report, read_at) VALUES (?, 'here', 'entered', ?)", (NOW,)),
+    }
+    for i, (what, (table, cols, extra)) in enumerate(ROWS.items()):
+        co = call("post", "/api/setup/entities", json={"fields": {"code": f"FK{i}", "name": f"Example Referenced {i} Ltd", "uses_sql": False}})
+        write(f"a {what} of FK{i}", (f"INSERT INTO {table} {cols}", (co["id"], *extra)))
+        rec = call("get", f"/api/setup/entities/{co['id']}")
+        check(f"Where used says a company has a {what}, and Delete is not offered", any(w == what for w, n in rec["used_by"]) and rec["can_delete"] is False, rec["used_by"])
+        r = c.delete(BASE + f"/api/setup/entities/{co['id']}", headers=H, json={"reason": "test"})
+        err = r.get_json()["error"]
+        check(f"...deleting it says what uses it, in the records' words, and deletes nothing", r.status_code == 409 and f"1 {what}" in err and "FOREIGN KEY" not in err.upper()
+              and q("SELECT id FROM entities WHERE id = ?", (co["id"],)) != [], err)
+    # a reference the list does not know of: the refusal is plain, and the delete leaves everything as it was
+    co = call("post", "/api/setup/entities", json={"fields": {"code": "FKX", "name": "Example Unlisted Ltd", "uses_sql": False}})
+    items = q("SELECT COUNT(*) AS n FROM checklist_items WHERE entity_id = ?", (co["id"],))[0]["n"]
+    with sqlite3.connect(config.DB_PATH) as raw:
+        raw.execute("CREATE TABLE tst_unlisted (entity_id INTEGER REFERENCES entities(id))")
+        raw.execute("INSERT INTO tst_unlisted VALUES (?)", (co["id"],))
+    r = c.delete(BASE + f"/api/setup/entities/{co['id']}", headers=H, json={"reason": "test"})
+    check("a delete that still meets a reference Where used lacks is refused in plain words, never as the records' own text",
+          r.status_code == 409 and r.get_json()["error"] == "It is still used by other records, so nothing was deleted. Stop using it instead.", r.get_json())
+    check("...and nothing was deleted: the company and its checklist are as they were",
+          q("SELECT id FROM entities WHERE id = ?", (co["id"],)) != [] and q("SELECT COUNT(*) AS n FROM checklist_items WHERE entity_id = ?", (co["id"],))[0]["n"] == items and items > 0)
+    with sqlite3.connect(config.DB_PATH) as raw:
+        raw.execute("DROP TABLE tst_unlisted")
+    # a bank account's confirmed pair of bank lines, and a GL account a statutory account names
+    ac = call("post", "/api/setup/accounts", json={"entity_id": EXB, "fields": {"label": "Paired", "bank": "Example Bank", "currency": "MYR"}})
+    write("a confirmed pair", ("INSERT INTO recon_pairs (account_id, month, pair_key) VALUES (?, '2026-10', 'k1')", (ac["id"],)))
+    ar = call("get", f"/api/setup/accounts/{ac['id']}")
+    check("Where used says a bank account has a confirmed pair of bank lines, and Delete is not offered",
+          any(w == "confirmed pair of bank lines" for w, n in ar["used_by"]) and ar["can_delete"] is False, ar["used_by"])
+    gl = {r["code"]: r for r in call("get", f"/api/setup/gl_accounts?entity={EXA}")["rows"]}
+    for code in ("420-1001", "900-E001"):
+        g = call("get", f"/api/setup/gl_accounts/{gl[code]['id']}")
+        check(f"Where used says a GL account a statutory account names ({code}) is used by it, and Delete is not offered",
+              any(w == "statutory account" for w, n in g["used_by"]) and g["can_delete"] is False and "code" in g["locked"], g["used_by"])
+        r = c.delete(BASE + f"/api/setup/gl_accounts/{gl[code]['id']}", headers=H, json={"reason": "test"})
+        check(f"...and deleting {code} is refused, naming it, so no statutory account is left pointing at nothing",
+              r.status_code == 409 and "1 statutory account" in r.get_json()["error"] and q("SELECT id FROM gl_accounts WHERE code = ?", (code,)) != []
+              and q("SELECT payable_code FROM statutory_accounts")[0]["payable_code"] == "420-1001", r.get_json())
+    check("a GL account no statutory account names can still be deleted", call("get", f"/api/setup/gl_accounts/{gl['310-000']['id']}")["can_delete"] is True)
+
+# 3. a company switched to Kept here keeps the printed company names confirmed while it was Kept in SQL Account: they can be removed
+with section('3. a company switched to Kept here keeps the printed company names con'):
+    ko = call("post", "/api/setup/entities", json={"fields": {"code": "KEPT", "name": "Example Switched Ltd", "uses_sql": True}})
+    write("a confirmed printed company name", ("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at) VALUES (?, 'kn', 'EXAMPLE SWITCHED LTD (2026)', ?)", (ko["id"], NOW)))
+    call("patch", f"/api/setup/entities/{ko['id']}", json={"fields": {"uses_sql": False}})
+    left = call("get", "/api/setup/export?what=full").get("left_out", [])
+    check("the export says a name of a company now Kept here stays out, and where to remove it",
+          any("EXAMPLE SWITCHED LTD" in x and "no longer kept in SQL Account" in x and "Remove the name in Setup › Companies" in x for x in left), left)
+    nm = call("get", f"/api/setup/entities/{ko['id']}/sql-names")
+    check("the company's names are still listed for a company Kept here, and can be removed there", nm["ready"] and [n["name"] for n in nm["names"]] == ["EXAMPLE SWITCHED LTD (2026)"])
+    call("delete", f"/api/setup/entities/{ko['id']}/sql-names/{nm['names'][0]['id']}", json={})
+    check("...removing it leaves none, and the export no longer says it is left out",
+          call("get", f"/api/setup/entities/{ko['id']}/sql-names")["names"] == [] and not any("EXAMPLE SWITCHED LTD" in x for x in call("get", "/api/setup/export?what=full").get("left_out", [])))
+
+# 4. the stopped note is said once in a record's own answer (the page adds the section's note only when the server has not)
+with section("4. the stopped note is said once in a record's own answer (the page ad"):
+    ss = call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "Stop me", "bank": "Example Bank", "currency": "USD"}})
+    call("post", f"/api/setup/accounts/{ss['id']}/stop", json={"reason": "Not needed"})
+    sn = call("get", f"/api/setup/accounts/{ss['id']}")["notes"]
+    check("a stopped record's notes hold the section's stopped note once, and it is the same words the section carries",
+          sn.count(masters.STOPPED_NOTE["accounts"]) == 1 and call("get", "/api/setup/types")["kinds"]["accounts"]["stop_note"] == masters.STOPPED_NOTE["accounts"], sn)
+
+# 13. what a company Kept here is not asked for is what the server leaves out of its payments' documents
+with section('13. what a company Kept here is not asked for is what the server leave'):
+    R = rulebook.get(db.connect())
+    sqlish = sorted(d["key"] for d in call("get", "/api/setup/required?entity=")["doc_types"] if d["from_sql"])
+    check("the documents Setup says SQL Account issues are the ones the server does not ask a company Kept here for",
+          sqlish == sorted(rules.SQL_ONLY) and "pv" not in R.required_docs("salary", False) and "pv" in R.required_docs("salary", True)
+          and all(d in R.required_docs("salary", False) for d in R.required_docs("salary", True) if d not in sqlish), (sqlish, R.required_docs("salary", False), R.required_docs("salary", True)))
+
+# 14. wording that had gone stale
+with section('14. wording that had gone stale'):
+    check("a stopped company is hidden from the company switcher, not the sidebar", "company switcher" in masters.STOPPED_NOTE["entities"] and "sidebar" not in masters.STOPPED_NOTE["entities"])
+    check("a stopped bank account says everything recorded stays, as the board does", masters.STOPPED_NOTE["accounts"].endswith("Everything recorded stays."))
+    check("Statutory accounts says where it is checked by the menu's own name", "Accounting › Statutory payables" in masters.KINDS["statutory_accounts"]["help"]
+          and "Books › Statutory" not in masters.KINDS["statutory_accounts"]["help"])
+
+# 16. Show deleted names a company by its code and name, a chart account with its code beside it, and each section by its own words
+with section('16. Show deleted names a company by its code and name, a chart account'):
+    dc = call("get", "/api/setup/restore?kind=entities")["rows"]
+    check("a deleted company is listed as CODE · Name, as its list shows it", [x["name"] for x in dc if x["name"].startswith("EXD")] == ["EXD · Example Delta Ltd"], [x["name"] for x in dc])
+    pvw = call("post", f"/api/setup/restore/{next(x['row_id'] for x in dc if x['name'].startswith('EXD'))}", json={"preview": True})
+    check("...and the Put it back preview names it so too", pvw["name"] == "EXD · Example Delta Ltd", pvw.get("name"))
+    spare = call("post", "/api/setup/gl_accounts", json={"entity_id": EXA, "fields": {"code": "999-001", "name": "Spare account"}})["id"]
+    call("delete", f"/api/setup/gl_accounts/{spare}", json={"reason": "Not needed"})
+    gd = call("get", f"/api/setup/restore?kind=gl_accounts&entity={EXA}")["rows"]
+    check("a deleted chart account is listed by its name, with its code", [(x["name"], x["code"]) for x in gd] == [("Spare account", "999-001")], gd)
+    kk = call("get", "/api/setup/types")["kinds"]
+    check("each section says its own words for what was deleted: Filing words, bank accounts, accounts for the chart",
+          kk["filing_words"]["deleted_plural"] == "filing words" and kk["accounts"]["deleted_plural"] == "bank accounts" and kk["gl_accounts"]["deleted_plural"] == "accounts"
+    )
+
+if failed:
+    print(f"\n{len(failed)} failed, {len(passed)} passed")
+    sys.exit(1)
 print(f"\n{len(passed)} checks passed")

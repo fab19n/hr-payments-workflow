@@ -68,7 +68,8 @@ async function viewSetup(main) {
   const S = state.setup;
   if (!S.types) S.types = await api("/api/setup/types");
   const T = S.types, e = ent(), groups = setupGroups(T, e);
-  if (!T.kinds[S.kind]) S.kind = groups[0]?.kinds[0] || null;
+  if (!T.kinds[S.kind] || SETUP_LINKS[S.kind]) S.kind = groups[0]?.kinds[0] || null;  // a link's old address (Recurring payments) has no page here
+  if (S.kind !== "move" && S.move) S.move.justImported = false;
   renderNav();  // the breadcrumb names the section
   main.innerHTML = `<div class="setup-grid">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
   const box = $("#setupMain"), spec = setupSpec();
@@ -266,7 +267,9 @@ async function setupList(box, kind) {
     return;
   }
   const [{ rows }, tabs] = await Promise.all([api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`), setupTabs(kind, spec.per_entity)]);
-  (S.more ||= {})[id] = SETUP_PAGE;
+  const at = `${kind}:${spec.per_entity ? state.entity : ""}`;  // the rows shown stay shown across a redraw (a save, a stop)
+  if (S.moreAt !== at) { S.more = {}; S.moreAt = at; }   // and start again when the section or the company changes
+  (S.more ||= {})[id] ??= SETUP_PAGE;
   const stopped = r => r.status === "stopped", nStopped = rows.filter(stopped).length;
   const text = r => [...cols.map(c => setupCell(kind, fieldOf(c.key), r, c.key)), SETUP_SUB[kind]?.(r) || "", usedText(r.used_by), stopped(r) ? "stopped" : "in use", +r.system ? "used by the app" : ""].join(" ");
   const sub = SETUP_SUB[kind] || (() => "");
@@ -420,14 +423,16 @@ function hideWhy() {
   state.why = null;
 }
 async function whySubmit() {
+  if (state.whyBusy) return;  // Enter pressed twice: the change is made once
   const inp = $("#su-reason"), goBtn = $("#su-why-go"), reason = inp.value.trim();
   if (!reason) { setWhyMsg("Say why you're making this change."); inp.focus(); return; }
   const run = state.why;
   if (!run) return hideWhy();
   goBtn.disabled = true; goBtn.setAttribute("aria-busy", "true");
+  state.whyBusy = true;
   try { await run(reason); hideWhy(); }
   catch (e) { if (appStopped(e)) toast(e.message, true); else { setWhyMsg(e.message, true); $("#su-reason")?.focus?.(); } }
-  finally { if (goBtn.isConnected) { goBtn.disabled = false; goBtn.removeAttribute("aria-busy"); } }
+  finally { state.whyBusy = false; if (goBtn.isConnected) { goBtn.disabled = false; goBtn.removeAttribute("aria-busy"); } }
 }
 
 // After a company, bank account, payment type, document type, matching words, customer or supplier, or GL account
@@ -459,7 +464,7 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
   const stopped = !isNew && (rec.status === "stopped" || !isActive(rec));
   state.openPayment = null; state.why = null; state.setup.id = id; syncAddr();
   const noun = setupNoun(spec.label), name = isNew ? `New ${noun}` : rec[spec.name_field] || "(no name)";
-  const allNotes = [...(stopped && spec.stop_note ? [spec.stop_note] : []), ...(r.notes || []), ...(notes || []).filter(n => !(r.notes || []).includes(n))];
+  const allNotes = [...new Set([...(stopped && spec.stop_note ? [spec.stop_note] : []), ...(r.notes || []), ...(notes || [])])];  // the server's stopped note is the section's: said once
   const tidy = kind === "entities" && !isNew && rec.first_month;
   const groups = (spec.field_groups || [["Details", fields.map(f => f.key)]]).map(([label, keys]) => [label, keys.map(k => fields.find(f => f.key === k)).filter(Boolean)]);
   const placed = new Set(groups.flatMap(g => g[1].map(f => f.key))), rest = fields.filter(f => !placed.has(f.key));
@@ -473,6 +478,9 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
     ${tidy ? `<button type="button" class="ghost" data-setup-act="tidy">${icon("clock")}Tidy up months before this</button>` : ""}`;
   // Printed invoices and Printed company names belong to a company Kept in SQL Account: its invoices are printed from SQL's documents.
   const printed = kind === "entities" && !isNew && !!+rec.uses_sql;
+  // A company switched to Kept here keeps the names confirmed while it was Kept in SQL Account: only they are listed, so they can be removed.
+  const keptNames = kind === "entities" && !isNew && !+rec.uses_sql ? await api(`/api/setup/entities/${+id}/sql-names`).catch(() => null) : null;
+  const hereNames = !!keptNames?.names?.length;
   $("#drawer").innerHTML = `<form class="np st-form" id="setupForm" novalidate aria-describedby="su-sub">
     <div class="pd-head"><span class="plate brand">${icon(spec.glyph || "sliders")}</span>
       <div class="pd-words"><span class="eyebrow">${esc(spec.label)}${spec.per_entity ? ` · ${esc(e.code)}` : ""}</span>
@@ -489,7 +497,7 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
         <div class="note" id="su-act-note">${esc(actNote)}</div>
         ${tidy ? `<div class="note">Tidy up removes, from the months before the first month tracked, the payments with no paid date, documents, SQL voucher or bank line, and the checklist items not ticked with no documents.</div>` : ""}
         ${whyForm()}</section>
-      ${printed ? `<div id="suPrint"></div><div id="suNames"></div>` : ""}
+      ${printed ? `<div id="suPrint"></div><div id="suNames"></div>` : hereNames ? `<div id="suNames"></div>` : ""}
       ${histSection(spec.table, id)}`}
     </div>
     <div class="pd-foot"><span id="su-foot" class="pd-foot-note ro">${isNew ? "It is added as in use." : "Saved changes are kept in the audit trail."}</span>
@@ -497,10 +505,11 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
         <button type="submit" class="btn" id="su-save" aria-describedby="su-foot">${isNew ? icon("plus") : ""}${isNew ? `Add ${esc(noun)}` : "Save"}</button></div></div>
   </form>`;
   showDrawer("setup");
-  state.setup.drawer = { kind, id, locked, used: r.used_by || [], loaded: formValues(fields, "su-") };
+  state.setup.drawer = { kind, id, locked, used: r.used_by || [], keptHere: hereNames, loaded: formValues(fields, "su-") };
   watchDrawer(keep);
   suFoot();
   if (printed) { drawPrintSettings(id); drawSqlNames(id); }
+  else if (hereNames) drawSqlNames(id, keptNames);
 }
 // The note beside Save: Unsaved changes while something is typed, else what Save does.
 function suFoot() {
@@ -519,9 +528,12 @@ async function drawSqlNames(id, got) {
   const box = $("#suNames");
   if (!box || String(state.setup.id) !== String(id)) return;
   const co = state.meta.entities.find(x => x.id === +id);
+  const here = !!state.setup.drawer?.keptHere;  // the company is Kept here now: the names can only be removed
+  if (here && d.ready && !d.names.length) { box.innerHTML = ""; return; }
   const when = at => at ? `${at.slice(0, 10).split("-").reverse().join("/")}${at.length >= 16 ? ` at ${at.slice(11, 16)}` : ""}` : "—";
   box.innerHTML = `<section class="st-sec" aria-labelledby="su-pn-h"><h3 id="su-pn-h">Printed company names</h3>
-    <div class="note">Names SQL Account prints on its exports that match no company in Setup, confirmed as ${esc(co?.code || "this company")}'s with <b>Take it for ${esc(co?.code || "")}</b> on <a href="${esc(menuHref(MENU_BY_PAGE["accounting/sql"]))}" data-menu="accounting/sql">Accounting › SQL import</a>. Fetch takes files printing them for this company.</div>
+    ${here ? `<div class="note">These names were confirmed while this company was Kept in SQL Account. They are not used while it is Kept here; remove any you don't want.</div>`
+      : `<div class="note">Names SQL Account prints on its exports that match no company in Setup, confirmed as ${esc(co?.code || "this company")}'s with <b>Take it for ${esc(co?.code || "")}</b> on <a href="${esc(menuHref(MENU_BY_PAGE["accounting/sql"]))}" data-menu="accounting/sql">Accounting › SQL import</a>. Fetch takes files printing them for this company.</div>`}
     ${!d.ready ? `<div class="note">The records need an update for this. Restart the app.</div>`
       : !d.names.length ? `<div class="muted">None confirmed.</div>`
       : `<div class="tbl-wrap"><table><thead><tr><th>Name as printed</th><th>Confirmed</th><th>By</th><th></th></tr></thead><tbody>${d.names.map(n => `<tr>
@@ -561,7 +573,7 @@ async function drawPrintSettings(id, got) {
   box.innerHTML = `<section class="st-sec" id="su-print" aria-labelledby="su-pi-h"><h3 id="su-pi-h">Printed invoices</h3>
     <div class="note">Customer invoices and self-billed e-Invoices are printed from SQL's documents with this header and footer: the name, registration no., TIN, address, phone, email and website above, the bank account on invoices, and the logo and signature here (PNG or JPEG, at most 2 MB). Used by <a href="${esc(menuHref(MENU_BY_PAGE["accounting/einvoices"]))}" data-menu="accounting/einvoices">Accounting › e-Invoices</a>.</div>
     <div class="grid2">${img("logo", "Logo")}${img("signature", "Signature")}</div>
-    ${p.missing.length ? `<div class="note"><b>Print settings still missing</b> (invoices print without them):<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>${bankGap ? `<button type="button" class="ghost small" data-setup-kind="accounts">Open Setup › Bank accounts</button>` : ""}</div>` : `<div class="note">${icon("check")} Every print setting is filled in.</div>`}
+    ${p.missing.length ? `<div class="note"><b>Print settings still missing</b> (invoices print without them):<ul>${p.missing.map(m => `<li>${esc(m)}</li>`).join("")}</ul>${bankGap ? `<button type="button" class="ghost small" data-setup-kind="accounts" data-setup-entity="${+id}">Open Setup › Bank accounts</button>` : ""}</div>` : `<div class="note">${icon("check")} Every print setting is filled in.</div>`}
     ${fontNote(p.fonts)}${tooLongNote(p.too_long)}</section>`;
 }
 // Uploads (or removes) the logo or signature of the company open in the drawer.

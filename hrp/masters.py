@@ -242,7 +242,7 @@ KINDS["statutory_accounts"] = {
     "label": "Statutory account", "plural": "statutory accounts", "table": "statutory_accounts", "per_entity": True,
     "order": "sort, id", "name_field": "label",
     "help": "The payable accounts the salary vouchers credit with what is taken off the salaries (EPF, SOCSO, EIS, SKBBK, PCB), "
-            "and the expense account each authority's voucher debits with the employer's share. Accounting › Books › Statutory "
+            "and the expense account each authority's voucher debits with the employer's share. Accounting › Statutory payables "
             "checks that each month is paid in full by its due day. Nothing is checked until an account is added here; that "
             "page suggests them from the chart of accounts by their names.",
     "columns": [{"key": "label", "label": "Name"}, {"key": "kind", "label": "Kind"}, {"key": "payable_code", "label": "Payable account"},
@@ -286,7 +286,7 @@ NAV = {
                             ["SQL Account", ["cash_book", "gl_code", "sql_payment_method"]],
                             ["Printed on invoices", ["bank_address", "swift_code"]],
                             ["Notes", ["notes"]]]},
-    "gl_accounts": {"glyph": "trail",
+    "gl_accounts": {"glyph": "trail", "deleted_plural": "accounts",
                     "intro": "Each company's chart of accounts in SQL Account, for reference: nothing is posted to it.",
                     "use": "In use again: listed with the accounts in use.",
                     "groups": [["The account", ["code", "name", "sql_type", "type", "special", "parent_code"]], ["Notes", ["notes"]]]},
@@ -335,8 +335,8 @@ NAV_LINKS = {"payees": "Opens Payments › Recurring"}
 SQL_ONLY_GROUPS = ("Matching words",)
 DELETE_NOTE = "It goes from the list. Show deleted keeps it for you, and it can be put back from there with its history."
 
-STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and its months aren't set up any more. Everything recorded stays.",
-                "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one.",
+STOPPED_NOTE = {"entities": "Stopped: hidden from the company switcher and Next up, and its months aren't set up any more. Everything recorded stays.",
+                "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one. Everything recorded stays.",
                 "payment_types": "Stopped: not offered for new payments or recurring payments. Payments of this type keep it.",
                 "doc_types": "Stopped: not offered for uploads or required documents. Documents of this type keep it.",
                 "guess_words": "Stopped: not used to guess the type of SQL vouchers added as payments.",
@@ -366,6 +366,7 @@ def types():
         if d.get("use"):
             v["use_note"] = d["use"]
         v["delete_note"] = DELETE_NOTE
+        v["deleted_plural"] = d.get("deleted_plural") or v.get("plural")
         if k in NAV_LINKS:
             v["link_note"] = NAV_LINKS[k]
     # sql_only: groups of the menu that are for a company Kept in SQL Account (the page hides them for one Kept here)
@@ -434,7 +435,9 @@ def check_value(f, v):
             raise Refused(f"{label}: give the words separated by commas.")
         v = list(dict.fromkeys(w.strip().upper() for w in v if w.strip()))
         if not v:
-            raise Refused(f"{label}: give at least one word.")
+            if f.get("required"):
+                raise Refused(f"{label}: give at least one word.")
+            return None  # an optional field left empty is no words, as one never filled in is
         if any(not WORD.fullmatch(w) for w in v):
             raise Refused(f"{label}: letters, digits, spaces and ' & . / - only, up to 40 characters each.")
         return v
@@ -635,6 +638,14 @@ USES = {  # (one, many, how to count)
         ("customer or supplier", "customers and suppliers", "SELECT COUNT(*) FROM parties WHERE entity_id = ?"),
         ("GL account", "GL accounts", "SELECT COUNT(*) FROM gl_accounts WHERE entity_id = ?"),
         ("statutory account", "statutory accounts", "SELECT COUNT(*) FROM statutory_accounts WHERE entity_id = ?"),
+        ("printed company name", "printed company names", "SELECT COUNT(*) FROM sql_company_names WHERE entity_id = ?"),
+        ("SQL journal line", "SQL journal lines", "SELECT COUNT(*) FROM sql_journal_lines WHERE entity_id = ?"),
+        ("SQL account fetch", "SQL account fetches", "SELECT COUNT(*) FROM ledger_batches WHERE entity_id = ?"),
+        ("SQL account document", "SQL account documents", "SELECT COUNT(*) FROM ledger_docs WHERE entity_id = ?"),
+        ("SQL account line", "SQL account lines", "SELECT COUNT(*) FROM ledger_lines WHERE entity_id = ?"),
+        ("opening balance", "opening balances", "SELECT COUNT(*) FROM ledger_openings WHERE entity_id = ?"),
+        ("MyInvois document", "MyInvois documents", "SELECT COUNT(*) FROM myinvois_docs WHERE entity_id = ?"),
+        ("payroll workbook check", "payroll workbook checks", "SELECT COUNT(*) FROM payroll_checks WHERE entity_id = ?"),
     ],
     "payment_types": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
@@ -677,6 +688,9 @@ USES = {  # (one, many, how to count)
                                         AND s.code = g.code"""),
         ("SQL account line", "SQL account lines", """SELECT COUNT(*) FROM ledger_lines l, gl_accounts g WHERE g.id = ?
                                                      AND l.entity_id = g.entity_id AND l.account_code = UPPER(TRIM(g.code))"""),
+        ("statutory account", "statutory accounts", """SELECT COUNT(*) FROM statutory_accounts s, gl_accounts g WHERE g.id = ?
+                                             AND s.entity_id = g.entity_id AND (UPPER(TRIM(s.payable_code)) = UPPER(TRIM(g.code))
+                                                                                OR UPPER(TRIM(s.employer_code)) = UPPER(TRIM(g.code)))"""),
     ],
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),
@@ -684,6 +698,7 @@ USES = {  # (one, many, how to count)
         ("bank statement", "bank statements", "SELECT COUNT(*) FROM statements WHERE account_id = ?"),
         ("book opening", "book openings", "SELECT COUNT(*) FROM book_openings WHERE account_id = ?"),
         ("company's invoices", "companies' invoices", "SELECT COUNT(*) FROM entities WHERE invoice_account_id = ?"),
+        ("confirmed pair of bank lines", "confirmed pairs of bank lines", "SELECT COUNT(*) FROM recon_pairs WHERE account_id = ?"),
     ],
     "statutory_accounts": [],  # the check only reads it, so it can always be deleted
 }
@@ -738,7 +753,8 @@ def locked(con, kind, rec):
         if used:
             out["entity_id"] = "Recurring payments or SQL entries refer to it, so it stays with the companies it is for: add another one instead."
     if kind == "gl_accounts" and rec.get("id") and usage(con, kind, rec["id"]):
-        out["code"] = "Bank accounts, customers, suppliers, other accounts or SQL entries refer to it by this code, so it can't change once used."
+        out["code"] = ("Bank accounts, customers, suppliers, other accounts, statutory accounts or SQL entries refer to it by this code, "
+                       "so it can't change once used.")
     if kind == "accounts" and rec.get("id"):
         if _count(con, "SELECT COUNT(*) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", rec["entity_id"]):
             out["cash_book"] = ("Filed months were reconciled with the SQL cash book on the account that is the cash book now, so it "
@@ -1062,14 +1078,20 @@ def delete(con, kind, rid):
         _default_type(con, rec)
     if kind == "payment_types":  # its own sets of required documents go with it (they are part of the type)
         con.execute("DELETE FROM required_sets WHERE payment_type = ?", (rec["key"],))
-    if kind == "entities":  # so does a company's own checklist and its own sets: no month was set up with them
-        if _has_table(con, "checklist_items"):
-            con.execute("DELETE FROM checklist_terms WHERE item_id IN (SELECT id FROM checklist_items WHERE entity_id = ?)", (rid,))
-            con.execute("DELETE FROM checklist_items WHERE entity_id = ?", (rid,))
-            checklistbook.forget(con)
-        if _has_table(con, "required_sets"):
-            con.execute("DELETE FROM required_sets WHERE entity_id = ?", (rid,))
-    con.execute(f"DELETE FROM {s['table']} WHERE id = ?", (rid,))
+    try:
+        if kind == "entities":  # so does a company's own checklist and its own sets: no month was set up with them
+            if _has_table(con, "checklist_items"):
+                con.execute("DELETE FROM checklist_terms WHERE item_id IN (SELECT id FROM checklist_items WHERE entity_id = ?)", (rid,))
+                con.execute("DELETE FROM checklist_items WHERE entity_id = ?", (rid,))
+                checklistbook.forget(con)
+            if _has_table(con, "required_sets"):
+                con.execute("DELETE FROM required_sets WHERE entity_id = ?", (rid,))
+        con.execute(f"DELETE FROM {s['table']} WHERE id = ?", (rid,))
+    except sqlite3.IntegrityError as x:
+        if "FOREIGN KEY" not in str(x).upper():
+            raise
+        checklistbook.forget(con)  # the page rolls this back: what was read for it is read again
+        raise Refused("It is still used by other records, so nothing was deleted. Stop using it instead.", 409)
     if kind == "accounts" and rec["cash_book"]:
         nxt = con.execute("SELECT id FROM accounts WHERE entity_id = ? AND active = 1 AND currency = ? ORDER BY sort, id LIMIT 1",
                           (rec["entity_id"], BASE)).fetchone()
