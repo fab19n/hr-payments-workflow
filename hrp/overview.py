@@ -14,7 +14,7 @@ slice 11). Cards follow the month on show unless they say "today" (Due and overd
 import calendar
 from datetime import date, timedelta
 
-from . import auditread, books, budget, db, finstatements, pages, receivables
+from . import auditread, books, budget, db, finstatements, pages, receivables, rulebook
 
 STALE_DAYS = 3  # SQL's data or a statement that stops more than this many days before today is shown as out of date
 DUE_AHEAD = 7  # Due and overdue: what falls due within this many days of today
@@ -111,10 +111,13 @@ def due(con, e, month, today):
     """Due and overdue, from today (not the month on show): payments out not paid yet that are overdue, and those that
     fall due in the next 7 days, each counted with what is still to pay per currency (as the Budget page has it as at
     today). Every open month counts (not filed, not before tracking). link_month: the month of the oldest of them, which
-    the card's link opens (the register's Not paid tab until To pay comes with slice 11)."""
+    the card's link opens (the register's Not paid tab until To pay comes with slice 11). A payment of a pay type (a salary, a
+    director's allowance: rulebook.pay_type) is counted but never added to the amounts (pay_n), so no amount shown can be one
+    person's pay."""
     iso, ahead = today.isoformat(), (today + timedelta(days=DUE_AHEAD)).isoformat()
-    over = {"n": 0, "sums": {}}
-    soon = {"n": 0, "sums": {}}
+    R = rulebook.get(con)
+    over = {"n": 0, "sums": {}, "pay_n": 0}
+    soon = {"n": 0, "sums": {}, "pay_n": 0}
     first = None
     for p in con.execute("""SELECT * FROM payments WHERE entity_id = ? AND direction = 'out' AND paid_date IS NULL
                             AND due_date <= ? ORDER BY due_date, id""", (e["id"], ahead)).fetchall():
@@ -122,17 +125,22 @@ def due(con, e, month, today):
             continue
         box = over if p["due_date"] < iso else soon
         box["n"] += 1
+        first = first or p["month"]
+        if R.pay_type(p["category"], p["month"], e["id"]):
+            box["pay_n"] += 1
+            continue
         left = budget.payment_left(con, p, iso)
         if left is not None:
             box["sums"][p["currency"]] = round(box["sums"].get(p["currency"], 0) + left, 2)
-        first = first or p["month"]
     return {"overdue": over, "soon": soon, "link_month": first, "days": DUE_AHEAD}
 
 
 def funds(con, e, month, today):
     """Funds to request for the month: what is still to pay in ringgit less the bank balance kept with the stored budget,
     on the budget's balance date (slice 8's rules: never worked out from a blank balance). bank: the label of the
-    company's own account the balance is for (budget.bank_account), never its number."""
+    company's own account the balance is for (budget.bank_account), never its number. When what is still to pay is pay alone
+    (only pay-type payments left: a salary, a director's allowance), still_to_pay and the balance are not given, as either
+    with the funds figure would show that pay (pay_only)."""
     eid = e["id"]
     if not _set_up(con, eid, month):
         return {"empty": NO_CHECKLIST, "set_up": False}
@@ -145,7 +153,26 @@ def funds(con, e, month, today):
            "balance": bal, "funds": budget.funds_to_request(totals, bal), "bank": acct["label"] if acct else None}
     if bal is None:
         out["empty"] = "Enter the bank balance to see funds to request"
+    if _pay_only(con, e, month, as_at, bool(hdr)):
+        out.update({"still_to_pay": None, "balance": None, "pay_only": True})
     return out
+
+
+def _pay_only(con, e, month, as_at, stored):
+    """True when what is still to pay in ringgit for the month is made of pay-type payments alone (rulebook.pay_type)."""
+    R = rulebook.get(con)
+    pay = other = 0
+    for p in con.execute("SELECT * FROM payments WHERE entity_id = ? AND month = ? AND direction = 'out' AND currency = 'MYR'",
+                         (e["id"], month)).fetchall():
+        if (budget.payment_left(con, p, as_at) or 0) > 0:
+            if R.pay_type(p["category"], month, e["id"]):
+                pay += 1
+            else:
+                other += 1
+    if stored:  # a budget line of its own (no payment behind it) is never pay
+        other += con.execute("""SELECT COUNT(*) FROM budget_lines WHERE entity_id = ? AND month = ? AND payment_id IS NULL
+                                AND currency = 'MYR' AND COALESCE(amount, 0) > 0""", (e["id"], month)).fetchone()[0]
+    return bool(pay) and not other
 
 
 def unapproved(con, e, month, today):

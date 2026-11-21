@@ -124,6 +124,15 @@ kwsp = pay(EXA, "KWSP", "statutory", 1500, "2026-11-15")
 courier = pay(EXA, "Courier - test", "other", 85.5, "2026-11-25")
 printer = pay(EXA, "Printer lease - test", "other", 410, "2026-12-10")
 here_bill = pay(EXH, "Electricity - test", "utility", 60, "2026-11-10")
+# EXN, tracked from November: a salary is all it has to pay (one person's pay), and a director's fee paid in part.
+NPAY, NDIR = 4321.09, 2650
+j("post", "/api/months/open", json={"entity_id": EXN, "month": "2026-11"})
+n_salary = j("post", "/api/payments", json={"entity_id": EXN, "month": "2026-11", "description": "Salary - Test Payee", "category": "salary",
+                                            "amount": NPAY, "account_id": acct["EXN"], "due_date": "2026-11-15"})["id"]
+n_dir = j("post", "/api/payments", json={"entity_id": EXN, "month": "2026-11", "description": "Director fee - Test Payee", "category": "director",
+                                         "amount": NDIR, "account_id": acct["EXN"], "due_date": "2026-11-05", "paid_date": "2026-11-05"})["id"]
+j("post", "/api/budget/setup", json={"entity_id": EXN, "month": "2026-11"})
+j("post", "/api/budget/header", json={"entity_id": EXN, "month": "2026-11", "balance": 1000, "as_at": "2026-11-20"})
 j("post", "/api/months/close", json={"entity_id": EXH, "month": M, "closed": True})
 
 # The October statement of EXA's Main account: the lease's line, a receipt not explained, part of the internet bill.
@@ -136,6 +145,11 @@ for n, (day, desc, amt, pid, status, bal) in enumerate((("2026-10-05", "LEASE", 
                                                        ("2026-10-20", "INTERNET", -150, internet, "matched", 53650)), 1):
     con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_date, description, amount, balance, payment_id, status)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)""", (sid, n, day, desc, amt, bal, pid, status))
+# EXN's November statement: part of the director's fee went out.
+nsid = con.execute("""INSERT INTO statements (account_id, month, statement_date, opening, closing, imported_at, check_ok)
+                      VALUES (?, '2026-11', '2026-11-30', 20000, 19000, ?, 1)""", (acct["EXN"], db.now())).lastrowid
+con.execute("""INSERT INTO statement_lines (statement_id, line_no, txn_date, description, amount, balance, payment_id, status)
+               VALUES (?, 1, '2026-11-05', 'TRANSFER', -1000, 19000, ?, 'matched')""", (nsid, n_dir))
 con.commit()
 con.disarm()
 con.close()
@@ -216,11 +230,20 @@ check("...no checklist: 'No checklist for this month yet', with the first month 
 # ---------- Due and overdue ----------
 d = card("due", EXA)
 check("Due and overdue counts from today: payments not paid that are overdue (with what is still to pay)",
-      d["overdue"]["n"] == 4 and d["overdue"]["sums"] == {"MYR": round(45 + 300 + SALARY + 1500, 2)}, d)
-check("...and those due in the next 7 days (later ones left out)", d["soon"] == {"n": 1, "sums": {"MYR": 85.5}} and d["days"] == 7, d)
+      d["overdue"]["n"] == 4 and d["overdue"]["sums"] == {"MYR": round(45 + 300 + 1500, 2)}, d)
+check("...the salary among them counted, never added to the amounts", d["overdue"]["pay_n"] == 1 and d["soon"]["pay_n"] == 0, d)
+check("...and those due in the next 7 days (later ones left out)", d["soon"] == {"n": 1, "sums": {"MYR": 85.5}, "pay_n": 0} and d["days"] == 7, d)
 check("...its link opens the month of the oldest of them", d["link_month"] == M, d)
 dh = card("due", EXH)
 check("...a filed month's payments are not counted", dh["overdue"]["n"] == 0 and dh["soon"]["n"] == 0, dh)
+dn = card("due", EXN)
+check("...when the only payment overdue is a salary, the card counts it and shows no amount at all (one person's pay)",
+      dn["overdue"] == {"n": 1, "sums": {}, "pay_n": 1} and str(NPAY) not in json.dumps(dn), dn)
+fn = card("funds", EXN, "2026-11")
+check("Funds to request: with pay alone left to pay, neither what is still to pay nor the balance is given",
+      fn.get("pay_only") is True and fn["still_to_pay"] is None and fn["balance"] is None and fn["funds"] is not None
+      and not ({str(NPAY), f"{NPAY:,.2f}"} & set(re.findall(r"[\d,.]+", json.dumps(fn)))), fn)
+check("...while a month with other bills to pay gives them", not card("funds", EXA).get("pay_only") and card("funds", EXA)["still_to_pay"] is not None)
 
 # ---------- Funds to request ----------
 f = card("funds", EXA)
@@ -294,7 +317,7 @@ ov.CARDS["bank"] = real
 check("a card that fails answers with its own error, and every other card still answers",
       failed.status_code == 500 and "could not be worked out" in failed.get_json()["error"] and set(others) == {200}, (failed.status_code, others))
 ro = j("get", f"/api/overview/rollover?month={M}")
-check("the rollover banner's route: the next month and the companies that have it set up", ro["next_month"] == "2026-11" and ro["set_up"] == [EXA], ro)
+check("the rollover banner's route: the next month and the companies that have it set up", ro["next_month"] == "2026-11" and ro["set_up"] == [EXA, EXN], ro)
 act = j("get", "/api/overview/activity")["items"]
 act_h = j("get", f"/api/overview/activity?entity_id={EXH}")["items"]
 check("Recent activity: the newest changes from the audit trail, newest first, in words with who, company and when",
@@ -307,8 +330,8 @@ check("...for the company the switcher chose: what was done, by the route it cam
 payloads = [j("get", f"/api/overview/{k}?month={m}{q}") for k in CARDS for m in (M, "2026-11") for q in ("", f"&entity_id={EXA}")]
 payloads.append({"activity": j("get", "/api/overview/activity")})
 text = json.dumps(payloads)
-bad = [w for w in (ACCT_NO, BANK_DETAILS, REG_NO, ADDRESS, "Example Bank", str(SALARY), f"{SALARY:,.2f}", str(S(SALARY)), "Salaries - test",
-                   "Test Payee", "Example Alpha Sdn Bhd") if w in text]
+PAY_WORDS = (str(SALARY), f"{SALARY:,.2f}", str(S(SALARY)), str(NPAY), f"{NPAY:,.2f}", str(S(NPAY)), "Salaries - test", "Test Payee")
+bad = [w for w in (ACCT_NO, BANK_DETAILS, REG_NO, ADDRESS, "Example Bank", "Example Alpha Sdn Bhd") + PAY_WORDS if w in text]
 check("no card and no activity line holds a pay figure, a bank account number, bank details, a registration number, an address or a name",
       not bad, bad)
 keys = set()
@@ -328,12 +351,35 @@ walk(payloads)
 check("...nor any field for one", not keys & {"number", "bank_details", "address", "ic", "passport", "tax_no", "epf_no", "old_reg_no", "name", "description", "salary"},
       keys & {"number", "bank_details", "address", "ic", "passport", "tax_no", "epf_no", "old_reg_no", "name", "description", "salary"})
 
+# Next up on the Overview: a pay-type payment (salary, director's allowance) never with its name or amount
+with db.connect() as r:
+    days = [date(2026, 11, d) for d in (1, 8, 12, 16, 20, 26)]
+    nrows = [x for day in days for x in nextup.items(r, day)] + [x for day in days for x in nextup.items(r, day, EXN)]
+    nexts = [nextup.upcoming(r, day) for day in days]
+ntext = json.dumps([[x["text"] for x in nrows], nexts])
+check("Next up names no one's pay: no salary or allowance description, no pay amount, on any day",
+      not [w for w in PAY_WORDS + ("Director fee",) if w in ntext], [w for w in PAY_WORDS + ("Director fee",) if w in ntext])
+sal_rows = [x for x in nrows if x["key"].endswith(":pay-2026-11")]
+check("...a month's salaries due soon are one row, counted, with no amount: 'Pay salaries for November (1 payment)'",
+      sal_rows and all(x["text"] == "Pay salaries for November (1 payment)" and x["amount"] is None and x["rule"] == 5 for x in sal_rows), sal_rows[:2])
+part = [x for x in nrows if x["rule"] == 8 and x["entity_id"] == EXN]
+check("...a part-paid allowance says so with no amounts", part and all(x["text"] == "A director allowance payment is part paid: not all of it is found on the EXN statements"
+                                                                        and x["amount"] is None for x in part), part[:1])
+check("...and no row carries a pay amount", not [x for x in nrows if x["amount"] in (SALARY, NPAY, NDIR, round(NDIR - 1000, 2))],
+      [x["text"] for x in nrows if x["amount"] in (SALARY, NPAY, NDIR, round(NDIR - 1000, 2))])
+
 # ---------- the page ----------
 routes = {"/api/meta": j("get", "/api/meta"), "/api/audit/status?quick=1": {"ok": True}}
 with db.connect() as r:
     items = nextup.items(r, TODAY)
     routes["/api/next"] = {"today": TODAY.isoformat(), "items": items, "older_open_months": nextup.older_open(r, TODAY), "next_due": None}
-    for scope in (None, EXA, EXN):
+    for scope in (EXA, EXN):  # one company's Overview reads that company's list
+        routes[f"/api/next?entity_id={scope}"] = {"today": TODAY.isoformat(), "items": nextup.items(r, TODAY, scope),
+                                                  "older_open_months": nextup.older_open(r, TODAY, scope), "next_due": None}
+    # EXH has nothing to do: its Overview says so with its own next due (made up here), never another company's
+    routes[f"/api/next?entity_id={EXH}"] = {"today": TODAY.isoformat(), "items": [], "older_open_months": [],
+                                            "next_due": {"due": "2026-12-01", "text": "Pay Test bill from EXH"}}
+    for scope in (None, EXA, EXN, EXH):
         q = f"month={M}" + (f"&entity_id={scope}" if scope else "")
         for k in CARDS:
             if not (k == "pl" and scope is None):  # Profit or loss can't load with All companies: the failing card
@@ -348,14 +394,15 @@ PROBE = r"""
 const fs = require("fs"), vm = require("vm");
 const [appPath, fxPath] = process.argv.slice(2);
 const fx = JSON.parse(fs.readFileSync(fxPath, "utf8"));
-const els = {}, posts = [], asked = [];
+const els = {}, posts = [], asked = [], focused = [], delay = {};
 const el = id => els[id] ||= { id, innerHTML: "", value: "", checked: false, hidden: id === "drawer", textContent: "", dataset: {}, classList: { add() {}, remove() {} },
-  setAttribute() {}, getAttribute() { return null; }, focus() {}, remove() { delete els[id]; }, querySelectorAll() { return []; }, querySelector() { return null; },
+  setAttribute() {}, getAttribute() { return null; }, focus() { focused.push(id); }, remove() { delete els[id]; }, querySelectorAll() { return []; }, querySelector() { return null; },
   addEventListener() {}, contains() { return false; } };
 const document = { querySelector: s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : null, addEventListener() {}, activeElement: null };
 async function fetch(path, init = {}) {
   if (init.method && init.method !== "GET") { posts.push([init.method, path, init.body && typeof init.body === "string" ? JSON.parse(init.body) : null]); return { ok: true, status: 200, json: async () => ({ ok: true, id: 9999 }) }; }
   asked.push(path);
+  if (delay[path]) await new Promise(res => setTimeout(res, delay[path]));
   const r = fx.routes[path];
   if (r === undefined) return { ok: false, status: 500, json: async () => ({ error: "not stubbed: " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(r)) };
@@ -382,6 +429,33 @@ const slots = () => Object.fromEntries(fx.cards.map(k => [k, { html: el("ov-c-" 
   await run(`ovRetry("pl")`); out.retried = { pl: el("ov-c-pl").innerHTML, asked: asked.slice() };
   out.exa = await show(fx.exa);
   out.exn = await show(fx.exn);
+  asked.length = 0; out.exh = await show(fx.exh); out.exh_asked = asked.slice();
+  // Try again moves the focus only when its answer was drawn on the page it was asked for
+  await show(fx.exa); focused.length = 0;
+  await run(`ovRetry("checklist")`); out.focus_same = focused.slice();
+  delay[`/api/overview/checklist?month=${fx.month}&entity_id=${fx.exa}`] = 250; delay[`/api/overview/activity?month=${fx.month}&entity_id=${fx.exa}`] = 250;
+  const late = run(`ovRetry("checklist")`), lateAct = run(`ovActivity(OV.seq, true)`);
+  await pause(); await show(fx.exn); focused.length = 0;
+  await late; await lateAct; out.focus_late = focused.slice();
+  delete delay[`/api/overview/checklist?month=${fx.month}&entity_id=${fx.exa}`]; delete delay[`/api/overview/activity?month=${fx.month}&entity_id=${fx.exa}`];
+  // the totals with All companies, on made-up answers: never an unknown figure as 0, never one currency added into another
+  run(`state.view = "overview"; state.month = "${fx.month}"; state.addr = { all: true, id: null, params: {} }`);
+  const co = (id, code, more) => ({ entity_id: id, code, kind: "sql", kind_label: "Kept in SQL Account", ...more });
+  const calm = (card, cs) => run(`ovCalm(${JSON.stringify(card)}, ${JSON.stringify({ companies: cs })})`);
+  const fund = (n, more) => ({ set_up: true, funds: n, still_to_pay: 10000, balance: 1000, as_at: "2026-11-20", bank: "Main", ...more });
+  const acct = (cur, bal, inn = 0, outt = 0) => ({ accounts: [{ label: "Main", currency: cur, balance: bal, date: "2026-10-31" }], runs_to: "2026-10-31", stale: false });
+  const bank = (totals) => ({ ...acct("MYR", 0), totals });
+  const pl = (m, y) => ({ month_sen: m, ytd_sen: y, upto: "2026-10-31", sql_to: "2026-11-17", fy_start: "2026-01-01", stale: false });
+  out.t = {
+    funds_unknown: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(null, { empty: "Enter the bank balance to see funds to request", still_to_pay: 80000, balance: null }))]),
+    funds_known: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(2000))]),
+    bank_mixed: calm("bank", [co(1, "AAA", bank({ MYR: { balance: 80000, in: 100, out: 50 } })), co(2, "BBB", bank({ USD: { balance: 17480, in: 0, out: 0 } }))]),
+    bank_both: calm("bank", [co(1, "AAA", bank({ MYR: { balance: 80000, in: 100, out: 50 }, USD: { balance: 100, in: 0, out: 0 } })),
+                              co(2, "BBB", bank({ MYR: { balance: -1250, in: 0, out: 10 }, USD: { balance: 50, in: 0, out: 0 } }))]),
+    bank_neg: calm("bank", [co(1, "AAA", bank({ MYR: { balance: -1250, in: 0, out: 1250 } }))]),
+    pl_unknown: calm("pl", [co(1, "AAA", pl(150000, 560000)), co(2, "BBB", pl(null, null))]),
+    pl_known: calm("pl", [co(1, "AAA", pl(150000, 560000)), co(2, "BBB", pl(-50000, 0))]),
+  };
   // the addresses the links write, read back
   out.parse = {};
   for (const k of Object.keys(out.exa.cards)) for (const m of out.exa.cards[k].html.matchAll(/href="(#[^"]+)"/g)) out.parse[m[1].replace(/&amp;/g, "&")] = JSON.parse(run(`JSON.stringify(parseAddr(${JSON.stringify(m[1].replace(/&amp;/g, "&"))}))`));
@@ -432,7 +506,7 @@ check("Needs attention, All companies: a block per company with its kind, counte
       and '<b class="ctr-n bad">2</b><span>Past due</span>' in att and '<b class="ctr-n">0</b>' in att and "Filed: nothing in it counts" in att, att[:900])
 due_all = cards["due"]["html"]
 check("Due and overdue with All companies: the companies added up, a line per company, 'Today'",
-      '<b class="ovh bad">4 overdue</b>' in due_all and '<span class="ovco">EXA</span>' in due_all and '<span class="ovco">EXH</span>' in due_all and 'class="tday">Today' in due_all, due_all)
+      '<b class="ovh bad">5 overdue</b>' in due_all and '<span class="ovco">EXN</span><b class="bad">1 payment overdue</b>' in due_all and '<span class="ovco">EXA</span>' in due_all and '<span class="ovco">EXH</span>' in due_all and 'class="tday">Today' in due_all, due_all)
 check("Customers overdue shows the balances from before tracking apart, labelled 'Before tracking'",
       "RM 2,700" in X["cards"]["customers"]["html"] and "Before tracking RM 4,000" in X["cards"]["customers"]["html"] and "2 balances over 30 days" in X["cards"]["customers"]["html"],
       X["cards"]["customers"]["html"])
@@ -440,11 +514,11 @@ check("Funds to request, one company: its figure and where it comes from (the co
       "Main on 20 Nov" in X["cards"]["funds"]["html"] and 'class="ovh ' in X["cards"]["funds"]["html"])
 check("one company's Overview: no company lines, and Next up lists only that company's rows (and those of no company)",
       'class="ovk"' not in X["cards"]["due"]["html"] and {k.split(":")[1] for k in re.findall(r'data-next-go="([^"]+)"', X["next"])} <= {str(EXA), "-"}
-      and {k.split(":")[1] for k in re.findall(r'data-next-go="([^"]+)"', N["next"])} == {"-"}
+      and {k.split(":")[1] for k in re.findall(r'data-next-go="([^"]+)"', N["next"])} == {str(EXN)}
       and 'class="cp info">EXA</span>' in X["next"], [re.findall(r'data-next-go="([^"]+)"', x["next"]) for x in (X, N)])
 check("a company with nothing yet: its empty sentences", "No checklist for this month yet" in N["cards"]["checklist"]["html"] and "Tracked from November 2026" in N["cards"]["checklist"]["html"]
       and "Nothing fetched from SQL yet" in N["cards"]["pl"]["html"] and "No statement imported for October 2026" in N["cards"]["bank"]["html"]
-      and "Nothing needs attention" in N["cards"]["attention"]["html"] and "Nothing due" in N["cards"]["due"]["html"], {k: v["html"][-300:] for k, v in N["cards"].items() if k in ("checklist", "due")})
+      and "Nothing needs attention" in N["cards"]["attention"]["html"] and '<b class="ovh bad">1 overdue</b>' in N["cards"]["due"]["html"] and str(NPAY) not in N["cards"]["due"]["html"], {k: v["html"][-300:] for k, v in N["cards"].items() if k in ("checklist", "due")})
 check("the HR cards and Requests waiting: their sentence and no link", all("Add your staff to see this" in X["cards"][k]["html"] and 'href="#' not in X["cards"][k]["html"] for k in ("leave", "dates", "headcount"))
       and "Nothing waiting" in X["cards"]["requests"]["html"] and 'href="#' not in X["cards"]["requests"]["html"])
 
@@ -472,10 +546,38 @@ check("every link is an address of the app", all(v is not None for v in P.values
 # the rollover banner: names the company with November set up and counts only its October rows
 rows_exa_oct = sum(1 for r in items if r["month"] == M and r["entity_id"] == EXA)
 check("the rollover banner names the company whose next month is set up, counting only its rows of the month on show",
-      "EXA&#39;s November is set up" in A["roll"] and f"which is still open: {rows_exa_oct} thing" in A["roll"] and rows_exa_oct > 0, (A["roll"], rows_exa_oct))
+      "EXA and EXN&#39;s November is set up" in A["roll"] and f"which is still open: {rows_exa_oct} thing" in A["roll"] and rows_exa_oct > 0, (A["roll"], rows_exa_oct))
 check("...on that company's Overview: November has started", "November has started" in X["roll"] and f"{rows_exa_oct} thing" in X["roll"], X["roll"])
 check("...not for a company without it", N["roll"] == "", N["roll"])
 check("...and Dismiss keeps it away", o["dismissed"].strip() == "", o["dismissed"])
+
+# one company's Overview reads that company's Next up from the server: its rows, its next due
+check("one company's Overview asks the server for that company's list, and says its own next due, never another company's",
+      f"/api/next?entity_id={EXH}" in o["exh_asked"] and "/api/next" not in o["exh_asked"]
+      and "Pay Test bill from EXH" in o["exh"]["next"] and "All caught up" in o["exh"]["next"] and "data-next-go" not in o["exh"]["next"], o["exh_asked"])
+check("Try again moves the focus to the card once its answer is drawn", o["focus_same"] == ["ov-link-checklist"], o["focus_same"])
+check("...but an answer that came back after the page moved on moves no focus (cards and Recent activity)", o["focus_late"] == [], o["focus_late"])
+
+# the totals with All companies
+t = {k: re.sub(r"\s+", " ", v) for k, v in o["t"].items()}
+
+
+def head(h):
+    m = re.search(r'<b class="ovh[^"]*">([^<]*)</b>(?:<span class="sub ovn">([^<]*)</span>)?', h)
+    return (m.group(1), m.group(2) or "") if m else (None, None)
+
+
+check("Funds to request: a company with no balance entered means no total, naming it, with each company's line kept",
+      head(t["funds_unknown"]) == ("No total", "BBB: bank balance not entered") and "RM 5,000" not in head(t["funds_unknown"])[0]
+      and '<span class="ovco">BBB</span><b class="muted">Balance not entered</b>' in t["funds_unknown"] and "RM 5,000.00" in t["funds_unknown"], head(t["funds_unknown"]))
+check("...and with every balance entered, the total", head(t["funds_known"])[0] == "RM 7,000", head(t["funds_known"]))
+check("Bank: each currency totalled on its own, never one label over two currencies",
+      head(t["bank_mixed"]) == ("RM 80,000", "in RM 100 · out RM 50 · also USD 17,480") and "MYR+USD" not in t["bank_mixed"], head(t["bank_mixed"]))
+check("...companies added up per currency (ringgit with ringgit, dollars with dollars)", head(t["bank_both"]) == ("RM 78,750", "in RM 100 · out RM 60 · also USD 150"), head(t["bank_both"]))
+check("...an overdrawn balance keeps its minus sign", head(t["bank_neg"])[0] == "-RM 1,250", head(t["bank_neg"]))
+check("Profit or loss: a company whose month can't be worked out is not counted as 0; the total says it leaves it out",
+      head(t["pl_unknown"]) == ("Profit RM 1,500", "this month, the companies together · leaves out BBB: the month can&#39;t be worked out"), head(t["pl_unknown"]))
+check("...and with both known, the companies together", head(t["pl_known"])[0] == "Profit RM 1,000", head(t["pl_known"]))
 
 # Add a payment from the Overview
 na = o["np_all"]

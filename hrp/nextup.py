@@ -101,8 +101,29 @@ def upcoming(con, today, entity_id=None):
         p = con.execute("SELECT * FROM payments WHERE entity_id = ? AND month = ? AND direction = 'out' AND paid_date IS NULL "
                         "AND due_date > ? ORDER BY due_date, id LIMIT 1", (e["id"], m, iso)).fetchone()
         if p:
-            found.append((p["due_date"], f"Pay {db._names([p], [p])} from {e['code']}"))
+            found.append((p["due_date"], f"Pay {_said([p], [p], rulebook.get(con))} from {e['code']}"))
     return dict(zip(("due", "text"), min(found))) if found else None
+
+
+def _is_pay(R, p):
+    """A payment of a pay type (rulebook.pay_type: a salary, a director's allowance): its amount is one person's pay and its
+    description names the person, so Next up (on the Overview) shows neither (the "Never on the Overview" list)."""
+    return R.pay_type(p["category"], p["month"], p["entity_id"])
+
+
+def _pay_words(ps, R):
+    """Pay-type payments counted by their type, with no name or amount: 1 salary payment, 2 director allowance payments."""
+    n = Counter(p["category"] for p in ps)
+    return db._listed(f"{k} {R.label(c).lower()} payment{_s(k)}" for c, k in n.items())
+
+
+def _said(ps, among, R):
+    """What a group of payments is called in a sentence: the others by their descriptions (db._names), the pay-type ones
+    only counted (_pay_words)."""
+    pay = [p for p in ps if _is_pay(R, p)]
+    rest = [p for p in ps if not _is_pay(R, p)]
+    parts = ([db._names(rest, [p for p in among if not _is_pay(R, p)])] if rest else []) + ([_pay_words(pay, R)] if pay else [])
+    return db._listed(parts)
 
 
 def _row(rule, e, month, text, due, priority, go, key, amount=None, currency=None):
@@ -250,11 +271,12 @@ def _not_found(e, pays, iso, soon, R):
     for (code, m, way), ps in groups.items():
         n, one = len(ps), len(ps) == 1
         same = len({p["currency"] for p in ps}) == 1 and all(p["amount"] is not None for p in ps)
-        total = round(sum(p["amount"] for p in ps), 2) if same else None
+        # a group holding pay (a salary...) gives no total: it would show that pay (the "Never on the Overview" list)
+        total = round(sum(p["amount"] for p in ps), 2) if same and not any(_is_pay(R, p) for p in ps) else None
         if code != "not_on_statement":
             legal = db.legal_due(ps[0], R)
             what = (f"{n} {e['code']} statutory payments are" if n > 3
-                    else f"{db._names(ps, ps)} for {e['code']} {'is' if one else 'are'}")
+                    else f"{_said(ps, ps, R)} for {e['code']} {'is' if one else 'are'}")
             text = (f"{what} past the legal deadline of {db.short_day(legal)}: pay now or record the payment{_s(n)} (penalty risk)"
                     if code == "past_legal" else
                     f"{what} not recorded as paid, and the legal deadline is {db.short_day(legal)}: pay or record the "
@@ -262,7 +284,7 @@ def _not_found(e, pays, iso, soon, R):
             rows.append(_row(4, e, m, text, legal, P1, _pay_go(ps), code, total, ps[0]["currency"]))
         else:
             mons = list(dict.fromkeys(_mon(p["due_date"]) for p in ps))
-            what = f"{n} {_kinds(ps, R)} are" if n > 3 else f"{db._names(ps, ps)} {'is' if one else 'are'}"
+            what = f"{n} {_kinds(ps, R)} are" if n > 3 else f"{_said(ps, ps, R)} {'is' if one else 'are'}"
             other = (f"enter the date{_s(n)} received" if way == "in" else f"enter the paid date{_s(n)}")
             text = (f"{what} not on the {e['code']} {db._listed(mons)} statement{_s(len(mons))}: link "
                     f"{'its bank line' if one else 'their bank lines'} or {other}")
@@ -281,12 +303,21 @@ def _to_pay(con, e, pays, iso, ahead):
     """Rule 5: payments out not paid yet that fall due within AHEAD days, one row per month, due date and currency
     with what is still to pay (as the Budget page has it as at today, which Go opens; a stored budget counts its lines, and a payment with no line
     counts as it is), how many are estimates and how many have no amount yet. A date shared by two months says which month each row is for.
-    Statutory payments are not given here: each has a row of its own (_statutory_pays)."""
-    groups, rows = {}, []
+    Statutory payments are not given here: each has a row of its own (_statutory_pays). Pay-type payments (a salary, a
+    director's allowance) are one row per month, counted, with no name or amount: "Pay salaries for October (3 payments)"."""
+    groups, pay, rows = {}, {}, []
+    R = rulebook.get(con)
     for x in pays:
         p = x["p"]
         if p["direction"] == "out" and not p["paid_date"] and iso <= p["due_date"] <= ahead:
-            groups.setdefault((p["due_date"], p["currency"], p["month"]), []).append(p)
+            if _is_pay(R, p):
+                pay.setdefault(p["month"], []).append(p)
+            else:
+                groups.setdefault((p["due_date"], p["currency"], p["month"]), []).append(p)
+    for m, ps in sorted(pay.items()):
+        d = min(p["due_date"] for p in ps)
+        text = f"Pay {_kinds(ps, R)} for {calendar.month_name[int(m[5:7])]} ({len(ps)} payment{_s(len(ps))})"
+        rows.append(_row(5, e, m, text, d, P1 if d == iso else P2, _pay_go(ps), f"pay-{m}"))
     shared = Counter(key[:2] for key in groups)
     for (d, cur, m), ps in sorted(groups.items()):
         left = [budget.payment_left(con, p, iso) for p in ps]
@@ -296,7 +327,7 @@ def _to_pay(con, e, pays, iso, ahead):
         est = sum(1 for p, v in zip(ps, left) if p["amount_is_estimate"] and v is not None)
         notes = ([("estimate" if one else f"{est} estimate{_s(est)}")] if est else []) + (
             [f"no amount{_s(len(ps))} yet"] if not known else [f"{blank} without an amount"] if blank else [])
-        what = f"{db._names(ps, ps)} from {e['code']}" if one else f"{len(ps)} {e['code']} {_kinds(ps, rulebook.get(con))}"
+        what = f"{db._names(ps, ps)} from {e['code']}" if one else f"{len(ps)} {e['code']} {_kinds(ps, R)}"
         month = f" for {_mon(m)}" if shared[d, cur] > 1 else ""
         text = (f"Pay {what}{month} by {db.short_day(d)}" + (f": {db.money(total, cur)}" if known else "")
                 + (f" ({', '.join(notes)})" if notes else ""))
@@ -335,7 +366,7 @@ def _statutory_pays(con, e, pays, iso, ahead, open_months, R):
     return rows, ids
 
 
-# The kinds of statutory payable a payment to an authority pays: by the words of its name (statutory.kind_of_name), and
+# The kinds of statutory payable a payment to an authority pays: by the words of its name (statutory.kinds_of_name), and
 # PERKESO collects EIS and SKBBK with SOCSO, so a payment named for SOCSO or PERKESO stands for all three.
 _COLLECTED_WITH = {"socso": ("socso", "eis", "skbbk")}
 
@@ -349,9 +380,10 @@ def _unpaid_statutory(con, e):
                             WHERE p.entity_id = ? AND p.direction = 'out' AND p.paid_date IS NULL""", (e["id"],)):
         if not db.legal_due(p, R) or db.before_tracking(e, p["month"]) or db.closed_at(con, e["id"], p["month"]):
             continue
-        kind = statutory.kind_of_name(p["description"]) or statutory.kind_of_name(p["payee_name"])
-        for k in _COLLECTED_WITH.get(kind, (kind,) if kind else ()):
-            out.add((k, p["month"]))
+        kinds = statutory.kinds_of_name(p["description"]) or statutory.kinds_of_name(p["payee_name"])
+        for kind in kinds:  # every kind the name speaks of ("SOCSO & EIS", "KWSP & PERKESO")
+            for k in _COLLECTED_WITH.get(kind, (kind,)):
+                out.add((k, p["month"]))
     return out
 
 
@@ -423,7 +455,7 @@ def _in_sql(con, e, worked, pays, cur):
         n = len(unrecorded)
         mons = list(dict.fromkeys(_mon(d) for d in sorted(p["paid_date"] or p["due_date"] for p in unrecorded)))
         kinds = list(dict.fromkeys("Official Receipt" if p["direction"] == "in" else "Payment Voucher" for p in unrecorded))
-        what = db._names(unrecorded, unrecorded) if n == 1 else f"{n} {_kinds(unrecorded, rulebook.get(con))}"
+        what = _said(unrecorded, unrecorded, rulebook.get(con)) if n == 1 else f"{n} {_kinds(unrecorded, rulebook.get(con))}"
         text = (f"Fetch SQL's {db._listed(mons)} {db._listed(kinds)} listing{_s(len(mons) * len(kinds))} on the SQL import page: "
                 f"{what} not recorded"
                 + (f"; {unlinked}" if k else "") + (f"; {moved}" if ch else ""))
@@ -436,11 +468,16 @@ def _in_sql(con, e, worked, pays, cur):
 
 
 def _part_paid(con, e, mine):
-    """Rule 8: paid with bank lines that add up to less than the amount, and no note accepting the difference."""
-    rows = []
+    """Rule 8: paid with bank lines that add up to less than the amount, and no note accepting the difference. A pay-type
+    payment (a salary...) says so with no name and no amount."""
+    rows, R = [], rulebook.get(con)
     for x in mine:
         if x["status"] == "part_paid":
             p = x["p"]
+            if _is_pay(R, p):
+                rows.append(_row(8, e, p["month"], f"A {_pay_words([p], R)[2:]} is part paid: not all of it is found on the "
+                                 f"{e['code']} statements", None, P2, _pay_go([p]), f"part-{p['id']}"))
+                continue
             found = db.linked_total(con, p)
             text = (f"{db._names([p], [p])} is part paid: {db.money(found, p['currency'])} of {db.money(p['amount'], p['currency'])} "
                     f"found on the {e['code']} statements")

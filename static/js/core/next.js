@@ -74,9 +74,10 @@ function nextRow(r) {
 function nextCard(res, scope) {
   const ov = !scope && state.view === "overview", who = ov && typeof ovWho === "function" ? ovWho() : "";
   if (res.error) return `<div class="card noprint"><div class="next-head"><h2 id="ov-next-h" tabindex="-1">Next up</h2>${who}</div><div class="note">Couldn't work out what to do next: ${esc(res.error)}</div></div>`;
-  if (!scope) state.menuNext = { items: res.items, at: Date.now() };  // the side menu's numbers count these rows (core/menu.js)
-  // On the Overview the top bar's switcher is the company filter: one company's rows (and those of no company, the backup).
+  // On the Overview the top bar's switcher is the company filter: the list was read for that company (/api/next?entity_id=), with its
+  // own rows, those of no company (the backup), its older months and its next due.
   const only = ov ? ovScope() : null;
+  if (!scope && !only) state.menuNext = { items: res.items, at: Date.now() };  // the side menu's numbers count every company's rows (core/menu.js)
   const items = only ? res.items.filter(r => r.entity_id == null || r.entity_id === only) : res.items;
   const olderOpen = only ? res.older_open_months.filter(o => o.entity_id === only) : res.older_open_months;
   state.next = new Map(items.map(r => [r.key, r]));
@@ -109,8 +110,8 @@ function todoLinks(res) {
 // the checklist the to-dos link. With keepOnError, a list that can't be read leaves it as it was.
 async function refreshNext(keepOnError) {
   if (!["overview", "entity", "checklist"].includes(state.view)) return;
-  const scope = nextScope(), res = await loadNext(scope);
-  if (scope !== nextScope() || (keepOnError && res.error)) return;
+  const scope = nextScope(), only = state.view === "overview" ? ovScope() : null, res = await loadNext(scope || only);
+  if (scope !== nextScope() || (state.view === "overview" ? ovScope() : null) !== only || (keepOnError && res.error)) return;
   const box = $("#nextUp"), todo = $("#todoBox");
   if (box && !scope) { box.innerHTML = nextCard(res, scope); renderNav(); }
   else if (todo && scope) todo.innerHTML = todoLinks(res);

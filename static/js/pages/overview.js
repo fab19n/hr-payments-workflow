@@ -22,7 +22,8 @@ const ovQuery = () => `month=${state.month}${ovScope() ? `&entity_id=${ovScope()
 const monthOnly = k => monthName(k).split(" ")[0];
 const r0 = n => Math.round(Math.abs(Number(n) || 0)).toLocaleString("en-MY");
 const curWord = c => c === "MYR" ? "RM" : c;
-const money0 = (n, c = "MYR") => `${curWord(c)} ${r0(n)}`;
+// Whole ringgit (or another currency), keeping the sign: an overdrawn balance reads -RM 1,250.
+const money0 = (n, c = "MYR") => `${Math.round(Number(n) || 0) < 0 ? "-" : ""}${curWord(c)} ${r0(n)}`;
 // Sums per currency, ringgit first: "RM 1,250.00 and USD 300.00".
 const sumsText = (sums, round) => Object.entries(sums || {}).sort((a, b) => (a[0] !== "MYR") - (b[0] !== "MYR"))
   .map(([c, n]) => round ? money0(n, c) : money(n, c)).join(" and ");
@@ -50,7 +51,9 @@ const OV_CARDS = {
     src: () => "Payments out not paid yet, as at today: what is overdue, and what falls due in the next 7 days, from every month still open.",
     get: c => {
       const n = c.overdue.n, n2 = c.soon.n, soon = n2 ? `${n2} due in the next ${c.days} days` : `nothing due in the next ${c.days} days`;
-      const bit = `${c.code}: ${n} overdue${n && sumsText(c.overdue.sums) ? `, ${sumsText(c.overdue.sums)}` : ""}; ${soon}${n2 && sumsText(c.soon.sums) ? `, ${sumsText(c.soon.sums)}` : ""}.`;
+      const payN = (c.overdue.pay_n || 0) + (c.soon.pay_n || 0);
+      const bit = `${c.code}: ${n} overdue${n && sumsText(c.overdue.sums) ? `, ${sumsText(c.overdue.sums)}` : ""}; ${soon}${n2 && sumsText(c.soon.sums) ? `, ${sumsText(c.soon.sums)}` : ""}.`
+        + (payN ? ` ${plural(payN, "pay payment")} (a salary, an allowance) counted but not added to the amounts.` : "");
       if (!n && !n2) return { u: "n", n: 0, n2: 0, zero: true, head: "0 overdue", headTone: "muted", line: "None", note: soon };
       return { u: "n", n, n2, head: `${n} overdue`, headTone: n ? "bad" : "", line: n ? `${sumsText(c.overdue.sums) || plural(n, "payment")} overdue` : `${n2} due`, lineTone: n ? "bad" : "",
         note: soon + (n2 && sumsText(c.soon.sums, true) ? `, ${sumsText(c.soon.sums, true)}` : ""), bit };
@@ -61,10 +64,13 @@ const OV_CARDS = {
     src: () => `From the Budget: what is still to pay for ${monthName(state.month)}, less the bank balance entered on the budget's balance date.`,
     get: c => {
       if (!c.set_up) return { empty: c.empty, short: "Not set up" };
-      if (c.funds == null) return { empty: c.empty, short: "Balance not entered", asZero: true };
+      // No balance entered: the funds are not known, so no total is drawn while any company's are (unknown).
+      if (c.funds == null) return { empty: c.empty, short: "Balance not entered", unknown: true };
       return { u: "RM", n: c.funds, head: money0(c.funds), line: money(c.funds), note: c.funds ? "to cover what's still to pay" : "the balance covers what's still to pay",
-        bit: `${c.code}: still to pay ${money(c.still_to_pay)}, less ${money(c.balance)} in ${c.bank || "the bank"} on ${shortDate(c.as_at)}.` };
+        bit: c.pay_only ? `${c.code}: what is still to pay is pay alone, so it is not shown here.`
+          : `${c.code}: still to pay ${money(c.still_to_pay)}, less ${money(c.balance)} in ${c.bank || "the bank"} on ${shortDate(c.as_at)}.` };
     },
+    unknownWhy: "bank balance not entered", partial: "none",
     sum: L => ({ head: money0(L.reduce((s, x) => s + x.n, 0)), note: "to cover what's still to pay" }) },
   unapproved: { title: "Paid without approval on file", glyph: "approval", tone: "bad", follows: true, hidden: true },
   bank: { title: "Bank", glyph: "bank", tone: "brand", follows: true, empty: () => `No statement imported for ${monthName(state.month)}`, open: "Open bank", where: ", Accounting, Bank and reconciliation",
@@ -73,26 +79,30 @@ const OV_CARDS = {
     stale: cs => { const s = cs.filter(c => c.stale && c.runs_to).map(c => c.runs_to).sort()[0]; return s ? `Statement runs to ${shortDate(s)}` : ""; },
     get: c => {
       if (c.empty) return { empty: c.empty, short: "No statement" };
-      const curs = Object.keys(c.totals).sort((a, b) => (a !== "MYR") - (b !== "MYR")), u = curs[0], t = c.totals[u];
-      const more = curs.slice(1).map(k => money(c.totals[k].balance, k)).join(", ");
-      return { u: curs.join("+"), n: t.balance, inn: t.in, out: t.out, head: money0(t.balance, u), line: money(t.balance, u),
-        note: `in ${money0(t.in, u)} · out ${money0(t.out, u)}` + (more ? ` · also ${more}` : ""),
+      const { head, note } = bankWords(c.totals);
+      const curs = bankCurs(c.totals);
+      return { u: "bank", totals: c.totals, head, line: curs.map(k => money(c.totals[k].balance, k)).join(" · "), note,
         bit: `${c.code}: ${c.accounts.map(a => `${a.label} ${money(a.balance, a.currency)} on ${shortDate(a.date)}`).join("; ")}.` };
     },
-    sum: L => { const u = L[0].u, s = k => L.reduce((t, x) => t + x[k], 0); return { head: money0(s("n"), u), note: `in ${money0(s("inn"), u)} · out ${money0(s("out"), u)}` }; } },
+    // Each currency is added up on its own, across the companies that hold it; never one currency into another.
+    sum: L => { const t = {};
+      for (const x of L) for (const [k, v] of Object.entries(x.totals)) { const s = t[k] ||= { balance: 0, in: 0, out: 0 }; s.balance += v.balance; s.in += v.in; s.out += v.out; }
+      return bankWords(t); } },
   pl: { title: "Profit or loss", glyph: "chart", tone: "brand", follows: true, sql: true, empty: "No books yet", open: "Open Books", where: ", Accounting, Books, Profit and loss",
     href: c => ovHref("books", c.entity_id, { tab: "pl" }),
     src: cs => { const to = cs.map(c => c.sql_to).filter(Boolean).sort()[0]; return to ? `From SQL's books, journal to ${shortDate(to)}.` : "From the books."; },
     stale: cs => { const s = cs.filter(c => c.stale).map(c => c.sql_to).sort()[0]; return s ? `SQL data runs to ${shortDate(s)}, fetch again` : ""; },
     get: c => {
       if (c.empty) return { empty: c.empty, short: c.empty === "No books yet" ? "No books yet" : "Nothing fetched" };
-      const word = sen => sen < 0 ? "Loss" : "Profit", ytd = c.ytd_sen == null ? "year to date can't be worked out" : `${word(c.ytd_sen)} ${money0(c.ytd_sen / 100)} year to ${c.upto < `${state.month}-01` || c.upto < lastDay(state.month) ? shortDate(c.upto) : "date"}`;
-      if (c.month_sen == null) return { u: "RM", n: 0, head: "—", headTone: "muted", line: "—", lineTone: "muted", note: ytd,
+      const word = sen => sen < 0 ? "Loss" : "Profit", ytd = c.ytd_sen == null ? "year to date can't be worked out" : `${word(c.ytd_sen)} ${money0(Math.abs(c.ytd_sen / 100))} year to ${c.upto < `${state.month}-01` || c.upto < lastDay(state.month) ? shortDate(c.upto) : "date"}`;
+      // The month can't be worked out: never counted as 0 in a total (unknown).
+      if (c.month_sen == null) return { u: "RM", n: 0, unknown: true, head: "—", headTone: "muted", line: "Not worked out", lineTone: "muted", note: ytd,
         bit: c.upto < `${state.month}-01` ? `${c.code}: SQL's data runs to ${shortDate(c.sql_to)}, before ${monthName(state.month)}.` : `${c.code}: an opening balance is missing, so the month can't be worked out.` };
       const m = c.month_sen / 100;
-      return { u: "RM", n: m, head: `${word(c.month_sen)} ${money0(m)}`, headTone: m < 0 ? "bad" : "", line: `${word(c.month_sen)} ${money(Math.abs(m))}`, lineTone: m < 0 ? "bad" : "", note: ytd };
+      return { u: "RM", n: m, head: `${word(c.month_sen)} ${money0(Math.abs(m))}`, headTone: m < 0 ? "bad" : "", line: `${word(c.month_sen)} ${money(Math.abs(m))}`, lineTone: m < 0 ? "bad" : "", note: ytd };
     },
-    sum: L => { const n = L.reduce((s, x) => s + x.n, 0); return { head: `${n < 0 ? "Loss" : "Profit"} ${money0(n)}`, headTone: n < 0 ? "bad" : "", note: "this month, the companies together" }; } },
+    unknownWhy: "the month can't be worked out", partial: "leave_out",
+    sum: L => { const n = L.reduce((s, x) => s + x.n, 0); return { head: `${n < 0 ? "Loss" : "Profit"} ${money0(Math.abs(n))}`, headTone: n < 0 ? "bad" : "", note: "this month, the companies together" }; } },
   customers: { title: "Customers overdue", glyph: "users", tone: "brand", today: true, sql: true, empty: "No balances", open: "Open customers", where: ", Accounting, Customers and suppliers, customers",
     href: c => ovHref("parties", c.entity_id),
     src: cs => { const to = cs.map(c => c.sql_to).filter(Boolean).sort()[0]; return `${to ? `As at ${shortDate(to)}, from SQL. ` : ""}Balances older than 30 days. Balances brought forward from before tracking are not counted as overdue: they show apart, as Before tracking.`; },
@@ -126,6 +136,14 @@ const OV_CARDS = {
   headcount: { title: "Headcount", glyph: "staff", tone: "brand", today: true, empty: "Add your staff to see this", src: () => "From Staff, as at today: people in employment, and joiners and leavers this month.", get: c => ({ empty: c.empty, short: "No staff yet" }) },
   requests: { title: "Requests waiting", glyph: "claim", tone: "brand", today: true, empty: "Nothing waiting", src: () => "Waiting for approval on Approvals, and approved but not yet paid.", get: c => ({ empty: c.empty, short: "None" }) },
 };
+// The Bank card's words for balances per currency: the ringgit (else the first) currency as the headline with its in and out,
+// every other currency's balance named after it ("also USD 17,480"). Balances keep their sign.
+const bankCurs = totals => Object.keys(totals).sort((a, b) => (a !== "MYR") - (b !== "MYR") || (a < b ? -1 : 1));
+function bankWords(totals) {
+  const curs = bankCurs(totals), u = curs[0], t = totals[u];
+  const more = curs.slice(1).map(k => money0(totals[k].balance, k)).join(", ");
+  return { head: money0(t.balance, u), note: `in ${money0(t.in, u)} · out ${money0(t.out, u)}` + (more ? ` · also ${more}` : "") };
+}
 const lastDay = m => { const [y, mm] = m.split("-").map(Number); return `${m}-${String(new Date(y, mm, 0).getDate()).padStart(2, "0")}`; };
 
 // ---------- Needs attention: five counters per company, each opening its list ----------
@@ -176,7 +194,15 @@ function ovCalm(id, d) {
   const main = live.find(x => !x.v.zero) || live[0] || per[0];
   const dEmpty = typeof C.empty === "function" ? C.empty() : C.empty;
   let head = "", note = "", headTone = "", extra = "";
-  if (!none) {
+  // A company whose figure is not known (no bank balance entered, a month that can't be worked out) is never added as 0:
+  // with it there is no total (partial "none"), or a total of the others that says it leaves that company out ("leave_out").
+  const unknown = per.filter(x => x.v.unknown), known = live.filter(x => !x.v.unknown);
+  if (!none && many && unknown.length && C.sum) {
+    const codes = unknown.map(x => x.c.code).join(" and ");
+    if (C.partial === "leave_out" && known.length && new Set(known.map(x => x.v.u)).size === 1) {
+      const s = C.sum(known.map(x => x.v)); head = s.head; headTone = s.headTone || ""; note = `${s.note || ""} · leaves out ${codes}: ${C.unknownWhy}`;
+    } else { head = "No total"; headTone = "muted"; note = `${codes}: ${C.unknownWhy}`; }
+  } else if (!none) {
     if (many && agree && C.sum) { const s = C.sum(live.map(x => x.v)); head = s.head; note = s.note || ""; headTone = s.headTone || ""; extra = s.extra || ""; }
     else { head = main.v.head; headTone = main.v.headTone || ""; note = main.v.note || ""; extra = main.v.extra || ""; if (many) note = main.c.code + (note ? " · " + note : " only"); }
   }
@@ -217,13 +243,18 @@ async function ovLoad(id, seq) {
   OV.data[id] = { busy: true }; ovPaint(id);
   let x;
   try { x = { d: await api(`/api/overview/${id}?${ovQuery()}`) }; } catch (e) { x = { err: e.message || "Could not load" }; }
-  if (seq !== OV.seq || state.view !== "overview") return;
+  if (seq !== OV.seq || state.view !== "overview") return false;
   OV.data[id] = x; ovPaint(id);
+  return true;
 }
-// Try again on one card: only that card is read again; the focus goes to its link (else its heading) once it is back.
+// The page the answer was asked for is still on show: the same Overview drawn, the same month and company choice.
+const ovSame = (seq, month, scope) => seq === OV.seq && state.view === "overview" && state.month === month && ovScope() === scope;
+// Try again on one card: only that card is read again; once it is back and drawn, on the same page, the focus goes to its
+// link (else its first counter, else its heading). An answer dropped as late moves no focus.
 async function ovRetry(id) {
   if (!OV_CARDS[id]) return;
-  await ovLoad(id, OV.seq);
+  const seq = OV.seq, month = state.month, scope = ovScope();
+  if (!(await ovLoad(id, seq)) || !ovSame(seq, month, scope)) return;
   const first = OV.data[id]?.d?.companies?.[0];
   ($(`#ov-link-${id}`) || (first && $(`#ov-ctr-past_due-${first.entity_id}`)) || $(`#ov-h-${id}`))?.focus?.({ preventScroll: true });
 }
@@ -238,10 +269,11 @@ function ovActHtml(r) {
 }
 async function ovActivity(seq, focus) {
   OV.act = null; const box = $("#ovAct"); if (box) box.innerHTML = ovActHtml(null);
+  const month = state.month, scope = ovScope();
   let r;
   try { r = await api(`/api/overview/activity?${ovQuery()}`); } catch (e) { r = { error: e.message }; }
   if (!r.error && !Array.isArray(r.items)) r = { error: "The answer had no entries in it" };
-  if (seq !== OV.seq || state.view !== "overview") return;
+  if (!ovSame(seq, month, scope)) return;  // a late answer for a page since left: dropped, and no focus moved
   OV.act = r; const b = $("#ovAct"); if (b) b.innerHTML = ovActHtml(r);
   if (focus) $("#ov-act-h")?.focus?.({ preventScroll: true });
 }
@@ -287,7 +319,7 @@ async function viewOverview(main) {
     OV.done = Promise.resolve();
     return;
   }
-  const [next, ro] = await Promise.all([loadNext(null), api(`/api/overview/rollover?${ovQuery()}`).catch(e => ({ error: e.message }))]);
+  const [next, ro] = await Promise.all([loadNext(scope), api(`/api/overview/rollover?${ovQuery()}`).catch(e => ({ error: e.message }))]);
   if (seq !== OV.seq) return;
   // Nothing answered at all (the records can't be reached): the page's own Couldn't load card, not a page of failed cards.
   if (next.error && ro.error) throw new Error(next.error);

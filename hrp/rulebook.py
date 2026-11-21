@@ -92,6 +92,13 @@ class Rules:
         every = [s for s in found if s["entity_id"] is None]
         return (own or every or [None])[0]
 
+    def pay_type(self, category, month=None, entity_id=None):
+        """True for a payment type that pays a person their pay: one whose documents (Setup › Required documents, the set in
+        force) ask for a payslip, as salaries and directors' allowances do. Such a payment's amount is that person's pay, so
+        the Overview never shows it on its own (slice 1, the "Never on the Overview" list)."""
+        s = self.set_for(category, month, entity_id)
+        return bool(s and "payslip" in s["docs"])
+
     def required_docs(self, category, uses_sql, month=None, entity_id=None):
         """The documents a payment of the type needs in that payroll month: the set in force (a type with none takes
         the 'other' type's), without the ones only SQL Account issues for a company not kept in SQL."""

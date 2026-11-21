@@ -149,7 +149,18 @@ with db.connect() as r:
     covered = nextup._unpaid_statutory(r, e)
 check("...and a PERKESO payment stands for SOCSO, EIS and SKBBK (collected together)",
       covered == {("epf", M), ("socso", M), ("eis", M), ("skbbk", M)}, covered)
+for name, want in (("SOCSO & EIS", {"socso", "eis", "skbbk"}), ("PERKESO (SOCSO+EIS)", {"socso", "eis", "skbbk"}),
+                   ("EIS (SIP)", {"eis"}), ("PCB and HRD Corp levy", {"pcb", "hrdf"})):
+    j("patch", f"/api/payments/{clean}", json={"description": name})
+    with db.connect() as r:
+        covered = nextup._unpaid_statutory(r, e)
+    check(f"...a payment named '{name}' stands for every kind it names", covered == {("epf", M)} | {(k, M) for k in want}, covered)
 j("delete", f"/api/payments/{clean}", json={})
+j("patch", f"/api/payments/{kwsp}", json={"description": "EIS & KWSP"})
+rs = rows(LATE)
+check("a payment named for two kinds ('EIS & KWSP') still stands for EPF: no rule 14 row beside its own",
+      not [r for r in rs if r["rule"] == 14] and len([r for r in rs if r["key"].endswith(f":stat-{kwsp}")]) == 1, [r["text"] for r in rs])
+j("patch", f"/api/payments/{kwsp}", json={"description": "KWSP"})
 
 # ---------- paid short: the rule 14 row ----------
 con = db.connect()

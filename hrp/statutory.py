@@ -107,6 +107,17 @@ def kind_of_name(name):
     return None
 
 
+def kinds_of_name(name):
+    """Every statutory kind a name speaks of, as a set: "SOCSO & EIS" or "KWSP & PERKESO" name two. kind_of_name gives
+    the first one only, for the callers that want one."""
+    up = str(name or "").upper()
+    words = set(re.findall(r"[A-Z0-9]+", up))
+    found = {kind for kind, ws in _KIND_WORDS if words & set(ws)}
+    if "HRD CORP" in up or "HRDCORP" in words:
+        found.add("hrdf")
+    return found
+
+
 def _accounts(con, eid):
     """{code: {name, type}} of the company's chart in use, plus the codes its account lines name that the chart lacks
     (type None), so a company whose chart isn't entered still gets a suggestion from SQL's own names."""
