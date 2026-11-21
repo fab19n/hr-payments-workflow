@@ -297,6 +297,17 @@ with section('1. Words in SQL descriptions is optional: left empty it is no word
     r = c.patch(BASE + f"/api/setup/guess_words/{rule['id']}", headers=H, json={"fields": {"words": []}})
     check("...and so is clearing the words of one", r.status_code == 400 and "at least one word" in r.get_json()["error"]
           and call("get", f"/api/setup/guess_words/{rule['id']}")["record"]["words"] == ["LEVY"], r.get_json())
+    item = q("SELECT code FROM checklist_items ORDER BY id LIMIT 1")[0]["code"]
+    for kind, fields in (("hint_words", {"label": "Test hint", "payment_type": "salary"}),
+                         ("filing_words", {"label": "Test filing", "doc_kind": "invoice", "checklist_code": item})):
+        r = c.post(BASE + f"/api/setup/{kind}", headers=H, json={"fields": {**fields, "words": []}})
+        check(f"{kind}: an empty list of words is refused on add, as for payment type guesses", r.status_code == 400 and "at least one word" in r.get_json()["error"], r.get_json())
+        r = c.post(BASE + f"/api/setup/{kind}", headers=H, json={"fields": {**fields, "words": [" ", ""]}})
+        check(f"{kind}: ...and a list of blanks", r.status_code == 400 and "at least one word" in r.get_json()["error"], r.get_json())
+        made = call("post", f"/api/setup/{kind}", json={"fields": {**fields, "words": ["levy"]}})
+        r = c.patch(BASE + f"/api/setup/{kind}/{made['id']}", headers=H, json={"fields": {"words": []}})
+        check(f"{kind}: ...and clearing the words of one, which keeps its words", r.status_code == 400 and "at least one word" in r.get_json()["error"]
+              and call("get", f"/api/setup/{kind}/{made['id']}")["record"]["words"] == ["LEVY"], r.get_json())
 
 # 2. Where used lists every record that refers to a company or a GL account, so Delete is not offered and then refused by the records
 with section('2. Where used lists every record that refers to a company or a GL acco'):
@@ -356,6 +367,20 @@ with section('2. Where used lists every record that refers to a company or a GL 
               r.status_code == 409 and "1 statutory account" in r.get_json()["error"] and q("SELECT id FROM gl_accounts WHERE code = ?", (code,)) != []
               and q("SELECT payable_code FROM statutory_accounts")[0]["payable_code"] == "420-1001", r.get_json())
     check("a GL account no statutory account names can still be deleted", call("get", f"/api/setup/gl_accounts/{gl['310-000']['id']}")["can_delete"] is True)
+    # a chart account named only by an opening balance, or by a line of a journal read from SQL
+    for what, code in (("opening balance", "770-0001"), ("SQL journal line", "770-0002")):
+        ga = call("post", "/api/setup/gl_accounts", json={"entity_id": EXB, "fields": {"code": code, "name": f"Named only by a {what}"}})
+        if what == "opening balance":
+            write(f"a {what} of {code}", ("INSERT INTO ledger_openings (entity_id, account_code, as_of, source, set_at) VALUES (?, ?, '2026-01-01', 'here', ?)", (EXB, code, NOW)))
+        else:
+            write(f"a {what} of {code}", ("INSERT INTO sql_imports (entity_id, filename, imported_at, entries, linked) VALUES (?, 'journal.xlsx', ?, 0, 0)", (EXB, NOW)),
+                  ("INSERT INTO sql_journal_lines (entity_id, dockey, import_id, code, dr, cr) VALUES (?, 'J1', (SELECT MAX(id) FROM sql_imports), ?, 10, 0)", (EXB, code)))
+        rec = call("get", f"/api/setup/gl_accounts/{ga['id']}")
+        check(f"Where used says a chart account named only by a {what} is used by it, its code can't change, and Delete is not offered",
+              any(w == what for w, n in rec["used_by"]) and rec["can_delete"] is False and "code" in rec["locked"], rec["used_by"])
+        r = c.delete(BASE + f"/api/setup/gl_accounts/{ga['id']}", headers=H, json={"reason": "test"})
+        check(f"...and deleting it is refused, naming it, and deletes nothing", r.status_code == 409 and f"1 {what}" in r.get_json()["error"]
+              and q("SELECT id FROM gl_accounts WHERE id = ?", (ga["id"],)) != [], r.get_json())
 
 # 3. a company switched to Kept here keeps the printed company names confirmed while it was Kept in SQL Account: they can be removed
 with section('3. a company switched to Kept here keeps the printed company names con'):

@@ -245,6 +245,7 @@ async function openRestore(rowId, title) {
   const del = p.deleted || {}, a = p.affected || {};
   const touches = (p.lines || []).length || +a.tasks || +a.payments;
   $("#rs-eyebrow").textContent = `Put back · ${p.label}`;
+  if (p.name && $("#drawerTitle")) $("#drawerTitle").textContent = p.name;  // as Show deleted names it (a company by its code), whichever way this was opened
   $("#rs-sub").textContent = `Deleted ${fmtWhen(del.at)}${del.actor ? ` by ${del.actor}` : ""}, in entry ${del.entry}.`;
   $("#rsBody").innerHTML = `<div id="rsErr"></div><div class="st-pb"><div>${esc(p.label)} deleted ${esc(fmtWhen(del.at))}${del.actor ? ` by ${esc(del.actor)}` : ""}, in entry ${esc(del.entry)}${del.reason ? `. Why: ${esc(del.reason)}` : ""}.</div>
       <div class="row tight st-back">${icon("undo")}<span>It comes back as it was when it was deleted, ${p.same_id ? "with the same number." : `as #${esc(p.id)}.`}</span></div>
@@ -252,7 +253,7 @@ async function openRestore(rowId, title) {
     ${touches ? effectCard(p, "Putting it back also changes", p.kind === "checklist" ? "checklist item" : "reminder") : `<div class="note">Nothing in the months already set up changes.</div>`}
     <label class="field"><span>Why are you putting it back? <span class="req">Required</span></span><input id="pb-why" maxlength="500" autocomplete="off" aria-required="true" aria-describedby="pb-why-err" placeholder="Kept in the audit trail with the change">
       <span class="field-err" id="pb-why-err" role="alert"></span></label>
-    <div class="row"><button class="ghost small" type="button" data-hist-open="${esc(p.table)}:${esc(del.key)}" data-hist-title="${esc(title || p.name)}">${icon("history")}History</button></div>`;
+    <div class="row"><button class="ghost small" type="button" data-hist-open="${esc(p.table)}:${esc(del.key)}" data-hist-title="${esc(p.name || title)}">${icon("history")}History</button></div>`;
   $("#rsActs").innerHTML = `<button type="button" class="ghost" data-su-close="1">Cancel</button><button type="button" class="btn" id="pb-go" data-restore-go="${esc(rowId)}">${icon("undo")}Put it back</button>`;
   watchDrawer();
   document.getElementById("pb-why")?.focus?.({ preventScroll: true });

@@ -195,6 +195,7 @@ async function applyPlace(place, opts = {}) {
     }
     const v = place.view, R = ROUTES[v], p = cleanParams(v, place.params), B = state.books;
     state.view = v;
+    if (v !== "setup") setupLeft();  // what Setup keeps only while it is on show (the rows Show more showed, the link after an import) goes
     if (place.entity && place.entity !== "all") state.entity = +place.entity;
     if (!state.entity) state.entity = firstEntityId();
     if (R.month && MONTH_RE.test(place.month || "")) state.month = place.month;
@@ -223,7 +224,8 @@ async function applyPlace(place, opts = {}) {
     if (opts.link) window.scrollTo?.(0, 0);
     renderNav();
     await render();
-    if (v === "setup" && place.id && state.view === "setup" && state.setup.kind) {  // the record the address names opens in its drawer
+    // the record the address names opens in its drawer; a section drawn in place of the one named (a link's old address) has no such record
+    if (v === "setup" && place.id && state.view === "setup" && state.setup.kind && state.setup.kind === place.sub) {
       try { await openSetup(state.setup.kind, +place.id, { force: true }); } catch (err) { toast(err.message, true); }
     }
     settleAddr();

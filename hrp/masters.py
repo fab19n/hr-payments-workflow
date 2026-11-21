@@ -691,6 +691,10 @@ USES = {  # (one, many, how to count)
         ("statutory account", "statutory accounts", """SELECT COUNT(*) FROM statutory_accounts s, gl_accounts g WHERE g.id = ?
                                              AND s.entity_id = g.entity_id AND (UPPER(TRIM(s.payable_code)) = UPPER(TRIM(g.code))
                                                                                 OR UPPER(TRIM(s.employer_code)) = UPPER(TRIM(g.code)))"""),
+        ("opening balance", "opening balances", """SELECT COUNT(*) FROM ledger_openings o, gl_accounts g WHERE g.id = ?
+                                             AND o.entity_id = g.entity_id AND UPPER(TRIM(o.account_code)) = UPPER(TRIM(g.code))"""),
+        ("SQL journal line", "SQL journal lines", """SELECT COUNT(*) FROM sql_journal_lines j, gl_accounts g WHERE g.id = ?
+                                             AND j.entity_id = g.entity_id AND UPPER(TRIM(j.code)) = UPPER(TRIM(g.code))"""),
     ],
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),
@@ -753,8 +757,8 @@ def locked(con, kind, rec):
         if used:
             out["entity_id"] = "Recurring payments or SQL entries refer to it, so it stays with the companies it is for: add another one instead."
     if kind == "gl_accounts" and rec.get("id") and usage(con, kind, rec["id"]):
-        out["code"] = ("Bank accounts, customers, suppliers, other accounts, statutory accounts or SQL entries refer to it by this code, "
-                       "so it can't change once used.")
+        out["code"] = ("Bank accounts, customers, suppliers, other accounts, statutory accounts, SQL entries, account lines, opening balances "
+                       "or journal lines refer to it by this code, so it can't change once used.")
     if kind == "accounts" and rec.get("id"):
         if _count(con, "SELECT COUNT(*) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", rec["entity_id"]):
             out["cash_book"] = ("Filed months were reconciled with the SQL cash book on the account that is the cash book now, so it "

@@ -23,7 +23,7 @@ document.addEventListener("click", async ev => {
     if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return render(); }
     if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
     if (ds.restore) return await openRestore(+ds.restore, ds.restoreTitle);
-    if (ds.restoreGo) return restoreGo(+ds.restoreGo, t);
+    if (ds.restoreGo) return await restoreGo(+ds.restoreGo, t);  // awaited: a refusal or a stopped app reaches the catch below, and is said
     if (ds.packFile) return await openPackCheck(ds.packCheck, ds.packFile);
     if (ds.tx) return toggleEntry(+ds.tx, t);
     if (ds.trailMore) return trailMore(t);
@@ -62,8 +62,9 @@ document.addEventListener("click", async ev => {
       if (ds.setupEntity && (state.meta.entities || []).some(x => x.id === +ds.setupEntity)) state.entity = +ds.setupEntity;
       Object.assign(state.setup, { kind: ds.setupKind, id: null });
       await redraw();
-      // a tab chosen by key was drawn again with the page: the focus goes to the tab now selected
+      // the page was drawn again, menu and all: the focus goes to the menu item or the tab now selected (a key chose it)
       if (t.getAttribute?.("role") === "tab") document.querySelector(`[role="tab"][data-setup-kind="${ds.setupKind}"]`)?.focus?.({ preventScroll: true });
+      else if (t.classList?.contains?.("sn")) document.querySelector(".setup-nav .sn.on")?.focus?.({ preventScroll: true });
       return;
     }
     if (ds.setupNew) return await openSetup(ds.setupNew, "new");
@@ -76,7 +77,7 @@ document.addEventListener("click", async ev => {
       return document.querySelectorAll("#setupList [data-setup-open]")[was]?.focus?.({ preventScroll: true });
     }
     if (ds.setupClear) {
-      const id = "setup-" + ds.setupClear; listState(id).q = "";
+      const id = "setup-" + ds.setupClear; listState(id).q = ""; setupMoreReset(id);
       const q = document.querySelector(`[data-search="${id}"]`); if (q) q.value = "";
       LIST_REDRAW[id]?.(); return q?.focus?.();
     }

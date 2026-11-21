@@ -70,8 +70,13 @@ async function viewSetup(main) {
   const T = S.types, e = ent(), groups = setupGroups(T, e);
   if (!T.kinds[S.kind] || SETUP_LINKS[S.kind]) S.kind = groups[0]?.kinds[0] || null;  // a link's old address (Recurring payments) has no page here
   if (S.kind !== "move" && S.move) S.move.justImported = false;
+  const at = setupMoreAt(setupSpec());  // the rows Show 25 more showed stay shown only while the same list is drawn again
+  if (S.moreAt !== at) { S.more = {}; S.moreAt = at; }
   renderNav();  // the breadcrumb names the section
+  const top = main.querySelector(".setup-nav")?.scrollTop || 0;  // the menu is drawn again with the page: it keeps where it was scrolled to
   main.innerHTML = `<div class="setup-grid">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
+  const bar = main.querySelector(".setup-nav");  // and the item on show is in its frame (it scrolls when the window is short)
+  if (bar) { bar.scrollTop = top; bar.querySelector(".sn.on")?.scrollIntoView?.({ block: "nearest" }); }
   const box = $("#setupMain"), spec = setupSpec();
   if (!spec) box.innerHTML = emptyState({ glyph: "sliders", title: "Nothing to set up yet." });
   else if (e && !e.uses_sql && setupNeedsSql(S.kind, T)) box.innerHTML = setupNotUsed(S.kind, e);
@@ -82,6 +87,17 @@ async function viewSetup(main) {
   else if (S.kind === "move") await setupMove(box);
   else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
   else await setupList(box, S.kind);
+}
+
+// The rows Show 25 more has shown (state.setup.more, per list) stay shown while the same list is drawn again (a save, a stop). They start
+// again with another section or company (viewSetup, a section that is no list too), when the search changes, and on leaving Setup.
+const setupMoreAt = spec => `${state.setup.kind}:${spec?.per_entity ? state.entity : ""}`;
+const setupMoreReset = id => { (state.setup.more ||= {})[id] = SETUP_PAGE; };
+// Another page is opened (core/router.js applyPlace): what Setup keeps only while it is on show is dropped.
+function setupLeft() {
+  const S = state.setup;
+  S.more = {}; S.moreAt = null;
+  if (S.move) S.move.justImported = false;
 }
 
 // A field's choices as [value, label] pairs: payment types in use only, unless all (to name a value already saved). The
@@ -267,9 +283,7 @@ async function setupList(box, kind) {
     return;
   }
   const [{ rows }, tabs] = await Promise.all([api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`), setupTabs(kind, spec.per_entity)]);
-  const at = `${kind}:${spec.per_entity ? state.entity : ""}`;  // the rows shown stay shown across a redraw (a save, a stop)
-  if (S.moreAt !== at) { S.more = {}; S.moreAt = at; }   // and start again when the section or the company changes
-  (S.more ||= {})[id] ??= SETUP_PAGE;
+  (S.more ||= {})[id] ??= SETUP_PAGE;  // the rows shown stay shown across a redraw (a save, a stop)
   const stopped = r => r.status === "stopped", nStopped = rows.filter(stopped).length;
   const text = r => [...cols.map(c => setupCell(kind, fieldOf(c.key), r, c.key)), SETUP_SUB[kind]?.(r) || "", usedText(r.used_by), stopped(r) ? "stopped" : "in use", +r.system ? "used by the app" : ""].join(" ");
   const sub = SETUP_SUB[kind] || (() => "");
@@ -532,7 +546,7 @@ async function drawSqlNames(id, got) {
   if (here && d.ready && !d.names.length) { box.innerHTML = ""; return; }
   const when = at => at ? `${at.slice(0, 10).split("-").reverse().join("/")}${at.length >= 16 ? ` at ${at.slice(11, 16)}` : ""}` : "—";
   box.innerHTML = `<section class="st-sec" aria-labelledby="su-pn-h"><h3 id="su-pn-h">Printed company names</h3>
-    ${here ? `<div class="note">These names were confirmed while this company was Kept in SQL Account. They are not used while it is Kept here; remove any you don't want.</div>`
+    ${here ? `<div class="note">These names were confirmed while this company was Kept in SQL Account. While they stay, no other company can take them; remove any you don't want.</div>`
       : `<div class="note">Names SQL Account prints on its exports that match no company in Setup, confirmed as ${esc(co?.code || "this company")}'s with <b>Take it for ${esc(co?.code || "")}</b> on <a href="${esc(menuHref(MENU_BY_PAGE["accounting/sql"]))}" data-menu="accounting/sql">Accounting › SQL import</a>. Fetch takes files printing them for this company.</div>`}
     ${!d.ready ? `<div class="note">The records need an update for this. Restart the app.</div>`
       : !d.names.length ? `<div class="muted">None confirmed.</div>`

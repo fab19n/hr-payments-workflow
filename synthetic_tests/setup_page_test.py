@@ -126,6 +126,8 @@ POST = {
     f"/api/setup/accounts/{old['id']}/use": {"status": 200, "body": {"record": {}}},
     f"/api/setup/accounts/{main['id']}/stop": {"status": 400, "body": {"error": "This is the company's cash book account. Make another account the cash book first."}},
 }
+EXD_ROW = GET["/api/setup/restore?kind=entities"]["rows"][0]["row_id"]   # the deleted company: its real Put it back preview names it EXD · Example Delta Ltd
+POST[f"/api/setup/restore/{EXD_ROW}?preview"] = {"status": 200, "body": call("post", f"/api/setup/restore/{EXD_ROW}", json={"preview": True})}
 check("the fixtures are the real server's: a deleted account to put back, a deleted type whose key was taken, 30 parties",
       restored["name"] == "Spare" and taken.get("problem") and len(GET[f"/api/setup/parties?entity={EXA}"]["rows"]) == 30)
 
@@ -140,7 +142,8 @@ const makeEl = id => { const set = new Set(); return ({ id, innerHTML: "", value
   contains: () => false, after() {}, isConnected: true, addEventListener() {}, removeEventListener() {} }); };
 const el = id => els[id] ||= makeEl(id);
 const document = { activeElement: null, body: { classList: { add() {}, remove() {} } },
-  querySelector: s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : (m => m ? (sandbox.__tabs || {})[m[1]] || null : null)(/^\[role="tab"\]\[data-setup-kind="([a-z_]+)"\]$/.exec(s)),
+  querySelector: s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : s === ".setup-nav .sn.on" ? (((els.main || {}).nav || {}).active || null)
+    : (m => m ? (sandbox.__tabs || {})[m[1]] || null : null)(/^\[role="tab"\]\[data-setup-kind="([a-z_]+)"\]$/.exec(s)),
   querySelectorAll: () => [], getElementById: id => els[id] || null, addEventListener(t, f) { (listeners[t] ||= []).push(f); } };
 async function fetch(path, init = {}) {
   const method = init.method || "GET", body = init.body && typeof init.body === "string" ? JSON.parse(init.body) : null;
@@ -171,6 +174,13 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     globalThis.click = async (dataset, extra = {}) => { const b = { dataset, tagName: "BUTTON", id: "", className: "", getAttribute: () => null, ...extra }; b.closest = () => b;
       const ev = { type: "click", target: b, button: 0, preventDefault() {}, stopPropagation() {} }; for (const f of __listeners.click || []) await f(ev); };`);
   const main = el("main"), box = () => el("setupMain");
+  // the menu is a new element (scrolled to the top) each time the page is drawn, as in a browser; its item on show records what is done to it
+  const navOf = html => { const m = /class="sn on" data-setup-kind="([a-z_]+)"/.exec(html);
+    return /class="setup-nav/.test(html) ? { scrollTop: 0, kind: m && m[1], active: { scrolled: [], scrollIntoView(o) { this.scrolled.push(o); }, focus() { document.activeElement = this; } },
+      querySelector(s) { return s === ".sn.on" ? this.active : null; } } : null; };
+  let mainHtml = "";
+  Object.defineProperty(main, "innerHTML", { get: () => mainHtml, set(v) { mainHtml = v; main.nav = navOf(v); } });
+  main.nav = null; main.querySelector = s => s === ".setup-nav" ? main.nav : null;
   const view = async (kind, entity) => {
     run(`state.entity = ${entity}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false;`);
     await run(`viewSetup(__el("main"))`); await sleep(20); return { nav: main.innerHTML, page: box().innerHTML };
@@ -396,7 +406,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     r.threwMeta = await run(`frAddCompany().then(() => "ok", e => e.name)`); FX.fail = {}; r.busyMeta = run(`FR.busy`);
     return r;
   });
-  FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.code = ""; FR.cname = ""; FR.kind = ""; FR.tried = false`);
+  FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.code = ""; FR.cname = ""; FR.kind = ""; FR.tried = false`);
 
   // 8. the rows shown stay shown across a redraw; they start again with another section or company
   await tryit("moreKept", async () => {
@@ -502,12 +512,150 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     run(`state.setup.deleted = false`);
     return r;
   });
+
+  // A. the rows Show 25 more showed: not kept past another section (a list or not), nor out of Setup; kept by a save; a changed search starts again
+  await tryit("moreAway", async () => {
+    const count = h => (h.match(/class="st-row/g) || []).length, r = {};
+    const more = async () => { await run(`click({ setupMore: "parties" })`); return count(run(`__el("setupList").innerHTML`)); };
+    const type = v => { for (const f of listeners.input || []) f({ target: { dataset: { search: "setup-parties" }, value: v, id: "", closest: () => null } }); return count(run(`__el("setupList").innerHTML`)); };
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    await view("parties", FX.EXA); r.first = count(box().innerHTML); r.more = await more();
+    await view("required", FX.EXA); await view("parties", FX.EXA); r.afterRequired = count(box().innerHTML);
+    await more(); await view("move", FX.EXA); await view("parties", FX.EXA); r.afterMove = count(box().innerHTML);
+    await more();
+    await run(`applyPlace({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} })`);
+    run(`state.view = "setup"`);
+    await view("parties", FX.EXA); r.afterLeaving = count(box().innerHTML);
+    await more(); await run(`viewSetup(__el("main"))`); await sleep(20); r.saveRedraw = count(box().innerHTML);
+    r.searched = type("Test"); r.moreAgain = await more(); r.cleared = type("");
+    await more(); await run(`click({ setupClear: "parties" })`); r.clearBtn = count(run(`__el("setupList").innerHTML`));
+    return r;
+  });
+
+  // C. the Setup menu keeps its scroll when the page is drawn again, shows its item on show, and takes the focus after a click on an item
+  await tryit("navKeep", async () => {
+    const r = {};
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    run(`state.view = "setup"; render = async () => { await viewSetup(__el("main")); }`);   // the page is really drawn again for this
+    main.innerHTML = "";                                                                      // a deep address: no menu before it
+    await view("move", FX.EXA);
+    r.deep = { kind: main.nav.kind, top: main.nav.scrollTop, scrolled: main.nav.active.scrolled };
+    main.nav.scrollTop = 140; document.activeElement = null;                                  // the menu was scrolled by hand
+    await run(`viewSetup(__el("main"))`); await sleep(20);                                    // a save draws the page again
+    r.save = { top: main.nav.scrollTop, focused: document.activeElement === main.nav.active, scrolled: main.nav.active.scrolled };
+    await run(`click({ setupKind: "accounts" }, { classList: { contains: c => c === "sn" } })`); await sleep(20);   // a click or Enter on an item
+    r.click = { kind: main.nav.kind, top: main.nav.scrollTop, scrolled: main.nav.active.scrolled, focused: document.activeElement === main.nav.active };
+    run(`render = async () => { __calls.push(["render"]); }`);
+    return r;
+  });
+
+  // D. Put it back opened from the audit trail or a History: the heading is the preview's name (CODE · Name), as Show deleted names it
+  await tryit("putBackTitle", async () => {
+    await run(`openRestore(${FX.RS_EXD}, "Example Delta Ltd")`); await sleep(20);
+    return { title: el("drawerTitle").textContent, body: el("rsBody").innerHTML, trailBtn: run(`putBackHtml({ id: ${FX.RS_EXD}, put_back: true, record: "Example Delta Ltd" })`) };
+  });
+
+  // E3. Put it back with the app stopped: the click handler waits for it, so the message is said
+  await tryit("restoreStopped", async () => {
+    await run(`openRestore(${FX.RESTORE}, "Spare")`); await sleep(20);
+    el("pb-why").value = "A reason"; el("toast").textContent = "";
+    FX.fail = { [`/api/setup/restore/${FX.RESTORE}`]: true };
+    const threw = await run(`click({ restoreGo: "${FX.RESTORE}" }, { disabled: false, isConnected: true }).then(() => "ok", e => "threw")`);
+    FX.fail = {};
+    return { threw, toast: el("toast").textContent };
+  });
+
+  // E4. the old address of Recurring payments with a record number, with no company: the first section, and no record of it opened
+  await tryit("deadLinkId", async () => {
+    run(`globalThis.__opened = []; globalThis.__realOpen = openSetup; openSetup = async (...a) => { __opened.push([a[0], a[1]]); return __realOpen(...a); };
+      render = async () => { await viewSetup(__el("main")); }; state.meta.entities = []; state.entity = null; state.setup.kind = "parties";`);
+    el("toast").textContent = "";
+    await run(`applyPlace({ view: "setup", entity: null, month: null, sub: "payees", id: "5", params: {} })`); await sleep(40);
+    const r = { opened: run(`__opened.slice()`), kind: run(`state.setup.kind`), toast: el("toast").textContent };
+    run(`state.meta = ${JSON.stringify(meta0)}; state.entity = ${FX.EXA}; __opened.length = 0`);   // a record of a real section still opens
+    await run(`applyPlace({ view: "setup", entity: ${FX.EXA}, month: null, sub: "entities", id: "${FX.EXA}", params: {} })`); await sleep(60);
+    r.control = run(`__opened.slice()`);
+    run(`openSetup = __realOpen; render = async () => { __calls.push(["render"]); }; state.view = "setup"`);
+    return r;
+  });
+
+  // E5. the link to the companies an import added: the redraw right after an import that added one, once
+  await tryit("moveFlag", async () => {
+    const r = {}, link = "See the companies it added";
+    const imported = async () => { run(`state.setup.move = { ...(state.setup.move || {}), file: { format: "hrp-setup" }, preview: {} }`); await run(`moveImport("A reason")`); return run(`state.setup.move.justImported`); };
+    FX.get["/api/setup/import"] = { empty: false, holding: [["companies", 3]] };
+    r.flag = await imported(); r.right = (await view("move", FX.EXA)).page; r.next = (await view("move", FX.EXA)).page;
+    r.flagAfter = run(`state.setup.move.justImported`);
+    await imported(); await run(`applyPlace({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} })`); run(`state.view = "setup"`);
+    r.flagOut = run(`state.setup.move.justImported`); r.afterOverview = (await view("move", FX.EXA)).page;
+    withCompanies([]); r.rulesFlag = await imported(); r.rulesBlocked = (await view("move", FX.EXA)).page;   // a file of rules alone: no company came in
+    FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.entity = ${FX.EXA}; state.setup.types = null`);
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // E2. First run when what was written was saved but the records can't be read again: a note and Try again, which only reads
+  await tryit("frSaved", async () => {
+    const r = {};
+    withCompanies([co(1, "EXA", 1)]); setFile("full", [["companies", 1]]); FX.fail = { "/api/meta": true }; calls.length = 0;
+    r.threw = await run(`frImport().then(() => "ok", e => e.name)`);
+    r.busy = run(`FR.busy`); r.saved = run(`FR.saved`); r.html = run(`frHtml()`);
+    await run(`click({ frReload: "1" })`); r.stillSaved = run(`FR.saved`); r.stillBusy = run(`FR.busy`); r.stillHtml = run(`frHtml()`);
+    FX.fail = {}; calls.length = 0;
+    await run(`click({ frReload: "1" })`);
+    r.after = { done: run(`FR.done`), saved: run(`FR.saved`), posts: calls.filter(x => x[0] === "POST").length, html: run(`frHtml()`) };
+    run(`state.meta.entities = []; FR.done = null; FR.note = null; FR.preview = null; FR.file = null; FR.addOpen = true; FR.tried = false; FR.code = "ABC"; FR.cname = "Example Co"; FR.reg = ""; FR.kind = "sql"; FR.busy = ""`);
+    withCompanies([co(1, "ABC", 1)]); FX.fail = { "/api/meta": true }; calls.length = 0;
+    r.addThrew = await run(`frAddCompany().then(() => "ok", e => e.name)`); r.addHtml = run(`frHtml()`); r.addPosts = calls.filter(x => x[1] === "/api/setup/entities").length;
+    FX.fail = {}; calls.length = 0;
+    await run(`click({ frReload: "1" })`);
+    r.addAfter = { done: run(`FR.done`), saved: run(`FR.saved`), posts: calls.filter(x => x[0] === "POST").length };
+    FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.code = ""; FR.cname = ""; FR.kind = ""; state.entity = ${FX.EXA}`);
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // B. markup in a name, a label, a code or a note is shown as it is written, never as HTML
+  await tryit("escapes", async () => {
+    const r = {}, T = "Delivery <i>Order</i> (SQL)", N = "Tom & <b>Jerry</b> Ltd", C = "E&<B";
+    const reqPath = `/api/setup/required?entity=${FX.EXB}`, wasReq = FX.get[reqPath];
+    FX.get[reqPath] = { ...wasReq, doc_types: [...wasReq.doc_types, { key: "tst_dosql", label: T, from_sql: 1, active: 1 }] };
+    run(`state.meta.entities.forEach(x => { if (x.id === ${FX.EXB}) { x.code = ${JSON.stringify(C)}; x.name = ${JSON.stringify(N)}; } })`);
+    run(`state.setup.kind = "required"; state.setup.reqScope = ${FX.EXB}`);
+    await run(`setupRequired(__el("setupMain"))`); r.required = el("setupMain").innerHTML;
+    run(`state.setup.reqScope = null`); FX.get[reqPath] = wasReq;
+    const entPath = `/api/setup/entities/${FX.EXA}`, wasEnt = FX.get[entPath];
+    FX.get[entPath] = { ...wasEnt, record: { ...wasEnt.record, name: N }, used_by: [["bank <u>account</u>s", 2]], used_total: 2, notes: ["A note with <i>markup</i> & more"] };
+    run(`state.entity = ${FX.EXA}`);
+    await run(`openSetup("entities", ${FX.EXA})`); await sleep(60); r.dlg = el("drawer").innerHTML; FX.get[entPath] = wasEnt;
+    const namesPath = `/api/setup/entities/${FX.EXB}/sql-names`, wasNames = FX.get[namesPath];
+    FX.get[namesPath] = { ready: true, names: [{ id: 7, name: "A & <b>B</b> (2026)", confirmed_at: "2026-11-01T10:00:00", confirmed_by: "t <i>ester</i>" }] };
+    els.suPrint = undefined; els.suNames = undefined;
+    const hereEnt = `/api/setup/entities/${FX.EXB}`, wasHere = FX.get[hereEnt];
+    FX.get[hereEnt] = { ...wasHere, record: { ...wasHere.record, name: N } };
+    await run(`openSetup("entities", ${FX.EXB})`); await sleep(60); r.names = el("suNames").innerHTML; r.dlgHere = el("drawer").innerHTML; FX.get[namesPath] = wasNames; FX.get[hereEnt] = wasHere;
+    const delPath = "/api/setup/restore?kind=entities", wasDel = FX.get[delPath], row = (id, problem) => ({ row_id: id, name: `${C} · ${N}`, code: "C&<D", at: "2026-11-01T10:00:00", actor: "a&<b>", reason: "why <i>x</i>", entry: 12, table: "entities", key: String(id), problem });
+    FX.get[delPath] = { kind: "entities", table: "entities", plural: "companies", label: "company", rows: [row(9, "key <u>taken</u>"), row(10, null)] };
+    run(`state.setup.deleted = true`); await run(`drawDeleted("entities")`); r.deleted = el("setupDeleted").innerHTML;
+    run(`state.setup.deleted = false`); FX.get[delPath] = wasDel;
+    FX.post["/api/setup/restore/9?preview"] = { status: 200, body: { ...FX.PREVIEW, name: `${C} · ${N}`, label: "Company <i>x</i>", table: "entities",
+      deleted: { entry: 12, at: "2026-11-01T10:00:00", actor: "a&<b>", reason: "why <i>x</i>", key: "5" }, notes: ["note <b>b</b>"] } };
+    await run(`openRestore(9, "Old <i>name</i>")`); await sleep(20);
+    r.putBack = { head: el("drawerTitle").textContent, body: el("rsBody").innerHTML, drawer: el("drawer").innerHTML };
+    FX.get["/api/meta"] = { ...meta0, entities: [{ id: 1, code: C, name: N, uses_sql: 0, active: 1, accounts: [] }] };
+    run(`state.view = "overview"; FR.done = null; FR.note = null; FR.saved = null; FR.busy = ""`);
+    await run(`frFinish({ code: ${JSON.stringify(C)}, kept: "Kept here" })`); r.banner = run(`frHtml()`);
+    FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.done = null; FR.note = null; state.entity = ${FX.EXA}`);
+    await view("accounts", FX.EXA);
+    return r;
+  });
   process.stdout.write(JSON.stringify(out));
 })().catch(e => { console.error(e && e.stack || e); process.exit(1); });
 """
 
 fx_path = tmp / "fixtures.json"
-fx_path.write_text(json.dumps({"get": GET, "post": POST, "EXA": EXA, "EXB": EXB, "MAIN": main["id"], "OLD": old["id"], "SALARY": salary["id"], "TEMP": temp["id"], "TEMP_AFTER": TEMP_AFTER, "RESTORE": restored["row_id"], "TAKEN": taken["row_id"]}), encoding="utf-8")
+fx_path.write_text(json.dumps({"get": GET, "post": POST, "EXA": EXA, "EXB": EXB, "MAIN": main["id"], "OLD": old["id"], "SALARY": salary["id"], "TEMP": temp["id"], "TEMP_AFTER": TEMP_AFTER, "RESTORE": restored["row_id"], "TAKEN": taken["row_id"],
+                                "RS_EXD": EXD_ROW, "PREVIEW": PREVIEW}), encoding="utf-8")
 probe = tmp / "probe.js"
 probe.write_text(PROBE, encoding="utf-8")
 files = [str(f) for f in app_files() if not str(f).endswith("main.js")]   # the page's own start-up is left out
@@ -705,11 +853,11 @@ pp = o["partyPost"]
 check("Add customer or supplier: the page posts the words box left empty as an empty list (the server takes that as no words)",
       len(pp) == 1 and pp[0]["fields"].get("match_words") == [] and pp[0]["fields"].get("name") == "Test Party" and pp[0]["entity_id"] == EXA, pp)
 hn = o["hereNames"]
-check("a company Kept here that still has printed company names lists them with Remove, says they are not used while it is Kept here, and draws nothing else of the print settings",
+check("a company Kept here that still has printed company names lists them with Remove, says what they still do (no other company can take them), and draws nothing else of the print settings",
       has(hn["drawer"], 'id="suNames"') and 'id="suPrint"' not in hn["drawer"] and "Printed invoices" not in hn["drawer"]
       and has(hn["names"], "Printed company names", "EXAMPLE SWITCHED LTD (2026)", 'data-sql-name-remove="7"',
-              "These names were confirmed while this company was Kept in SQL Account. They are not used while it is Kept here; remove any you don't want.")
-      and "Take it for" not in hn["names"], hn["names"][:600])
+              "These names were confirmed while this company was Kept in SQL Account. While they stay, no other company can take them; remove any you don't want.")
+      and "not used while" not in hn["names"] and "Take it for" not in hn["names"], hn["names"][:600])
 check("...and removing the last of them ends the section", hn["removed"] == [f"/api/setup/entities/{EXB}/sql-names/7"] and hn["after"] == "", (hn["removed"], hn["after"]))
 SN = "Stopped: hidden from the account lists"
 check("the stopped note is said once in a stopped record's dialog, and once in the dialog drawn again right after Stop using",
@@ -772,6 +920,63 @@ check("Show deleted names a company as CODE · Name, in the list and on its Put 
       has(dn["companies"], "Deleted companies", "EXD · Example Delta Ltd", 'data-restore-title="EXD · Example Delta Ltd"'), dn["companies"][:500])
 check("...a chart account by its name with its code under it, under Deleted accounts; and Filing words is Filing words, as the menu says",
       has(dn["chart"], "Deleted accounts", "Spare account", ">999-001<") and "Deleted filing words" in dn["filing"] and "SQL filing words" not in dn["filing"], (dn["chart"][:300], dn["filing"][:200]))
+
+# ---------- round 2 ----------
+ma = o["moreAway"]
+check("the rows Show 25 more showed are not kept past another section: after Required documents or Move setup (no lists), or after leaving Setup, a list starts at 25 again",
+      ma["first"] == 25 and ma["more"] == 30 and ma["afterRequired"] == 25 and ma["afterMove"] == 25 and ma["afterLeaving"] == 25, ma)
+check("...a save that draws the page again keeps them; a changed search, clearing it by hand and Clear the search each start at 25 again",
+      ma["saveRedraw"] == 30 and ma["searched"] == 25 and ma["moreAgain"] == 30 and ma["cleared"] == 25 and ma["clearBtn"] == 25, ma)
+nk = o["navKeep"]
+check("the Setup menu is a new element each time the page is drawn: its item on show is scrolled into view (also on a deep address), and where it was scrolled to is kept",
+      nk["deep"] == {"kind": "move", "top": 0, "scrolled": [{"block": "nearest"}]} and nk["save"]["top"] == 140 and nk["click"]["top"] == 140
+      and nk["save"]["scrolled"] == [{"block": "nearest"}] and nk["click"]["scrolled"] == [{"block": "nearest"}], nk)
+check("a click (or Enter) on a menu item puts the focus on the new item on show; a page drawn again that no menu item asked for leaves the focus alone",
+      nk["click"]["kind"] == "accounts" and nk["click"]["focused"] is True and nk["save"]["focused"] is False, nk)
+pt = o["putBackTitle"]
+check("Put it back opened from the audit trail or a History heads the dialog CODE · Name, as Show deleted does, and its History button too; the trail's own button still names the record as it does",
+      pt["title"] == "EXD · Example Delta Ltd" and has(pt["body"], 'data-hist-title="EXD · Example Delta Ltd"') and 'data-restore-title="Example Delta Ltd"' in pt["trailBtn"], (pt["title"], pt["body"][-260:], pt["trailBtn"]))
+rs = o["restoreStopped"]
+check("Put it back with the app stopped says so: the click handler waits for it, so the message is not lost as an unhandled rejection", rs["threw"] == "ok" and "Failed to fetch" in rs["toast"], rs)
+di = o["deadLinkId"]
+check("the old address of Recurring payments with a record number and no company opens the first section and no record (no 404 message); a record of a real section still opens",
+      di["opened"] == [] and di["kind"] == "entities" and di["toast"] == "" and di["control"] == [["entities", EXA]], di)
+mf = o["moveFlag"]
+LINK = "See the companies it added"
+check("the link to the companies an import added is for the page drawn right after it, once: not on the next draw, nor after the Overview and back, nor after a file of rules alone",
+      mf["flag"] is True and has(mf["right"], LINK, "Not for this install") and LINK not in mf["next"] and mf["flagAfter"] is False
+      and mf["flagOut"] is False and LINK not in mf["afterOverview"] and mf["rulesFlag"] is False and LINK not in mf["rulesBlocked"] and "Not for this install" in mf["rulesBlocked"], mf)
+sv = o["frSaved"]
+SAVED = "It was saved, but this page could not reload. Try again."
+check("First run when Import was saved but the records can't be read again: it says so with Try again, and no form is left that would write it twice",
+      sv["threw"] == "TypeError" and sv["busy"] == "" and sv["saved"] == {"imported": True, "code": "", "kept": ""} and has(sv["html"], SAVED, 'data-fr-reload="1"')
+      and "fr-cards" not in sv["html"] and 'data-fr-import' not in sv["html"] and 'id="fr-add-open"' not in sv["html"] and "aria-busy" not in sv["html"], sv["html"][:700])
+check("...Try again only reads: it fails again with a note still there, and once it works the page goes on with nothing sent",
+      sv["stillSaved"] is not None and sv["stillBusy"] == "" and SAVED in sv["stillHtml"]
+      and sv["after"]["saved"] is None and sv["after"]["posts"] == 0 and sv["after"]["done"]["title"] == "Setup imported." and SAVED not in sv["after"]["html"] and "Open Overview" in sv["after"]["html"], sv)
+check("...and the same after Add company: it was written once, Try again reads and gives Company added, and a retype of the code is never asked for",
+      sv["addThrew"] == "TypeError" and has(sv["addHtml"], SAVED) and sv["addPosts"] == 1 and sv["addAfter"]["posts"] == 0 and sv["addAfter"]["saved"] is None
+      and sv["addAfter"]["done"] == {"title": "Company added.", "body": "ABC is ready: Kept in SQL Account. The next steps are open below."}, sv["addAfter"])
+es = o["escapes"]
+check("markup in a document type's label and in a company's code and name is shown as written in the Required documents note (the sentence, the chips and the table)",
+      has(es["required"], "Payment Voucher, Journal Voucher, Official Receipt and Delivery &lt;i&gt;Order&lt;/i&gt; are issued by SQL Account, so they are not asked for while E&amp;&lt;B is Kept here.", "E&amp;&lt;B")
+      and not any(x in es["required"] for x in ("<i>Order</i>", "<b>Jerry", "E&<B")), es["required"][:900])
+check("...and in the company's dialog: its name, Where used and the notes",
+      has(es["dlg"], "Tom &amp; &lt;b&gt;Jerry&lt;/b&gt; Ltd", "bank &lt;u&gt;account&lt;/u&gt;s", "A note with &lt;i&gt;markup&lt;/i&gt; &amp; more")
+      and not any(x in es["dlg"] for x in ("<u>", "<b>Jerry", "<i>markup")), es["dlg"][:500])
+check("...and in the printed company names of a company Kept here, and in the heading of its dialog",
+      has(es["names"], "A &amp; &lt;b&gt;B&lt;/b&gt; (2026)", "t &lt;i&gt;ester&lt;/i&gt;") and "<b>B</b>" not in es["names"] and "<i>ester" not in es["names"]
+      and "Tom &amp; &lt;b&gt;Jerry&lt;/b&gt; Ltd" in es["dlgHere"] and "<b>Jerry" not in es["dlgHere"], es["names"][:400])
+check("...and in Show deleted (the name, the code under it, who, why, why it can't be put back, and the Put it back button's title)",
+      has(es["deleted"], "E&amp;&lt;B · Tom &amp; &lt;b&gt;Jerry&lt;/b&gt; Ltd", "C&amp;&lt;D", "a&amp;&lt;b&gt;", "why &lt;i&gt;x&lt;/i&gt;", "key &lt;u&gt;taken&lt;/u&gt;",
+          'data-restore-title="E&amp;&lt;B · Tom &amp; &lt;b&gt;Jerry&lt;/b&gt; Ltd"') and not any(x in es["deleted"] for x in ("<i>x</i>", "<u>taken", "<b>Jerry", "E&<B")), es["deleted"][:500])
+check("...and in the Put it back dialog (its heading is text, its body and the title it was opened with are escaped)",
+      es["putBack"]["head"] == "E&<B · Tom & <b>Jerry</b> Ltd" and has(es["putBack"]["body"], "why &lt;i&gt;x&lt;/i&gt;", "a&amp;&lt;b&gt;", "note &lt;b&gt;b&lt;/b&gt;")
+      and not any(x in es["putBack"]["body"] for x in ("<i>x</i>", "<b>b</b>")) and "Old &lt;i&gt;name&lt;/i&gt;" in es["putBack"]["drawer"] and "<i>name</i>" not in es["putBack"]["drawer"], es["putBack"]["body"][:400])
+check("...and in First run's note after a company is added",
+      "E&amp;&lt;B is ready: Kept here." in es["banner"] and "E&<B" not in es["banner"], es["banner"][:300])
+check("Required documents for a company Kept in SQL Account greys nothing and has no Kept here note: it is not asked for fewer documents",
+      'class="chip off"' not in o["requiredSql"] and "is Kept here" not in o["requiredSql"] and "not asked for" not in o["requiredSql"] and 'class="chip">' in o["requiredSql"], o["requiredSql"][:300])
 
 # ---------- the layout keeps today's narrow rules ----------
 check("the form keeps Setup's 520-pixel rule: two columns, one under 520 pixels, in the new dialog too",

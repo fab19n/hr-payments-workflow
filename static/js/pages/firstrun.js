@@ -6,7 +6,7 @@
    Nothing here is new to the server: the import is POST /api/setup/import (a preview, then the import) and the company is POST
    /api/setup/entities, each audited like every Setup change. Departures from the board, kept for later slices: no Undo on the note
    (Undo is slice 10), no "Runs payroll in this app" tick (slice 15), no name or Sign out in the header (sign-in is slice 16). */
-const FR = { name: "", preview: null, file: null, error: "", refused: "", why: "", done: null, note: null, addOpen: false, busy: "", tried: false, kind: "", code: "", cname: "", reg: "", addError: "" };
+const FR = { name: "", preview: null, file: null, error: "", refused: "", why: "", done: null, note: null, saved: null, addOpen: false, busy: "", tried: false, kind: "", code: "", cname: "", reg: "", addError: "" };
 
 // The page takes the place of the Overview while there is no company, and after one is added or a file imported, until Open Overview.
 const firstRunDue = () => state.view === "overview" && !!state.meta && (!(state.meta.entities || []).length || !!FR.done);
@@ -55,14 +55,15 @@ function frHtml() {
   return `<div class="fr-page"><header class="fr-top">${brand}<span class="fr-brand">HR Payments</span></header>
     <div class="fr-main"><div class="fr-head"><h1 id="fr-title" tabindex="-1">Welcome to HR Payments</h1>
       <p class="note">There is no company here yet. Start in one of two ways. Everything is kept on this PC, and each change is noted in the audit trail.</p></div>
+    ${FR.saved ? `<div class="banner bad fr-done" role="alert">${icon("alert")}<span>It was saved, but this page could not reload. Try again.</span><button type="button" class="btn" data-fr-reload="1"${FR.busy === "reload" ? ` disabled aria-busy="true"` : ""}>${FR.busy === "reload" ? `<span class="spin" aria-hidden="true"></span>Reading` : "Try again"}</button></div>` : ""}
     ${!done && FR.note ? `<div class="banner info fr-done" role="status">${icon("help")}<span><b>${esc(FR.note.title)}</b> ${esc(FR.note.body)}</span></div>` : ""}
     ${done ? `<div class="banner ok fr-done" role="status">${icon("check")}<span><b>${esc(FR.done.title)}</b> ${esc(FR.done.body)}</span><button type="button" class="btn" data-fr-open="1">Open Overview</button></div>` : ""}
-    <div class="fr-cards">
+    ${FR.saved ? "" : `<div class="fr-cards">
       <section class="card fr-card" aria-labelledby="fr-imp-h"><span class="plate brand">${icon("upload")}</span><h2 id="fr-imp-h">Import a setup file</h2>
         <p class="note">Already use HR Payments somewhere else? Start from its setup file (Move setup). Each row is checked as Setup checks it, and nothing is saved unless every row passes.</p>${importBody}</section>
       <section class="card fr-card" aria-labelledby="fr-add-h"><span class="plate brand">${icon("company")}</span><h2 id="fr-add-h">Add your first company</h2>
         <p class="note">Starting fresh? Add the company you pay from. You can add more companies later in Setup.</p>${addBody}</section>
-    </div>
+    </div>`}
     <section class="card fr-next" aria-labelledby="fr-next-h"><div><h2 id="fr-next-h">What comes next</h2>
       <span class="note">${done ? "Do these in any order. Each one opens where it is done." : "These open up once the first company is in. Nothing is lost by doing them in any order."}</span></div>
       <ol class="fr-steps">${steps}</ol></section></div></div>`;
@@ -102,8 +103,12 @@ async function frImport() {
 // A company or a file has been added: the menu and the company switcher read the records again. The install is ready to use only when
 // there is a company now: a file of rules alone (a template) leaves the page as it was, with a note that says what is next.
 async function frFinish({ imported = false, code = "", kept = "" } = {}) {
+  // It is written already: if the records can't be read again, the page says so and offers Try again, which only reads them again
+  // (never the form that would write it twice).
+  FR.saved = { imported, code, kept };
   try { state.meta = await api("/api/meta"); paintOrg(); }
   catch (e) { FR.busy = ""; frPaint(); throw e; }
+  FR.saved = null;
   const list = state.meta.entities || [], n = list.length, stopped = list.filter(e => !isActive(e)).length;
   Object.assign(FR, { busy: "", addOpen: false, refused: "", error: "" });
   if (!n) FR.done = null, FR.note = { title: "Rules imported.", body: "Now add your first company." };
@@ -116,6 +121,13 @@ async function frFinish({ imported = false, code = "", kept = "" } = {}) {
   state.entity = firstEntityId(); state.setup.types = null; state.setup.kind = null;
   renderNav();
   await render();
+}
+// Try again after a write that was saved: the records are read again, nothing is sent.
+async function frReload() {
+  if (!FR.saved || FR.busy) return;
+  FR.busy = "reload"; frPaint();
+  try { await frFinish(FR.saved); }
+  finally { if (FR.busy) { FR.busy = ""; frPaint(); } }
 }
 async function frAddCompany() {
   Object.assign(FR, { tried: true, addError: "" });
@@ -144,7 +156,7 @@ async function frAddCancel() {
 
 // The page's own controls (it has no shell around it, so the page-wide handlers don't know them).
 document.addEventListener("click", async ev => {
-  const t = ev.target?.closest?.("[data-fr-pick], [data-fr-import], [data-fr-cancel-import], [data-fr-add-open], [data-fr-add-cancel], [data-fr-open], [data-fr-kind]");
+  const t = ev.target?.closest?.("[data-fr-pick], [data-fr-import], [data-fr-cancel-import], [data-fr-add-open], [data-fr-add-cancel], [data-fr-open], [data-fr-kind], [data-fr-reload]");
   if (!t || !$("#fr-title")) return;
   const d = t.dataset;
   try {
@@ -153,6 +165,7 @@ document.addEventListener("click", async ev => {
     else if ("frCancelImport" in d) { Object.assign(FR, { preview: null, file: null, name: "", why: "", error: "", refused: "" }); frPaint("fr-imp-h"); }
     else if ("frAddOpen" in d) { FR.addOpen = true; FR.tried = false; frPaint("fr-code"); }
     else if ("frAddCancel" in d) await frAddCancel();
+    else if ("frReload" in d) await frReload();
     else if ("frOpen" in d) { FR.done = null; await go("overview"); }
     else if ("frKind" in d) { FR.kind = d.frKind; frPaint(`fr-kind-${d.frKind}`); }
   } catch (e) { toast(e.message, true); }

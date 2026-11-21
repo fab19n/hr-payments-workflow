@@ -78,7 +78,7 @@ document.addEventListener("keydown", ev => {
 });
 document.addEventListener("input", ev => {
   const id = ev.target.dataset?.search;
-  if (id) { listState(id).q = ev.target.value; LIST_REDRAW[id]?.(); }
+  if (id) { listState(id).q = ev.target.value; if (id.startsWith("setup-")) setupMoreReset(id); LIST_REDRAW[id]?.(); }  // a changed search shows the first 25 again
 });
 document.addEventListener("input", ev => { if (ev.target.id === "sqlPaste") state.sqlPaste[state.entity] = ev.target.value; });
 document.addEventListener("input", ev => { if (ev.target.id === "trailReason") state.trail.reason = ev.target.value; });  // kept across redraws
