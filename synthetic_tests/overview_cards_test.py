@@ -446,9 +446,19 @@ const slots = () => Object.fromEntries(fx.cards.map(k => [k, { html: el("ov-c-" 
   const fund = (n, more) => ({ set_up: true, funds: n, still_to_pay: 10000, balance: 1000, as_at: "2026-11-20", bank: "Main", ...more });
   const acct = (cur, bal, inn = 0, outt = 0) => ({ accounts: [{ label: "Main", currency: cur, balance: bal, date: "2026-10-31" }], runs_to: "2026-10-31", stale: false });
   const bank = (totals) => ({ ...acct("MYR", 0), totals });
+  const zeroes = { past_due: 0, part_paid: 0, docs_missing: 0, to_explain: 0, not_in_sql: 0, filed: false, filed_at: null, before_tracking: false };
   const pl = (m, y) => ({ month_sen: m, ytd_sen: y, upto: "2026-10-31", sql_to: "2026-11-17", fy_start: "2026-01-01", stale: false });
   out.t = {
     funds_unknown: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(null, { empty: "Enter the bank balance to see funds to request", still_to_pay: 80000, balance: null }))]),
+    // filed months: always shown with their day
+    att_all_filed: run(`ovAttention(${JSON.stringify({ companies: [co(1, "AAA", { ...zeroes, filed: true, filed_at: "2026-10-03T09:00:00" }), co(2, "BBB", { ...zeroes, filed: true, filed_at: "2026-10-05T09:00:00" })] })})`),
+    att_one_filed: run(`ovAttention(${JSON.stringify({ companies: [co(1, "AAA", { ...zeroes, filed: true, filed_at: "2026-10-03T09:00:00" }), co(2, "BBB", { ...zeroes })] })})`),
+    att_filed_busy: run(`ovAttention(${JSON.stringify({ companies: [co(1, "AAA", { ...zeroes, filed: true, filed_at: "2026-10-03T09:00:00" }), co(2, "BBB", { ...zeroes, past_due: 2 })] })})`),
+    att_single_filed: run(`state.addr = { all: false, id: null, params: {} }; state.entity = 1; ovAttention(${JSON.stringify({ companies: [co(1, "AAA", { ...zeroes, filed: true, filed_at: "2026-10-03T09:00:00" })] })})`),
+    cl_single_filed_open: calm("checklist", [co(1, "AAA", { done: 4, total: 6, filed_at: "2026-10-03T09:00:00" })]),
+    _all_again: run(`state.addr = { all: true, id: null, params: {} }; ""`),
+    cl_all_filed: calm("checklist", [co(1, "AAA", { done: 6, total: 6, filed_at: "2026-10-03T09:00:00" }), co(2, "BBB", { done: 4, total: 6, filed_at: "2026-10-05T09:00:00" })]),
+    cl_one_filed: calm("checklist", [co(1, "AAA", { done: 6, total: 6, filed_at: "2026-10-03T09:00:00" }), co(2, "BBB", { done: 4, total: 6, filed_at: null })]),
     due_mixed: calm("due", [co(1, "AAA", { overdue: { n: 3, sums: { MYR: 739 }, pay_n: 0 }, soon: { n: 2, sums: { MYR: 1200 }, pay_n: 0 }, days: 7, link_month: "2026-10" }),
                             co(2, "BBB", { overdue: { n: 1, sums: { USD: 100 }, pay_n: 0 }, soon: { n: 1, sums: {}, pay_n: 1 }, days: 7, link_month: "2026-10" })]),
     funds_pay: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(null, { empty: "Funds to request: salaries only, open the Budget", pay_only: true, still_to_pay: null, balance: null }))]),
@@ -507,7 +517,7 @@ check("each card was read on its own route", sum(1 for x in o["asked"] if x.star
 att = cards["attention"]["html"]
 check("Needs attention, All companies: a block per company with its kind, counters grey at zero, Not in SQL only for SQL companies",
       att.count('class="ova"') == 3 and "Kept here" in att and f'id="ov-ctr-not_in_sql-{EXA}"' in att and f'id="ov-ctr-not_in_sql-{EXH}"' not in att
-      and '<b class="ctr-n bad">2</b><span>Past due</span>' in att and '<b class="ctr-n">0</b>' in att and "Filed: nothing in it counts" in att, att[:900])
+      and '<b class="ctr-n bad">2</b><span>Past due</span>' in att and '<b class="ctr-n">0</b>' in att and f"Filed {db.short_day(here['closed_at'][:10])}: nothing in it counts" in att, att[:900])
 due_all = cards["due"]["html"]
 check("Due and overdue with All companies: the companies added up, a line per company, 'Today'",
       '<b class="ovh bad">5 overdue · RM 1,845</b><span class="sub ovn">1 due in the next 7 days · RM 86</span>' in due_all and '<span class="ovco">EXN</span><b class="bad">1 payment overdue</b>' in due_all and '<span class="ovco">EXA</span>' in due_all and '<span class="ovco">EXH</span>' in due_all and 'class="tday">Today' in due_all, due_all)
@@ -581,6 +591,19 @@ check("...companies added up per currency (ringgit with ringgit, dollars with do
 check("...an overdrawn balance keeps its minus sign", head(t["bank_neg"])[0] == "-RM 1,250", head(t["bank_neg"]))
 check("...the company line shows it the same way (-RM 1,250.00, never RM -1,250.00)",
       '<span class="ovco">BBB</span><b class="">-RM 1,250.00 · USD 50.00</b>' in t["bank_both"] and "RM -" not in t["bank_both"], t["bank_both"][-700:])
+plain = {k: re.sub(r"<[^>]+>", "|", v) for k, v in t.items()}
+check("every company's month filed, every counter 0: Needs attention still shows each company filed, with its day",
+      "Nothing needs attention" in plain["att_all_filed"] and "|AAA||Filed 3 Oct|" in plain["att_all_filed"] and "|BBB||Filed 5 Oct|" in plain["att_all_filed"],
+      plain["att_all_filed"][-400:])
+check("...one filed and one open: the filed one says so, the open one has nothing to do",
+      "|AAA||Filed 3 Oct|" in plain["att_one_filed"] and "|BBB||Nothing to do|" in plain["att_one_filed"], plain["att_one_filed"][-400:])
+check("...and beside a company with something to do, the filed one's block says its day", "Filed 3 Oct: nothing in it counts as to do" in plain["att_filed_busy"])
+check("...one company's Overview: the month was filed on its day", "October 2026 was filed on 3 Oct" in plain["att_single_filed"], plain["att_single_filed"][-300:])
+check("Checklist, every company filed: each line says Filed <day>",
+      "|AAA||6 of 6 · Filed 3 Oct|" in plain["cl_all_filed"] and "|BBB||4 of 6 · Filed 5 Oct|" in plain["cl_all_filed"], plain["cl_all_filed"][-500:])
+check("...one filed and one open: only the filed one says so", "|AAA||6 of 6 · Filed 3 Oct|" in plain["cl_one_filed"] and "|BBB||4 of 6|" in plain["cl_one_filed"])
+check("...one company filed with items still open: the note says both", "2 still to do · October 2026 was filed on 3 Oct" in plain["cl_single_filed_open"], plain["cl_single_filed_open"][-400:])
+check("the server gives the day a month was filed on the Needs attention card", card("attention", EXH)["filed_at"] == here["closed_at"])
 check("Due and overdue, one company: the number overdue with its amount, and the number due soon with its amount",
       '<b class="ovh bad">4 overdue · RM 1,845</b><span class="sub ovn">1 due in the next 7 days · RM 86</span>' in X["cards"]["due"]["html"], X["cards"]["due"]["html"][-900:])
 check("...with All companies, the amounts added per currency, never one into another", head(t["due_mixed"]) == ("4 overdue · RM 739 and USD 100", "3 due in the next 7 days · RM 1,200"),

@@ -63,7 +63,8 @@ def attention(con, e, month, today):
     paid but not recorded in SQL (Kept in SQL Account only, else None). A month filed counts nothing; a month before the
     first month tracked counts only the lines to explain (bank reconciliation still covers it)."""
     iso, eid = today.isoformat(), e["id"]
-    out = {"filed": bool(db.closed_at(con, eid, month)), "before_tracking": db.before_tracking(e, month),
+    filed_at = db.closed_at(con, eid, month)
+    out = {"filed": bool(filed_at), "filed_at": filed_at, "before_tracking": db.before_tracking(e, month),
            "past_due": 0, "part_paid": 0, "docs_missing": 0, "to_explain": 0, "not_in_sql": 0 if e["uses_sql"] else None}
     if out["filed"]:
         return out

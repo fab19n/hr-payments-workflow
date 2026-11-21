@@ -44,9 +44,11 @@ const OV_CARDS = {
     open: "Open checklist", where: ", Payments, Monthly checklist",
     href: c => ovHref("checklist", c.entity_id),
     src: () => `Items ticked on the Monthly checklist for ${monthName(state.month)}, out of that month's total.`,
-    get: c => c.empty ? { empty: c.empty, short: "No checklist yet", note: c.tracked_from ? `Tracked from ${monthName(c.tracked_from)}` : "" }
-      : { u: "items", n: c.done, t: c.total, head: `${c.done} of ${c.total}`, line: `${c.done} of ${c.total}`,
-        note: c.total - c.done ? `${c.total - c.done} still to do` : `All done${c.filed_at ? `, filed ${shortDate(c.filed_at)}` : ""}` },
+    // A filed month says so with its day, ticked or not: on its company's line with All companies, in the note for one.
+    get: c => c.empty ? { empty: c.empty, short: c.filed_at ? `No checklist · Filed ${shortDate(c.filed_at)}` : "No checklist yet",
+        note: [c.tracked_from ? `Tracked from ${monthName(c.tracked_from)}` : "", c.filed_at ? filedWords(c.filed_at) : ""].filter(Boolean).join(" · ") }
+      : { u: "items", n: c.done, t: c.total, head: `${c.done} of ${c.total}`, line: `${c.done} of ${c.total}${c.filed_at ? ` · Filed ${shortDate(c.filed_at)}` : ""}`,
+        note: [c.total - c.done ? `${c.total - c.done} still to do` : "All done", c.filed_at ? filedWords(c.filed_at) : ""].filter(Boolean).join(" · ") },
     sum: L => { const n = L.reduce((s, x) => s + x.n, 0), t = L.reduce((s, x) => s + x.t, 0); return { head: `${n} of ${t}`, note: t - n ? `${t - n} still to do` : "All done" }; } },
   due: { title: "Due and overdue", glyph: "clock", tone: "warn", today: true, empty: "Nothing due", open: "Open payments not paid", where: ", Payments, Payments register, Not paid",
     href: c => ovHref("entity", c.entity_id, { tab: "unpaid" }, c.link_month || state.month),
@@ -157,6 +159,8 @@ function bankWords(totals) {
   const more = curs.slice(1).map(k => money0(totals[k].balance, k)).join(", ");
   return { head: money0(t.balance, u), note: `in ${money0(t.in, u)} · out ${money0(t.out, u)}` + (more ? ` · also ${more}` : "") };
 }
+// "September 2026 was filed on 3 Oct": the month on show, marked as filed on that day.
+const filedWords = at => `${monthName(state.month)} was filed on ${shortDate(at)}`;
 const lastDay = m => { const [y, mm] = m.split("-").map(Number); return `${m}-${String(new Date(y, mm, 0).getDate()).padStart(2, "0")}`; };
 
 // ---------- Needs attention: five counters per company, each opening its list ----------
@@ -170,13 +174,19 @@ const OV_COUNTERS = [
 function ovAttention(d) {
   const all = !ovScope(), cs = d.companies;
   const zero = c => OV_COUNTERS.every(([k]) => !c[k]);
-  if (cs.every(zero)) return ovBody("attention", `<div class="ovb"><span class="ove">Nothing needs attention</span>${cs.length === 1 && cs[0].filed ? `<span class="sub">${esc(monthName(state.month))} is filed</span>` : ""}</div>`, { empty: true });
+  // A filed month always says so, with its day: never only "Nothing needs attention" (slice 1 kept the old "Filed <day>").
+  if (cs.every(zero)) {
+    const filedLines = cs.length > 1 && cs.some(c => c.filed) ? `<div class="ovk">${cs.map(c => `<span class="ovr"><span class="ovco">${esc(c.code)}</span><b class="muted">${
+      c.filed ? `Filed ${esc(shortDate(c.filed_at))}` : "Nothing to do"}</b></span>`).join("")}</div>` : "";
+    const one = cs.length === 1 && cs[0].filed ? `<span class="sub">${esc(filedWords(cs[0].filed_at))}</span>` : "";
+    return ovBody("attention", `<div class="ovb"><span class="ove">Nothing needs attention</span>${one}</div>${filedLines}`, { empty: true });
+  }
   const blocks = cs.map(c => {
     const ctrs = OV_COUNTERS.filter(([k]) => c[k] != null).map(([k, label, tone, href]) => {
       const n = c[k];
       return `<a class="ctr" href="${esc(href(c) || "#/")}" id="ov-ctr-${k}-${c.entity_id}" aria-label="${esc(`${label}, ${n || "none"}${all ? `, ${c.code}` : ""}. Opens its list`)}"><b class="ctr-n${n ? " " + tone : ""}">${n}</b><span>${label}</span></a>`;
     }).join("");
-    const note = c.filed ? "Filed: nothing in it counts as to do" : c.before_tracking ? "Before tracking: only the lines to explain count" : "";
+    const note = c.filed ? `Filed ${shortDate(c.filed_at)}: nothing in it counts as to do` :c.before_tracking ? "Before tracking: only the lines to explain count" : "";
     return `<div class="ova">${all ? ovCo(c) : ""}<div class="ova-ctrs">${ctrs}</div>${note ? `<span class="sub">${note}</span>` : ""}</div>`;
   }).join("");
   return ovBody("attention", blocks, { foot: "Each number opens its list, filtered" });
@@ -229,7 +239,8 @@ function ovCalm(id, d) {
   // one company, on each company's line with All companies.
   const sqlTo = c => C.sql && c.kind === "sql" && c.sql_to ? c.sql_to : null;
   if (!many && per[0] && sqlTo(per[0].c)) note = [note, `SQL data to ${shortDate(sqlTo(per[0].c))}`].filter(Boolean).join(" · ");
-  const lines = many && (!none || sentences.length > 1 || cs.some(sqlTo)) ? per.map(({ c, v }) =>
+  // the company lines: with All companies, unless every company reads the same empty words (a filed one never does)
+  const lines = many && (!none || sentences.length > 1 || cs.some(sqlTo) || new Set(per.map(x => x.v.empty ? x.v.short : x.v.line)).size > 1) ? per.map(({ c, v }) =>
     `<span class="ovr"><span class="ovco">${esc(c.code)}</span><b class="${v.empty || v.zero || v.lineTone === "muted" ? "muted" : v.lineTone === "bad" ? "bad" : ""}">${esc(v.empty ? v.short : v.line)}${sqlTo(c) ? `<span class="ovr-to"><span class="sr-only"> · </span>to ${esc(shortDate(sqlTo(c)))}</span>` : ""}</b></span>`).join("") : "";
   const stale = C.stale ? C.stale(cs) : "";
   const target = C.href && (cs.find(c => { const v = C.get(c); return !v.empty && !v.zero; }) || cs[0]);
