@@ -1656,8 +1656,8 @@ button.pill.pill-btn[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .ov-slot[hidden] { display: none; }
 .ovc { position: relative; display: flex; flex-direction: column; gap: 12px; flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; transition: background-color var(--t-fast), border-color var(--t-fast); }
 .ovc.lk:hover { border-color: var(--line-strong); }
-.ovt { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.ovtt { flex: 1; min-width: 0; font-family: var(--f-body); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
+.ovt { display: flex; align-items: flex-start; gap: 8px; min-width: 0; }   /* a long title wraps; the tile and the pill stay at its first line */
+.ovtt { flex: 1; min-width: 0; font-family: var(--f-body); font-size: 14px; font-weight: 600; line-height: 24px; overflow-wrap: anywhere; outline: none; }   /* the full title always shows, on two lines when it must */
 .ov-tile { width: 24px; height: 24px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; flex: none; background: var(--accent-soft); color: var(--accent); }
 .ov-tile .glyph { width: 16px; height: 16px; }
 .ova-card .ov-tile { width: 32px; height: 32px; border-radius: 10px; }
@@ -1665,9 +1665,9 @@ button.pill.pill-btn[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .ov-tile.bad { background: var(--bad-soft); color: var(--bad); --glyph-tint: var(--tint-bad); }
 .ov-tile.warn { background: var(--warn-soft); color: var(--warn); --glyph-tint: var(--tint-warn); }
 .ov-tile.muted { background: var(--mute-soft); color: var(--muted); --glyph-tint: var(--tint-mute); }
-.tday { flex: none; display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: var(--mute-soft); color: var(--mute-ink); font-size: 12px; font-weight: 500; }
+.tday { flex: none; margin-top: 2px; display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 99px; background: var(--mute-soft); color: var(--mute-ink); font-size: 12px; font-weight: 500; }
 .ovb { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ovh { font-size: 20px; font-weight: 500; line-height: 28px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ovh { font-size: 20px; font-weight: 500; line-height: 28px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }   /* a headline with its amount wraps rather than being cut */
 .ovh.bad { color: var(--bad); } .ovh.muted { color: var(--muted); }
 .ovn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ove { font-size: 14px; line-height: 20px; color: var(--ink-2); }
@@ -1678,6 +1678,8 @@ button.pill.pill-btn[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .ovr { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 13px; white-space: nowrap; }
 .ovr b { font-variant-numeric: tabular-nums; } .ovr b.bad { color: var(--bad); } .ovr b.muted { color: var(--muted); }
 .ovco { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.ovr b { text-align: right; }   /* the figure stays on one line; a company's SQL date goes under it */
+.ovr-to { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
 .ovf { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 32px; }
 .ovo { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; font-size: 13px; font-weight: 600; color: var(--accent); text-decoration: none; }
 .ovo:hover { text-decoration: underline; }

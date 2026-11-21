@@ -449,6 +449,8 @@ const slots = () => Object.fromEntries(fx.cards.map(k => [k, { html: el("ov-c-" 
   const pl = (m, y) => ({ month_sen: m, ytd_sen: y, upto: "2026-10-31", sql_to: "2026-11-17", fy_start: "2026-01-01", stale: false });
   out.t = {
     funds_unknown: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(null, { empty: "Enter the bank balance to see funds to request", still_to_pay: 80000, balance: null }))]),
+    due_mixed: calm("due", [co(1, "AAA", { overdue: { n: 3, sums: { MYR: 739 }, pay_n: 0 }, soon: { n: 2, sums: { MYR: 1200 }, pay_n: 0 }, days: 7, link_month: "2026-10" }),
+                            co(2, "BBB", { overdue: { n: 1, sums: { USD: 100 }, pay_n: 0 }, soon: { n: 1, sums: {}, pay_n: 1 }, days: 7, link_month: "2026-10" })]),
     funds_pay: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(null, { empty: "Funds to request: salaries only, open the Budget", pay_only: true, still_to_pay: null, balance: null }))]),
     funds_known: calm("funds", [co(1, "AAA", fund(5000)), co(2, "BBB", fund(2000))]),
     bank_mixed: calm("bank", [co(1, "AAA", bank({ MYR: { balance: 80000, in: 100, out: 50 } })), co(2, "BBB", bank({ USD: { balance: 17480, in: 0, out: 0 } }))]),
@@ -508,7 +510,7 @@ check("Needs attention, All companies: a block per company with its kind, counte
       and '<b class="ctr-n bad">2</b><span>Past due</span>' in att and '<b class="ctr-n">0</b>' in att and "Filed: nothing in it counts" in att, att[:900])
 due_all = cards["due"]["html"]
 check("Due and overdue with All companies: the companies added up, a line per company, 'Today'",
-      '<b class="ovh bad">5 overdue</b>' in due_all and '<span class="ovco">EXN</span><b class="bad">1 payment overdue</b>' in due_all and '<span class="ovco">EXA</span>' in due_all and '<span class="ovco">EXH</span>' in due_all and 'class="tday">Today' in due_all, due_all)
+      '<b class="ovh bad">5 overdue · RM 1,845</b><span class="sub ovn">1 due in the next 7 days · RM 86</span>' in due_all and '<span class="ovco">EXN</span><b class="bad">1 payment overdue</b>' in due_all and '<span class="ovco">EXA</span>' in due_all and '<span class="ovco">EXH</span>' in due_all and 'class="tday">Today' in due_all, due_all)
 check("Customers overdue shows the balances from before tracking apart, labelled 'Before tracking'",
       "RM 2,700" in X["cards"]["customers"]["html"] and "Before tracking RM 4,000" in X["cards"]["customers"]["html"] and "2 balances over 30 days" in X["cards"]["customers"]["html"],
       X["cards"]["customers"]["html"])
@@ -579,6 +581,22 @@ check("...companies added up per currency (ringgit with ringgit, dollars with do
 check("...an overdrawn balance keeps its minus sign", head(t["bank_neg"])[0] == "-RM 1,250", head(t["bank_neg"]))
 check("...the company line shows it the same way (-RM 1,250.00, never RM -1,250.00)",
       '<span class="ovco">BBB</span><b class="">-RM 1,250.00 · USD 50.00</b>' in t["bank_both"] and "RM -" not in t["bank_both"], t["bank_both"][-700:])
+check("Due and overdue, one company: the number overdue with its amount, and the number due soon with its amount",
+      '<b class="ovh bad">4 overdue · RM 1,845</b><span class="sub ovn">1 due in the next 7 days · RM 86</span>' in X["cards"]["due"]["html"], X["cards"]["due"]["html"][-900:])
+check("...with All companies, the amounts added per currency, never one into another", head(t["due_mixed"]) == ("4 overdue · RM 739 and USD 100", "3 due in the next 7 days · RM 1,200"),
+      head(t["due_mixed"]))
+check("Profit or loss, Customers overdue and Suppliers due say the date SQL's data runs to on the card: in one company's note",
+      all("SQL data to 17 Nov" in re.sub(r"<[^>]+>", "", X["cards"][k]["html"].split("<details")[0]) for k in ("pl", "customers", "suppliers")),
+      {k: X["cards"][k]["html"][-500:] for k in ("pl",)})
+check("...and on each SQL company's line with All companies (not on a company kept here)",
+      all(ln.get("EXA", "").endswith("· to 17 Nov") and "to " not in ln.get("EXH", "x") and "to " not in ln.get("EXN", "x")
+          for ln in ({m[0]: re.sub(r"<[^>]+>", "", m[1]) for m in re.findall(r'<span class="ovco">(\w+)</span><b[^>]*>(.*?)</b></span>', h)}
+                     for h in (o["retried"]["pl"], A["cards"]["customers"]["html"], A["cards"]["suppliers"]["html"]))), A["cards"]["customers"]["html"][-900:])
+check("Needs attention is named once (its card's heading), not by a hidden heading too",
+      'aria-labelledby="ov-h-attention"' in A["main"] and ">Needs attention</h2>" not in A["main"])
+css_now = (Path(__file__).resolve().parents[1] / "static" / "app.css").read_text(encoding="utf-8")
+ovtt = re.search(r"^\.ovtt \{([^}]*)\}", css_now, re.M).group(1)
+check("a card's title is never cut off: it wraps (no nowrap, no ellipsis)", "nowrap" not in ovtt and "ellipsis" not in ovtt, ovtt)
 check("Funds to request with a company whose left to pay is salaries only: no total, and why, never a figure for it",
       head(t["funds_pay"]) == ("No total", "BBB: salaries only, open the Budget") and '<b class="muted">Salaries only</b>' in t["funds_pay"], head(t["funds_pay"]))
 check("Profit or loss: a company whose month can't be worked out is not counted as 0; the total says it leaves it out",

@@ -56,11 +56,12 @@ const OV_CARDS = {
       const payN = (c.overdue.pay_n || 0) + (c.soon.pay_n || 0);
       const bit = `${c.code}: ${n} overdue${n && sumsText(c.overdue.sums) ? `, ${sumsText(c.overdue.sums)}` : ""}; ${soon}${n2 && sumsText(c.soon.sums) ? `, ${sumsText(c.soon.sums)}` : ""}.`
         + (payN ? ` ${plural(payN, "pay payment")} (a salary, an allowance) counted but not added to the amounts.` : "");
-      if (!n && !n2) return { u: "n", n: 0, n2: 0, zero: true, head: "0 overdue", headTone: "muted", line: "None", note: soon };
-      return { u: "n", n, n2, head: `${n} overdue`, headTone: n ? "bad" : "", line: n ? `${sumsText(c.overdue.sums) || plural(n, "payment")} overdue` : `${n2} due`, lineTone: n ? "bad" : "",
-        note: soon + (n2 && sumsText(c.soon.sums, true) ? `, ${sumsText(c.soon.sums, true)}` : ""), bit };
+      if (!n && !n2) return { u: "n", n: 0, n2: 0, over: {}, due: {}, zero: true, head: "0 overdue", headTone: "muted", line: "None", note: soon };
+      return { u: "n", n, n2, over: c.overdue.sums, due: c.soon.sums, ...dueWords(n, n2, c.overdue.sums, c.soon.sums, c.days),
+        line: n ? `${sumsText(c.overdue.sums) || plural(n, "payment")} overdue` : `${n2} due`, lineTone: n ? "bad" : "", bit };
     },
-    sum: L => { const n = L.reduce((s, x) => s + x.n, 0), n2 = L.reduce((s, x) => s + x.n2, 0); return { head: `${n} overdue`, headTone: n ? "bad" : "muted", note: n2 ? `${n2} due in the next 7 days` : "nothing due in the next 7 days" }; } },
+    // the counts added up, and the amounts per currency (never one currency into another; pay is counted, never in them)
+    sum: L => dueWords(L.reduce((s, x) => s + x.n, 0), L.reduce((s, x) => s + x.n2, 0), addSums(L.map(x => x.over)), addSums(L.map(x => x.due)), 7) },
   funds: { title: "Funds to request", glyph: "budget", tone: "brand", follows: true, empty: "Enter the bank balance to see funds to request", open: "Open Budget", where: ", Payments, Budget",
     href: c => ovHref("budget", c.entity_id),
     src: () => `From the Budget: what is still to pay for ${monthName(state.month)}, less the bank balance entered on the budget's balance date.`,
@@ -140,6 +141,14 @@ const OV_CARDS = {
   headcount: { title: "Headcount", glyph: "staff", tone: "brand", today: true, empty: "Add your staff to see this", src: () => "From Staff, as at today: people in employment, and joiners and leavers this month.", get: c => ({ empty: c.empty, short: "No staff yet" }) },
   requests: { title: "Requests waiting", glyph: "claim", tone: "brand", today: true, empty: "Nothing waiting", src: () => "Waiting for approval on Approvals, and approved but not yet paid.", get: c => ({ empty: c.empty, short: "None" }) },
 };
+// Due and overdue's headline and note: the number overdue with what is still to pay ("3 overdue · RM 739"), and the number due
+// in the next days with its amount ("2 due in the next 7 days · RM 1,200"), each currency apart.
+function dueWords(n, n2, over, due, days) {
+  const amt = s => sumsText(s, true);
+  return { head: `${n} overdue${n && amt(over) ? ` · ${amt(over)}` : ""}`, headTone: n ? "bad" : "muted",
+    note: n2 ? `${n2} due in the next ${days} days${amt(due) ? ` · ${amt(due)}` : ""}` : `nothing due in the next ${days} days` };
+}
+const addSums = list => { const t = {}; for (const s of list) for (const [k, v] of Object.entries(s || {})) t[k] = Math.round(((t[k] || 0) + v) * 100) / 100; return t; };
 // The Bank card's words for balances per currency: the ringgit (else the first) currency as the headline with its in and out,
 // every other currency's balance named after it ("also USD 17,480"). Balances keep their sign.
 const bankCurs = totals => Object.keys(totals).sort((a, b) => (a !== "MYR") - (b !== "MYR") || (a < b ? -1 : 1));
@@ -216,8 +225,12 @@ function ovCalm(id, d) {
   const sentences = [...new Set(per.map(x => x.v.empty || dEmpty))];
   const emptyText = sentences.length === 1 ? sentences[0] : (per[0]?.v.empty || dEmpty);
   if (none && !many) note = per[0]?.v.empty && per[0].v.note || "";
-  const lines = many && (!none || sentences.length > 1) ? per.map(({ c, v }) =>
-    `<span class="ovr"><span class="ovco">${esc(c.code)}</span><b class="${v.empty || v.zero || v.lineTone === "muted" ? "muted" : v.lineTone === "bad" ? "bad" : ""}">${esc(v.empty ? v.short : v.line)}</b></span>`).join("") : "";
+  // An Accounting card says, for each company kept in SQL Account, the date SQL's data runs to (section 4.4): in the note for
+  // one company, on each company's line with All companies.
+  const sqlTo = c => C.sql && c.kind === "sql" && c.sql_to ? c.sql_to : null;
+  if (!many && per[0] && sqlTo(per[0].c)) note = [note, `SQL data to ${shortDate(sqlTo(per[0].c))}`].filter(Boolean).join(" · ");
+  const lines = many && (!none || sentences.length > 1 || cs.some(sqlTo)) ? per.map(({ c, v }) =>
+    `<span class="ovr"><span class="ovco">${esc(c.code)}</span><b class="${v.empty || v.zero || v.lineTone === "muted" ? "muted" : v.lineTone === "bad" ? "bad" : ""}">${esc(v.empty ? v.short : v.line)}${sqlTo(c) ? `<span class="ovr-to"><span class="sr-only"> · </span>to ${esc(shortDate(sqlTo(c)))}</span>` : ""}</b></span>`).join("") : "";
   const stale = C.stale ? C.stale(cs) : "";
   const target = C.href && (cs.find(c => { const v = C.get(c); return !v.empty && !v.zero; }) || cs[0]);
   const href = target ? C.href(target) : null;
@@ -331,8 +344,9 @@ async function viewOverview(main) {
   // Nothing answered at all (the records can't be reached): the page's own Couldn't load card, not a page of failed cards.
   if (next.error && ro.error) throw new Error(next.error);
   const budgetTo = ovHref("budget", scope || state.entity || firstEntityId());
-  const rows = OV_ROWS.map(r => `<section class="ov-row" aria-labelledby="ov-row-${r.key}">
-      ${r.head ? `<div class="ov-row-head"><h2 id="ov-row-${r.key}" class="rh">${esc(r.head(state.month))}</h2>${r.note ? `<span class="sub">${esc(r.note)}</span>` : ""}</div>` : `<h2 id="ov-row-${r.key}" class="sr-only">Needs attention</h2>`}
+  // A row with no heading of its own (Needs attention) is named by its one card's heading, read out once.
+  const rows = OV_ROWS.map(r => `<section class="ov-row" aria-labelledby="${r.head ? `ov-row-${r.key}` : `ov-h-${r.ids[0]}`}">
+      ${r.head ? `<div class="ov-row-head"><h2 id="ov-row-${r.key}" class="rh">${esc(r.head(state.month))}</h2>${r.note ? `<span class="sub">${esc(r.note)}</span>` : ""}</div>` : ""}
       <div class="${r.key === "attention" ? "ov-grid1" : "ovg"}">${r.ids.map(id => `<div class="ov-slot" id="ov-c-${id}"${OV_CARDS[id].hidden ? " hidden></div>" : `>${ovLoading(id)}</div>`}`).join("")}</div></section>`).join("");
   main.innerHTML = `
     <div id="ovRollBox">${ovRollover(ro, next)}</div>
