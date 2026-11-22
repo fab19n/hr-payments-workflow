@@ -673,6 +673,28 @@ with section("19. the records' overview (/api/meta) carries each company's short
     call("patch", f"/api/setup/entities/{EXA}", json={"fields": {"short_name": "Alpha"}})
     check("...and the one set in Setup is there at once", {e["code"]: e["short_name"] for e in call("get", "/api/meta")["entities"]}["EXA"] == "Alpha")
 
+# 20. the longer limit of a setup file's own check (three times) is for the fields kept in capitals; every other field keeps its limit there
+with section("20. a setup file's longer limit reaches only the fields kept in capitals"):
+    every = [(k, f) for k, spec in masters.KINDS.items() for f in spec["fields"]]
+    kept_upper = [(k, f["key"]) for k, f in every if f.get("upper")]
+    check("only the bank account's GL code is kept in capitals, so it is the one field the longer limit of a file's check can reach", kept_upper == [("accounts", "gl_code")], kept_upper)
+    strict, off = [(k, f) for k, f in every if f["type"] in ("text", "textarea") and not f.get("upper")], []
+    for k, f in strict:
+        limit = 2000 if f["type"] == "textarea" else f.get("max", 200)
+        for n, taken in ((limit, True), (limit + 1, False)):
+            try:
+                masters.check_value(f, "x" * n, lenient=True)
+                got = True
+            except masters.Refused:
+                got = False
+            if got != taken:
+                off.append((k, f["key"], n))
+    check(f"every other text field of every kind ({len(strict)} of them) keeps its own limit in a file's check: its limit is taken, one more is refused", len(strict) > 20 and not off, off[:5])
+    check("...and the GL code is the one that takes three times (600) and refuses one more, in a file's check, while a typed value is held to 200",
+          masters.check_value(next(f for k, f in every if f.get("upper")), "x" * 600, lenient=True) == "X" * 600
+          and _refused(lambda: masters.check_value(next(f for k, f in every if f.get("upper")), "x" * 601, lenient=True))
+          and _refused(lambda: masters.check_value(next(f for k, f in every if f.get("upper")), "x" * 201)))
+
 if failed:
     print(f"\n{len(failed)} failed, {len(passed)} passed")
     sys.exit(1)

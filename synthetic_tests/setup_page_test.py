@@ -159,6 +159,7 @@ async function fetch(path, init = {}) {
   const slow = delays[path]; if (slow) await new Promise(r => setTimeout(r, Array.isArray(slow) ? slow.shift() || 0 : slow));
   if (lateFail[path] > 0) { lateFail[path]--; throw new TypeError("Failed to fetch"); }   // it fails once it has taken its time
   if ((FX.bad || {})[path]) return { ok: true, status: 200, json: async () => { throw new SyntaxError("not JSON"); } };   // the app answers, but not with the records
+  if ((FX.status || {})[path]) return { ok: false, status: FX.status[path], json: async () => ({ error: "The server could not read the records." }) };   // the app answers with a failure
   const hit = FX.get[path];
   if (hit === undefined) return { ok: false, status: 404, json: async () => ({ error: "no fixture for " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(hit)) };
@@ -1036,24 +1037,59 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     return out;
   });
 
+  // L1 (round 8). the second draw: its own failure reaches render() (which paints it, with its Try again), and it is the last: never a third
+  await tryit("secondDraw", async () => {
+    const out = {}, EXA = FX.EXA, A = `/api/setup/accounts?entity=${EXA}`;
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    const covered = () => { const was = main.querySelector; main.querySelector = s => s === "#setupMain" ? null : was(s); return () => { main.querySelector = was; }; };   // the place stays missing
+    const arrive = () => { main.innerHTML = `<div>Overview</div>`; run(`render.last = null; state.view = "setup"; state.entity = ${EXA}; state.setup.kind = "accounts"; state.setup.stopped = false; state.setup.deleted = false`); };
+    run(`render = __realRender`);
+    let n = 0, uncover = null;
+    try {
+      // the place stays missing: the section is read twice, never a third time, and nothing is painted as an error
+      uncover = covered(); onGet = p => { if (p === A) n++; };
+      arrive(); await run(`render()`); uncover(); onGet = null;
+      out.twice = { reads: n, error: /Couldn(&#39;|')t load|isn(&#39;|')t running/.test(main.innerHTML), grid: /class="setup-grid"/.test(main.innerHTML) };
+      // the second read answers 500: the page says so, with its Try again
+      n = 0; uncover = covered(); onGet = p => { if (p === A && ++n === 2) FX.status = { [A]: 500 }; };
+      arrive(); await run(`render()`); uncover(); onGet = null; delete FX.status;
+      out.fails500 = { reads: n, html: main.innerHTML };
+      await run(`click({ retry: "1" })`); await sleep(40);
+      out.after500 = { grid: /class="setup-grid"/.test(main.innerHTML), error: /Couldn(&#39;|')t load/.test(main.innerHTML) };
+      // the second read can't reach the app: the page says it isn't running, with its Try again
+      n = 0; uncover = covered(); onGet = p => { if (p === A && ++n === 1) FX.fail = { [A]: true }; };
+      arrive(); await run(`render()`); uncover(); onGet = null; FX.fail = {};
+      out.rejects = { reads: n, html: main.innerHTML };
+      await run(`click({ retry: "1" })`); await sleep(40);
+      out.afterRejects = { grid: /class="setup-grid"/.test(main.innerHTML), error: /isn(&#39;|')t running/.test(main.innerHTML) };
+    } finally { if (uncover) uncover(); onGet = null; FX.status = {}; FX.fail = {}; run(`render = async () => { __calls.push(["render"]); }`); }
+    await view("accounts", EXA);
+    return out;
+  });
+
   // L2. a change was saved and what reads after it fails (the records overview, or a reply that isn't the records): the page says it was saved (never
-  // that nothing was changed), the change was made once, and Try again only reads again
+  // that nothing was changed), once, the change was made once, and Try again only reads again: it opens no record and closes no dialog
   const SAVED_MSG = "It was saved, but this page could not reload. Try again.";
   const writesOf = (m, re) => calls.filter(x => x[0] === m && re.test(x[1]) && !(x[2] && x[2].preview)).length;
   const badToast = () => sandbox.__toasts.filter(t => t.bad).pop();
   const allSaid = () => [...sandbox.__toasts.map(t => t.msg), el("su-why-msg").innerHTML, el("pb-why-err").innerHTML, el("rsErr").innerHTML].join(" | ");
+  const spyOn = () => run(`globalThis.__spy = []; for (const n of ["openSetup", "openChecklist", "openReminder", "closeDrawer"]) { globalThis["__orig_" + n] = globalThis[n]; globalThis[n] = (...a) => { __spy.push(n); return globalThis["__orig_" + n](...a); }; }`);
+  const spyOff = () => run(`for (const n of ["openSetup", "openChecklist", "openReminder", "closeDrawer"]) if (globalThis["__orig_" + n]) { globalThis[n] = globalThis["__orig_" + n]; delete globalThis["__orig_" + n]; }`);
   let uniq = 100;
   await tryit("afterSave", async () => {
-    const out = {}, EXA = FX.EXA, EXB = FX.EXB;
+    const out = {}, EXA = FX.EXA, EXB = FX.EXB, CH = `/api/setup/checklist?entity=${EXA}`, RM = "/api/setup/reminders";
+    const chk = FX.get[CH].items[0] || { id: 901 }, rem = FX.get[RM].rules[0];   // a company with no month set up has no item: the id is only sent
+    if (!rem) throw new Error("a fixture has no rule");
     const openRec = async (kind, id, ent) => { run(`state.entity = ${ent}`); await run(`openSetup(${JSON.stringify(kind)}, ${JSON.stringify(id)})`); await sleep(20); };
-    const why = act => async () => { await run(`setupAct(${JSON.stringify(act)}, __btn)`); el("su-reason").value = "A reason"; await run(`whySubmit()`); };
+    const why = (fn, act) => async () => { await run(`${fn}(${JSON.stringify(act)}, __btn)`); el("su-reason").value = "A reason"; await run(`whySubmit()`); };
     const fillAll = () => { for (const f of run(`state.setup.types.kinds[state.setup.drawer.kind].fields`)) { const e = el("su-" + f.key); e.value = "1"; e.checked = true; } };
+    const chkPost = () => writesOf("POST", /\/api\/setup\/checklist$/), remPost = () => writesOf("POST", /\/api\/setup\/reminders$/);
     const SAVE = { w: () => writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/), prep: () => openRec("accounts", FX.TEMP, EXB),
       fire: async () => { fillAll(); el("su-label").value = "Renamed account " + (++uniq); await run(`setupSave()`); await sleep(30); } };
     const FLOWS = {
-      "delete": { w: () => writesOf("DELETE", /\/api\/setup\/accounts\/\d+$/), prep: () => openRec("accounts", FX.OLD, EXA), fire: why("delete") },
-      "stop using": { w: () => writesOf("POST", /\/accounts\/\d+\/stop$/), prep: () => openRec("accounts", FX.TEMP, EXB), fire: why("stop") },
-      "use again": { w: () => writesOf("POST", /\/accounts\/\d+\/use$/), prep: () => openRec("accounts", FX.OLD, EXA), fire: why("use") },
+      "delete": { w: () => writesOf("DELETE", /\/api\/setup\/accounts\/\d+$/), prep: () => openRec("accounts", FX.OLD, EXA), fire: why("setupAct", "delete") },
+      "stop using": { w: () => writesOf("POST", /\/accounts\/\d+\/stop$/), prep: () => openRec("accounts", FX.TEMP, EXB), fire: why("setupAct", "stop") },
+      "use again": { w: () => writesOf("POST", /\/accounts\/\d+\/use$/), prep: () => openRec("accounts", FX.OLD, EXA), fire: why("setupAct", "use") },
       "save": SAVE,
       "save (a reply that isn't the records)": { ...SAVE, bad: true },
       "add": { w: () => writesOf("POST", /\/api\/setup\/accounts$/), prep: () => openRec("accounts", "new", EXA), fire: async () => { fillAll(); await run(`setupSave()`); await sleep(30); } },
@@ -1070,38 +1106,50 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       "put it back": { w: () => writesOf("POST", /\/api\/setup\/restore\/\d+$/),
         prep: async () => { await run(`openRestore(${FX.RESTORE}, "Spare")`); await sleep(20); el("pb-why").value = "A reason"; },
         fire: () => run(`restoreGo(${FX.RESTORE}, { disabled: false, isConnected: true })`) },
+      // the flows that read the records through reloadMeta, which used to swallow a failed read
+      "checklist: add an item": { kind: "checklist", w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: "new", completion: "manual" }`); el("cl-from").value = "2026-11"; el("cl-title").value = "A new item"; }, fire: () => run(`chkSave(false)`) },
+      "checklist: stop using": { kind: "checklist", w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: ${chk.id} }`); el("cl-from").value = "2026-11"; }, fire: why("chkAct", "stop") },
+      "checklist: delete an item": { kind: "checklist", w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: ${chk.id} }`); }, fire: why("chkAct", "delete") },
+      "checklist: copy another company's": { kind: "checklist", w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: "copy" }`); el("cp-from").value = "2"; el("cl-from").value = "2026-11"; }, fire: () => run(`chkCopySave(false)`) },
+      "reminders: save": { kind: "reminders", w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); el("rm-from").value = "2026-11"; el("rm-title").value = "A title"; el("rm-days").value = "5"; }, fire: () => run(`remSave(false)`) },
+      "reminders: delete": { kind: "reminders", w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); }, fire: why("remAct", "delete") },
     };
-    for (const [name, F] of Object.entries(FLOWS)) {
-      const r = out[name] = {};
-      await view("accounts", EXA);
-      sandbox.__toasts.length = 0; el("su-why-msg").innerHTML = ""; el("pb-why-err").innerHTML = ""; el("rsErr").innerHTML = "";
-      await F.prep(); calls.length = 0;
-      const reads0 = run(`state.metaReads || 0`);
-      if (F.bad) FX.bad = { "/api/meta": true }; else lateFail["/api/meta"] = 1;
-      await Promise.resolve(F.fire()).catch(e => { r.threw = String(e); });
-      r.hit = F.bad ? true : lateFail["/api/meta"] === 0; delete lateFail["/api/meta"];
-      const bad = badToast();
-      r.once = F.w(); r.said = !!bad && bad.msg === SAVED_MSG; r.tryAgain = !!(bad && bad.opts && bad.opts.action && bad.opts.action.label === "Try again");
-      r.nothing = /Nothing was changed|Failed to fetch/.test(allSaid()); r.drawer = run(`state.setup.drawer`) === null;
-      FX.bad = {}; calls.length = 0;
-      if (r.tryAgain) await bad.opts.action.fn();
-      await sleep(30);
-      r.again = { writes: F.w(), read: run(`state.metaReads || 0`) - reads0, rendered: calls.some(x => x[0] === "render"), saved: run(`state.saved`) };
-    }
-    await view("accounts", EXA); run(`state.entity = ${EXA}`);
+    spyOn();
+    try {
+      for (const [name, F] of Object.entries(FLOWS)) {
+        const r = out[name] = {};
+        await run(`closeDrawer(true)`); await view(F.kind || "accounts", EXA);
+        sandbox.__toasts.length = 0; el("su-why-msg").innerHTML = ""; el("pb-why-err").innerHTML = ""; el("rsErr").innerHTML = "";
+        await F.prep(); calls.length = 0;
+        const reads0 = run(`state.metaReads || 0`);
+        if (F.bad) FX.bad = { "/api/meta": true }; else lateFail["/api/meta"] = 1;
+        await Promise.resolve(F.fire()).catch(e => { r.threw = String(e); });
+        r.hit = F.bad ? true : lateFail["/api/meta"] === 0; delete lateFail["/api/meta"];
+        const bad = badToast();
+        r.once = F.w(); r.said = !!bad && bad.msg === SAVED_MSG; r.tryAgain = !!(bad && bad.opts && bad.opts.action && bad.opts.action.label === "Try again");
+        r.toasts = sandbox.__toasts.filter(t => t.bad).length;
+        r.nothing = /Nothing was changed|Failed to fetch/.test(allSaid()); r.drawer = run(`state.setup.drawer`) === null;
+        FX.bad = {}; calls.length = 0; run(`__spy.length = 0`);
+        if (r.tryAgain) await bad.opts.action.fn();
+        await sleep(30);
+        r.again = { writes: F.w(), read: run(`state.metaReads || 0`) - reads0, rendered: calls.some(x => x[0] === "render"), spy: run(`__spy.slice()`), toasts: sandbox.__toasts.filter(t => t.bad).length };
+      }
+    } finally { spyOff(); }
+    await run(`closeDrawer(true)`); await view("accounts", EXA); run(`state.entity = ${EXA}`);
     return out;
   });
 
-  // L2. ... and when the page's own read fails after the change was saved (render() paints it): the page says it was saved, in the same words, with its
-  // own Try again, which draws the page again and sends nothing
+  // L2. ... and when the page's own read fails after the change was saved (render() paints it): the page says it was saved, in the same words, once (no
+  // toast as well), with its own Try again, which draws the page again and sends nothing, and says it again if it fails again
   await tryit("afterSavePage", async () => {
     const out = {}, EXA = FX.EXA;
-    const CH = `/api/setup/checklist?entity=${EXA}`, RM = "/api/setup/reminders", RQ = "/api/setup/required?entity=", AC = `/api/setup/accounts?entity=${EXA}`, ST = "/api/setup/settings";
-    const chk = FX.get[CH].items[0] || { id: 901 }, rem = FX.get[RM].rules[0], req = FX.get[RQ].types[0];   // a company with no month set up has no item: the id is only sent
+    const CH = `/api/setup/checklist?entity=${EXA}`, RM = "/api/setup/reminders", RQ = "/api/setup/required?entity=", AC = `/api/setup/accounts?entity=${EXA}`, ST = "/api/setup/settings", EN = "/api/setup/entities";
+    const chk = FX.get[CH].items[0] || { id: 901 }, rem = FX.get[RM].rules[0], req = FX.get[RQ].types[0];
     if (!rem || !req) throw new Error("a fixture has no rule or type");
+    sandbox.__btnArmed = { ...sandbox.__btn, dataset: { armed: "1" } };   // Tidy up's button, once it has counted what would go
     const go = async kind => { run(`state.entity = ${EXA}; state.view = "setup"; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false; state.setup.reqScope = null`);
       await run(`viewSetup(__el("main"))`); await sleep(20); };
-    const why = (fn, act) => async () => { await run(`${fn}(${JSON.stringify(act)}, __btn)`); el("su-reason").value = "A reason"; await run(`whySubmit()`); };
+    const why = (fn, act, btn = "__btn") => async () => { await run(`${fn}(${JSON.stringify(act)}, ${btn})`); el("su-reason").value = "A reason"; await run(`whySubmit()`); };
     const chkPost = () => writesOf("POST", /\/api\/setup\/checklist$/), remPost = () => writesOf("POST", /\/api\/setup\/reminders$/);
     const FLOWS = {
       "checklist: add an item": { kind: "checklist", path: CH, w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: "new", completion: "manual" }`); el("cl-from").value = "2026-11"; el("cl-title").value = "A new item"; }, fire: () => run(`chkSave(false)`) },
@@ -1112,6 +1160,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       "reminders: delete": { kind: "reminders", path: RM, w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); }, fire: why("remAct", "delete") },
       "required documents: save": { kind: "required", path: RQ, w: () => writesOf("POST", /\/api\/setup\/required$/), prep: () => { run(`state.setup.reqOpen = ${JSON.stringify(req.key)}`); el("rq-from").value = "2026-11"; }, fire: () => run(`reqSave(false)`) },
       "bank account: delete": { kind: "accounts", path: AC, w: () => writesOf("DELETE", /\/api\/setup\/accounts\/\d+$/), prep: async () => { await run(`openSetup("accounts", ${FX.OLD})`); await sleep(20); }, fire: why("setupAct", "delete") },
+      "tidy up": { kind: "entities", path: EN, w: () => writesOf("POST", /^\/api\/months\/tidy$/), prep: async () => { await run(`openSetup("entities", ${EXA})`); await sleep(40); }, fire: why("setupAct", "tidy", "__btnArmed") },
       "general settings": { kind: "settings", path: ST, w: () => writesOf("PATCH", /\/api\/setup\/settings$/),
         prep: async () => { const f = run(`state.setup.settings.fields`).find(x => !["bool", "select"].includes(x.type)); el("gs-" + f.key).value = String(++uniq); }, fire: () => run(`settingsSave()`) },
       "move setup import": { kind: "move", path: "/api/setup/types", w: () => writesOf("POST", /^\/api\/setup\/import$/),
@@ -1124,73 +1173,126 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     try {
       for (const [name, F] of Object.entries(FLOWS)) {
         const r = out[name] = {};
-        await go(F.kind); sandbox.__toasts.length = 0; el("su-why-msg").innerHTML = "";
+        await run(`closeDrawer(true)`); await go(F.kind); sandbox.__toasts.length = 0; el("su-why-msg").innerHTML = "";
         await F.prep(); calls.length = 0;
         lateFail[F.path] = 1;
         await Promise.resolve(F.fire()).catch(e => { r.threw = String(e); });
         await sleep(40);
         r.hit = lateFail[F.path] === 0; delete lateFail[F.path];
         const html = main.innerHTML;
-        r.once = F.w(); r.page = html.includes(SAVED_MSG); r.nothing = /Nothing was changed|isn(&#39;|')t running/.test(html + " " + allSaid()); r.retry = html.includes('data-retry="1"'); r.saved = run(`state.saved`);
+        r.once = F.w(); r.page = html.includes(SAVED_MSG); r.nothing = /Nothing was changed|isn(&#39;|')t running/.test(html + " " + allSaid()); r.retry = html.includes('data-retry="saved"');
+        r.toasts = sandbox.__toasts.filter(t => t.msg === SAVED_MSG).length;
         calls.length = 0;
-        await run(`click({ retry: "1" })`); await sleep(60);
-        r.again = { writes: F.w(), page: !main.innerHTML.includes(SAVED_MSG) && /class="setup-grid"/.test(main.innerHTML), saved: run(`state.saved`) };
+        lateFail[F.path] = 1; await run(`click({ retry: "saved" })`); await sleep(40); delete lateFail[F.path];   // its Try again fails again: it says it again
+        r.again1 = main.innerHTML.includes(SAVED_MSG) && main.innerHTML.includes('data-retry="saved"');
+        await run(`click({ retry: "saved" })`); await sleep(60);
+        r.again = { writes: F.w(), page: !main.innerHTML.includes(SAVED_MSG) && /class="setup-grid"/.test(main.innerHTML) };
       }
       // a page that fails with no change saved says what it did before: the app has stopped, or the reason, and that nothing was changed
-      await go("accounts"); run(`state.saved = false`);
+      await run(`closeDrawer(true)`); await go("accounts");
       lateFail[AC] = 1; await run(`render()`); out.plainStopped = { stopped: /isn(&#39;|')t running/.test(main.innerHTML), saved: main.innerHTML.includes(SAVED_MSG) };
       run(`ROUTES.zzz = { draw: () => async m => { throw new Error("The records could not be read."); } }; state.view = "zzz"`); await run(`render()`);
       out.plainError = { reason: main.innerHTML.includes("The records could not be read."), nothing: main.innerHTML.includes("Nothing was changed."), saved: main.innerHTML.includes(SAVED_MSG) };
-    } finally { run(`render = async () => { __calls.push(["render"]); }; state.saved = false; state.view = "setup"`); for (const k of Object.keys(lateFail)) delete lateFail[k]; }
+    } finally { run(`render = async () => { __calls.push(["render"]); }; state.view = "setup"`); for (const k of Object.keys(lateFail)) delete lateFail[k]; }
     await view("accounts", EXA);
     return out;
+  });
+
+  // L2. a dialog with something typed in it is left alone when the reading back fails, and so is another dialog the user opened meanwhile; the toast's
+  // Try again never reopens a record or closes a dialog
+  await tryit("dialogs", async () => {
+    const r = {}, EXA = FX.EXA, EXB = FX.EXB;
+    const openRec = async (kind, id, ent) => { run(`state.entity = ${ent}`); await run(`openSetup(${JSON.stringify(kind)}, ${JSON.stringify(id)})`); await sleep(20); };
+    const fillAll = () => { for (const f of run(`state.setup.types.kinds[state.setup.drawer.kind].fields`)) { const e = el("su-" + f.key); e.value = "1"; e.checked = true; } };
+    spyOn();
+    try {
+      // 1. Stop using, with something typed in the dialog that the stop doesn't save: the dialog stays open, with its edits
+      await run(`closeDrawer(true)`); await view("accounts", EXA); sandbox.__toasts.length = 0;
+      await openRec("accounts", FX.TEMP, EXB); run(`state.drawerDirty = () => true`);   // something typed
+      const d0 = run(`state.setup.drawer`);
+      await run(`setupAct("stop", __btn)`); el("su-reason").value = "A reason"; lateFail["/api/meta"] = 1; await run(`whySubmit()`); await sleep(30);
+      r.dirty = { open: run(`state.setup.drawer`) === d0 && !el("drawer").hidden, said: (badToast() || {}).msg === SAVED_MSG };
+      run(`__spy.length = 0`); await badToast().opts.action.fn(); await sleep(30);
+      r.dirtyRetry = { spy: run(`__spy.slice()`), same: run(`state.setup.drawer`) === d0 && !el("drawer").hidden };
+      // 2. Save Acme; its re-read is slow and fails; meanwhile the user opens another record (and types in it, or doesn't): that dialog is left as it is,
+      // and so after Try again
+      for (const [key, typed] of [["other", true], ["otherClean", false]]) {
+        await run(`closeDrawer(true)`); await view("accounts", EXA); sandbox.__toasts.length = 0; calls.length = 0;
+        await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq);
+        delays["/api/meta"] = [250]; lateFail["/api/meta"] = 1;
+        const saving = run(`setupSave()`); await sleep(80);                       // the write is done; the re-read is pending
+        await run(`openSetup("accounts", ${FX.MAIN})`); await sleep(20);          // the user opens another record
+        if (typed) run(`state.drawerDirty = () => true`);                         // and types in it
+        const d1 = run(`state.setup.drawer`);
+        await saving; await sleep(300); delete delays["/api/meta"];
+        r[key] = { open: run(`state.setup.drawer`) === d1 && run(`state.setup.drawer`).id === FX.MAIN && !el("drawer").hidden, said: (badToast() || {}).msg === SAVED_MSG, once: writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/) };
+        run(`__spy.length = 0`); calls.length = 0; await badToast().opts.action.fn(); await sleep(40);
+        r[key + "Retry"] = { spy: run(`__spy.slice()`), same: run(`state.setup.drawer`) === d1 && !el("drawer").hidden, writes: calls.filter(x => x[0] !== "render").length };
+      }
+    } finally { spyOff(); delete delays["/api/meta"]; delete lateFail["/api/meta"]; }
+    await run(`closeDrawer(true)`); await view("accounts", EXA); run(`state.entity = ${EXA}`);
+    return r;
+  });
+
+  // L2. what says "it was saved" belongs to the page that says it: a later, unrelated failure of the page says what it always said
+  await tryit("noLeak", async () => {
+    const r = {}, EXA = FX.EXA, AC = `/api/setup/accounts?entity=${EXA}`, P = `/api/setup/parties?entity=${EXA}`;
+    const open = async () => { run(`state.entity = ${EXA}`); await run(`openSetup("accounts", ${FX.OLD})`); await sleep(20); };
+    const delOld = async () => { await run(`setupAct("delete", __btn)`); el("su-reason").value = "A reason"; await run(`whySubmit()`); await sleep(40); };
+    const plain = async fn => { sandbox.__toasts.length = 0; await fn(); const h = main.innerHTML; return { saved: h.includes(SAVED_MSG), says: /isn(&#39;|')t running/.test(h) || /Couldn(&#39;|')t load/.test(h) }; };
+    const toRealRender = () => run(`render = __realRender; state.view = "setup"; state.entity = ${EXA}; state.setup.kind = "accounts"; state.setup.deleted = false; render.last = null`);
+    try {
+      // 1. a saved change whose records read failed (a toast, no page painted), then a page that fails for its own reasons
+      await run(`closeDrawer(true)`); await view("accounts", EXA); await open(); lateFail["/api/meta"] = 1; await delOld(); delete lateFail["/api/meta"];
+      toRealRender(); lateFail[AC] = 1;
+      r.afterToast = await plain(() => run(`render()`));
+      // 2. a page that painted "it was saved", then another place whose read fails
+      await run(`closeDrawer(true)`); run(`render = async () => { __calls.push(["render"]); }`); await view("accounts", EXA);
+      toRealRender(); await open(); lateFail[AC] = 1; await delOld();
+      r.pageSaved = main.innerHTML.includes(SAVED_MSG);
+      lateFail[P] = 1;
+      r.afterPlace = await plain(() => run(`applyPlace({ view: "setup", entity: ${EXA}, month: "2026-11", sub: "parties", id: null, params: {} }, { fresh: true })`));
+      // 3. the same, then a section switch (redraw)
+      run(`render.last = null`); await go2("accounts"); await open(); lateFail[AC] = 1; await delOld();
+      r.pageSaved2 = main.innerHTML.includes(SAVED_MSG);
+      run(`state.setup.kind = "parties"`); lateFail[P] = 1;
+      r.afterRedraw = await plain(() => run(`redraw()`));
+    } finally { run(`render = async () => { __calls.push(["render"]); }; state.view = "setup"`); for (const k of Object.keys(lateFail)) delete lateFail[k]; }
+    await run(`closeDrawer(true)`); await view("accounts", EXA);
+    return r;
+    async function go2(kind) { run(`state.entity = ${EXA}; state.view = "setup"; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false`); await run(`viewSetup(__el("main"))`); await sleep(20); }
   });
 
   // L5. Setup's list says the short name the company switcher shows, from the same function
   await tryit("shortNames", async () => {
     const mk = (name, short) => ({ id: 1, code: "S1", name, short_name: short });
     const list = [mk("Example Alpha Sdn Bhd", null), mk("Example Beta Sdn. Bhd.", ""), mk("Example Gamma Bhd", undefined), mk("Example Delta Ltd", null), mk("Example Epsilon Limited", null),
-      mk("Example Zeta Ltd.", "  Zed "), mk("Example <b>Eta</b> Ltd", "<i>Eta</i> & Co"), mk("Ltd", null), mk("Example Theta Sdn Bhd Services", null), mk("Example Iota, Ltd", null)];
+      mk("Example Zeta Ltd.", "  Zed "), mk("Example <b>Eta</b> Ltd", "<i>Eta</i> & Co"), mk("Ltd", null), mk("Example Theta Sdn Bhd Services", null), mk("Example Iota, Ltd", null),
+      mk("Sdn Bhd", null), mk("Bhd", null), mk("Limited", null)];
     return { sub: list.map(e => run(`SETUP_SUB.entities(${JSON.stringify(e)})`)), short: list.map(e => run(`companyShortName(${JSON.stringify(e)})`)) };
   });
 
-  // L6. a page whose slow read finishes after the user went on to Setup: Setup is drawn again once; two quick clicks end on the last page; a normal render draws once
-  await tryit("stalePaint", async () => {
-    const r = {}, P = `/api/setup/parties?entity=${FX.EXA}`;
-    FX.get["/api/setup/import"] = { empty: true, holding: [] };
-    run(`globalThis.__draws = { slow: 0, slow2: 0, quick: 0 };
-      ROUTES.slow = { draw: () => async m => { await new Promise(res => setTimeout(res, 300)); __draws.slow++; m.innerHTML = "<div>register</div>"; } };
-      ROUTES.slow2 = { draw: () => async m => { await new Promise(res => setTimeout(res, 150)); __draws.slow2++; m.innerHTML = "<div>second page</div>"; } };
-      ROUTES.quick = { draw: () => async m => { __draws.quick++; m.innerHTML = "<div>quick page</div>"; } };
-      render = __realRender`);
+  // Round 8. render() leaves a page that was overtaken as it always did (a late draw can paint over a newer page: a known limit, which wants a fix in
+  // the shell), but never draws anything again: a slow page A, a fast page B opened meanwhile, A's late paint, and then page C, which stays on show
+  await tryit("noRedo", async () => {
+    const r = {};
+    run(`globalThis.__d = { a: 0, b: 0, c: 0, quick: 0 };
+      ROUTES.pageA = { draw: () => async m => { await new Promise(res => setTimeout(res, 300)); __d.a++; m.innerHTML = "<div>A page</div>"; } };
+      ROUTES.pageB = { draw: () => async m => { const n = ++__d.b; if (n > 1) await new Promise(res => setTimeout(res, 300)); m.innerHTML = "<div>B page " + n + "</div>"; } };
+      ROUTES.pageC = { draw: () => async m => { __d.c++; m.innerHTML = "<div>C page</div>"; } };
+      ROUTES.quick = { draw: () => async m => { __d.quick++; m.innerHTML = "<div>quick page</div>"; } };
+      render = __realRender; render.last = null; state.view = "pageA"`);
     try {
-      run(`state.entity = ${FX.EXA}; state.setup.kind = "parties"; state.setup.stopped = false; state.setup.deleted = false; render.last = null; state.view = "slow"`);
-      const a = run(`render()`); await sleep(30);
-      run(`state.view = "setup"`); await run(`render()`);          // Setup, which is quick
-      r.setupFirst = smHtml.includes('data-setup-new="parties"');
-      await a; await sleep(60);                                      // the register's read has come
-      r.afterRegister = { setup: smHtml.includes('data-setup-new="parties"'), register: main.innerHTML.includes("register"), view: run(`state.view`), slowDraws: run(`__draws.slow`) };
-      // two quick clicks, the first page the slowest
-      run(`render.last = null; state.view = "slow"`); const b = run(`render()`); await sleep(30);
-      run(`state.view = "slow2"`); const c = run(`render()`); await sleep(30);
-      run(`state.view = "quick"`); await run(`render()`);
-      await b; await c; await sleep(60);
-      r.quick = { page: main.innerHTML, ended: run(`state.view`) };
-      // a stale page whose read comes while the newer one is still reading: nothing is drawn again, the newer page writes itself (once)
-      run(`ROUTES.slow3 = { draw: () => async m => { await new Promise(res => setTimeout(res, 450)); __draws.slow3++; m.innerHTML = "<div>third page</div>"; } };
-        __draws.slow3 = 0; __draws.slow = 0; render.last = null; state.view = "slow"`);
-      const e1 = run(`render()`); await sleep(30);
-      run(`state.view = "slow3"`); const e2 = run(`render()`);
-      await e1; await e2; await sleep(60);
-      r.stillReading = { page: main.innerHTML, slow3: run(`__draws.slow3`), slow: run(`__draws.slow`) };
+      const a = run(`render()`); await sleep(40);
+      run(`state.view = "pageB"`); await run(`render()`);                  // B is quick
+      await sleep(330);                                                      // A's read comes and paints over B
+      run(`state.view = "pageC"`); await run(`render()`);                  // C is quick, and is the page on show
+      await a; await sleep(400);
+      r.timeline = { page: main.innerHTML, view: run(`state.view`), a: run(`__d.a`), b: run(`__d.b`), c: run(`__d.c`) };
       // the normal path: one render, one draw
-      run(`__draws.quick = 0; render.last = null; state.view = "quick"`); await run(`render()`); await sleep(40);
-      r.once = run(`__draws.quick`);
-      // Setup is the stale one (its draws write nothing once overtaken): nothing is drawn again
-      run(`__draws.quick = 0; state.view = "setup"; render.last = null`); delays[P] = 200; const d = run(`render()`); await sleep(30);
-      run(`state.view = "quick"`); await run(`render()`); await d; await sleep(40); delete delays[P];
-      r.setupStale = { quick: run(`__draws.quick`), page: main.innerHTML };
-    } finally { run(`render = async () => { __calls.push(["render"]); }; state.view = "setup"; delete ROUTES.slow; delete ROUTES.slow2; delete ROUTES.slow3; delete ROUTES.quick`); delete delays[P]; }
+      run(`__d.quick = 0; render.last = null; state.view = "quick"`); await run(`render()`); await sleep(60);
+      r.once = run(`__d.quick`);
+    } finally { run(`render = async () => { __calls.push(["render"]); }; state.view = "setup"; delete ROUTES.pageA; delete ROUTES.pageB; delete ROUTES.pageC; delete ROUTES.quick`); }
     await view("accounts", FX.EXA);
     return r;
   });
@@ -1613,40 +1715,58 @@ check("Put it back's Try again with the app stopped makes one request and shows 
       all(x == {"requests": 1, "dialogs": 1, "notes": 1} for x in rr["rounds"]) and len(rr["rounds"]) == 3
       and rr["back"]["requests"] == 1 and rr["back"]["dialogs"] == 1 and "It comes back as it was" in rr["back"]["body"] and "Couldn't load" not in rr["back"]["body"], rr)
 
-# ---------- round 7 ----------
+# ---------- round 7 and 8 ----------
 sd = o["skeletonDeleted"]
 okcase = {"skeleton": False, "grid": True, "hold": "", "loading": False, "section": True, "table": True, "slow": True}
 check("L1: render()'s loading skeleton covering the page after the section was written (the Show deleted read, 900 ms, came last) is drawn over once more, for the list, the checklist and the reminders, with Show deleted on and off: the section, its table, no skeleton, no hold",
       all(sd[k] == okcase for k in ("accounts-on", "checklist-on", "reminders-on", "accounts-off", "checklist-off", "reminders-off")), sd)
-check("L2: every flow that changes something is tried: record save, add, stop using, use again, delete, put it back, general settings, Move setup import, Paste a list, and a reply that isn't the records",
-      sorted(o["afterSave"].keys()) == sorted(["delete", "stop using", "use again", "save", "save (a reply that isn't the records)", "add", "general settings", "move setup import", "paste a list", "put it back"]), list(o["afterSave"].keys()))
+sw = o["secondDraw"]
+check("L1: when the place of the section stays missing the second draw is the last: the section is read twice in all, never a third time, and no error is painted",
+      sw["twice"] == {"reads": 2, "error": False, "grid": True}, sw["twice"])
+check("L1: a failure of the second draw (its read answers 500) reaches render(): the page says so, with its Try again, and Try again draws the section",
+      sw["fails500"]["reads"] == 2 and "The server could not read the records." in sw["fails500"]["html"] and 'data-retry="1"' in sw["fails500"]["html"] and "Couldn't load this page" in sw["fails500"]["html"]
+      and sw["after500"] == {"grid": True, "error": False}, sw["fails500"]["html"][-300:])
+check("...and so does one that can't reach the app: the page says it isn't running, with its Try again, and Try again draws the section",
+      "isn't running" in sw["rejects"]["html"] and 'data-retry="1"' in sw["rejects"]["html"] and sw["afterRejects"] == {"grid": True, "error": False}, sw["rejects"]["html"][-300:])
+AFTER_SAVE = ["delete", "stop using", "use again", "save", "save (a reply that isn't the records)", "add", "general settings", "move setup import", "paste a list", "put it back",
+              "checklist: add an item", "checklist: stop using", "checklist: delete an item", "checklist: copy another company's", "reminders: save", "reminders: delete"]
+check("L2: every flow that changes something is tried with the records overview failing: record save, add, stop using, use again, delete, put it back, general settings, Move setup import, Paste a list, a reply that isn't the records, and the checklist and reminders (which swallowed a failed read)",
+      sorted(o["afterSave"].keys()) == sorted(AFTER_SAVE), list(o["afterSave"].keys()))
 for name, f in o["afterSave"].items():
-    check(f"L2: {name}: the change is made once and, when the records can't be read again after it, the page says it was saved (not that nothing was changed), with a Try again and the dialog closed; Try again reads again and sends nothing",
-          f["hit"] is True and f["once"] == 1 and f["said"] is True and f["tryAgain"] is True and f["nothing"] is False and f["drawer"] is True
-          and f["again"]["writes"] == 0 and f["again"]["read"] == 1 and f["again"]["rendered"] is True and f["again"]["saved"] is False, f)
-check("L2: every flow that draws the page after a change is tried with the page's own read failing: checklist (add, stop using, delete, copy), reminders (save, delete), required documents, a bank account's delete, general settings, Move setup import and Put it back",
-      sorted(o["afterSavePage"].keys()) == sorted(["checklist: add an item", "checklist: stop using", "checklist: delete an item", "checklist: copy another company's", "reminders: save", "reminders: delete", "required documents: save",
-                                                   "bank account: delete", "general settings", "move setup import", "put it back", "plainStopped", "plainError"]), list(o["afterSavePage"].keys()))
+    check(f"L2: {name}: the change is made once and, when the records can't be read again after it, it says it was saved, once (not that nothing was changed), with a Try again; Try again reads again, sends nothing, opens no record and closes no dialog",
+          f["hit"] is True and f["once"] == 1 and f["said"] is True and f["tryAgain"] is True and f["toasts"] == 1 and f["nothing"] is False and f["drawer"] is True
+          and f["again"]["writes"] == 0 and f["again"]["read"] == 1 and f["again"]["rendered"] is True and f["again"]["spy"] == [] and f["again"]["toasts"] == 1, f)
+AFTER_PAGE = ["checklist: add an item", "checklist: stop using", "checklist: delete an item", "checklist: copy another company's", "reminders: save", "reminders: delete", "required documents: save",
+              "bank account: delete", "tidy up", "general settings", "move setup import", "put it back", "plainStopped", "plainError"]
+check("L2: every flow that draws the page after a change is tried with the page's own read failing: checklist (add, stop using, delete, copy), reminders (save, delete), required documents, a bank account's delete, Tidy up, general settings, Move setup import and Put it back",
+      sorted(o["afterSavePage"].keys()) == sorted(AFTER_PAGE), list(o["afterSavePage"].keys()))
 for name, f in o["afterSavePage"].items():
     if name.startswith("plain"):
         continue
-    check(f"L2: {name}: when the page's own read fails after the change was saved, the page says it was saved with its Try again (the change made once, never 'nothing was changed' or 'isn't running'), and Try again draws the page and sends nothing",
-          f["hit"] is True and f["once"] == 1 and f["page"] is True and f["nothing"] is False and f["retry"] is True and f["saved"] is True
-          and f["again"]["writes"] == 0 and f["again"]["page"] is True and f["again"]["saved"] is False, f)
+    check(f"L2: {name}: when the page's own read fails after the change was saved, the page says it was saved, once (no toast as well), with its Try again (the change made once, never 'nothing was changed' or 'isn't running'); Try again says it again if it fails again, and draws the page and sends nothing when it works",
+          f["hit"] is True and f["once"] == 1 and f["page"] is True and f["nothing"] is False and f["retry"] is True and f["toasts"] == 0 and f["again1"] is True
+          and f["again"]["writes"] == 0 and f["again"]["page"] is True, f)
 check("L2: a page that fails with nothing saved says what it said before: the app has stopped (or the reason, and that nothing was changed), never that it was saved",
       o["afterSavePage"]["plainStopped"] == {"stopped": True, "saved": False} and o["afterSavePage"]["plainError"] == {"reason": True, "nothing": True, "saved": False}, o["afterSavePage"]["plainStopped"])
+dl = o["dialogs"]
+check("L2: a dialog with something typed in it that the change didn't save is left open when the reading back fails, with the saved note, and Try again leaves it alone (no record opened, no dialog closed)",
+      dl["dirty"] == {"open": True, "said": True} and dl["dirtyRetry"] == {"spy": [], "same": True}, dl)
+check("L2: another record's dialog that the user opened while the re-read was pending is not replaced or closed, by the failure or by Try again, whether they typed in it or not, and the change was made once",
+      dl["other"] == {"open": True, "said": True, "once": 1} and dl["otherRetry"] == {"spy": [], "same": True, "writes": 0}
+      and dl["otherClean"] == {"open": True, "said": True, "once": 1} and dl["otherCleanRetry"] == {"spy": [], "same": True, "writes": 0}, dl)
+nl = o["noLeak"]
+check("L2: 'it was saved' belongs to the page that says it: after a saved change whose read failed (a toast), a page that fails for its own reasons says what it always said",
+      nl["afterToast"] == {"saved": False, "says": True}, nl)
+check("...and so does the next place after a page that said it was saved (applyPlace), and a section switch (redraw)",
+      nl["pageSaved"] is True and nl["afterPlace"] == {"saved": False, "says": True} and nl["pageSaved2"] is True and nl["afterRedraw"] == {"saved": False, "says": True}, nl)
 sn = o["shortNames"]
-check("L5: Setup's list says the short name the switcher shows: the one set (trimmed), else the name without Sdn Bhd, Sdn. Bhd., Bhd, Ltd or Limited at its end (the whole name when nothing is left), from one function",
-      sn["short"] == ["Example Alpha", "Example Beta", "Example Gamma", "Example Delta", "Example Epsilon", "Zed", "<i>Eta</i> & Co", "Ltd", "Example Theta Sdn Bhd Services", "Example Iota"]
+check("L5: Setup's list says the short name the switcher shows: the one set (trimmed), else the name without Sdn Bhd, Sdn. Bhd., Bhd, Ltd or Limited at its end (the whole name when nothing is left, a name that is only a suffix too), from one function",
+      sn["short"] == ["Example Alpha", "Example Beta", "Example Gamma", "Example Delta", "Example Epsilon", "Zed", "<i>Eta</i> & Co", "Ltd", "Example Theta Sdn Bhd Services", "Example Iota", "Sdn Bhd", "Bhd", "Limited"]
       and sn["sub"] == ["Switcher: " + s for s in sn["short"]], sn)
-sp = o["stalePaint"]
-check("L6: a page whose slow read finishes after the user went on to Setup doesn't leave itself over Setup: Setup is drawn again, the page ends on Setup",
-      sp["setupFirst"] is True and sp["afterRegister"] == {"setup": True, "register": False, "view": "setup", "slowDraws": 1}, sp)
-check("...two quick clicks between pages end on the last page, whichever read finishes last", sp["quick"] == {"page": "<div>quick page</div>", "ended": "quick"}, sp["quick"])
-check("...a page overtaken while the newer one is still reading is not drawn again: the newer page writes itself, once",
-      sp["stillReading"] == {"page": "<div>third page</div>", "slow3": 1, "slow": 1}, sp["stillReading"])
-check("...a normal render draws once, and a Setup draw that was overtaken doesn't make the page that overtook it draw again",
-      sp["once"] == 1 and sp["setupStale"] == {"quick": 1, "page": "<div>quick page</div>"}, sp)
+nr = o["noRedo"]
+check("round 8: render() leaves a page that was overtaken as it always did and draws nothing again: slow A, quick B, A's late paint, then C stays on show, and B was drawn once (a redo of B would land over C)",
+      nr["timeline"] == {"page": "<div>C page</div>", "view": "pageC", "a": 1, "b": 1, "c": 1}, nr["timeline"])
+check("...and a normal render draws once", nr["once"] == 1, nr)
 
 # ---------- the layout keeps today's narrow rules ----------
 check("the form keeps Setup's 520-pixel rule: two columns, one under 520 pixels, in the new dialog too",

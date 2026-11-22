@@ -140,8 +140,10 @@ function go(view, entity) {
   return place ? navigate(place, { fresh: true }) : Promise.resolve(false);
 }
 
-async function render(again = false) {
-  const main = $("#main");
+// opts.saved: a change was kept and this draw is the reading back of it: if it fails the page says so (it was saved) and never that nothing was
+// changed, and its Try again says it again (data-retry="saved"). Returns false when it painted an error, true otherwise.
+async function render(opts) {
+  const main = $("#main"), saved = !!(opts && opts.saved === true);
   if (dayKey() !== state.day) await newDay();
   // A page the company does not use. Switching company while on it: that company's Overview instead, and the toast says why.
   // Reaching it any other way (a link): the card that says it is not used, with a way to a company that does.
@@ -152,32 +154,27 @@ async function render(again = false) {
   if (state.view !== "setup") setupLeft();  // any other page: Setup's draws still reading are overtaken, and their hold of the page's height is gone
   // A page that takes visible time: the old page stays, slightly dimmed, and a skeleton comes after 0.3 s (never a flash);
   // drawing the same page again keeps what is there.
-  const seq = render.n = (render.n || 0) + 1, key = `${state.view}:${state.entity}`, fresh = render.last !== key, own = state.view === "setup";
+  const seq = render.n = (render.n || 0) + 1, key = `${state.view}:${state.entity}`, fresh = render.last !== key;
   if (fresh) main.classList.add("loading");
   const slow = fresh ? setTimeout(() => { if (seq === render.n) main.innerHTML = loadingSkeleton(3); }, 300) : null;
-  let failed = false, redo = false;
+  let failed = false;
   try {
     const first = firstRunDue();  // an install with no company yet (pages/firstrun.js) takes the Overview's place, with no shell around it
     firstRunShell(first);
     const draw = first ? viewFirstRun : ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
     if (draw) await draw(main);
-    // A page's own draw writes into the page whenever its read comes. One that comes after a newer render has finished (the user went on to
-    // another page meanwhile) has painted over it: that page is drawn once more. If the newer render is still reading it will write itself,
-    // and Setup's draws (the page it was started for) write nothing once overtaken, so there is nothing to draw again for them.
-    if (seq !== render.n && render.done === render.n && !again && !own) redo = true;
     if (state.view === "overview" && !first) trailNotice();
-    if (seq === render.n) { render.last = key; state.saved = false; }  // a draw that was overtaken doesn't say what the page on show is
+    if (seq === render.n) render.last = key;  // a draw that was overtaken doesn't say what the page on show is
   } catch (e) {
-    // nor does it paint over the page now shown; after a change was saved the page says so (whatever failed), and never that nothing was changed
-    // or sent: the app having stopped meanwhile doesn't make the change unsaved
+    // nor does it paint over the page now shown; after a change was kept the page says so (whatever failed, the app having stopped too), never that
+    // nothing was changed or sent
     if (seq === render.n) {
       failed = true; render.last = null;
-      main.innerHTML = state.saved ? errorState({ body: SAVED_NOT_READ, retry: true, nothingChanged: false })
-        : appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true, nothingChanged: true });
+      main.innerHTML = saved ? errorState({ body: SAVED_NOT_READ, retry: "saved", nothingChanged: false })
+        : appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true });
     }
   }
-  finally { clearTimeout(slow); if (seq === render.n) { render.done = seq; main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } } dlgRestore(); }  // the menu's numbers follow the Next up rows this page may have just read
-  if (redo) return render(true);
+  finally { clearTimeout(slow); if (seq === render.n) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } } dlgRestore(); }  // the menu's numbers follow the Next up rows this page may have just read
   return !failed;
 }
 

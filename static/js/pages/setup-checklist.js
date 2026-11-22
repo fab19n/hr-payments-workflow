@@ -147,15 +147,12 @@ function chkFields(isNew) {
 
 // After a checklist change: the page's copy of the codes is read again, the list drawn again, and the item's drawer
 // opened again on what the change did.
-async function chkDone(r, id, head, keep = {}) {
+async function chkDone(r, id, head, keep = {}, dialogSaved = false) {
   toast(`${head}. ${effectText(r.affected, "checklist item")}`);
-  return afterSaved(async () => {
-    await reloadMeta();
-    const ok = await render();
-    if (ok === false) return false;
+  return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
     if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep, saved: { ...r, head } });
     closeDrawer(true);
-  });
+  }, { dialogSaved });
 }
 
 // Preview (nothing kept) or Save: adds the item, or changes it from the month chosen.
@@ -170,7 +167,7 @@ async function chkSave(preview) {
   const r = await api("/api/setup/checklist", { json: body });
   if (preview) return showPreview("#cl-preview", r, "checklist item");
   // Drawn again on the month the change starts from, so it shows the term just saved.
-  return chkDone(r, isNew ? r.item_id : O.id, isNew ? "Item added" : "Saved", { "cl-from": body.from_month });
+  return chkDone(r, isNew ? r.item_id : O.id, isNew ? "Item added" : "Saved", { "cl-from": body.from_month }, true);
 }
 
 // Stop using, Use again (from the month chosen) and Delete ask why first.
@@ -184,7 +181,7 @@ async function chkAct(act, btn) {
     const body = { action: act, entity_id: d.entity_id ?? state.entity, item_id: O.id, reason };
     if (act !== "delete") body.from_month = fromMonth("#cl-from");
     const r = await api("/api/setup/checklist", { json: body });
-    if (act === "delete") { closeDrawer(true); toast("Item deleted"); return afterSaved(async () => { await reloadMeta(); return render(); }); }
+    if (act === "delete") { closeDrawer(true); toast("Item deleted"); return afterSaved(async o => { await reloadMeta(); return render(o); }); }
     const keep = { ...drawerEdits(), "cl-from": body.from_month };
     return chkDone(r, O.id, act === "stop" ? "Stopped" : "In use again", keep);
   });
@@ -220,6 +217,6 @@ async function chkCopySave(preview) {
   if (preview) return showPreview("#cl-preview", r, "checklist item");
   toast(`Checklist copied. ${effectText(r.affected, "checklist item")}`);
   closeDrawer(true);
-  return afterSaved(async () => { await reloadMeta(); return render(); });
+  return afterSaved(async o => { await reloadMeta(); return render(o); });
 }
 

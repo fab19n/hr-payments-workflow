@@ -195,7 +195,6 @@ async function applyPlace(place, opts = {}) {
     }
     const v = place.view, R = ROUTES[v], p = cleanParams(v, place.params), B = state.books;
     state.view = v;
-    state.saved = false;  // a page of another place doesn't say "it was saved"
     if (v !== "setup") setupLeft();  // what Setup keeps only while it is on show (the rows Show more showed, the link after an import) goes
     if (place.entity && place.entity !== "all") state.entity = +place.entity;
     if (!state.entity) state.entity = firstEntityId();

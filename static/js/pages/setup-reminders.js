@@ -104,15 +104,12 @@ function remFields() {
     title: $("#rm-title").value.trim(), detail: $("#rm-detail").value.trim(), docs: ticked("rm-doc-", pickTypes(d.doc_types, had), had) };
 }
 
-async function remDone(r, id, head, keep = {}) {
+async function remDone(r, id, head, keep = {}, dialogSaved = false) {
   toast(`${head}. ${effectText(r.affected, "reminder")}`);
-  return afterSaved(async () => {
-    await reloadMeta();
-    const ok = await render();
-    if (ok === false) return false;
+  return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
     if (id != null && (state.setup.rem?.rules || []).some(x => x.id === +id)) return openReminder(+id, { force: true, keep, saved: { ...r, head } });
     closeDrawer(true);
-  });
+  }, { dialogSaved });
 }
 
 // Preview (nothing kept) or Save: adds the reminder, or changes it for people starting (or leaving) from the month chosen.
@@ -131,10 +128,10 @@ async function remSave(preview) {
   if (preview) return showPreview("#rm-preview", r, "reminder");
   // Drawn again on the month the change starts from, so it shows the term just saved.
   const keep = { "rm-from": body.from_month };
-  if (!isNew) return remDone(r, O.id, "Saved", keep);
+  if (!isNew) return remDone(r, O.id, "Saved", keep, true);
   // A new reminder is found by the id the server gives, else by its key.
   const nid = r.id ?? r.item_id;
-  await remDone(r, nid, "Reminder added", keep);
+  await remDone(r, nid, "Reminder added", keep, true);
   if (nid == null) { const x = (state.setup.rem?.rules || []).find(y => y.key === body.key); if (x) openReminder(x.id, { force: true, keep, saved: { ...r, head: "Reminder added" } }); }
 }
 
@@ -148,7 +145,7 @@ async function remAct(act, btn) {
     const body = { action: act, id: O.id, reason };
     if (act !== "delete") body.from_month = fromMonth("#rm-from");
     const r = await api("/api/setup/reminders", { json: body });
-    if (act === "delete") { closeDrawer(true); toast("Reminder deleted"); return afterSaved(async () => { await reloadMeta(); return render(); }); }
+    if (act === "delete") { closeDrawer(true); toast("Reminder deleted"); return afterSaved(async o => { await reloadMeta(); return render(o); }); }
     const keep = { ...drawerEdits(), "rm-from": body.from_month };
     return remDone(r, O.id, act === "stop" ? "Stopped" : "In use again", keep);
   });

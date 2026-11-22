@@ -85,6 +85,7 @@ async function viewSetup(main, again = false) {
   const grid = () => `<div class="setup-grid" data-at="${esc(at)}">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
   viewSetup.draw = { main, grid, top };  // what a draw whose page render() covered with its loading skeleton draws again (setupBox)
   const spec = setupSpec();
+  let redo = false;
   try {
     if (same) main.style.minHeight = `${Math.ceil(main.getBoundingClientRect().height)}px`;
     main.innerHTML = grid();
@@ -103,15 +104,16 @@ async function viewSetup(main, again = false) {
     else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
     else await setupList(box, S.kind);
     // The section was written and then covered by render()'s loading skeleton (the Show deleted read that came last took over 0.3 s): its place is gone
-    // and nothing draws it again, so it is drawn once more (once: a draw that is itself a retry is not retried).
-    if (seq === viewSetup.n && !again && !main.querySelector("#setupMain")) return await viewSetup(main, true);
-    if (seq === viewSetup.n) setupMenuScroll(main);  // last, once the whole section is written
+    // and nothing draws it again, so it is drawn once more (once: a draw that is itself a retry is not retried), below, once this draw is over.
+    if (seq === viewSetup.n && !again && !main.querySelector("#setupMain")) redo = true;
+    else if (seq === viewSetup.n) setupMenuScroll(main);  // last, once the whole section is written
   } catch (err) {
     if (seq !== viewSetup.n) return;  // overtaken: what it met is of no interest to the page now
     throw err;
   } finally {
     if (seq === viewSetup.n) main.style.minHeight = "";  // the whole section is written (or it failed): the page is as tall as it is
   }
+  if (redo) return viewSetup(main, true);  // outside the try: a failure of the second draw is this call's failure, and render() paints it
 }
 
 // The place a draw writes into, once what it reads has come: its own while that is still on the page. If render() covered the page with its loading
@@ -506,17 +508,30 @@ async function whySubmit() {
   finally { state.whyBusy = false; if (goBtn.isConnected) { goBtn.disabled = false; goBtn.removeAttribute("aria-busy"); } }
 }
 
-// A change was saved. Reading the records and drawing the page again (reread) comes after it and may fail; the change stays, so that is never
-// "nothing was changed": the page says it was saved, with a Try again that only reads again and never sends the change again (reread is run
-// again). reread returns false when the page it drew failed (render() has said so itself, in the same words), or throws when the records can't be
-// read. The dialog of the change is closed on a failure: what it did is done. Returns whether it worked.
-async function afterSaved(reread) {
-  state.saved = true;  // a page that fails to draw now says it was saved (render())
-  let ok = false, drawn = false;
-  try { ok = await reread(); drawn = true; } catch (e) { ok = false; }
-  if (ok !== false) { state.saved = false; return true; }
-  closeDrawer(true);
-  if (!drawn) toast(SAVED_NOT_READ, true, { ms: 0, action: { label: "Try again", fn: () => afterSaved(reread) } });  // render() put its own words, and its own Try again, on the page
+// A change was kept (the server said so). What comes after it (reading the records and drawing the page again, opening the record's dialog again)
+// can fail, and the change stays, so that is never "nothing was changed". refresh(opts) reads and draws: it returns false when render() painted its
+// own error (in the same words, with its own Try again) or throws when the records can't be read; then reopen() opens the record's dialog again,
+// once, if that dialog is still the one on show. When the reading back fails, the toast says it was saved, with a Try again that only runs refresh
+// again: it never reopens a record, never closes a dialog and never sends the change again, and the page that painted the words doesn't get a toast
+// as well. The dialog of the change is closed on a failure only if nothing has been typed in it since (an Add dialog left open would add the record
+// twice); one with something typed in it, or another dialog opened meanwhile, is left alone. dialogSaved: what the dialog holds was saved by this
+// change (Save, Add), so only what is typed from now on counts. Returns whether it all worked.
+async function afterSaved(refresh, reopen, { dialogSaved = false } = {}) {
+  if (dialogSaved && drawerShown()) watchDrawer();
+  const mine = state.drawerAt;
+  const typed = () => drawerShown() && !!state.drawerDirty?.();
+  const said = () => toast(SAVED_NOT_READ, true, { ms: 0, action: { label: "Try again", fn: again } });
+  const again = async () => {
+    try { return (await refresh({ saved: true })) !== false; } catch (e) { said(); return false; }
+  };
+  let ok = false, thrown = false;
+  try { ok = await refresh({ saved: true }); } catch (e) { thrown = true; }
+  if (!thrown && ok !== false) {
+    try { if (reopen && state.drawerAt === mine) await reopen(); return true; }
+    catch (e) { toast(SAVED_NOT_REOPENED, true); return false; }
+  }
+  if (mine && state.drawerAt === mine && !typed()) closeDrawer(true);
+  if (thrown) said();
   return false;
 }
 
@@ -715,12 +730,8 @@ async function setupSave() {
     let r;
     try { r = await api(`/api/setup/${D.kind}`, { json: body }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e.message); }
     toast(`${spec.label} added`);
-    return afterSaved(async () => {
-      await afterSetupChange(D.kind);
-      const ok = await render();
-      if (ok === false) return false;
-      return r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true });
-    });
+    return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); },
+      () => r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true }), { dialogSaved: true });
   }
   const changed = {};
   for (const k in now) if (!(k in D.locked) && JSON.stringify(now[k]) !== JSON.stringify(D.loaded[k])) changed[k] = now[k];
@@ -731,12 +742,7 @@ async function setupSave() {
   let r;
   try { r = await api(`/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields: changed } }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e.message); }
   toast("Saved");
-  return afterSaved(async () => {
-    await afterSetupChange(D.kind);
-    const ok = await render();
-    if (ok === false) return false;
-    return openSetup(D.kind, D.id, { force: true, notes: r.notes });
-  });
+  return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, notes: r.notes }), { dialogSaved: true });
 }
 
 // Stop using, Use again and Delete ask why first, with what the change does; Tidy up counts first, then asks. A refusal (the cash
@@ -757,17 +763,12 @@ async function setupAct(act, btn) {
     if (act === "delete") {
       await api(`/api/setup/${D.kind}/${D.id}`, { method: "DELETE", json: { reason } });
       closeDrawer(true); toast(`${spec.label} deleted`);
-      return afterSaved(async () => { await afterSetupChange(D.kind); return render(); });
+      return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); });
     }
     await api(`/api/setup/${D.kind}/${D.id}/${act}`, { json: { reason } });
     toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
     const keep = drawerEdits();
-    return afterSaved(async () => {
-      await afterSetupChange(D.kind);
-      const ok = await render();
-      if (ok === false) return false;
-      return openSetup(D.kind, D.id, { force: true, keep });
-    });
+    return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, keep }));
   }, { note, glyph: { stop: "eyeOff", use: "eye", delete: "trash" }[act], danger: act === "delete" });
 }
 
@@ -783,11 +784,7 @@ async function tidyMonths(eid, btn) {
     const r = await api("/api/months/tidy", { json: { entity_id: +eid, reason } });
     toast(`Removed ${r.payments} payments and ${r.tasks} checklist items from ${e?.code || "the company"}`);
     const keep = drawerEdits();
-    return afterSaved(async () => {
-      const ok = await render();
-      if (ok === false) return false;
-      return openSetup("entities", eid, { force: true, keep });
-    });
+    return afterSaved(o => render(o), () => openSetup("entities", eid, { force: true, keep }));
   });
 }
 

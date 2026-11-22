@@ -130,7 +130,7 @@ async function pasteSave(preview, over = {}) {
   const kind = P.kind;
   toast(pasteCounts(r.counts));
   closeDrawer(true);
-  return afterSaved(async () => { await afterSetupChange(kind); return render(); });
+  return afterSaved(async o => { await afterSetupChange(kind); return render(o); });
 }
 
 // General settings: one form; Save sends only what changed.
@@ -155,14 +155,14 @@ async function settingsSave() {
   const was = currentCycle();
   await api("/api/setup/settings", { method: "PATCH", json: body });
   toast("Saved");
-  return afterSaved(async () => {
+  return afterSaved(async o => {
     state.meta = await readMeta(); paintOrg();
     if ("cycle_rollover_day" in values && currentCycle() !== was) {
       if (state.month === was) state.month = currentCycle();
       await openCycleMonths();
     }
     renderNav();
-    return render();
+    return render(o);
   });
 }
 
@@ -250,15 +250,13 @@ async function moveImport(reason) {
   catch (e) { if (appStopped(e)) throw e; Object.assign(M, { file: null, preview: null, refused: e.message }); moveRepaint("mv-refused"); return; }
   Object.assign(M, { file: null, preview: null, name: "", refused: "" });
   toast("Setup imported");
-  await afterSaved(async () => {
+  await afterSaved(async o => {
     state.meta = await readMeta(); paintOrg();
     M.justImported = (state.meta.entities || []).length > 0;  // a file of rules alone added no company to see
     state.entity = firstEntityId(); state.setup.types = null;
     renderNav();
-    const ok = await render();
-    document.getElementById("mv-imp-h")?.focus?.({ preventScroll: true });
-    return ok;
-  });
+    return render(o);
+  }, () => document.getElementById("mv-imp-h")?.focus?.({ preventScroll: true }));
 }
 
 /* Required documents: the documents each payment type needs before a payment counts as complete, for every company or
@@ -362,7 +360,7 @@ async function reqSave(follow) {
   if (reason) body.reason = reason;
   const r = await api("/api/setup/required", { json: body });
   closeDrawer(true); toast(reqAffected(r.affected));
-  return afterSaved(() => render());
+  return afterSaved(o => render(o));
 }
 
 /* Monthly checklist (per company) and joiner and leaver reminders (every company). Each item or reminder has terms: what
@@ -455,7 +453,7 @@ const effectCard = (r, head, what) => `<div class="card"><h3>${esc(head)}</h3>
   ${(r.lines || []).map(x => `<div class="note">${esc(x)}</div>`).join("") || `<div class="note">Nothing in the months already set up changes.</div>`}
   <div class="note"><b>${esc(effectText(r.affected, what))}</b></div></div>`;
 const showPreview = (sel, r, what) => { const el = $(sel); if (el) el.innerHTML = effectCard(r, "Preview: nothing is saved yet", what); };
-const reloadMeta = async () => { state.meta = await readMeta().catch(() => state.meta); };
+const reloadMeta = async () => { state.meta = await readMeta(); };  // only after a change that was kept (afterSaved): a read that fails says so
 
 // Shows the parts of a checklist or reminder drawer that depend on what is chosen in it.
 function setupPaint() {

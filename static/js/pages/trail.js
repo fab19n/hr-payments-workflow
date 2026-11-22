@@ -279,9 +279,9 @@ async function restoreGo(rowId, btn) {
   finally { restoreGo.busy = false; }
   closeDrawer(true);
   toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
-  return afterSaved(async () => {
+  return afterSaved(async o => {
     if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);
-    return render();
+    return render(o);
   });
 }
 
