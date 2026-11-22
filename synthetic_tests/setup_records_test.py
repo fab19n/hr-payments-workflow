@@ -44,12 +44,7 @@ if not CHILD:
     ]}), encoding="utf-8")
 
 passed, failed = [], []
-def keep_going(value):
-    """Whether HRP_KEEP_GOING asks to list every check that fails, not only the first (to see what a change fixes): any value but empty or 0."""
-    return value not in (None, "", "0")
-
-
-KEEP_GOING = keep_going(os.environ.get("HRP_KEEP_GOING"))
+from synthetic_tests.flags import KEEP_GOING, keep_going  # noqa: E402  (one place for the flag, so a check of it is about the flag the tests use)
 
 
 def check(name, ok, detail=""):
@@ -132,6 +127,17 @@ if CHILD:
     sys.exit(0)
 
 # ---------- 1. the menu and sections as the server gives them ----------
+def flag_in_new_process(value):
+    env = {k: v for k, v in os.environ.items() if k != "HRP_KEEP_GOING"}
+    if value is not None:
+        env["HRP_KEEP_GOING"] = value
+    return subprocess.run([sys.executable, "-c", "from synthetic_tests.flags import KEEP_GOING; print(KEEP_GOING)"], cwd=str(Path(__file__).resolve().parents[1]),
+                          env=env, capture_output=True, text=True).stdout.strip()
+
+
+from synthetic_tests import flags  # noqa: E402
+check("HRP_KEEP_GOING turns keep-going on only for a value other than empty or 0, read in a new process from the module both tests import (the variable they use)",
+      flags.KEEP_GOING is KEEP_GOING and [flag_in_new_process(v) for v in ("1", "yes", "0", "", None)] == ["True", "True", "False", "False", "False"])
 T = call("get", "/api/setup/types")
 kinds = T["kinds"]
 check("the groups keep their shape: [name, [sections]], with Matching words and the settings", dict((g[0], g[1]) for g in T["groups"])["People and payments"] == ["payees", "parties"]
@@ -240,12 +246,14 @@ OLD_A, OLD_B = "Example Bank CA 1", "Example Bank Current Acct 0001"
 assert len(OLD_B) == 30
 write("old free-text GL codes", ("UPDATE accounts SET gl_code = ? WHERE id = ?", (OLD_A, main["id"])),
       ("UPDATE accounts SET gl_code = ? WHERE entity_id = ? AND label = 'Current'", (OLD_B, EXB)))
+# 100 letters that grow in capitals (the German sharp s) are 200 capitals: the longest a GL code can be
+call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "Sharp", "bank": "Example Bank", "currency": "SGD", "gl_code": "\u00df" * 100}})
 full = call("get", "/api/setup/export?what=full&payees=1")
 check("the file holds the stopped company and not the deleted one", [e["code"] for e in full["entities"]] == ["EXA", "EXB", "EXC"]
       and [e["active"] for e in full["entities"]] == [1, 1, 0], [(e["code"], e["active"]) for e in full["entities"]])
 mine = held(call("get", "/api/setup/import")["holding"])
 check("what this install holds (Move setup's sentence) counts the stopped company and not the deleted one",
-      mine["companies"] == 3 and mine["bank accounts"] == 3 and mine["statutory accounts"] == 1 and mine["customers and suppliers"] == 2
+      mine["companies"] == 3 and mine["bank accounts"] == 4 and mine["statutory accounts"] == 1 and mine["customers and suppliers"] == 2
       and mine["GL accounts"] == 3 and mine["recurring payments"] == 1, mine)
 fileholds = {w: len(full[k]) for k, w in (("entities", "companies"), ("accounts", "bank accounts"), ("gl_accounts", "GL accounts"),
                                                               ("statutory_accounts", "statutory accounts"), ("parties", "customers and suppliers"),
@@ -280,7 +288,9 @@ check("...and, but for the starter checklists the import gives, both are what th
 check("the export of an install holding free-text GL codes holds them as they are", {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Main") == OLD_A
       and {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Current") == OLD_B, [(a["label"], a["gl_code"]) for a in full["accounts"]])
 check("...and imports into a fresh install, which is not refused for their shape: they come in tidied (capitals, no spaces round them), the 30-character one whole, and a hand-made ' bk-310 ' as BK-310",
-      got["gl_codes"] == {"Main": OLD_A.upper(), "Current": OLD_B.upper(), "Spare": "BK-310"}, got.get("gl_codes"))
+      got["gl_codes"] == {"Main": OLD_A.upper(), "Current": OLD_B.upper(), "Spare": "BK-310", "Sharp": "SS" * 100}, got.get("gl_codes"))
+check("...and a GL code of 200 capitals made of 100 letters that grow in capitals goes out in the export and comes back in whole: what is kept is accepted again",
+      {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Sharp") == "SS" * 100 and got["gl_codes"]["Sharp"] == "SS" * 100)
 check("the stopped company comes across as stopped, and nothing is left of the deleted one",
       got["codes"] == ["EXA", "EXB", "EXC"] and got["active"] == {"EXA": 1, "EXB": 1, "EXC": 0} and got["empty"] is False, got)
 
@@ -502,7 +512,6 @@ with section("17. a chart account's uses are counted per company, as capitals wi
               and r2.status_code == 400 and "can't change once used" in r2.get_json()["error"], (rc["used_by"], r.get_json(), r2.get_json()))
     # a bank account's GL code is kept as the chart keeps its codes
     call("patch", f"/api/setup/accounts/{pa['id']}", json={"fields": {"label": "Padded GL two", "gl_code": "  880-a006 "}})
-    check("HRP_KEEP_GOING asks to list every failure for any value but empty or 0", keep_going("1") is True and keep_going("yes") is True and keep_going("0") is False and keep_going("") is False and keep_going(None) is False)
     check("a bank account's GL code is stored in capitals without the spaces round it, so it names its chart account as typed",
           q("SELECT gl_code FROM accounts WHERE id = ?", (pa["id"],))[0]["gl_code"] == "880-A006" and uses(EXA, API_BANK)["used_by"] == [["bank account", 1]]
           and call("get", f"/api/setup/accounts/{pa['id']}")["record"]["gl_code"] == "880-A006")
@@ -516,10 +525,23 @@ with section("17. a chart account's uses are counted per company, as capitals wi
           and q("SELECT gl_code, bank FROM accounts WHERE id = ?", (mo["id"],)) == [{"gl_code": OLD_A.upper(), "bank": "Example Bank Two"}], r.get_json())
     r = c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": OLD_B}})
     check("...a 30-character value (over a chart code's 20) is kept whole", r.status_code == 200 and q("SELECT gl_code FROM accounts WHERE id = ?", (mo["id"],))[0]["gl_code"] == OLD_B.upper(), r.get_json())
-    r = c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": "\u00df" * 150}})
-    check("...its length of 200 is the typed one, not the one in capitals: 150 letters that grow in capitals (the German sharp s) are kept, and 201 characters are refused",
-          r.status_code == 200 and q("SELECT gl_code FROM accounts WHERE id = ?", (mo["id"],))[0]["gl_code"] == "SS" * 150
-          and c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": "x" * 201}}).status_code == 400, r.get_json())
+    sharp = q("SELECT id, gl_code FROM accounts WHERE label = 'Sharp'")[0]
+    r = c.patch(BASE + f"/api/setup/accounts/{sharp['id']}", headers=H, json={"fields": {"gl_code": sharp["gl_code"], "bank": "Example Bank Three"}})
+    check("...the rule is one for every caller, capitals first and then the length of what is kept: the stored 200 capitals are accepted again by a PATCH (with another field), as an import accepts them",
+          sharp["gl_code"] == "SS" * 100 and r.status_code == 200 and q("SELECT bank FROM accounts WHERE id = ?", (sharp["id"],))[0]["bank"] == "Example Bank Three", r.get_json())
+    long = "\u00df" * 101   # 202 capitals
+    r1 = c.patch(BASE + f"/api/setup/accounts/{sharp['id']}", headers=H, json={"fields": {"gl_code": long}})
+    r2 = c.post(BASE + "/api/setup/accounts", headers=H, json={"entity_id": EXA, "fields": {"label": "Too long", "bank": "Example Bank", "currency": "SGD", "gl_code": long}})
+    r3 = c.patch(BASE + f"/api/setup/accounts/{sharp['id']}", headers=H, json={"fields": {"gl_code": "x" * 201}})
+    try:
+        masters._checked("accounts", {"gl_code": long})   # what an import and a paste check a row with
+        refused = None
+    except masters.Refused as x:
+        refused = str(x)
+    check("...and 101 of them (202 capitals), or 201 characters, are refused as too long the same way by the page's path, the API (added or changed) and the import's check",
+          r1.status_code == 400 and r2.status_code == 400 and r3.status_code == 400 and all("too long" in r.get_json()["error"] for r in (r1, r2, r3))
+          and refused is not None and "too long" in refused and masters._checked("accounts", {"gl_code": "\u00df" * 100})["gl_code"] == "SS" * 100
+          and q("SELECT gl_code FROM accounts WHERE id = ?", (sharp["id"],))[0]["gl_code"] == "SS" * 100, (r1.get_json(), r2.get_json(), r3.get_json(), refused))
     r = c.post(BASE + "/api/setup/accounts", headers=H, json={"entity_id": EXA, "fields": {"label": "Odd code", "bank": "Example Bank", "currency": "SGD", "gl_code": " no good! "}})
     check("...and so is one SQL Account would not write: kept as typed apart from the capitals and the spaces round it", r.status_code == 200
           and q("SELECT gl_code FROM accounts WHERE id = ?", (r.get_json()["id"],))[0]["gl_code"] == "NO GOOD!", r.get_json())

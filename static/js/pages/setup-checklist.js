@@ -7,7 +7,7 @@ async function setupChecklist(box) {
   const S = state.setup, e = ent();
   if (!e) { box.innerHTML = `${setupHead("checklist", setupSpec())}${emptyState({ glyph: "company", title: "Add a company first.", body: "Each company has its own monthly checklist. Once one is added, its checklist is set up here.", action: { label: "Go to Companies", attr: "data-setup-kind", value: "entities", glyph: "company" } })}`; return; }
   const d = await api(`/api/setup/checklist?entity=${state.entity}`);
-  if (!setupLive(box)) return;
+  if (!(box = setupBox(box))) return;
   S.chk = d;
   const code = d.code || e.code, items = d.items || [];
   // A company added in Setup starts with the starter checklist: while it is untouched and no month is set up, a copy may replace it.

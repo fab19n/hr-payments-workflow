@@ -136,7 +136,7 @@ async function pasteSave(preview, over = {}) {
 // General settings: one form; Save sends only what changed.
 async function setupSettings(box) {
   const s = await api("/api/setup/settings");
-  if (!setupLive(box)) return;
+  if (!(box = setupBox(box))) return;
   const fields = s.fields || setupSpec()?.fields || [];
   box.innerHTML = `${setupHead("settings", setupSpec(), { intro: "These apply to every company. Each change is kept in the audit trail." })}
     <div class="card"><form class="form setup-form" id="settingsForm">${fields.map(f => fieldHtml(f, s.values?.[f.key], null, "gs-")).join("")}
@@ -188,7 +188,7 @@ async function readSetupFile(f) {
 }
 async function setupMove(box) {
   const st = await api("/api/setup/import");
-  if (!setupLive(box)) return;
+  if (!(box = setupBox(box))) return;
   const M = state.setup.move ||= { payees: false, from: "", preview: null, refused: "" };
   M.empty = !!st.empty; M.holding = st.holding || [];
   const said = !!M.justImported; M.justImported = false;  // the link to the companies it added is for the redraw right after an import, once
@@ -278,7 +278,7 @@ async function setupRequired(box) {
   const S = state.setup, live = state.meta.entities.filter(isActive);
   if (S.reqScope != null && !live.some(e => e.id === S.reqScope)) S.reqScope = null;
   const d = await api(`/api/setup/required?entity=${S.reqScope ?? ""}`);
-  if (!setupLive(box)) return;
+  if (!(box = setupBox(box))) return;
   S.req = d;
   const co = S.reqScope != null ? live.find(e => e.id === S.reqScope) : null;
   const scopeBtn = (v, label, on, title = "") => `<button class="${on ? "btn" : "ghost"} small" data-req-scope="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;

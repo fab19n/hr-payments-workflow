@@ -399,10 +399,10 @@ def check_value(f, v):
                     raise Refused(f"{label}: give the three-letter code, such as MYR or USD.")
             elif not CODE.fullmatch(v):
                 raise Refused(f"{label}: capitals, digits, - and _ only, up to 16 characters, starting with a letter or digit.")
-        if len(v) > (2000 if kind == "textarea" else f.get("max", 200)):
-            raise Refused(f"{label}: that is too long.")
-        if f.get("upper"):  # a code kept as SQL Account writes it: capitals. Its shape isn't checked (an older record may hold any text), nor its length once in capitals
+        if f.get("upper"):  # a code kept as SQL Account writes it: capitals. Its shape isn't checked (an older record may hold any text)
             v = v.upper()
+        if len(v) > (2000 if kind == "textarea" else f.get("max", 200)):  # the length of what is kept, so what is kept is always accepted again
+            raise Refused(f"{label}: that is too long.")
         return v
     if kind == "key":
         if not isinstance(v, str) or not KEY.fullmatch(v.strip().lower()):

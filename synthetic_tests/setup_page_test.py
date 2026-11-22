@@ -40,12 +40,7 @@ config.SETTINGS_FILE = tmp / "settings.json"  # never the program's own settings
 ]}), encoding="utf-8")
 
 passed, failed = [], []
-def keep_going(value):
-    """Whether HRP_KEEP_GOING asks to list every check that fails, not only the first (to see what a change fixes): any value but empty or 0."""
-    return value not in (None, "", "0")
-
-
-KEEP_GOING = keep_going(os.environ.get("HRP_KEEP_GOING"))
+from synthetic_tests.flags import KEEP_GOING, keep_going  # noqa: E402  (one place for the flag, so a check of it is about the flag the tests use)
 
 
 def check(name, ok, detail=""):
@@ -118,7 +113,8 @@ for p in ("/api/meta", "/api/setup/types", "/api/setup/entities", f"/api/setup/a
           f"/api/setup/accounts/{old['id']}", f"/api/setup/entities/{EXA}", f"/api/setup/entities/{EXB}", f"/api/setup/entities/{EXA}/print",
           f"/api/setup/entities/{EXA}/sql-names", f"/api/setup/restore?kind=accounts&entity={EXA}", "/api/setup/restore?kind=doc_types",
           f"/api/setup/payment_types/{salary['id']}", "/api/setup/import", "/api/setup/required?entity=", f"/api/setup/required?entity={EXA}", f"/api/setup/required?entity={EXB}",
-          f"/api/setup/parties?entity={EXB}", "/api/setup/restore?kind=entities", f"/api/setup/restore?kind=gl_accounts&entity={EXA}"):
+          f"/api/setup/parties?entity={EXB}", "/api/setup/restore?kind=entities", f"/api/setup/restore?kind=gl_accounts&entity={EXA}",
+          f"/api/setup/checklist?entity={EXA}", "/api/setup/reminders", "/api/setup/settings", f"/api/setup/restore?kind=checklist&entity={EXA}", "/api/setup/restore?kind=reminders"):
     fx(p)
 GET[f"/api/setup/accounts/{temp['id']}"] = TEMP_BEFORE
 restored = GET[f"/api/setup/restore?kind=accounts&entity={EXA}"]["rows"][0]
@@ -161,6 +157,8 @@ async function fetch(path, init = {}) {
   if ((FX.fail || {})[path]) throw new TypeError("Failed to fetch");   // the app is not running
   if (onGet) onGet(path);
   const slow = delays[path]; if (slow) await new Promise(r => setTimeout(r, Array.isArray(slow) ? slow.shift() || 0 : slow));
+  if (lateFail[path] > 0) { lateFail[path]--; throw new TypeError("Failed to fetch"); }   // it fails once it has taken its time
+  if ((FX.bad || {})[path]) return { ok: true, status: 200, json: async () => { throw new SyntaxError("not JSON"); } };   // the app answers, but not with the records
   const hit = FX.get[path];
   if (hit === undefined) return { ok: false, status: 404, json: async () => ({ error: "no fixture for " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(hit)) };
@@ -170,6 +168,7 @@ const win = { matchMedia: () => ({ matches: true }), location: { hash: "#/admin/
   scrollTo(...a) { scrolls.push(a); [this.scrollX, this.scrollY] = a; }, addEventListener() {}, print() {} };
 let onGet = null;   // called with the path of each read: what the page looks like while it is waiting for the records
 const delays = {};  // path -> milliseconds a read of it takes (or a list of them, one for each read in turn)
+const lateFail = {};  // path -> how many of its next reads fail (after the delay)
 const sandbox = { document, fetch, FormData: class {}, console, setTimeout, clearTimeout, URLSearchParams, CSS: { escape: s => s },
   localStorage: { getItem: () => null, setItem() {} }, window: win, navigator: {}, __el: el, __calls: calls, __listeners: listeners,
   __btn: { closest: () => ({ after() {} }), getAttribute: () => "false", isConnected: true } };
@@ -181,6 +180,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
 (async () => {
   run(files.map(f => fs.readFileSync(f, "utf8")).join("\n"));
   run(`state.meta = ${JSON.stringify(FX.get["/api/meta"])}; state.month = "2026-11"; state.day = dayKey(); state.entity = ${FX.EXA};
+    globalThis.__realRender = render; menuNextEnsure = () => {};
     renderNav = () => {}; render = async () => { __calls.push(["render"]); }; navigate = async place => { __calls.push(["navigate", place]); return true; };
     globalThis.click = async (dataset, extra = {}) => { const b = { dataset, tagName: "BUTTON", id: "", className: "", getAttribute: () => null, ...extra }; b.closest = () => b;
       const ev = { type: "click", target: b, button: 0, preventDefault() {}, stopPropagation() {} }; for (const f of __listeners.click || []) await f(ev); };`);
@@ -200,7 +200,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
   // The page is 700 high and 2500 more while its section has something in it, or as tall as main is held at (style.minHeight), in a window 600 high:
   // a short page clamps the window's scroll, as a browser does. Each draw's section place is a new element; the old one is off the page, and counts
   // what is written into it (nothing should be once it is overtaken, or once the page it was drawn into has been replaced).
-  let mainHtml = "", smHtml = "", smWrites = 0;
+  let mainHtml = "", smHtml = "", smWrites = 0, mainSets = 0;
   const seenY = [];
   const pageH = () => Math.max(700 + (smHtml.length > 200 ? 2500 : 0), parseInt(main.style._h) || 0);
   const clamp = () => { const max = Math.max(0, pageH() - 600); if (win.scrollY > max) win.scrollY = max; seenY.push(win.scrollY); };
@@ -209,7 +209,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
   main.style = { _h: "", log: [], get minHeight() { return this._h; }, set minHeight(v) { this._h = v; this.log.push(v); clamp(); } };
   main.getBoundingClientRect = () => ({ height: pageH() });
   Object.defineProperty(main, "innerHTML", { get: () => mainHtml, set(v) {
-    mainHtml = v; const m = /id="setupMain">([\s\S]*)<\/div><\/div>$/.exec(v);
+    mainHtml = v; mainSets++; const m = /id="setupMain">([\s\S]*)<\/div><\/div>$/.exec(v);
     if (els.setupMain) els.setupMain.isConnected = false;
     els.setupMain = newSm(m ? m[1] : "", !!m); smHtml = m ? m[1] : ""; smWrites = 0; clamp(); main.nav = navOf(v); } });
   els.setupMain = newSm("", true);
@@ -784,13 +784,6 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     r.overlap = { holdWhileSecond: main.style.minHeight, firstWrites: boxB.writes, page: smHtml.length };
     await two; onGet = null; delete delays[PT];
     r.overlapEnd = { hold: main.style.minHeight, page: smHtml.includes('data-setup-new="payment_types"') };
-    // the page is replaced (render()'s loading skeleton, on a company change) while a draw reads: it writes into nothing
-    await ask("parties"); forget();
-    const P = `/api/setup/parties?entity=${FX.EXA}`; delays[P] = 100; let boxC = null; onGet = path => { if (path === P) boxC = els.setupMain; };
-    const c = ask("parties"); await sleep(20);
-    main.innerHTML = `<div class="skeleton"></div>`;
-    await c; await sleep(20); onGet = null; delete delays[P];
-    r.detached = { writes: boxC.writes, page: main.innerHTML, redraw: run(`typeof LIST_REDRAW["setup-parties"]`), hold: main.style.minHeight };
     await view("accounts", FX.EXA);
     return r;
   });
@@ -834,6 +827,184 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     FX.fail = {}; calls.length = 0;
     await run(`click({ restore: "${FX.RESTORE}", restoreTitle: "Spare" })`); await sleep(20);
     r.back = { requests: calls.filter(x => x[1] === path).length, dialogs: (el("drawer").innerHTML.match(/id="restoreBox"/g) || []).length, body: el("rsBody").innerHTML };
+    return r;
+  });
+  // 1. render() covers the page with its loading skeleton while a draw reads (a read over 0.3 s): the draw, still the latest, puts its grid back and writes
+  await tryit("skeleton", async () => {
+    const r = {}, P = `/api/setup/parties?entity=${FX.EXA}`, AB = `/api/setup/accounts?entity=${FX.EXB}`;
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    const real = () => run(`render = __realRender`), stub = () => run(`render = async () => { __calls.push(["render"]); }`);
+    const shape = (kind, code) => ({ section: smHtml.includes(`data-setup-new="${kind}"`), company: smHtml.includes(code), grid: /class="setup-grid"/.test(main.innerHTML),
+      skeleton: /class="skel"/.test(main.innerHTML), menu: !!main.nav, redraw: run(`typeof LIST_REDRAW["setup-${kind}"]`), hold: main.style.minHeight, loading: main.classList.contains("loading") });
+    real();
+    try {
+      // arriving from another page, the records of the section taking 700 ms
+      main.innerHTML = `<div>Overview</div>`; run(`render.last = null; state.view = "setup"; state.entity = ${FX.EXA}; state.setup.kind = "parties"; state.setup.stopped = false; state.setup.deleted = false; delete LIST_REDRAW["setup-parties"]`);
+      delays[P] = 700; await run(`render()`); delete delays[P];
+      r.arrival = shape("parties", "Customers and suppliers");
+      // a company switch, 700 ms
+      run(`state.entity = ${FX.EXA}; state.setup.kind = "accounts"`); await run(`render()`);
+      run(`state.entity = ${FX.EXB}; delete LIST_REDRAW["setup-accounts"]`); delays[AB] = 700; await run(`render()`); delete delays[AB];
+      r.switch = shape("accounts", "Bank accounts · EXB");
+      // the very first read of the types, 700 ms, on arriving
+      main.innerHTML = `<div>Overview</div>`; run(`render.last = null; state.setup.types = null; state.entity = ${FX.EXA}; state.setup.kind = "parties"; delete LIST_REDRAW["setup-parties"]`);
+      delays["/api/setup/types"] = 700; await run(`render()`); delete delays["/api/setup/types"];
+      r.types = shape("parties", "Customers and suppliers");
+    } finally { stub(); }
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 2. leaving Setup while a draw reads: the new page has no hold of the page's height at once, a read that hangs changes nothing, and nothing is drawn over it
+  await tryit("leaving", async () => {
+    const r = {}, P = `/api/setup/parties?entity=${FX.EXA}`;
+    await view("parties", FX.EXA);
+    delays[P] = 400; const a = run(`viewSetup(__el("main"))`); await sleep(40);   // the same section drawn again: the page is held
+    r.held = main.style.minHeight;
+    await run(`applyPlace({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} })`);   // the menu, or the address, to the Overview
+    main.innerHTML = `<div>Overview page</div>`;
+    r.at = main.style.minHeight; await sleep(100); r.hung = main.style.minHeight;   // the read hasn't come
+    await a; await sleep(20); delete delays[P];
+    r.end = { hold: main.style.minHeight, page: main.innerHTML };
+    // by render(), for a page that isn't Setup
+    run(`state.view = "setup"`); await view("parties", FX.EXA);
+    delays[P] = 400; const b = run(`viewSetup(__el("main"))`); await sleep(40);
+    run(`ROUTES.zzz = { draw: () => async m => { m.innerHTML = "<div>zzz page</div>"; } }; render = __realRender; state.view = "zzz"`);
+    try { await run(`render()`); } finally { run(`render = async () => { __calls.push(["render"]); }; state.view = "setup"`); }
+    r.byRender = { hold: main.style.minHeight, page: main.innerHTML };
+    await b; await sleep(20); delete delays[P];
+    r.byRenderEnd = { hold: main.style.minHeight, page: main.innerHTML };
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 2b. a failure while the grid is drawn (after the page's height is held): the hold doesn't stay
+  await tryit("gridFails", async () => {
+    const r = {};
+    await view("parties", FX.EXA);
+    run(`globalThis.__navHtml = setupNavHtml; setupNavHtml = () => { throw new Error("the menu failed"); }`);
+    try { r.threw = await run(`viewSetup(__el("main"))`).then(() => "ok", e => e.message); } finally { run(`setupNavHtml = __navHtml`); }
+    r.hold = main.style.minHeight;
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 3. render(): the page on show is the latest render's; an error comes only for the current render
+  await tryit("renderStale", async () => {
+    const r = {}, AE = `/api/setup/accounts?entity=${FX.EXA}`;
+    run(`render = __realRender; ROUTES.zzz = { draw: () => async m => { await new Promise(res => setTimeout(res, 300)); throw new Error("late failure"); } }`);
+    try {
+      run(`state.view = "setup"; render.last = null; state.entity = ${FX.EXA}; state.setup.kind = "accounts"; state.setup.stopped = false; state.setup.deleted = false`);
+      delays[AE] = 400; const a = run(`render()`); await sleep(30);   // company EXA, slow
+      run(`state.entity = ${FX.EXB}`); await run(`render()`);        // company EXB, quick: it is the page on show
+      r.mid = run(`render.last`); await a; r.last = run(`render.last`); delete delays[AE];
+      run(`state.view = "zzz"`); const z = run(`render()`); await sleep(30);   // a page that fails, after 300 ms
+      run(`state.view = "setup"; state.entity = ${FX.EXA}; state.setup.kind = "parties"`); await run(`render()`);   // left for Setup meanwhile
+      await z; await sleep(20);
+      r.error = { painted: main.innerHTML.includes("late failure"), grid: /setup-grid/.test(main.innerHTML), last: run(`render.last`) };
+    } finally { run(`render = async () => { __calls.push(["render"]); }; state.view = "setup"; state.entity = ${FX.EXA}`); delete delays[AE]; }
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 4. a reply that isn't the records (no companies in it) is a failed read
+  await tryit("badMeta", async () => {
+    const r = {}, reads0 = run(`state.metaReads || 0`), was = run(`state.meta`);
+    FX.bad = { "/api/meta": true };
+    r.message = await run(`readMeta().then(() => "ok", e => e.message)`);
+    r.reads = run(`state.metaReads || 0`) - reads0; r.sameMeta = run(`state.meta`) === was;
+    run(`state.view = "overview"; state.meta.entities = []; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.busy = ""; FR.preview = null; FR.file = null;
+      FR.addOpen = true; FR.tried = false; FR.code = "NOP"; FR.cname = "Example Nop"; FR.reg = ""; FR.kind = "here"`);
+    r.add = await run(`frAddCompany().then(() => "ok", e => e.name + ": " + e.message)`);
+    r.saved = run(`!!FR.saved`); r.html = run(`frHtml()`);
+    FX.bad = {};
+    FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.code = ""; FR.cname = ""; FR.kind = ""; state.entity = ${FX.EXA}`);
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 5. every section that has a read of its own: overtaken by another section, drawn twice (the hold), and an overtaken read that throws
+  const SECTIONS = [
+    { kind: "checklist", path: `/api/setup/checklist?entity=${FX.EXA}`, state: "chk" }, { kind: "reminders", path: "/api/setup/reminders", state: "rem" },
+    { kind: "settings", path: "/api/setup/settings", state: "settings" }, { kind: "move", path: "/api/setup/import", state: "move" },
+    { kind: "required", path: "/api/setup/required?entity=", state: "req" }, { kind: "parties", path: `/api/setup/parties?entity=${FX.EXA}`, redraw: "setup-parties" }];
+  await tryit("staleSections", async () => {
+    const out = {};
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    const ask = kind => { run(`state.entity = ${FX.EXA}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false; state.setup.reqScope = null`); return run(`viewSetup(__el("main"))`); };
+    for (const K of SECTIONS) {
+      const r = out[K.kind] = {};
+      const forget = () => { if (K.state) run(`state.setup.${K.state} = undefined`); if (K.redraw) run(`delete LIST_REDRAW[${JSON.stringify(K.redraw)}]`); };
+      const wrote = () => K.state ? run(`state.setup.${K.state} !== undefined && state.setup.${K.state} !== null`) : run(`typeof LIST_REDRAW[${JSON.stringify(K.redraw)}] !== "undefined"`);
+      // overtaken by another section: it writes no state, no markup
+      await ask("payment_types"); forget();
+      delays[K.path] = 150; let boxK = null; onGet = p => { if (p === K.path && !boxK) boxK = els.setupMain; };
+      const a = ask(K.kind); await sleep(20);
+      await ask("payment_types");
+      await a; await sleep(10); onGet = null; delete delays[K.path];
+      r.overtaken = { wrote: wrote(), writes: boxK.writes, page: smHtml.includes('data-setup-new="payment_types"'), hold: main.style.minHeight };
+      // the same section drawn twice, the first read finishing first: it writes nothing and leaves the hold of the second alone
+      await ask(K.kind); forget();
+      delays[K.path] = [100, 400]; let firstBox = null, heldFirst = null; onGet = p => { if (p === K.path && !firstBox) { firstBox = els.setupMain; heldFirst = main.style.minHeight; } };
+      const one = ask(K.kind); await sleep(20);
+      const two = ask(K.kind);
+      await one; await sleep(20);
+      r.twice = { holdKept: main.style.minHeight !== "" && main.style.minHeight === heldFirst, wrote: wrote(), writes: firstBox.writes };
+      await two; onGet = null; delete delays[K.path];
+      r.twiceEnd = { hold: main.style.minHeight, wrote: wrote() };
+      // an overtaken read that fails: no error comes out of the draw, and no message
+      delays[K.path] = 100; lateFail[K.path] = 1;
+      const b = ask(K.kind); await sleep(20);
+      const toast0 = el("toast").textContent;
+      await ask("payment_types");
+      r.threw = await b.then(() => "ok", e => e.name); r.quiet = el("toast").textContent === toast0;
+      delete delays[K.path]; delete lateFail[K.path];
+      await ask("payment_types");
+    }
+    return out;
+  });
+
+  // 5b. the types read at the start: an overtaken draw writes nothing (its reply isn't kept, its page isn't drawn)
+  await tryit("staleTypes", async () => {
+    const r = {};
+    run(`state.entity = ${FX.EXA}; state.setup.stopped = false; state.setup.deleted = false`);
+    run(`state.setup.types = null; state.setup.kind = "parties"`);
+    delays["/api/setup/types"] = [200, 10];
+    const a = run(`viewSetup(__el("main"))`); await sleep(20);
+    run(`state.setup.kind = "payment_types"`); await run(`viewSetup(__el("main"))`);
+    const types = run(`state.setup.types`), sets = mainSets;
+    await a; await sleep(20); delete delays["/api/setup/types"];
+    r.after = { sameTypes: run(`state.setup.types`) === types, mainSets: mainSets - sets, page: smHtml.includes('data-setup-new="payment_types"') };
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 5c. Show deleted is part of the draw of the checklist and the reminders too: the hold lasts until its table is written
+  await tryit("deletedHold", async () => {
+    const out = {};
+    for (const [kind, D] of [["checklist", `/api/setup/restore?kind=checklist&entity=${FX.EXA}`], ["reminders", "/api/setup/restore?kind=reminders"]]) {
+      run(`state.entity = ${FX.EXA}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false`);
+      await run(`viewSetup(__el("main"))`);
+      run(`state.setup.deleted = true`); el("setupDeleted").innerHTML = "";
+      let at = null; delays[D] = 120; onGet = p => { if (p === D) at = { hold: main.style.minHeight, section: smHtml.length > 200 }; };
+      await run(`viewSetup(__el("main"))`);
+      out[kind] = { at, hold: main.style.minHeight, table: el("setupDeleted").innerHTML.includes("None deleted") };
+      onGet = null; delete delays[D]; run(`state.setup.deleted = false`);
+    }
+    return out;
+  });
+
+  // 7. Show deleted unticked while its table is read: nothing is drawn
+  await tryit("untick", async () => {
+    const D = `/api/setup/restore?kind=accounts&entity=${FX.EXA}`, r = {};
+    await view("accounts", FX.EXA); run(`state.setup.deleted = true`);
+    delays[D] = 120; const p = run(`drawDeleted("accounts")`); await sleep(20);
+    run(`state.setup.deleted = false`); await run(`drawDeleted("accounts")`);   // the tick is taken off: the box is emptied
+    await p; await sleep(10); delete delays[D];
+    r.box = el("setupDeleted").innerHTML;
+    delays[D] = 120; lateFail[D] = 1; run(`state.setup.deleted = true`); const q = run(`drawDeleted("accounts")`); await sleep(20);   // and a read that fails after the tick was taken off
+    run(`state.setup.deleted = false`); await run(`drawDeleted("accounts")`); await q; await sleep(10); delete delays[D]; delete lateFail[D];
+    r.afterFail = el("setupDeleted").innerHTML;
     return r;
   });
   process.stdout.write(JSON.stringify(out));
@@ -1184,7 +1355,17 @@ check("a record's History key and a list's name are escaped where they are writt
       and has(ec["bar"], 'data-search="setup-a&quot;b"', 'placeholder="Search cust &lt;i&gt;x&lt;/i&gt;"', 'aria-label="Search cust &lt;i&gt;x&lt;/i&gt;"', 'data-count="setup-a&quot;b"') and "<i>x</i>" not in ec["bar"], ec)
 
 # ---------- round 5 ----------
-check("HRP_KEEP_GOING asks to list every failure for any value but empty or 0", keep_going("1") is True and keep_going("yes") is True and keep_going("0") is False and keep_going("") is False and keep_going(None) is False)
+def flag_in_new_process(value):
+    env = {k: v for k, v in os.environ.items() if k != "HRP_KEEP_GOING"}
+    if value is not None:
+        env["HRP_KEEP_GOING"] = value
+    return subprocess.run([sys.executable, "-c", "from synthetic_tests.flags import KEEP_GOING; print(KEEP_GOING)"], cwd=str(Path(__file__).resolve().parents[1]),
+                          env=env, capture_output=True, text=True).stdout.strip()
+
+
+from synthetic_tests import flags  # noqa: E402
+check("HRP_KEEP_GOING turns keep-going on only for a value other than empty or 0, read in a new process from the module both tests import (the variable they use)",
+      flags.KEEP_GOING is KEEP_GOING and [flag_in_new_process(v) for v in ("1", "yes", "0", "", None)] == ["True", "True", "False", "False", "False"])
 hk = o["holdKeeps"]
 check("a section drawn again (a save, a stop, a delete, a put back) holds the page's height while it is read: the window stays at 800 throughout, nothing old is shown meanwhile, the hold ends once it is written, and no scroll is made",
       hk["same"]["y"] == 800 and hk["same"]["low"] == 800 and hk["same"]["scrolls"] == 0 and hk["same"]["during"] == [{"y": 800, "hold": "3200px", "section": 0}]
@@ -1199,14 +1380,43 @@ check("a draw that another section overtook writes nothing (no markup, no list t
       and sd["later"] == {"a": True, "pt": False}, sd)
 check("...and an overtaken draw doesn't end the hold of the one that overtook it: the same section drawn twice holds until the second is written",
       sd["overlap"] == {"holdWhileSecond": "3200px", "firstWrites": 0, "page": 0} and sd["overlapEnd"] == {"hold": "", "page": True}, sd)
-check("a draw whose place is no longer on the page (render() put its loading skeleton there) writes nothing, and leaves no hold",
-      sd["detached"] == {"writes": 0, "page": '<div class="skeleton"></div>', "redraw": "undefined", "hold": ""}, sd["detached"])
 se = o["frSavedElsewhere"]
 check("First run's saved-but-not-read note is over once the records have been read again, whatever they list: a company added but not read, then deleted in Setup, leaves the Overview drawn, not the alert",
       se["first"] == "Company added." and se["threw"] == "TypeError" and se["due"] is True and se["dueAfterFailed"] is True and se["savedAfterFailed"] is True and se["reads1"] == se["reads0"]
       and se["read"] == "ok" and se["dueAfterRead"] is False and se["saved"] is None and se["alerted"] is False, se)
 check("...a read that fails doesn't end it, the first company of all is ended by any successful read, and the count of reads is what counts",
       se["failedRead"] == "TypeError" and se["threw2"] == "TypeError" and se["due2"] is True and se["read2"] == "ok" and se["due2After"] is False and se["saved2"] is None, se)
+# ---------- round 6 ----------
+sk = o["skeleton"]
+good = lambda kind, code: {"section": True, "company": True, "grid": True, "skeleton": False, "menu": True, "redraw": "function", "hold": "", "loading": False}
+check("a draw still reading when render() covers the page with its loading skeleton (a read over 0.3 s: arriving from another page, a company switch, the first read of the types) puts its grid back and writes the section, with its menu and its list to redraw",
+      sk["arrival"] == good("parties", "") and sk["switch"] == good("accounts", "") and sk["types"] == good("parties", ""), sk)
+lv = o["leaving"]
+check("leaving Setup while a draw reads leaves the new page no hold of the page's height at once, and a read that hangs (or comes later) changes nothing and draws nothing over the new page",
+      lv["held"] != "" and lv["at"] == "" and lv["hung"] == "" and lv["end"] == {"hold": "", "page": "<div>Overview page</div>"}, lv)
+check("...also when the new page is drawn by render() (a page that isn't Setup)", lv["byRender"] == {"hold": "", "page": "<div>zzz page</div>"} and lv["byRenderEnd"] == {"hold": "", "page": "<div>zzz page</div>"}, lv)
+gf = o["gridFails"]
+check("a failure while the grid is drawn, after the page's height was held, leaves no hold", gf["threw"] == "the menu failed" and gf["hold"] == "", gf)
+rs = o["renderStale"]
+check("render() says the page on show is the latest one's: a draw that was overtaken and finishes late doesn't set the last page drawn (company EXA after EXB)",
+      rs["mid"] == f"setup:{EXB}" and rs["last"] == f"setup:{EXB}", rs)
+check("...and an error that comes after the page was left is not painted over the page now shown, nor does it say which page was last", rs["error"] == {"painted": False, "grid": True, "last": f"setup:{EXA}"}, rs)
+bm = o["badMeta"]
+check("a reply that isn't the records (a 200 that holds no companies) is a failed read: it is not counted, state.meta is not replaced, and First run, after a write, shows the alert instead of failing in firstEntityId",
+      "couldn't be read" in bm["message"] and bm["reads"] == 0 and bm["sameMeta"] is True and bm["add"].startswith("Error: The records couldn't be read") and bm["saved"] is True and SAVED in bm["html"], bm)
+for kind, st in o["staleSections"].items():
+    check(f"{kind}: a draw that another section overtook writes no state, no markup and no list to redraw",
+          st["overtaken"] == {"wrote": False, "writes": 0, "page": True, "hold": ""}, st["overtaken"])
+    check(f"{kind}: drawn twice, the first read finishing first writes nothing and leaves the hold of the second alone, which ends it when it is written; an overtaken read that fails raises nothing and says nothing",
+          st["twice"] == {"holdKept": True, "wrote": False, "writes": 0} and st["twiceEnd"] == {"hold": "", "wrote": True} and st["threw"] == "ok" and st["quiet"] is True, st)
+check("the types read at the start: a draw that was overtaken leaves what the newer draw drew (it doesn't keep its own reply or draw its page)",
+      o["staleTypes"]["after"] == {"sameTypes": True, "mainSets": 0, "page": True}, o["staleTypes"])
+dh = o["deletedHold"]
+check("the checklist and the reminders hold the page's height until their Show deleted table is written, as the lists do",
+      all(dh[k]["at"] == {"hold": "3200px", "section": True} and dh[k]["hold"] == "" and dh[k]["table"] is True for k in ("checklist", "reminders")), dh)
+un = o["untick"]
+check("Show deleted unticked while its table is read draws nothing: the box stays empty, also when that read fails", un["box"] == "" and un["afterFail"] == "", un)
+
 ga = re.search(r'<input id="su-gl_code"[^>]*>', o["dlgAccount"])
 check("a bank account's GL code input has what the code fields have: monospace, no spell check, no autocomplete, typed in capitals",
       ga is not None and all(x in ga.group(0) for x in ('class="mono"', 'spellcheck="false"', 'autocomplete="off"', "data-upper")), ga.group(0) if ga else None)

@@ -149,6 +149,7 @@ async function render() {
   render.company = state.entity;
   if (gone && switched) { const e = ent(); const was = state.view; state.view = "entity"; renderNav(); switchedNote(gone, e, PAGE_RULES[was]?.plural); }
   else if (gone) { render.n = (render.n || 0) + 1; render.last = null; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return; }
+  if (state.view !== "setup") setupLeft();  // any other page: Setup's draws still reading are overtaken, and their hold of the page's height is gone
   // A page that takes visible time: the old page stays, slightly dimmed, and a skeleton comes after 0.3 s (never a flash);
   // drawing the same page again keeps what is there.
   const seq = render.n = (render.n || 0) + 1, key = `${state.view}:${state.entity}`, fresh = render.last !== key;
@@ -160,8 +161,10 @@ async function render() {
     const draw = first ? viewFirstRun : ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
     if (draw) await draw(main);
     if (state.view === "overview" && !first) trailNotice();
-    render.last = key;
-  } catch (e) { render.last = null; main.innerHTML = appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true }); }
+    if (seq === render.n) render.last = key;  // a draw that was overtaken doesn't say what the page on show is
+  } catch (e) {
+    if (seq === render.n) { render.last = null; main.innerHTML = appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true }); }  // nor does it paint over the page now shown
+  }
   finally { clearTimeout(slow); if (seq === render.n) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } } dlgRestore(); }  // the menu's numbers follow the Next up rows this page may have just read
 }
 

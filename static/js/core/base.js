@@ -24,6 +24,7 @@ async function api(path, opts = {}) {
 // again (First run's note of what was saved and not read) can tell that one has happened, whatever it found.
 async function readMeta() {
   const m = await api("/api/meta");
+  if (!m || !Array.isArray(m.entities)) throw new Error("The records couldn't be read just now. Try again.");  // a reply with no companies in it isn't a reading
   state.metaReads = (state.metaReads || 0) + 1;
   return m;
 }

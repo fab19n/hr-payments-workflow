@@ -5,7 +5,7 @@ const REM_HINT = "{name} in the title becomes the person's short name; {date} in
 
 async function setupReminders(box) {
   const d = await api("/api/setup/reminders");
-  if (!setupLive(box)) return;
+  if (!(box = setupBox(box))) return;
   state.setup.rem = d;
   const rules = d.rules || [];
   const row = r => {

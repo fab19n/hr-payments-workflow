@@ -214,7 +214,7 @@ async function drawDeleted(kind) {
   box.innerHTML = `<div class="note" role="status">Loading…</div>`;
   try {
     const d = await api(`/api/setup/restore?kind=${encodeURIComponent(kind)}${per ? `&entity=${state.entity}` : ""}`);
-    if ($("#setupDeleted") !== box) return;  // another page or section was drawn meanwhile
+    if ($("#setupDeleted") !== box || !state.setup.deleted) return;  // another page or section was drawn meanwhile, or Show deleted was unticked
     const own = state.setup.types?.kinds?.[kind], plural = own?.deleted_plural || own?.plural || d.plural;  // the section's own words (Filing words, not SQL filing words)
     const row = r => `<tr><td>${esc(r.name)}${r.code ? `<div class="note st-sub">${esc(r.code)}</div>` : ""}</td><td>${esc(fmtWhen(r.at))}<div class="note st-sub">Entry ${esc(r.entry)}</div></td><td>${esc(r.actor || "")}</td><td>${esc(r.reason || "")}</td>
       <td><div class="row tight">${r.problem ? "" : `<button class="ghost small" type="button" data-restore="${esc(r.row_id)}" data-restore-title="${esc(r.name)}" aria-haspopup="dialog">${icon("undo")}Put it back</button>`}
@@ -224,7 +224,7 @@ async function drawDeleted(kind) {
       <div class="note">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</div>
       <div class="tbl-wrap"><table class="st-table"><thead><tr><th scope="col">Name</th><th scope="col">Deleted</th><th scope="col">By</th><th scope="col">Why</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
         ${d.rows.map(row).join("") || `<tr><td colspan="5" class="empty">None deleted.</td></tr>`}</tbody></table></div></section>`;
-  } catch (e) { box.innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; }
+  } catch (e) { if ($("#setupDeleted") === box && state.setup.deleted) box.innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; }
 }
 
 // Put it back (from the audit trail, a record's History or Show deleted): a dialog shows what it would do first (a preview: nothing is

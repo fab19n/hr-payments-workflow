@@ -66,7 +66,11 @@ function goSetupRecord(kind, id) {
 
 async function viewSetup(main) {
   const S = state.setup, seq = viewSetup.n = (viewSetup.n || 0) + 1;  // a draw that a newer one overtakes writes nothing
-  if (!S.types) S.types = await api("/api/setup/types");
+  if (!S.types) {
+    const types = await api("/api/setup/types");
+    if (seq !== viewSetup.n) return;
+    S.types = types;
+  }
   if (seq !== viewSetup.n) return;
   const T = S.types, e = ent(), groups = setupGroups(T, e);
   if (!T.kinds[S.kind] || SETUP_LINKS[S.kind]) S.kind = groups[0]?.kinds[0] || null;  // a link's old address (Recurring payments) has no page here
@@ -78,14 +82,17 @@ async function viewSetup(main) {
   // for a moment: a save, a stop, a delete or a put back keeps the place. The window itself is never touched, except to start at the top when
   // another section or company is drawn, which is held for nothing.
   const prev = main.querySelector(".setup-grid"), same = prev?.dataset.at === at, top = main.querySelector(".setup-nav")?.scrollTop || 0;
-  if (same) main.style.minHeight = `${Math.ceil(main.getBoundingClientRect().height)}px`;
-  main.innerHTML = `<div class="setup-grid" data-at="${esc(at)}">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
-  if (!same) { main.style.minHeight = ""; if (prev) window.scrollTo(0, 0); }
-  const shown = main.querySelector(".setup-nav");
-  if (shown) shown.scrollTop = top;  // at once, not when the section has been read
-  const box = $("#setupMain"), spec = setupSpec();
-  box.dataset.draw = String(seq);
+  const grid = () => `<div class="setup-grid" data-at="${esc(at)}">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
+  viewSetup.draw = { main, grid, top };  // what a draw whose page render() covered with its loading skeleton draws again (setupBox)
+  const spec = setupSpec();
   try {
+    if (same) main.style.minHeight = `${Math.ceil(main.getBoundingClientRect().height)}px`;
+    main.innerHTML = grid();
+    if (!same) { main.style.minHeight = ""; if (prev) window.scrollTo(0, 0); }
+    const shown = main.querySelector(".setup-nav");
+    if (shown) shown.scrollTop = top;  // at once, not when the section has been read
+    const box = $("#setupMain");
+    box.dataset.draw = String(seq);
     if (!spec) box.innerHTML = emptyState({ glyph: "sliders", title: "Nothing to set up yet." });
     else if (e && !e.uses_sql && setupNeedsSql(S.kind, T)) box.innerHTML = setupNotUsed(S.kind, e);
     else if (spec.single) await setupSettings(box);
@@ -95,7 +102,7 @@ async function viewSetup(main) {
     else if (S.kind === "move") await setupMove(box);
     else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
     else await setupList(box, S.kind);
-    if (setupLive(box)) setupMenuScroll(main);  // last, once the whole section is written
+    if (seq === viewSetup.n) setupMenuScroll(main);  // last, once the whole section is written
   } catch (err) {
     if (seq !== viewSetup.n) return;  // overtaken: what it met is of no interest to the page now
     throw err;
@@ -104,10 +111,22 @@ async function viewSetup(main) {
   }
 }
 
-// A draw is live while it is the latest one asked for and the place it writes into is still on the page (render() puts its loading skeleton there
-// when the company changes, and another section may be asked for while this one is read). A draw that is not live writes nothing: no markup, no
-// state, no list to redraw.
-const setupLive = box => !!box && box.isConnected !== false && (box.dataset?.draw == null || box.dataset.draw === String(viewSetup.n));
+// The place a draw writes into, once what it reads has come: its own while that is still on the page. If render() covered the page with its loading
+// skeleton meanwhile (a read that takes over 0.3 s, on arriving from another page or on a company switch) and this is still the latest draw, its grid
+// is put back and the section is written into that. A draw that a newer one overtook, or that Setup was left for, gets nothing: null, and it writes
+// no markup, no state and no list to redraw. A box that viewSetup didn't draw (a section called on its own) is its own.
+function setupBox(box) {
+  if (!box || box.dataset?.draw == null) return box;
+  if (box.dataset.draw !== String(viewSetup.n)) return null;
+  if (box.isConnected !== false) return box;
+  const d = viewSetup.draw;
+  d.main.innerHTML = d.grid();
+  const bar = d.main.querySelector(".setup-nav");
+  if (bar) bar.scrollTop = d.top;
+  const back = $("#setupMain");
+  back.dataset.draw = box.dataset.draw;
+  return back;
+}
 
 // The menu is a new element each time the page is drawn (it has its scroll back already): it scrolls itself (never the window, as
 // scrollIntoView would) just far enough for the item on show to be in its frame, as when a deep address opens a lower section.
@@ -126,7 +145,9 @@ const setupMoreAt = spec => `${state.setup.kind}:${spec?.per_entity ? state.enti
 const setupMoreReset = id => { (state.setup.more ||= {})[id] = SETUP_PAGE; };
 // Another page is opened (core/router.js applyPlace): what Setup keeps only while it is on show is dropped.
 function setupLeft() {
-  const S = state.setup;
+  const S = state.setup, main = $("#main");
+  viewSetup.n = (viewSetup.n || 0) + 1;  // a draw still reading is overtaken: it writes nothing, and doesn't draw its grid over the page now shown
+  if (main?.style) main.style.minHeight = "";  // nor does its hold stay on that page
   S.more = {}; S.moreAt = null;
   if (S.move) S.move.justImported = false;
 }
@@ -314,7 +335,7 @@ async function setupList(box, kind) {
     return;
   }
   const [{ rows }, tabs] = await Promise.all([api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`), setupTabs(kind, spec.per_entity)]);
-  if (!setupLive(box)) return;
+  if (!(box = setupBox(box))) return;
   (S.more ||= {})[id] ??= SETUP_PAGE;  // the rows shown stay shown across a redraw (a save, a stop)
   const stopped = r => r.status === "stopped", nStopped = rows.filter(stopped).length;
   const text = r => [...cols.map(c => setupCell(kind, fieldOf(c.key), r, c.key)), SETUP_SUB[kind]?.(r) || "", usedText(r.used_by), stopped(r) ? "stopped" : "in use", +r.system ? "used by the app" : ""].join(" ");
