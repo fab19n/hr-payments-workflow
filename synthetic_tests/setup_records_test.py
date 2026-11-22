@@ -23,13 +23,14 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 tmp = Path(tempfile.mkdtemp(prefix="hrp-setup-records-test-"))
 os.environ["HRP_DATA_DIR"] = str(tmp)
 CHILD = sys.argv[1:2] == ["--import"]  # part 4's new install: --import <setup.json> <what it holds afterwards>
 
-from hrp import config, db, masters, rulebook, rules, setupfile  # noqa: E402
+from hrp import config, db, masters, rulebook, rules, setupfile, sqlfetch  # noqa: E402
 from hrp.app import app  # noqa: E402
 
 assert config.DATA_DIR == tmp, "the test must never open the real records folder"
@@ -108,7 +109,8 @@ if CHILD:
     now = call("get", "/api/setup/import")
     dst.write_text(json.dumps({"preview": counted(pv), "holding": held(now["holding"]), "empty": now["empty"],
                                "codes": [r["code"] for r in q("SELECT code FROM entities ORDER BY id")],
-                               "active": {r["code"]: r["active"] for r in q("SELECT code, active FROM entities")}}), encoding="utf-8")
+                               "active": {r["code"]: r["active"] for r in q("SELECT code, active FROM entities")},
+                               "gl_codes": {r["label"]: r["gl_code"] for r in q("SELECT label, gl_code FROM accounts WHERE label = 'Main'")}}), encoding="utf-8")
     print("child done")
     sys.exit(0)
 
@@ -228,7 +230,9 @@ fileholds = {w: len(full[k]) for k, w in (("entities", "companies"), ("accounts"
                                                               ("checklist", "checklist items"), ("payees", "recurring payments"))}
 check("the file's own rows are the figures the install holds", all(mine[w] == n for w, n in fileholds.items()), (mine, fileholds))
 src_file, out_file = tmp / "setup full.json", tmp / "child out.json"
-src_file.write_text(json.dumps(full), encoding="utf-8")
+filed = json.loads(json.dumps(full))
+next(a for a in filed["accounts"] if a["label"] == "Main")["gl_code"] = " bk-310 "   # a file made by hand, or by an older version
+src_file.write_text(json.dumps(filed), encoding="utf-8")
 run = subprocess.run([sys.executable, "-m", "synthetic_tests.setup_records_test", "--import", str(src_file), str(out_file)],
                      cwd=str(Path(__file__).resolve().parents[1]), capture_output=True, text=True, timeout=600)
 print("\n".join("  " + line for line in run.stdout.splitlines()))
@@ -243,6 +247,7 @@ check("First run's counts are Move setup's: the preview of the file equals what 
 # preview counts them, above): the first install keeps none of its own for the two companies it never opened a checklist for.
 check("...and, but for the starter checklists the import gives, both are what the first install holds",
       all(got["holding"][w] == mine[w] for w in mine if w != "checklist items") and got["holding"]["checklist items"] > mine["checklist items"], (got["holding"], mine))
+check("a bank account's GL code comes in as Setup stores one, in capitals without the spaces round it", got["gl_codes"] == {"Main": "BK-310"}, got.get("gl_codes"))
 check("the stopped company comes across as stopped, and nothing is left of the deleted one",
       got["codes"] == ["EXA", "EXB", "EXC"] and got["active"] == {"EXA": 1, "EXB": 1, "EXC": 0} and got["empty"] is False, got)
 
@@ -385,16 +390,23 @@ with section('2. Where used lists every record that refers to a company or a GL 
 # 3. a company switched to Kept here keeps the printed company names confirmed while it was Kept in SQL Account: they can be removed
 with section('3. a company switched to Kept here keeps the printed company names con'):
     ko = call("post", "/api/setup/entities", json={"fields": {"code": "KEPT", "name": "Example Switched Ltd", "uses_sql": True}})
-    write("a confirmed printed company name", ("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at) VALUES (?, 'kn', 'EXAMPLE SWITCHED LTD (2026)', ?)", (ko["id"], NOW)))
+    write("a confirmed printed company name", ("INSERT INTO sql_company_names (entity_id, name_key, name, confirmed_at) VALUES (?, ?, 'EXAMPLE PRINTED NAME BHD (2026)', ?)",
+                                                (ko["id"], sqlfetch._key("EXAMPLE PRINTED NAME BHD (2026)"), NOW)))
     call("patch", f"/api/setup/entities/{ko['id']}", json={"fields": {"uses_sql": False}})
     left = call("get", "/api/setup/export?what=full").get("left_out", [])
     check("the export says a name of a company now Kept here stays out, and where to remove it",
-          any("EXAMPLE SWITCHED LTD" in x and "no longer kept in SQL Account" in x and "Remove the name in Setup › Companies" in x for x in left), left)
+          any("EXAMPLE PRINTED NAME BHD" in x and "no longer kept in SQL Account" in x and "Remove the name in Setup › Companies" in x for x in left), left)
     nm = call("get", f"/api/setup/entities/{ko['id']}/sql-names")
-    check("the company's names are still listed for a company Kept here, and can be removed there", nm["ready"] and [n["name"] for n in nm["names"]] == ["EXAMPLE SWITCHED LTD (2026)"])
+    check("the company's names are still listed for a company Kept here, and can be removed there", nm["ready"] and [n["name"] for n in nm["names"]] == ["EXAMPLE PRINTED NAME BHD (2026)"])
+    r = c.post(BASE + "/api/sql/take-company", headers=H, json={"entity_id": EXA, "company": "Example Printed Name Bhd (2026)"})
+    check("while a company Kept here still holds a confirmed name no other company can take it (what the dialog's sentence says)",
+          r.status_code == 400 and "was taken for KEPT before" in r.get_json()["error"] and sqlfetch.confirmed_names(db.connect()).get(sqlfetch._key("EXAMPLE PRINTED NAME BHD (2026)")) == ko["id"], r.get_json())
     call("delete", f"/api/setup/entities/{ko['id']}/sql-names/{nm['names'][0]['id']}", json={})
+    got_it = call("post", "/api/sql/take-company", json={"entity_id": EXA, "company": "Example Printed Name Bhd (2026)"})
+    check("...and once it is removed another company can", got_it["added"] is True)
+    call("delete", f"/api/setup/entities/{EXA}/sql-names/{call('get', f'/api/setup/entities/{EXA}/sql-names')['names'][0]['id']}", json={})
     check("...removing it leaves none, and the export no longer says it is left out",
-          call("get", f"/api/setup/entities/{ko['id']}/sql-names")["names"] == [] and not any("EXAMPLE SWITCHED LTD" in x for x in call("get", "/api/setup/export?what=full").get("left_out", [])))
+          call("get", f"/api/setup/entities/{ko['id']}/sql-names")["names"] == [] and not any("EXAMPLE PRINTED NAME BHD" in x for x in call("get", "/api/setup/export?what=full").get("left_out", [])))
 
 # 4. the stopped note is said once in a record's own answer (the page adds the section's note only when the server has not)
 with section("4. the stopped note is said once in a record's own answer (the page ad"):
@@ -433,6 +445,114 @@ with section('16. Show deleted names a company by its code and name, a chart acc
     check("each section says its own words for what was deleted: Filing words, bank accounts, accounts for the chart",
           kk["filing_words"]["deleted_plural"] == "filing words" and kk["accounts"]["deleted_plural"] == "bank accounts" and kk["gl_accounts"]["deleted_plural"] == "accounts"
     )
+
+# 17. a chart account's uses are read in one pass for the whole chart: per company, whatever case or padding a stored code has
+with section("17. a chart account's uses are counted per company, as capitals without padding"):
+    def chart(eid, code, name="Chart test"):
+        return call("post", "/api/setup/gl_accounts", json={"entity_id": eid, "fields": {"code": code, "name": f"{name} {code}"}})["id"]
+    SAME_A, SAME_B = chart(EXA, "880-0001"), chart(EXB, "880-0001")      # the same code in two companies
+    PAD_OPEN, LOW_JNL, PAD_BANK, API_BANK = chart(EXB, "880-0002"), chart(EXB, "880-A003"), chart(EXA, "880-A004"), chart(EXA, "880-A006")
+    write("rows naming chart codes",
+          ("INSERT INTO ledger_openings (entity_id, account_code, as_of, source, set_at) VALUES (?, '880-0001', '2026-01-01', 'here', ?)", (EXB, NOW)),
+          ("INSERT INTO ledger_openings (entity_id, account_code, as_of, source, set_at) VALUES (?, '  880-0002 ', '2026-01-01', 'here', ?)", (EXB, NOW)),
+          ("INSERT INTO sql_imports (entity_id, filename, imported_at, entries, linked) VALUES (?, 'journal.xlsx', ?, 0, 0)", (EXB, NOW)),
+          ("INSERT INTO sql_journal_lines (entity_id, dockey, import_id, code, dr, cr) VALUES (?, 'J1', (SELECT MAX(id) FROM sql_imports), '880-0001', 5, 0)", (EXB,)),
+          ("INSERT INTO sql_journal_lines (entity_id, dockey, import_id, code, dr, cr) VALUES (?, 'J1', (SELECT MAX(id) FROM sql_imports), '880-0001', 0, 5)", (EXB,)),
+          ("INSERT INTO sql_journal_lines (entity_id, dockey, import_id, code, dr, cr) VALUES (?, 'J2', (SELECT MAX(id) FROM sql_imports), '880-a003', 7, 0)", (EXB,)),
+          ("INSERT INTO sql_journal_lines (entity_id, dockey, import_id, code, dr, cr) VALUES (?, 'J2', (SELECT MAX(id) FROM sql_imports), ' 880-A003 ', 0, 7)", (EXB,)))
+    pa = call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "Padded GL", "bank": "Example Bank", "currency": "USD"}})
+    write("a bank account naming a chart code padded and in lower case, as an older record may hold it", ("UPDATE accounts SET gl_code = ' 880-a004 ' WHERE id = ?", (pa["id"],)))
+    uses = lambda kind_eid, gid: next(x for x in call("get", f"/api/setup/gl_accounts?entity={kind_eid}")["rows"] if x["id"] == gid)
+    check("a second company's rows with the same code are not this company's: its account of that code is used by nothing, the other's by its opening and its journal lines",
+          uses(EXA, SAME_A)["used_by"] == [] and call("get", f"/api/setup/gl_accounts/{SAME_A}")["can_delete"] is True
+          and uses(EXB, SAME_B)["used_by"] == [["opening balance", 1], ["SQL journal lines", 2]] and call("get", f"/api/setup/gl_accounts/{SAME_B}")["used_by"] == [["opening balance", 1], ["SQL journal lines", 2]],
+          (uses(EXA, SAME_A)["used_by"], uses(EXB, SAME_B)["used_by"]))
+    check("a stored code padded or in lower case still names its account: an opening balance, journal lines of both kinds, a bank account, in the list and in the record",
+          uses(EXB, PAD_OPEN)["used_by"] == [["opening balance", 1]] and uses(EXB, LOW_JNL)["used_by"] == [["SQL journal lines", 2]] and uses(EXA, PAD_BANK)["used_by"] == [["bank account", 1]]
+          and call("get", f"/api/setup/gl_accounts/{PAD_OPEN}")["used_by"] == [["opening balance", 1]] and call("get", f"/api/setup/gl_accounts/{PAD_BANK}")["used_by"] == [["bank account", 1]],
+          [uses(EXB, PAD_OPEN)["used_by"], uses(EXB, LOW_JNL)["used_by"], uses(EXA, PAD_BANK)["used_by"]])
+    for gid, why in ((PAD_OPEN, "a padded opening balance"), (LOW_JNL, "lower-case journal lines"), (PAD_BANK, "a bank account's padded lower-case code")):
+        rc = call("get", f"/api/setup/gl_accounts/{gid}")
+        r = c.delete(BASE + f"/api/setup/gl_accounts/{gid}", headers=H, json={"reason": "test"})
+        r2 = c.patch(BASE + f"/api/setup/gl_accounts/{gid}", headers=H, json={"fields": {"code": "880-9999"}})
+        check(f"{why} locks the chart account's code and Delete is not offered or allowed", rc["can_delete"] is False and "code" in rc["locked"] and r.status_code == 409
+              and r2.status_code == 400 and "can't change once used" in r2.get_json()["error"], (rc["used_by"], r.get_json(), r2.get_json()))
+    # a bank account's GL code is kept as the chart keeps its codes
+    call("patch", f"/api/setup/accounts/{pa['id']}", json={"fields": {"label": "Padded GL two", "gl_code": "  880-a006 "}})
+    check("a bank account's GL code is stored in capitals without the spaces round it, so it names its chart account as typed",
+          q("SELECT gl_code FROM accounts WHERE id = ?", (pa["id"],))[0]["gl_code"] == "880-A006" and uses(EXA, API_BANK)["used_by"] == [["bank account", 1]]
+          and call("get", f"/api/setup/accounts/{pa['id']}")["record"]["gl_code"] == "880-A006")
+    mk = call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "New with a code", "bank": "Example Bank", "currency": "SGD", "gl_code": "bk-7 "}})
+    check("...also when the account is added", q("SELECT gl_code FROM accounts WHERE id = ?", (mk["id"],))[0]["gl_code"] == "BK-7")
+    r = c.post(BASE + "/api/setup/accounts", headers=H, json={"entity_id": EXA, "fields": {"label": "Bad code", "bank": "Example Bank", "currency": "SGD", "gl_code": "no good!"}})
+    check("...and a code SQL Account would not write is refused, as the chart's are", r.status_code == 400 and "GL account code" in r.get_json()["error"], r.get_json())
+
+# 18. a big company's chart: 500 accounts, 3 openings each and 50,000 journal lines read from SQL. Counting each account's uses by a scan of the
+# journal lines for each took 9 to 16 seconds for the list and the same for pasting the chart; it is one pass over each table, whatever the chart.
+with section("18. a big chart of accounts is listed, pasted and edited in a moment"):
+    big = call("post", "/api/setup/entities", json={"fields": {"code": "BIG", "name": "Example Big Sdn Bhd", "uses_sql": True}})["id"]
+    codes = [f"{300 + i // 100}-{i % 100:04d}" for i in range(500)]
+    bc = db.connect()
+    bc.arm("user", "test: a big chart")
+    bc.executemany("INSERT INTO gl_accounts (entity_id, code, name) VALUES (?, ?, ?)", [(big, k, f"Account {k}") for k in codes])
+    bc.execute("INSERT INTO sql_imports (entity_id, filename, imported_at, entries, linked) VALUES (?, 'big.xlsx', ?, 0, 0)", (big, NOW))
+    imp = bc.execute("SELECT MAX(id) FROM sql_imports").fetchone()[0]
+    bc.execute("INSERT INTO ledger_batches (entity_id, origin, report, read_at, sql_import_id) VALUES (?, 'sql', 'trial_balance', ?, ?)", (big, NOW, imp))
+    batch = bc.execute("SELECT MAX(id) FROM ledger_batches").fetchone()[0]
+    bc.executemany("INSERT INTO ledger_openings (entity_id, account_code, as_of, source, batch_id, set_at) VALUES (?, ?, ?, 'sql_tb', ?, ?)",
+                   [(big, k, d, batch, NOW) for k in codes for d in ("2024-01-01", "2025-01-01", "2026-01-01")])
+    bc.executemany("INSERT INTO sql_journal_lines (entity_id, dockey, import_id, code, dr, cr) VALUES (?, ?, ?, ?, 1, 0)", [(big, f"J{i // 4}", imp, codes[i % 500]) for i in range(50000)])
+    bc.commit()
+    bc.disarm()
+    bc.close()
+
+    def timed(fn):
+        t0 = time.perf_counter()
+        r = fn()
+        return r, time.perf_counter() - t0
+    r, t_list = timed(lambda: c.get(BASE + f"/api/setup/gl_accounts?entity={big}", headers=H))
+    rows = r.get_json()["rows"]
+    check(f"the chart of 500 accounts, each with 3 openings and 100 journal lines, is listed with what uses each in {t_list:.2f} s (a budget of 1 s; it took 9 to 16 s when each account scanned the journal lines)",
+          r.status_code == 200 and len(rows) == 500 and t_list < 1.0 and rows[0]["used_by"] == [["opening balances", 3], ["SQL journal lines", 100]], (r.status_code, len(rows), t_list, rows[0]["used_by"] if rows else None))
+    text = "Code\tName\n" + "\n".join(f"{k}\tRenamed {k}" for k in codes)
+    r, t_prev = timed(lambda: c.post(BASE + "/api/setup/gl_accounts/paste", headers=H, json={"entity_id": big, "text": text, "preview": True}))
+    r2, t_apply = timed(lambda: c.post(BASE + "/api/setup/gl_accounts/paste", headers=H, json={"entity_id": big, "text": text}))
+    check(f"pasting the chart with all 500 names changed takes {t_prev:.2f} s to preview and {t_apply:.2f} s to save (a budget of 3 s each; 15 s before), and changes them",
+          r.status_code == 200 and r.get_json()["counts"]["update"] == 500 and r2.status_code == 200 and r2.get_json()["counts"]["update"] == 500 and t_prev < 3 and t_apply < 3
+          and q("SELECT name FROM gl_accounts WHERE entity_id = ? AND code = ?", (big, codes[0]))[0]["name"] == f"Renamed {codes[0]}", (r.status_code, t_prev, t_apply))
+    gid = q("SELECT id FROM gl_accounts WHERE entity_id = ? AND code = ?", (big, codes[7]))[0]["id"]
+    r, t_edit = timed(lambda: c.patch(BASE + f"/api/setup/gl_accounts/{gid}", headers=H, json={"fields": {"name": "Edited once", "notes": "and a note"}}))
+    check(f"editing one account takes {t_edit:.2f} s (a budget of 0.5 s)", r.status_code == 200 and t_edit < 0.5, (r.status_code, t_edit))
+    r = c.patch(BASE + f"/api/setup/gl_accounts/{gid}", headers=H, json={"fields": {"code": "999-9999"}})
+    check("...and its code, which its openings and journal lines name, still can't be changed", r.status_code == 400 and "can't change once used" in r.get_json()["error"], r.get_json())
+
+    # the speed above is a time; this is the work: the lists of a chart read each table once, not once per account, and an edit asks only when it must
+    def statements(fn, table="sql_journal_lines"):
+        rc = db.connect()
+        seen = []
+        rc.set_trace_callback(lambda s: seen.append(s) if table in s else None)
+        try:
+            fn(rc)
+        except masters.Refused:
+            pass
+        finally:
+            rc.set_trace_callback(None)
+            rc.close()
+        return len(seen)
+    check("listing a chart of 500 accounts reads the journal lines once, not once per account", statements(lambda rc: masters.listing(rc, "gl_accounts", big)) == 1)
+    check("one account's record reads them once (its Where used and what it locks come from the same reading)", statements(lambda rc: masters.record(rc, "gl_accounts", gid)) == 1)
+
+    def edit(rc, fields):
+        rc.arm("user", "test: one edit")
+        try:
+            masters.update(rc, "gl_accounts", gid, fields, quiet=True)
+        finally:
+            rc.rollback()
+            rc.disarm()
+    check("an edit of an account's name, type and notes doesn't look for what uses it at all (only its code depends on that)",
+          statements(lambda rc: edit(rc, {"name": "Edited twice", "notes": "another note", "type": "asset", "special": "bank"}), "ledger_openings") == 0)
+    check("...and an edit that changes its code and two other fields asks once, however many fields change",
+          statements(lambda rc: edit(rc, {"code": "999-9998", "name": "x", "notes": "y"}), "ledger_openings") == 1)
 
 if failed:
     print(f"\n{len(failed)} failed, {len(passed)} passed")

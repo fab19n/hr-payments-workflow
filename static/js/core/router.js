@@ -199,7 +199,10 @@ async function applyPlace(place, opts = {}) {
     if (place.entity && place.entity !== "all") state.entity = +place.entity;
     if (!state.entity) state.entity = firstEntityId();
     if (R.month && MONTH_RE.test(place.month || "")) state.month = place.month;
-    if (opts.fresh) { state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; state.payeeSaved = null; state.reg = null; state.cl = null; }
+    if (opts.fresh) {
+      state.recon.rv = null; state.payeeSaved = null; state.reg = null; state.cl = null;
+      for (const k in state.lists) { state.lists[k].q = ""; if (k.startsWith("setup-")) setupMoreReset(k); }  // searches start again, and so do Setup's 25 rows
+    }
     state.addr = { all: place.entity === "all", id: v === "entity" && place.id ? String(place.id) : null, params: p };
     state.openPayment = state.addr.id ? +state.addr.id : null;
     state.mark = v !== "entity" && v !== "checklist" ? null : p.pay ? { pay: x => p.pay.split(",").map(Number).includes(x.id) }

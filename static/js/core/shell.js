@@ -78,7 +78,7 @@ function sortTh(id, col, label, cls = "") {
   return `<th${cls ? ` class="${cls}"` : ""} aria-sort="${on ? (st.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" class="sorth" data-sort="${id}" data-col="${col}">${label}<span class="arrow" aria-hidden="true">${on ? (st.dir > 0 ? "▲" : "▼") : ""}</span></button></th>`;
 }
 function listBar(id, what) {
-  return `<div class="listbar noprint"><input type="search" data-search="${id}" value="${esc(listState(id).q)}" placeholder="Search ${what}" aria-label="Search ${what}"><span class="muted" data-count="${id}" aria-live="polite"></span></div>`;
+  return `<div class="listbar noprint"><input type="search" data-search="${esc(id)}" value="${esc(listState(id).q)}" placeholder="Search ${esc(what)}" aria-label="Search ${esc(what)}"><span class="muted" data-count="${esc(id)}" aria-live="polite"></span></div>`;
 }
 const setCount = (id, n, m) => { state.counts[id] = [n, m]; };
 function paintCount(id) {

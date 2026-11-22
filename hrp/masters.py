@@ -100,7 +100,7 @@ KINDS = {
             _f("currency", "Currency", "code", required=True, max=3, hint="Three letters: MYR, USD, SGD."),
             _f("cash_book", "Cash book account", "bool", wide=True,
                hint="The account SQL Account's cash book listing is for. Each company has one, in MYR."),
-            _f("gl_code", "GL account code", "text", hint="The bank account's code in SQL Account's chart of accounts."),
+            _f("gl_code", "GL account code", "sqlcode", hint="The bank account's code in SQL Account's chart of accounts."),  # kept in capitals, like the chart's own codes
             _f("sql_payment_method", "SQL payment method", "text", hint="As SQL Account names it on vouchers."),
             _f("bank_address", "Bank address", "text", wide=True, hint="Printed on invoices when this account is the one to pay into."),
             _f("swift_code", "Bank transfer (SWIFT) code", "text", max=11, hint="Printed on invoices, e.g. EXMBMYKL."),
@@ -677,25 +677,7 @@ USES = {  # (one, many, how to count)
                                         AND s.code = p.sql_code AND (p.entity_id IS NULL OR s.entity_id = p.entity_id)"""),
         ("SQL filing word rule", "SQL filing word rules", "SELECT COUNT(*) FROM filing_words WHERE party_id = ?"),
     ],
-    "gl_accounts": [
-        ("bank account", "bank accounts", """SELECT COUNT(*) FROM accounts a, gl_accounts g WHERE g.id = ? AND a.entity_id = g.entity_id
-                                             AND a.gl_code = g.code"""),
-        ("customer or supplier", "customers and suppliers", """SELECT COUNT(*) FROM parties p, gl_accounts g WHERE g.id = ?
-                                             AND p.gl_code = g.code AND (p.entity_id IS NULL OR p.entity_id = g.entity_id)"""),
-        ("account under it", "accounts under it", """SELECT COUNT(*) FROM gl_accounts c, gl_accounts g WHERE g.id = ?
-                                             AND c.entity_id = g.entity_id AND c.parent_code = g.code"""),
-        ("SQL entry", "SQL entries", """SELECT COUNT(*) FROM sql_entries s, gl_accounts g WHERE g.id = ? AND s.entity_id = g.entity_id
-                                        AND s.code = g.code"""),
-        ("SQL account line", "SQL account lines", """SELECT COUNT(*) FROM ledger_lines l, gl_accounts g WHERE g.id = ?
-                                                     AND l.entity_id = g.entity_id AND l.account_code = UPPER(TRIM(g.code))"""),
-        ("statutory account", "statutory accounts", """SELECT COUNT(*) FROM statutory_accounts s, gl_accounts g WHERE g.id = ?
-                                             AND s.entity_id = g.entity_id AND (UPPER(TRIM(s.payable_code)) = UPPER(TRIM(g.code))
-                                                                                OR UPPER(TRIM(s.employer_code)) = UPPER(TRIM(g.code)))"""),
-        ("opening balance", "opening balances", """SELECT COUNT(*) FROM ledger_openings o, gl_accounts g WHERE g.id = ?
-                                             AND o.entity_id = g.entity_id AND UPPER(TRIM(o.account_code)) = UPPER(TRIM(g.code))"""),
-        ("SQL journal line", "SQL journal lines", """SELECT COUNT(*) FROM sql_journal_lines j, gl_accounts g WHERE g.id = ?
-                                             AND j.entity_id = g.entity_id AND UPPER(TRIM(j.code)) = UPPER(TRIM(g.code))"""),
-    ],
+    "gl_accounts": [],  # counted from GL_USES, one grouped scan of each table for the whole chart (gl_use_map), not one scan per account
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),
         ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE account_id = ?"),
@@ -708,8 +690,83 @@ USES = {  # (one, many, how to count)
 }
 
 
+# A chart account is named by its code in many tables, and a code may be stored padded or in lower case (a row pasted or imported from
+# SQL), so each is compared as UPPER(TRIM(code)). That hides any index, so it is done once per table, in one grouped scan of the company's
+# rows (gl_use_map), never once per account: 500 accounts against 50,000 journal lines would be 500 scans of them.
+# (what it is, and many of them, table, column holding the code, which rows are the company's)
+GL_USES = [
+    ("bank account", "bank accounts", "accounts", "gl_code", "entity_id = :e"),
+    ("customer or supplier", "customers and suppliers", "parties", "gl_code", "(entity_id IS NULL OR entity_id = :e)"),
+    ("account under it", "accounts under it", "gl_accounts", "parent_code", "entity_id = :e"),
+    ("SQL entry", "SQL entries", "sql_entries", "code", "entity_id = :e"),
+    ("SQL account line", "SQL account lines", "ledger_lines", "account_code", "entity_id = :e"),
+    ("statutory account", "statutory accounts", None, None, None),  # two codes a row: the payable and the employer's share account
+    ("opening balance", "opening balances", "ledger_openings", "account_code", "entity_id = :e"),
+    ("SQL journal line", "SQL journal lines", "sql_journal_lines", "code", "entity_id = :e"),
+]
+_STATUTORY = ("(SELECT id, UPPER(TRIM(payable_code)) AS k FROM statutory_accounts WHERE entity_id = :e "
+              "UNION SELECT id, UPPER(TRIM(employer_code)) FROM statutory_accounts WHERE entity_id = :e)")
+
+
+def norm_code(code):
+    """A chart code as it is compared: capitals, without the spaces round it."""
+    return str(code or "").strip().upper()
+
+
+def _gl_sql(source, code=None, first=False):
+    """The query for one source: every code it holds with how many rows (the whole company), the count for one code, or (first) a row
+    naming it if there is one."""
+    _, _, table, col, where = source
+    if table is None:
+        table, col, where = _STATUTORY, "k", "1 = 1"
+        k = "k"
+    else:
+        k = f"UPPER(TRIM({col}))"
+    if first:
+        return f"SELECT 1 FROM {table} WHERE {where} AND {k} = :c LIMIT 1"
+    one = f" AND {k} = :c" if code else ""
+    return f"SELECT {k}, COUNT(*) FROM {table} WHERE {where}{one} GROUP BY {k}"
+
+
+def _gl_rows(con, sql, entity_id, code=None):
+    try:
+        return con.execute(sql, {"e": entity_id, "c": code}).fetchall()
+    except sqlite3.OperationalError as x:  # a table or column a later update adds (a records.db still below it)
+        if "no such table" not in str(x) and "no such column" not in str(x):
+            raise
+        return []
+
+
+def gl_use_map(con, entity_id, code=None):
+    """{code: [how many rows of each GL_USES source name it]} for every code the company's rows hold, or for one code. One scan of
+    each table, whatever the number of accounts."""
+    out = {}
+    for i, source in enumerate(GL_USES):
+        for k, n in _gl_rows(con, _gl_sql(source, code), entity_id, code):
+            if k:
+                out.setdefault(k, [0] * len(GL_USES))[i] += n
+    return out
+
+
+def _gl_out(counts):
+    """[[what, how many]] of the sources that are not zero, in GL_USES order."""
+    return [[one if n == 1 else many, n] for (one, many, *_), n in zip(GL_USES, counts or []) if n]
+
+
+def gl_used(con, entity_id, code):
+    """Whether any row names the chart account at all (stops at the first it finds, so it never counts)."""
+    k = norm_code(code)
+    return any(_gl_rows(con, _gl_sql(source, first=True), entity_id, k) for source in GL_USES)
+
+
 def usage(con, kind, rid):
     """[(what, how many)] for the uses that are not zero."""
+    if kind == "gl_accounts":
+        g = con.execute("SELECT entity_id, code FROM gl_accounts WHERE id = ?", (rid,)).fetchone()
+        if g is None:
+            return []
+        k = norm_code(g["code"])
+        return _gl_out(gl_use_map(con, g["entity_id"], k).get(k))
     out = []
     for one, many, sql in USES[kind]:
         try:
@@ -727,8 +784,9 @@ def _count(con, sql, *args):
     return con.execute(sql, args).fetchone()[0]
 
 
-def locked(con, kind, rec):
-    """{field: why it can't change now}."""
+def locked(con, kind, rec, used=None, only=None):
+    """{field: why it can't change now}. used: what uses the record when that has been read already (usage's answer); only: the
+    fields about to change, so what no one of them depends on isn't looked up."""
     out = {}
     if kind == "entities" and rec.get("id"):
         if any(_count(con, f"SELECT COUNT(*) FROM {t} WHERE entity_id = ?", rec["id"]) for t in ("months", "payments", "documents")):
@@ -738,8 +796,8 @@ def locked(con, kind, rec):
                                "Reopen the filed months first if it really must.")
     if kind in TYPE_KINDS and rec.get("id"):
         out["key"] = "Records refer to it by this key, so it can't change once added."
-        used = bool(usage(con, kind, rec["id"]))
-        if kind == "payment_types" and (rec.get("system") or used):
+        in_use = bool(usage(con, kind, rec["id"]) if used is None else used)
+        if kind == "payment_types" and (rec.get("system") or in_use):
             out["direction"] = ("The app relies on this type being money " + rec["direction"] + "." if rec.get("system")
                                 else "Payments of this type are money " + rec["direction"] + ", so it can't change once it has any.")
         if kind == "payment_types" and _count(con, """SELECT COUNT(*) FROM payments p JOIN months m ON m.entity_id = p.entity_id
@@ -747,16 +805,17 @@ def locked(con, kind, rec):
             out["legal_due_offset"] = out["legal_due_day"] = (
                 "Filed months judged their payments of this type by this deadline, so it can't change once one is filed. "
                 "Reopen the filed months first if it really must.")
-        if kind == "doc_types" and (rec.get("system") or used):
+        if kind == "doc_types" and (rec.get("system") or in_use):
             out["from_sql"] = ("The app relies on this." if rec.get("system")
                                else "Documents and rules of this type are filed by it, so it can't change once used.")
-    if kind == "parties" and rec.get("id"):
-        used = dict((what, n) for what, n in usage(con, kind, rec["id"]))
-        if any("SQL entr" in w for w in used):
+    if kind == "parties" and rec.get("id") and (only is None or only & {"sql_code", "entity_id"}):
+        uses = dict((what, n) for what, n in (usage(con, kind, rec["id"]) if used is None else used))
+        if any("SQL entr" in w for w in uses):
             out["sql_code"] = "SQL entries are matched to it by this code, so it can't change once any carry it."
-        if used:
+        if uses:
             out["entity_id"] = "Recurring payments or SQL entries refer to it, so it stays with the companies it is for: add another one instead."
-    if kind == "gl_accounts" and rec.get("id") and usage(con, kind, rec["id"]):
+    if kind == "gl_accounts" and rec.get("id") and (only is None or "code" in only) \
+            and (bool(used) if used is not None else gl_used(con, rec["entity_id"], rec["code"])):
         out["code"] = ("Bank accounts, customers, suppliers, other accounts, statutory accounts, SQL entries, account lines, opening balances "
                        "or journal lines refer to it by this code, so it can't change once used.")
     if kind == "accounts" and rec.get("id"):
@@ -803,9 +862,10 @@ def listing(con, kind, entity_id=None):
     else:
         rows = con.execute(f"SELECT * FROM {s['table']} ORDER BY {s.get('order', 'sort, id')}").fetchall()
     out = []
+    chart = gl_use_map(con, entity_id) if kind == "gl_accounts" else None  # the whole chart's uses in one pass
     for r in rows:
         r = _decoded(kind, dict(r))
-        used = usage(con, kind, r["id"])
+        used = usage(con, kind, r["id"]) if chart is None else _gl_out(chart.get(norm_code(r["code"])))
         out.append({**r, "used_by": used, "used_total": sum(n for _, n in used), "status": "in_use" if r.get("active", 1) else "stopped"})
     return {"rows": out}
 
@@ -813,7 +873,7 @@ def listing(con, kind, entity_id=None):
 def record(con, kind, rid):
     rec = _row(con, kind, rid)
     used = usage(con, kind, rid)
-    return {"record": rec, "used_by": used, "used_total": sum(n for _, n in used), "locked": locked(con, kind, rec),
+    return {"record": rec, "used_by": used, "used_total": sum(n for _, n in used), "locked": locked(con, kind, rec, used=used),
             "can_delete": not used and not rec.get("system"), "can_stop": _can_stop(kind, rec), "notes": notes(con, kind, rec)}
 
 
@@ -939,10 +999,11 @@ def update(con, kind, rid, fields, quiet=False):
     rec = _row(con, kind, rid)
     vals = _checked(kind, fields, rec)
     vals = {k: v for k, v in vals.items() if v != rec.get(k)}
-    for k in vals:
-        why = locked(con, kind, rec).get(k)
-        if why:
-            raise Refused(why)
+    if vals:
+        why = locked(con, kind, rec, only=set(vals))  # once, for every field changed
+        for k in vals:
+            if why.get(k):
+                raise Refused(why[k])
     for f in s["fields"]:
         if f.get("required") and f["key"] in vals and vals[f["key"]] in (None, ""):
             raise Refused(f"{f['label']}: this can't be empty.")

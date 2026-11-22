@@ -158,7 +158,8 @@ async function fetch(path, init = {}) {
   if (hit === undefined) return { ok: false, status: 404, json: async () => ({ error: "no fixture for " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(hit)) };
 }
-const win = { matchMedia: () => ({ matches: true }), location: { hash: "#/admin/setup", replace(v) { this.hash = v; } }, scrollTo() {}, addEventListener() {}, print() {} };
+const scrolls = [];   // what the window was scrolled to: a page drawn again must not move it
+const win = { matchMedia: () => ({ matches: true }), location: { hash: "#/admin/setup", replace(v) { this.hash = v; } }, scrollTo(...a) { scrolls.push(a); }, addEventListener() {}, print() {} };
 const sandbox = { document, fetch, FormData: class {}, console, setTimeout, clearTimeout, URLSearchParams, CSS: { escape: s => s },
   localStorage: { getItem: () => null, setItem() {} }, window: win, navigator: {}, __el: el, __calls: calls, __listeners: listeners,
   __btn: { closest: () => ({ after() {} }), getAttribute: () => "false", isConnected: true } };
@@ -175,11 +176,19 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       const ev = { type: "click", target: b, button: 0, preventDefault() {}, stopPropagation() {} }; for (const f of __listeners.click || []) await f(ev); };`);
   const main = el("main"), box = () => el("setupMain");
   // the menu is a new element (scrolled to the top) each time the page is drawn, as in a browser; its item on show records what is done to it
+  // The menu has a frame 400 high at the top of the window; its item on show sits at 700 (Move setup), 420 (Required documents) or 80 in its content.
+  // Each time the grid is drawn the section's own place is empty until the section is drawn, and each scrollTop set records whether it was.
   const navOf = html => { const m = /class="sn on" data-setup-kind="([a-z_]+)"/.exec(html);
-    return /class="setup-nav/.test(html) ? { scrollTop: 0, kind: m && m[1], active: { scrolled: [], scrollIntoView(o) { this.scrolled.push(o); }, focus() { document.activeElement = this; } },
-      querySelector(s) { return s === ".sn.on" ? this.active : null; } } : null; };
+    if (!/class="setup-nav/.test(html)) return null;
+    const kind = m && m[1], at = kind === "move" ? 700 : kind === "required" ? 420 : 80;
+    let st = 0;
+    const nav = { sets: [], kind, clientHeight: 400, clientTop: 0, getBoundingClientRect: () => ({ top: 100, height: 400 }),
+      get scrollTop() { return st; }, set scrollTop(v) { st = v; nav.sets.push(el("setupMain").innerHTML.length > 0); }, userScroll(v) { st = v; },
+      active: { scrolled: [], scrollIntoView(o) { this.scrolled.push(o); }, focus() { document.activeElement = this; }, getBoundingClientRect: () => ({ top: 100 + at - st, height: 40 }) },
+      querySelector(s) { return s === ".sn.on" ? this.active : null; } };
+    return nav; };
   let mainHtml = "";
-  Object.defineProperty(main, "innerHTML", { get: () => mainHtml, set(v) { mainHtml = v; main.nav = navOf(v); } });
+  Object.defineProperty(main, "innerHTML", { get: () => mainHtml, set(v) { mainHtml = v; if (/id="setupMain"/.test(v)) el("setupMain").innerHTML = ""; main.nav = navOf(v); } });
   main.nav = null; main.querySelector = s => s === ".setup-nav" ? main.nav : null;
   const view = async (kind, entity) => {
     run(`state.entity = ${entity}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false;`);
@@ -529,6 +538,9 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     await more(); await run(`viewSetup(__el("main"))`); await sleep(20); r.saveRedraw = count(box().innerHTML);
     r.searched = type("Test"); r.moreAgain = await more(); r.cleared = type("");
     await more(); await run(`click({ setupClear: "parties" })`); r.clearBtn = count(run(`__el("setupList").innerHTML`));
+    await more();   // the menu's Setup item while on Setup, or a record's address on the same section: a fresh page, which clears the search too
+    await run(`applyPlace({ view: "setup", entity: ${FX.EXA}, month: null, sub: "parties", id: null, params: {} }, { fresh: true })`);
+    await view("parties", FX.EXA); r.freshPage = count(box().innerHTML);
     return r;
   });
 
@@ -537,14 +549,17 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     const r = {};
     FX.get["/api/setup/import"] = { empty: true, holding: [] };
     run(`state.view = "setup"; render = async () => { await viewSetup(__el("main")); }`);   // the page is really drawn again for this
+    scrolls.length = 0;
+    const seen = () => ({ kind: main.nav.kind, top: main.nav.scrollTop, early: main.nav.sets.filter(x => !x), intoView: main.nav.active.scrolled.length, focused: document.activeElement === main.nav.active });
     main.innerHTML = "";                                                                      // a deep address: no menu before it
     await view("move", FX.EXA);
-    r.deep = { kind: main.nav.kind, top: main.nav.scrollTop, scrolled: main.nav.active.scrolled };
-    main.nav.scrollTop = 140; document.activeElement = null;                                  // the menu was scrolled by hand
+    r.deep = seen();
+    main.nav.userScroll(400); document.activeElement = null;                                  // the menu was scrolled by hand, its item is in the frame
     await run(`viewSetup(__el("main"))`); await sleep(20);                                    // a save draws the page again
-    r.save = { top: main.nav.scrollTop, focused: document.activeElement === main.nav.active, scrolled: main.nav.active.scrolled };
-    await run(`click({ setupKind: "accounts" }, { classList: { contains: c => c === "sn" } })`); await sleep(20);   // a click or Enter on an item
-    r.click = { kind: main.nav.kind, top: main.nav.scrollTop, scrolled: main.nav.active.scrolled, focused: document.activeElement === main.nav.active };
+    r.save = seen();
+    await run(`click({ setupKind: "accounts" }, { classList: { contains: c => c === "sn" } })`); await sleep(20);   // a click or Enter on an item above the frame
+    r.click = seen();
+    r.windowScrolls = scrolls.length;
     run(`render = async () => { __calls.push(["render"]); }`);
     return r;
   });
@@ -649,6 +664,38 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     await view("accounts", FX.EXA);
     return r;
   });
+
+  // 5. First run: a second Add company whose records can't be read again says so alone, takes the focus, and its button keeps it
+  await tryit("frSavedTwice", async () => {
+    const r = {};
+    el("fr-saved"); el("fr-reload");   // the alert and its button, to see where the focus goes
+    run(`state.view = "overview"; state.meta.entities = []; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.busy = ""; FR.preview = null; FR.file = null;
+      FR.addOpen = true; FR.tried = false; FR.code = "ABC"; FR.cname = "Example Co"; FR.reg = ""; FR.kind = "here"`);
+    withCompanies([co(1, "ABC", 1)]);
+    await run(`frAddCompany()`); r.first = run(`FR.done`);                          // the first company is added and read: Company added
+    run(`FR.addOpen = true; FR.code = "DEF"; FR.cname = "Example Two"; FR.kind = "here"; FR.tried = false`);
+    withCompanies([co(1, "ABC", 1), co(2, "DEF", 1)]); FX.fail = { "/api/meta": true };
+    r.threw = await run(`frAddCompany().then(() => "ok", e => e.name)`);
+    r.html = run(`frHtml()`); r.done = run(`FR.done`); r.due = run(`firstRunDue()`); r.focus1 = document.activeElement && document.activeElement.id; r.alerted = run(`FR.alerted`);
+    await run(`click({ frReload: "1" })`);
+    r.focus2 = document.activeElement && document.activeElement.id; r.html2 = run(`frHtml()`);
+    FX.fail = {};
+    await run(`click({ frReload: "1" })`);
+    r.after = { done: run(`FR.done`), saved: run(`FR.saved`), alerted: run(`FR.alerted`), html: run(`frHtml()`) };
+    FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.code = ""; FR.cname = ""; FR.kind = ""; state.entity = ${FX.EXA}`);
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 6d. Put it back with the app stopped: the dialog says it couldn't load, with a way to try again, and doesn't stay on Loading
+  await tryit("restoreLoadFail", async () => {
+    FX.fail = { [`/api/setup/restore/${FX.RESTORE}`]: true };
+    const threw = await run(`openRestore(${FX.RESTORE}, "Spare").then(() => "ok", e => "threw")`); FX.fail = {};
+    return { threw, body: el("rsBody").innerHTML };
+  });
+
+  // 6b. a record's History key and a list's name are escaped where they are written into the page
+  await tryit("escapesCore", async () => ({ hist: run(`histSection('a"b', '<x>')`), bar: run(`listBar('setup-a"b', 'cust <i>x</i>')`) }));
   process.stdout.write(JSON.stringify(out));
 })().catch(e => { console.error(e && e.stack || e); process.exit(1); });
 """
@@ -927,10 +974,11 @@ check("the rows Show 25 more showed are not kept past another section: after Req
       ma["first"] == 25 and ma["more"] == 30 and ma["afterRequired"] == 25 and ma["afterMove"] == 25 and ma["afterLeaving"] == 25, ma)
 check("...a save that draws the page again keeps them; a changed search, clearing it by hand and Clear the search each start at 25 again",
       ma["saveRedraw"] == 30 and ma["searched"] == 25 and ma["moreAgain"] == 30 and ma["cleared"] == 25 and ma["clearBtn"] == 25, ma)
+check("...and a fresh page (the menu's Setup item while on Setup, a record's address on the same section) starts at 25 rows as it clears the search", ma["freshPage"] == 25, ma)
 nk = o["navKeep"]
-check("the Setup menu is a new element each time the page is drawn: its item on show is scrolled into view (also on a deep address), and where it was scrolled to is kept",
-      nk["deep"] == {"kind": "move", "top": 0, "scrolled": [{"block": "nearest"}]} and nk["save"]["top"] == 140 and nk["click"]["top"] == 140
-      and nk["save"]["scrolled"] == [{"block": "nearest"}] and nk["click"]["scrolled"] == [{"block": "nearest"}], nk)
+check("the Setup menu is scrolled last, once the section is drawn, and only itself (never scrollIntoView, never the window): a deep address brings its item into the frame, a page drawn again keeps the scroll, and an item out of the frame is scrolled to",
+      nk["deep"] == {"kind": "move", "top": 340, "early": [], "intoView": 0, "focused": False} and nk["save"]["top"] == 400 and nk["save"]["early"] == [] and nk["save"]["intoView"] == 0
+      and nk["click"]["top"] == 80 and nk["click"]["early"] == [] and nk["click"]["intoView"] == 0 and nk["windowScrolls"] == 0, nk)
 check("a click (or Enter) on a menu item puts the focus on the new item on show; a page drawn again that no menu item asked for leaves the focus alone",
       nk["click"]["kind"] == "accounts" and nk["click"]["focused"] is True and nk["save"]["focused"] is False, nk)
 pt = o["putBackTitle"]
@@ -977,6 +1025,22 @@ check("...and in First run's note after a company is added",
       "E&amp;&lt;B is ready: Kept here." in es["banner"] and "E&<B" not in es["banner"], es["banner"][:300])
 check("Required documents for a company Kept in SQL Account greys nothing and has no Kept here note: it is not asked for fewer documents",
       'class="chip off"' not in o["requiredSql"] and "is Kept here" not in o["requiredSql"] and "not asked for" not in o["requiredSql"] and 'class="chip">' in o["requiredSql"], o["requiredSql"][:300])
+
+# ---------- round 3 ----------
+s2 = o["frSavedTwice"]
+check("a second Add company whose records can't be read again says so alone: the earlier Company added note and Open Overview are gone while it stands, the page stays First run, and the alert takes the focus",
+      s2["first"]["title"] == "Company added." and has(s2["html"], SAVED, 'id="fr-reload"', 'id="fr-saved"') and "Company added." not in s2["html"] and "Open Overview" not in s2["html"]
+      and s2["done"] is None and s2["due"] is True and s2["focus1"] == "fr-saved" and s2["alerted"] is True, s2)
+check("...its Try again keeps the focus when the records can't be read again, and when they can the note says what was added and the alert goes",
+      s2["focus2"] == "fr-reload" and SAVED in s2["html2"] and s2["after"]["done"] == {"title": "Company added.", "body": "DEF is ready: Kept here. The next steps are open below."}
+      and s2["after"]["saved"] is None and s2["after"]["alerted"] is False and SAVED not in s2["after"]["html"] and "Open Overview" in s2["after"]["html"], s2)
+rl = o["restoreLoadFail"]
+check("Put it back with the app stopped says it couldn't load, with a Try again that opens it again, instead of Loading for ever",
+      rl["threw"] == "ok" and "Couldn't load this. Try again." in rl["body"] and f'data-restore="{restored["row_id"]}"' in rl["body"], rl)
+ec = o["escapesCore"]
+check("a record's History key and a list's name are escaped where they are written into the page",
+      'data-hist="a&quot;b:&lt;x&gt;"' in ec["hist"] and "<x>" not in ec["hist"]
+      and has(ec["bar"], 'data-search="setup-a&quot;b"', 'placeholder="Search cust &lt;i&gt;x&lt;/i&gt;"', 'aria-label="Search cust &lt;i&gt;x&lt;/i&gt;"', 'data-count="setup-a&quot;b"') and "<i>x</i>" not in ec["bar"], ec)
 
 # ---------- the layout keeps today's narrow rules ----------
 check("the form keeps Setup's 520-pixel rule: two columns, one under 520 pixels, in the new dialog too",

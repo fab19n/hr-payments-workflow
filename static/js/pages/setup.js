@@ -75,8 +75,6 @@ async function viewSetup(main) {
   renderNav();  // the breadcrumb names the section
   const top = main.querySelector(".setup-nav")?.scrollTop || 0;  // the menu is drawn again with the page: it keeps where it was scrolled to
   main.innerHTML = `<div class="setup-grid">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
-  const bar = main.querySelector(".setup-nav");  // and the item on show is in its frame (it scrolls when the window is short)
-  if (bar) { bar.scrollTop = top; bar.querySelector(".sn.on")?.scrollIntoView?.({ block: "nearest" }); }
   const box = $("#setupMain"), spec = setupSpec();
   if (!spec) box.innerHTML = emptyState({ glyph: "sliders", title: "Nothing to set up yet." });
   else if (e && !e.uses_sql && setupNeedsSql(S.kind, T)) box.innerHTML = setupNotUsed(S.kind, e);
@@ -87,6 +85,20 @@ async function viewSetup(main) {
   else if (S.kind === "move") await setupMove(box);
   else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
   else await setupList(box, S.kind);
+  setupMenuScroll(main, top);  // last, once the section has its height: before it the page is short and the window would be moved
+}
+
+// The menu is a new element each time the page is drawn: it gets back the scroll it had, then scrolls itself (never the window, as
+// scrollIntoView would) just far enough for the item on show to be in its frame, as when a deep address opens a lower section.
+function setupMenuScroll(main, top) {
+  const bar = main.querySelector(".setup-nav"), it = bar?.querySelector(".sn.on");
+  if (!bar) return;
+  bar.scrollTop = top;
+  if (!it) return;
+  const at = it.getBoundingClientRect(), frame = bar.getBoundingClientRect();
+  const a = at.top - frame.top - bar.clientTop + bar.scrollTop, b = a + at.height;  // the item's place in the menu's own content
+  if (a < bar.scrollTop) bar.scrollTop = a;
+  else if (b > bar.scrollTop + bar.clientHeight) bar.scrollTop = b - bar.clientHeight;
 }
 
 // The rows Show 25 more has shown (state.setup.more, per list) stay shown while the same list is drawn again (a save, a stop). They start

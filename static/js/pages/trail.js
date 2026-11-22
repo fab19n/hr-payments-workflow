@@ -189,7 +189,7 @@ function historyHtml(h) {
       · <span class="pill ${SRC_TONE[ch.source] ?? "grey"}">${esc(ch.source_label || "")}</span> ${esc(ch.actor || "")}${ch.reason ? ` · Why: ${esc(ch.reason)}` : ""}</div>
     ${ch.op === "baseline" ? `<div class="note">As it stood when the audit trail started.</div>` : ch.table === "restore" ? restoreHtml(ch, h.key) : changeHtml(ch, true)}</div>`).join("");
 }
-const histSection = (tbl, key) => `<details class="hist" data-hist="${tbl}:${key}"><summary><h3>History</h3></summary><div class="hist-body"></div></details>`;
+const histSection = (tbl, key) => `<details class="hist" data-hist="${esc(tbl)}:${esc(key)}"><summary><h3>History</h3></summary><div class="hist-body"></div></details>`;
 
 async function openHistory(tbl, key, title) {
   if (!(await closeDrawer())) return;
@@ -240,7 +240,12 @@ async function openRestore(rowId, title) {
   watchDrawer();
   let p;
   try { p = await api(`/api/setup/restore/${rowId}`, { json: { preview: true } }); }
-  catch (e) { if (appStopped(e)) throw e; if ($("#rsBody")) $("#rsBody").innerHTML = refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." }); return; }
+  catch (e) {
+    if ($("#rsBody")) $("#rsBody").innerHTML = appStopped(e)
+      ? `<div class="note bad-text" role="alert">Couldn't load this. Try again.</div><div class="row"><button type="button" class="ghost small" data-restore="${esc(rowId)}" data-restore-title="${esc(title || "")}">${icon("refresh")}Try again</button></div>`
+      : refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." });
+    return;
+  }
   if (!$("#rsBody")) return;
   const del = p.deleted || {}, a = p.affected || {};
   const touches = (p.lines || []).length || +a.tasks || +a.payments;
