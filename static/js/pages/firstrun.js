@@ -10,8 +10,8 @@ const FR = { name: "", preview: null, file: null, error: "", refused: "", why: "
 
 // The page takes the place of the Overview while there is no company, and after one is added or a file imported, until Open Overview.
 function firstRunDue() {
-  // What was saved and not read again is in the records once something else reads them (Setup does): the note is over, the Overview draws.
-  if (FR.saved && (state.meta?.entities || []).length > FR.saved.known) { FR.saved = null; FR.alerted = false; }
+  // What was saved and not read again is in the records once something reads them (Setup does): the note is over, the Overview draws.
+  if (FR.saved && (state.metaReads || 0) > FR.saved.reads) { FR.saved = null; FR.alerted = false; }
   return state.view === "overview" && !!state.meta && (!(state.meta.entities || []).length || !!FR.done || !!FR.saved);
 }
 // The shell (menu and top bar) has nothing to offer yet: the page has its own head.
@@ -109,8 +109,8 @@ async function frImport() {
 async function frFinish({ imported = false, code = "", kept = "" } = {}) {
   // It is written already: if the records can't be read again, the page says so and offers Try again, which only reads them again
   // (never the form that would write it twice).
-  FR.saved = { imported, code, kept, known: (state.meta?.entities || []).length }; FR.done = FR.note = null;
-  try { state.meta = await api("/api/meta"); paintOrg(); }
+  FR.saved = { imported, code, kept, reads: state.metaReads || 0 }; FR.done = FR.note = null;
+  try { state.meta = await readMeta(); paintOrg(); }
   catch (e) {
     const again = FR.alerted; FR.alerted = true;
     FR.busy = ""; frPaint(again ? "fr-reload" : "fr-saved");  // the alert takes the focus when it first appears; its button keeps it after

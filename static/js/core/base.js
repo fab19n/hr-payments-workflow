@@ -20,6 +20,14 @@ async function api(path, opts = {}) {
   return data;
 }
 
+// The records' overview (companies, accounts, types, pages), read again. Each reading that works is counted: what waits for the records to be read
+// again (First run's note of what was saved and not read) can tell that one has happened, whatever it found.
+async function readMeta() {
+  const m = await api("/api/meta");
+  state.metaReads = (state.metaReads || 0) + 1;
+  return m;
+}
+
 // toast(message, bad, opts): opts { title, body, glyph, undo: fn, action: {label, fn}, ms, progress }. Drawn by toastShow() in core/states.js.
 function toast(msg, bad, opts) { return toastShow(msg, bad, opts); }
 // Money received shows with a green +, so it can't be read as a payment.

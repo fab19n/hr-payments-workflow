@@ -65,36 +65,49 @@ function goSetupRecord(kind, id) {
 }
 
 async function viewSetup(main) {
-  const S = state.setup;
+  const S = state.setup, seq = viewSetup.n = (viewSetup.n || 0) + 1;  // a draw that a newer one overtakes writes nothing
   if (!S.types) S.types = await api("/api/setup/types");
+  if (seq !== viewSetup.n) return;
   const T = S.types, e = ent(), groups = setupGroups(T, e);
   if (!T.kinds[S.kind] || SETUP_LINKS[S.kind]) S.kind = groups[0]?.kinds[0] || null;  // a link's old address (Recurring payments) has no page here
   if (S.kind !== "move" && S.move) S.move.justImported = false;
   const at = setupMoreAt(setupSpec());  // the rows Show 25 more showed stay shown only while the same list is drawn again
   if (S.moreAt !== at) { S.more = {}; S.moreAt = at; }
   renderNav();  // the breadcrumb names the section
-  // The same section of the same company drawn again (a save, a stop, a delete, a put back) keeps what it showed in place until the new one is
-  // read, so the page keeps its height and the window its place; another section or company starts empty, at the top, as it always did.
-  const same = !!main.querySelector(".setup-nav") && S.drawnAt === at, keep = same ? $("#setupMain")?.innerHTML || "" : "";
-  const sx = window.scrollX, sy = window.scrollY;
-  const top = main.querySelector(".setup-nav")?.scrollTop || 0;  // the menu is drawn again with the page: it keeps where it was scrolled to
-  main.innerHTML = `<div class="setup-grid">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain">${keep}</div></div>`;
+  // While a section is read the page keeps its height (the old page's, held as a minimum), so the window is never moved by a page that is short
+  // for a moment: a save, a stop, a delete or a put back keeps the place. The window itself is never touched, except to start at the top when
+  // another section or company is drawn, which is held for nothing.
+  const prev = main.querySelector(".setup-grid"), same = prev?.dataset.at === at, top = main.querySelector(".setup-nav")?.scrollTop || 0;
+  if (same) main.style.minHeight = `${Math.ceil(main.getBoundingClientRect().height)}px`;
+  main.innerHTML = `<div class="setup-grid" data-at="${esc(at)}">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
+  if (!same) { main.style.minHeight = ""; if (prev) window.scrollTo(0, 0); }
   const shown = main.querySelector(".setup-nav");
   if (shown) shown.scrollTop = top;  // at once, not when the section has been read
   const box = $("#setupMain"), spec = setupSpec();
-  if (!spec) box.innerHTML = emptyState({ glyph: "sliders", title: "Nothing to set up yet." });
-  else if (e && !e.uses_sql && setupNeedsSql(S.kind, T)) box.innerHTML = setupNotUsed(S.kind, e);
-  else if (spec.single) await setupSettings(box);
-  else if (S.kind === "required") await setupRequired(box);
-  else if (S.kind === "checklist") await setupChecklist(box);
-  else if (S.kind === "reminders") await setupReminders(box);
-  else if (S.kind === "move") await setupMove(box);
-  else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
-  else await setupList(box, S.kind);
-  setupMenuScroll(main);  // last, once the section has its height
-  if (same && (window.scrollX !== sx || window.scrollY !== sy)) window.scrollTo(sx, sy);  // the window where it was, if anything moved it
-  S.drawnAt = at;
+  box.dataset.draw = String(seq);
+  try {
+    if (!spec) box.innerHTML = emptyState({ glyph: "sliders", title: "Nothing to set up yet." });
+    else if (e && !e.uses_sql && setupNeedsSql(S.kind, T)) box.innerHTML = setupNotUsed(S.kind, e);
+    else if (spec.single) await setupSettings(box);
+    else if (S.kind === "required") await setupRequired(box);
+    else if (S.kind === "checklist") await setupChecklist(box);
+    else if (S.kind === "reminders") await setupReminders(box);
+    else if (S.kind === "move") await setupMove(box);
+    else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
+    else await setupList(box, S.kind);
+    if (setupLive(box)) setupMenuScroll(main);  // last, once the whole section is written
+  } catch (err) {
+    if (seq !== viewSetup.n) return;  // overtaken: what it met is of no interest to the page now
+    throw err;
+  } finally {
+    if (seq === viewSetup.n) main.style.minHeight = "";  // the whole section is written (or it failed): the page is as tall as it is
+  }
 }
+
+// A draw is live while it is the latest one asked for and the place it writes into is still on the page (render() puts its loading skeleton there
+// when the company changes, and another section may be asked for while this one is read). A draw that is not live writes nothing: no markup, no
+// state, no list to redraw.
+const setupLive = box => !!box && box.isConnected !== false && (box.dataset?.draw == null || box.dataset.draw === String(viewSetup.n));
 
 // The menu is a new element each time the page is drawn (it has its scroll back already): it scrolls itself (never the window, as
 // scrollIntoView would) just far enough for the item on show to be in its frame, as when a deep address opens a lower section.
@@ -114,7 +127,7 @@ const setupMoreReset = id => { (state.setup.more ||= {})[id] = SETUP_PAGE; };
 // Another page is opened (core/router.js applyPlace): what Setup keeps only while it is on show is dropped.
 function setupLeft() {
   const S = state.setup;
-  S.more = {}; S.moreAt = null; S.drawnAt = null;
+  S.more = {}; S.moreAt = null;
   if (S.move) S.move.justImported = false;
 }
 
@@ -301,6 +314,7 @@ async function setupList(box, kind) {
     return;
   }
   const [{ rows }, tabs] = await Promise.all([api(`/api/setup/${kind}${spec.per_entity ? `?entity=${state.entity}` : ""}`), setupTabs(kind, spec.per_entity)]);
+  if (!setupLive(box)) return;
   (S.more ||= {})[id] ??= SETUP_PAGE;  // the rows shown stay shown across a redraw (a save, a stop)
   const stopped = r => r.status === "stopped", nStopped = rows.filter(stopped).length;
   const text = r => [...cols.map(c => setupCell(kind, fieldOf(c.key), r, c.key)), SETUP_SUB[kind]?.(r) || "", usedText(r.used_by), stopped(r) ? "stopped" : "in use", +r.system ? "used by the app" : ""].join(" ");
@@ -350,7 +364,7 @@ async function setupList(box, kind) {
       <div class="tbl-wrap" id="setupList">${table()}</div></section>
     <div id="setupDeleted"></div>`;
   paintCount(id);
-  drawDeleted(kind);
+  const deleted = drawDeleted(kind);  // read while the rest is set up, and waited for at the end: the page is whole when it is written
   // While a search is on, the tree's Open all / Close all are off and a note says why.
   const treeBar = () => {
     const on = !!listState(id).q.trim();
@@ -361,6 +375,7 @@ async function setupList(box, kind) {
   LIST_REDRAW[id] = () => { if (!$("#setupList")) return; $("#setupList").innerHTML = table(); paintCount(id); if (view === "tree") treeBar(); };
   if (view === "tree") treeBar();
   if (spec.tree) (S.treeKeys ||= {})[treeId(kind, spec)] = treeKeys(rows);  // what Close all closes
+  await deleted;
 }
 
 // One input for a field (FieldSpec from the server). lock: why it can't be changed; pre: the id prefix. Each has its hint and, for a
@@ -398,7 +413,7 @@ function fieldHtml(f, v, lock, pre) {
   } else {
     const type = { number: "number", money: "number", day: "number", month: "month", date: "date" }[f.type] || "text";
     const extra = f.type === "money" ? ` step="0.01"` : f.type === "day" ? ` min="1" max="31" step="1"`
-      : f.type === "number" ? ` step="any"${f.max != null ? ` max="${+f.max}"` : ""}` : f.type === "code" ? ` class="mono" spellcheck="false" autocomplete="off"` : f.upper ? ` data-upper` : "";
+      : f.type === "number" ? ` step="any"${f.max != null ? ` max="${+f.max}"` : ""}` : f.type === "code" ? ` class="mono" spellcheck="false" autocomplete="off"` : f.upper ? ` class="mono" spellcheck="false" autocomplete="off" data-upper` : "";
     input = `<input id="${id}" type="${type}" value="${esc(val)}"${extra}${ro}${req}${len}${by}>`;
   }
   return `<label class="field${lock ? " locked" : ""}"${wide}><span>${esc(f.label)}${tags}</span>${input}${notes}</label>`;
@@ -472,7 +487,7 @@ async function whySubmit() {
 // showing gives way to the first one in use.
 async function afterSetupChange(kind) {
   if (!["entities", "accounts", "payment_types", "doc_types", "guess_words", "hint_words", "filing_words", "parties", "gl_accounts"].includes(kind)) return;
-  state.meta = await api("/api/meta");
+  state.meta = await readMeta();
   const e = ent();
   if (!e || !isActive(e)) state.entity = firstEntityId();
   renderNav();

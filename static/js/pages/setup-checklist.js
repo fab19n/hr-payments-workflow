@@ -6,7 +6,9 @@ const chkCompletion = k => (state.setup.chk?.completions || []).find(c => c.key 
 async function setupChecklist(box) {
   const S = state.setup, e = ent();
   if (!e) { box.innerHTML = `${setupHead("checklist", setupSpec())}${emptyState({ glyph: "company", title: "Add a company first.", body: "Each company has its own monthly checklist. Once one is added, its checklist is set up here.", action: { label: "Go to Companies", attr: "data-setup-kind", value: "entities", glyph: "company" } })}`; return; }
-  const d = S.chk = await api(`/api/setup/checklist?entity=${state.entity}`);
+  const d = await api(`/api/setup/checklist?entity=${state.entity}`);
+  if (!setupLive(box)) return;
+  S.chk = d;
   const code = d.code || e.code, items = d.items || [];
   // A company added in Setup starts with the starter checklist: while it is untouched and no month is set up, a copy may replace it.
   const copy = (d.replaceable || !items.some(it => it.in_use || termOn(it))) && (d.others || []).length;
@@ -24,7 +26,7 @@ async function setupChecklist(box) {
       <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Due</th><th>Done when</th><th>Documents</th><th>Status</th></tr></thead><tbody>
         ${items.map(row).join("") || `<tr><td colspan="5" class="empty">${esc(code)} has no monthly checklist yet. Add an item${copy ? ", or copy another company's checklist" : ""}.</td></tr>`}
       </tbody></table></div><div id="setupDeleted"></div></div>`;
-  drawDeleted("checklist");
+  await drawDeleted("checklist");
 }
 
 // The payments rule of an item done by its payments: which payments it covers and what each needs.

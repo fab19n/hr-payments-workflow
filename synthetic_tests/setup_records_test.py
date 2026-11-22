@@ -44,7 +44,12 @@ if not CHILD:
     ]}), encoding="utf-8")
 
 passed, failed = [], []
-KEEP_GOING = bool(os.environ.get("HRP_KEEP_GOING"))  # list every check that fails, not only the first (to see what a change fixes)
+def keep_going(value):
+    """Whether HRP_KEEP_GOING asks to list every check that fails, not only the first (to see what a change fixes): any value but empty or 0."""
+    return value not in (None, "", "0")
+
+
+KEEP_GOING = keep_going(os.environ.get("HRP_KEEP_GOING"))
 
 
 def check(name, ok, detail=""):
@@ -497,6 +502,7 @@ with section("17. a chart account's uses are counted per company, as capitals wi
               and r2.status_code == 400 and "can't change once used" in r2.get_json()["error"], (rc["used_by"], r.get_json(), r2.get_json()))
     # a bank account's GL code is kept as the chart keeps its codes
     call("patch", f"/api/setup/accounts/{pa['id']}", json={"fields": {"label": "Padded GL two", "gl_code": "  880-a006 "}})
+    check("HRP_KEEP_GOING asks to list every failure for any value but empty or 0", keep_going("1") is True and keep_going("yes") is True and keep_going("0") is False and keep_going("") is False and keep_going(None) is False)
     check("a bank account's GL code is stored in capitals without the spaces round it, so it names its chart account as typed",
           q("SELECT gl_code FROM accounts WHERE id = ?", (pa["id"],))[0]["gl_code"] == "880-A006" and uses(EXA, API_BANK)["used_by"] == [["bank account", 1]]
           and call("get", f"/api/setup/accounts/{pa['id']}")["record"]["gl_code"] == "880-A006")
@@ -510,6 +516,10 @@ with section("17. a chart account's uses are counted per company, as capitals wi
           and q("SELECT gl_code, bank FROM accounts WHERE id = ?", (mo["id"],)) == [{"gl_code": OLD_A.upper(), "bank": "Example Bank Two"}], r.get_json())
     r = c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": OLD_B}})
     check("...a 30-character value (over a chart code's 20) is kept whole", r.status_code == 200 and q("SELECT gl_code FROM accounts WHERE id = ?", (mo["id"],))[0]["gl_code"] == OLD_B.upper(), r.get_json())
+    r = c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": "\u00df" * 150}})
+    check("...its length of 200 is the typed one, not the one in capitals: 150 letters that grow in capitals (the German sharp s) are kept, and 201 characters are refused",
+          r.status_code == 200 and q("SELECT gl_code FROM accounts WHERE id = ?", (mo["id"],))[0]["gl_code"] == "SS" * 150
+          and c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": "x" * 201}}).status_code == 400, r.get_json())
     r = c.post(BASE + "/api/setup/accounts", headers=H, json={"entity_id": EXA, "fields": {"label": "Odd code", "bank": "Example Bank", "currency": "SGD", "gl_code": " no good! "}})
     check("...and so is one SQL Account would not write: kept as typed apart from the capitals and the spaces round it", r.status_code == 200
           and q("SELECT gl_code FROM accounts WHERE id = ?", (r.get_json()["id"],))[0]["gl_code"] == "NO GOOD!", r.get_json())

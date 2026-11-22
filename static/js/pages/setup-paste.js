@@ -135,7 +135,9 @@ async function pasteSave(preview, over = {}) {
 
 // General settings: one form; Save sends only what changed.
 async function setupSettings(box) {
-  const s = await api("/api/setup/settings"), fields = s.fields || setupSpec()?.fields || [];
+  const s = await api("/api/setup/settings");
+  if (!setupLive(box)) return;
+  const fields = s.fields || setupSpec()?.fields || [];
   box.innerHTML = `${setupHead("settings", setupSpec(), { intro: "These apply to every company. Each change is kept in the audit trail." })}
     <div class="card"><form class="form setup-form" id="settingsForm">${fields.map(f => fieldHtml(f, s.values?.[f.key], null, "gs-")).join("")}
       <label class="field" style="grid-column:1/-1"><span>Why are you making this change? (optional)</span><input id="gs-reason" maxlength="500" autocomplete="off"></label>
@@ -152,7 +154,7 @@ async function settingsSave() {
   if (reason) body.reason = reason;
   const was = currentCycle();
   await api("/api/setup/settings", { method: "PATCH", json: body });
-  state.meta = await api("/api/meta"); paintOrg();
+  state.meta = await readMeta(); paintOrg();
   if ("cycle_rollover_day" in values && currentCycle() !== was) {
     if (state.month === was) state.month = currentCycle();
     await openCycleMonths();
@@ -185,7 +187,9 @@ async function readSetupFile(f) {
   catch (e) { if (appStopped(e)) throw e; e.refused = true; throw e; }
 }
 async function setupMove(box) {
-  const st = await api("/api/setup/import"), M = state.setup.move ||= { payees: false, from: "", preview: null, refused: "" };
+  const st = await api("/api/setup/import");
+  if (!setupLive(box)) return;
+  const M = state.setup.move ||= { payees: false, from: "", preview: null, refused: "" };
   M.empty = !!st.empty; M.holding = st.holding || [];
   const said = !!M.justImported; M.justImported = false;  // the link to the companies it added is for the redraw right after an import, once
   const list = state.meta.entities || [];
@@ -242,7 +246,7 @@ async function moveImport(reason) {
   try { await api("/api/setup/import", { json: { setup: M.file, reason } }); }
   catch (e) { if (appStopped(e)) throw e; Object.assign(M, { file: null, preview: null, refused: e.message }); moveRepaint("mv-refused"); return; }
   Object.assign(M, { file: null, preview: null, name: "", refused: "" });
-  state.meta = await api("/api/meta"); paintOrg();
+  state.meta = await readMeta(); paintOrg();
   M.justImported = (state.meta.entities || []).length > 0;  // a file of rules alone added no company to see
   state.entity = firstEntityId(); state.setup.types = null;
   toast("Setup imported"); renderNav(); await render();
@@ -273,7 +277,9 @@ function reqAffected(a = {}) {
 async function setupRequired(box) {
   const S = state.setup, live = state.meta.entities.filter(isActive);
   if (S.reqScope != null && !live.some(e => e.id === S.reqScope)) S.reqScope = null;
-  const d = S.req = await api(`/api/setup/required?entity=${S.reqScope ?? ""}`);
+  const d = await api(`/api/setup/required?entity=${S.reqScope ?? ""}`);
+  if (!setupLive(box)) return;
+  S.req = d;
   const co = S.reqScope != null ? live.find(e => e.id === S.reqScope) : null;
   const scopeBtn = (v, label, on, title = "") => `<button class="${on ? "btn" : "ghost"} small" data-req-scope="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
   const types = [...d.types.filter(isActive), ...d.types.filter(t => !isActive(t))];
@@ -441,7 +447,7 @@ const effectCard = (r, head, what) => `<div class="card"><h3>${esc(head)}</h3>
   ${(r.lines || []).map(x => `<div class="note">${esc(x)}</div>`).join("") || `<div class="note">Nothing in the months already set up changes.</div>`}
   <div class="note"><b>${esc(effectText(r.affected, what))}</b></div></div>`;
 const showPreview = (sel, r, what) => { const el = $(sel); if (el) el.innerHTML = effectCard(r, "Preview: nothing is saved yet", what); };
-const reloadMeta = async () => { state.meta = await api("/api/meta").catch(() => state.meta); };
+const reloadMeta = async () => { state.meta = await readMeta().catch(() => state.meta); };
 
 // Shows the parts of a checklist or reminder drawer that depend on what is chosen in it.
 function setupPaint() {

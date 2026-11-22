@@ -4,7 +4,10 @@ const remDocName = k => setupDocName(state.setup.rem, k);
 const REM_HINT = "{name} in the title becomes the person's short name; {date} in the detail becomes the start date or last day. No other braces can be used. The wording doesn't change by itself when you change the days or the salary.";
 
 async function setupReminders(box) {
-  const d = state.setup.rem = await api("/api/setup/reminders"), rules = d.rules || [];
+  const d = await api("/api/setup/reminders");
+  if (!setupLive(box)) return;
+  state.setup.rem = d;
+  const rules = d.rules || [];
   const row = r => {
     const t = r.now || {};
     return `<tr${termOn(r, d.default_from) ? "" : ` class="muted"`}><td><button class="link" data-rem-open="${r.id}">${esc(t.title || r.key)}</button>${r.short_name ? `<div class="note">${esc(r.short_name)}</div>` : ""}</td>
@@ -18,7 +21,7 @@ async function setupReminders(box) {
     <div class="tbl-wrap"><table><thead><tr><th>Reminder</th><th>For</th><th>When</th><th>Salary</th><th>Documents</th><th>Status</th></tr></thead><tbody>
       ${rules.map(row).join("") || `<tr><td colspan="6" class="empty">None yet.</td></tr>`}
     </tbody></table></div><div id="setupDeleted"></div></div>`;
-  drawDeleted("reminders");
+  await drawDeleted("reminders");
 }
 
 // The drawer of one reminder (id "new" to add one); keep and saved as for a checklist item.

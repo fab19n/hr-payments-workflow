@@ -392,8 +392,6 @@ def check_value(f, v):
         if not isinstance(v, str):
             raise Refused(f"{label}: give it as text.")
         v = v.strip()
-        if f.get("upper"):  # a code kept as SQL Account writes it: capitals. Its shape isn't checked: an older record may hold any text
-            v = v.upper()
         if kind == "code":
             v = v.upper()
             if f["key"] == "currency":
@@ -403,6 +401,8 @@ def check_value(f, v):
                 raise Refused(f"{label}: capitals, digits, - and _ only, up to 16 characters, starting with a letter or digit.")
         if len(v) > (2000 if kind == "textarea" else f.get("max", 200)):
             raise Refused(f"{label}: that is too long.")
+        if f.get("upper"):  # a code kept as SQL Account writes it: capitals. Its shape isn't checked (an older record may hold any text), nor its length once in capitals
+            v = v.upper()
         return v
     if kind == "key":
         if not isinstance(v, str) or not KEY.fullmatch(v.strip().lower()):

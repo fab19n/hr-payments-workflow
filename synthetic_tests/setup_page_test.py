@@ -40,7 +40,12 @@ config.SETTINGS_FILE = tmp / "settings.json"  # never the program's own settings
 ]}), encoding="utf-8")
 
 passed, failed = [], []
-KEEP_GOING = bool(os.environ.get("HRP_KEEP_GOING"))  # list every check that fails, not only the first (to see what a change fixes)
+def keep_going(value):
+    """Whether HRP_KEEP_GOING asks to list every check that fails, not only the first (to see what a change fixes): any value but empty or 0."""
+    return value not in (None, "", "0")
+
+
+KEEP_GOING = keep_going(os.environ.get("HRP_KEEP_GOING"))
 
 
 def check(name, ok, detail=""):
@@ -155,6 +160,7 @@ async function fetch(path, init = {}) {
   }
   if ((FX.fail || {})[path]) throw new TypeError("Failed to fetch");   // the app is not running
   if (onGet) onGet(path);
+  const slow = delays[path]; if (slow) await new Promise(r => setTimeout(r, Array.isArray(slow) ? slow.shift() || 0 : slow));
   const hit = FX.get[path];
   if (hit === undefined) return { ok: false, status: 404, json: async () => ({ error: "no fixture for " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(hit)) };
@@ -163,6 +169,7 @@ const scrolls = [];   // what the window was scrolled to: a page drawn again mus
 const win = { matchMedia: () => ({ matches: true }), location: { hash: "#/admin/setup", replace(v) { this.hash = v; } }, scrollX: 0, scrollY: 0,
   scrollTo(...a) { scrolls.push(a); [this.scrollX, this.scrollY] = a; }, addEventListener() {}, print() {} };
 let onGet = null;   // called with the path of each read: what the page looks like while it is waiting for the records
+const delays = {};  // path -> milliseconds a read of it takes (or a list of them, one for each read in turn)
 const sandbox = { document, fetch, FormData: class {}, console, setTimeout, clearTimeout, URLSearchParams, CSS: { escape: s => s },
   localStorage: { getItem: () => null, setItem() {} }, window: win, navigator: {}, __el: el, __calls: calls, __listeners: listeners,
   __btn: { closest: () => ({ after() {} }), getAttribute: () => "false", isConnected: true } };
@@ -178,9 +185,9 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     globalThis.click = async (dataset, extra = {}) => { const b = { dataset, tagName: "BUTTON", id: "", className: "", getAttribute: () => null, ...extra }; b.closest = () => b;
       const ev = { type: "click", target: b, button: 0, preventDefault() {}, stopPropagation() {} }; for (const f of __listeners.click || []) await f(ev); };`);
   const main = el("main"), box = () => el("setupMain");
-  // the menu is a new element (scrolled to the top) each time the page is drawn, as in a browser; its item on show records what is done to it
-  // The menu has a frame 400 high at the top of the window; its item on show sits at 700 (Move setup), 420 (Required documents) or 80 in its content.
-  // Each time the grid is drawn the section's own place is empty until the section is drawn, and each scrollTop set records whether it was.
+  // The menu is a new element (scrolled to the top) each time the page is drawn, as in a browser; its item on show records what is done to it.
+  // The menu has a frame 400 high at the top of the window; its item on show sits at 700 (Move setup), 420 (Required documents) or 80 in its content,
+  // and each scrollTop set records whether the section had been written by then.
   const navOf = html => { const m = /class="sn on" data-setup-kind="([a-z_]+)"/.exec(html);
     if (!/class="setup-nav/.test(html)) return null;
     const kind = m && m[1], at = kind === "move" ? 700 : kind === "required" ? 420 : 80;
@@ -190,15 +197,24 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       active: { scrolled: [], scrollIntoView(o) { this.scrolled.push(o); }, focus() { document.activeElement = this; }, getBoundingClientRect: () => ({ top: 100 + at - st, height: 40 }) },
       querySelector(s) { return s === ".sn.on" ? this.active : null; } };
     return nav; };
-  // The page is 700 high and 2500 more while its section has something in it, in a window 600 high: a short page clamps the window's scroll, as a browser does.
-  // The section's own place keeps what the grid was drawn with (the old section, for a redraw) and counts the times the section is written.
+  // The page is 700 high and 2500 more while its section has something in it, or as tall as main is held at (style.minHeight), in a window 600 high:
+  // a short page clamps the window's scroll, as a browser does. Each draw's section place is a new element; the old one is off the page, and counts
+  // what is written into it (nothing should be once it is overtaken, or once the page it was drawn into has been replaced).
   let mainHtml = "", smHtml = "", smWrites = 0;
   const seenY = [];
-  const clamp = () => { const max = Math.max(0, 700 + (smHtml.length > 200 ? 2500 : 0) - 600); if (win.scrollY > max) win.scrollY = max; seenY.push(win.scrollY); };
-  Object.defineProperty(el("setupMain"), "innerHTML", { get: () => smHtml, set(v) { smHtml = v; smWrites++; clamp(); } });
+  const pageH = () => Math.max(700 + (smHtml.length > 200 ? 2500 : 0), parseInt(main.style._h) || 0);
+  const clamp = () => { const max = Math.max(0, pageH() - 600); if (win.scrollY > max) win.scrollY = max; seenY.push(win.scrollY); };
+  const newSm = (html, on) => { const sm = makeEl("setupMain"); sm.writes = 0; sm.isConnected = on; let h = html;
+    Object.defineProperty(sm, "innerHTML", { get: () => h, set(v) { h = v; sm.writes++; if (els.setupMain === sm && sm.isConnected) { smHtml = v; smWrites++; clamp(); } } }); return sm; };
+  main.style = { _h: "", log: [], get minHeight() { return this._h; }, set minHeight(v) { this._h = v; this.log.push(v); clamp(); } };
+  main.getBoundingClientRect = () => ({ height: pageH() });
   Object.defineProperty(main, "innerHTML", { get: () => mainHtml, set(v) {
-    mainHtml = v; const m = /id="setupMain">([\s\S]*)<\/div><\/div>$/.exec(v); smHtml = m ? m[1] : ""; smWrites = 0; clamp(); main.nav = navOf(v); } });
-  main.nav = null; main.querySelector = s => s === ".setup-nav" ? main.nav : null;
+    mainHtml = v; const m = /id="setupMain">([\s\S]*)<\/div><\/div>$/.exec(v);
+    if (els.setupMain) els.setupMain.isConnected = false;
+    els.setupMain = newSm(m ? m[1] : "", !!m); smHtml = m ? m[1] : ""; smWrites = 0; clamp(); main.nav = navOf(v); } });
+  els.setupMain = newSm("", true);
+  main.nav = null;
+  main.querySelector = s => s === ".setup-nav" ? main.nav : s === ".setup-grid" ? ((m => m ? { dataset: { at: m[1] } } : null)(/class="setup-grid" data-at="([^"]*)"/.exec(mainHtml))) : null;
   const view = async (kind, entity) => {
     run(`state.entity = ${entity}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false;`);
     await run(`viewSetup(__el("main"))`); await sleep(20); return { nav: main.innerHTML, page: box().innerHTML };
@@ -568,7 +584,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     r.save = seen();
     await run(`click({ setupKind: "accounts" }, { classList: { contains: c => c === "sn" } })`); await sleep(20);   // a click or Enter on an item above the frame
     r.click = seen();
-    r.windowScrolls = scrolls.length;
+    r.windowScrolls = scrolls.slice();
     run(`render = async () => { __calls.push(["render"]); }`);
     return r;
   });
@@ -706,46 +722,100 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
   // 6b. a record's History key and a list's name are escaped where they are written into the page
   await tryit("escapesCore", async () => ({ hist: run(`histSection('a"b', '<x>')`), bar: run(`listBar('setup-a"b', 'cust <i>x</i>')`) }));
 
-  // 2. a section drawn again keeps what it showed in place until the new one is read, writes the new one once, and the window keeps its place
-  await tryit("redrawKeeps", async () => {
-    const r = {}, during = [];
+  // 1. a section drawn again holds the page's height while it is read: the window isn't moved, nothing old is shown meanwhile, and the hold ends only
+  // once the whole section (the Show deleted table too) is written, or the read failed; another section or company starts at the top
+  await tryit("holdKeeps", async () => {
+    const r = {}, P = `/api/setup/parties?entity=${FX.EXA}`, A = `/api/setup/accounts?entity=${FX.EXA}`, D = `/api/setup/restore?kind=accounts&entity=${FX.EXA}`;
     FX.get["/api/setup/import"] = { empty: true, holding: [] };
     await view("parties", FX.EXA);
-    onGet = path => { if (/\/api\/setup\/parties\?entity=/.test(path)) during.push({ kept: smHtml.length > 200, y: win.scrollY }); };
+    const during = [];
+    delays[P] = 60; onGet = path => { if (path === P) during.push({ y: win.scrollY, hold: main.style.minHeight, section: smHtml.length }); };
     win.scrollY = 800; seenY.length = 0; scrolls.length = 0;
-    await run(`viewSetup(__el("main"))`); await sleep(20);   // a save, a stop, a delete, a put back: the same section of the same company
-    r.same = { y: win.scrollY, low: Math.min(...seenY), scrolls: scrolls.length, during, writes: smWrites };
-    onGet = path => { if (/\/api\/setup\/parties\?entity=/.test(path)) win.scrollY = 77; };   // something moved the window while the records were read
+    await run(`viewSetup(__el("main"))`);   // a save, a stop, a delete, a put back: the same section of the same company
+    r.same = { y: win.scrollY, low: Math.min(...seenY), scrolls: scrolls.length, during, hold: main.style.minHeight, written: smHtml.length > 200 };
+    onGet = path => { if (path === P) win.scrollY = 1000; };   // the user scrolls while it is read
     win.scrollY = 800; scrolls.length = 0;
-    await run(`viewSetup(__el("main"))`); await sleep(20);
-    r.moved = { y: win.scrollY, scrolls: scrolls.slice() };
-    onGet = null; win.scrollY = 800; scrolls.length = 0;
-    await view("accounts", FX.EXA);    // another section starts empty, at the top, and is not put back
-    r.otherSection = { y: win.scrollY, scrolls: scrolls.length };
+    await run(`viewSetup(__el("main"))`);
+    r.userScroll = { y: win.scrollY, scrolls: scrolls.length };
+    await view("accounts", FX.EXA); run(`state.setup.deleted = true`);   // with Show deleted on: its table is part of the draw
+    delays[D] = 60; onGet = path => { if (path === D) r.atDeleted = { hold: main.style.minHeight, listWritten: smHtml.length > 200 }; };
     win.scrollY = 800; scrolls.length = 0;
-    await view("accounts", FX.EXB);    // so does another company
-    r.otherCompany = { y: win.scrollY, scrolls: scrolls.length };
+    await run(`viewSetup(__el("main"))`);
+    r.deleted = { y: win.scrollY, scrolls: scrolls.length, hold: main.style.minHeight, table: el("setupDeleted").innerHTML.includes("Deleted bank accounts") };
+    run(`state.setup.deleted = false`); onGet = null; delete delays[D];
+    FX.fail = { [A]: true };
+    r.failed = await run(`viewSetup(__el("main"))`).then(() => "ok", e => e.name); FX.fail = {};   // the read fails: the hold doesn't stay
+    r.failedHold = main.style.minHeight;
+    delete delays[P];
+    await view("parties", FX.EXA);
+    win.scrollY = 800; scrolls.length = 0;
+    await view("accounts", FX.EXA);   // another section
+    r.otherSection = { y: win.scrollY, scrolls: scrolls.slice(), hold: main.style.minHeight };
+    win.scrollY = 800; scrolls.length = 0;
+    await view("accounts", FX.EXB);   // another company
+    r.otherCompany = { y: win.scrollY, scrolls: scrolls.slice(), hold: main.style.minHeight };
     await view("accounts", FX.EXA);
     return r;
   });
 
-  // 3. First run: what was saved and not read again is over once something else read the records, and they list the company
+  // 1f. a draw that has been overtaken, or whose place is no longer on the page, writes nothing
+  await tryit("staleDraw", async () => {
+    const r = {}, G = `/api/setup/gl_accounts?entity=${FX.EXA}`, PT = "/api/setup/payment_types";
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    const ask = kind => { run(`state.entity = ${FX.EXA}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false`); return run(`viewSetup(__el("main"))`); };
+    const forget = () => run(`delete LIST_REDRAW["setup-gl_accounts"]; delete state.counts["setup-gl_accounts"]; delete LIST_REDRAW["setup-payment_types"]; delete state.counts["setup-payment_types"]; delete LIST_REDRAW["setup-parties"]; delete state.counts["setup-parties"]`);
+    // Chart of accounts is read slowly; Payment types is asked for next, and is quick
+    await ask("parties");
+    forget(); delays[G] = 120; let boxA = null; onGet = path => { if (path === G) boxA = els.setupMain; };
+    const a = ask("gl_accounts"); await sleep(20);
+    await ask("payment_types");
+    r.quick = { page: smHtml.includes('data-setup-new="payment_types"'), a: smHtml.includes('data-setup-new="gl_accounts"') };
+    await a; await sleep(20); onGet = null;
+    r.overtaken = { writes: boxA.writes, page: smHtml.includes('data-setup-new="payment_types"'), a: smHtml.includes('data-setup-new="gl_accounts"'),
+      redraw: run(`typeof LIST_REDRAW["setup-gl_accounts"]`), count: run(`state.counts["setup-gl_accounts"] ?? null`), hold: main.style.minHeight };
+    delete delays[G];
+    await ask("gl_accounts"); r.later = { a: smHtml.includes('data-setup-new="gl_accounts"'), pt: smHtml.includes('data-setup-new="payment_types"') };
+    // the same section drawn twice, the first read finishing first: it doesn't end the hold of the second
+    await ask("payment_types"); forget();
+    delays[PT] = [100, 400]; let boxB = null; onGet = path => { if (path === PT && !boxB) boxB = els.setupMain; };
+    const one = ask("payment_types"); await sleep(20);
+    const two = ask("payment_types");
+    await one; await sleep(20);
+    r.overlap = { holdWhileSecond: main.style.minHeight, firstWrites: boxB.writes, page: smHtml.length };
+    await two; onGet = null; delete delays[PT];
+    r.overlapEnd = { hold: main.style.minHeight, page: smHtml.includes('data-setup-new="payment_types"') };
+    // the page is replaced (render()'s loading skeleton, on a company change) while a draw reads: it writes into nothing
+    await ask("parties"); forget();
+    const P = `/api/setup/parties?entity=${FX.EXA}`; delays[P] = 100; let boxC = null; onGet = path => { if (path === P) boxC = els.setupMain; };
+    const c = ask("parties"); await sleep(20);
+    main.innerHTML = `<div class="skeleton"></div>`;
+    await c; await sleep(20); onGet = null; delete delays[P];
+    r.detached = { writes: boxC.writes, page: main.innerHTML, redraw: run(`typeof LIST_REDRAW["setup-parties"]`), hold: main.style.minHeight };
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 3. First run: what was saved and not read again is over once the records have been read again, whatever they list
   await tryit("frSavedElsewhere", async () => {
-    const r = {};
+    const r = {}, read = () => run(`readMeta().then(m => { state.meta = m; return "ok"; }, e => e.name)`);
     run(`state.view = "overview"; state.meta.entities = []; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.busy = ""; FR.preview = null; FR.file = null;
-      FR.addOpen = true; FR.tried = false; FR.code = "GHI"; FR.cname = "Example Three"; FR.reg = ""; FR.kind = "here"`);
+      FR.addOpen = true; FR.tried = false; FR.code = "ALP"; FR.cname = "Example Alpha"; FR.reg = ""; FR.kind = "here"`);
+    withCompanies([co(1, "ALP", 1)]);
+    await run(`frAddCompany()`); r.first = run(`FR.done && FR.done.title`);   // ALP is added and read
+    // BET is added but the records can't be read again: the alert. A read that fails (Setup's, with the app stopped) doesn't end it
+    run(`FR.done = null; FR.note = null; FR.addOpen = true; FR.code = "BET"; FR.cname = "Example Beta"; FR.kind = "here"; FR.tried = false`);
+    withCompanies([co(1, "ALP", 1), co(2, "BET", 1)]); FX.fail = { "/api/meta": true };
+    r.threw = await run(`frAddCompany().then(() => "ok", e => e.name)`);
+    r.due = run(`firstRunDue()`); r.savedAt = run(`FR.saved && FR.saved.reads`); r.reads0 = run(`state.metaReads`);
+    r.failedRead = await read(); r.dueAfterFailed = run(`firstRunDue()`); r.savedAfterFailed = run(`!!FR.saved`); r.reads1 = run(`state.metaReads`);
+    // BET is deleted in Setup, which reads the records again: they list ALP only, so the count of companies didn't rise, and the note is over
+    FX.fail = {}; withCompanies([co(1, "ALP", 1)]);
+    r.read = await read(); r.dueAfterRead = run(`firstRunDue()`); r.saved = run(`FR.saved`); r.alerted = run(`FR.alerted`);
+    // the first company of all, saved but not read: any successful read ends it
+    run(`state.meta.entities = []; FR.done = null; FR.note = null; FR.addOpen = true; FR.code = "GHI"; FR.cname = "Example Three"; FR.kind = "here"; FR.tried = false`);
     withCompanies([co(1, "GHI", 1)]); FX.fail = { "/api/meta": true };
-    r.threw = await run(`frAddCompany().then(() => "ok", e => e.name)`); FX.fail = {};
-    r.dueWhileSaved = run(`firstRunDue()`); r.savedKnown = run(`FR.saved && FR.saved.known`);
-    run(`state.meta = ${JSON.stringify({ ...meta0, entities: [co(1, "GHI", 1)] })}`);   // Setup read the records again
-    r.dueAfter = run(`firstRunDue()`); r.saved = run(`FR.saved`); r.alerted = run(`FR.alerted`);
-    // a second company saved but not read: the records still list the first, so it is still saved; they list both once they are read again
-    run(`FR.done = null; FR.note = null; FR.addOpen = true; FR.code = "JKL"; FR.cname = "Example Four"; FR.kind = "here"; FR.tried = false`);
-    withCompanies([co(1, "GHI", 1), co(2, "JKL", 1)]); FX.fail = { "/api/meta": true };
-    r.threw2 = await run(`frAddCompany().then(() => "ok", e => e.name)`); FX.fail = {};
-    r.due2 = run(`firstRunDue()`); r.saved2 = run(`!!FR.saved`);
-    run(`state.meta = ${JSON.stringify({ ...meta0, entities: [co(1, "GHI", 1), co(2, "JKL", 1)] })}`);
-    r.due2After = run(`firstRunDue()`); r.saved2After = run(`FR.saved`);
+    r.threw2 = await run(`frAddCompany().then(() => "ok", e => e.name)`); r.due2 = run(`firstRunDue()`);
+    FX.fail = {}; r.read2 = await read(); r.due2After = run(`firstRunDue()`); r.saved2 = run(`FR.saved`);
     FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.code = ""; FR.cname = ""; FR.kind = ""; state.entity = ${FX.EXA}`);
     await view("accounts", FX.EXA);
     return r;
@@ -1049,7 +1119,7 @@ nk = o["navKeep"]
 check("the Setup menu gets the scroll it had at once, as it is drawn (not when the section has been read), and is scrolled to its item once the section is drawn, only itself (never scrollIntoView, never the window)",
       nk["deep"] == {"kind": "move", "top": 340, "sets": [[0, False], [340, True]], "intoView": 0, "focused": False}
       and nk["save"] == {"kind": "move", "top": 400, "sets": [[400, False]], "intoView": 0, "focused": False}
-      and nk["click"] == {"kind": "accounts", "top": 80, "sets": [[400, False], [80, True]], "intoView": 0, "focused": True} and nk["windowScrolls"] == 0, nk)
+      and nk["click"] == {"kind": "accounts", "top": 80, "sets": [[400, False], [80, True]], "intoView": 0, "focused": True} and nk["windowScrolls"] == [[0, 0]], nk)
 check("a click (or Enter) on a menu item puts the focus on the new item on show; a page drawn again that no menu item asked for leaves the focus alone",
       nk["click"]["kind"] == "accounts" and nk["click"]["focused"] is True and nk["save"]["focused"] is False, nk)
 pt = o["putBackTitle"]
@@ -1068,7 +1138,7 @@ check("the link to the companies an import added is for the page drawn right aft
 sv = o["frSaved"]
 SAVED = "It was saved, but this page could not reload. Try again."
 check("First run when Import was saved but the records can't be read again: it says so with Try again, and no form is left that would write it twice",
-      sv["threw"] == "TypeError" and sv["busy"] == "" and {k: v for k, v in sv["saved"].items() if k != "known"} == {"imported": True, "code": "", "kept": ""} and has(sv["html"], SAVED, 'data-fr-reload="1"')
+      sv["threw"] == "TypeError" and sv["busy"] == "" and {k: v for k, v in sv["saved"].items() if k != "reads"} == {"imported": True, "code": "", "kept": ""} and has(sv["html"], SAVED, 'data-fr-reload="1"')
       and "fr-cards" not in sv["html"] and 'data-fr-import' not in sv["html"] and 'id="fr-add-open"' not in sv["html"] and "aria-busy" not in sv["html"], sv["html"][:700])
 check("...Try again only reads: it fails again with a note still there, and once it works the page goes on with nothing sent",
       sv["stillSaved"] is not None and sv["stillBusy"] == "" and SAVED in sv["stillHtml"]
@@ -1113,17 +1183,34 @@ check("a record's History key and a list's name are escaped where they are writt
       'data-hist="a&quot;b:&lt;x&gt;"' in ec["hist"] and "<x>" not in ec["hist"]
       and has(ec["bar"], 'data-search="setup-a&quot;b"', 'placeholder="Search cust &lt;i&gt;x&lt;/i&gt;"', 'aria-label="Search cust &lt;i&gt;x&lt;/i&gt;"', 'data-count="setup-a&quot;b"') and "<i>x</i>" not in ec["bar"], ec)
 
-# ---------- round 4 ----------
-rk = o["redrawKeeps"]
-check("a section drawn again (a save, a stop, a delete, a put back) keeps what it showed in place until the new one is read, writes the new one once, and the window never moves",
-      rk["same"]["y"] == 800 and rk["same"]["low"] == 800 and rk["same"]["scrolls"] == 0 and rk["same"]["during"] == [{"kept": True, "y": 800}] and rk["same"]["writes"] == 1, rk["same"])
-check("...if anything moved the window meanwhile it goes back where it was, with one scroll; another section or company starts at the top, empty, and is not put back",
-      rk["moved"] == {"y": 800, "scrolls": [[0, 800]]} and rk["otherSection"] == {"y": 100, "scrolls": 0} and rk["otherCompany"] == {"y": 100, "scrolls": 0}, rk)
+# ---------- round 5 ----------
+check("HRP_KEEP_GOING asks to list every failure for any value but empty or 0", keep_going("1") is True and keep_going("yes") is True and keep_going("0") is False and keep_going("") is False and keep_going(None) is False)
+hk = o["holdKeeps"]
+check("a section drawn again (a save, a stop, a delete, a put back) holds the page's height while it is read: the window stays at 800 throughout, nothing old is shown meanwhile, the hold ends once it is written, and no scroll is made",
+      hk["same"]["y"] == 800 and hk["same"]["low"] == 800 and hk["same"]["scrolls"] == 0 and hk["same"]["during"] == [{"y": 800, "hold": "3200px", "section": 0}]
+      and hk["same"]["hold"] == "" and hk["same"]["written"] is True, hk["same"])
+check("...a scroll by the user during the read is respected (the page does not jump back), and with Show deleted on the hold lasts until its table is written",
+      hk["userScroll"] == {"y": 1000, "scrolls": 0} and hk["atDeleted"] == {"hold": "3200px", "listWritten": True} and hk["deleted"] == {"y": 800, "scrolls": 0, "hold": "", "table": True}, hk)
+check("...a read that fails doesn't leave the hold, and another section or company starts at the top (the one scroll), with no hold",
+      hk["failed"] == "TypeError" and hk["failedHold"] == "" and hk["otherSection"] == {"y": 0, "scrolls": [[0, 0]], "hold": ""} and hk["otherCompany"] == {"y": 0, "scrolls": [[0, 0]], "hold": ""}, hk)
+sd = o["staleDraw"]
+check("a draw that another section overtook writes nothing (no markup, no list to redraw, no count): Chart of accounts read slowly and Payment types asked for next, the page ends on Payment types, and Chart of accounts drawn later is Chart of accounts",
+      sd["quick"] == {"page": True, "a": False} and sd["overtaken"] == {"writes": 0, "page": True, "a": False, "redraw": "undefined", "count": None, "hold": ""}
+      and sd["later"] == {"a": True, "pt": False}, sd)
+check("...and an overtaken draw doesn't end the hold of the one that overtook it: the same section drawn twice holds until the second is written",
+      sd["overlap"] == {"holdWhileSecond": "3200px", "firstWrites": 0, "page": 0} and sd["overlapEnd"] == {"hold": "", "page": True}, sd)
+check("a draw whose place is no longer on the page (render() put its loading skeleton there) writes nothing, and leaves no hold",
+      sd["detached"] == {"writes": 0, "page": '<div class="skeleton"></div>', "redraw": "undefined", "hold": ""}, sd["detached"])
 se = o["frSavedElsewhere"]
-check("First run's saved-but-not-read note is over once Setup (or anything) has read the records and they list the company: the Overview draws, and the alert is gone",
-      se["threw"] == "TypeError" and se["dueWhileSaved"] is True and se["savedKnown"] == 0 and se["dueAfter"] is False and se["saved"] is None and se["alerted"] is False, se)
-check("...a second company saved but not read keeps it until the records list one more than they did, and then it is over too",
-      se["threw2"] == "TypeError" and se["due2"] is True and se["saved2"] is True and se["due2After"] is False and se["saved2After"] is None, se)
+check("First run's saved-but-not-read note is over once the records have been read again, whatever they list: a company added but not read, then deleted in Setup, leaves the Overview drawn, not the alert",
+      se["first"] == "Company added." and se["threw"] == "TypeError" and se["due"] is True and se["dueAfterFailed"] is True and se["savedAfterFailed"] is True and se["reads1"] == se["reads0"]
+      and se["read"] == "ok" and se["dueAfterRead"] is False and se["saved"] is None and se["alerted"] is False, se)
+check("...a read that fails doesn't end it, the first company of all is ended by any successful read, and the count of reads is what counts",
+      se["failedRead"] == "TypeError" and se["threw2"] == "TypeError" and se["due2"] is True and se["read2"] == "ok" and se["due2After"] is False and se["saved2"] is None, se)
+ga = re.search(r'<input id="su-gl_code"[^>]*>', o["dlgAccount"])
+check("a bank account's GL code input has what the code fields have: monospace, no spell check, no autocomplete, typed in capitals",
+      ga is not None and all(x in ga.group(0) for x in ('class="mono"', 'spellcheck="false"', 'autocomplete="off"', "data-upper")), ga.group(0) if ga else None)
+
 rr = o["restoreRetry"]
 check("Put it back's Try again with the app stopped makes one request and shows one dialog each time it is pressed, and works once the app is back",
       all(x == {"requests": 1, "dialogs": 1, "notes": 1} for x in rr["rounds"]) and len(rr["rounds"]) == 3
