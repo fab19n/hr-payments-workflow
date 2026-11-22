@@ -231,7 +231,9 @@ const ENTS = [{ id: 1, code: "AAA", name: "Alpha Test Sdn Bhd", short_name: "Alp
   await click(btn("company"));
   ok("a click opens the menu: aria-expanded true, role menu, a click-away layer", btn("company").getAttribute("aria-expanded") === "true" && menu("company").getAttribute("role") === "menu" && !!E.body.querySelector("button[data-tb-away]"));
   ok("it lists the companies in use only: a stopped company is left out", same(rowCodes(), ["AAA", "BBB", "DDD"]) && !slot("company").innerHTML.includes("CCC"), rowCodes());
-  ok("each row shows the code, the name and the kind", /Alpha Test Sdn Bhd/.test(text(rows()[0])) && /Kept in SQL Account/.test(text(rows()[0])) && /Kept here/.test(text(rows()[1])) && /Delta Test Sdn Bhd/.test(text(rows()[2])));
+  ok("each row shows the code, the company's short name (Setup's, here) and the kind; the full name is in the row's title",
+    /Alpha/.test(text(rows()[0])) && !/Sdn Bhd/.test(text(rows()[0])) && /Kept in SQL Account/.test(text(rows()[0])) && /Kept here/.test(text(rows()[1])) && /Delta/.test(text(rows()[2])) && !/Sdn Bhd/.test(text(rows()[2]))
+    && /class="tb-name" title="Alpha Test Sdn Bhd">Alpha</.test(rowHtml(0)) && /class="tb-name" title="Delta Test Sdn Bhd">Delta</.test(rowHtml(2)), text(rows()[0]) + " | " + rowHtml(0).slice(0, 400));
   ok("the footnote says stopped companies are not offered", /Stopped companies are not offered\./.test(text(menu("company"))));
   ok("the company on show is checked", rows()[0].getAttribute("aria-checked") === "true" && rows()[1].getAttribute("aria-checked") === "false");
   ok("All companies is not offered away from the Overview", !rowCodes().includes("all companies"));
@@ -268,6 +270,23 @@ const ENTS = [{ id: 1, code: "AAA", name: "Alpha Test Sdn Bhd", short_name: "Alp
   await click(btn("user")); await click(btn("company"));
   ok("opening one menu closes the other", !!menu("company") && !menu("user"));
   await shut();
+
+  // ---- the short name: the one set in Setup, else the name without Sdn Bhd, Bhd, Ltd or Limited; the full name for a screen reader ----
+  { const was = run("JSON.stringify(state.meta.entities)");
+    const mkE = (id, code, name, short) => ({ id, code, name, short_name: short, uses_sql: 1, active: 1, accounts: [], pages: SQLP });
+    const LIST = [mkE(1, "S1", "Example Alpha Sdn Bhd", null), mkE(2, "S2", "Example Beta Sdn. Bhd.", ""), mkE(3, "S3", "Example Gamma Bhd", null), mkE(4, "S4", "Example Delta Ltd", null),
+      mkE(5, "S5", "Example Epsilon Limited", null), mkE(6, "S6", "Example Zeta Ltd.", "  Zed "), mkE(7, "S7", "Example <b>Eta</b> Ltd", "<i>Eta</i> & Co"), mkE(8, "S8", "Ltd", null),
+      mkE(9, "S9", "Example Theta Sdn Bhd Services", null), mkE(10, "S10", "Example Iota, Ltd", null)];
+    run(`state.meta.entities = ${JSON.stringify(LIST)}`);
+    await click(btn("company"));
+    const shown = LIST.map((_, i) => (/class="tb-name"[^>]*>(.*?)<\/span>/.exec(rowHtml(i)) || [])[1]), all = html("company");
+    ok("a row shows the short name set in Setup (trimmed), else the name without Sdn Bhd, Sdn. Bhd., Bhd, Ltd or Limited at its end; the whole name when nothing is left; escaped",
+      same(shown, ["Example Alpha", "Example Beta", "Example Gamma", "Example Delta", "Example Epsilon", "Zed", "&lt;i&gt;Eta&lt;/i&gt; &amp; Co", "Ltd", "Example Theta Sdn Bhd Services", "Example Iota"]) && !/<i>|<b>/.test(all), shown);
+    ok("the full name is in the row's title when the row shows less, and in what a screen reader hears (escaped)",
+      /class="tb-name" title="Example Alpha Sdn Bhd">/.test(rowHtml(0)) && /class="tb-name" title="Example Zeta Ltd\.">/.test(rowHtml(5)) && !/title=/.test((/class="tb-name"[^>]*>/.exec(rowHtml(7)) || [""])[0])
+      && all.includes('aria-label="S1, Example Alpha Sdn Bhd, Kept in SQL Account') && all.includes('aria-label="S7, Example &lt;b&gt;Eta&lt;/b&gt; Ltd, Kept in SQL Account') && all.includes('title="Example &lt;b&gt;Eta&lt;/b&gt; Ltd"'), rowHtml(0).slice(0, 300));
+    await shut();
+    run(`state.meta.entities = ${was}`); }
 
   // ---- switching company ----
   clearToasts();

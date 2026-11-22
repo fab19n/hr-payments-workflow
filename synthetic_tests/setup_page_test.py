@@ -181,6 +181,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
   run(files.map(f => fs.readFileSync(f, "utf8")).join("\n"));
   run(`state.meta = ${JSON.stringify(FX.get["/api/meta"])}; state.month = "2026-11"; state.day = dayKey(); state.entity = ${FX.EXA};
     globalThis.__realRender = render; menuNextEnsure = () => {};
+    globalThis.__toasts = []; { const was = toastShow; toastShow = (msg, bad, opts) => { __toasts.push({ msg, bad, opts }); return was(msg, bad, opts); }; }
     renderNav = () => {}; render = async () => { __calls.push(["render"]); }; navigate = async place => { __calls.push(["navigate", place]); return true; };
     globalThis.click = async (dataset, extra = {}) => { const b = { dataset, tagName: "BUTTON", id: "", className: "", getAttribute: () => null, ...extra }; b.closest = () => b;
       const ev = { type: "click", target: b, button: 0, preventDefault() {}, stopPropagation() {} }; for (const f of __listeners.click || []) await f(ev); };`);
@@ -214,7 +215,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     els.setupMain = newSm(m ? m[1] : "", !!m); smHtml = m ? m[1] : ""; smWrites = 0; clamp(); main.nav = navOf(v); } });
   els.setupMain = newSm("", true);
   main.nav = null;
-  main.querySelector = s => s === ".setup-nav" ? main.nav : s === ".setup-grid" ? ((m => m ? { dataset: { at: m[1] } } : null)(/class="setup-grid" data-at="([^"]*)"/.exec(mainHtml))) : null;
+  main.querySelector = s => s === "#setupMain" ? (els.setupMain && els.setupMain.isConnected ? els.setupMain : null) : s === ".setup-nav" ? main.nav : s === ".setup-grid" ? ((m => m ? { dataset: { at: m[1] } } : null)(/class="setup-grid" data-at="([^"]*)"/.exec(mainHtml))) : null;
   const view = async (kind, entity) => {
     run(`state.entity = ${entity}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false;`);
     await run(`viewSetup(__el("main"))`); await sleep(20); return { nav: main.innerHTML, page: box().innerHTML };
@@ -1007,6 +1008,192 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     r.afterFail = el("setupDeleted").innerHTML;
     return r;
   });
+
+  // ---------- round 7 ----------
+  // L1. render()'s loading skeleton covers the page after the section was written, while the Show deleted read (the last of the draw) takes 900 ms:
+  // the section is drawn once more
+  await tryit("skeletonDeleted", async () => {
+    const out = {}, EXA = FX.EXA;
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    const cases = [
+      ["accounts", `/api/setup/accounts?entity=${EXA}`, `/api/setup/restore?kind=accounts&entity=${EXA}`, 'data-setup-new="accounts"', "Deleted bank accounts"],
+      ["checklist", `/api/setup/checklist?entity=${EXA}`, `/api/setup/restore?kind=checklist&entity=${EXA}`, 'data-chk-new="1"', "None deleted"],
+      ["reminders", "/api/setup/reminders", "/api/setup/restore?kind=reminders", 'data-rem-new="1"', "None deleted"]];
+    run(`render = __realRender`);
+    try {
+      for (const deleted of [true, false]) for (const [kind, sect, rest, marker, table] of cases) {
+        main.innerHTML = `<div>Overview</div>`;
+        run(`render.last = null; state.view = "setup"; state.entity = ${EXA}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = ${deleted}`);
+        delays[sect] = [50]; delays[rest] = [900];
+        const t0 = Date.now();
+        await run(`render()`);
+        out[`${kind}-${deleted ? "on" : "off"}`] = { section: smHtml.includes(marker), skeleton: /class="skel"/.test(main.innerHTML), grid: /class="setup-grid"/.test(main.innerHTML),
+          table: deleted ? el("setupDeleted").innerHTML.includes(table) : true, hold: main.style.minHeight, loading: main.classList.contains("loading"), slow: (Date.now() - t0 > 850) === deleted };
+        delete delays[sect]; delete delays[rest];
+      }
+    } finally { run(`render = async () => { __calls.push(["render"]); }; state.setup.deleted = false`); }
+    await view("accounts", FX.EXA);
+    return out;
+  });
+
+  // L2. a change was saved and what reads after it fails (the records overview, or a reply that isn't the records): the page says it was saved (never
+  // that nothing was changed), the change was made once, and Try again only reads again
+  const SAVED_MSG = "It was saved, but this page could not reload. Try again.";
+  const writesOf = (m, re) => calls.filter(x => x[0] === m && re.test(x[1]) && !(x[2] && x[2].preview)).length;
+  const badToast = () => sandbox.__toasts.filter(t => t.bad).pop();
+  const allSaid = () => [...sandbox.__toasts.map(t => t.msg), el("su-why-msg").innerHTML, el("pb-why-err").innerHTML, el("rsErr").innerHTML].join(" | ");
+  let uniq = 100;
+  await tryit("afterSave", async () => {
+    const out = {}, EXA = FX.EXA, EXB = FX.EXB;
+    const openRec = async (kind, id, ent) => { run(`state.entity = ${ent}`); await run(`openSetup(${JSON.stringify(kind)}, ${JSON.stringify(id)})`); await sleep(20); };
+    const why = act => async () => { await run(`setupAct(${JSON.stringify(act)}, __btn)`); el("su-reason").value = "A reason"; await run(`whySubmit()`); };
+    const fillAll = () => { for (const f of run(`state.setup.types.kinds[state.setup.drawer.kind].fields`)) { const e = el("su-" + f.key); e.value = "1"; e.checked = true; } };
+    const SAVE = { w: () => writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/), prep: () => openRec("accounts", FX.TEMP, EXB),
+      fire: async () => { fillAll(); el("su-label").value = "Renamed account " + (++uniq); await run(`setupSave()`); await sleep(30); } };
+    const FLOWS = {
+      "delete": { w: () => writesOf("DELETE", /\/api\/setup\/accounts\/\d+$/), prep: () => openRec("accounts", FX.OLD, EXA), fire: why("delete") },
+      "stop using": { w: () => writesOf("POST", /\/accounts\/\d+\/stop$/), prep: () => openRec("accounts", FX.TEMP, EXB), fire: why("stop") },
+      "use again": { w: () => writesOf("POST", /\/accounts\/\d+\/use$/), prep: () => openRec("accounts", FX.OLD, EXA), fire: why("use") },
+      "save": SAVE,
+      "save (a reply that isn't the records)": { ...SAVE, bad: true },
+      "add": { w: () => writesOf("POST", /\/api\/setup\/accounts$/), prep: () => openRec("accounts", "new", EXA), fire: async () => { fillAll(); await run(`setupSave()`); await sleep(30); } },
+      "general settings": { w: () => writesOf("PATCH", /\/api\/setup\/settings$/),
+        prep: async () => { await view("settings", EXA); const f = run(`state.setup.settings.fields`).find(x => !["bool", "select"].includes(x.type)); el("gs-" + f.key).value = String(++uniq); },
+        fire: async () => { await run(`settingsSave()`); await sleep(30); } },
+      "move setup import": { w: () => writesOf("POST", /^\/api\/setup\/import$/),
+        prep: async () => { await view("move", EXA); run(`state.setup.move = { ...state.setup.move, file: { format: "hrp-setup" }, preview: {} }`); },
+        fire: () => run(`moveImport("A reason")`) },
+      "paste a list": { w: () => writesOf("POST", /\/api\/setup\/parties\/paste$/),
+        prep: async () => { await view("parties", EXA); await run(`openPaste("parties", { force: true })`); el("ps-text").value = "a\tb"; el("ps-scope").value = "company"; el("ps-kind").value = "supplier";
+          run(`state.setup.paste.preview = { counts: { add: 1 }, rows: [] }; state.setup.paste.previewFor = pasteForm()`); },
+        fire: () => run(`pasteSave(false)`) },
+      "put it back": { w: () => writesOf("POST", /\/api\/setup\/restore\/\d+$/),
+        prep: async () => { await run(`openRestore(${FX.RESTORE}, "Spare")`); await sleep(20); el("pb-why").value = "A reason"; },
+        fire: () => run(`restoreGo(${FX.RESTORE}, { disabled: false, isConnected: true })`) },
+    };
+    for (const [name, F] of Object.entries(FLOWS)) {
+      const r = out[name] = {};
+      await view("accounts", EXA);
+      sandbox.__toasts.length = 0; el("su-why-msg").innerHTML = ""; el("pb-why-err").innerHTML = ""; el("rsErr").innerHTML = "";
+      await F.prep(); calls.length = 0;
+      const reads0 = run(`state.metaReads || 0`);
+      if (F.bad) FX.bad = { "/api/meta": true }; else lateFail["/api/meta"] = 1;
+      await Promise.resolve(F.fire()).catch(e => { r.threw = String(e); });
+      r.hit = F.bad ? true : lateFail["/api/meta"] === 0; delete lateFail["/api/meta"];
+      const bad = badToast();
+      r.once = F.w(); r.said = !!bad && bad.msg === SAVED_MSG; r.tryAgain = !!(bad && bad.opts && bad.opts.action && bad.opts.action.label === "Try again");
+      r.nothing = /Nothing was changed|Failed to fetch/.test(allSaid()); r.drawer = run(`state.setup.drawer`) === null;
+      FX.bad = {}; calls.length = 0;
+      if (r.tryAgain) await bad.opts.action.fn();
+      await sleep(30);
+      r.again = { writes: F.w(), read: run(`state.metaReads || 0`) - reads0, rendered: calls.some(x => x[0] === "render"), saved: run(`state.saved`) };
+    }
+    await view("accounts", EXA); run(`state.entity = ${EXA}`);
+    return out;
+  });
+
+  // L2. ... and when the page's own read fails after the change was saved (render() paints it): the page says it was saved, in the same words, with its
+  // own Try again, which draws the page again and sends nothing
+  await tryit("afterSavePage", async () => {
+    const out = {}, EXA = FX.EXA;
+    const CH = `/api/setup/checklist?entity=${EXA}`, RM = "/api/setup/reminders", RQ = "/api/setup/required?entity=", AC = `/api/setup/accounts?entity=${EXA}`, ST = "/api/setup/settings";
+    const chk = FX.get[CH].items[0] || { id: 901 }, rem = FX.get[RM].rules[0], req = FX.get[RQ].types[0];   // a company with no month set up has no item: the id is only sent
+    if (!rem || !req) throw new Error("a fixture has no rule or type");
+    const go = async kind => { run(`state.entity = ${EXA}; state.view = "setup"; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false; state.setup.reqScope = null`);
+      await run(`viewSetup(__el("main"))`); await sleep(20); };
+    const why = (fn, act) => async () => { await run(`${fn}(${JSON.stringify(act)}, __btn)`); el("su-reason").value = "A reason"; await run(`whySubmit()`); };
+    const chkPost = () => writesOf("POST", /\/api\/setup\/checklist$/), remPost = () => writesOf("POST", /\/api\/setup\/reminders$/);
+    const FLOWS = {
+      "checklist: add an item": { kind: "checklist", path: CH, w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: "new", completion: "manual" }`); el("cl-from").value = "2026-11"; el("cl-title").value = "A new item"; }, fire: () => run(`chkSave(false)`) },
+      "checklist: stop using": { kind: "checklist", path: CH, w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: ${chk.id} }`); el("cl-from").value = "2026-11"; }, fire: why("chkAct", "stop") },
+      "checklist: delete an item": { kind: "checklist", path: CH, w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: ${chk.id} }`); }, fire: why("chkAct", "delete") },
+      "checklist: copy another company's": { kind: "checklist", path: CH, w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: "copy" }`); el("cp-from").value = "2"; el("cl-from").value = "2026-11"; }, fire: () => run(`chkCopySave(false)`) },
+      "reminders: save": { kind: "reminders", path: RM, w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); el("rm-from").value = "2026-11"; el("rm-title").value = "A title"; el("rm-days").value = "5"; }, fire: () => run(`remSave(false)`) },
+      "reminders: delete": { kind: "reminders", path: RM, w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); }, fire: why("remAct", "delete") },
+      "required documents: save": { kind: "required", path: RQ, w: () => writesOf("POST", /\/api\/setup\/required$/), prep: () => { run(`state.setup.reqOpen = ${JSON.stringify(req.key)}`); el("rq-from").value = "2026-11"; }, fire: () => run(`reqSave(false)`) },
+      "bank account: delete": { kind: "accounts", path: AC, w: () => writesOf("DELETE", /\/api\/setup\/accounts\/\d+$/), prep: async () => { await run(`openSetup("accounts", ${FX.OLD})`); await sleep(20); }, fire: why("setupAct", "delete") },
+      "general settings": { kind: "settings", path: ST, w: () => writesOf("PATCH", /\/api\/setup\/settings$/),
+        prep: async () => { const f = run(`state.setup.settings.fields`).find(x => !["bool", "select"].includes(x.type)); el("gs-" + f.key).value = String(++uniq); }, fire: () => run(`settingsSave()`) },
+      "move setup import": { kind: "move", path: "/api/setup/types", w: () => writesOf("POST", /^\/api\/setup\/import$/),
+        prep: async () => { run(`state.setup.move = { ...state.setup.move, file: { format: "hrp-setup" }, preview: {} }`); }, fire: () => run(`moveImport("A reason")`) },
+      "put it back": { kind: "accounts", path: AC, w: () => writesOf("POST", /\/api\/setup\/restore\/\d+$/),
+        prep: async () => { await run(`openRestore(${FX.RESTORE}, "Spare")`); await sleep(20); el("pb-why").value = "A reason"; }, fire: () => run(`restoreGo(${FX.RESTORE}, { disabled: false, isConnected: true })`) },
+    };
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    run(`render = __realRender`);
+    try {
+      for (const [name, F] of Object.entries(FLOWS)) {
+        const r = out[name] = {};
+        await go(F.kind); sandbox.__toasts.length = 0; el("su-why-msg").innerHTML = "";
+        await F.prep(); calls.length = 0;
+        lateFail[F.path] = 1;
+        await Promise.resolve(F.fire()).catch(e => { r.threw = String(e); });
+        await sleep(40);
+        r.hit = lateFail[F.path] === 0; delete lateFail[F.path];
+        const html = main.innerHTML;
+        r.once = F.w(); r.page = html.includes(SAVED_MSG); r.nothing = /Nothing was changed|isn(&#39;|')t running/.test(html + " " + allSaid()); r.retry = html.includes('data-retry="1"'); r.saved = run(`state.saved`);
+        calls.length = 0;
+        await run(`click({ retry: "1" })`); await sleep(60);
+        r.again = { writes: F.w(), page: !main.innerHTML.includes(SAVED_MSG) && /class="setup-grid"/.test(main.innerHTML), saved: run(`state.saved`) };
+      }
+      // a page that fails with no change saved says what it did before: the app has stopped, or the reason, and that nothing was changed
+      await go("accounts"); run(`state.saved = false`);
+      lateFail[AC] = 1; await run(`render()`); out.plainStopped = { stopped: /isn(&#39;|')t running/.test(main.innerHTML), saved: main.innerHTML.includes(SAVED_MSG) };
+      run(`ROUTES.zzz = { draw: () => async m => { throw new Error("The records could not be read."); } }; state.view = "zzz"`); await run(`render()`);
+      out.plainError = { reason: main.innerHTML.includes("The records could not be read."), nothing: main.innerHTML.includes("Nothing was changed."), saved: main.innerHTML.includes(SAVED_MSG) };
+    } finally { run(`render = async () => { __calls.push(["render"]); }; state.saved = false; state.view = "setup"`); for (const k of Object.keys(lateFail)) delete lateFail[k]; }
+    await view("accounts", EXA);
+    return out;
+  });
+
+  // L5. Setup's list says the short name the company switcher shows, from the same function
+  await tryit("shortNames", async () => {
+    const mk = (name, short) => ({ id: 1, code: "S1", name, short_name: short });
+    const list = [mk("Example Alpha Sdn Bhd", null), mk("Example Beta Sdn. Bhd.", ""), mk("Example Gamma Bhd", undefined), mk("Example Delta Ltd", null), mk("Example Epsilon Limited", null),
+      mk("Example Zeta Ltd.", "  Zed "), mk("Example <b>Eta</b> Ltd", "<i>Eta</i> & Co"), mk("Ltd", null), mk("Example Theta Sdn Bhd Services", null), mk("Example Iota, Ltd", null)];
+    return { sub: list.map(e => run(`SETUP_SUB.entities(${JSON.stringify(e)})`)), short: list.map(e => run(`companyShortName(${JSON.stringify(e)})`)) };
+  });
+
+  // L6. a page whose slow read finishes after the user went on to Setup: Setup is drawn again once; two quick clicks end on the last page; a normal render draws once
+  await tryit("stalePaint", async () => {
+    const r = {}, P = `/api/setup/parties?entity=${FX.EXA}`;
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    run(`globalThis.__draws = { slow: 0, slow2: 0, quick: 0 };
+      ROUTES.slow = { draw: () => async m => { await new Promise(res => setTimeout(res, 300)); __draws.slow++; m.innerHTML = "<div>register</div>"; } };
+      ROUTES.slow2 = { draw: () => async m => { await new Promise(res => setTimeout(res, 150)); __draws.slow2++; m.innerHTML = "<div>second page</div>"; } };
+      ROUTES.quick = { draw: () => async m => { __draws.quick++; m.innerHTML = "<div>quick page</div>"; } };
+      render = __realRender`);
+    try {
+      run(`state.entity = ${FX.EXA}; state.setup.kind = "parties"; state.setup.stopped = false; state.setup.deleted = false; render.last = null; state.view = "slow"`);
+      const a = run(`render()`); await sleep(30);
+      run(`state.view = "setup"`); await run(`render()`);          // Setup, which is quick
+      r.setupFirst = smHtml.includes('data-setup-new="parties"');
+      await a; await sleep(60);                                      // the register's read has come
+      r.afterRegister = { setup: smHtml.includes('data-setup-new="parties"'), register: main.innerHTML.includes("register"), view: run(`state.view`), slowDraws: run(`__draws.slow`) };
+      // two quick clicks, the first page the slowest
+      run(`render.last = null; state.view = "slow"`); const b = run(`render()`); await sleep(30);
+      run(`state.view = "slow2"`); const c = run(`render()`); await sleep(30);
+      run(`state.view = "quick"`); await run(`render()`);
+      await b; await c; await sleep(60);
+      r.quick = { page: main.innerHTML, ended: run(`state.view`) };
+      // a stale page whose read comes while the newer one is still reading: nothing is drawn again, the newer page writes itself (once)
+      run(`ROUTES.slow3 = { draw: () => async m => { await new Promise(res => setTimeout(res, 450)); __draws.slow3++; m.innerHTML = "<div>third page</div>"; } };
+        __draws.slow3 = 0; __draws.slow = 0; render.last = null; state.view = "slow"`);
+      const e1 = run(`render()`); await sleep(30);
+      run(`state.view = "slow3"`); const e2 = run(`render()`);
+      await e1; await e2; await sleep(60);
+      r.stillReading = { page: main.innerHTML, slow3: run(`__draws.slow3`), slow: run(`__draws.slow`) };
+      // the normal path: one render, one draw
+      run(`__draws.quick = 0; render.last = null; state.view = "quick"`); await run(`render()`); await sleep(40);
+      r.once = run(`__draws.quick`);
+      // Setup is the stale one (its draws write nothing once overtaken): nothing is drawn again
+      run(`__draws.quick = 0; state.view = "setup"; render.last = null`); delays[P] = 200; const d = run(`render()`); await sleep(30);
+      run(`state.view = "quick"`); await run(`render()`); await d; await sleep(40); delete delays[P];
+      r.setupStale = { quick: run(`__draws.quick`), page: main.innerHTML };
+    } finally { run(`render = async () => { __calls.push(["render"]); }; state.view = "setup"; delete ROUTES.slow; delete ROUTES.slow2; delete ROUTES.slow3; delete ROUTES.quick`); delete delays[P]; }
+    await view("accounts", FX.EXA);
+    return r;
+  });
   process.stdout.write(JSON.stringify(out));
 })().catch(e => { console.error(e && e.stack || e); process.exit(1); });
 """
@@ -1425,6 +1612,41 @@ rr = o["restoreRetry"]
 check("Put it back's Try again with the app stopped makes one request and shows one dialog each time it is pressed, and works once the app is back",
       all(x == {"requests": 1, "dialogs": 1, "notes": 1} for x in rr["rounds"]) and len(rr["rounds"]) == 3
       and rr["back"]["requests"] == 1 and rr["back"]["dialogs"] == 1 and "It comes back as it was" in rr["back"]["body"] and "Couldn't load" not in rr["back"]["body"], rr)
+
+# ---------- round 7 ----------
+sd = o["skeletonDeleted"]
+okcase = {"skeleton": False, "grid": True, "hold": "", "loading": False, "section": True, "table": True, "slow": True}
+check("L1: render()'s loading skeleton covering the page after the section was written (the Show deleted read, 900 ms, came last) is drawn over once more, for the list, the checklist and the reminders, with Show deleted on and off: the section, its table, no skeleton, no hold",
+      all(sd[k] == okcase for k in ("accounts-on", "checklist-on", "reminders-on", "accounts-off", "checklist-off", "reminders-off")), sd)
+check("L2: every flow that changes something is tried: record save, add, stop using, use again, delete, put it back, general settings, Move setup import, Paste a list, and a reply that isn't the records",
+      sorted(o["afterSave"].keys()) == sorted(["delete", "stop using", "use again", "save", "save (a reply that isn't the records)", "add", "general settings", "move setup import", "paste a list", "put it back"]), list(o["afterSave"].keys()))
+for name, f in o["afterSave"].items():
+    check(f"L2: {name}: the change is made once and, when the records can't be read again after it, the page says it was saved (not that nothing was changed), with a Try again and the dialog closed; Try again reads again and sends nothing",
+          f["hit"] is True and f["once"] == 1 and f["said"] is True and f["tryAgain"] is True and f["nothing"] is False and f["drawer"] is True
+          and f["again"]["writes"] == 0 and f["again"]["read"] == 1 and f["again"]["rendered"] is True and f["again"]["saved"] is False, f)
+check("L2: every flow that draws the page after a change is tried with the page's own read failing: checklist (add, stop using, delete, copy), reminders (save, delete), required documents, a bank account's delete, general settings, Move setup import and Put it back",
+      sorted(o["afterSavePage"].keys()) == sorted(["checklist: add an item", "checklist: stop using", "checklist: delete an item", "checklist: copy another company's", "reminders: save", "reminders: delete", "required documents: save",
+                                                   "bank account: delete", "general settings", "move setup import", "put it back", "plainStopped", "plainError"]), list(o["afterSavePage"].keys()))
+for name, f in o["afterSavePage"].items():
+    if name.startswith("plain"):
+        continue
+    check(f"L2: {name}: when the page's own read fails after the change was saved, the page says it was saved with its Try again (the change made once, never 'nothing was changed' or 'isn't running'), and Try again draws the page and sends nothing",
+          f["hit"] is True and f["once"] == 1 and f["page"] is True and f["nothing"] is False and f["retry"] is True and f["saved"] is True
+          and f["again"]["writes"] == 0 and f["again"]["page"] is True and f["again"]["saved"] is False, f)
+check("L2: a page that fails with nothing saved says what it said before: the app has stopped (or the reason, and that nothing was changed), never that it was saved",
+      o["afterSavePage"]["plainStopped"] == {"stopped": True, "saved": False} and o["afterSavePage"]["plainError"] == {"reason": True, "nothing": True, "saved": False}, o["afterSavePage"]["plainStopped"])
+sn = o["shortNames"]
+check("L5: Setup's list says the short name the switcher shows: the one set (trimmed), else the name without Sdn Bhd, Sdn. Bhd., Bhd, Ltd or Limited at its end (the whole name when nothing is left), from one function",
+      sn["short"] == ["Example Alpha", "Example Beta", "Example Gamma", "Example Delta", "Example Epsilon", "Zed", "<i>Eta</i> & Co", "Ltd", "Example Theta Sdn Bhd Services", "Example Iota"]
+      and sn["sub"] == ["Switcher: " + s for s in sn["short"]], sn)
+sp = o["stalePaint"]
+check("L6: a page whose slow read finishes after the user went on to Setup doesn't leave itself over Setup: Setup is drawn again, the page ends on Setup",
+      sp["setupFirst"] is True and sp["afterRegister"] == {"setup": True, "register": False, "view": "setup", "slowDraws": 1}, sp)
+check("...two quick clicks between pages end on the last page, whichever read finishes last", sp["quick"] == {"page": "<div>quick page</div>", "ended": "quick"}, sp["quick"])
+check("...a page overtaken while the newer one is still reading is not drawn again: the newer page writes itself, once",
+      sp["stillReading"] == {"page": "<div>third page</div>", "slow3": 1, "slow": 1}, sp["stillReading"])
+check("...a normal render draws once, and a Setup draw that was overtaken doesn't make the page that overtook it draw again",
+      sp["once"] == 1 and sp["setupStale"] == {"quick": 1, "page": "<div>quick page</div>"}, sp)
 
 # ---------- the layout keeps today's narrow rules ----------
 check("the form keeps Setup's 520-pixel rule: two columns, one under 520 pixels, in the new dialog too",

@@ -64,7 +64,7 @@ function goSetupRecord(kind, id) {
   return navigate({ view: "setup", entity: state.entity, month: state.month, sub: kind, id: String(id), params: {} }, { fresh: true });
 }
 
-async function viewSetup(main) {
+async function viewSetup(main, again = false) {
   const S = state.setup, seq = viewSetup.n = (viewSetup.n || 0) + 1;  // a draw that a newer one overtakes writes nothing
   if (!S.types) {
     const types = await api("/api/setup/types");
@@ -102,6 +102,9 @@ async function viewSetup(main) {
     else if (S.kind === "move") await setupMove(box);
     else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
     else await setupList(box, S.kind);
+    // The section was written and then covered by render()'s loading skeleton (the Show deleted read that came last took over 0.3 s): its place is gone
+    // and nothing draws it again, so it is drawn once more (once: a draw that is itself a retry is not retried).
+    if (seq === viewSetup.n && !again && !main.querySelector("#setupMain")) return await viewSetup(main, true);
     if (seq === viewSetup.n) setupMenuScroll(main);  // last, once the whole section is written
   } catch (err) {
     if (seq !== viewSetup.n) return;  // overtaken: what it met is of no interest to the page now
@@ -281,7 +284,7 @@ function treeKeys(rows) {
 // a type's plural, a customer's short name.
 const SETUP_SUB = {
   accounts: r => { const last = String(r.number || "").replace(/\s/g, "").slice(-4); return last ? `···· ${last}` : "No account number yet"; },
-  entities: r => r.short_name ? `Switcher: ${r.short_name}` : "",
+  entities: r => `Switcher: ${companyShortName(r)}`,
   payment_types: r => r.plural ? `Several: ${r.plural}` : "",
   doc_types: r => r.plural ? `Several: ${r.plural}` : "",
   parties: r => r.short_name || "",
@@ -503,6 +506,20 @@ async function whySubmit() {
   finally { state.whyBusy = false; if (goBtn.isConnected) { goBtn.disabled = false; goBtn.removeAttribute("aria-busy"); } }
 }
 
+// A change was saved. Reading the records and drawing the page again (reread) comes after it and may fail; the change stays, so that is never
+// "nothing was changed": the page says it was saved, with a Try again that only reads again and never sends the change again (reread is run
+// again). reread returns false when the page it drew failed (render() has said so itself, in the same words), or throws when the records can't be
+// read. The dialog of the change is closed on a failure: what it did is done. Returns whether it worked.
+async function afterSaved(reread) {
+  state.saved = true;  // a page that fails to draw now says it was saved (render())
+  let ok = false, drawn = false;
+  try { ok = await reread(); drawn = true; } catch (e) { ok = false; }
+  if (ok !== false) { state.saved = false; return true; }
+  closeDrawer(true);
+  if (!drawn) toast(SAVED_NOT_READ, true, { ms: 0, action: { label: "Try again", fn: () => afterSaved(reread) } });  // render() put its own words, and its own Try again, on the page
+  return false;
+}
+
 // After a company, bank account, payment type, document type, matching words, customer or supplier, or GL account
 // change: the page's copy of them is read again (the labels and pickers), and a company stopped or deleted while it was
 // showing gives way to the first one in use.
@@ -698,8 +715,12 @@ async function setupSave() {
     let r;
     try { r = await api(`/api/setup/${D.kind}`, { json: body }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e.message); }
     toast(`${spec.label} added`);
-    await afterSetupChange(D.kind); await render();
-    return r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true });
+    return afterSaved(async () => {
+      await afterSetupChange(D.kind);
+      const ok = await render();
+      if (ok === false) return false;
+      return r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true });
+    });
   }
   const changed = {};
   for (const k in now) if (!(k in D.locked) && JSON.stringify(now[k]) !== JSON.stringify(D.loaded[k])) changed[k] = now[k];
@@ -710,8 +731,12 @@ async function setupSave() {
   let r;
   try { r = await api(`/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields: changed } }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e.message); }
   toast("Saved");
-  await afterSetupChange(D.kind); await render();
-  return openSetup(D.kind, D.id, { force: true, notes: r.notes });
+  return afterSaved(async () => {
+    await afterSetupChange(D.kind);
+    const ok = await render();
+    if (ok === false) return false;
+    return openSetup(D.kind, D.id, { force: true, notes: r.notes });
+  });
 }
 
 // Stop using, Use again and Delete ask why first, with what the change does; Tidy up counts first, then asks. A refusal (the cash
@@ -732,13 +757,17 @@ async function setupAct(act, btn) {
     if (act === "delete") {
       await api(`/api/setup/${D.kind}/${D.id}`, { method: "DELETE", json: { reason } });
       closeDrawer(true); toast(`${spec.label} deleted`);
-      await afterSetupChange(D.kind); return render();
+      return afterSaved(async () => { await afterSetupChange(D.kind); return render(); });
     }
     await api(`/api/setup/${D.kind}/${D.id}/${act}`, { json: { reason } });
     toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
     const keep = drawerEdits();
-    await afterSetupChange(D.kind); await render();
-    return openSetup(D.kind, D.id, { force: true, keep });
+    return afterSaved(async () => {
+      await afterSetupChange(D.kind);
+      const ok = await render();
+      if (ok === false) return false;
+      return openSetup(D.kind, D.id, { force: true, keep });
+    });
   }, { note, glyph: { stop: "eyeOff", use: "eye", delete: "trash" }[act], danger: act === "delete" });
 }
 
@@ -754,7 +783,11 @@ async function tidyMonths(eid, btn) {
     const r = await api("/api/months/tidy", { json: { entity_id: +eid, reason } });
     toast(`Removed ${r.payments} payments and ${r.tasks} checklist items from ${e?.code || "the company"}`);
     const keep = drawerEdits();
-    await render(); return openSetup("entities", eid, { force: true, keep });
+    return afterSaved(async () => {
+      const ok = await render();
+      if (ok === false) return false;
+      return openSetup("entities", eid, { force: true, keep });
+    });
   });
 }
 

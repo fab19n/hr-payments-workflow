@@ -75,6 +75,15 @@ def call(method, path, expect=200, **kw):
     return r.get_json()
 
 
+def _refused(fn):
+    """Whether fn raises Refused with 'too long'."""
+    try:
+        fn()
+    except masters.Refused as x:
+        return "too long" in str(x)
+    return False
+
+
 def last_tx():
     return q("SELECT * FROM audit_tx ORDER BY id DESC LIMIT 1")[0]
 
@@ -117,12 +126,22 @@ if CHILD:
     check("[new install] it holds no company data, so it may import", state["empty"] is True and state["holding"] == [])
     pv = call("post", "/api/setup/import", json={"setup": data, "preview": True})
     check("[new install] the preview leaves nothing behind", not q("SELECT id FROM entities"))
+    # a code held longer than a new one may be typed is accepted from a file (up to three times that, in capitals); more is refused, naming the row
+    def with_code(code):
+        d = json.loads(json.dumps(data))
+        next(a for a in d["accounts"] if a["label"] == "Legacy")["gl_code"] = code
+        return c.post(BASE + "/api/setup/import", headers=H, json={"setup": d, "preview": True})
+    edge = {n: with_code("x" * n).status_code for n in (600, 601, 700)}
+    bad = with_code("x" * 700).get_json()
+    check("[new install] a GL code of 700 characters in the file is refused, naming the row and the field, and 600 is the most that is taken",
+          edge == {600: 200, 601: 400, 700: 400} and "Legacy" in bad["error"] and "GL account code" in bad["error"] and "too long" in bad["error"], (edge, bad))
+    check("[new install] ...and a refused file imports nothing", not q("SELECT id FROM entities") and not q("SELECT id FROM accounts"))
     call("post", "/api/setup/import", json={"setup": data, "reason": "test: a new install"})
     now = call("get", "/api/setup/import")
     dst.write_text(json.dumps({"preview": counted(pv), "holding": held(now["holding"]), "empty": now["empty"],
                                "codes": [r["code"] for r in q("SELECT code FROM entities ORDER BY id")],
                                "active": {r["code"]: r["active"] for r in q("SELECT code, active FROM entities")},
-                               "gl_codes": {r["label"]: r["gl_code"] for r in q("SELECT label, gl_code FROM accounts")}}), encoding="utf-8")
+                               "gl_codes": {r["label"]: r["gl_code"] for r in q("SELECT label, gl_code FROM accounts")}, "refused": bad["error"]}), encoding="utf-8")
     print("child done")
     sys.exit(0)
 
@@ -248,12 +267,15 @@ write("old free-text GL codes", ("UPDATE accounts SET gl_code = ? WHERE id = ?",
       ("UPDATE accounts SET gl_code = ? WHERE entity_id = ? AND label = 'Current'", (OLD_B, EXB)))
 # 100 letters that grow in capitals (the German sharp s) are 200 capitals: the longest a GL code can be
 call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "Sharp", "bank": "Example Bank", "currency": "SGD", "gl_code": "\u00df" * 100}})
+# a code an older version kept as typed (150 letters that grow in capitals: 300 capitals, over the 200 a new one may be)
+call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "Legacy", "bank": "Example Bank", "currency": "SGD"}})
+write("a GL code kept as typed by an older version", ("UPDATE accounts SET gl_code = ? WHERE label = 'Legacy'", ("\u00df" * 150,)))
 full = call("get", "/api/setup/export?what=full&payees=1")
 check("the file holds the stopped company and not the deleted one", [e["code"] for e in full["entities"]] == ["EXA", "EXB", "EXC"]
       and [e["active"] for e in full["entities"]] == [1, 1, 0], [(e["code"], e["active"]) for e in full["entities"]])
 mine = held(call("get", "/api/setup/import")["holding"])
 check("what this install holds (Move setup's sentence) counts the stopped company and not the deleted one",
-      mine["companies"] == 3 and mine["bank accounts"] == 4 and mine["statutory accounts"] == 1 and mine["customers and suppliers"] == 2
+      mine["companies"] == 3 and mine["bank accounts"] == 5 and mine["statutory accounts"] == 1 and mine["customers and suppliers"] == 2
       and mine["GL accounts"] == 3 and mine["recurring payments"] == 1, mine)
 fileholds = {w: len(full[k]) for k, w in (("entities", "companies"), ("accounts", "bank accounts"), ("gl_accounts", "GL accounts"),
                                                               ("statutory_accounts", "statutory accounts"), ("parties", "customers and suppliers"),
@@ -288,7 +310,11 @@ check("...and, but for the starter checklists the import gives, both are what th
 check("the export of an install holding free-text GL codes holds them as they are", {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Main") == OLD_A
       and {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Current") == OLD_B, [(a["label"], a["gl_code"]) for a in full["accounts"]])
 check("...and imports into a fresh install, which is not refused for their shape: they come in tidied (capitals, no spaces round them), the 30-character one whole, and a hand-made ' bk-310 ' as BK-310",
-      got["gl_codes"] == {"Main": OLD_A.upper(), "Current": OLD_B.upper(), "Spare": "BK-310", "Sharp": "SS" * 100}, got.get("gl_codes"))
+      got["gl_codes"] == {"Main": OLD_A.upper(), "Current": OLD_B.upper(), "Spare": "BK-310", "Sharp": "SS" * 100, "Legacy": "SS" * 150}, got.get("gl_codes"))
+check("...a code an older version kept as typed, 150 letters that are 300 capitals (over the 200 a new one may be), goes out in the export as it is kept and comes back in whole into a fresh install",
+      {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Legacy") == "\u00df" * 150 and got["gl_codes"]["Legacy"] == "SS" * 150, (len({a["label"]: a["gl_code"] for a in full["accounts"]}.get("Legacy") or ""), got["gl_codes"]["Legacy"]))
+check("...and a code of 700 characters in a file is refused naming the bank account and the field (600 characters is the most a file may hold, tried in the new install)",
+      "Legacy" in got["refused"] and "GL account code" in got["refused"] and "too long" in got["refused"], got["refused"])
 check("...and a GL code of 200 capitals made of 100 letters that grow in capitals goes out in the export and comes back in whole: what is kept is accepted again",
       {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Sharp") == "SS" * 100 and got["gl_codes"]["Sharp"] == "SS" * 100)
 check("the stopped company comes across as stopped, and nothing is left of the deleted one",
@@ -542,6 +568,26 @@ with section("17. a chart account's uses are counted per company, as capitals wi
           r1.status_code == 400 and r2.status_code == 400 and r3.status_code == 400 and all("too long" in r.get_json()["error"] for r in (r1, r2, r3))
           and refused is not None and "too long" in refused and masters._checked("accounts", {"gl_code": "\u00df" * 100})["gl_code"] == "SS" * 100
           and q("SELECT gl_code FROM accounts WHERE id = ?", (sharp["id"],))[0]["gl_code"] == "SS" * 100, (r1.get_json(), r2.get_json(), r3.get_json(), refused))
+    # a code an older version kept as typed (300 capitals): the same value posted again with another field is the record's own, and is accepted; a new or changed one is not
+    leg = q("SELECT id, gl_code FROM accounts WHERE label = 'Legacy'")[0]
+    ra = c.patch(BASE + f"/api/setup/accounts/{leg['id']}", headers=H, json={"fields": {"gl_code": leg["gl_code"], "bank": "Example Bank Legacy"}})
+    now = q("SELECT gl_code, bank FROM accounts WHERE id = ?", (leg["id"],))[0]
+    check("a PATCH that posts a stored code of 300 capitals again unchanged (as the page does) with another field is accepted, and the code is kept as capitals",
+          leg["gl_code"] == "\u00df" * 150 and ra.status_code == 200 and now == {"gl_code": "SS" * 150, "bank": "Example Bank Legacy"}, (ra.get_json(), now))
+    rb = c.patch(BASE + f"/api/setup/accounts/{leg['id']}", headers=H, json={"fields": {"gl_code": "  " + "ss" * 150 + " ", "bank": "Example Bank Legacy Two"}})
+    check("...also written in lower case with spaces round it (the same code), and it is still the record's own",
+          rb.status_code == 200 and q("SELECT gl_code, bank FROM accounts WHERE id = ?", (leg["id"],)) == [{"gl_code": "SS" * 150, "bank": "Example Bank Legacy Two"}], rb.get_json())
+    rc_ = c.patch(BASE + f"/api/setup/accounts/{leg['id']}", headers=H, json={"fields": {"gl_code": "BK-1"}})
+    rd = c.patch(BASE + f"/api/setup/accounts/{leg['id']}", headers=H, json={"fields": {"gl_code": "\u00df" * 150}})
+    check("...but once another code has been stored, the same long value is a new one: refused as too long, as it is when added",
+          rc_.status_code == 200 and rd.status_code == 400 and "too long" in rd.get_json()["error"] and q("SELECT gl_code FROM accounts WHERE id = ?", (leg["id"],))[0]["gl_code"] == "BK-1", (rc_.get_json(), rd.get_json()))
+    re_ = c.patch(BASE + f"/api/setup/accounts/{leg['id']}", headers=H, json={"fields": {"gl_code": "\u00df" * 100}})
+    rf = c.patch(BASE + f"/api/setup/accounts/{leg['id']}", headers=H, json={"fields": {"gl_code": "\u00df" * 101}})
+    check("...100 letters (200 capitals) are accepted as a new value and 101 refused; and nothing is taken at three times the length by a PATCH unless it is the record's own",
+          re_.status_code == 200 and q("SELECT gl_code FROM accounts WHERE id = ?", (leg["id"],))[0]["gl_code"] == "SS" * 100 and rf.status_code == 400 and "too long" in rf.get_json()["error"], (re_.get_json(), rf.get_json()))
+    check("a file's own check takes three times the length (600 capitals) and no more, as a hard cap; Setup's own check of a typed value is unchanged (200)",
+          masters._checked("accounts", {"gl_code": "x" * 600}, lenient=True)["gl_code"] == "X" * 600 and masters._checked("accounts", {"gl_code": "x" * 200})["gl_code"] == "X" * 200
+          and all(_refused(lambda n=n, k=k: masters._checked("accounts", {"gl_code": "x" * n}, lenient=k)) for n, k in ((601, True), (201, False))), None)
     r = c.post(BASE + "/api/setup/accounts", headers=H, json={"entity_id": EXA, "fields": {"label": "Odd code", "bank": "Example Bank", "currency": "SGD", "gl_code": " no good! "}})
     check("...and so is one SQL Account would not write: kept as typed apart from the capitals and the spaces round it", r.status_code == 200
           and q("SELECT gl_code FROM accounts WHERE id = ?", (r.get_json()["id"],))[0]["gl_code"] == "NO GOOD!", r.get_json())
@@ -619,6 +665,13 @@ with section("18. a big chart of accounts is listed, pasted and edited in a mome
     free = call("post", "/api/setup/gl_accounts", json={"entity_id": big, "fields": {"code": "999-0001", "name": "Used by nothing"}})["id"]
     n, why = statements(lambda rc: edit(rc, {"name": "x", "notes": "y", "code": "999-0002"}, free), EXISTS)
     check("...and one that nothing uses is changed (not refused), having asked each table once", why is None and n == SOURCES, (n, why))
+
+# 19. the company switcher's names come from the records' overview: a company's short name travels in it, as Setup keeps it
+with section("19. the records' overview (/api/meta) carries each company's short name"):
+    names = {e["code"]: e for e in call("get", "/api/meta")["entities"]}
+    check("/api/meta lists every company with its short_name key (empty when none is set), which the company switcher reads", all("short_name" in e for e in names.values()) and names["EXA"]["short_name"] in (None, ""), names["EXA"])
+    call("patch", f"/api/setup/entities/{EXA}", json={"fields": {"short_name": "Alpha"}})
+    check("...and the one set in Setup is there at once", {e["code"]: e["short_name"] for e in call("get", "/api/meta")["entities"]}["EXA"] == "Alpha")
 
 if failed:
     print(f"\n{len(failed)} failed, {len(passed)} passed")

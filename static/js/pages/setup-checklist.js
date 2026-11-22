@@ -149,9 +149,13 @@ function chkFields(isNew) {
 // opened again on what the change did.
 async function chkDone(r, id, head, keep = {}) {
   toast(`${head}. ${effectText(r.affected, "checklist item")}`);
-  await reloadMeta(); await render();
-  if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep, saved: { ...r, head } });
-  closeDrawer(true);
+  return afterSaved(async () => {
+    await reloadMeta();
+    const ok = await render();
+    if (ok === false) return false;
+    if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep, saved: { ...r, head } });
+    closeDrawer(true);
+  });
 }
 
 // Preview (nothing kept) or Save: adds the item, or changes it from the month chosen.
@@ -180,7 +184,7 @@ async function chkAct(act, btn) {
     const body = { action: act, entity_id: d.entity_id ?? state.entity, item_id: O.id, reason };
     if (act !== "delete") body.from_month = fromMonth("#cl-from");
     const r = await api("/api/setup/checklist", { json: body });
-    if (act === "delete") { closeDrawer(true); toast("Item deleted"); await reloadMeta(); return render(); }
+    if (act === "delete") { closeDrawer(true); toast("Item deleted"); return afterSaved(async () => { await reloadMeta(); return render(); }); }
     const keep = { ...drawerEdits(), "cl-from": body.from_month };
     return chkDone(r, O.id, act === "stop" ? "Stopped" : "In use again", keep);
   });
@@ -215,6 +219,7 @@ async function chkCopySave(preview) {
   const r = await api("/api/setup/checklist", { json: body });
   if (preview) return showPreview("#cl-preview", r, "checklist item");
   toast(`Checklist copied. ${effectText(r.affected, "checklist item")}`);
-  closeDrawer(true); await reloadMeta(); return render();
+  closeDrawer(true);
+  return afterSaved(async () => { await reloadMeta(); return render(); });
 }
 

@@ -130,7 +130,7 @@ async function pasteSave(preview, over = {}) {
   const kind = P.kind;
   toast(pasteCounts(r.counts));
   closeDrawer(true);
-  await afterSetupChange(kind); return render();
+  return afterSaved(async () => { await afterSetupChange(kind); return render(); });
 }
 
 // General settings: one form; Save sends only what changed.
@@ -154,13 +154,16 @@ async function settingsSave() {
   if (reason) body.reason = reason;
   const was = currentCycle();
   await api("/api/setup/settings", { method: "PATCH", json: body });
-  state.meta = await readMeta(); paintOrg();
-  if ("cycle_rollover_day" in values && currentCycle() !== was) {
-    if (state.month === was) state.month = currentCycle();
-    await openCycleMonths();
-  }
-  renderNav();
-  toast("Saved"); return render();
+  toast("Saved");
+  return afterSaved(async () => {
+    state.meta = await readMeta(); paintOrg();
+    if ("cycle_rollover_day" in values && currentCycle() !== was) {
+      if (state.month === was) state.month = currentCycle();
+      await openCycleMonths();
+    }
+    renderNav();
+    return render();
+  });
 }
 
 /* Move setup: this install's setup saved as one file (setup.json) to start another install with, and such a file imported into
@@ -246,11 +249,16 @@ async function moveImport(reason) {
   try { await api("/api/setup/import", { json: { setup: M.file, reason } }); }
   catch (e) { if (appStopped(e)) throw e; Object.assign(M, { file: null, preview: null, refused: e.message }); moveRepaint("mv-refused"); return; }
   Object.assign(M, { file: null, preview: null, name: "", refused: "" });
-  state.meta = await readMeta(); paintOrg();
-  M.justImported = (state.meta.entities || []).length > 0;  // a file of rules alone added no company to see
-  state.entity = firstEntityId(); state.setup.types = null;
-  toast("Setup imported"); renderNav(); await render();
-  document.getElementById("mv-imp-h")?.focus?.({ preventScroll: true });
+  toast("Setup imported");
+  await afterSaved(async () => {
+    state.meta = await readMeta(); paintOrg();
+    M.justImported = (state.meta.entities || []).length > 0;  // a file of rules alone added no company to see
+    state.entity = firstEntityId(); state.setup.types = null;
+    renderNav();
+    const ok = await render();
+    document.getElementById("mv-imp-h")?.focus?.({ preventScroll: true });
+    return ok;
+  });
 }
 
 /* Required documents: the documents each payment type needs before a payment counts as complete, for every company or
@@ -354,7 +362,7 @@ async function reqSave(follow) {
   if (reason) body.reason = reason;
   const r = await api("/api/setup/required", { json: body });
   closeDrawer(true); toast(reqAffected(r.affected));
-  return render();
+  return afterSaved(() => render());
 }
 
 /* Monthly checklist (per company) and joiner and leaver reminders (every company). Each item or reminder has terms: what

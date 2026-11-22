@@ -455,7 +455,7 @@ class _Import:
 
     def fields(self, kind, r, keys):
         """The row's fields Setup's form has, checked as Setup checks them (masters._checked), and the required ones."""
-        vals = masters._checked(kind, {k: r[k] for k in keys if k in r and r[k] is not None})
+        vals = masters._checked(kind, {k: r[k] for k in keys if k in r and r[k] is not None}, lenient=True)
         for f in masters.KINDS[kind]["fields"]:
             if f.get("required") and f["key"] in keys and vals.get(f["key"]) in (None, ""):
                 raise Refused(f"{f['label']}: this can't be empty.")

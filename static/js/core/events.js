@@ -20,7 +20,7 @@ document.addEventListener("click", async ev => {
     if (ds.view) return go(ds.view, ds.entity);
     if (ds.goField) { ev.preventDefault(); const f = document.getElementById(ds.goField); f?.scrollIntoView?.({ block: "center" }); return f?.focus?.(); }
     if (ds.copyDetails !== undefined) return copyDetails(ds.copyDetails);
-    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return render(); }
+    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return ds.retry === "start" ? start() : render(); }
     if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
     if (ds.restore) return await openRestore(+ds.restore, ds.restoreTitle);
     if (ds.restoreGo) return await restoreGo(+ds.restoreGo, t);  // awaited: a refusal or a stopped app reaches the catch below, and is said

@@ -279,8 +279,10 @@ async function restoreGo(rowId, btn) {
   finally { restoreGo.busy = false; }
   closeDrawer(true);
   toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
-  if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);
-  return render();
+  return afterSaved(async () => {
+    if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);
+    return render();
+  });
 }
 
 // The Overview says when the trail needs attention (changes made outside the app, a records.db behind or rebuilt).

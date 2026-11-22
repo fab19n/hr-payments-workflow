@@ -381,8 +381,10 @@ def spec(kind):
 
 # ---------- checking values ----------
 
-def check_value(f, v):
-    """A field's value from the page, checked and made tidy; None for empty. Raises Refused with a plain sentence."""
+def check_value(f, v, lenient=False):
+    """A field's value from the page, checked and made tidy; None for empty. Raises Refused with a plain sentence. lenient: a value
+    that may be older than the rule (a code kept by a version before capitals were kept, in capitals longer than it may now be typed): the
+    limit of a field kept in capitals is then three times its usual one (a hard cap, not none)."""
     label, kind = f["label"], f["type"]
     if v is None or (isinstance(v, str) and not v.strip() and kind != "bool"):
         if f.get("required"):
@@ -399,9 +401,12 @@ def check_value(f, v):
                     raise Refused(f"{label}: give the three-letter code, such as MYR or USD.")
             elif not CODE.fullmatch(v):
                 raise Refused(f"{label}: capitals, digits, - and _ only, up to 16 characters, starting with a letter or digit.")
+        limit = 2000 if kind == "textarea" else f.get("max", 200)
         if f.get("upper"):  # a code kept as SQL Account writes it: capitals. Its shape isn't checked (an older record may hold any text)
             v = v.upper()
-        if len(v) > (2000 if kind == "textarea" else f.get("max", 200)):  # the length of what is kept, so what is kept is always accepted again
+            if lenient:
+                limit *= 3
+        if len(v) > limit:  # the length of what is kept: a value typed or sent now is always accepted again once kept
             raise Refused(f"{label}: that is too long.")
         return v
     if kind == "key":
@@ -890,7 +895,7 @@ def _can_stop(kind, rec):
 
 # ---------- changing ----------
 
-def _checked(kind, fields, rec=None):
+def _checked(kind, fields, rec=None, lenient=False):
     if not isinstance(fields, dict):
         raise Refused("Nothing to save.")
     known = {f["key"]: f for f in spec(kind)["fields"]}
@@ -898,7 +903,10 @@ def _checked(kind, fields, rec=None):
     for k, v in fields.items():
         if k not in known:
             raise Refused(f"{k} can't be set here.")
-        out[k] = check_value(known[k], v)
+        # A value re-posted unchanged (compared in capitals, without the spaces round it) is the record's own, which an older version may have kept
+        # longer than a new one may be; so is a value in a setup file.
+        same = bool(rec) and known[k].get("upper") and isinstance(v, str) and rec.get(k) is not None and v.strip().upper() == str(rec[k]).strip().upper()
+        out[k] = check_value(known[k], v, lenient=lenient or same)
     return out
 
 

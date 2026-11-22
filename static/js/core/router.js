@@ -195,6 +195,7 @@ async function applyPlace(place, opts = {}) {
     }
     const v = place.view, R = ROUTES[v], p = cleanParams(v, place.params), B = state.books;
     state.view = v;
+    state.saved = false;  // a page of another place doesn't say "it was saved"
     if (v !== "setup") setupLeft();  // what Setup keeps only while it is on show (the rows Show more showed, the link after an import) goes
     if (place.entity && place.entity !== "all") state.entity = +place.entity;
     if (!state.entity) state.entity = firstEntityId();
@@ -276,7 +277,7 @@ async function onHashChange() {
 // The first draw: the address in the bar is the place; with none it is the Overview, and the address is written.
 async function routerBoot() {
   const L = placeLoc();
-  if (window.addEventListener) window.addEventListener("hashchange", onHashChange);
+  if (window.addEventListener && !routerBoot.on) { routerBoot.on = true; window.addEventListener("hashchange", onHashChange); }  // once, if the app starts again after a failed start
   const h = L ? L.hash : "", home = !h || h === "#" || h === "#/", place = home ? null : parseAddr(h);
   if (h && !home) ROUTER.at = h;
   if (entryNo() != null) ROUTER.i = entryNo();
