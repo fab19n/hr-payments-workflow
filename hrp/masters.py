@@ -100,7 +100,7 @@ KINDS = {
             _f("currency", "Currency", "code", required=True, max=3, hint="Three letters: MYR, USD, SGD."),
             _f("cash_book", "Cash book account", "bool", wide=True,
                hint="The account SQL Account's cash book listing is for. Each company has one, in MYR."),
-            _f("gl_code", "GL account code", "sqlcode", hint="The bank account's code in SQL Account's chart of accounts."),  # kept in capitals, like the chart's own codes
+            _f("gl_code", "GL account code", "text", upper=True, hint="The bank account's code in SQL Account's chart of accounts."),  # kept in capitals like the chart's codes, never refused for its shape
             _f("sql_payment_method", "SQL payment method", "text", hint="As SQL Account names it on vouchers."),
             _f("bank_address", "Bank address", "text", wide=True, hint="Printed on invoices when this account is the one to pay into."),
             _f("swift_code", "Bank transfer (SWIFT) code", "text", max=11, hint="Printed on invoices, e.g. EXMBMYKL."),
@@ -392,6 +392,8 @@ def check_value(f, v):
         if not isinstance(v, str):
             raise Refused(f"{label}: give it as text.")
         v = v.strip()
+        if f.get("upper"):  # a code kept as SQL Account writes it: capitals. Its shape isn't checked: an older record may hold any text
+            v = v.upper()
         if kind == "code":
             v = v.upper()
             if f["key"] == "currency":

@@ -79,6 +79,18 @@ def last_tx():
     return q("SELECT * FROM audit_tx ORDER BY id DESC LIMIT 1")[0]
 
 
+def write(why, *statements):
+    con = db.connect()
+    con.arm("user", f"test: {why}")
+    try:
+        for sql, args in statements:
+            con.execute(sql, args)
+        con.commit()
+    finally:
+        con.disarm()
+        con.close()
+
+
 # What a record holding states in a setup file is called in the file's lists (hrp/setupfile.py LISTS) and in what an install holds (HOLDING).
 HELD_AS = {"entities": "companies", "accounts": "bank accounts", "payees": "recurring payments", "parties": "customers and suppliers",
            "gl_accounts": "GL accounts", "statutory_accounts": "statutory accounts", "checklist_items": "checklist items", "advances": "salary advances"}
@@ -110,7 +122,7 @@ if CHILD:
     dst.write_text(json.dumps({"preview": counted(pv), "holding": held(now["holding"]), "empty": now["empty"],
                                "codes": [r["code"] for r in q("SELECT code FROM entities ORDER BY id")],
                                "active": {r["code"]: r["active"] for r in q("SELECT code, active FROM entities")},
-                               "gl_codes": {r["label"]: r["gl_code"] for r in q("SELECT label, gl_code FROM accounts WHERE label = 'Main'")}}), encoding="utf-8")
+                               "gl_codes": {r["label"]: r["gl_code"] for r in q("SELECT label, gl_code FROM accounts")}}), encoding="utf-8")
     print("child done")
     sys.exit(0)
 
@@ -218,6 +230,11 @@ r = c.post(BASE + "/api/setup/parties", headers=H, json={"entity_id": EXA, "fiel
 check("Add customer or supplier with the words box left empty (as the page posts it) is not refused", r.status_code == 200, r.get_json())
 if r.status_code != 200:  # (to see what else a change fixes, with HRP_KEEP_GOING: the customer is added without the box)
     call("post", "/api/setup/parties", json={"entity_id": EXA, "fields": {"name": "Test Customer", "kind": "customer", "sql_code": "300-T001"}})
+# bank accounts that hold a GL code as an older version let it be typed: any text (here 17 and 30 characters, not in SQL's code format)
+OLD_A, OLD_B = "Example Bank CA 1", "Example Bank Current Acct 0001"
+assert len(OLD_B) == 30
+write("old free-text GL codes", ("UPDATE accounts SET gl_code = ? WHERE id = ?", (OLD_A, main["id"])),
+      ("UPDATE accounts SET gl_code = ? WHERE entity_id = ? AND label = 'Current'", (OLD_B, EXB)))
 full = call("get", "/api/setup/export?what=full&payees=1")
 check("the file holds the stopped company and not the deleted one", [e["code"] for e in full["entities"]] == ["EXA", "EXB", "EXC"]
       and [e["active"] for e in full["entities"]] == [1, 1, 0], [(e["code"], e["active"]) for e in full["entities"]])
@@ -231,13 +248,21 @@ fileholds = {w: len(full[k]) for k, w in (("entities", "companies"), ("accounts"
 check("the file's own rows are the figures the install holds", all(mine[w] == n for w, n in fileholds.items()), (mine, fileholds))
 src_file, out_file = tmp / "setup full.json", tmp / "child out.json"
 filed = json.loads(json.dumps(full))
-next(a for a in filed["accounts"] if a["label"] == "Main")["gl_code"] = " bk-310 "   # a file made by hand, or by an older version
+next(a for a in filed["accounts"] if a["label"] == "Spare")["gl_code"] = " bk-310 "   # a file made by hand, or by an older version
 src_file.write_text(json.dumps(filed), encoding="utf-8")
 run = subprocess.run([sys.executable, "-m", "synthetic_tests.setup_records_test", "--import", str(src_file), str(out_file)],
                      cwd=str(Path(__file__).resolve().parents[1]), capture_output=True, text=True, timeout=600)
 print("\n".join("  " + line for line in run.stdout.splitlines()))
 check("the new install's checks pass", run.returncode == 0, run.stdout[-1500:] + run.stderr[-1500:])
-got = json.loads(out_file.read_text(encoding="utf-8"))
+
+
+class Missing(dict):
+    """What the new install didn't say, when it stopped (listing every failure with HRP_KEEP_GOING): any key is nothing, so each check that needed it fails."""
+    def __missing__(self, k):
+        return Missing()
+
+
+got = Missing(json.loads(out_file.read_text(encoding="utf-8"))) if out_file.exists() else Missing()
 check("First run's preview of the file counts the stopped company, not the deleted one", got["preview"]["companies"] == 3, got["preview"])
 check("First run's counts are Move setup's: the preview of the file equals what the install holds once it is imported, figure by figure",
       all(got["holding"][w] == got["preview"][w] for w in got["holding"]) and set(got["holding"]) >= {"companies", "bank accounts", "GL accounts", "statutory accounts",
@@ -247,22 +272,15 @@ check("First run's counts are Move setup's: the preview of the file equals what 
 # preview counts them, above): the first install keeps none of its own for the two companies it never opened a checklist for.
 check("...and, but for the starter checklists the import gives, both are what the first install holds",
       all(got["holding"][w] == mine[w] for w in mine if w != "checklist items") and got["holding"]["checklist items"] > mine["checklist items"], (got["holding"], mine))
-check("a bank account's GL code comes in as Setup stores one, in capitals without the spaces round it", got["gl_codes"] == {"Main": "BK-310"}, got.get("gl_codes"))
+check("the export of an install holding free-text GL codes holds them as they are", {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Main") == OLD_A
+      and {a["label"]: a["gl_code"] for a in full["accounts"]}.get("Current") == OLD_B, [(a["label"], a["gl_code"]) for a in full["accounts"]])
+check("...and imports into a fresh install, which is not refused for their shape: they come in tidied (capitals, no spaces round them), the 30-character one whole, and a hand-made ' bk-310 ' as BK-310",
+      got["gl_codes"] == {"Main": OLD_A.upper(), "Current": OLD_B.upper(), "Spare": "BK-310"}, got.get("gl_codes"))
 check("the stopped company comes across as stopped, and nothing is left of the deleted one",
       got["codes"] == ["EXA", "EXB", "EXC"] and got["active"] == {"EXA": 1, "EXB": 1, "EXC": 0} and got["empty"] is False, got)
 
 
 # ---------- 5. review fixes ----------
-def write(why, *statements):
-    con = db.connect()
-    con.arm("user", f"test: {why}")
-    try:
-        for sql, args in statements:
-            con.execute(sql, args)
-        con.commit()
-    finally:
-        con.disarm()
-        con.close()
 
 
 class section:
@@ -484,8 +502,17 @@ with section("17. a chart account's uses are counted per company, as capitals wi
           and call("get", f"/api/setup/accounts/{pa['id']}")["record"]["gl_code"] == "880-A006")
     mk = call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "New with a code", "bank": "Example Bank", "currency": "SGD", "gl_code": "bk-7 "}})
     check("...also when the account is added", q("SELECT gl_code FROM accounts WHERE id = ?", (mk["id"],))[0]["gl_code"] == "BK-7")
-    r = c.post(BASE + "/api/setup/accounts", headers=H, json={"entity_id": EXA, "fields": {"label": "Bad code", "bank": "Example Bank", "currency": "SGD", "gl_code": "no good!"}})
-    check("...and a code SQL Account would not write is refused, as the chart's are", r.status_code == 400 and "GL account code" in r.get_json()["error"], r.get_json())
+    # ...but never refused for its shape: an older install holds any text there, and must keep saving it
+    mo = call("post", "/api/setup/accounts", json={"entity_id": EXA, "fields": {"label": "Old text", "bank": "Example Bank", "currency": "SGD"}})
+    write("an old free-text GL code", ("UPDATE accounts SET gl_code = ? WHERE id = ?", (OLD_A, mo["id"])))
+    r = c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": OLD_A, "bank": "Example Bank Two"}})
+    check("a PATCH that posts the old value unchanged with another field is not refused, and tidies it", r.status_code == 200
+          and q("SELECT gl_code, bank FROM accounts WHERE id = ?", (mo["id"],)) == [{"gl_code": OLD_A.upper(), "bank": "Example Bank Two"}], r.get_json())
+    r = c.patch(BASE + f"/api/setup/accounts/{mo['id']}", headers=H, json={"fields": {"gl_code": OLD_B}})
+    check("...a 30-character value (over a chart code's 20) is kept whole", r.status_code == 200 and q("SELECT gl_code FROM accounts WHERE id = ?", (mo["id"],))[0]["gl_code"] == OLD_B.upper(), r.get_json())
+    r = c.post(BASE + "/api/setup/accounts", headers=H, json={"entity_id": EXA, "fields": {"label": "Odd code", "bank": "Example Bank", "currency": "SGD", "gl_code": " no good! "}})
+    check("...and so is one SQL Account would not write: kept as typed apart from the capitals and the spaces round it", r.status_code == 200
+          and q("SELECT gl_code FROM accounts WHERE id = ?", (r.get_json()["id"],))[0]["gl_code"] == "NO GOOD!", r.get_json())
 
 # 18. a big company's chart: 500 accounts, 3 openings each and 50,000 journal lines read from SQL. Counting each account's uses by a scan of the
 # journal lines for each took 9 to 16 seconds for the list and the same for pasting the chart; it is one pass over each table, whatever the chart.
@@ -527,32 +554,39 @@ with section("18. a big chart of accounts is listed, pasted and edited in a mome
     check("...and its code, which its openings and journal lines name, still can't be changed", r.status_code == 400 and "can't change once used" in r.get_json()["error"], r.get_json())
 
     # the speed above is a time; this is the work: the lists of a chart read each table once, not once per account, and an edit asks only when it must
-    def statements(fn, table="sql_journal_lines"):
+    def statements(fn, has):
+        """(how many statements of the call have the words in has, what it was refused with, or None)."""
         rc = db.connect()
-        seen = []
-        rc.set_trace_callback(lambda s: seen.append(s) if table in s else None)
+        seen, refused = [], None
+        rc.set_trace_callback(lambda s: seen.append(s) if all(w in s for w in has) else None)
         try:
             fn(rc)
-        except masters.Refused:
-            pass
+        except masters.Refused as x:
+            refused = str(x)
         finally:
             rc.set_trace_callback(None)
             rc.close()
-        return len(seen)
-    check("listing a chart of 500 accounts reads the journal lines once, not once per account", statements(lambda rc: masters.listing(rc, "gl_accounts", big)) == 1)
-    check("one account's record reads them once (its Where used and what it locks come from the same reading)", statements(lambda rc: masters.record(rc, "gl_accounts", gid)) == 1)
+        return len(seen), refused
+    GROUPED, EXISTS, SOURCES = ("UPPER(TRIM(", "GROUP BY"), ("UPPER(TRIM(", "LIMIT 1"), len(masters.GL_USES)
+    check("listing a chart of 500 accounts reads each of the tables that name an account once, not once per account", statements(lambda rc: masters.listing(rc, "gl_accounts", big), GROUPED)[0] == SOURCES)
+    check("one account's record reads each of them once (its Where used and what it locks come from the same reading)", statements(lambda rc: masters.record(rc, "gl_accounts", gid), GROUPED)[0] == SOURCES
+          and statements(lambda rc: masters.record(rc, "gl_accounts", gid), EXISTS)[0] == 0)
 
-    def edit(rc, fields):
+    def edit(rc, fields, rid=None):
         rc.arm("user", "test: one edit")
         try:
-            masters.update(rc, "gl_accounts", gid, fields, quiet=True)
+            masters.update(rc, "gl_accounts", rid or gid, fields, quiet=True)
         finally:
             rc.rollback()
             rc.disarm()
     check("an edit of an account's name, type and notes doesn't look for what uses it at all (only its code depends on that)",
-          statements(lambda rc: edit(rc, {"name": "Edited twice", "notes": "another note", "type": "asset", "special": "bank"}), "ledger_openings") == 0)
-    check("...and an edit that changes its code and two other fields asks once, however many fields change",
-          statements(lambda rc: edit(rc, {"code": "999-9998", "name": "x", "notes": "y"}), "ledger_openings") == 1)
+          statements(lambda rc: edit(rc, {"name": "Edited twice", "notes": "another note", "type": "asset", "special": "bank"}), ("UPPER(TRIM(",))[0] == 0)
+    n, why = statements(lambda rc: edit(rc, {"name": "x", "notes": "y", "code": "999-9998"}), EXISTS)
+    check("an edit of the name, the notes and then the code of an account that is used is refused, having asked what uses it once at most (each table once), not once for each field",
+          why is not None and "can't change once used" in why and 1 <= n <= SOURCES, (n, why))
+    free = call("post", "/api/setup/gl_accounts", json={"entity_id": big, "fields": {"code": "999-0001", "name": "Used by nothing"}})["id"]
+    n, why = statements(lambda rc: edit(rc, {"name": "x", "notes": "y", "code": "999-0002"}, free), EXISTS)
+    check("...and one that nothing uses is changed (not refused), having asked each table once", why is None and n == SOURCES, (n, why))
 
 if failed:
     print(f"\n{len(failed)} failed, {len(passed)} passed")

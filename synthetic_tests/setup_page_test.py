@@ -154,12 +154,15 @@ async function fetch(path, init = {}) {
     return { ok: hit.status < 400, status: hit.status, json: async () => hit.body };
   }
   if ((FX.fail || {})[path]) throw new TypeError("Failed to fetch");   // the app is not running
+  if (onGet) onGet(path);
   const hit = FX.get[path];
   if (hit === undefined) return { ok: false, status: 404, json: async () => ({ error: "no fixture for " + path }) };
   return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(hit)) };
 }
 const scrolls = [];   // what the window was scrolled to: a page drawn again must not move it
-const win = { matchMedia: () => ({ matches: true }), location: { hash: "#/admin/setup", replace(v) { this.hash = v; } }, scrollTo(...a) { scrolls.push(a); }, addEventListener() {}, print() {} };
+const win = { matchMedia: () => ({ matches: true }), location: { hash: "#/admin/setup", replace(v) { this.hash = v; } }, scrollX: 0, scrollY: 0,
+  scrollTo(...a) { scrolls.push(a); [this.scrollX, this.scrollY] = a; }, addEventListener() {}, print() {} };
+let onGet = null;   // called with the path of each read: what the page looks like while it is waiting for the records
 const sandbox = { document, fetch, FormData: class {}, console, setTimeout, clearTimeout, URLSearchParams, CSS: { escape: s => s },
   localStorage: { getItem: () => null, setItem() {} }, window: win, navigator: {}, __el: el, __calls: calls, __listeners: listeners,
   __btn: { closest: () => ({ after() {} }), getAttribute: () => "false", isConnected: true } };
@@ -183,12 +186,18 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     const kind = m && m[1], at = kind === "move" ? 700 : kind === "required" ? 420 : 80;
     let st = 0;
     const nav = { sets: [], kind, clientHeight: 400, clientTop: 0, getBoundingClientRect: () => ({ top: 100, height: 400 }),
-      get scrollTop() { return st; }, set scrollTop(v) { st = v; nav.sets.push(el("setupMain").innerHTML.length > 0); }, userScroll(v) { st = v; },
+      get scrollTop() { return st; }, set scrollTop(v) { st = v; nav.sets.push([v, smWrites > 0]); }, userScroll(v) { st = v; },
       active: { scrolled: [], scrollIntoView(o) { this.scrolled.push(o); }, focus() { document.activeElement = this; }, getBoundingClientRect: () => ({ top: 100 + at - st, height: 40 }) },
       querySelector(s) { return s === ".sn.on" ? this.active : null; } };
     return nav; };
-  let mainHtml = "";
-  Object.defineProperty(main, "innerHTML", { get: () => mainHtml, set(v) { mainHtml = v; if (/id="setupMain"/.test(v)) el("setupMain").innerHTML = ""; main.nav = navOf(v); } });
+  // The page is 700 high and 2500 more while its section has something in it, in a window 600 high: a short page clamps the window's scroll, as a browser does.
+  // The section's own place keeps what the grid was drawn with (the old section, for a redraw) and counts the times the section is written.
+  let mainHtml = "", smHtml = "", smWrites = 0;
+  const seenY = [];
+  const clamp = () => { const max = Math.max(0, 700 + (smHtml.length > 200 ? 2500 : 0) - 600); if (win.scrollY > max) win.scrollY = max; seenY.push(win.scrollY); };
+  Object.defineProperty(el("setupMain"), "innerHTML", { get: () => smHtml, set(v) { smHtml = v; smWrites++; clamp(); } });
+  Object.defineProperty(main, "innerHTML", { get: () => mainHtml, set(v) {
+    mainHtml = v; const m = /id="setupMain">([\s\S]*)<\/div><\/div>$/.exec(v); smHtml = m ? m[1] : ""; smWrites = 0; clamp(); main.nav = navOf(v); } });
   main.nav = null; main.querySelector = s => s === ".setup-nav" ? main.nav : null;
   const view = async (kind, entity) => {
     run(`state.entity = ${entity}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false;`);
@@ -550,7 +559,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     FX.get["/api/setup/import"] = { empty: true, holding: [] };
     run(`state.view = "setup"; render = async () => { await viewSetup(__el("main")); }`);   // the page is really drawn again for this
     scrolls.length = 0;
-    const seen = () => ({ kind: main.nav.kind, top: main.nav.scrollTop, early: main.nav.sets.filter(x => !x), intoView: main.nav.active.scrolled.length, focused: document.activeElement === main.nav.active });
+    const seen = () => ({ kind: main.nav.kind, top: main.nav.scrollTop, sets: main.nav.sets, intoView: main.nav.active.scrolled.length, focused: document.activeElement === main.nav.active });
     main.innerHTML = "";                                                                      // a deep address: no menu before it
     await view("move", FX.EXA);
     r.deep = seen();
@@ -696,6 +705,67 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
 
   // 6b. a record's History key and a list's name are escaped where they are written into the page
   await tryit("escapesCore", async () => ({ hist: run(`histSection('a"b', '<x>')`), bar: run(`listBar('setup-a"b', 'cust <i>x</i>')`) }));
+
+  // 2. a section drawn again keeps what it showed in place until the new one is read, writes the new one once, and the window keeps its place
+  await tryit("redrawKeeps", async () => {
+    const r = {}, during = [];
+    FX.get["/api/setup/import"] = { empty: true, holding: [] };
+    await view("parties", FX.EXA);
+    onGet = path => { if (/\/api\/setup\/parties\?entity=/.test(path)) during.push({ kept: smHtml.length > 200, y: win.scrollY }); };
+    win.scrollY = 800; seenY.length = 0; scrolls.length = 0;
+    await run(`viewSetup(__el("main"))`); await sleep(20);   // a save, a stop, a delete, a put back: the same section of the same company
+    r.same = { y: win.scrollY, low: Math.min(...seenY), scrolls: scrolls.length, during, writes: smWrites };
+    onGet = path => { if (/\/api\/setup\/parties\?entity=/.test(path)) win.scrollY = 77; };   // something moved the window while the records were read
+    win.scrollY = 800; scrolls.length = 0;
+    await run(`viewSetup(__el("main"))`); await sleep(20);
+    r.moved = { y: win.scrollY, scrolls: scrolls.slice() };
+    onGet = null; win.scrollY = 800; scrolls.length = 0;
+    await view("accounts", FX.EXA);    // another section starts empty, at the top, and is not put back
+    r.otherSection = { y: win.scrollY, scrolls: scrolls.length };
+    win.scrollY = 800; scrolls.length = 0;
+    await view("accounts", FX.EXB);    // so does another company
+    r.otherCompany = { y: win.scrollY, scrolls: scrolls.length };
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 3. First run: what was saved and not read again is over once something else read the records, and they list the company
+  await tryit("frSavedElsewhere", async () => {
+    const r = {};
+    run(`state.view = "overview"; state.meta.entities = []; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.busy = ""; FR.preview = null; FR.file = null;
+      FR.addOpen = true; FR.tried = false; FR.code = "GHI"; FR.cname = "Example Three"; FR.reg = ""; FR.kind = "here"`);
+    withCompanies([co(1, "GHI", 1)]); FX.fail = { "/api/meta": true };
+    r.threw = await run(`frAddCompany().then(() => "ok", e => e.name)`); FX.fail = {};
+    r.dueWhileSaved = run(`firstRunDue()`); r.savedKnown = run(`FR.saved && FR.saved.known`);
+    run(`state.meta = ${JSON.stringify({ ...meta0, entities: [co(1, "GHI", 1)] })}`);   // Setup read the records again
+    r.dueAfter = run(`firstRunDue()`); r.saved = run(`FR.saved`); r.alerted = run(`FR.alerted`);
+    // a second company saved but not read: the records still list the first, so it is still saved; they list both once they are read again
+    run(`FR.done = null; FR.note = null; FR.addOpen = true; FR.code = "JKL"; FR.cname = "Example Four"; FR.kind = "here"; FR.tried = false`);
+    withCompanies([co(1, "GHI", 1), co(2, "JKL", 1)]); FX.fail = { "/api/meta": true };
+    r.threw2 = await run(`frAddCompany().then(() => "ok", e => e.name)`); FX.fail = {};
+    r.due2 = run(`firstRunDue()`); r.saved2 = run(`!!FR.saved`);
+    run(`state.meta = ${JSON.stringify({ ...meta0, entities: [co(1, "GHI", 1), co(2, "JKL", 1)] })}`);
+    r.due2After = run(`firstRunDue()`); r.saved2After = run(`FR.saved`);
+    FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.code = ""; FR.cname = ""; FR.kind = ""; state.entity = ${FX.EXA}`);
+    await view("accounts", FX.EXA);
+    return r;
+  });
+
+  // 4c. Put it back's Try again with the app stopped: one request and one dialog each time, however often it is pressed, and it works once the app is back
+  await tryit("restoreRetry", async () => {
+    const path = `/api/setup/restore/${FX.RESTORE}`, r = { rounds: [] };
+    FX.fail = { [path]: true };
+    await run(`openRestore(${FX.RESTORE}, "Spare")`); await sleep(20);
+    for (let i = 0; i < 3; i++) {
+      calls.length = 0;
+      await run(`click({ restore: "${FX.RESTORE}", restoreTitle: "Spare" })`); await sleep(20);
+      r.rounds.push({ requests: calls.filter(x => x[1] === path).length, dialogs: (el("drawer").innerHTML.match(/id="restoreBox"/g) || []).length, notes: (el("rsBody").innerHTML.match(/Couldn't load this/g) || []).length });
+    }
+    FX.fail = {}; calls.length = 0;
+    await run(`click({ restore: "${FX.RESTORE}", restoreTitle: "Spare" })`); await sleep(20);
+    r.back = { requests: calls.filter(x => x[1] === path).length, dialogs: (el("drawer").innerHTML.match(/id="restoreBox"/g) || []).length, body: el("rsBody").innerHTML };
+    return r;
+  });
   process.stdout.write(JSON.stringify(out));
 })().catch(e => { console.error(e && e.stack || e); process.exit(1); });
 """
@@ -976,9 +1046,10 @@ check("...a save that draws the page again keeps them; a changed search, clearin
       ma["saveRedraw"] == 30 and ma["searched"] == 25 and ma["moreAgain"] == 30 and ma["cleared"] == 25 and ma["clearBtn"] == 25, ma)
 check("...and a fresh page (the menu's Setup item while on Setup, a record's address on the same section) starts at 25 rows as it clears the search", ma["freshPage"] == 25, ma)
 nk = o["navKeep"]
-check("the Setup menu is scrolled last, once the section is drawn, and only itself (never scrollIntoView, never the window): a deep address brings its item into the frame, a page drawn again keeps the scroll, and an item out of the frame is scrolled to",
-      nk["deep"] == {"kind": "move", "top": 340, "early": [], "intoView": 0, "focused": False} and nk["save"]["top"] == 400 and nk["save"]["early"] == [] and nk["save"]["intoView"] == 0
-      and nk["click"]["top"] == 80 and nk["click"]["early"] == [] and nk["click"]["intoView"] == 0 and nk["windowScrolls"] == 0, nk)
+check("the Setup menu gets the scroll it had at once, as it is drawn (not when the section has been read), and is scrolled to its item once the section is drawn, only itself (never scrollIntoView, never the window)",
+      nk["deep"] == {"kind": "move", "top": 340, "sets": [[0, False], [340, True]], "intoView": 0, "focused": False}
+      and nk["save"] == {"kind": "move", "top": 400, "sets": [[400, False]], "intoView": 0, "focused": False}
+      and nk["click"] == {"kind": "accounts", "top": 80, "sets": [[400, False], [80, True]], "intoView": 0, "focused": True} and nk["windowScrolls"] == 0, nk)
 check("a click (or Enter) on a menu item puts the focus on the new item on show; a page drawn again that no menu item asked for leaves the focus alone",
       nk["click"]["kind"] == "accounts" and nk["click"]["focused"] is True and nk["save"]["focused"] is False, nk)
 pt = o["putBackTitle"]
@@ -997,7 +1068,7 @@ check("the link to the companies an import added is for the page drawn right aft
 sv = o["frSaved"]
 SAVED = "It was saved, but this page could not reload. Try again."
 check("First run when Import was saved but the records can't be read again: it says so with Try again, and no form is left that would write it twice",
-      sv["threw"] == "TypeError" and sv["busy"] == "" and sv["saved"] == {"imported": True, "code": "", "kept": ""} and has(sv["html"], SAVED, 'data-fr-reload="1"')
+      sv["threw"] == "TypeError" and sv["busy"] == "" and {k: v for k, v in sv["saved"].items() if k != "known"} == {"imported": True, "code": "", "kept": ""} and has(sv["html"], SAVED, 'data-fr-reload="1"')
       and "fr-cards" not in sv["html"] and 'data-fr-import' not in sv["html"] and 'id="fr-add-open"' not in sv["html"] and "aria-busy" not in sv["html"], sv["html"][:700])
 check("...Try again only reads: it fails again with a note still there, and once it works the page goes on with nothing sent",
       sv["stillSaved"] is not None and sv["stillBusy"] == "" and SAVED in sv["stillHtml"]
@@ -1041,6 +1112,22 @@ ec = o["escapesCore"]
 check("a record's History key and a list's name are escaped where they are written into the page",
       'data-hist="a&quot;b:&lt;x&gt;"' in ec["hist"] and "<x>" not in ec["hist"]
       and has(ec["bar"], 'data-search="setup-a&quot;b"', 'placeholder="Search cust &lt;i&gt;x&lt;/i&gt;"', 'aria-label="Search cust &lt;i&gt;x&lt;/i&gt;"', 'data-count="setup-a&quot;b"') and "<i>x</i>" not in ec["bar"], ec)
+
+# ---------- round 4 ----------
+rk = o["redrawKeeps"]
+check("a section drawn again (a save, a stop, a delete, a put back) keeps what it showed in place until the new one is read, writes the new one once, and the window never moves",
+      rk["same"]["y"] == 800 and rk["same"]["low"] == 800 and rk["same"]["scrolls"] == 0 and rk["same"]["during"] == [{"kept": True, "y": 800}] and rk["same"]["writes"] == 1, rk["same"])
+check("...if anything moved the window meanwhile it goes back where it was, with one scroll; another section or company starts at the top, empty, and is not put back",
+      rk["moved"] == {"y": 800, "scrolls": [[0, 800]]} and rk["otherSection"] == {"y": 100, "scrolls": 0} and rk["otherCompany"] == {"y": 100, "scrolls": 0}, rk)
+se = o["frSavedElsewhere"]
+check("First run's saved-but-not-read note is over once Setup (or anything) has read the records and they list the company: the Overview draws, and the alert is gone",
+      se["threw"] == "TypeError" and se["dueWhileSaved"] is True and se["savedKnown"] == 0 and se["dueAfter"] is False and se["saved"] is None and se["alerted"] is False, se)
+check("...a second company saved but not read keeps it until the records list one more than they did, and then it is over too",
+      se["threw2"] == "TypeError" and se["due2"] is True and se["saved2"] is True and se["due2After"] is False and se["saved2After"] is None, se)
+rr = o["restoreRetry"]
+check("Put it back's Try again with the app stopped makes one request and shows one dialog each time it is pressed, and works once the app is back",
+      all(x == {"requests": 1, "dialogs": 1, "notes": 1} for x in rr["rounds"]) and len(rr["rounds"]) == 3
+      and rr["back"]["requests"] == 1 and rr["back"]["dialogs"] == 1 and "It comes back as it was" in rr["back"]["body"] and "Couldn't load" not in rr["back"]["body"], rr)
 
 # ---------- the layout keeps today's narrow rules ----------
 check("the form keeps Setup's 520-pixel rule: two columns, one under 520 pixels, in the new dialog too",
