@@ -5,7 +5,7 @@ script is run in Node on a small stand-in for the page (no browser); the records
 Checks: a records overview that can't be read (the server's 500, an answer that is not JSON, an answer with no companies in it, a network failure)
 draws "HR Payments couldn't start" with the reason and a Try again, no "Nothing was changed" (nothing was being changed), and no loading dim left;
 Try again starts again, reads the records again and the page starts (once); a Try again that fails again still says so; a start that fails after the
-records were read (the first page can't be drawn) says the same, and leaves the shell it drew; the cycle's months failing to open is a toast and the app
+records were read (routerBoot throws) says the same, and leaves the shell it drew; the cycle's months failing to open is a toast and the app
 starts; the cause is in the console and in Copy details; the Try again is busy and a second click while a start runs starts nothing; a start that a newer
 one overtook writes nothing (neither its failure nor its success); the address is listened to once, however often the app starts.
 
@@ -67,7 +67,7 @@ const document = { activeElement: null, body: { classList: { add() {}, remove() 
   querySelector: s => /^#[\w-]+$/.test(s) ? el(s.slice(1)) : null, querySelectorAll: () => [], getElementById: id => els[id] || null,
   addEventListener(t, f) { (listeners[t] ||= []).push(f); } };
 // what each read of the records' overview does, in turn (the last one repeats): ok, a status, bad (not JSON), none (no companies), net (the app is not running)
-let script = [], metaReads = 0, monthsFail = false;
+let script = [], metaReads = 0, monthsFail = false, monthsMs = 0;
 const logged = [];   // what the page puts in the console as an error
 async function fetch(path, init = {}) {
   if (path === "/api/meta") {
@@ -80,6 +80,7 @@ async function fetch(path, init = {}) {
     if (how === "500") return { ok: false, status: 500, json: async () => ({ error: "The server could not read the records." }) };
     return { ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(FX.meta)) };
   }
+  if (path === "/api/months/open" && monthsMs) await sleep(monthsMs);   // setting the cycle's months up can take its time
   if (path === "/api/months/open" && monthsFail) return { ok: false, status: 500, json: async () => ({ error: "The months could not be set up." }) };
   return { ok: true, status: 200, json: async () => ({}) };
 }
@@ -181,7 +182,29 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     run(`paintOrg = __po`);
     return r;
   });
-  // what a start leaves when the first page can't be drawn (the shell it drew stays), and that Try again works then
+  // ... also while it sets the cycle's months up (slow): the first start gets no further than that, and draws nothing
+  await tryit("overtakenMonths", async () => {
+    const r = {};
+    main.innerHTML = ""; run(`__boots = 0`); metaReads = 0; monthsMs = 250;
+    script = ["ok"];
+    const s1 = run(`start()`); await sleep(80); const s2 = run(`start()`);   // the second begins while the first is setting the months up
+    await s1; await s2; await sleep(50);
+    monthsMs = 0;
+    r.page = shown(); r.runningAfter = run(`start.running`);
+    return r;
+  });
+  // an older start that finishes while a newer one is still reading doesn't end the newer one's running
+  await tryit("olderFinishes", async () => {
+    const r = {};
+    main.innerHTML = ""; run(`__boots = 0`); metaReads = 0;
+    script = ["ok@20", "ok@300"];
+    const s1 = run(`start()`); await sleep(10); const s2 = run(`start()`);   // the first is read quickly, the second slowly
+    await sleep(120); r.whileReading = { running: run(`start.running`), boots: run(`__boots`) };   // the first is over; the second is still reading
+    await s1; await s2; await sleep(50);
+    r.page = shown(); r.runningAfter = run(`start.running`);
+    return r;
+  });
+  // what a start leaves when routerBoot throws (the shell it drew stays), and that Try again works then
   await tryit("partial", async () => {
     const r = {};
     run(`globalThis.__stubBoot2 = routerBoot; routerBoot = async () => { __boots++; $("#nav").innerHTML = "<nav>the menu</nav>"; throw new Error("the page could not be drawn"); }`);
@@ -256,7 +279,7 @@ check("a Try again that fails again says so again, and the next one that works s
       says(o["twice"]["again"]) and o["twice"]["again"]["reads"] == 1 and o["twice"]["ok"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 1}, o["twice"])
 check("the cycle's months failing to open is a toast and the app starts (openCycleMonths says its own failures and never throws)",
       o["months"]["html"] == STARTED and o["months"]["boots"] == 1 and "The months could not be set up." in o["months"]["toast"], o["months"])
-check("a start that fails after the records were read (the first page can't be drawn) says the same, and Try again starts it", says(o["later"]["place"])
+check("a start that fails after the records were read (routerBoot throws) says the same, and Try again starts it", says(o["later"]["place"])
       and o["later"]["retried"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 1}, o["later"])
 check("the cause of a failed start is in the console and in Copy details, and the message the user reads stays plain",
       any("The server could not read the records." in x for x in o["cause"]["fail500"]["logged"]) and "The server could not read the records." in o["cause"]["fail500"]["html"].split('data-copy-details="')[1].split('"')[0]
@@ -268,7 +291,11 @@ check("a start that a newer one overtook writes nothing: a late failure of the f
       o["overtaken"]["page"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 2} and o["overtaken"]["runningAfter"] is False and len(o["overtaken"]["logged"]) == 1, o["overtaken"])
 check("...and a start that works late, overtaken by a newer one, draws nothing either: the first page is drawn once",
       o["overtakenLate"]["page"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 2} and o["overtakenLate"]["runningAfter"] is False and o["overtakenLate"]["paint"] == 1, o["overtakenLate"])
-check("when the first page can't be drawn the page says so over the shell it had drawn (the menu stays in place), and Try again starts the app again over it",
+check("...and one that is overtaken while it sets the cycle's months up goes no further: the first page is drawn once, by the newer start",
+      o["overtakenMonths"]["page"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 2} and o["overtakenMonths"]["runningAfter"] is False, o["overtakenMonths"])
+check("...and an older start that is over while a newer one is still reading leaves it running (a Try again meanwhile is still ignored), and it ends when the newer one does",
+      o["olderFinishes"]["whileReading"] == {"running": True, "boots": 0} and o["olderFinishes"]["page"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 2} and o["olderFinishes"]["runningAfter"] is False, o["olderFinishes"])
+check("when routerBoot throws (a failure in drawing the first page, not a page's own read) the page says so over the shell it had drawn (the menu stays in place), and Try again starts the app again over it",
       "HR Payments couldn&#39;t start" in o["partial"]["failed"]["html"] and o["partial"]["failed"]["nav"] == "<nav>the menu</nav>" and o["partial"]["retried"]["html"] == STARTED, o["partial"])
 check("Try again on a page that failed to draw still only draws the page again (it doesn't start the app again)", o["plainRetry"] == {"renders": 1, "boots": 0}, o["plainRetry"])
 check("the address is listened to once, however often the app starts", o["hashOnce"] == {"listeners": 1, "applied": 3}, o["hashOnce"])

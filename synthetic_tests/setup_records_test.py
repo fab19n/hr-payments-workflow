@@ -564,7 +564,7 @@ with section("17. a chart account's uses are counted per company, as capitals wi
         refused = None
     except masters.Refused as x:
         refused = str(x)
-    check("...and 101 of them (202 capitals), or 201 characters, are refused as too long the same way by the page's path, the API (added or changed) and the import's check",
+    check("...and 101 of them (202 capitals), or 201 characters, are refused as too long when typed as a new value: by the page's path, the API (added or changed) and the strict check a paste uses (a setup file's own check takes up to 600, below)",
           r1.status_code == 400 and r2.status_code == 400 and r3.status_code == 400 and all("too long" in r.get_json()["error"] for r in (r1, r2, r3))
           and refused is not None and "too long" in refused and masters._checked("accounts", {"gl_code": "\u00df" * 100})["gl_code"] == "SS" * 100
           and q("SELECT gl_code FROM accounts WHERE id = ?", (sharp["id"],))[0]["gl_code"] == "SS" * 100, (r1.get_json(), r2.get_json(), r3.get_json(), refused))

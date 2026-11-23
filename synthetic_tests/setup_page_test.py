@@ -216,6 +216,16 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     els.setupMain = newSm(m ? m[1] : "", !!m); smHtml = m ? m[1] : ""; smWrites = 0; clamp(); main.nav = navOf(v); } });
   els.setupMain = newSm("", true);
   main.nav = null;
+  // The dialog's inputs: what is written into #drawer makes its input, select and textarea elements, with the values the HTML gives (a test types into them,
+  // and drawerInputs() reads them). Only while drawerInputsOn: the other scenarios leave the dialog without inputs.
+  let drawerInputsOn = false, drawerHtml = "";
+  {
+    const d = el("drawer"), tags = () => [...drawerHtml.matchAll(/<(?:input|select|textarea)\b[^>]*?\bid="([^"]+)"[^>]*>/g)];
+    const un = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+    Object.defineProperty(d, "innerHTML", { configurable: true, get: () => drawerHtml, set(v) { drawerHtml = v;
+      if (drawerInputsOn) for (const [tag, id] of tags()) { const e = el(id); e.type = (/\btype="([^"]+)"/.exec(tag) || [])[1] || "text"; e.value = un((/\bvalue="([^"]*)"/.exec(tag) || [])[1] || ""); e.checked = /\bchecked\b/.test(tag); } } });
+    d.querySelectorAll = sel => drawerInputsOn && /^input\[id\]/.test(sel) ? [...new Set(tags().map(m => m[1]))].map(id => el(id)) : [];
+  }
   main.querySelector = s => s === "#setupMain" ? (els.setupMain && els.setupMain.isConnected ? els.setupMain : null) : s === ".setup-nav" ? main.nav : s === ".setup-grid" ? ((m => m ? { dataset: { at: m[1] } } : null)(/class="setup-grid" data-at="([^"]*)"/.exec(mainHtml))) : null;
   const view = async (kind, entity) => {
     run(`state.entity = ${entity}; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false;`);
@@ -1047,17 +1057,18 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     let n = 0, uncover = null;
     try {
       // the place stays missing: the section is read twice, never a third time, and nothing is painted as an error
-      uncover = covered(); onGet = p => { if (p === A) n++; };
+      const runaway = () => { if (n > 3) throw new Error("runaway: the section is read again and again"); };   // a loop fails here, as reads: 4
+      uncover = covered(); onGet = p => { if (p === A) { n++; runaway(); } };
       arrive(); await run(`render()`); uncover(); onGet = null;
       out.twice = { reads: n, error: /Couldn(&#39;|')t load|isn(&#39;|')t running/.test(main.innerHTML), grid: /class="setup-grid"/.test(main.innerHTML) };
       // the second read answers 500: the page says so, with its Try again
-      n = 0; uncover = covered(); onGet = p => { if (p === A && ++n === 2) FX.status = { [A]: 500 }; };
+      n = 0; uncover = covered(); onGet = p => { if (p === A) { if (++n === 2) FX.status = { [A]: 500 }; runaway(); } };
       arrive(); await run(`render()`); uncover(); onGet = null; delete FX.status;
       out.fails500 = { reads: n, html: main.innerHTML };
       await run(`click({ retry: "1" })`); await sleep(40);
       out.after500 = { grid: /class="setup-grid"/.test(main.innerHTML), error: /Couldn(&#39;|')t load/.test(main.innerHTML) };
       // the second read can't reach the app: the page says it isn't running, with its Try again
-      n = 0; uncover = covered(); onGet = p => { if (p === A && ++n === 1) FX.fail = { [A]: true }; };
+      n = 0; uncover = covered(); onGet = p => { if (p === A) { if (++n === 1) FX.fail = { [A]: true }; runaway(); } };
       arrive(); await run(`render()`); uncover(); onGet = null; FX.fail = {};
       out.rejects = { reads: n, html: main.innerHTML };
       await run(`click({ retry: "1" })`); await sleep(40);
@@ -1114,7 +1125,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       "reminders: save": { kind: "reminders", w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); el("rm-from").value = "2026-11"; el("rm-title").value = "A title"; el("rm-days").value = "5"; }, fire: () => run(`remSave(false)`) },
       "reminders: delete": { kind: "reminders", w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); }, fire: why("remAct", "delete") },
     };
-    spyOn();
+    spyOn(); drawerInputsOn = true;   // the dialog has its inputs: a Save or Add leaves it clean only because what it held was saved
     try {
       for (const [name, F] of Object.entries(FLOWS)) {
         const r = out[name] = {};
@@ -1134,7 +1145,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
         await sleep(30);
         r.again = { writes: F.w(), read: run(`state.metaReads || 0`) - reads0, rendered: calls.some(x => x[0] === "render"), spy: run(`__spy.slice()`), toasts: sandbox.__toasts.filter(t => t.bad).length };
       }
-    } finally { spyOff(); }
+    } finally { spyOff(); drawerInputsOn = false; }
     await run(`closeDrawer(true)`); await view("accounts", EXA); run(`state.entity = ${EXA}`);
     return out;
   });
@@ -1198,38 +1209,97 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     return out;
   });
 
-  // L2. a dialog with something typed in it is left alone when the reading back fails, and so is another dialog the user opened meanwhile; the toast's
-  // Try again never reopens a record or closes a dialog
+  // L2. a dialog with something typed in it is left alone when the reading back fails, and so is another dialog the user opened meanwhile (also when the
+  // reading back works); the toast's Try again never reopens a record or closes a dialog, and says it again if it fails again; and a record that was saved
+  // whose dialog can't be opened again leaves no dialog that adds it twice
   await tryit("dialogs", async () => {
-    const r = {}, EXA = FX.EXA, EXB = FX.EXB;
+    const r = {}, EXA = FX.EXA, EXB = FX.EXB, NOT_REOPENED = "It was saved, but its dialog could not be opened again.", REFUSED = "This was saved. Close it and open it again from the list.";
     const openRec = async (kind, id, ent) => { run(`state.entity = ${ent}`); await run(`openSetup(${JSON.stringify(kind)}, ${JSON.stringify(id)})`); await sleep(20); };
     const fillAll = () => { for (const f of run(`state.setup.types.kinds[state.setup.drawer.kind].fields`)) { const e = el("su-" + f.key); e.value = "1"; e.checked = true; } };
-    spyOn();
+    const reset = async () => { await run(`closeDrawer(true)`); await view("accounts", EXA); sandbox.__toasts.length = 0; calls.length = 0; };
+    const said = () => (badToast() || {}).msg === SAVED_MSG, open = d => run(`state.setup.drawer`) === d && !el("drawer").hidden;
+    const toasted = msg => sandbox.__toasts.some(t => t.msg === msg);
+    drawerInputsOn = true; spyOn();
     try {
-      // 1. Stop using, with something typed in the dialog that the stop doesn't save: the dialog stays open, with its edits
-      await run(`closeDrawer(true)`); await view("accounts", EXA); sandbox.__toasts.length = 0;
-      await openRec("accounts", FX.TEMP, EXB); run(`state.drawerDirty = () => true`);   // something typed
+      // 1. Stop using, with something typed in the dialog that the stop doesn't save: the dialog stays open, with what was typed
+      await reset();
+      await openRec("accounts", FX.TEMP, EXB); el("su-label").value = "typed before the stop";
       const d0 = run(`state.setup.drawer`);
       await run(`setupAct("stop", __btn)`); el("su-reason").value = "A reason"; lateFail["/api/meta"] = 1; await run(`whySubmit()`); await sleep(30);
-      r.dirty = { open: run(`state.setup.drawer`) === d0 && !el("drawer").hidden, said: (badToast() || {}).msg === SAVED_MSG };
+      r.dirty = { open: open(d0), typed: el("su-label").value, said: said() };
       run(`__spy.length = 0`); await badToast().opts.action.fn(); await sleep(30);
-      r.dirtyRetry = { spy: run(`__spy.slice()`), same: run(`state.setup.drawer`) === d0 && !el("drawer").hidden };
-      // 2. Save Acme; its re-read is slow and fails; meanwhile the user opens another record (and types in it, or doesn't): that dialog is left as it is,
-      // and so after Try again
+      r.dirtyRetry = { spy: run(`__spy.slice()`), same: open(d0), typed: el("su-label").value };
+      // 2. Save Acme; the re-read is slow and fails; meanwhile the user opens another record (and types in it, or doesn't): that dialog is left as it is, and so
+      // after Try again
       for (const [key, typed] of [["other", true], ["otherClean", false]]) {
-        await run(`closeDrawer(true)`); await view("accounts", EXA); sandbox.__toasts.length = 0; calls.length = 0;
+        await reset();
         await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq);
         delays["/api/meta"] = [250]; lateFail["/api/meta"] = 1;
         const saving = run(`setupSave()`); await sleep(80);                       // the write is done; the re-read is pending
         await run(`openSetup("accounts", ${FX.MAIN})`); await sleep(20);          // the user opens another record
-        if (typed) run(`state.drawerDirty = () => true`);                         // and types in it
-        const d1 = run(`state.setup.drawer`);
+        if (typed) el("su-label").value = "typed in the other record";            // and types in it
+        const d1 = run(`state.setup.drawer`), want = el("su-label").value;
         await saving; await sleep(300); delete delays["/api/meta"];
-        r[key] = { open: run(`state.setup.drawer`) === d1 && run(`state.setup.drawer`).id === FX.MAIN && !el("drawer").hidden, said: (badToast() || {}).msg === SAVED_MSG, once: writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/) };
+        r[key] = { open: open(d1) && run(`state.setup.drawer`).id === FX.MAIN, kept: el("su-label").value === want, said: said(), once: writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/) };
         run(`__spy.length = 0`); calls.length = 0; await badToast().opts.action.fn(); await sleep(40);
-        r[key + "Retry"] = { spy: run(`__spy.slice()`), same: run(`state.setup.drawer`) === d1 && !el("drawer").hidden, writes: calls.filter(x => x[0] !== "render").length };
+        r[key + "Retry"] = { spy: run(`__spy.slice()`), same: open(d1), kept: el("su-label").value === want, writes: calls.filter(x => x[0] !== "render").length };
       }
-    } finally { spyOff(); delete delays["/api/meta"]; delete lateFail["/api/meta"]; }
+      // 3. Save Acme and type in it after the save, while the re-read is pending: the dialog stays open as typed, and Try again leaves it alone
+      await reset();
+      await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq);
+      delays["/api/meta"] = [250]; lateFail["/api/meta"] = 1;
+      const d2 = run(`state.setup.drawer`), saving2 = run(`setupSave()`); await sleep(80);
+      el("su-label").value = "typed after the save";
+      await saving2; await sleep(300); delete delays["/api/meta"];
+      r.typedAfter = { open: open(d2), typed: el("su-label").value, said: said(), once: writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/) };
+      run(`__spy.length = 0`); calls.length = 0; await badToast().opts.action.fn(); await sleep(40);
+      r.typedAfterRetry = { spy: run(`__spy.slice()`), same: open(d2), typed: el("su-label").value, writes: calls.filter(x => x[0] !== "render").length };
+      // 4. the re-read WORKS (slowly) after the user opened another record: the saved record's dialog is not opened again over it
+      await reset();
+      await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq);
+      delays["/api/meta"] = [250];
+      const saving3 = run(`setupSave()`); await sleep(80);
+      await run(`openSetup("accounts", ${FX.MAIN})`); await sleep(20);
+      const d3 = run(`state.setup.drawer`), want3 = el("su-label").value; run(`__spy.length = 0`);
+      await saving3; await sleep(300); delete delays["/api/meta"];
+      r.guard = { spy: run(`__spy.slice()`), same: open(d3) && run(`state.setup.drawer`).id === FX.MAIN, kept: el("su-label").value === want3, once: writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/), rendered: calls.some(x => x[0] === "render"), toasts: sandbox.__toasts.filter(t => t.bad).length };
+      // 5. Try again fails again: a second "saved" toast (the first was used up by the click); the third works
+      await reset(); await openRec("accounts", FX.OLD, EXA);
+      await run(`setupAct("delete", __btn)`); el("su-reason").value = "A reason"; lateFail["/api/meta"] = 1; await run(`whySubmit()`); await sleep(30);
+      const savedToasts = () => sandbox.__toasts.filter(t => t.msg === SAVED_MSG);
+      r.retry1 = savedToasts().length;
+      lateFail["/api/meta"] = 1; await savedToasts()[0].opts.action.fn(); await sleep(30);
+      r.retry2 = savedToasts().length;
+      calls.length = 0; await savedToasts()[1].opts.action.fn(); await sleep(30);
+      r.retry3 = { saved: savedToasts().length, rendered: calls.some(x => x[0] === "render") };
+      // 6. the record was added (or saved), what reads after it worked, but its dialog can't be opened again: the dialog is closed if nothing was typed in it
+      // since, and one that stays open (typed in after the save) can't add the record again
+      const posts = () => writesOf("POST", /\/api\/setup\/accounts$/), patches = () => writesOf("PATCH", /\/api\/setup\/accounts\/\d+$/), recPath = `/api/setup/accounts/${FX.TEMP}`;
+      FX.post["/api/setup/accounts"] = { status: 200, body: { id: 777 } };   // its record has no answer: the read of it fails
+      try {
+        await reset(); await openRec("accounts", "new", EXA); fillAll();
+        await run(`setupSave()`); await sleep(40);
+        r.addClean = { drawer: run(`state.setup.drawer`) === null, said: toasted(NOT_REOPENED), posts: posts() };
+        await run(`setupSave()`); await sleep(20);                            // a second click on Add
+        r.addCleanAgain = { posts: posts() };
+        await reset(); await openRec("accounts", "new", EXA); fillAll();
+        delays["/api/setup/accounts/777"] = [150];
+        const d4 = run(`state.setup.drawer`), adding = run(`setupSave()`); await sleep(60);
+        el("su-label").value = "typed after the add";
+        await adding; await sleep(40); delete delays["/api/setup/accounts/777"];
+        r.addTyped = { open: open(d4) && run(`state.setup.drawer`).id === "new", typed: el("su-label").value, said: toasted(NOT_REOPENED), posts: posts() };
+        await run(`setupSave()`); await sleep(20);                            // a second click on Add
+        r.addTypedAgain = { posts: posts(), refused: toasted(REFUSED), open: open(d4) };
+      } finally { delete FX.post["/api/setup/accounts"]; }
+      for (const [key, typedAfter] of [["saveClean", false], ["saveTyped", true]]) {
+        await reset(); await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq);
+        delays[recPath] = [150]; lateFail[recPath] = 1;                        // the read that opens the record's dialog again fails
+        const d5 = run(`state.setup.drawer`), saving4 = run(`setupSave()`); await sleep(60);
+        if (typedAfter) el("su-label").value = "typed after the save";
+        await saving4; await sleep(40); delete delays[recPath]; delete lateFail[recPath];
+        r[key] = { drawer: typedAfter ? open(d5) : run(`state.setup.drawer`) === null, said: toasted(NOT_REOPENED), patches: patches(), typed: el("su-label").value };
+      }
+    } finally { spyOff(); drawerInputsOn = false; delete delays["/api/meta"]; delete lateFail["/api/meta"]; delete FX.post["/api/setup/accounts"]; }
     await run(`closeDrawer(true)`); await view("accounts", EXA); run(`state.entity = ${EXA}`);
     return r;
   });
@@ -1749,11 +1819,25 @@ for name, f in o["afterSavePage"].items():
 check("L2: a page that fails with nothing saved says what it said before: the app has stopped (or the reason, and that nothing was changed), never that it was saved",
       o["afterSavePage"]["plainStopped"] == {"stopped": True, "saved": False} and o["afterSavePage"]["plainError"] == {"reason": True, "nothing": True, "saved": False}, o["afterSavePage"]["plainStopped"])
 dl = o["dialogs"]
-check("L2: a dialog with something typed in it that the change didn't save is left open when the reading back fails, with the saved note, and Try again leaves it alone (no record opened, no dialog closed)",
-      dl["dirty"] == {"open": True, "said": True} and dl["dirtyRetry"] == {"spy": [], "same": True}, dl)
+TYPED = "typed after the save"
+check("L2: a dialog with something typed in it that the change didn't save is left open when the reading back fails, with what was typed and the saved note, and Try again leaves it alone (no record opened, no dialog closed)",
+      dl["dirty"] == {"open": True, "typed": "typed before the stop", "said": True} and dl["dirtyRetry"] == {"spy": [], "same": True, "typed": "typed before the stop"}, dl)
 check("L2: another record's dialog that the user opened while the re-read was pending is not replaced or closed, by the failure or by Try again, whether they typed in it or not, and the change was made once",
-      dl["other"] == {"open": True, "said": True, "once": 1} and dl["otherRetry"] == {"spy": [], "same": True, "writes": 0}
-      and dl["otherClean"] == {"open": True, "said": True, "once": 1} and dl["otherCleanRetry"] == {"spy": [], "same": True, "writes": 0}, dl)
+      dl["other"] == {"open": True, "kept": True, "said": True, "once": 1} and dl["otherRetry"] == {"spy": [], "same": True, "kept": True, "writes": 0}
+      and dl["otherClean"] == {"open": True, "kept": True, "said": True, "once": 1} and dl["otherCleanRetry"] == {"spy": [], "same": True, "kept": True, "writes": 0}, dl)
+check("L2: something typed in a saved record's dialog after the save, while the re-read is pending, stays: the dialog is left open as typed when the reading back fails, and Try again leaves it alone",
+      dl["typedAfter"] == {"open": True, "typed": TYPED, "said": True, "once": 1} and dl["typedAfterRetry"] == {"spy": [], "same": True, "typed": TYPED, "writes": 0}, dl)
+check("L2: when the re-read works after the user opened another record, the saved record's dialog is not opened again over it: no record opened or dialog closed, the other dialog as it was",
+      dl["guard"] == {"spy": [], "same": True, "kept": True, "once": 1, "rendered": True, "toasts": 0}, dl["guard"])
+check("L2: a Try again that fails again says it again (a second 'saved' toast), and the next one that works draws the page",
+      dl["retry1"] == 1 and dl["retry2"] == 2 and dl["retry3"] == {"saved": 2, "rendered": True}, [dl["retry1"], dl["retry2"], dl["retry3"]])
+check("L2: an Add whose record was saved but whose dialog can't be opened again (its read fails) closes the dialog, and a second click on Add makes no second record",
+      dl["addClean"] == {"drawer": True, "said": True, "posts": 1} and dl["addCleanAgain"] == {"posts": 1}, [dl["addClean"], dl["addCleanAgain"]])
+check("...and one with something typed in it after the save stays open, as typed, but refuses to add the record again: a second click on Add makes no second record and says so",
+      dl["addTyped"] == {"open": True, "typed": "typed after the add", "said": True, "posts": 1} and dl["addTypedAgain"] == {"posts": 1, "refused": True, "open": True}, [dl["addTyped"], dl["addTypedAgain"]])
+check("L2: a Save whose record's dialog can't be opened again closes the dialog when nothing was typed in it since, and leaves it open as typed when something was; the change was made once",
+      dl["saveClean"]["drawer"] is True and dl["saveClean"]["said"] is True and dl["saveClean"]["patches"] == 1 and dl["saveClean"]["typed"].startswith("Renamed account ")
+      and dl["saveTyped"] == {"drawer": True, "said": True, "patches": 1, "typed": TYPED}, [dl["saveClean"], dl["saveTyped"]])
 nl = o["noLeak"]
 check("L2: 'it was saved' belongs to the page that says it: after a saved change whose read failed (a toast), a page that fails for its own reasons says what it always said",
       nl["afterToast"] == {"saved": False, "says": True}, nl)

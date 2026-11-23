@@ -514,8 +514,9 @@ async function whySubmit() {
 // once, if that dialog is still the one on show. When the reading back fails, the toast says it was saved, with a Try again that only runs refresh
 // again: it never reopens a record, never closes a dialog and never sends the change again, and the page that painted the words doesn't get a toast
 // as well. The dialog of the change is closed on a failure only if nothing has been typed in it since (an Add dialog left open would add the record
-// twice); one with something typed in it, or another dialog opened meanwhile, is left alone. dialogSaved: what the dialog holds was saved by this
-// change (Save, Add), so only what is typed from now on counts. Returns whether it all worked.
+// twice); one with something typed in it, or another dialog opened meanwhile, is left alone (an Add dialog that stays open can't add its record again:
+// setupSave refuses it). The same when the record's dialog can't be opened again after a good reading. dialogSaved: what the dialog holds was saved by
+// this change (Save, Add), so only what is typed from now on counts. Returns whether it all worked.
 async function afterSaved(refresh, reopen, { dialogSaved = false } = {}) {
   if (dialogSaved && drawerShown()) watchDrawer();
   const mine = state.drawerAt;
@@ -528,7 +529,11 @@ async function afterSaved(refresh, reopen, { dialogSaved = false } = {}) {
   try { ok = await refresh({ saved: true }); } catch (e) { thrown = true; }
   if (!thrown && ok !== false) {
     try { if (reopen && state.drawerAt === mine) await reopen(); return true; }
-    catch (e) { toast(SAVED_NOT_REOPENED, true); return false; }
+    catch (e) {
+      toast(SAVED_NOT_REOPENED, true);
+      if (mine && state.drawerAt === mine && !typed()) closeDrawer(true);  // as after a failed reading: only a dialog nobody has typed in since, and still the one on show
+      return false;
+    }
   }
   if (mine && state.drawerAt === mine && !typed()) closeDrawer(true);
   if (thrown) said();
@@ -719,6 +724,7 @@ function suRefused(message) {
 async function setupSave() {
   const D = state.setup.drawer;
   if (!D) return;
+  if (D.id === "new" && D.saved) return toast("This was saved. Close it and open it again from the list.", true);  // it stayed open (typed in since, or it couldn't be replaced): never a second record
   const spec = state.setup.types.kinds[D.kind], fields = spec.fields || [], now = formValues(fields, "su-");
   const box = $("#su-refused"); if (box) box.innerHTML = "";
   if (!suCheck(fields, now, D.id === "new" ? {} : D.locked)) return;
@@ -729,6 +735,7 @@ async function setupSave() {
     if (spec.per_entity) body.entity_id = state.entity;
     let r;
     try { r = await api(`/api/setup/${D.kind}`, { json: body }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e.message); }
+    D.saved = true;
     toast(`${spec.label} added`);
     return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); },
       () => r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true }), { dialogSaved: true });
