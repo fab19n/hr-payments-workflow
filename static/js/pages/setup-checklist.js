@@ -5,8 +5,10 @@ const chkCompletion = k => (state.setup.chk?.completions || []).find(c => c.key 
 
 async function setupChecklist(box) {
   const S = state.setup, e = ent();
-  if (!e) { box.innerHTML = `<div class="card"><h1>Monthly checklist</h1><div class="note">Add a company first.</div></div>`; return; }
-  const d = S.chk = await api(`/api/setup/checklist?entity=${state.entity}`);
+  if (!e) { box.innerHTML = `${setupHead("checklist", setupSpec())}${emptyState({ glyph: "company", title: "Add a company first.", body: "Each company has its own monthly checklist. Once one is added, its checklist is set up here.", action: { label: "Go to Companies", attr: "data-setup-kind", value: "entities", glyph: "company" } })}`; return; }
+  const d = await api(`/api/setup/checklist?entity=${state.entity}`);
+  if (!(box = setupBox(box))) return;
+  S.chk = d;
   const code = d.code || e.code, items = d.items || [];
   // A company added in Setup starts with the starter checklist: while it is untouched and no month is set up, a copy may replace it.
   const copy = (d.replaceable || !items.some(it => it.in_use || termOn(it))) && (d.others || []).length;
@@ -17,15 +19,14 @@ async function setupChecklist(box) {
       <td>${esc(chkCompletion(it.completion))}${it.completion === "payments" && rule?.name?.[1] ? `<div class="note">${esc(rule.name[1])}</div>` : ""}</td>
       <td>${docChips(asList(t.docs), chkDocName)}</td><td>${termPills(it, d.default_from)}</td></tr>`;
   };
-  box.innerHTML = `${entityPicker()}
-    <div class="card"><div class="row spread"><h1>Monthly checklist · ${esc(code)}</h1>
-      <div class="row">${copy ? `<button class="ghost" data-chk-copy="1">Copy from another company</button>` : ""}<button class="btn" data-chk-new="1">Add item</button></div></div>
-      <div class="note">What each month's checklist holds for ${esc(code)}, in order. Click an item to change it. A change starts from a payroll month you choose: the months before it keep the checklist they had, and filed months never change.</div>
+  box.innerHTML = `${setupHead("checklist", setupSpec(), { title: `Monthly checklist · ${code}`, intro: `What each month's checklist holds for ${code}, in order. Click an item to change it. A change starts from a payroll month you choose: the months before it keep the checklist they had, and filed months never change.`,
+      actions: `${copy ? `<button class="ghost" data-chk-copy="1">Copy from another company</button>` : ""}<button class="btn" data-chk-new="1">${icon("plus")}Add item</button>` })}
+    <div class="card">
       <div class="row">${deletedToggle("checklist")}</div>
       <div class="tbl-wrap"><table><thead><tr><th>Item</th><th>Due</th><th>Done when</th><th>Documents</th><th>Status</th></tr></thead><tbody>
         ${items.map(row).join("") || `<tr><td colspan="5" class="empty">${esc(code)} has no monthly checklist yet. Add an item${copy ? ", or copy another company's checklist" : ""}.</td></tr>`}
       </tbody></table></div><div id="setupDeleted"></div></div>`;
-  drawDeleted("checklist");
+  await drawDeleted("checklist");
 }
 
 // The payments rule of an item done by its payments: which payments it covers and what each needs.
@@ -146,11 +147,12 @@ function chkFields(isNew) {
 
 // After a checklist change: the page's copy of the codes is read again, the list drawn again, and the item's drawer
 // opened again on what the change did.
-async function chkDone(r, id, head, keep = {}) {
+async function chkDone(r, id, head, keep = {}, dialogSaved = false) {
   toast(`${head}. ${effectText(r.affected, "checklist item")}`);
-  await reloadMeta(); await render();
-  if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep, saved: { ...r, head } });
-  closeDrawer(true);
+  return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
+    if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep, saved: { ...r, head } });
+    closeDrawer(true);
+  }, { dialogSaved });
 }
 
 // Preview (nothing kept) or Save: adds the item, or changes it from the month chosen.
@@ -165,7 +167,7 @@ async function chkSave(preview) {
   const r = await api("/api/setup/checklist", { json: body });
   if (preview) return showPreview("#cl-preview", r, "checklist item");
   // Drawn again on the month the change starts from, so it shows the term just saved.
-  return chkDone(r, isNew ? r.item_id : O.id, isNew ? "Item added" : "Saved", { "cl-from": body.from_month });
+  return chkDone(r, isNew ? r.item_id : O.id, isNew ? "Item added" : "Saved", { "cl-from": body.from_month }, true);
 }
 
 // Stop using, Use again (from the month chosen) and Delete ask why first.
@@ -179,7 +181,7 @@ async function chkAct(act, btn) {
     const body = { action: act, entity_id: d.entity_id ?? state.entity, item_id: O.id, reason };
     if (act !== "delete") body.from_month = fromMonth("#cl-from");
     const r = await api("/api/setup/checklist", { json: body });
-    if (act === "delete") { closeDrawer(true); toast("Item deleted"); await reloadMeta(); return render(); }
+    if (act === "delete") { closeDrawer(true); toast("Item deleted"); return afterSaved(async o => { await reloadMeta(); return render(o); }); }
     const keep = { ...drawerEdits(), "cl-from": body.from_month };
     return chkDone(r, O.id, act === "stop" ? "Stopped" : "In use again", keep);
   });
@@ -214,6 +216,7 @@ async function chkCopySave(preview) {
   const r = await api("/api/setup/checklist", { json: body });
   if (preview) return showPreview("#cl-preview", r, "checklist item");
   toast(`Checklist copied. ${effectText(r.affected, "checklist item")}`);
-  closeDrawer(true); await reloadMeta(); return render();
+  closeDrawer(true);
+  return afterSaved(async o => { await reloadMeta(); return render(o); });
 }
 

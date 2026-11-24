@@ -4,20 +4,24 @@ const remDocName = k => setupDocName(state.setup.rem, k);
 const REM_HINT = "{name} in the title becomes the person's short name; {date} in the detail becomes the start date or last day. No other braces can be used. The wording doesn't change by itself when you change the days or the salary.";
 
 async function setupReminders(box) {
-  const d = state.setup.rem = await api("/api/setup/reminders"), rules = d.rules || [];
+  const d = await api("/api/setup/reminders");
+  if (!(box = setupBox(box))) return;
+  state.setup.rem = d;
+  const rules = d.rules || [];
   const row = r => {
     const t = r.now || {};
     return `<tr${termOn(r, d.default_from) ? "" : ` class="muted"`}><td><button class="link" data-rem-open="${r.id}">${esc(t.title || r.key)}</button>${r.short_name ? `<div class="note">${esc(r.short_name)}</div>` : ""}</td>
       <td>${r.kind === "leaver" ? "Leaver" : "Joiner"}</td><td>${esc(remDays(t.days, r.kind))}</td><td>${esc(remSalary(t.salary_over))}</td>
       <td>${docChips(asList(t.docs), remDocName)}</td><td>${termPills(r, d.default_from)}</td></tr>`;
   };
-  box.innerHTML = `<div class="card"><div class="row spread"><h1>Joiner and leaver reminders</h1><button class="btn" data-rem-new="1">Add reminder</button></div>
-    <div class="note">A recurring salary's start date or last day adds these reminders to the checklist, each in the month it falls due, for every company. Click one to change it. A change applies to people starting (or leaving) from a month you choose, and filed months never change.</div>
+  box.innerHTML = `${setupHead("reminders", setupSpec(), { intro: "A recurring salary's start date or last day adds these reminders to the checklist, each in the month it falls due, for every company. Click one to change it. A change applies to people starting (or leaving) from a month you choose, and filed months never change.",
+      actions: `<button class="btn" data-rem-new="1">${icon("plus")}Add reminder</button>` })}
+    <div class="card">
     <div class="row">${deletedToggle("reminders")}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Reminder</th><th>For</th><th>When</th><th>Salary</th><th>Documents</th><th>Status</th></tr></thead><tbody>
       ${rules.map(row).join("") || `<tr><td colspan="6" class="empty">None yet.</td></tr>`}
     </tbody></table></div><div id="setupDeleted"></div></div>`;
-  drawDeleted("reminders");
+  await drawDeleted("reminders");
 }
 
 // The drawer of one reminder (id "new" to add one); keep and saved as for a checklist item.
@@ -100,11 +104,12 @@ function remFields() {
     title: $("#rm-title").value.trim(), detail: $("#rm-detail").value.trim(), docs: ticked("rm-doc-", pickTypes(d.doc_types, had), had) };
 }
 
-async function remDone(r, id, head, keep = {}) {
+async function remDone(r, id, head, keep = {}, dialogSaved = false) {
   toast(`${head}. ${effectText(r.affected, "reminder")}`);
-  await reloadMeta(); await render();
-  if (id != null && (state.setup.rem?.rules || []).some(x => x.id === +id)) return openReminder(+id, { force: true, keep, saved: { ...r, head } });
-  closeDrawer(true);
+  return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
+    if (id != null && (state.setup.rem?.rules || []).some(x => x.id === +id)) return openReminder(+id, { force: true, keep, saved: { ...r, head } });
+    closeDrawer(true);
+  }, { dialogSaved });
 }
 
 // Preview (nothing kept) or Save: adds the reminder, or changes it for people starting (or leaving) from the month chosen.
@@ -123,10 +128,10 @@ async function remSave(preview) {
   if (preview) return showPreview("#rm-preview", r, "reminder");
   // Drawn again on the month the change starts from, so it shows the term just saved.
   const keep = { "rm-from": body.from_month };
-  if (!isNew) return remDone(r, O.id, "Saved", keep);
+  if (!isNew) return remDone(r, O.id, "Saved", keep, true);
   // A new reminder is found by the id the server gives, else by its key.
   const nid = r.id ?? r.item_id;
-  await remDone(r, nid, "Reminder added", keep);
+  await remDone(r, nid, "Reminder added", keep, true);
   if (nid == null) { const x = (state.setup.rem?.rules || []).find(y => y.key === body.key); if (x) openReminder(x.id, { force: true, keep, saved: { ...r, head: "Reminder added" } }); }
 }
 
@@ -140,7 +145,7 @@ async function remAct(act, btn) {
     const body = { action: act, id: O.id, reason };
     if (act !== "delete") body.from_month = fromMonth("#rm-from");
     const r = await api("/api/setup/reminders", { json: body });
-    if (act === "delete") { closeDrawer(true); toast("Reminder deleted"); await reloadMeta(); return render(); }
+    if (act === "delete") { closeDrawer(true); toast("Reminder deleted"); return afterSaved(async o => { await reloadMeta(); return render(o); }); }
     const keep = { ...drawerEdits(), "rm-from": body.from_month };
     return remDone(r, O.id, act === "stop" ? "Stopped" : "In use again", keep);
   });

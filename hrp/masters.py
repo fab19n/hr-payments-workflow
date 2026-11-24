@@ -57,13 +57,15 @@ def _f(key, label, kind, **kw):
 KINDS = {
     "entities": {
         "label": "Company", "plural": "companies", "table": "entities", "per_entity": False, "name_field": "name",
-        "columns": [{"key": "code", "label": "Code"}, {"key": "name", "label": "Name"}, {"key": "first_month", "label": "First month tracked"}],
+        "columns": [{"key": "code", "label": "Code"}, {"key": "name", "label": "Name"}, {"key": "first_month", "label": "First month tracked"},
+                    {"key": "uses_sql", "label": "Books"}],
         "fields": [
             _f("code", "Code", "code", required=True, max=16,
-               hint="Short, capitals: AISB. Folders and audit packs are named by it."),
+               hint="Short, capitals: ABC. Shown in the company switcher; folders and audit packs are named by it."),
             _f("name", "Name", "text", required=True, wide=True),
-            _f("short_name", "Short name", "text", hint="Shown in the sidebar. Empty: the name without Sdn Bhd or Ltd."),
-            _f("uses_sql", "Kept in SQL Account", "bool", default=1, hint="Payments then need their PV, JV or OR from SQL."),
+            _f("short_name", "Short name", "text", hint="Shown in the company switcher's list beside the code. Empty: the name without Sdn Bhd or Ltd."),
+            _f("uses_sql", "Kept in SQL Account", "bool", default=1, wide=True,
+               hint="On: Kept in SQL Account, and payments need their PV, JV or OR from SQL. Off: Kept here, with no SQL import."),
             _f("first_month", "First month tracked", "month",
                hint="Months before it are never set up on their own and nothing in them counts as overdue. Empty: no limit."),
             _f("fy_start", "Financial year starts in", "select", options=[[n, name] for n, name in enumerate(MONTH_NAMES, 1)],
@@ -96,9 +98,9 @@ KINDS = {
             _f("bank", "Bank", "text"),
             _f("number", "Account number", "text", hint="Filled from the first statement imported if left empty."),
             _f("currency", "Currency", "code", required=True, max=3, hint="Three letters: MYR, USD, SGD."),
-            _f("cash_book", "Cash book account", "bool",
+            _f("cash_book", "Cash book account", "bool", wide=True,
                hint="The account SQL Account's cash book listing is for. Each company has one, in MYR."),
-            _f("gl_code", "GL account code", "text", hint="The bank account's code in SQL Account's chart of accounts."),
+            _f("gl_code", "GL account code", "text", upper=True, hint="The bank account's code in SQL Account's chart of accounts."),  # kept in capitals like the chart's codes, never refused for its shape
             _f("sql_payment_method", "SQL payment method", "text", hint="As SQL Account names it on vouchers."),
             _f("bank_address", "Bank address", "text", wide=True, hint="Printed on invoices when this account is the one to pay into."),
             _f("swift_code", "Bank transfer (SWIFT) code", "text", max=11, hint="Printed on invoices, e.g. EXMBMYKL."),
@@ -108,7 +110,8 @@ KINDS = {
 }
 KINDS["payment_types"] = {
     "label": "Payment type", "plural": "payment types", "table": "payment_types", "per_entity": False, "name_field": "label",
-    "columns": [{"key": "key", "label": "Key"}, {"key": "label", "label": "Name"}, {"key": "direction", "label": "Money"}],
+    "columns": [{"key": "label", "label": "Name"}, {"key": "key", "label": "Key"}, {"key": "direction", "label": "Money"},
+                {"key": "legal_due_day", "label": "Legal deadline"}],
     "fields": [
         _f("key", "Key", "key", required=True, hint="Short, lower case: water_bill. Records refer to it, so it can't change once added."),
         _f("label", "Name", "text", required=True, wide=True),
@@ -122,14 +125,15 @@ KINDS["payment_types"] = {
 }
 KINDS["doc_types"] = {
     "label": "Document type", "plural": "document types", "table": "doc_types", "per_entity": False, "name_field": "label",
-    "columns": [{"key": "key", "label": "Key"}, {"key": "label", "label": "Name"}, {"key": "from_sql", "label": "From SQL"}],
+    "columns": [{"key": "label", "label": "Name"}, {"key": "key", "label": "Key"}, {"key": "from_sql", "label": "From SQL"},
+                {"key": "pack_order", "label": "Place in the pack"}],
     "fields": [
         _f("key", "Key", "key", required=True, hint="Short, lower case: tax_form. Stored file names begin with it, so it can't change once added."),
         _f("label", "Name", "text", required=True, wide=True),
         _f("singular", "One of them is called", "text", hint="In Next up and the audit pack: 1 tax form."),
         _f("plural", "Several of them are called", "text", hint="3 tax forms."),
         _f("pack_order", "Place in the audit pack", "number", hint="Lower comes first. Empty: after the others."),
-        _f("from_sql", "Issued by SQL Account", "bool", hint="Not asked for from a company that isn't kept in SQL Account."),
+        _f("from_sql", "Issued by SQL Account", "bool", wide=True, hint="Not asked for from a company that is Kept here."),
         _f("notes", "Notes", "textarea", wide=True),
     ],
 }
@@ -204,7 +208,8 @@ KINDS["parties"] = {
         _f("attention", "Attention", "text", hint="Printed as Attn on its invoices."),
         _f("phone", "Phone", "text"),
         _f("credit_term", "Terms", "text", max=40, hint="Its credit term as SQL prints it, e.g. 30 Days."),
-        _f("match_words", "Words in SQL descriptions", "words", wide=True, hint="Kept for reference; matching uses the code."),
+        _f("match_words", "Words in SQL descriptions", "words", wide=True,
+           hint="Kept for reference; matching uses the code. Separate the words with commas."),
         _f("notes", "Notes", "textarea", wide=True),
     ],
 }
@@ -237,7 +242,7 @@ KINDS["statutory_accounts"] = {
     "label": "Statutory account", "plural": "statutory accounts", "table": "statutory_accounts", "per_entity": True,
     "order": "sort, id", "name_field": "label",
     "help": "The payable accounts the salary vouchers credit with what is taken off the salaries (EPF, SOCSO, EIS, SKBBK, PCB), "
-            "and the expense account each authority's voucher debits with the employer's share. Accounting › Books › Statutory "
+            "and the expense account each authority's voucher debits with the employer's share. Accounting › Statutory payables "
             "checks that each month is paid in full by its due day. Nothing is checked until an account is added here; that "
             "page suggests them from the chart of accounts by their names.",
     "columns": [{"key": "label", "label": "Name"}, {"key": "kind", "label": "Kind"}, {"key": "payable_code", "label": "Payable account"},
@@ -260,8 +265,78 @@ GROUPS = [["Companies and banks", ["entities", "accounts", "gl_accounts", "statu
           ["Payments and documents", ["payment_types", "doc_types", "required"]],
           ["Monthly work", ["checklist", "reminders"]],
           ["Matching words", ["guess_words", "hint_words", "filing_words"]], ["General", ["settings", "move"]]]
-STOPPED_NOTE = {"entities": "Stopped: hidden from the sidebar and Next up, and its months aren't set up any more. Everything recorded stays.",
-                "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one.",
+# How Setup draws each section (design/canvas/Setup*.dc.html): the glyph of its menu item, the sentence under its heading, the
+# groups of fields its record dialog shows (every field of the kind is in exactly one), and its Use again note (the Stop note is
+# STOPPED_NOTE). types() hands these to the page with the kinds.
+NAV = {
+    "entities": {"glyph": "company",
+                 "intro": "A stopped company leaves the company switcher and Next up. Everything recorded for it stays. Whether a company is Kept in SQL "
+                          "Account or Kept here is a setting here: nothing is fixed to one company.",
+                 "use": "In use again: back in the company switcher and Next up, and its months are set up again.",
+                 "groups": [["The company", ["code", "short_name", "name", "first_month", "fy_start"]],
+                            ["Registration and employer numbers", ["reg_no", "old_reg_no", "tin", "sst_no", "employer_kwsp", "employer_perkeso",
+                                                                   "employer_lhdn"]],
+                            ["Books", ["uses_sql", "sql_database"]],
+                            ["On printed invoices", ["address", "phone", "email", "website", "invoice_account_id", "sign_label"]],
+                            ["Notes", ["notes"]]]},
+    "accounts": {"glyph": "bank",
+                 "intro": "How each company's bank accounts are named here and in SQL Account. Each company has one cash book account, in MYR.",
+                 "use": "In use again: offered in the account lists, and months set up from now on ask for its statement.",
+                 "groups": [["The account", ["label", "bank", "number", "currency"]],
+                            ["SQL Account", ["cash_book", "gl_code", "sql_payment_method"]],
+                            ["Printed on invoices", ["bank_address", "swift_code"]],
+                            ["Notes", ["notes"]]]},
+    "gl_accounts": {"glyph": "trail", "deleted_plural": "accounts",
+                    "intro": "Each company's chart of accounts in SQL Account, for reference: nothing is posted to it.",
+                    "use": "In use again: listed with the accounts in use.",
+                    "groups": [["The account", ["code", "name", "sql_type", "type", "special", "parent_code"]], ["Notes", ["notes"]]]},
+    "statutory_accounts": {"glyph": "vault",
+                           "intro": KINDS["statutory_accounts"]["help"],
+                           "use": "In use again: the statutory payables check reads this account again.",
+                           "groups": [["The account", ["kind", "label", "payable_code", "employer_code", "due_day", "sort"]], ["Notes", ["notes"]]]},
+    "parties": {"glyph": "users",
+                "intro": "Customers pay money in and suppliers are paid money out. Staff are not added here: they stay recurring payments.",
+                "use": "In use again: offered for recurring payments, and SQL entries carrying its code are matched to it.",
+                "groups": [["Who it is", ["name", "kind", "entity_id", "short_name"]],
+                           ["SQL Account", ["sql_code", "gl_code", "match_words"]],
+                           ["Tax numbers", ["tin", "brn"]],
+                           ["Printed on its invoices", ["address_1", "address_2", "address_3", "address_4", "attention", "phone", "credit_term"]],
+                           ["Notes", ["notes"]]]},
+    "payment_types": {"glyph": "payment",
+                      "intro": "The kinds of payment you record. Each can be money out or money in, with a legal deadline if it has one.",
+                      "use": "In use again: offered for new payments and recurring payments.",
+                      "groups": [["The type", ["key", "direction", "label", "plural"]], ["Legal deadline", ["legal_due_offset", "legal_due_day"]],
+                                 ["Notes", ["notes"]]]},
+    "doc_types": {"glyph": "document",
+                  "intro": "The kinds of document you file against a payment, in the order they go in the audit pack. The app's own types can't be deleted.",
+                  "use": "In use again: offered for uploads and required documents.",
+                  "groups": [["The type", ["key", "label", "singular", "plural"]], ["Audit pack and SQL Account", ["pack_order", "from_sql"]],
+                             ["Notes", ["notes"]]]},
+    "guess_words": {"glyph": "database",
+                    "intro": "When an SQL voucher is added as a payment, the first rule whose words appear in its description sets the type.",
+                    "use": "In use again: used to guess the type of SQL vouchers added as payments.",
+                    "groups": [["The rule", ["label", "words", "payment_type", "sort"]], ["Notes", ["notes"]]]},
+    "hint_words": {"glyph": "search",
+                   "intro": "A voucher must contain one of these words to be treated as salary. They act on SQL imports from now on; "
+                            "payments already added stay where they are.",
+                   "use": "In use again: used when matching estimated payments with SQL vouchers.",
+                   "groups": [["The rule", ["label", "payment_type", "words"]], ["Notes", ["notes"]]]},
+    "filing_words": {"glyph": "filter",
+                     "intro": "An SQL document with its code is filed here, before any words. They act on SQL imports from now on; "
+                              "documents already filed stay where they are.",
+                     "use": "In use again: SQL documents are filed on the checklist by these words.",
+                     "groups": [["The rule", ["label", "doc_kind", "direction", "words", "checklist_code", "party_id", "sort"]], ["Notes", ["notes"]]]},
+}
+# The glyphs of the sections that are not lists, and a section that lives on another page (Recurring payments has one home, the
+# Recurring page under Payments, so its Setup item is a link there).
+NAV_GLYPHS = {"payees": "recurring", "required": "upload", "checklist": "checklist", "reminders": "person", "settings": "sliders", "move": "archive"}
+NAV_LINKS = {"payees": "Opens Payments › Recurring"}
+# A group of the Setup menu for companies Kept in SQL Account only: its pages match SQL Account's vouchers and documents.
+SQL_ONLY_GROUPS = ("Matching words",)
+DELETE_NOTE = "It goes from the list. Show deleted keeps it for you, and it can be put back from there with its history."
+
+STOPPED_NOTE = {"entities": "Stopped: hidden from the company switcher and Next up, and its months aren't set up any more. Everything recorded stays.",
+                "accounts": "Stopped: hidden from the account lists; a month with no statement for it no longer asks for one. Everything recorded stays.",
                 "payment_types": "Stopped: not offered for new payments or recurring payments. Payments of this type keep it.",
                 "doc_types": "Stopped: not offered for uploads or required documents. Documents of this type keep it.",
                 "guess_words": "Stopped: not used to guess the type of SQL vouchers added as payments.",
@@ -280,7 +355,22 @@ def types():
     kinds["checklist"] = {"label": "Monthly checklist", "bespoke": True, "per_entity": True, "table": "checklist_items"}
     kinds["reminders"] = {"label": "Joiner and leaver reminders", "bespoke": True, "table": "people_tasks"}
     kinds["move"] = {"label": "Move setup", "bespoke": True}  # export and import setup.json (setupfile)
-    return {"groups": GROUPS, "kinds": kinds}
+    for k, v in kinds.items():
+        d = NAV.get(k, {})
+        v["glyph"] = d.get("glyph") or NAV_GLYPHS.get(k, "sliders")
+        v["intro"] = d.get("intro") or v.get("help")
+        if d.get("groups"):
+            v["field_groups"] = d["groups"]
+        if k in STOPPED_NOTE:
+            v["stop_note"] = STOPPED_NOTE[k]
+        if d.get("use"):
+            v["use_note"] = d["use"]
+        v["delete_note"] = DELETE_NOTE
+        v["deleted_plural"] = d.get("deleted_plural") or v.get("plural")
+        if k in NAV_LINKS:
+            v["link_note"] = NAV_LINKS[k]
+    # sql_only: groups of the menu that are for a company Kept in SQL Account (the page hides them for one Kept here)
+    return {"groups": GROUPS, "kinds": kinds, "sql_only": list(SQL_ONLY_GROUPS)}
 
 
 def spec(kind):
@@ -291,8 +381,10 @@ def spec(kind):
 
 # ---------- checking values ----------
 
-def check_value(f, v):
-    """A field's value from the page, checked and made tidy; None for empty. Raises Refused with a plain sentence."""
+def check_value(f, v, lenient=False):
+    """A field's value from the page, checked and made tidy; None for empty. Raises Refused with a plain sentence. lenient: a value
+    that may be older than the rule (a code kept by a version before capitals were kept, in capitals longer than it may now be typed): the
+    limit of a field kept in capitals is then three times its usual one (a hard cap, not none)."""
     label, kind = f["label"], f["type"]
     if v is None or (isinstance(v, str) and not v.strip() and kind != "bool"):
         if f.get("required"):
@@ -309,7 +401,12 @@ def check_value(f, v):
                     raise Refused(f"{label}: give the three-letter code, such as MYR or USD.")
             elif not CODE.fullmatch(v):
                 raise Refused(f"{label}: capitals, digits, - and _ only, up to 16 characters, starting with a letter or digit.")
-        if len(v) > (2000 if kind == "textarea" else f.get("max", 200)):
+        limit = 2000 if kind == "textarea" else f.get("max", 200)
+        if f.get("upper"):  # a code kept as SQL Account writes it: capitals. Its shape isn't checked (an older record may hold any text)
+            v = v.upper()
+            if lenient:
+                limit *= 3
+        if len(v) > limit:  # the length of what is kept: a value typed or sent now is always accepted again once kept
             raise Refused(f"{label}: that is too long.")
         return v
     if kind == "key":
@@ -345,7 +442,9 @@ def check_value(f, v):
             raise Refused(f"{label}: give the words separated by commas.")
         v = list(dict.fromkeys(w.strip().upper() for w in v if w.strip()))
         if not v:
-            raise Refused(f"{label}: give at least one word.")
+            if f.get("required"):
+                raise Refused(f"{label}: give at least one word.")
+            return None  # an optional field left empty is no words, as one never filled in is
         if any(not WORD.fullmatch(w) for w in v):
             raise Refused(f"{label}: letters, digits, spaces and ' & . / - only, up to 40 characters each.")
         return v
@@ -546,6 +645,14 @@ USES = {  # (one, many, how to count)
         ("customer or supplier", "customers and suppliers", "SELECT COUNT(*) FROM parties WHERE entity_id = ?"),
         ("GL account", "GL accounts", "SELECT COUNT(*) FROM gl_accounts WHERE entity_id = ?"),
         ("statutory account", "statutory accounts", "SELECT COUNT(*) FROM statutory_accounts WHERE entity_id = ?"),
+        ("printed company name", "printed company names", "SELECT COUNT(*) FROM sql_company_names WHERE entity_id = ?"),
+        ("SQL journal line", "SQL journal lines", "SELECT COUNT(*) FROM sql_journal_lines WHERE entity_id = ?"),
+        ("SQL account fetch", "SQL account fetches", "SELECT COUNT(*) FROM ledger_batches WHERE entity_id = ?"),
+        ("SQL account document", "SQL account documents", "SELECT COUNT(*) FROM ledger_docs WHERE entity_id = ?"),
+        ("SQL account line", "SQL account lines", "SELECT COUNT(*) FROM ledger_lines WHERE entity_id = ?"),
+        ("opening balance", "opening balances", "SELECT COUNT(*) FROM ledger_openings WHERE entity_id = ?"),
+        ("MyInvois document", "MyInvois documents", "SELECT COUNT(*) FROM myinvois_docs WHERE entity_id = ?"),
+        ("payroll workbook check", "payroll workbook checks", "SELECT COUNT(*) FROM payroll_checks WHERE entity_id = ?"),
     ],
     "payment_types": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE category = (SELECT key FROM payment_types WHERE id = ?)"),
@@ -577,31 +684,96 @@ USES = {  # (one, many, how to count)
                                         AND s.code = p.sql_code AND (p.entity_id IS NULL OR s.entity_id = p.entity_id)"""),
         ("SQL filing word rule", "SQL filing word rules", "SELECT COUNT(*) FROM filing_words WHERE party_id = ?"),
     ],
-    "gl_accounts": [
-        ("bank account", "bank accounts", """SELECT COUNT(*) FROM accounts a, gl_accounts g WHERE g.id = ? AND a.entity_id = g.entity_id
-                                             AND a.gl_code = g.code"""),
-        ("customer or supplier", "customers and suppliers", """SELECT COUNT(*) FROM parties p, gl_accounts g WHERE g.id = ?
-                                             AND p.gl_code = g.code AND (p.entity_id IS NULL OR p.entity_id = g.entity_id)"""),
-        ("account under it", "accounts under it", """SELECT COUNT(*) FROM gl_accounts c, gl_accounts g WHERE g.id = ?
-                                             AND c.entity_id = g.entity_id AND c.parent_code = g.code"""),
-        ("SQL entry", "SQL entries", """SELECT COUNT(*) FROM sql_entries s, gl_accounts g WHERE g.id = ? AND s.entity_id = g.entity_id
-                                        AND s.code = g.code"""),
-        ("SQL account line", "SQL account lines", """SELECT COUNT(*) FROM ledger_lines l, gl_accounts g WHERE g.id = ?
-                                                     AND l.entity_id = g.entity_id AND l.account_code = UPPER(TRIM(g.code))"""),
-    ],
+    "gl_accounts": [],  # counted from GL_USES, one grouped scan of each table for the whole chart (gl_use_map), not one scan per account
     "accounts": [
         ("payment", "payments", "SELECT COUNT(*) FROM payments WHERE account_id = ?"),
         ("recurring payment", "recurring payments", "SELECT COUNT(*) FROM payees WHERE account_id = ?"),
         ("bank statement", "bank statements", "SELECT COUNT(*) FROM statements WHERE account_id = ?"),
         ("book opening", "book openings", "SELECT COUNT(*) FROM book_openings WHERE account_id = ?"),
         ("company's invoices", "companies' invoices", "SELECT COUNT(*) FROM entities WHERE invoice_account_id = ?"),
+        ("confirmed pair of bank lines", "confirmed pairs of bank lines", "SELECT COUNT(*) FROM recon_pairs WHERE account_id = ?"),
     ],
     "statutory_accounts": [],  # the check only reads it, so it can always be deleted
 }
 
 
+# A chart account is named by its code in many tables, and a code may be stored padded or in lower case (a row pasted or imported from
+# SQL), so each is compared as UPPER(TRIM(code)). That hides any index, so it is done once per table, in one grouped scan of the company's
+# rows (gl_use_map), never once per account: 500 accounts against 50,000 journal lines would be 500 scans of them.
+# (what it is, and many of them, table, column holding the code, which rows are the company's)
+GL_USES = [
+    ("bank account", "bank accounts", "accounts", "gl_code", "entity_id = :e"),
+    ("customer or supplier", "customers and suppliers", "parties", "gl_code", "(entity_id IS NULL OR entity_id = :e)"),
+    ("account under it", "accounts under it", "gl_accounts", "parent_code", "entity_id = :e"),
+    ("SQL entry", "SQL entries", "sql_entries", "code", "entity_id = :e"),
+    ("SQL account line", "SQL account lines", "ledger_lines", "account_code", "entity_id = :e"),
+    ("statutory account", "statutory accounts", None, None, None),  # two codes a row: the payable and the employer's share account
+    ("opening balance", "opening balances", "ledger_openings", "account_code", "entity_id = :e"),
+    ("SQL journal line", "SQL journal lines", "sql_journal_lines", "code", "entity_id = :e"),
+]
+_STATUTORY = ("(SELECT id, UPPER(TRIM(payable_code)) AS k FROM statutory_accounts WHERE entity_id = :e "
+              "UNION SELECT id, UPPER(TRIM(employer_code)) FROM statutory_accounts WHERE entity_id = :e)")
+
+
+def norm_code(code):
+    """A chart code as it is compared: capitals, without the spaces round it."""
+    return str(code or "").strip().upper()
+
+
+def _gl_sql(source, code=None, first=False):
+    """The query for one source: every code it holds with how many rows (the whole company), the count for one code, or (first) a row
+    naming it if there is one."""
+    _, _, table, col, where = source
+    if table is None:
+        table, col, where = _STATUTORY, "k", "1 = 1"
+        k = "k"
+    else:
+        k = f"UPPER(TRIM({col}))"
+    if first:
+        return f"SELECT 1 FROM {table} WHERE {where} AND {k} = :c LIMIT 1"
+    one = f" AND {k} = :c" if code else ""
+    return f"SELECT {k}, COUNT(*) FROM {table} WHERE {where}{one} GROUP BY {k}"
+
+
+def _gl_rows(con, sql, entity_id, code=None):
+    try:
+        return con.execute(sql, {"e": entity_id, "c": code}).fetchall()
+    except sqlite3.OperationalError as x:  # a table or column a later update adds (a records.db still below it)
+        if "no such table" not in str(x) and "no such column" not in str(x):
+            raise
+        return []
+
+
+def gl_use_map(con, entity_id, code=None):
+    """{code: [how many rows of each GL_USES source name it]} for every code the company's rows hold, or for one code. One scan of
+    each table, whatever the number of accounts."""
+    out = {}
+    for i, source in enumerate(GL_USES):
+        for k, n in _gl_rows(con, _gl_sql(source, code), entity_id, code):
+            if k:
+                out.setdefault(k, [0] * len(GL_USES))[i] += n
+    return out
+
+
+def _gl_out(counts):
+    """[[what, how many]] of the sources that are not zero, in GL_USES order."""
+    return [[one if n == 1 else many, n] for (one, many, *_), n in zip(GL_USES, counts or []) if n]
+
+
+def gl_used(con, entity_id, code):
+    """Whether any row names the chart account at all (stops at the first it finds, so it never counts)."""
+    k = norm_code(code)
+    return any(_gl_rows(con, _gl_sql(source, first=True), entity_id, k) for source in GL_USES)
+
+
 def usage(con, kind, rid):
     """[(what, how many)] for the uses that are not zero."""
+    if kind == "gl_accounts":
+        g = con.execute("SELECT entity_id, code FROM gl_accounts WHERE id = ?", (rid,)).fetchone()
+        if g is None:
+            return []
+        k = norm_code(g["code"])
+        return _gl_out(gl_use_map(con, g["entity_id"], k).get(k))
     out = []
     for one, many, sql in USES[kind]:
         try:
@@ -619,8 +791,9 @@ def _count(con, sql, *args):
     return con.execute(sql, args).fetchone()[0]
 
 
-def locked(con, kind, rec):
-    """{field: why it can't change now}."""
+def locked(con, kind, rec, used=None, only=None):
+    """{field: why it can't change now}. used: what uses the record when that has been read already (usage's answer); only: the
+    fields about to change, so what no one of them depends on isn't looked up."""
     out = {}
     if kind == "entities" and rec.get("id"):
         if any(_count(con, f"SELECT COUNT(*) FROM {t} WHERE entity_id = ?", rec["id"]) for t in ("months", "payments", "documents")):
@@ -630,8 +803,8 @@ def locked(con, kind, rec):
                                "Reopen the filed months first if it really must.")
     if kind in TYPE_KINDS and rec.get("id"):
         out["key"] = "Records refer to it by this key, so it can't change once added."
-        used = bool(usage(con, kind, rec["id"]))
-        if kind == "payment_types" and (rec.get("system") or used):
+        in_use = bool(usage(con, kind, rec["id"]) if used is None else used)
+        if kind == "payment_types" and (rec.get("system") or in_use):
             out["direction"] = ("The app relies on this type being money " + rec["direction"] + "." if rec.get("system")
                                 else "Payments of this type are money " + rec["direction"] + ", so it can't change once it has any.")
         if kind == "payment_types" and _count(con, """SELECT COUNT(*) FROM payments p JOIN months m ON m.entity_id = p.entity_id
@@ -639,17 +812,19 @@ def locked(con, kind, rec):
             out["legal_due_offset"] = out["legal_due_day"] = (
                 "Filed months judged their payments of this type by this deadline, so it can't change once one is filed. "
                 "Reopen the filed months first if it really must.")
-        if kind == "doc_types" and (rec.get("system") or used):
+        if kind == "doc_types" and (rec.get("system") or in_use):
             out["from_sql"] = ("The app relies on this." if rec.get("system")
                                else "Documents and rules of this type are filed by it, so it can't change once used.")
-    if kind == "parties" and rec.get("id"):
-        used = dict((what, n) for what, n in usage(con, kind, rec["id"]))
-        if any("SQL entr" in w for w in used):
+    if kind == "parties" and rec.get("id") and (only is None or only & {"sql_code", "entity_id"}):
+        uses = dict((what, n) for what, n in (usage(con, kind, rec["id"]) if used is None else used))
+        if any("SQL entr" in w for w in uses):
             out["sql_code"] = "SQL entries are matched to it by this code, so it can't change once any carry it."
-        if used:
+        if uses:
             out["entity_id"] = "Recurring payments or SQL entries refer to it, so it stays with the companies it is for: add another one instead."
-    if kind == "gl_accounts" and rec.get("id") and usage(con, kind, rec["id"]):
-        out["code"] = "Bank accounts, customers, suppliers, other accounts or SQL entries refer to it by this code, so it can't change once used."
+    if kind == "gl_accounts" and rec.get("id") and (only is None or "code" in only) \
+            and (bool(used) if used is not None else gl_used(con, rec["entity_id"], rec["code"])):
+        out["code"] = ("Bank accounts, customers, suppliers, other accounts, statutory accounts, SQL entries, account lines, opening balances "
+                       "or journal lines refer to it by this code, so it can't change once used.")
     if kind == "accounts" and rec.get("id"):
         if _count(con, "SELECT COUNT(*) FROM months WHERE entity_id = ? AND closed_at IS NOT NULL", rec["entity_id"]):
             out["cash_book"] = ("Filed months were reconciled with the SQL cash book on the account that is the cash book now, so it "
@@ -694,9 +869,10 @@ def listing(con, kind, entity_id=None):
     else:
         rows = con.execute(f"SELECT * FROM {s['table']} ORDER BY {s.get('order', 'sort, id')}").fetchall()
     out = []
+    chart = gl_use_map(con, entity_id) if kind == "gl_accounts" else None  # the whole chart's uses in one pass
     for r in rows:
         r = _decoded(kind, dict(r))
-        used = usage(con, kind, r["id"])
+        used = usage(con, kind, r["id"]) if chart is None else _gl_out(chart.get(norm_code(r["code"])))
         out.append({**r, "used_by": used, "used_total": sum(n for _, n in used), "status": "in_use" if r.get("active", 1) else "stopped"})
     return {"rows": out}
 
@@ -704,7 +880,7 @@ def listing(con, kind, entity_id=None):
 def record(con, kind, rid):
     rec = _row(con, kind, rid)
     used = usage(con, kind, rid)
-    return {"record": rec, "used_by": used, "used_total": sum(n for _, n in used), "locked": locked(con, kind, rec),
+    return {"record": rec, "used_by": used, "used_total": sum(n for _, n in used), "locked": locked(con, kind, rec, used=used),
             "can_delete": not used and not rec.get("system"), "can_stop": _can_stop(kind, rec), "notes": notes(con, kind, rec)}
 
 
@@ -719,7 +895,7 @@ def _can_stop(kind, rec):
 
 # ---------- changing ----------
 
-def _checked(kind, fields, rec=None):
+def _checked(kind, fields, rec=None, lenient=False):
     if not isinstance(fields, dict):
         raise Refused("Nothing to save.")
     known = {f["key"]: f for f in spec(kind)["fields"]}
@@ -727,7 +903,10 @@ def _checked(kind, fields, rec=None):
     for k, v in fields.items():
         if k not in known:
             raise Refused(f"{k} can't be set here.")
-        out[k] = check_value(known[k], v)
+        # A value re-posted unchanged (compared in capitals, without the spaces round it) is the record's own, which an older version may have kept
+        # longer than a new one may be; so is a value in a setup file.
+        same = bool(rec) and known[k].get("upper") and isinstance(v, str) and rec.get(k) is not None and v.strip().upper() == str(rec[k]).strip().upper()
+        out[k] = check_value(known[k], v, lenient=lenient or same)
     return out
 
 
@@ -830,10 +1009,11 @@ def update(con, kind, rid, fields, quiet=False):
     rec = _row(con, kind, rid)
     vals = _checked(kind, fields, rec)
     vals = {k: v for k, v in vals.items() if v != rec.get(k)}
-    for k in vals:
-        why = locked(con, kind, rec).get(k)
-        if why:
-            raise Refused(why)
+    if vals:
+        why = locked(con, kind, rec, only=set(vals))  # once, for every field changed
+        for k in vals:
+            if why.get(k):
+                raise Refused(why[k])
     for f in s["fields"]:
         if f.get("required") and f["key"] in vals and vals[f["key"]] in (None, ""):
             raise Refused(f"{f['label']}: this can't be empty.")
@@ -973,14 +1153,20 @@ def delete(con, kind, rid):
         _default_type(con, rec)
     if kind == "payment_types":  # its own sets of required documents go with it (they are part of the type)
         con.execute("DELETE FROM required_sets WHERE payment_type = ?", (rec["key"],))
-    if kind == "entities":  # so does a company's own checklist and its own sets: no month was set up with them
-        if _has_table(con, "checklist_items"):
-            con.execute("DELETE FROM checklist_terms WHERE item_id IN (SELECT id FROM checklist_items WHERE entity_id = ?)", (rid,))
-            con.execute("DELETE FROM checklist_items WHERE entity_id = ?", (rid,))
-            checklistbook.forget(con)
-        if _has_table(con, "required_sets"):
-            con.execute("DELETE FROM required_sets WHERE entity_id = ?", (rid,))
-    con.execute(f"DELETE FROM {s['table']} WHERE id = ?", (rid,))
+    try:
+        if kind == "entities":  # so does a company's own checklist and its own sets: no month was set up with them
+            if _has_table(con, "checklist_items"):
+                con.execute("DELETE FROM checklist_terms WHERE item_id IN (SELECT id FROM checklist_items WHERE entity_id = ?)", (rid,))
+                con.execute("DELETE FROM checklist_items WHERE entity_id = ?", (rid,))
+                checklistbook.forget(con)
+            if _has_table(con, "required_sets"):
+                con.execute("DELETE FROM required_sets WHERE entity_id = ?", (rid,))
+        con.execute(f"DELETE FROM {s['table']} WHERE id = ?", (rid,))
+    except sqlite3.IntegrityError as x:
+        if "FOREIGN KEY" not in str(x).upper():
+            raise
+        checklistbook.forget(con)  # the page rolls this back: what was read for it is read again
+        raise Refused("It is still used by other records, so nothing was deleted. Stop using it instead.", 409)
     if kind == "accounts" and rec["cash_book"]:
         nxt = con.execute("SELECT id FROM accounts WHERE entity_id = ? AND active = 1 AND currency = ? ORDER BY sort, id LIMIT 1",
                           (rec["entity_id"], BASE)).fetchone()

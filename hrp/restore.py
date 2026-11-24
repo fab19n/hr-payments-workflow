@@ -36,6 +36,14 @@ PER_ENTITY = ("accounts", "parties", "gl_accounts", "checklist_items", "payees",
 LISTED = 200  # deleted records listed at most per section (the newest)
 
 
+def display_name(tbl, img, key):
+    """A deleted record as its Setup list names it: a company by its code and name (CODE · Name), the rest as the trail does."""
+    img = img or {}
+    if tbl == "entities" and img.get("code") and img.get("name"):
+        return f"{img['code']} · {img['name']}"
+    return auditread._record_name(img, key)
+
+
 def _columns(con, table):
     return [r[1] for r in con.execute(f"PRAGMA table_info({table})")]
 
@@ -396,7 +404,7 @@ def put_back(con, row_id):
     notes, lines, affected, deleted}; raises Refused."""
     p = plan(con, row_id)
     tbl, img, kids, r, tx = p["table"], p["img"], p["children"], p["row"], p["tx"]
-    name = auditread._record_name(img, r["row_key"])
+    name = display_name(tbl, img, r["row_key"])
     label = auditread._label(tbl)
     lines, affected, put = [], {"tasks": 0, "payments": 0, "now_missing": 0, "now_complete": 0}, {}
     try:
@@ -528,7 +536,8 @@ def _listed(con, tbl, rows, done, entity_id):
         except Refused as x:
             problem = str(x)
         out.append({"row_id": r["id"], "entry": r["tx_id"], "at": r["tx_at"], "actor": r["actor"], "reason": r["reason"],
-                    "table": tbl, "key": r["row_key"], "name": auditread._record_name(img, r["row_key"]),
+                    "table": tbl, "key": r["row_key"], "name": display_name(tbl, img, r["row_key"]),
+                    "code": img.get("code") if tbl == "gl_accounts" else None,  # a chart account's list shows its code beside its name
                     "entity_id": img.get("entity_id"), "problem": problem})
         if len(out) >= LISTED:
             break

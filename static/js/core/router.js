@@ -10,7 +10,7 @@
    A place is { view, entity (id, "all" or null), month, sub, id, params }: sub and id are the Setup section and record, or the
    payment to open on the register; params are the filters (mark, pay, task, as_at, filter, account, tab, from, to).
    navigate(place) writes the address and applies the place; applyPlace(place) sets the state and draws; go() and goTo() call
-   navigate. Known departure from the design: Setup is #/admin/setup[/<kind>[/<id>]] with today's server kind names; the design's
+   navigate. Setup's section for recurring payments (#/admin/setup/payees) is the Recurring page; goSetupRecord() (pages/setup.js) opens a Setup record by its address. Known departure from the design: Setup is #/admin/setup[/<kind>[/<id>]] with today's server kind names; the design's
    #/<CODE>/admin/setup/<group>/<page> (companies, hr/approvers) comes with the Setup HR group. Where the page has no real location or history (the test stand-ins) a place is applied with no address. */
 
 // The areas of the menu (core/menu.js draws it): the first word of an address after the company and month.
@@ -185,6 +185,8 @@ function settleAddr() { const a = currentAddr(); if (a && placeLoc() && placeLoc
 async function applyPlace(place, opts = {}) {
   ROUTER.busy++;
   try {
+    // Recurring payments has one home, Payments › Recurring: its old Setup address opens it there (Setup's menu links to it).
+    if (place.view === "setup" && place.sub === "payees" && (state.entity ?? firstEntityId()) != null) place = { view: "payees", entity: state.entity ?? firstEntityId(), month: state.month, sub: null, id: null, params: {} };
     let e = place.entity && place.entity !== "all" ? state.meta.entities.find(x => x.id === +place.entity) : null;
     if (opts.bad) { toast("That address isn't used here. Showing the Overview."); place = homePlace(); }
     else if (opts.fromAddress) {
@@ -193,10 +195,14 @@ async function applyPlace(place, opts = {}) {
     }
     const v = place.view, R = ROUTES[v], p = cleanParams(v, place.params), B = state.books;
     state.view = v;
+    if (v !== "setup") setupLeft();  // what Setup keeps only while it is on show (the rows Show more showed, the link after an import) goes
     if (place.entity && place.entity !== "all") state.entity = +place.entity;
     if (!state.entity) state.entity = firstEntityId();
     if (R.month && MONTH_RE.test(place.month || "")) state.month = place.month;
-    if (opts.fresh) { state.recon.rv = null; for (const k in state.lists) state.lists[k].q = ""; state.payeeSaved = null; state.reg = null; state.cl = null; }
+    if (opts.fresh) {
+      state.recon.rv = null; state.payeeSaved = null; state.reg = null; state.cl = null;
+      for (const k in state.lists) { state.lists[k].q = ""; if (k.startsWith("setup-")) setupMoreReset(k); }  // searches start again, and so do Setup's 25 rows
+    }
     state.addr = { all: place.entity === "all", id: v === "entity" && place.id ? String(place.id) : null, params: p };
     state.openPayment = state.addr.id ? +state.addr.id : null;
     state.mark = v !== "entity" && v !== "checklist" ? null : p.pay ? { pay: x => p.pay.split(",").map(Number).includes(x.id) }
@@ -221,7 +227,8 @@ async function applyPlace(place, opts = {}) {
     if (opts.link) window.scrollTo?.(0, 0);
     renderNav();
     await render();
-    if (v === "setup" && place.id && state.view === "setup" && state.setup.kind) {  // the record the address names opens in its drawer
+    // the record the address names opens in its drawer; a section drawn in place of the one named (a link's old address) has no such record
+    if (v === "setup" && place.id && state.view === "setup" && state.setup.kind && state.setup.kind === place.sub) {
       try { await openSetup(state.setup.kind, +place.id, { force: true }); } catch (err) { toast(err.message, true); }
     }
     settleAddr();
@@ -269,7 +276,7 @@ async function onHashChange() {
 // The first draw: the address in the bar is the place; with none it is the Overview, and the address is written.
 async function routerBoot() {
   const L = placeLoc();
-  if (window.addEventListener) window.addEventListener("hashchange", onHashChange);
+  if (window.addEventListener && !routerBoot.on) { routerBoot.on = true; window.addEventListener("hashchange", onHashChange); }  // once, if the app starts again after a failed start
   const h = L ? L.hash : "", home = !h || h === "#" || h === "#/", place = home ? null : parseAddr(h);
   if (h && !home) ROUTER.at = h;
   if (entryNo() != null) ROUTER.i = entryNo();

@@ -4,13 +4,14 @@ document.addEventListener("click", async ev => {
   // The pick box of a register row (and the cell around it) picks the payment for the bulk bar; it doesn't open it.
   const g = ev.target, gd = g.dataset || {};
   if ("regPick" in gd || "regPickAll" in gd || (g.tagName === "TD" && /\breg-pick\b/.test(g.className || ""))) return;
-  const t = ev.target.closest("button, tr[data-payment], a");
+  const t = ev.target.closest("button, tr[data-payment], tr[data-setup-row], a");
   if (!t) return;
   const ds = t.dataset;
   if (ds.sort) return sortClick(ds.sort, ds.col, t);
   try {
     if (ds.menu) { if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return; ev.preventDefault(); return menuGo(ds.menu); }  // a menu link: the app opens it; a new-tab click is the browser's
     if (ds.menuFold) return menuFoldToggle(ds.menuFold);
+    if (ds.setupLink) { if (ev.button || ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey) return; ev.preventDefault(); if (!(await closeDrawer())) return; return menuGo(SETUP_LINKS[ds.setupLink]); }  // Setup's link to a section that lives on another page
     if (ds.tbToggle) return tbToggle(ds.tbToggle);  // the top bar: the company and account menus (core/topbar.js)
     if (ds.tbAway) return tbClose(false);
     if (ds.tbPick) return tbPick(ds.tbPick);
@@ -19,10 +20,10 @@ document.addEventListener("click", async ev => {
     if (ds.view) return go(ds.view, ds.entity);
     if (ds.goField) { ev.preventDefault(); const f = document.getElementById(ds.goField); f?.scrollIntoView?.({ block: "center" }); return f?.focus?.(); }
     if (ds.copyDetails !== undefined) return copyDetails(ds.copyDetails);
-    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return render(); }
+    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return ds.retry === "start" ? (start.running ? undefined : start()) : render({ saved: ds.retry === "saved" }); }
     if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
     if (ds.restore) return await openRestore(+ds.restore, ds.restoreTitle);
-    if (ds.restoreGo) return restoreGo(+ds.restoreGo, t);
+    if (ds.restoreGo) return await restoreGo(+ds.restoreGo, t);  // awaited: a refusal or a stopped app reaches the catch below, and is said
     if (ds.packFile) return await openPackCheck(ds.packCheck, ds.packFile);
     if (ds.tx) return toggleEntry(+ds.tx, t);
     if (ds.trailMore) return trailMore(t);
@@ -60,9 +61,34 @@ document.addEventListener("click", async ev => {
     if (t.id === "closeDrawer") return closeDrawer();
     if (ds.setupKind) {
       if (!(await closeDrawer())) return;
-      Object.assign(state.setup, { kind: ds.setupKind, id: null }); return redraw();
+      // Open Setup > Bank accounts in a company's dialog: that company's accounts, not the top bar's
+      if (ds.setupEntity && (state.meta.entities || []).some(x => x.id === +ds.setupEntity)) state.entity = +ds.setupEntity;
+      Object.assign(state.setup, { kind: ds.setupKind, id: null });
+      await redraw();
+      // the page was drawn again, menu and all: the focus goes to the menu item or the tab now selected (a key chose it)
+      if (t.getAttribute?.("role") === "tab") document.querySelector(`[role="tab"][data-setup-kind="${ds.setupKind}"]`)?.focus?.({ preventScroll: true });
+      else if (t.classList?.contains?.("sn")) document.querySelector(".setup-nav .sn.on")?.focus?.({ preventScroll: true });
+      return;
     }
     if (ds.setupNew) return await openSetup(ds.setupNew, "new");
+    if (ds.setupRow) return await openSetup(state.setup.kind, +ds.setupRow);
+    if (ds.suClose) return closeDrawer();
+    if (ds.whyGo) return await whySubmit();
+    if (ds.setupMore) {  // Show 25 more: the list is drawn again, and the focus goes to the first row that was not there
+      const id = "setup-" + ds.setupMore, was = state.setup.more?.[id] || SETUP_PAGE;
+      (state.setup.more ||= {})[id] = was + SETUP_PAGE; LIST_REDRAW[id]?.();
+      return document.querySelectorAll("#setupList [data-setup-open]")[was]?.focus?.({ preventScroll: true });
+    }
+    if (ds.setupClear) {
+      const id = "setup-" + ds.setupClear; listState(id).q = ""; setupMoreReset(id);
+      const q = document.querySelector(`[data-search="${id}"]`); if (q) q.value = "";
+      LIST_REDRAW[id]?.(); return q?.focus?.();
+    }
+    if (ds.setupShowStopped) {
+      state.setup.stopped = true;
+      const c = document.querySelector("[data-setup-stopped]"); if (c) c.checked = true;
+      LIST_REDRAW["setup-" + ds.setupShowStopped]?.(); return c?.focus?.();
+    }
     if (ds.setupPaste) return openPaste(ds.setupPaste);
     if (ds.pasteRead) { t.disabled = true; try { return await pasteSave(true); } finally { if (t.isConnected) t.disabled = false; } }
     if (ds.setupOpen) return await openSetup(state.setup.kind, +ds.setupOpen);
@@ -99,8 +125,9 @@ document.addEventListener("click", async ev => {
     if (ds.remOpen) return openReminder(+ds.remOpen);
     if (ds.remAct) return await remAct(ds.remAct, t);
     if (ds.movePick) { t.disabled = true; try { return await movePick(); } finally { if (t.isConnected) t.disabled = false; } }
+    if (ds.moveExport) return toast(moveExportNote(ds.moveExport));  // the download itself is the browser's
     if (ds.moveGo) return askWhy(t, "Import it", moveImport);
-    if (ds.moveCancel) { Object.assign(state.setup.move, { file: null, preview: null }); hideWhy(); $("#mvPreview").innerHTML = ""; return; }
+    if (ds.moveCancel) { hideWhy(); Object.assign(state.setup.move, { file: null, preview: null, name: "", refused: "" }); return moveRepaint("mv-pick"); }
     if (ds.chkPreview || ds.chkCopyPreview || ds.remPreview) {
       t.disabled = true;
       try { return await (ds.chkPreview ? chkSave(true) : ds.chkCopyPreview ? chkCopySave(true) : remSave(true)); } finally { if (t.isConnected) t.disabled = false; }
@@ -242,7 +269,7 @@ document.addEventListener("click", async ev => {
       toast(`${r.doc_nos.join(", ")} marked as deleted in SQL; listed under Ignored${reconMoved(r)}`); return render();
     }
     if (ds.sqlLinkGo) return await sqlEntryLink(+ds.sqlLinkGo);
-    if (ds.invSetup) { state.setup.kind = "entities"; return go("setup"); }
+    if (ds.invSetup) return goSetupRecord("entities", state.entity);
     if (ds.invImgUp) return printImage(ds.invImgUp, false);
     if (ds.invImgRemove) return printImage(ds.invImgRemove, true);
     if (ds.sqlNameRemove) return await removeSqlName(t);

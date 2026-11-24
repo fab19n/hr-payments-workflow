@@ -426,6 +426,17 @@ class _Import:
             self.counts.append([ONE[label] if len(v) == 1 else label, len(v)])
         return v
 
+    def more(self, name, n):
+        """Counts n more rows of a list among what the import adds: rows the import makes itself (a company's starter checklist), so
+        the preview says what the records will hold, the figure Move setup gives once the file is in."""
+        label = dict(LISTS)[name]
+        for entry in self.counts:
+            if entry[0] in (label, ONE[label]):
+                total = entry[1] + n
+                entry[:] = [ONE[label] if total == 1 else label, total]
+                return
+        self.counts.append([ONE[label] if n == 1 else label, n])
+
     def ent(self, code, every=False):
         """The id a company code in the file has in these records; None for every company where that is allowed."""
         if code is None and every:
@@ -444,7 +455,7 @@ class _Import:
 
     def fields(self, kind, r, keys):
         """The row's fields Setup's form has, checked as Setup checks them (masters._checked), and the required ones."""
-        vals = masters._checked(kind, {k: r[k] for k in keys if k in r and r[k] is not None})
+        vals = masters._checked(kind, {k: r[k] for k in keys if k in r and r[k] is not None}, lenient=True)
         for f in masters.KINDS[kind]["fields"]:
             if f.get("required") and f["key"] in keys and vals.get(f["key"]) in (None, ""):
                 raise Refused(f"{f['label']}: this can't be empty.")
@@ -701,10 +712,14 @@ class _Import:
                                                             "name": out[-1]["title"], "notes": notes})
                 for t in out:
                     _insert(self.con, "checklist_terms", {**t, "item_id": iid, "rule": json.dumps(t["rule"]) if t["rule"] else None})
+        seeded = 0
         for code, eid in self.ents.items():  # a company with no checklist in the file starts with the starter checklist
             if eid not in taken:
                 uses_sql = self.con.execute("SELECT uses_sql FROM entities WHERE id = ?", (eid,)).fetchone()[0]
                 checklistbook.seed_company(self.con, {"id": eid, "code": code, "uses_sql": uses_sql}, starter=True)
+                seeded += self.con.execute("SELECT COUNT(*) FROM checklist_items WHERE entity_id = ?", (eid,)).fetchone()[0]
+        if seeded:
+            self.more("checklist", seeded)
         checklistbook.forget(self.con)
 
     # ---- dated rules and words ----

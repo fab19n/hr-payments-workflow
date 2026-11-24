@@ -78,7 +78,7 @@ function sortTh(id, col, label, cls = "") {
   return `<th${cls ? ` class="${cls}"` : ""} aria-sort="${on ? (st.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" class="sorth" data-sort="${id}" data-col="${col}">${label}<span class="arrow" aria-hidden="true">${on ? (st.dir > 0 ? "▲" : "▼") : ""}</span></button></th>`;
 }
 function listBar(id, what) {
-  return `<div class="listbar noprint"><input type="search" data-search="${id}" value="${esc(listState(id).q)}" placeholder="Search ${what}" aria-label="Search ${what}"><span class="muted" data-count="${id}" aria-live="polite"></span></div>`;
+  return `<div class="listbar noprint"><input type="search" data-search="${esc(id)}" value="${esc(listState(id).q)}" placeholder="Search ${esc(what)}" aria-label="Search ${esc(what)}"><span class="muted" data-count="${esc(id)}" aria-live="polite"></span></div>`;
 }
 const setCount = (id, n, m) => { state.counts[id] = [n, m]; };
 function paintCount(id) {
@@ -140,8 +140,10 @@ function go(view, entity) {
   return place ? navigate(place, { fresh: true }) : Promise.resolve(false);
 }
 
-async function render() {
-  const main = $("#main");
+// opts.saved: a change was kept and this draw is the reading back of it: if it fails the page says so (it was saved) and never that nothing was
+// changed, and its Try again says it again (data-retry="saved"). Returns false when it painted an error, true otherwise.
+async function render(opts) {
+  const main = $("#main"), saved = !!(opts && opts.saved === true);
   if (dayKey() !== state.day) await newDay();
   // A page the company does not use. Switching company while on it: that company's Overview instead, and the toast says why.
   // Reaching it any other way (a link): the card that says it is not used, with a way to a company that does.
@@ -149,18 +151,31 @@ async function render() {
   render.company = state.entity;
   if (gone && switched) { const e = ent(); const was = state.view; state.view = "entity"; renderNav(); switchedNote(gone, e, PAGE_RULES[was]?.plural); }
   else if (gone) { render.n = (render.n || 0) + 1; render.last = null; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return; }
+  if (state.view !== "setup") setupLeft();  // any other page: Setup's draws still reading are overtaken, and their hold of the page's height is gone
   // A page that takes visible time: the old page stays, slightly dimmed, and a skeleton comes after 0.3 s (never a flash);
   // drawing the same page again keeps what is there.
   const seq = render.n = (render.n || 0) + 1, key = `${state.view}:${state.entity}`, fresh = render.last !== key;
   if (fresh) main.classList.add("loading");
   const slow = fresh ? setTimeout(() => { if (seq === render.n) main.innerHTML = loadingSkeleton(3); }, 300) : null;
+  let failed = false;
   try {
-    const draw = ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
+    const first = firstRunDue();  // an install with no company yet (pages/firstrun.js) takes the Overview's place, with no shell around it
+    firstRunShell(first);
+    const draw = first ? viewFirstRun : ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
     if (draw) await draw(main);
-    if (state.view === "overview") trailNotice();
-    render.last = key;
-  } catch (e) { render.last = null; main.innerHTML = appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true }); }
+    if (state.view === "overview" && !first) trailNotice();
+    if (seq === render.n) render.last = key;  // a draw that was overtaken doesn't say what the page on show is
+  } catch (e) {
+    // nor does it paint over the page now shown; after a change was kept the page says so (whatever failed, the app having stopped too), never that
+    // nothing was changed or sent
+    if (seq === render.n) {
+      failed = true; render.last = null;
+      main.innerHTML = saved ? errorState({ body: SAVED_NOT_READ, retry: "saved", nothingChanged: false })
+        : appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true });
+    }
+  }
   finally { clearTimeout(slow); if (seq === render.n) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } } dlgRestore(); }  // the menu's numbers follow the Next up rows this page may have just read
+  return !failed;
 }
 
 function entityPicker() {

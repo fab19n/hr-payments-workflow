@@ -36,11 +36,12 @@ function loadingSkeleton(rows = 3, { kind = "list", label } = {}) {
 }
 
 // A page that could not load: the reason, and Try again (a button carrying data-retry; the click handler draws the page again)
-// beside Copy details (the title and the reason, for whoever helps). Every load only reads, so it says nothing was changed.
-function errorState({ title = "Couldn't load this page", body = "", retry = true, nothingChanged = true } = {}) {
+// beside Copy details (the title and the reason, and detail: the cause, for whoever helps). Every load only reads, so it says nothing was changed.
+// busy: the words the Try again button shows while it works (it is disabled then, as stoppedState's is).
+function errorState({ title = "Couldn't load this page", body = "", retry = true, nothingChanged = true, busy = "", detail = "" } = {}) {
   const text = [body, nothingChanged ? "Nothing was changed." : ""].filter(Boolean).join(" ");
-  const b = (retry ? `<button type="button" class="btn" data-retry="${esc(retry === true ? "1" : retry)}">${icon("refresh")}Try again</button>` : "")
-    + `<button type="button" class="ghost" data-copy-details="${esc(title + "\n" + text)}">Copy details</button>`;
+  const b = (retry ? `<button type="button" class="btn" data-retry="${esc(retry === true ? "1" : retry)}"${busy ? ` data-busy="${esc(busy)}"` : ""}>${icon("refresh")}Try again</button>` : "")
+    + `<button type="button" class="ghost" data-copy-details="${esc(title + "\n" + text + (detail ? "\n" + detail : ""))}">Copy details</button>`;
   return `<div class="state bad" role="alert">${stPlate("alert", "bad")}<h2>${esc(title)}</h2>${text ? `<p>${esc(text)}</p>` : ""}<div class="state-actions">${b}</div></div>`;
 }
 

@@ -130,15 +130,16 @@ async function pasteSave(preview, over = {}) {
   const kind = P.kind;
   toast(pasteCounts(r.counts));
   closeDrawer(true);
-  await afterSetupChange(kind); return render();
+  return afterSaved(async o => { await afterSetupChange(kind); return render(o); });
 }
 
 // General settings: one form; Save sends only what changed.
 async function setupSettings(box) {
-  const s = await api("/api/setup/settings"), fields = s.fields || setupSpec()?.fields || [];
-  box.innerHTML = `<div class="card"><h1>General settings</h1>
-    <div class="note">These apply to every company. Each change is kept in the audit trail.</div>
-    <form class="form setup-form" id="settingsForm">${fields.map(f => fieldHtml(f, s.values?.[f.key], null, "gs-")).join("")}
+  const s = await api("/api/setup/settings");
+  if (!(box = setupBox(box))) return;
+  const fields = s.fields || setupSpec()?.fields || [];
+  box.innerHTML = `${setupHead("settings", setupSpec(), { intro: "These apply to every company. Each change is kept in the audit trail." })}
+    <div class="card"><form class="form setup-form" id="settingsForm">${fields.map(f => fieldHtml(f, s.values?.[f.key], null, "gs-")).join("")}
       <label class="field" style="grid-column:1/-1"><span>Why are you making this change? (optional)</span><input id="gs-reason" maxlength="500" autocomplete="off"></label>
       <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Save</button></div></form></div>`;
   state.setup.settings = { fields, loaded: formValues(fields, "gs-") };
@@ -153,71 +154,109 @@ async function settingsSave() {
   if (reason) body.reason = reason;
   const was = currentCycle();
   await api("/api/setup/settings", { method: "PATCH", json: body });
-  state.meta = await api("/api/meta"); paintOrg();
-  if ("cycle_rollover_day" in values && currentCycle() !== was) {
-    if (state.month === was) state.month = currentCycle();
-    await openCycleMonths();
-  }
-  renderNav();
-  toast("Saved"); return render();
+  toast("Saved");
+  return afterSaved(async o => {
+    state.meta = await readMeta(); paintOrg();
+    if ("cycle_rollover_day" in values && currentCycle() !== was) {
+      if (state.month === was) state.month = currentCycle();
+      await openCycleMonths();
+    }
+    renderNav();
+    return render(o);
+  });
 }
 
-/* Move setup: this install's setup saved as one file (setup.json) to start another install with, and such a file
-   imported into records that hold no company yet (hrp/setupfile.py). The template holds the rules only; everything adds
-   the companies and what belongs to them, and the recurring payments only when ticked. Saving one is an ordinary
-   download (the server notes it in the audit trail); an import is previewed first and asks why. */
+/* Move setup: this install's setup saved as one file (setup.json) to start another install with, and such a file imported into
+   records that hold no company yet (hrp/setupfile.py). The template holds the rules only; everything adds the companies and what
+   belongs to them, and the recurring payments only when ticked. Saving one is an ordinary download (the server notes it in the audit
+   trail); an import is previewed first and asks why. The counts of a file come from the server's own reading of it (stopped records
+   are in the file, deleted ones are gone), and First run (pages/firstrun.js) draws the same counts the same way. */
 // A signed-off bank reconciliation month an action moved, said after its toast (it stays signed off).
 const reconMoved = r => r.recon_changed?.length ? `. The bank reconciliation of signed-off ${r.recon_changed.map(m => monthName(m.month)).join(", ")} changed: it stays signed off; check it again` : "";
 const moveHref = (what, extra) => `/api/setup/export?what=${what}${extra}`;
-async function setupMove(box) {
-  const st = await api("/api/setup/import"), M = state.setup.move ||= { payees: false, from: "", preview: null };
-  const list = state.meta.entities || [];
-  box.innerHTML = `<div class="card"><h1>Move setup</h1>
-    <div class="note">Save this install's setup as a file, to start another install with it. Each file saved is noted in the audit trail.</div>
-    <h3>Template</h3>
-    <div class="note">The rules only: payment types, document types and the documents each needs, a starter checklist, the joiner and leaver reminders, the matching words and the general settings. No company, bank account, customer, supplier or person.</div>
-    <div class="form setup-form"><label class="field" style="grid-column:1/-1"><span>Starter checklist</span><select id="mv-from"><option value="">The one new companies get here</option>${list.map(e => `<option value="${e.id}"${String(e.id) === M.from ? " selected" : ""}>${esc(e.code)} · ${esc(e.name)}'s checklist</option>`).join("")}</select>
-      <span class="note">Companies added in the other install start with it.</span></label></div>
-    <div class="row"><a class="btn" id="mvTemplate" href="${esc(moveHref("template", M.from ? `&entity=${M.from}` : ""))}">Export template</a></div>
-    <h3>Everything</h3>
-    <div class="note">The template, plus the companies, their bank accounts with the account numbers, charts of accounts, customers and suppliers, and each company's checklist. Keep the file safe.</div>
-    <label class="row"><input type="checkbox" id="mv-payees"${M.payees ? " checked" : ""}><span>Include recurring payments (staff names, amounts, bank details)</span></label>
-    <div class="note warn" id="mv-warn"${M.payees ? "" : " hidden"}>The file then holds personal data. Keep it as safe as a backup and delete it once it has been imported.</div>
-    <div class="row"><a class="btn" id="mvFull" href="${esc(moveHref("full", M.payees ? "&payees=1" : ""))}">Export everything</a></div></div>
-  <div class="card"><h1>Import a setup file</h1>
-    ${st.empty ? `<div class="note">For a new install, before any company is added. A template's rules are added to the app's own; everything also adds its companies and what belongs to them. Each row is checked as Setup checks it, and nothing is saved unless every row passes.</div>
-      <div class="row"><button class="btn" type="button" data-move-pick="1">Choose a setup file…</button></div>
-      <div id="mvPreview">${movePreviewHtml()}</div>${whyForm()}`
-    : `<div class="note">A setup file is imported only into new records, before any company is added. These hold ${esc((st.holding || []).map(([w, n]) => `${n} ${w}`).join(", "))}.</div>`}</div>`;
+// What the Export buttons say once clicked (the file is saved by the browser; the server notes it in the audit trail).
+const moveExportNote = what => `Setup ${what === "template" ? "template" : "everything"} ${dayKey()}.json is downloading${what === "full" && state.setup.move?.payees ? ", with recurring payments" : ""}. It is noted in the audit trail.`;
+// What a setup file adds, as the server counts it (setupfile.load): the lists with something in them, with a capital.
+const moveCounts = p => (p.counts || []).filter(([, n]) => +n).map(([w, n]) => [w.charAt(0).toUpperCase() + w.slice(1), +n]);
+const moveCountsTable = p => `<div class="tbl-wrap"><table class="st-table st-counts"><thead><tr><th scope="col">What</th><th scope="col" class="num">How many</th></tr></thead><tbody>${moveCounts(p).map(([w, n]) => `<tr><td>${esc(w)}</td><td class="num">${n}</td></tr>`).join("")}</tbody></table></div>`;
+// A file the server would not take: its reason, and that nothing was added.
+const moveRefusal = (name, why) => `<div class="refused" role="alert" id="mv-refused">${icon("alert")}<div class="refused-text"><b>${esc(name || "That file")} can't be imported.</b><div class="refused-why">${esc(why)} Nothing was added.</div></div></div>`;
+// A setup file read and previewed (nothing is saved): {setup, preview}. A file that is not JSON says so; one the server refuses
+// carries refused = true, with the server's sentence.
+async function readSetupFile(f) {
+  let setup;
+  try { setup = JSON.parse(await f.text()); } catch { throw new Error("That file can't be read as a setup file. Choose a file saved with Export template or Export everything in Move setup."); }
+  try { return { setup, preview: await api("/api/setup/import", { json: { setup, preview: true } }) }; }
+  catch (e) { if (appStopped(e)) throw e; e.refused = true; throw e; }
 }
-// What the file chosen would add (the server made the import and undid it), with Import and Cancel.
+async function setupMove(box) {
+  const st = await api("/api/setup/import");
+  if (!(box = setupBox(box))) return;
+  const M = state.setup.move ||= { payees: false, from: "", preview: null, refused: "" };
+  M.empty = !!st.empty; M.holding = st.holding || [];
+  const said = !!M.justImported; M.justImported = false;  // the link to the companies it added is for the redraw right after an import, once
+  const list = state.meta.entities || [];
+  box.innerHTML = `${setupHead("move", setupSpec(), { intro: "Save this install's setup as a file, to start another install with it. Each file saved is noted in the audit trail." })}
+    <section class="card st-move" aria-labelledby="mv-exp-h"><div class="row tight st-sec-head">${icon("download")}<h2 id="mv-exp-h">Export</h2></div>
+      <div class="st-move-grid">
+        <div class="st-panel"><div class="row tight"><span class="plate brand">${icon("copy")}</span><h3>Template</h3></div>
+          <p class="note">The rules only: payment types, document types and the documents each needs, a starter checklist, the joiner and leaver reminders, the matching words and the general settings. No company, bank account, customer, supplier or person.</p>
+          <label class="field"><span>Starter checklist</span><select id="mv-from" aria-describedby="mv-from-hint"><option value="">The one new companies get here</option>${list.map(e => `<option value="${e.id}"${String(e.id) === M.from ? " selected" : ""}>${esc(e.code)} · ${esc(e.name)}'s checklist</option>`).join("")}</select>
+            <span class="note" id="mv-from-hint">Companies added in the other install start with it.</span></label>
+          <div class="row"><a class="btn" id="mvTemplate" data-move-export="template" href="${esc(moveHref("template", M.from ? `&entity=${M.from}` : ""))}">${icon("download")}Export template</a></div></div>
+        <div class="st-panel"><div class="row tight"><span class="plate brand">${icon("archive")}</span><h3>Everything</h3></div>
+          <p class="note">The template, plus the companies, their bank accounts with the account numbers, charts of accounts, statutory accounts, customers and suppliers, each company's checklist, what its printed invoices need (address, bank details, logo and signature), and the printed company names confirmed. Keep the file safe.</p>
+          <label class="row tight"><input type="checkbox" id="mv-payees"${M.payees ? " checked" : ""} aria-describedby="mv-warn"><span>Include recurring payments (staff names, amounts, bank details)</span></label>
+          <div class="note warn" id="mv-warn"${M.payees ? "" : " hidden"}>${icon("lock")} <b>The file then holds personal data</b> (staff names, amounts and bank details). Keep it as safe as a backup and delete it once it has been imported.</div>
+          <div class="note" id="mv-never">${icon("eyeOff")} <b>Never in the file:</b> staff records, and the secret behind the keyed check on printed forms. The other install makes its own secret, so a form printed here can't be matched there.</div>
+          <div class="row"><a class="btn" id="mvFull" data-move-export="full" href="${esc(moveHref("full", M.payees ? "&payees=1" : ""))}">${icon("download")}Export everything</a></div></div>
+      </div></section>
+    <section class="card st-move" aria-labelledby="mv-imp-h"><div class="row tight st-sec-head">${icon("upload")}<h2 id="mv-imp-h" tabindex="-1">Import a setup file</h2></div>
+      <div id="mvImport">${moveImportHtml(said)}</div></section>`;
+}
+// The import card: not for an install that holds a company; else Choose a file, what the file adds, and Import.
+function moveImportHtml(added = false) {
+  const M = state.setup.move;
+  if (!M.empty) return `<div class="st-blocked">${icon("lock")}<div><b>Not for this install</b>
+    <p class="note">A setup file is imported only into new records, before any company is added. These hold ${esc(andList((M.holding || []).map(([w, n]) => `${n} ${w}`)))}.</p>
+    <p class="note">To start another install from this one, export above and import the file there.</p>
+    ${added ? `<button type="button" class="ghost small" data-setup-kind="entities">${icon("company")}See the companies it added</button>` : ""}</div></div>`;
+  return `<p class="note">For a new install, before any company is added. A template's rules are added to the app's own; everything also adds its companies and what belongs to them. Each row is checked as Setup checks it, and nothing is saved unless every row passes.</p>
+    <div id="mvPreview">${movePreviewHtml()}</div>${whyForm()}`;
+}
+// What the file chosen would add (the server made the import and undid it), with Import and Cancel; or why it can't be imported.
 function movePreviewHtml() {
   const M = state.setup.move, p = M?.preview;
-  if (!p) return "";
-  const rows = (p.counts || []).filter(([, n]) => +n).map(([w, n]) => `<tr><td>${esc(w.charAt(0).toUpperCase() + w.slice(1))}</td><td class="num">${esc(n)}</td></tr>`).join("");
-  return `<h3>${esc(M.name)}</h3><div class="note">${p.what === "full" ? "Everything" : "A template"}, saved ${esc(fmtDate(p.made))}. Importing it adds or changes:</div>
-    <div class="tbl-wrap"><table><tbody>${rows}</tbody></table></div>${(p.notes || []).map(n => `<div class="note">${esc(n)}</div>`).join("")}
-    <div class="row"><button class="btn" type="button" data-move-go="1">Import</button><button class="ghost" type="button" data-move-cancel="1">Cancel</button></div>`;
+  if (!p) return `${M?.refused ? moveRefusal(M.name, M.refused) : ""}<div class="row"><button class="btn" type="button" id="mv-pick" data-move-pick="1">${icon("folder")}${M?.refused ? "Choose another file…" : "Choose a setup file…"}</button></div>`;
+  const note = n => `<li>${icon(/^The file holds/.test(n) || /^Left out/.test(n) ? "lock" : "help")}<span>${esc(n)}</span></li>`;
+  return `<section class="st-file" aria-labelledby="mv-file-h"><div class="row tight">${icon("document")}<div><h3 id="mv-file-h" tabindex="-1">${esc(M.name)}</h3><span class="note">${p.what === "full" ? "Everything" : "A template"}, saved ${esc(fmtDate(p.made))}. Importing it adds or changes:</span></div></div>
+    ${moveCountsTable(p)}<ul class="st-notes-list">${(p.notes || []).map(note).join("")}</ul>
+    <div class="row"><button class="btn" type="button" id="mv-import" data-move-go="1">${icon("upload")}Import</button><button class="ghost" type="button" data-move-cancel="1">Cancel</button></div></section>`;
 }
+const moveRepaint = focus => { const b = $("#mvImport"); if (b) { b.innerHTML = moveImportHtml(); if (focus) document.getElementById(focus)?.focus?.({ preventScroll: true }); } };
 async function movePick() {
   const [f] = await pickFile(false);
   if (!f) return;
   const M = state.setup.move;
-  let setup;
-  try { setup = JSON.parse(await f.text()); } catch { return toast("That file can't be read as a setup file.", true); }
-  M.preview = null; M.file = null;
-  const p = await api("/api/setup/import", { json: { setup, preview: true } });
-  Object.assign(M, { file: setup, name: f.name, preview: p });
-  $("#mvPreview").innerHTML = movePreviewHtml();
+  Object.assign(M, { name: f.name, preview: null, file: null, refused: "" });
+  try { const r = await readSetupFile(f); Object.assign(M, { file: r.setup, preview: r.preview }); }
+  catch (e) { if (appStopped(e)) throw e; if (e.refused) M.refused = e.message; else { moveRepaint("mv-pick"); return toast(e.message, true); } }
+  moveRepaint(M.preview ? "mv-file-h" : "mv-refused");
 }
 async function moveImport(reason) {
   const M = state.setup.move;
   if (!M?.file) return;
-  await api("/api/setup/import", { json: { setup: M.file, reason } });
-  Object.assign(M, { file: null, preview: null, name: "" });
-  state.meta = await api("/api/meta"); paintOrg();
-  state.entity = firstEntityId(); state.setup.types = null;
-  toast("Setup imported"); renderNav(); return render();
+  try { await api("/api/setup/import", { json: { setup: M.file, reason } }); }
+  catch (e) { if (appStopped(e)) throw e; Object.assign(M, { file: null, preview: null, refused: e.message }); moveRepaint("mv-refused"); return; }
+  Object.assign(M, { file: null, preview: null, name: "", refused: "" });
+  toast("Setup imported");
+  await afterSaved(async o => {
+    state.meta = await readMeta(); paintOrg();
+    M.justImported = (state.meta.entities || []).length > 0;  // a file of rules alone added no company to see
+    state.entity = firstEntityId(); state.setup.types = null;
+    renderNav();
+    return render(o);
+  }, () => document.getElementById("mv-imp-h")?.focus?.({ preventScroll: true }));
 }
 
 /* Required documents: the documents each payment type needs before a payment counts as complete, for every company or
@@ -244,20 +283,29 @@ function reqAffected(a = {}) {
 async function setupRequired(box) {
   const S = state.setup, live = state.meta.entities.filter(isActive);
   if (S.reqScope != null && !live.some(e => e.id === S.reqScope)) S.reqScope = null;
-  const d = S.req = await api(`/api/setup/required?entity=${S.reqScope ?? ""}`);
+  const d = await api(`/api/setup/required?entity=${S.reqScope ?? ""}`);
+  if (!(box = setupBox(box))) return;
+  S.req = d;
   const co = S.reqScope != null ? live.find(e => e.id === S.reqScope) : null;
   const scopeBtn = (v, label, on, title = "") => `<button class="${on ? "btn" : "ghost"} small" data-req-scope="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
   const types = [...d.types.filter(isActive), ...d.types.filter(t => !isActive(t))];
-  const chips = t => t.docs?.length ? `<div class="row" style="gap:4px">${t.docs.map(k => `<span class="chip">${esc(reqDocName(k))}</span>`).join("")}</div>` : `<span class="muted">None</span>`;
+  // A company Kept here is not asked for the documents SQL Account issues (rulebook.required_docs), so those are greyed in its table.
+  const notAsked = k => !!co && !co.uses_sql && (d.doc_types || []).some(x => x.key === k && +x.from_sql);
+  const chips = t => t.docs?.length ? `<div class="row" style="gap:4px">${t.docs.map(k => notAsked(k)
+    ? `<span class="chip off" title="Issued by SQL Account, so not asked for while ${esc(co.code)} is Kept here">${esc(reqDocName(k))}<span class="sr-only"> (not asked for)</span></span>`
+    : `<span class="chip">${esc(reqDocName(k))}</span>`).join("")}</div>` : `<span class="muted">None</span>`;
+  const sqlDocs = (d.doc_types || []).filter(x => +x.from_sql && isActive(x)).map(x => reqDocName(x.key).split(" (")[0]), sqlIssued = andList(sqlDocs.map(esc)), many = sqlDocs.length > 1;
+  const greyed = types.some(t => (t.docs || []).some(notAsked));
   const row = t => `<tr${isActive(t) ? "" : ` class="muted"`}>
       <td><b>${esc(t.label || t.key)}</b>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}</td>
       <td>${chips(t)}</td><td>${esc(reqSince(t))}</td>
       ${co ? `<td>${t.own ? `<span class="pill">Its own set</span>` : `<span class="muted">Follows all companies</span>`}</td>` : ""}
       <td><button class="ghost small" data-req-edit="${esc(t.key)}">Edit</button></td></tr>`;
-  box.innerHTML = `<div class="card"><h1>Required documents</h1>
-    <div class="note">The documents each type of payment needs before it counts as complete. A change starts from a month you choose: the months before it keep the documents they needed, and filed months never change.</div>
+  box.innerHTML = `${setupHead("required", setupSpec(), { intro: "What each payment type needs before it counts as Complete. A change applies from the payroll month you pick and never reaches a filed month." })}
+    <div class="card">
     <div class="row noprint">${scopeBtn("all", "All companies", !co)}${live.map(e => scopeBtn(e.id, e.code, co?.id === e.id, e.name)).join("")}</div>
-    ${co ? `<div class="note">${esc(co.code)} follows the documents set for all companies, unless it has its own set for a type.</div>` : ""}
+    ${co ? `<div class="note">${esc(co.code)} follows the documents set for all companies, unless it has its own set for a type.</div>
+    <div class="note">${esc(co.code)} is ${esc(keptLabel(co))}: ${co.uses_sql ? "its payment vouchers are issued by SQL Account and read in on the SQL import page." : sqlIssued ? `${sqlIssued} ${many ? "are" : "is"} issued by SQL Account, so ${many ? "they are" : "it is"} not asked for while ${esc(co.code)} is Kept here.${greyed ? " Where a type lists them below they are greyed." : ""} Every other document a type needs is asked for.` : "nothing a type needs is issued by SQL Account, so every document in the table is asked for."}</div>` : ""}
     <div class="tbl-wrap"><table><thead><tr><th>Type of payment</th><th>Documents needed</th><th>In force</th>${co ? `<th>For ${esc(co.code)}</th>` : ""}<th></th></tr></thead><tbody>
       ${types.map(row).join("") || `<tr><td colspan="${co ? 5 : 4}" class="empty">No payment types yet.</td></tr>`}
     </tbody></table></div></div>`;
@@ -312,7 +360,7 @@ async function reqSave(follow) {
   if (reason) body.reason = reason;
   const r = await api("/api/setup/required", { json: body });
   closeDrawer(true); toast(reqAffected(r.affected));
-  return render();
+  return afterSaved(o => render(o));
 }
 
 /* Monthly checklist (per company) and joiner and leaver reminders (every company). Each item or reminder has terms: what
@@ -405,7 +453,7 @@ const effectCard = (r, head, what) => `<div class="card"><h3>${esc(head)}</h3>
   ${(r.lines || []).map(x => `<div class="note">${esc(x)}</div>`).join("") || `<div class="note">Nothing in the months already set up changes.</div>`}
   <div class="note"><b>${esc(effectText(r.affected, what))}</b></div></div>`;
 const showPreview = (sel, r, what) => { const el = $(sel); if (el) el.innerHTML = effectCard(r, "Preview: nothing is saved yet", what); };
-const reloadMeta = async () => { state.meta = await api("/api/meta").catch(() => state.meta); };
+const reloadMeta = async () => { state.meta = await readMeta(); };  // only after a change that was kept (afterSaved): a read that fails says so
 
 // Shows the parts of a checklist or reminder drawer that depend on what is chosen in it.
 function setupPaint() {
