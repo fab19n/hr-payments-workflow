@@ -233,6 +233,10 @@ def summary_sheet(ws, people, faults, month_line="SALARY FOR THE MONTH OF OCTOBE
 CELL = re.compile(r"(?:'([^']+)'!|(\[\d+\])?([A-Za-z_][\w]*)!)?\$?([A-Z]{1,3})\$?(\d+)(?::\$?([A-Z]{1,3})\$?(\d+))?")
 
 
+class XLError(Exception):
+    """A formula that gives an Excel error; its argument is the error (#REF!)."""
+
+
 def evaluate(book, sheet, ref, memo):
     key = (sheet, ref)
     if key in memo:
@@ -241,6 +245,10 @@ def evaluate(book, sheet, ref, memo):
     v = ws[ref].value
     if isinstance(v, str) and v.startswith("="):
         f = v[1:]
+        broken = next((e for e in pc.ERRORS if e in f), None)
+        if broken:
+            memo[key] = broken
+            return broken
         if f.startswith("PROPER("):
             memo[key] = None
             return None
@@ -259,11 +267,17 @@ def evaluate(book, sheet, ref, memo):
 
         def one(sh, r):
             x = evaluate(book, sh, r, memo)
+            if x in pc.ERRORS:
+                raise XLError(x)
             return 0 if x is None else x
 
         def rng(sh, c1, r1, c2, r2):
             from openpyxl.utils import column_index_from_string as ci, get_column_letter as gl
-            return [evaluate(book, sh, f"{gl(c)}{r}", memo) for c in range(ci(c1), ci(c2) + 1) for r in range(r1, r2 + 1)]
+            got = [evaluate(book, sh, f"{gl(c)}{r}", memo) for c in range(ci(c1), ci(c2) + 1) for r in range(r1, r2 + 1)]
+            for x in got:
+                if x in pc.ERRORS:
+                    raise XLError(x)
+            return got
 
         def sums(*a):
             out = 0
@@ -272,7 +286,10 @@ def evaluate(book, sheet, ref, memo):
                     if isinstance(y, (int, float)) and not isinstance(y, bool):
                         out += y
             return out
-        v = eval(expr, {"ONE": one, "RNG": rng, "SUMS": sums, "round": round})
+        try:
+            v = eval(expr, {"ONE": one, "RNG": rng, "SUMS": sums, "round": round})
+        except XLError as ex:
+            v = ex.args[0]
         if isinstance(v, float):
             v = float(f"{v:.15g}")  # Excel keeps 15 significant digits
     memo[key] = v
@@ -280,9 +297,10 @@ def evaluate(book, sheet, ref, memo):
 
 
 def build(faults=True, people=PEOPLE, month_line="SALARY FOR THE MONTH OF OCTOBER 2026", sheet_months=None, summary=True,
-          cells=None, other_book=None):
+          cells=None, other_book=None, drop=()):
     """The workbook as bytes, with each formula's value saved beside it as Excel saves it. cells: {(sheet, ref): value}
-    put in after the layout is built; other_book: {(sheet, ref): value} of the other workbook a [1] link reads."""
+    put in after the layout is built; other_book: {(sheet, ref): value} of the other workbook a [1] link reads; drop:
+    payslip sheets deleted afterwards (cells must replace every formula that read them)."""
     EXTERNAL.clear()
     wb = Workbook()
     wb.remove(wb.active)
@@ -290,14 +308,16 @@ def build(faults=True, people=PEOPLE, month_line="SALARY FOR THE MONTH OF OCTOBE
         person_sheet(wb.create_sheet(p["sheet"]), p, faults, (sheet_months or {}).get(p["sheet"], "October 2026"))
     if summary:
         summary_sheet(wb.create_sheet("Summary"), people, faults, month_line)
-    for (sheet, ref), v in (cells or {}).items():
-        wb[sheet][ref] = v
-    EXTERNAL.update(other_book or {})
     old = wb.create_sheet("2024 Template")
     old["C13"] = "Basic \nSalary"
     old["C17"] = 1500
     old["B17"] = "Contractor"
     old.sheet_state = "hidden"
+    for (sheet, ref), v in (cells or {}).items():
+        wb[sheet][ref] = v
+    for sheet in drop:
+        wb.remove(wb[sheet])
+    EXTERNAL.update(other_book or {})
     memo, values = {}, {}
     for ws in wb.worksheets:
         for row in ws.iter_rows():
@@ -329,6 +349,8 @@ def inject(data, names, values, external):
                     return mm.group(0)
                 if isinstance(v, bool):
                     return f'<c r="{ref}"{attrs} t="b"><f>{f}</f><v>{int(v)}</v></c>'
+                if v in pc.ERRORS:
+                    return f'<c r="{ref}"{attrs} t="e"><f>{f}</f><v>{v}</v></c>'
                 if isinstance(v, str):
                     return f'<c r="{ref}"{attrs} t="str"><f>{f}</f><v>{escape(v)}</v></c>'
                 return f'<c r="{ref}"{attrs}><f>{f}</f><v>{repr(float(v)) if isinstance(v, float) else v}</v></c>'
@@ -591,6 +613,162 @@ xb = load_workbook(io.BytesIO(buf.getvalue()))
 formulas = [(ws.title, c.coordinate) for ws in xb.worksheets for row in ws.iter_rows() for c in row if c.data_type == "f"]
 check("the Excel report keeps a name or finding starting with = as text", not formulas
       and xb["To pay"]["A2"].value == evil and xb["Findings"]["B7"].value == evil, formulas)
+
+# ---------- 3c. failures the check once missed ----------
+
+def checked(cells=None, month="2026-10", **kw):
+    return pc.check(build(False, cells=cells, **kw), month, "x.xlsx")
+
+
+def serious(rep_):
+    return [f for f in found(rep_) if f["severity"] != "note"]
+
+
+def short(fs):
+    return [(f["kind"], f["sheet"], f["cell"], f["severity"], f["what"]) for f in fs]
+
+
+SUMMARY_FIGURES = "EFGHIJKLMNOPQRSTUVW"  # the Summary's columns from the NRIC on; SE's row is 12, the Total row 17
+
+# A. The payslip sheet deleted: its Summary row is all #REF!, the name typed, and the Total row #REF! too.
+gone = {("Summary", f"{c}12"): "=#REF!" for c in SUMMARY_FIGURES}
+gone[("Summary", "C12")] = "Gone Person"
+r = checked(gone, drop=("SE",))
+fa = {(f["kind"], f["cell"]): f for f in serious(r)}
+check("a deleted payslip is never 'nothing to fix'", r["counts"]["fix"] == 3 and r["counts"]["check"] == 0
+      and set(fa) == {("excel_error", "E12"), ("summary_missing", "C12"), ("excel_error", "F17")}, short(serious(r)))
+row_err, tot_err, lost = fa[("excel_error", "E12")], fa[("excel_error", "F17")], fa[("summary_missing", "C12")]
+check("the Summary row's errors are one finding naming every cell", row_err["cells"] == [f"{c}12" for c in SUMMARY_FIGURES]
+      and "Gone Person" in row_err["what"] and "Basic F12 (#REF!)" in row_err["what"] and "Net M12" in row_err["what"], row_err)
+check("the Total row's errors are one finding of their own", tot_err["cells"] == [f"{c}17" for c in "FGHIJKLMNOPQRSTUVW"]
+      and "Total row" in tot_err["what"], tot_err)
+check("the row naming someone with no payslip says it is missing or deleted, and to remove it",
+      "Gone Person" in lost["what"] and "missing or was deleted" in lost["what"]
+      and "Remove the row if they are no longer paid" in lost["should"], lost)
+zeros = {("Summary", f"{c}12"): 0 for c in "FGHIJKLMNOPQRSTUVW"}
+zeros.update({("Summary", "C12"): "Gone Person", ("Summary", "E12"): "K0000000"})
+r = checked(zeros, drop=("SE",))
+check("a named row with no payslip is to fix even when its figures are zeros",
+      [(f["kind"], f["cell"], f["severity"]) for f in serious(r)] == [("summary_missing", "C12", "fix")], short(serious(r)))
+nameless = {("Summary", f"{c}12"): "=#REF!" for c in "C" + SUMMARY_FIGURES}
+r = checked(nameless, drop=("SE",))
+check("a row of #REF! with no name left is still reported",
+      {(f["kind"], f["cell"]) for f in serious(r)} == {("excel_error", "C12"), ("excel_error", "F17")}, short(serious(r)))
+r = checked({("Summary", "C18"): "Prepared by", ("Summary", "C17"): "Total"})
+check("a name under the Total row is not a person's row", not serious(r), short(serious(r)))
+r = checked({("Summary", "B4"): "=#REF!", ("Summary", "B9"): "=#REF!"})
+heads = {f["cell"]: f for f in serious(r) if f["kind"] == "excel_error"}
+check("a broken month line and a broken No. cell on the Summary are each to fix",
+      set(heads) == {"B4", "B9"} and all(f["severity"] == "fix" for f in heads.values())
+      and "headings show an Excel error in: B4 (#REF!)" in heads["B4"]["what"]
+      and "No. B9 (#REF!)" in heads["B9"]["what"], short(serious(r)))
+r = checked({("SD", "B44"): "=#NAME?"})
+check("a broken month name in a payslip's table is to fix, naming the cell",
+      [f["cells"] for f in serious(r) if f["kind"] == "excel_error"] == [["B44"]]
+      and "monthly table month name B44 (#NAME?)" in serious(r)[0]["what"], short(serious(r)))
+r = checked({("2024 Template", "C17"): "=#REF!"})
+check("a hidden sheet's errors are not checked", not serious(r), short(serious(r)))
+
+# An error on a payslip: one finding for the sheet, and nothing compared with the broken cells (never taken as 0).
+r = checked({("SD", "H17"): "=#REF!"})
+fa = serious(r)
+slip = [f for f in fa if f["sheet"] == "SD"]
+check("a payslip's errors are one finding: pay row, monthly table, Total and year to date",
+      len(slip) == 1 and slip[0]["kind"] == "excel_error" and slip[0]["severity"] == "fix"
+      and {"H17", "I17", "K17", "H49", "I49", "K49", "H52", "I52", "K52", "N25", "N30"} <= set(slip[0]["cells"])
+      and "pay row PCB H17 (#REF!)" in slip[0]["what"] and "monthly table October PCB H49" in slip[0]["what"]
+      and "monthly table Total PCB H52" in slip[0]["what"] and "year-to-date Employee PCB N30" in slip[0]["what"], short(fa))
+check("and only errors are reported: no sum, month row, year-to-date or Summary difference worked out from them",
+      [(f["kind"], f["sheet"], f["cell"]) for f in fa if f["sheet"] != "SD"]
+      == [("excel_error", "Summary", "K11"), ("excel_error", "Summary", "K17")]
+      and not [f for f in found(r) if "nothing" in f["what"] and f["kind"] != "pcb_not_checked" and f["kind"] != "excel_error"],
+      short(fa))
+r = checked({("SD", "D17"): "=#VALUE!"})
+check("an EPF cell in error gets no EPF finding as if it were 0",
+      {f["kind"] for f in serious(r)} == {"excel_error"}, short(serious(r)))
+for code in pc.ERRORS:
+    r = checked({("SD", "C44"): f"={code}"})
+    mine = [f for f in serious(r) if f["sheet"] == "SD"]
+    check(f"{code} in an earlier month's row is to fix", len(mine) == 1 and mine[0]["kind"] == "excel_error"
+          and f"C44 ({code})" in mine[0]["what"], short(serious(r)))
+r = checked({("SD", "C17"): "#REF!"})
+check("an error pasted as a value in the Basic cell is still read as that payslip's pay row",
+      any(f["kind"] == "excel_error" and f["sheet"] == "SD" and "C17" in f["cells"] for f in serious(r))
+      and not [f for f in found(r) if f["kind"] == "not_payslip"], short(serious(r)))
+
+# B. Earlier months still linked to the pay row (October's workbook: September is row 48, August 47).
+r = checked({("Staff A", "C48"): "=C17", ("Staff A", "H48"): "=+$H$17"})
+fb = serious(r)
+check("the month just before, linked to the pay row, is one finding to fix naming the cells",
+      [(f["kind"], f["sheet"], f["cell"], f["severity"], f["cells"]) for f in fb]
+      == [("past_row_link", "Staff A", "C48", "fix", ["C48", "H48"])]
+      and "September 2026" in fb[0]["what"] and "(=C17) reads the pay row" in fb[0]["what"]
+      and "Type the figures that were actually paid in September 2026" in fb[0]["should"], short(fb))
+r = checked({("Staff A", "C47"): "=C17"})
+check("an older month linked to the pay row is to check",
+      [(f["kind"], f["cell"], f["severity"]) for f in serious(r)] == [("past_row_link", "C47", "check")], short(serious(r)))
+r = checked({("SE", "H48"): "=H18", ("SE", "J48"): "=J19"})
+check("the month just before linked only to blank cells under the pay row is to check",
+      [(f["kind"], f["cell"], f["severity"]) for f in serious(r)] == [("past_row_link", "H48", "check")]
+      and "a blank cell under the pay row" in serious(r)[0]["what"], short(serious(r)))
+r = checked({("SC", "C49"): "=C18"})
+check("on a shifted sheet the pay row is found where it is (row 18, September in row 49)",
+      [(f["kind"], f["sheet"], f["cell"], f["severity"]) for f in serious(r)] == [("past_row_link", "SC", "C49", "fix")],
+      short(serious(r)))
+r = checked({("SH", "C48"): "=ROUND(A17/30*27,2)"})
+check("the month just before, reading the monthly salary on the pay row beside the table, is to fix",
+      [(f["cell"], f["severity"]) for f in serious(r) if f["kind"] == "past_row_link"] == [("C48", "fix")], short(serious(r)))
+r = checked({("Staff A", "D48"): "=C48*0.11", ("Staff A", "I48"): "=SUM(D48:H48)", ("Staff A", "K48"): "=C48-I48+J48",
+             ("Staff A", "L48"): "=ROUND(C48*0.12,2)"})
+check("the current month's linked row, sums over a row and a formula within the row are not flagged",
+      not serious(r), short(serious(r)))
+
+# C. An earlier month's row that doesn't add up (August, row 47).
+r = checked({("Staff A", "I47"): 999, ("Staff A", "K47"): 5001})
+fc = serious(r)
+check("an earlier row whose deductions and net pay don't add up is one finding to fix",
+      [(f["kind"], f["sheet"], f["cell"], f["severity"], f["cells"]) for f in fc if f["kind"] == "past_row_sum"]
+      == [("past_row_sum", "Staff A", "I47", "fix", ["I47", "K47"])], short(fc))
+fc = [f for f in fc if f["kind"] == "past_row_sum"][0]
+check("it names August and both sums", "August 2026" in fc["what"] and "RM 999.00" in fc["what"]
+      and "Basic - Total deduction + Allowance" in fc["what"] and fc["expected_sen"] is not None, fc)
+r = checked({("SE", "K47"): 1})
+check("net pay alone being wrong is found",
+      [(f["cell"], f["cells"]) for f in serious(r) if f["kind"] == "past_row_sum"] == [("K47", ["K47"])], short(serious(r)))
+r = checked({("SF", "H47"): "-", ("SF", "J47"): "-", ("SF", "K47"): 3065, ("SB", "G47"): None, ("SB", "J47"): None,
+             ("SI", "H50"): 123, ("SH", "H44"): 55})
+check("'-' and blank count as 0, and a row with no Basic figure (or a later month) isn't added up",
+      not [f for f in found(r) if f["kind"] == "past_row_sum"], short(serious(r)))
+r = checked({("Staff A", "K49"): 1})
+check("this month's row is left to the month-row finding", [f["kind"] for f in serious(r) if f["cell"] == "K49"] == ["month_row"]
+      and not [f for f in found(r) if f["kind"] == "past_row_sum"], short(serious(r)))
+advice = [f for f in serious(r) if f["kind"] == "month_row"][0]["should"]
+check("the month-row advice says earlier months are typed, and to change the month first if the pay row is the next",
+      "Earlier months must be typed figures, not links" in advice and "change the workbook's month first" in advice, advice)
+
+# D. The Summary's own sum columns linked to a row of a monthly table (row 50 is November's).
+r = checked({("Summary", "M8"): "='Staff A'!K50"})
+fd = serious(r)
+check("Net linked to a monthly-table row is one finding to fix, naming the row's month",
+      [(f["kind"], f["cell"], f["severity"]) for f in fd] == [("month_table_link", "M8", "fix")]
+      and "November" in fd[0]["what"] and "='Staff A'!K50" not in fd[0]["should"] and "=F8-L8" in fd[0]["should"]
+      and "it gives RM 0.00" in fd[0]["what"], short(fd))
+r = checked({("Summary", "L9"): "=SB!I48"})
+check("Total deduction linked to a table row is found even when the figure is the same today",
+      [(f["kind"], f["cell"], f["severity"]) for f in serious(r)] == [("month_table_link", "L9", "fix")]
+      and "same figure today" in serious(r)[0]["what"] and "=G9+H9+I9+J9+K9" in serious(r)[0]["should"], short(serious(r)))
+r = checked({("Summary", "P9"): "=SB!K52", ("Summary", "V10"): "=SC!G50"})
+check("the other sum columns are covered, the table's Total row too",
+      {(f["kind"], f["cell"]) for f in serious(r)} == {("month_table_link", "P9"), ("month_table_link", "V10")}, short(serious(r)))
+r = checked({("Summary", "M9"): "='Staff A'!K48"})
+check("another person's table row in Net is reported as another person's",
+      [(f["kind"], f["cell"], f["severity"]) for f in serious(r)] == [("wrong_person", "M9", "fix")], short(serious(r)))
+r = checked({("Summary", "M9"): "=SB!K17", ("Summary", "L9"): "=SB!I17", ("Summary", "M10"): "=+F10-L10",
+             ("Summary", "L10"): "=SUM(G10:K10)"})
+check("a sum column linked to the person's own pay row, or adding up the row, is fine", not serious(r), short(serious(r)))
+r = checked({("Summary", "M8"): "='Staff A'!K17"})
+check("Net linked to a pay row that includes an allowance is still the sum finding, as before",
+      [(f["kind"], f["cell"]) for f in serious(r)] == [("summary_sum", "M8")], short(serious(r)))
 
 # ---------- 4. months, and files that can't be checked ----------
 

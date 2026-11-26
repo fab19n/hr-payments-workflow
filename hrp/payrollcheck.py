@@ -6,11 +6,18 @@ Everything is found by its headings, never by fixed cells, as one sheet can be s
 The workbook is read twice: once for the formulas, once for the values Excel saved with them.
 
 What it checks:
+- Excel errors (#REF!, #VALUE!, #DIV/0!, #NAME?, #N/A, #NUM!, #NULL!) in any cell the check reads: one finding per
+  Summary row, one for the Summary's Total row, one for the Summary's headings (the month line among them) and one per
+  payslip. A figure showing an error is never taken as 0 or
+  as blank, and nothing is compared with it until it is fixed;
 - the Summary against the payslips: each row's figures equal its person's pay row, every link points at that
   person's own sheet and at the pay row (not a row of the monthly table), figures typed where the rest are linked,
-  links to another workbook, and the Summary's own sums and totals;
+  links to another workbook, the Summary's own sums and totals (also one of its sum columns linked to a row of a
+  monthly table), and a row naming a person whom no payslip sheet matches (the sheet deleted);
 - each payslip: the pay row adds up, the year-to-date box agrees with the monthly table (and is built so that it
   will still agree next month), the sheet's own check cells, this month's row of the table, and the sheet's month;
+- each payslip's earlier months in the monthly table: figures still linked to the pay row (or to the blank cells under
+  it), which change when the pay row does, and a row with a Basic figure that doesn't add up;
 - money with more than 2 decimals where a payment amount is formed;
 - EPF, SOCSO, EIS and SKBBK (Lindung 24 Jam) against the rates and bands in RATES. PCB amounts are not checked: they
   need each person's tax details, which payroll will hold once it is built into this app.
@@ -34,7 +41,7 @@ from xml.etree import ElementTree as ET
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Alignment, Font
-from openpyxl.utils import get_column_letter
+from openpyxl.utils import column_index_from_string, get_column_letter
 
 from . import audit, db
 
@@ -84,7 +91,7 @@ SUMMARY_LABEL = {"basic": "Basic", "epf": "KWSP", "socso": "Socso", "eis": "EIS"
                  "total_ded": "Total deduction", "net": "Net", "insurance": "Insurance Premium",
                  "allowance": "Transport Allowance", "pay_total": "TOTAL", "er_epf": "Employer KWSP",
                  "er_socso": "Employer Socso", "er_eis": "Employer EIS", "tot_epf": "Total KWSP",
-                 "tot_socso": "Total SOCSO", "tot_skbbk": "Total SKBBK", "tot_eis": "Total EIS",
+                 "tot_socso": "Total SOCSO", "tot_skbbk": "Total SKBBK", "tot_eis": "Total EIS", "no": "No.",
                  "name": "NAME", "nric": "NRIC NO."}
 # The Summary columns linked to a payslip's pay row (Summary key -> payslip key).
 LINKED = {"basic": "basic", "epf": "epf", "socso": "socso", "eis": "eis", "skbbk": "skbbk", "pcb": "pcb",
@@ -107,6 +114,9 @@ MONTH_NAMES = ["january", "february", "march", "april", "may", "june", "july", "
                "november", "december"]
 
 HALF_SEN = 0.005
+ERRORS = ("#REF!", "#VALUE!", "#DIV/0!", "#NAME?", "#N/A", "#NUM!", "#NULL!")  # what Excel shows for a broken cell
+BLANK_UNDER = 5  # how many rows under the pay row count as "just under it" for a link to a blank cell
+DEDUCTIONS = ("epf", "socso", "eis", "skbbk", "pcb")
 
 
 class Refused(ValueError):
@@ -308,6 +318,19 @@ class Sheet:
         v = self.raw(r, c)
         return v if isinstance(v, str) and v.startswith("=") else None
 
+    def error(self, r, c):
+        """The Excel error a cell holds (#REF!), or None: the value Excel saved with it, else the error typed in the
+        cell or written in a formula saved with no value."""
+        v = self.value(r, c)
+        if v is None:
+            raw = self.raw(r, c)
+            if not isinstance(raw, str):
+                return None
+            if raw.startswith("="):
+                return next((e for e in ERRORS if e in raw), None)
+            v = raw
+        return v.strip() if isinstance(v, str) and v.strip() in ERRORS else None
+
     def num(self, r, c):
         v = self.value(r, c)
         return float(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
@@ -317,6 +340,8 @@ class Sheet:
         return isinstance(v, (int, float)) and not isinstance(v, bool)
 
     def text(self, r, c):
+        if self.error(r, c):
+            return None
         v = self.raw(r, c)
         if isinstance(v, str) and not v.startswith("="):
             return v
@@ -471,7 +496,8 @@ def read_person(sh):
         if key and key not in p:
             got = sh.right_of(r, c)
             if got:
-                p[key] = got[2] if got[2] is not None else got[1]
+                p[key] = None if sh.error(r, got[0]) else got[2] if got[2] is not None else got[1]
+                p[key + "_at"] = (r, got[0])
                 p[key + "_cell"] = cell_name(got[0], r)
     p["month_value"] = p.get("month")
     p["month"] = month_of_text(p.get("month")) if p.get("month") is not None else None
@@ -483,7 +509,7 @@ def read_person(sh):
     p["cols"] = cols
     pay_row = None
     for r in range(hr + 2, hr + 10):
-        if sh.filled(r, hc) and (sh.num(r, hc) is not None or sh.formula(r, hc)):
+        if sh.filled(r, hc) and (sh.num(r, hc) is not None or sh.formula(r, hc) or sh.error(r, hc)):
             pay_row = r
             break
     if pay_row is None:
@@ -495,10 +521,14 @@ def read_person(sh):
     p["insurance"], p["insurance_cell"] = 0.0, None
     if ins:
         for r in range(ins[0] + 1, ins[0] + 4):
-            if sh.num(r, ins[1]) is not None:
+            if sh.num(r, ins[1]) is not None or sh.error(r, ins[1]):
                 p["insurance"], p["insurance_cell"] = sh.num(r, ins[1]), (r, ins[1])
                 break
     p["pay"]["insurance"] = p["insurance"]
+    # The pay row's figures (and the insurance amount) showing an Excel error: not 0, so nothing is compared with them.
+    p["bad"] = {k for k, c in cols.items() if sh.error(pay_row, c)}
+    if p["insurance_cell"] and sh.error(*p["insurance_cell"]):
+        p["bad"].add("insurance")
     # The monthly table.
     table = None
     if table_head:
@@ -528,7 +558,7 @@ def read_person(sh):
                 continue
             got = None
             for c in range(yc + 1, yc + 5):
-                if sh.filled(r, c) and (sh.formula(r, c) or sh.typed_num(r, c)):
+                if sh.filled(r, c) and (sh.formula(r, c) or sh.typed_num(r, c) or sh.error(r, c)):
                     got = c
                     break
             if got:
@@ -732,9 +762,13 @@ def _person_checks(p, month, F, books=None):
     pay, cols, pr = p["pay"], p["cols"], p["pay_row"]
     lines = []
     cell = lambda k: cell_name(cols[k], pr) if k in cols else None
+    bad_pay = p["bad"]
+    _payslip_errors(p, F)
     _payslip_external(p, month, books or {}, F)
     # The month on the sheet.
-    if not p["month"]:
+    if "month_at" in p and sh.error(*p["month_at"]):
+        pass  # the error finding names the cell
+    elif not p["month"]:
         F.add("sheet_month", "check", g, s, p.get("month_cell"), "No month was found on this payslip.",
               f"Put the month ({label_month(month)}) beside Month on the payslip.")
     elif month and p["month"] != month:
@@ -746,7 +780,7 @@ def _person_checks(p, month, F, books=None):
         F.add("columns_missing", "check", g, s, cell_name(cols["basic"], p["head_row"]),
               f"These pay table headings weren't found: {', '.join(missing)}, so those figures weren't checked.",
               "Keep the payslip's headings as on the other sheets.")
-    no_pay = all(not (pay.get(k) or 0) for k in FIGURES if k in cols)
+    no_pay = not bad_pay and all(not (pay.get(k) or 0) for k in FIGURES if k in cols)
     ytd_total = 0.0
     if p["ytd"]:
         ytd_total = sum(abs(sh.num(*ln["cell"]) or 0) for ln in p["ytd"]["lines"])
@@ -757,13 +791,15 @@ def _person_checks(p, month, F, books=None):
                   "Nothing to do if they have left. Take the row off the Summary, or keep it at zero.")
         lines.append("No pay this month, so the statutory figures weren't checked.")
     # The pay row adds up.
-    if not no_pay and all(k in cols for k in ("epf", "socso", "eis", "pcb", "total_ded")):
+    if (not no_pay and all(k in cols for k in ("epf", "socso", "eis", "pcb", "total_ded"))
+            and not bad_pay & {"total_ded", *DEDUCTIONS}):
         parts = [pay.get(k) or 0 for k in ("epf", "socso", "eis", "skbbk", "pcb") if k in cols]
         if _differs(pay["total_ded"], sum(parts)):
             F.add("pay_row_sum", "fix", g, s, cell("total_ded"),
                   f"Total deduction is {rm(pay['total_ded'])} but the deductions beside it add up to {rm(sum(parts))}.",
                   "Total deduction should be the sum of EPF, SOCSO, EIS, SKBBK and PCB.", sum(parts))
-    if not no_pay and all(k in cols for k in ("basic", "total_ded", "net")):
+    if (not no_pay and all(k in cols for k in ("basic", "total_ded", "net"))
+            and not bad_pay & {"basic", "total_ded", "allowance", "net"}):
         want = (pay["basic"] or 0) - (pay["total_ded"] or 0) + (pay.get("allowance") or 0)
         if _differs(pay["net"], want):
             F.add("pay_row_sum", "fix", g, s, cell("net"),
@@ -774,17 +810,21 @@ def _person_checks(p, month, F, books=None):
     if t and month and int(month[5:7]) in t["months"]:
         mr = t["months"][int(month[5:7])]
         bad = [(k, sh.num(mr, t["cols"][k]), pay.get(k)) for k in FIGURES if k in t["cols"] and k in cols
-               and _differs(sh.num(mr, t["cols"][k]), pay.get(k))]
+               and k not in bad_pay and not sh.error(mr, t["cols"][k]) and _differs(sh.num(mr, t["cols"][k]), pay.get(k))]
         if bad:
             k0 = bad[0][0]
             F.add("month_row", "fix", g, s, cell_name(t["cols"][k0], mr),
                   f"The monthly table's {label_month(month)} row differs from the pay row: "
                   + "; ".join(f"{LABEL[k]} {rm(a)} in the table, {rm(b)} on the pay row" for k, a, b in bad) + ".",
-                  "Link the month's row to the pay row (=C17 and so on), so the year-to-date figures include this month.",
+                  "Link the month's row to the pay row (=C17 and so on), so the year-to-date figures include this month. "
+                  "Earlier months must be typed figures, not links. If the pay row already holds the next month, change "
+                  "the workbook's month first.",
                   bad[0][2], [cell_name(t["cols"][k], mr) for k, _, _ in bad])
     elif t and month:
         F.add("month_row", "check", g, s, None, f"No {label_month(month)} row was found in the monthly table.",
               "Keep the table's month rows JAN to DEC.")
+    if t and month:
+        _earlier_months(p, t, month, F)
     if p["ytd"] and t:
         _ytd_checks(p, t, F)
     # The sheet's own check cells (=N25=K52) showing FALSE.
@@ -802,6 +842,120 @@ def _person_checks(p, month, F, books=None):
         lines += _statutory(p, month, F)
     _unrounded_pay_row(p, F, F[first_statutory:])
     return lines
+
+
+def _payslip_errors(p, F):
+    """Excel errors in the cells of a payslip the check reads: the name, NRIC and month, the pay row and insurance
+    amount, the year-to-date box with its own check cells, and the monthly table's month names, months and Total. One
+    finding."""
+    sh, s, t, y = p["sh"], p["sheet"], p["table"], p["ytd"]
+    places = [(*p[key + "_at"], what) for key, what in (("name", "name"), ("nric", "NRIC"), ("month", "month"))
+              if key + "_at" in p]
+    places += [(p["pay_row"], c, f"pay row {LABEL[k]}") for k, c in p["cols"].items()]
+    if p["insurance_cell"]:
+        places.append((*p["insurance_cell"], LABEL["insurance"]))
+    if y:
+        for ln in y["lines"]:
+            places.append((*ln["cell"], f"year-to-date {ln['label']}"))
+            places += [(ln["row"], c, f"the check beside year-to-date {ln['label']}")
+                       for c in range(y["value_col"] + 1, y["value_col"] + 4)]
+    if t:
+        rows = [(MONTH_NAMES[mo - 1].title(), r) for mo, r in sorted(t["months"].items())]
+        if t["total_row"]:
+            rows.append(("Total", t["total_row"]))
+        places += [(r, c, f"monthly table {name} {LABEL[k]}") for name, r in rows for k, c in t["cols"].items()]
+        # A month's name showing an error leaves its row unread.
+        end = t["total_row"] or max(t["months"].values(), default=t["head_row"])
+        places += [(r, t["month_col"], "monthly table month name") for r in range(t["head_row"] + 1, end + 1)]
+    hits, seen = [], set()
+    for r, c, what in places:
+        code = sh.error(r, c)
+        if code and (r, c) not in seen:
+            seen.add((r, c))
+            hits.append((cell_name(c, r), what, code))
+    if hits:
+        F.add("excel_error", "fix", s, s, hits[0][0],
+              f"{p.get('name') or s}'s payslip shows an Excel error in: "
+              + "; ".join(f"{what} {cell} ({code})" for cell, what, code in hits) + ".",
+              "Fix each formula, or type the right figure, so that no cell shows an error, then check the workbook "
+              "again. Nothing is compared with these cells until then.", None, [cell for cell, _, _ in hits])
+
+
+def _reads_pay_rows(p, formula):
+    """What a monthly-table formula reads at the pay row: "pay" (any cell of the pay row, the monthly salary beside
+    the pay table too), "blank" (an empty cell of the pay table's columns in the rows just under it), or None."""
+    sh, pr = p["sh"], p["pay_row"]
+    first, last = min(p["cols"].values()), max(p["cols"].values())
+    found = None
+    for x in refs(formula):
+        if x["book"] or x["sheet"] not in (None, sh.title):
+            continue
+        r1, r2 = sorted((x["row"], x["row2"] or x["row"]))
+        c1, c2 = sorted((column_index_from_string(x["col"]), column_index_from_string(x["col2"] or x["col"])))
+        if r1 <= pr <= r2:
+            return "pay"
+        if any(not sh.filled(r, c) for r in range(max(r1, pr + 1), min(r2, pr + BLANK_UNDER) + 1)
+               for c in range(max(c1, first), min(c2, last) + 1)):
+            found = "blank"
+    return found
+
+
+def _earlier_months(p, t, month, F):
+    """The monthly table's months before the workbook's month are finished: their figures should be typed, not linked
+    to the pay row (or the blank cells under it), and a row with a Basic figure should add up."""
+    sh, s, cols = p["sh"], p["sheet"], t["cols"]
+    now = int(month[5:7])
+    for mo, r in sorted(t["months"].items()):
+        if mo >= now:
+            continue
+        then = label_month(f"{month[:4]}-{mo:02d}")
+        links = []
+        for k, c in sorted(cols.items(), key=lambda x: x[1]):
+            f = sh.formula(r, c)
+            reads = _reads_pay_rows(p, f) if f else None
+            if reads:
+                links.append((cell_name(c, r), k, f, reads))
+        if links:
+            # The month just before, reading the pay row, is certainly wrong: the pay row holds the workbook's month.
+            wrong = mo == now - 1 and any(reads == "pay" for _, _, _, reads in links)
+            cells = [cell for cell, _, _, _ in links]
+            F.add("past_row_link", "fix" if wrong else "check", s, s, cells[0],
+                  f"The monthly table's {then} row is still linked, not typed: "
+                  + "; ".join(f"{LABEL[k]} {cell} ({f}) reads "
+                              + ("the pay row" if reads == "pay" else "a blank cell under the pay row")
+                              for cell, k, f, reads in links) + ". "
+                  + (f"The workbook is for {label_month(month)}, so the pay row is that month's: this row follows it instead "
+                     f"of keeping what was paid in {then}, and the year-to-date figures can't be relied on." if wrong else
+                     "The figures may be right today, but they will change when the cells they read change."),
+                  f"Type the figures that were actually paid in {then} into {', '.join(cells)}, as numbers, not links.",
+                  None, cells)
+        if "basic" not in cols or sh.num(r, cols["basic"]) is None:
+            continue
+
+        def value(k):
+            return (sh.num(r, cols[k]) or 0) if k in cols else 0  # blank or "-" counts as 0
+
+        def broken(keys):
+            return any(sh.error(r, cols[k]) for k in keys if k in cols)
+        wrong_sums = []
+        parts = [k for k in DEDUCTIONS if k in cols]
+        if parts and "total_ded" in cols and not broken(parts + ["total_ded"]):
+            want = sum(value(k) for k in parts)
+            if _differs(value("total_ded"), want):
+                wrong_sums.append(("total_ded", want, f"Total deduction {cell_name(cols['total_ded'], r)} is "
+                                   f"{rm(value('total_ded'))} but the deductions beside it add up to {rm(want)}"))
+        if "total_ded" in cols and "net" in cols and not broken(("basic", "total_ded", "allowance", "net")):
+            want = value("basic") - value("total_ded") + value("allowance")
+            if _differs(value("net"), want):
+                wrong_sums.append(("net", want, f"Net pay {cell_name(cols['net'], r)} is {rm(value('net'))} but "
+                                   f"Basic - Total deduction + Allowance is {rm(want)}"))
+        if wrong_sums:
+            cells = [cell_name(cols[k], r) for k, _, _ in wrong_sums]
+            F.add("past_row_sum", "fix", s, s, cells[0],
+                  f"The monthly table's {then} row doesn't add up: " + "; ".join(w for _, _, w in wrong_sums)
+                  + ". This makes the year-to-date figures wrong.",
+                  f"Type the figures that were actually paid in {then}, so that the deductions add up to Total deduction "
+                  "and Net pay is Basic - Total deduction + Allowance.", wrong_sums[0][1], cells)
 
 
 STATUTORY = ("epf", "socso", "eis", "skbbk", "er_epf", "er_socso", "er_eis")
@@ -828,8 +982,11 @@ def _unrounded_pay_row(p, F, statutory):
     def fixed(k):
         return told[k] if k in told else round(pay.get(k) or 0, 2)
     target = {}
+    unknown = p["bad"] & {"basic", "allowance", *DEDUCTIONS}  # an error among them: no sum to work out again
     for k, v in odd:
-        if k == "total_ded" and told:
+        if unknown:
+            target[k] = round(v, 2)
+        elif k == "total_ded" and told:
             target[k] = round(sum(fixed(x) for x in ("epf", "socso", "eis", "skbbk", "pcb") if x in cols), 2)
         elif k == "net" and told:
             ded = sum(fixed(x) for x in ("epf", "socso", "eis", "skbbk", "pcb") if x in cols)
@@ -862,6 +1019,9 @@ def _ytd_checks(p, t, F):
         col = t["cols"][k]
         r, c = ln["cell"]
         here = cell_name(c, r)
+        added = [t["total_row"]] if t["total_row"] else t["months"].values()
+        if sh.error(r, c) or any(sh.error(mr, col) for mr in added):
+            continue  # the error finding names the cell; there is nothing to compare
         if t["total_row"]:
             total = sh.num(t["total_row"], col)
             where = f"the monthly table's Total ({cell_name(col, t['total_row'])})"
@@ -999,6 +1159,7 @@ def _statutory(p, month, F):
     """EPF, SOCSO, EIS and SKBBK on the pay row; returns the lines saying what was assumed."""
     s, pay, cols, pr = p["sheet"], p["pay"], p["cols"], p["pay_row"]
     cell = lambda k: cell_name(cols[k], pr) if k in cols else None
+    bad = p["bad"]
     out = []
     basic = pay.get("basic")
     if basic is None:
@@ -1014,7 +1175,9 @@ def _statutory(p, month, F):
     if malaysian and not over60 and sixty_from and month and month == _month_before(sixty_from):
         out.append(f"Turns 60 this month: the under-60 rates still apply; the 60-and-over rates start with "
                    f"{label_month(sixty_from)}'s pay.")
-    if not malaysian:
+    if "nric_at" in p and p["sh"].error(*p["nric_at"]):
+        out.append("EPF rate group and EIS not checked: the NRIC cell shows an Excel error.")
+    elif not malaysian:
         F.add("rate_group", "note", s, s, p.get("nric_cell"),
               "The NRIC isn't a Malaysian IC number, so the EPF rate group (and EIS, which differs for non-citizens) "
               "was not checked.", "Check the EPF and EIS rates for this person by hand.")
@@ -1024,11 +1187,11 @@ def _statutory(p, month, F):
         ee, er = epf_expected(wage, over60)
         out.append(f"EPF: {'aged 60 or over' if over60 else 'under 60'}; on EPF wages {rm(basic)}: "
                    f"{rm_sen(ee)} employee, {rm_sen(er)} employer.")
-        if sen(pay.get("epf") or 0) != ee:
+        if "epf" not in bad and sen(pay.get("epf") or 0) != ee:
             F.add("epf", "fix", s, s, cell("epf"),
                   f"Employee EPF is {rm(pay.get('epf'))}; the Third Schedule gives {rm_sen(ee)} on wages of {rm(basic)}.",
                   f"{rm_sen(ee)} (the rate times the top of the wage band, rounded up to the ringgit).", ee / 100)
-        if "er_epf" in cols and sen(pay.get("er_epf") or 0) != er:
+        if "er_epf" in cols and "er_epf" not in bad and sen(pay.get("er_epf") or 0) != er:
             rate = (RATES["epf"]["employer_60"] if over60 else RATES["epf"]["employer_low"] if wage <= RATES["epf"]["low_upto"]
                     else RATES["epf"]["employer_high"])
             F.add("epf", "fix", s, s, cell("er_epf"),
@@ -1039,7 +1202,9 @@ def _statutory(p, month, F):
     if mid is None:
         out.append("SOCSO, EIS and SKBBK not checked: the wage is in the table's smallest bands, not held here.")
         return out
-    if "socso" in cols and m >= RATES["socso"]["from"]:
+    if bad & {"socso", "er_socso"}:
+        out.append("SOCSO not checked: a SOCSO cell shows an Excel error.")
+    elif "socso" in cols and m >= RATES["socso"]["from"]:
         er_v, ee_v = pay.get("er_socso"), pay.get("socso") or 0
         second_fits = within(er_v, socso_expected(wage, True)[0])
         second = over60 or (sen(ee_v) == 0 and second_fits)
@@ -1061,7 +1226,7 @@ def _statutory(p, month, F):
     if "eis" in cols and m >= RATES["eis"]["from"] and malaysian:
         exp_er, exp_ee = eis_expected(wage)
         R = RATES["eis"]
-        none_paid = all(sen(pay.get(k) or 0) == 0 for k in ("eis", "er_eis") if k in cols)
+        none_paid = not bad & {"eis", "er_eis"} and all(sen(pay.get(k) or 0) == 0 for k in ("eis", "er_eis") if k in cols)
         if over60:
             exp_er = exp_ee = Decimal(0)
             out.append("EIS: none, as EIS isn't for workers aged 60 or over.")
@@ -1075,13 +1240,13 @@ def _statutory(p, month, F):
                   "Nothing to do if exempt; else deduct it." if age >= R["exempt_from"] else "Nothing to do.")
             out.append(f"EIS: none taken as right at age {age}.")
         for k, exp, who in (("eis", exp_ee, "Employee"), ("er_eis", exp_er, "Employer")):
-            if k in cols and not within(pay.get(k) or 0, exp):
+            if k in cols and k not in bad and not within(pay.get(k) or 0, exp):
                 F.add("eis", "fix", s, s, cell(k),
                       f"{who} EIS is {rm(pay.get(k))}; " + ("EIS isn't paid for a worker aged 60 or over." if over60
                       else f"the table gives {rm_sen(five_sen(exp))} on wages of {rm(basic)}."),
                       f"{rm_sen(five_sen(exp))}.", five_sen(exp) / 100)
     # SKBBK
-    if "skbbk" in cols and m >= RATES["skbbk"]["from"]:
+    if "skbbk" in cols and "skbbk" not in bad and m >= RATES["skbbk"]["from"]:
         v = pay.get("skbbk") or 0
         exp = skbbk_expected(wage)
         if sen(v) == 0:
@@ -1105,8 +1270,20 @@ def _summary_checks(sh, S, people, books, F):
     by_nric = {re.sub(r"\W", "", p.get("nric") or ""): t for t, p in people.items() if p.get("nric")}
     used, out = Counter(), []
     names_typed = []
+    # The headings and what is above them (the month line may be a formula).
+    heading = [(cell_name(c, r), sh.error(r, c)) for r, c in sorted(sh.fs._cells)
+               if r <= S["head_row"] + 1 and sh.error(r, c)]
+    if heading:
+        F.add("excel_error", "fix", g, sh.title, heading[0][0],
+              "The Summary's headings show an Excel error in: "
+              + "; ".join(f"{cell} ({code})" for cell, code in heading) + ".",
+              "Fix each formula, or type the right words (the month line should read like SALARY FOR THE MONTH OF "
+              "OCTOBER 2026), so that no cell shows an error.", None, [cell for cell, _ in heading])
+    book = sh.fs.parent
     for r in S["rows"]:
         here = lambda k: cell_name(cols[k], r)
+        errors = _summary_errors(sh, cols, r)
+        bad = {k for k, _, _ in errors}
         vals = {k: sh.num(r, c) for k, c in cols.items() if k not in ("no", "name", "nric")}
         links, kinds = {}, {}
         for k, c in cols.items():
@@ -1133,12 +1310,40 @@ def _summary_checks(sh, S, people, books, F):
         votes = Counter(x["sheet"] for k, x in links.items() if k in LINKED and not x["book"] and x["sheet"] in people)
         if not who and votes:
             who = votes.most_common(1)[0][0]
-        if not who and not any(vals.get(k) for k in LINKED):
+        shown = ((sh.text(r, cols["name"]) if "name" in cols else None) or "").strip()
+        if not who:
+            who = by_name.get(squash(shown))
+        if errors:
+            said = shown or (people[who].get("name") if who else None)
+            F.add("excel_error", "fix", g, sh.title, errors[0][1],
+                  f"Summary row {r}{f' ({said})' if said else ''} shows an Excel error in: "
+                  + "; ".join(f"{SUMMARY_LABEL[k]} {cell} ({code})" for k, cell, code in errors) + ".",
+                  "Fix each link or formula so that the cell shows its figure (#REF! usually means the sheet or cell it "
+                  "pointed at was deleted). Until then nothing is compared with these cells, and the amounts to pay "
+                  "shown here count them as nothing.", None, [cell for _, cell, _ in errors])
+        # A person named, with figure cells beside the name, but no payslip to take them from.
+        unmatched = (not who and any(ch.isalpha() for ch in shown)
+                     and any(sh.filled(r, cols[k]) for k in (*LINKED, *SUMS) if k in cols))
+        if not who and not unmatched and not any(vals.get(k) for k in LINKED):
             continue  # an empty row
-        name = (sh.text(r, cols["name"]) if "name" in cols else None) or (people[who].get("name") if who else None)
+        name = shown or (people[who].get("name") if who else None)
         row = {"row": r, "sheet": who, "name": (name or "").strip(), "nric": mask(people[who].get("nric")) if who else "",
                "values": {k: v for k, v in vals.items()}, "sources": {}}
         out.append(row)
+        if unmatched:
+            unread = sorted({rf["sheet"] for k, c in cols.items() for rf in refs(sh.formula(r, c) or "")
+                             if not rf["book"] and rf["sheet"] in book.sheetnames and rf["sheet"] != sh.title})
+            if not unread:
+                why = "their payslip sheet is missing or was deleted"
+            elif all(book[n].sheet_state != "visible" for n in unread):
+                why = f"the row's links point at {', '.join(unread)}, which is hidden, so it isn't checked"
+            else:
+                why = f"the row's links point at {', '.join(unread)}, which isn't read as a payslip"
+            F.add("summary_missing", "fix", g, sh.title, cell_name(cols.get("name", cols["basic"]), r),
+                  f"Summary row {r} names {shown}, but no payslip checked here matches: {why}.",
+                  "Remove the row if they are no longer paid. If they should be paid, put their payslip sheet back "
+                  "and link the row to it. Either way, check that the Total row adds up the rows left.")
+            continue
         if not who:
             F.add("summary_person", "check", g, sh.title, cell_name(cols.get("name", cols["basic"]), r),
                   f"Summary row {r} couldn't be matched to a payslip (its name, NRIC and links don't point at one).",
@@ -1160,6 +1365,8 @@ def _summary_checks(sh, S, people, books, F):
             kind = kinds.get(k)
             x = links.get(k)
             row["sources"][k] = _ref_name(x) if x else ("typed" if kind == "typed" else sh.formula(r, c) or "empty")
+            if kind != "external" and (k in bad or pk in p["bad"]):
+                continue  # an Excel error here or on the payslip: that error's finding names it
             if pk == "insurance":
                 want_cell = p["insurance_cell"]
             else:
@@ -1188,13 +1395,10 @@ def _summary_checks(sh, S, people, books, F):
                           f"Link it to ={want_ref}." if want_ref else "Link it to this person's own payslip.",
                           p["pay"].get(pk))
                 elif x["sheet"] == who and want and f"{x['col']}{x['row']}" != want:
-                    t = p["table"]
-                    in_table = t and t["head_row"] < x["row"] <= (t["total_row"] or t["head_row"] + 15)
-                    mname = next((MONTH_NAMES[mo - 1].title() for mo, mr in (t["months"].items() if t else []) if mr == x["row"]), None)
-                    F.add("month_table_link" if in_table else "wrong_cell", "fix", g, sh.title, here(k),
+                    table_words = _in_table(p, x["row"])
+                    F.add("month_table_link" if table_words else "wrong_cell", "fix", g, sh.title, here(k),
                           f"{SUMMARY_LABEL[k]} on row {r} links to {_ref_name(x)}, "
-                          + (f"a row of the monthly table ({mname})" if in_table and mname else "the monthly table" if in_table
-                             else "not the pay row's figure")
+                          + (table_words or "not the pay row's figure")
                           + (", not this month's pay row (the same figure today)." if not differs
                              else f", not this month's pay row, so it gives {gives}."),
                           f"Link it to ={want_ref}.", p["pay"].get(pk))
@@ -1211,6 +1415,8 @@ def _summary_checks(sh, S, people, books, F):
             # The value against the payslip's (unless a wrong link above already says so).
             if linked_wrong is not None and len(F) > linked_wrong:
                 continue
+            if k in bad or pk in p["bad"]:
+                continue
             if _differs(vals.get(k), p["pay"].get(pk)) and (want or pk == "insurance"):
                 F.add("summary_differs", "fix", g, sh.title, here(k),
                       f"{SUMMARY_LABEL[k]} on row {r} is {rm(vals.get(k))} but {who}'s payslip has {rm(p['pay'].get(pk) or 0)}"
@@ -1224,7 +1430,8 @@ def _summary_checks(sh, S, people, books, F):
                   f"another workbook ({', '.join(names)}): that other file decides them, not this workbook's payslips.",
                   f"Link {'them' if len(external) > 1 else 'it'} to {who}'s pay row in this workbook.",
                   p["pay"].get(LINKED[external[0]]), [here(k) for k in external])
-        _row_sums(sh, S, r, vals, g, F, p.get("name") or who)
+        told = _sum_links(sh, S, r, vals, bad, links, who, people, F)
+        _row_sums(sh, S, r, vals, g, F, p.get("name") or who, bad, told)
         odd = [k for k in ("basic", "net", "pay_total", "total_ded", "allowance", "insurance") if k in cols and has_fraction_of_sen(vals.get(k))]
         if odd:
             F.add("unrounded", "fix", g, sh.title, here(odd[0]),
@@ -1238,7 +1445,7 @@ def _summary_checks(sh, S, people, books, F):
               f"{', '.join(map(str, names_typed))}.", "Link each name to its payslip (=Sheet!D9) so a row can't be "
               "mixed up.", None, [cell_name(cols["name"], r) for r in names_typed])
     for t, p in people.items():
-        if not used[t] and any(p["pay"].get(k) for k in FIGURES):
+        if not used[t] and (p["bad"] or any(p["pay"].get(k) for k in FIGURES)):
             F.add("not_on_summary", "check", g, sh.title, None,
                   f"{p.get('name') or t}'s payslip ({t}) has pay this month but no row on the Summary, so it isn't in the "
                   "month's totals.", "Add a row for them, or check that the payslip is meant to be in this workbook.")
@@ -1249,10 +1456,61 @@ def _summary_checks(sh, S, people, books, F):
     return out
 
 
-def _row_sums(sh, S, r, vals, g, F, who):
+def _summary_errors(sh, cols, r):
+    """The cells of a Summary row showing an Excel error, as [(key, cell, error)] from left to right."""
+    return [(k, cell_name(c, r), sh.error(r, c)) for k, c in sorted(cols.items(), key=lambda x: x[1])
+            if sh.error(r, c)]
+
+
+def _in_table(p, row):
+    """For a row of a payslip's monthly table, the words naming it (with its month); else None."""
+    t = p["table"]
+    if not t or not t["head_row"] < row <= (t["total_row"] or t["head_row"] + 15):
+        return None
+    mname = next((MONTH_NAMES[mo - 1].title() for mo, mr in t["months"].items() if mr == row), None)
+    return f"a row of the monthly table ({mname})" if mname else "the monthly table"
+
+
+def _sum_links(sh, S, r, vals, bad, links, who, people, F):
+    """The Summary's own sum columns (Total deduction, Net and so on) linked to a row of a monthly table instead of
+    adding up the row or taking the pay row. Returns the keys told, so the row's sums don't count the cell again."""
+    cols, told = S["cols"], set()
+    for k, (plus, minus) in SUMS.items():
+        x = links.get(k)
+        if not x or x["book"] or x["sheet"] not in people or k in bad:
+            continue
+        table_words = _in_table(people[x["sheet"]], x["row"])
+        if not table_words:
+            continue
+        added = [a for a in plus + minus if a in cols]
+        want = None
+        if not bad & set(added) and all(a in cols for a in plus + minus if a != "insurance"):
+            want = sum(vals.get(a) or 0 for a in plus) - sum(vals.get(a) or 0 for a in minus)
+        own = "=" + "+".join(cell_name(cols[a], r) for a in plus if a in cols) + "".join(
+            "-" + cell_name(cols[a], r) for a in minus if a in cols)
+        if want is None:
+            today = "."
+        elif _differs(vals.get(k), want):
+            today = f", so it gives {rm(vals.get(k))} where {SUMS_WORDS[k]} on this row is {rm(want)}."
+        else:
+            today = " (the same figure today)."
+        other = x["sheet"] != who
+        F.add("wrong_person" if other else "month_table_link", "fix", "Summary", sh.title, cell_name(cols[k], r),
+              f"{SUMMARY_LABEL[k]} on row {r} ({people[who].get('name') or who}) links to "
+              + (f"{x['sheet']}'s payslip ({_ref_name(x)}), another person's, {table_words}" if other
+                 else f"{_ref_name(x)}, {table_words}")
+              + ", not the row's own sum" + today,
+              f"Make it the row's own sum again: {own} ({SUMS_WORDS[k]}).", want)
+        told.add(k)
+    return told
+
+
+def _row_sums(sh, S, r, vals, g, F, who, bad=frozenset(), told=frozenset()):
     cols = S["cols"]
     for k, (plus, minus) in SUMS.items():
         if k not in cols or not all(x in cols for x in plus + minus if x != "insurance"):
+            continue
+        if k in told or bad & {k, *plus, *minus}:
             continue
         want = sum(vals.get(x) or 0 for x in plus) - sum(vals.get(x) or 0 for x in minus)
         if _differs(vals.get(k), want):
@@ -1268,7 +1526,17 @@ def _totals(sh, S, rows, F):
         F.add("summary_total", "check", g, sh.title, None, "The Summary has no Total row.",
               "Add a Total row adding up each column.")
         return
+    errors = _summary_errors(sh, cols, tr)
+    if errors:
+        F.add("excel_error", "fix", g, sh.title, errors[0][1],
+              "The Summary's Total row shows an Excel error in: "
+              + "; ".join(f"{SUMMARY_LABEL[k]} {cell} ({code})" for k, cell, code in errors) + ".",
+              "Fix the rows above first (repair or remove any row showing an error), then make each Total a SUM of the "
+              "rows above it.", None, [cell for _, cell, _ in errors])
     odd = []
+
+    def broken(k):
+        return any(sh.error(r, cols[k]) for r in S["rows"])
     for k, c in cols.items():
         if k in ("no", "name", "nric"):
             continue
@@ -1276,7 +1544,7 @@ def _totals(sh, S, rows, F):
         if tot is None:
             continue
         want = sum(sh.num(r, c) or 0 for r in S["rows"])
-        if _differs(tot, want):
+        if not broken(k) and _differs(tot, want):
             F.add("summary_total", "fix", g, sh.title, cell_name(c, tr),
                   f"The Total of {SUMMARY_LABEL.get(k, k)} is {rm(tot)} but the rows above add up to {rm(want)}.",
                   f"{rm(want)}: check that the SUM covers every row.", want)
@@ -1287,12 +1555,14 @@ def _totals(sh, S, rows, F):
         tot = sh.num(tr, cols[k_pay]) or 0
         rounded_rows = sum(round(sh.num(r, cols[k_pay]) or 0, 2) for r in S["rows"])
         effect = round(rounded_rows - tot, 6)
+        unknown = broken(k_pay) or bool(sh.error(tr, cols[k_pay]))  # the month's total can't be worked out
         F.add("unrounded", "fix", g, sh.title, cell_name(cols[odd[0]], tr),
               "The Total row has amounts with more than 2 decimals: "
               + "; ".join(f"{SUMMARY_LABEL.get(k, k)} {rm(sh.num(tr, cols[k]))}" for k in odd) + ".",
+              "Round each person's figures to the sen." if unknown else
               f"Round each person's figures to the sen; the month's {SUMMARY_LABEL[k_pay]} then is {rm(round(rounded_rows, 2))}, "
               f"{rm(abs(effect))} {'more' if effect > 0 else 'less'} than the {rm(tot)} it shows now.",
-              round(rounded_rows, 2), [cell_name(cols[k], tr) for k in odd])
+              None if unknown else round(rounded_rows, 2), [cell_name(cols[k], tr) for k in odd])
 
 
 def _external_unused(wf, books, F):
