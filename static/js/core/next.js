@@ -108,12 +108,14 @@ function todoLinks(res) {
 
 // Reads the list again and redraws the card alone (after a backup, or when the tab comes back into view), or on the register and
 // the checklist the to-dos link. With keepOnError, a list that can't be read leaves it as it was.
-async function refreshNext(keepOnError) {
-  if (!["overview", "entity", "checklist"].includes(state.view)) return;
-  const scope = nextScope(), only = state.view === "overview" ? ovScope() : null, res = await loadNext(scope || only);
-  if (scope !== nextScope() || (state.view === "overview" ? ovScope() : null) !== only || (keepOnError && res.error)) return;
-  const box = $("#nextUp"), todo = $("#todoBox");
-  if (box && !scope) { box.innerHTML = nextCard(res, scope); renderNav(); }
-  else if (todo && scope) todo.innerHTML = todoLinks(res);
+function refreshNext(keepOnError) {
+  if (!["overview", "entity", "checklist"].includes(state.view)) return Promise.resolve();
+  return pageDraw("next", async page => {
+    const scope = nextScope(), only = state.view === "overview" ? ovScope() : null, res = await page.read(loadNext(scope || only));
+    if (scope !== nextScope() || (state.view === "overview" ? ovScope() : null) !== only || (keepOnError && res.error)) return;
+    const box = $("#nextUp"), todo = $("#todoBox");
+    if (box && !scope) { box.innerHTML = nextCard(res, scope); renderNav(); }
+    else if (todo && scope) todo.innerHTML = todoLinks(res);
+  });
 }
 

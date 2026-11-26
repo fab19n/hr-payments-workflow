@@ -930,6 +930,9 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     r.add = await run(`frAddCompany().then(() => "ok", e => e.name + ": " + e.message)`);
     r.saved = run(`!!FR.saved`); r.html = run(`frHtml()`);
     FX.bad = {};
+    FX.get["/api/meta"] = {};   // JSON, but no companies in it: readMeta's own check
+    r.empty = await run(`readMeta().then(() => "ok", e => e.message)`);
+    r.emptyReads = run(`state.metaReads || 0`) - reads0;
     FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.alerted = false; FR.code = ""; FR.cname = ""; FR.kind = ""; state.entity = ${FX.EXA}`);
     await view("accounts", FX.EXA);
     return r;
@@ -1021,8 +1024,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
   });
 
   // ---------- round 7 ----------
-  // L1. render()'s loading skeleton covers the page after the section was written, while the Show deleted read (the last of the draw) takes 900 ms:
-  // the section is drawn once more
+  // L1. the Show deleted read (the last of the draw) takes 900 ms, after the section was written: render()'s loading skeleton leaves the section alone
   await tryit("skeletonDeleted", async () => {
     const out = {}, EXA = FX.EXA;
     FX.get["/api/setup/import"] = { empty: true, holding: [] };
@@ -1047,33 +1049,28 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     return out;
   });
 
-  // L1 (round 8). the second draw: its own failure reaches render() (which paints it, with its Try again), and it is the last: never a third
-  await tryit("secondDraw", async () => {
+  // L1 (slice 0g). render()'s skeleton never covers a section that has been written, so nothing is drawn a second time: a section that takes 900 ms is read
+  // once, and its own failure reaches render() (which paints it, with its Try again)
+  await tryit("oneDraw", async () => {
     const out = {}, EXA = FX.EXA, A = `/api/setup/accounts?entity=${EXA}`;
     FX.get["/api/setup/import"] = { empty: true, holding: [] };
-    const covered = () => { const was = main.querySelector; main.querySelector = s => s === "#setupMain" ? null : was(s); return () => { main.querySelector = was; }; };   // the place stays missing
     const arrive = () => { main.innerHTML = `<div>Overview</div>`; run(`render.last = null; state.view = "setup"; state.entity = ${EXA}; state.setup.kind = "accounts"; state.setup.stopped = false; state.setup.deleted = false`); };
     run(`render = __realRender`);
-    let n = 0, uncover = null;
+    let n = 0; const count = () => { n = 0; onGet = p => { if (p === A) n++; }; delays[A] = [900]; };
     try {
-      // the place stays missing: the section is read twice, never a third time, and nothing is painted as an error
-      const runaway = () => { if (n > 3) throw new Error("runaway: the section is read again and again"); };   // a loop fails here, as reads: 4
-      uncover = covered(); onGet = p => { if (p === A) { n++; runaway(); } };
-      arrive(); await run(`render()`); uncover(); onGet = null;
-      out.twice = { reads: n, error: /Couldn(&#39;|')t load|isn(&#39;|')t running/.test(main.innerHTML), grid: /class="setup-grid"/.test(main.innerHTML) };
-      // the second read answers 500: the page says so, with its Try again
-      n = 0; uncover = covered(); onGet = p => { if (p === A) { if (++n === 2) FX.status = { [A]: 500 }; runaway(); } };
-      arrive(); await run(`render()`); uncover(); onGet = null; delete FX.status;
+      count(); arrive(); await run(`render()`); await sleep(40);
+      out.slow = { reads: n, written: smHtml.includes('data-setup-new="accounts"'), skeleton: /class="skel"/.test(main.innerHTML), grid: /class="setup-grid"/.test(main.innerHTML) };
+      // the read answers 500: the page says so, with its Try again
+      count(); FX.status = { [A]: 500 }; arrive(); await run(`render()`); await sleep(40); FX.status = {};
       out.fails500 = { reads: n, html: main.innerHTML };
       await run(`click({ retry: "1" })`); await sleep(40);
       out.after500 = { grid: /class="setup-grid"/.test(main.innerHTML), error: /Couldn(&#39;|')t load/.test(main.innerHTML) };
-      // the second read can't reach the app: the page says it isn't running, with its Try again
-      n = 0; uncover = covered(); onGet = p => { if (p === A) { if (++n === 1) FX.fail = { [A]: true }; runaway(); } };
-      arrive(); await run(`render()`); uncover(); onGet = null; FX.fail = {};
+      // the read can't reach the app: the page says it isn't running, with its Try again
+      count(); lateFail[A] = 1; arrive(); await run(`render()`); await sleep(40); delete lateFail[A];
       out.rejects = { reads: n, html: main.innerHTML };
       await run(`click({ retry: "1" })`); await sleep(40);
       out.afterRejects = { grid: /class="setup-grid"/.test(main.innerHTML), error: /isn(&#39;|')t running/.test(main.innerHTML) };
-    } finally { if (uncover) uncover(); onGet = null; FX.status = {}; FX.fail = {}; run(`render = async () => { __calls.push(["render"]); }`); }
+    } finally { onGet = null; delete delays[A]; FX.status = {}; delete lateFail[A]; run(`render = async () => { __calls.push(["render"]); }`); }
     await view("accounts", EXA);
     return out;
   });
@@ -1748,7 +1745,7 @@ check("...a read that fails doesn't end it, the first company of all is ended by
 # ---------- round 6 ----------
 sk = o["skeleton"]
 good = lambda kind, code: {"section": True, "company": True, "grid": True, "skeleton": False, "menu": True, "redraw": "function", "hold": "", "loading": False}
-check("a draw still reading when render() covers the page with its loading skeleton (a read over 0.3 s: arriving from another page, a company switch, the first read of the types) puts its grid back and writes the section, with its menu and its list to redraw",
+check("a draw still reading when render()'s loading skeleton is due (a read over 0.3 s: arriving from another page, a company switch, the first read of the types) writes the section into its own frame, with its menu and its list to redraw, and no skeleton is left over it",
       sk["arrival"] == good("parties", "") and sk["switch"] == good("accounts", "") and sk["types"] == good("parties", ""), sk)
 lv = o["leaving"]
 check("leaving Setup while a draw reads leaves the new page no hold of the page's height at once, and a read that hangs (or comes later) changes nothing and draws nothing over the new page",
@@ -1761,8 +1758,9 @@ check("render() says the page on show is the latest one's: a draw that was overt
       rs["mid"] == f"setup:{EXB}" and rs["last"] == f"setup:{EXB}", rs)
 check("...and an error that comes after the page was left is not painted over the page now shown, nor does it say which page was last", rs["error"] == {"painted": False, "grid": True, "last": f"setup:{EXA}"}, rs)
 bm = o["badMeta"]
-check("a reply that isn't the records (a 200 that holds no companies) is a failed read: it is not counted, state.meta is not replaced, and First run, after a write, shows the alert instead of failing in firstEntityId",
-      "couldn't be read" in bm["message"] and bm["reads"] == 0 and bm["sameMeta"] is True and bm["add"].startswith("Error: The records couldn't be read") and bm["saved"] is True and SAVED in bm["html"], bm)
+check("a reply that isn't the records (a 200 that isn't JSON, or that holds no companies) is a failed read: it is not counted, state.meta is not replaced, and First run, after a write, shows the alert instead of failing in firstEntityId",
+      "this page can't read" in bm["message"] and "couldn't be read" in bm["empty"] and bm["emptyReads"] == 0 and bm["reads"] == 0 and bm["sameMeta"] is True and bm["add"].startswith("Error: HR Payments gave an answer this page can't read")
+      and bm["saved"] is True and SAVED in bm["html"], bm)
 for kind, st in o["staleSections"].items():
     check(f"{kind}: a draw that another section overtook writes no state, no markup and no list to redraw",
           st["overtaken"] == {"wrote": False, "writes": 0, "page": True, "hold": ""}, st["overtaken"])
@@ -1788,16 +1786,16 @@ check("Put it back's Try again with the app stopped makes one request and shows 
 # ---------- round 7 and 8 ----------
 sd = o["skeletonDeleted"]
 okcase = {"skeleton": False, "grid": True, "hold": "", "loading": False, "section": True, "table": True, "slow": True}
-check("L1: render()'s loading skeleton covering the page after the section was written (the Show deleted read, 900 ms, came last) is drawn over once more, for the list, the checklist and the reminders, with Show deleted on and off: the section, its table, no skeleton, no hold",
+check("L1: a section already written when render()'s loading skeleton is due (the Show deleted read, 900 ms, comes last) is left as it is, for the list, the checklist and the reminders, with Show deleted on and off: the section, its table, no skeleton, no hold",
       all(sd[k] == okcase for k in ("accounts-on", "checklist-on", "reminders-on", "accounts-off", "checklist-off", "reminders-off")), sd)
-sw = o["secondDraw"]
-check("L1: when the place of the section stays missing the second draw is the last: the section is read twice in all, never a third time, and no error is painted",
-      sw["twice"] == {"reads": 2, "error": False, "grid": True}, sw["twice"])
-check("L1: a failure of the second draw (its read answers 500) reaches render(): the page says so, with its Try again, and Try again draws the section",
-      sw["fails500"]["reads"] == 2 and "The server could not read the records." in sw["fails500"]["html"] and 'data-retry="1"' in sw["fails500"]["html"] and "Couldn't load this page" in sw["fails500"]["html"]
+sw = o["oneDraw"]
+check("L1: a section that takes 900 ms is read once and written into the frame it wrote: no skeleton covers it and nothing draws it a second time",
+      sw["slow"] == {"reads": 1, "written": True, "skeleton": False, "grid": True}, sw["slow"])
+check("L1: a failure of that read (it answers 500 after 900 ms) reaches render(): the page says so, with its Try again, after one read, and Try again draws the section",
+      sw["fails500"]["reads"] == 1 and "The server could not read the records." in sw["fails500"]["html"] and 'data-retry="1"' in sw["fails500"]["html"] and "Couldn't load this page" in sw["fails500"]["html"]
       and sw["after500"] == {"grid": True, "error": False}, sw["fails500"]["html"][-300:])
-check("...and so does one that can't reach the app: the page says it isn't running, with its Try again, and Try again draws the section",
-      "isn't running" in sw["rejects"]["html"] and 'data-retry="1"' in sw["rejects"]["html"] and sw["afterRejects"] == {"grid": True, "error": False}, sw["rejects"]["html"][-300:])
+check("...and so does one that can't reach the app: the page says it isn't running, with its Try again, after one read, and Try again draws the section",
+      sw["rejects"]["reads"] == 1 and "isn't running" in sw["rejects"]["html"] and 'data-retry="1"' in sw["rejects"]["html"] and sw["afterRejects"] == {"grid": True, "error": False}, sw["rejects"]["html"][-300:])
 AFTER_SAVE = ["delete", "stop using", "use again", "save", "save (a reply that isn't the records)", "add", "general settings", "move setup import", "paste a list", "put it back",
               "checklist: add an item", "checklist: stop using", "checklist: delete an item", "checklist: copy another company's", "reminders: save", "reminders: delete"]
 check("L2: every flow that changes something is tried with the records overview failing: record save, add, stop using, use again, delete, put it back, general settings, Move setup import, Paste a list, a reply that isn't the records, and the checklist and reminders (which swallowed a failed read)",

@@ -23,13 +23,14 @@ const rcType = p => state.meta.categories[p.category] || p.category;
 const rcGlyph = p => p.direction === "in" ? "coins" : p.category === "salary" ? "staff" : ["director", "consultant"].includes(p.category) ? "person" : p.category === "statutory" ? "statutory" : "receipt";
 
 // The Recurring page, or the Recurring payments section of Setup: main is the element it is drawn in.
-async function viewPayees(main) {
+async function viewPayees(main) { return pageDraw("main", page => payeesDraw(page, main)); }
+async function payeesDraw(page, main) {
   const e = ent(), inSetup = state.view === "setup";
   if (!e) { main.innerHTML = emptyState({ glyph: "recurring", title: "Recurring payments", body: "Add a company first, under Setup › Companies." }); return; }
   if (RC.key !== e.id) Object.assign(RC, { key: e.id, type: "all", stopped: true, shown: RC_STEP });
-  const list = await api(`/api/payees?entity=${state.entity}&month=${state.month}`);
+  const list = await page.read(api(`/api/payees?entity=${state.entity}&month=${state.month}`));
   // A month not set up gets the card that sets it up, rather than an Add button per row that would set it all up.
-  const m = await api(`/api/month?entity=${state.entity}&month=${state.month}`);
+  const m = await page.read(api(`/api/month?entity=${state.entity}&month=${state.month}`));
   const mon = MONTHS[+state.month.slice(5) - 1];
   // What the last save changed in the months already set up, shown once (a save that couldn't keep its drawer open).
   const ch = state.payeeSaved; state.payeeSaved = null;
@@ -128,12 +129,13 @@ function payeeErrors() {
 
 // The recurring payment's drawer. Opened again after a change made in it (saved: what the change did to the months
 // already set up; keep: what was typed elsewhere in the drawer and not saved yet).
-async function editPayee(id, { saved = null, keep = {} } = {}) {
+async function editPayee(id, opts) { return dialogDraw(dlg => payeeDialog(dlg, id, opts)); }
+async function payeeDialog(dlg, id, { saved = null, keep = {} } = {}) {
   const e = ent(), def = payeeDefaults();
   const p = id === "new" ? { name: "", category: def.category, desc_template: "", amount: "", amount_varies: 0, month_offset: def.month_offset, due_day: def.due_day,
     active: 1, account_id: defaultAccount(e)?.id, advances: [] } : state.payees?.find(x => x.id === +id);
   if (!e || !p) return closeDrawer(true);
-  const usage = id === "new" ? null : await api(`/api/payees/${p.id}/usage`).catch(() => null);
+  const usage = id === "new" ? null : await dlg.read(api(`/api/payees/${p.id}/usage`).catch(() => null));
   state.openPayment = null; state.why = null;
   const pdir = p.direction || catDir(p.category), into = pdir === "in", personal = PERSONAL_TYPES.includes(p.category);
   const req = `<span class="req">Required</span>`;
@@ -191,8 +193,10 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
   // own suppliers or customers before the one typed can be chosen.
   if (keep["py-dir"] || keep["py-cat"]) { fill(keep["py-cat"] || $("#py-cat").value); labels(); }
   party("py-party" in keep ? keep["py-party"] : undefined);
+  let added = false;  // this Add form's payment is in: it can't be added a second time from here
   $("#payeeForm").onsubmit = async ev => {
     ev.preventDefault();
+    if (added) return toast("This was saved. Close it and open it again from the list.", true);
     // The form's own checks first: each field marked in red with what to change, the first one focused, nothing sent.
     const bad = payeeErrors();
     for (const f of ["py-name", "py-amt", "py-day", "py-end"]) markField(f, bad[f] || "");
@@ -209,17 +213,20 @@ async function editPayee(id, { saved = null, keep = {} } = {}) {
     const btn = ev.target.querySelector("button[type=submit]");
     btn.disabled = true; btn.setAttribute?.("aria-busy", "true");
     try {
-      const r = await api("/api/payees", { json: body });
+      let r;
+      try { r = await api("/api/payees", { json: body }); } catch (e) { return toast(changeError(e), true); }
+      added = id === "new";
       const keep = Object.fromEntries(Object.entries(drawerEdits()).filter(([k]) => k.startsWith("adv-")));  // an advance being typed stays
       toast(id === "new" ? `${body.name} added` : "Saved");
-      await render();  // the list, and state.payees with the row as saved
-      // The drawer stays open on the saved row. A new one is found by its id if the server gives it, else by its name.
-      const same = state.payees?.filter(x => x.name === body.name) || [];
-      const nid = id !== "new" ? +id : r.id ?? (same.length ? Math.max(...same.map(x => x.id)) : null);
-      if (nid && state.payees?.some(x => x.id === nid)) return await editPayee(nid, { saved: r, keep: id === "new" ? {} : keep });
-      state.payeeSaved = r; closeDrawer(true); render();
-    } catch (e) { toast(e.message, true); }
-    finally { if (btn.isConnected) { btn.disabled = false; btn.removeAttribute?.("aria-busy"); } }
+      // The list is read again (and state.payees with the row as saved), and the drawer stays open on that row. A new one is found by its
+      // id if the server gives it, else by its name.
+      await afterSaved(render, () => {
+        const same = state.payees?.filter(x => x.name === body.name) || [];
+        const nid = id !== "new" ? +id : r.id ?? (same.length ? Math.max(...same.map(x => x.id)) : null);
+        if (nid && state.payees?.some(x => x.id === nid)) return editPayee(nid, { saved: r, keep: id === "new" ? {} : keep });
+        state.payeeSaved = r; closeDrawer(true); return afterSaved(render);
+      }, { dialogSaved: k => k.startsWith("py-") });
+    } finally { if (btn.isConnected) { btn.disabled = false; btn.removeAttribute?.("aria-busy"); } }
   };
 }
 
@@ -248,15 +255,14 @@ const advBody = k => {
 async function payeeChanged(pid, r, head, drop = "") {
   const keep = drawerEdits();
   if (drop) for (const k in keep) if (k.startsWith(drop)) delete keep[k];
-  await render();
-  return editPayee(pid, { saved: r && { ...r, head }, keep });
+  return afterSaved(render, () => editPayee(pid, { saved: r && { ...r, head }, keep }), { dialogSaved: drop ? k => k.startsWith(drop) : false });
 }
 async function payeeAct(act, pid, btn) {
   const label = { stop: "Stop using it", use: "Use it again", delete: "Delete it" }[act];
   return askWhy(btn, label, async reason => {
     if (act === "delete") {
       await api(`/api/payees/${pid}`, { method: "DELETE", json: { reason } });
-      closeDrawer(true); toast("Recurring payment deleted"); return render();
+      closeDrawer(true); toast("Recurring payment deleted"); return afterSaved(render);
     }
     const r = await api(`/api/payees/${pid}/${act}`, { json: { reason } });
     toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
@@ -267,13 +273,18 @@ async function advAdd(pid, btn) {
   const body = advBody("new");
   if (body.monthly_deduction == null || !body.start_month || !body.end_month) return toast("Type the monthly deduction and choose its first and last month.", true);
   btn.disabled = true;
-  try { const r = await api(`/api/payees/${pid}/advances`, { json: body }); toast("Advance added"); return await payeeChanged(pid, r, "Advance added", "adv-new-"); }
+  try {
+    const r = await api(`/api/payees/${pid}/advances`, { json: body }).catch(e => { throw changeThrown(e); });
+    // added: the row it was typed in is emptied, so a drawer left open can't add it a second time
+    for (const k of ["amt", "from", "to", "note"]) { const el = $(`#adv-new-${k}`); if (el) el.value = ""; }
+    toast("Advance added"); return await payeeChanged(pid, r, "Advance added", "adv-new-");
+  }
   finally { if (btn.isConnected) btn.disabled = false; }
 }
 async function advSave(aid, btn) {
   const pid = state.payees?.find(p => (p.advances || []).some(a => a.id === aid))?.id;
   btn.disabled = true;
-  try { const r = await api(`/api/advances/${aid}`, { method: "PATCH", json: advBody(aid) }); toast("Advance saved"); return await payeeChanged(pid, r, "Advance saved", `adv-${aid}-`); }
+  try { const r = await api(`/api/advances/${aid}`, { method: "PATCH", json: advBody(aid) }).catch(e => { throw changeThrown(e); }); toast("Advance saved"); return await payeeChanged(pid, r, "Advance saved", `adv-${aid}-`); }
   finally { if (btn.isConnected) btn.disabled = false; }
 }
 function advDelete(aid, btn) {

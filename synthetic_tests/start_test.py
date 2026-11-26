@@ -4,7 +4,9 @@ script is run in Node on a small stand-in for the page (no browser); the records
 
 Checks: a records overview that can't be read (the server's 500, an answer that is not JSON, an answer with no companies in it, a network failure)
 draws "HR Payments couldn't start" with the reason and a Try again, no "Nothing was changed" (nothing was being changed), and no loading dim left;
-Try again starts again, reads the records again and the page starts (once); a Try again that fails again still says so; a start that fails after the
+Try again starts again, reads the records again and the page starts (once); a Try again that fails again still says so, and the focus stays on it; an app
+that can't be reached shows the stopped page's words; while the start has failed, or before the records are read, the month's arrows do nothing and
+raise nothing; a start that fails after the
 records were read (routerBoot throws) says the same, and leaves the shell it drew; the cycle's months failing to open is a toast and the app
 starts; the cause is in the console and in Copy details; the Try again is busy and a second click while a start runs starts nothing; a start that a newer
 one overtook writes nothing (neither its failure nor its success); the address is listened to once, however often the app starts.
@@ -215,6 +217,36 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     r.retried = { ...shown(), nav: el("nav").innerHTML };
     return r;
   });
+  // the month's arrows while the start has failed (and while the very first read is still out): nothing moves, nothing is drawn, no message
+  await tryit("arrows", async () => {
+    const r = {}, arrow = async id => { const b = { dataset: {}, tagName: "BUTTON", id, className: "", getAttribute: () => null, setAttribute() {}, disabled: false, innerHTML: "" }; b.closest = () => b;
+      for (const f of listeners.click || []) await f({ type: "click", target: b, button: 0, preventDefault() {}, stopPropagation() {} }); };
+    const press = async () => { el("toast").textContent = ""; const before = main.innerHTML, month = run(`String(state.month)`); run(`globalThis.__renders = 0; globalThis.__render0 = render; render = async () => { __renders++; }`);
+      for (const id of ["prevMonth", "nextMonth", "thisMonth"]) await arrow(id); await sleep(20); const out = { same: main.innerHTML === before, month: run(`String(state.month)`) === month, renders: run(`__renders`), toast: el("toast").textContent };
+      run(`render = __render0`); return out; };
+    run(`state.meta = null; state.month = null`); await restart(["500"]); r.neverStarted = await press();
+    script = ["ok"]; await click({ retry: "start" }); await sleep(30);
+    await restart(["500"]); r.failedAfter = await press();             // the records were read once, and the start that followed failed
+    run(`state.meta = null; state.month = null; state.startFailed = false`); script = ["ok@200"]; const s = run(`start()`); await sleep(20); r.reading = await press(); await s; await sleep(30);
+    return r;
+  });
+  // the focus after a failed Try again stays on the (new) Try again; the first start, and a focus put elsewhere meanwhile, are left alone
+  await tryit("focus", async () => {
+    const r = {}; let focused = 0;
+    const was = main.querySelector;
+    main.querySelector = s => s === '[data-retry="start"]' && main.innerHTML.includes('data-retry="start"') ? { focus: () => focused++ } : null;
+    try {
+      for (const how of ["500", "net"]) {
+        focused = 0; await restart([how]); const first = focused;
+        await click({ retry: "start", busy: "Starting again…" }); await sleep(30);
+        r[how] = { first, retried: focused };
+      }
+      await restart(["500"]); focused = 0; document.activeElement = { isConnected: true };   // the user is somewhere else on the page
+      await click({ retry: "start" }); await sleep(30); r.elsewhere = focused; document.activeElement = null;
+      script = ["ok"]; focused = 0; await click({ retry: "start" }); await sleep(30); r.worked = focused;
+    } finally { main.querySelector = was; document.activeElement = null; }
+    return r;
+  });
   // the error page is the one Try again draws with the old click handler too (a page that fails to draw): "start" is only for a failed start
   await tryit("plainRetry", async () => {
     run(`globalThis.__renders = 0; __boots = 0; globalThis.__realRender = render; render = async () => { __renders++; }`);
@@ -270,10 +302,22 @@ def says(s):
             and "Nothing was changed" not in h and s["loading"] is False and s["boots"] == 0)
 
 
+
+
+def stopped(s):
+    """What the page shows when the app can't be reached at all: the stopped page's words, with a Try again that starts again; no dim left."""
+    h = s["html"]
+    return ("HR Payments isn&#39;t running" in h and "Start HR Payments.bat" in h and 'data-retry="start"' in h and 'data-retry="1"' not in h and 'data-busy="' in h and "Try again</button>" in h
+            and "couldn&#39;t start" not in h and "Nothing was changed" not in h and s["loading"] is False and s["boots"] == 0)
+
+
 WAYS = {"500": "the server's 500", "bad": "an answer that is not JSON", "none": "an answer with no companies in it", "net": "a network failure (the app is not running)"}
 for how, what in WAYS.items():
     f = o["fail-" + how]
-    check(f"the first read of the records failing ({what}) draws \"HR Payments couldn't start\" with the reason and a Try again, and no loading dim is left", says(f["failed"]) and f["failed"]["reads"] == 1, f["failed"])
+    if how == "net":
+        check(f"the first read of the records failing ({what}) shows the stopped page's words (double-click Start HR Payments.bat) with a Try again that starts again, and no loading dim is left", stopped(f["failed"]) and f["failed"]["reads"] == 1, f["failed"])
+    else:
+        check(f"the first read of the records failing ({what}) draws \"HR Payments couldn't start\" with the reason and a Try again, and no loading dim is left", says(f["failed"]) and f["failed"]["reads"] == 1, f["failed"])
     check(f"...Try again ({what}) reads the records again and starts the page, once", f["retried"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 1}, f["retried"])
 check("a Try again that fails again says so again, and the next one that works starts the page",
       says(o["twice"]["again"]) and o["twice"]["again"]["reads"] == 1 and o["twice"]["ok"] == {"html": STARTED, "loading": False, "boots": 1, "reads": 1}, o["twice"])
@@ -298,6 +342,12 @@ check("...and an older start that is over while a newer one is still reading lea
 check("when routerBoot throws (a failure in drawing the first page, not a page's own read) the page says so over the shell it had drawn (the menu stays in place), and Try again starts the app again over it",
       "HR Payments couldn&#39;t start" in o["partial"]["failed"]["html"] and o["partial"]["failed"]["nav"] == "<nav>the menu</nav>" and o["partial"]["retried"]["html"] == STARTED, o["partial"])
 check("Try again on a page that failed to draw still only draws the page again (it doesn't start the app again)", o["plainRetry"] == {"renders": 1, "boots": 0}, o["plainRetry"])
+quiet = {"same": True, "month": True, "renders": 0, "toast": ""}
+check("while the start has failed (never started, or failing again after the records were once read) the month's arrows do nothing and raise nothing, and so while the first read is still out",
+      o["arrows"]["neverStarted"] == quiet and o["arrows"]["failedAfter"] == quiet and o["arrows"]["reading"] == quiet, o["arrows"])
+check("after a Try again that fails again, the focus is on the new Try again (the couldn't-start card's and the stopped page's); the first start takes no focus",
+      o["focus"]["500"] == {"first": 0, "retried": 1} and o["focus"]["net"] == {"first": 0, "retried": 1}, o["focus"])
+check("...and a focus put somewhere else meanwhile stays there, as does a start that works", o["focus"]["elsewhere"] == 0 and o["focus"]["worked"] == 0, o["focus"])
 check("the address is listened to once, however often the app starts", o["hashOnce"] == {"listeners": 1, "applied": 3}, o["hashOnce"])
 
 if failed:

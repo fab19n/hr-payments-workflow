@@ -64,14 +64,12 @@ function goSetupRecord(kind, id) {
   return navigate({ view: "setup", entity: state.entity, month: state.month, sub: kind, id: String(id), params: {} }, { fresh: true });
 }
 
-async function viewSetup(main, again = false) {
-  const S = state.setup, seq = viewSetup.n = (viewSetup.n || 0) + 1;  // a draw that a newer one overtakes writes nothing
-  if (!S.types) {
-    const types = await api("/api/setup/types");
-    if (seq !== viewSetup.n) return;
-    S.types = types;
-  }
-  if (seq !== viewSetup.n) return;
+// A draw of Setup (core/page.js, its own part): one that a newer page or a newer draw of Setup overtook, or that Setup was left for
+// (setupLeft), writes nothing.
+async function viewSetup(main) { return pageDraw("setup", page => setupDraw(page, main)); }
+async function setupDraw(page, main) {
+  const S = state.setup;
+  if (!S.types) S.types = await page.read(api("/api/setup/types"));
   const T = S.types, e = ent(), groups = setupGroups(T, e);
   if (!T.kinds[S.kind] || SETUP_LINKS[S.kind]) S.kind = groups[0]?.kinds[0] || null;  // a link's old address (Recurring payments) has no page here
   if (S.kind !== "move" && S.move) S.move.justImported = false;
@@ -83,9 +81,7 @@ async function viewSetup(main, again = false) {
   // another section or company is drawn, which is held for nothing.
   const prev = main.querySelector(".setup-grid"), same = prev?.dataset.at === at, top = main.querySelector(".setup-nav")?.scrollTop || 0;
   const grid = () => `<div class="setup-grid" data-at="${esc(at)}">${setupNavHtml(T, S.kind, groups)}<div class="setup-main" id="setupMain"></div></div>`;
-  viewSetup.draw = { main, grid, top };  // what a draw whose page render() covered with its loading skeleton draws again (setupBox)
   const spec = setupSpec();
-  let redo = false;
   try {
     if (same) main.style.minHeight = `${Math.ceil(main.getBoundingClientRect().height)}px`;
     main.innerHTML = grid();
@@ -93,7 +89,7 @@ async function viewSetup(main, again = false) {
     const shown = main.querySelector(".setup-nav");
     if (shown) shown.scrollTop = top;  // at once, not when the section has been read
     const box = $("#setupMain");
-    box.dataset.draw = String(seq);
+    box.page = page;  // the draw whose place this is (setupBox)
     if (!spec) box.innerHTML = emptyState({ glyph: "sliders", title: "Nothing to set up yet." });
     else if (e && !e.uses_sql && setupNeedsSql(S.kind, T)) box.innerHTML = setupNotUsed(S.kind, e);
     else if (spec.single) await setupSettings(box);
@@ -103,35 +99,17 @@ async function viewSetup(main, again = false) {
     else if (S.kind === "move") await setupMove(box);
     else if (spec.bespoke) box.innerHTML = `<div class="card"><h1>${esc(sectionLabel(spec))}</h1><div class="note">This section isn't ready in this version of the app.</div></div>`;
     else await setupList(box, S.kind);
-    // The section was written and then covered by render()'s loading skeleton (the Show deleted read that came last took over 0.3 s): its place is gone
-    // and nothing draws it again, so it is drawn once more (once: a draw that is itself a retry is not retried), below, once this draw is over.
-    if (seq === viewSetup.n && !again && !main.querySelector("#setupMain")) redo = true;
-    else if (seq === viewSetup.n) setupMenuScroll(main);  // last, once the whole section is written
-  } catch (err) {
-    if (seq !== viewSetup.n) return;  // overtaken: what it met is of no interest to the page now
-    throw err;
+    page.check();  // a section that reads on its own (setupBox) may have ended quietly
+    setupMenuScroll(main);  // last, once the whole section is written
   } finally {
-    if (seq === viewSetup.n) main.style.minHeight = "";  // the whole section is written (or it failed): the page is as tall as it is
+    if (!page.gone()) main.style.minHeight = "";  // the whole section is written (or it failed): the page is as tall as it is
   }
-  if (redo) return viewSetup(main, true);  // outside the try: a failure of the second draw is this call's failure, and render() paints it
 }
 
-// The place a draw writes into, once what it reads has come: its own while that is still on the page. If render() covered the page with its loading
-// skeleton meanwhile (a read that takes over 0.3 s, on arriving from another page or on a company switch) and this is still the latest draw, its grid
-// is put back and the section is written into that. A draw that a newer one overtook, or that Setup was left for, gets nothing: null, and it writes
-// no markup, no state and no list to redraw. A box that viewSetup didn't draw (a section called on its own) is its own.
-function setupBox(box) {
-  if (!box || box.dataset?.draw == null) return box;
-  if (box.dataset.draw !== String(viewSetup.n)) return null;
-  if (box.isConnected !== false) return box;
-  const d = viewSetup.draw;
-  d.main.innerHTML = d.grid();
-  const bar = d.main.querySelector(".setup-nav");
-  if (bar) bar.scrollTop = d.top;
-  const back = $("#setupMain");
-  back.dataset.draw = box.dataset.draw;
-  return back;
-}
+// The place a section writes into, once what it reads has come: its own, unless the draw it belongs to was overtaken or Setup was left. Then
+// nothing: null, and the section writes no markup, no state and no list to redraw. A box that viewSetup didn't draw (a section called on its
+// own) is its own.
+const setupBox = box => box?.page?.gone() ? null : box;
 
 // The menu is a new element each time the page is drawn (it has its scroll back already): it scrolls itself (never the window, as
 // scrollIntoView would) just far enough for the item on show to be in its frame, as when a deep address opens a lower section.
@@ -151,7 +129,7 @@ const setupMoreReset = id => { (state.setup.more ||= {})[id] = SETUP_PAGE; };
 // Another page is opened (core/router.js applyPlace): what Setup keeps only while it is on show is dropped.
 function setupLeft() {
   const S = state.setup, main = $("#main");
-  viewSetup.n = (viewSetup.n || 0) + 1;  // a draw still reading is overtaken: it writes nothing, and doesn't draw its grid over the page now shown
+  pageDrop("setup");  // a draw still reading is overtaken: it writes nothing
   if (main?.style) main.style.minHeight = "";  // nor does its hold stay on that page
   S.more = {}; S.moreAt = null;
   if (S.move) S.move.justImported = false;
@@ -504,40 +482,8 @@ async function whySubmit() {
   goBtn.disabled = true; goBtn.setAttribute("aria-busy", "true");
   state.whyBusy = true;
   try { await run(reason); hideWhy(); }
-  catch (e) { if (appStopped(e)) toast(e.message, true); else { setWhyMsg(e.message, true); $("#su-reason")?.focus?.(); } }
+  catch (e) { if (appStopped(e)) toast(e.message, true); else { setWhyMsg(changeError(e), !e.unsure); $("#su-reason")?.focus?.(); } }
   finally { state.whyBusy = false; if (goBtn.isConnected) { goBtn.disabled = false; goBtn.removeAttribute("aria-busy"); } }
-}
-
-// A change was kept (the server said so). What comes after it (reading the records and drawing the page again, opening the record's dialog again)
-// can fail, and the change stays, so that is never "nothing was changed". refresh(opts) reads and draws: it returns false when render() painted its
-// own error (in the same words, with its own Try again) or throws when the records can't be read; then reopen() opens the record's dialog again,
-// once, if that dialog is still the one on show. When the reading back fails, the toast says it was saved, with a Try again that only runs refresh
-// again: it never reopens a record, never closes a dialog and never sends the change again, and the page that painted the words doesn't get a toast
-// as well. The dialog of the change is closed on a failure only if nothing has been typed in it since (an Add dialog left open would add the record
-// twice); one with something typed in it, or another dialog opened meanwhile, is left alone (an Add dialog that stays open can't add its record again:
-// setupSave refuses it). The same when the record's dialog can't be opened again after a good reading. dialogSaved: what the dialog holds was saved by
-// this change (Save, Add), so only what is typed from now on counts. Returns whether it all worked.
-async function afterSaved(refresh, reopen, { dialogSaved = false } = {}) {
-  if (dialogSaved && drawerShown()) watchDrawer();
-  const mine = state.drawerAt;
-  const typed = () => drawerShown() && !!state.drawerDirty?.();
-  const said = () => toast(SAVED_NOT_READ, true, { ms: 0, action: { label: "Try again", fn: again } });
-  const again = async () => {
-    try { return (await refresh({ saved: true })) !== false; } catch (e) { said(); return false; }
-  };
-  let ok = false, thrown = false;
-  try { ok = await refresh({ saved: true }); } catch (e) { thrown = true; }
-  if (!thrown && ok !== false) {
-    try { if (reopen && state.drawerAt === mine) await reopen(); return true; }
-    catch (e) {
-      toast(SAVED_NOT_REOPENED, true);
-      if (mine && state.drawerAt === mine && !typed()) closeDrawer(true);  // as after a failed reading: only a dialog nobody has typed in since, and still the one on show
-      return false;
-    }
-  }
-  if (mine && state.drawerAt === mine && !typed()) closeDrawer(true);
-  if (thrown) said();
-  return false;
 }
 
 // After a company, bank account, payment type, document type, matching words, customer or supplier, or GL account
@@ -557,6 +503,9 @@ async function afterSetupChange(kind) {
 // use again; notes: what the server said about the save just made.
 async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}) {
   if (!force && !(await mayLeave())) return;
+  return dialogDraw(dlg => setupDialog(dlg, kind, id, keep, notes));
+}
+async function setupDialog(dlg, kind, id, keep, notes) {
   const spec = state.setup.types?.kinds?.[kind];
   if (!spec) return;
   const isNew = id === "new", e = ent();
@@ -564,7 +513,7 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
   const fresh = Object.fromEntries((spec.fields || []).filter(f => f.default !== undefined).map(f => [f.key, f.default]));
   // A new record's company field starts on the company being viewed (every company is chosen in it).
   for (const f of spec.fields || []) if (f.type === "company" && fresh[f.key] == null && e) fresh[f.key] = e.id;
-  const r = isNew ? { record: fresh, used_by: [], used_total: 0, locked: {}, can_delete: false, notes: [] } : await api(`/api/setup/${kind}/${id}`);
+  const r = isNew ? { record: fresh, used_by: [], used_total: 0, locked: {}, can_delete: false, notes: [] } : await dlg.read(api(`/api/setup/${kind}/${id}`));
   const rec = r.record || {}, locked = r.locked || {}, fields = spec.fields || [];
   const stopped = !isNew && (rec.status === "stopped" || !isActive(rec));
   state.openPayment = null; state.why = null; state.setup.id = id; syncAddr();
@@ -584,7 +533,7 @@ async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}
   // Printed invoices and Printed company names belong to a company Kept in SQL Account: its invoices are printed from SQL's documents.
   const printed = kind === "entities" && !isNew && !!+rec.uses_sql;
   // A company switched to Kept here keeps the names confirmed while it was Kept in SQL Account: only they are listed, so they can be removed.
-  const keptNames = kind === "entities" && !isNew && !+rec.uses_sql ? await api(`/api/setup/entities/${+id}/sql-names`).catch(() => null) : null;
+  const keptNames = kind === "entities" && !isNew && !+rec.uses_sql ? await dlg.read(api(`/api/setup/entities/${+id}/sql-names`).catch(() => null)) : null;
   const hereNames = !!keptNames?.names?.length;
   $("#drawer").innerHTML = `<form class="np st-form" id="setupForm" novalidate aria-describedby="su-sub">
     <div class="pd-head"><span class="plate brand">${icon(spec.glyph || "sliders")}</span>
@@ -712,11 +661,12 @@ function suCheck(fields, now, locked) {
   if (bad.length) document.getElementById("su-" + bad[0].key)?.focus?.();
   return !bad.length;
 }
-// A refusal in the dialog's own place (not a toast, which goes after a few seconds): what the server said, and that nothing was saved.
-function suRefused(message) {
-  const box = $("#su-refused");
+// A refusal in the dialog's own place (not a toast, which goes after a few seconds): what the server said, and that nothing was saved (or,
+// when it isn't known whether it was, that).
+function suRefused(e) {
+  const box = $("#su-refused"), message = changeError(e);
   if (!box) return toast(message, true);
-  box.innerHTML = refusedNote(message, { title: "Nothing was saved" });
+  box.innerHTML = refusedNote(message, { title: e.unsure ? "It may not have been saved" : "Nothing was saved" });
   box.focus?.({ preventScroll: true });
 }
 
@@ -734,7 +684,7 @@ async function setupSave() {
     const body = { fields: Object.fromEntries(Object.entries(now).filter(([k, v]) => v !== null && v !== "" || isCompany(k))) };
     if (spec.per_entity) body.entity_id = state.entity;
     let r;
-    try { r = await api(`/api/setup/${D.kind}`, { json: body }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e.message); }
+    try { r = await api(`/api/setup/${D.kind}`, { json: body }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e); }
     D.saved = true;
     toast(`${spec.label} added`);
     return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); },
@@ -747,7 +697,7 @@ async function setupSave() {
     return toast("Nothing has changed.");
   }
   let r;
-  try { r = await api(`/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields: changed } }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e.message); }
+  try { r = await api(`/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields: changed } }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e); }
   toast("Saved");
   return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, notes: r.notes }), { dialogSaved: true });
 }

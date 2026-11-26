@@ -164,8 +164,8 @@ async function chkSave(preview) {
   if (!isNew) body.item_id = O.id;
   const reason = $("#cl-reason").value.trim();
   if (reason) body.reason = reason;
-  const r = await api("/api/setup/checklist", { json: body });
-  if (preview) return showPreview("#cl-preview", r, "checklist item");
+  const dialog = DLG.seq, r = await api("/api/setup/checklist", { json: body });
+  if (preview) return DLG.seq === dialog ? showPreview("#cl-preview", r, "checklist item") : undefined;  // not into a dialog opened since
   // Drawn again on the month the change starts from, so it shows the term just saved.
   return chkDone(r, isNew ? r.item_id : O.id, isNew ? "Item added" : "Saved", { "cl-from": body.from_month }, true);
 }
@@ -213,8 +213,8 @@ async function chkCopySave(preview) {
   const body = { action: "copy", entity_id: d.entity_id ?? state.entity, from_month: fromMonth("#cl-from"), copy_from: +$("#cp-from").value, preview: !!preview };
   const reason = $("#cl-reason").value.trim();
   if (reason) body.reason = reason;
-  const r = await api("/api/setup/checklist", { json: body });
-  if (preview) return showPreview("#cl-preview", r, "checklist item");
+  const dialog = DLG.seq, r = await api("/api/setup/checklist", { json: body });
+  if (preview) return DLG.seq === dialog ? showPreview("#cl-preview", r, "checklist item") : undefined;
   toast(`Checklist copied. ${effectText(r.affected, "checklist item")}`);
   closeDrawer(true);
   return afterSaved(async o => { await reloadMeta(); return render(o); });

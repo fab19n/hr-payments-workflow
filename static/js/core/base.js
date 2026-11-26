@@ -10,15 +10,33 @@ const shortDate = iso => { if (!iso) return "—"; const [, m, d] = iso.slice(0,
 const monthName = k => { const [y, m] = k.split("-"); return ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][+m - 1] + " " + y; };
 const shiftMonth = (k, n) => { let [y, m] = k.split("-").map(Number); m += n; y += Math.floor((m - 1) / 12); m = ((m - 1) % 12 + 12) % 12 + 1; return `${y}-${String(m).padStart(2, "0")}`; };
 
+// An answer from the server, or an error that says what is known. network: the app could not be reached, or the connection broke before its
+// answer was all here. unsure: a request that can change something got no clear answer (that, a server failure, or an answer that can't be
+// read), so it isn't known whether the change was made. Only an error without unsure may be said with "nothing was changed".
 async function api(path, opts = {}) {
   const init = { method: opts.method || "GET", headers: { "X-HRP": "1" } };
   if (opts.json !== undefined) { init.headers["Content-Type"] = "application/json"; init.body = JSON.stringify(opts.json); init.method = opts.method || "POST"; }
   if (opts.form) { init.body = opts.form; init.method = "POST"; }
-  const r = await fetch(path, init);
-  const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error || `Something went wrong (${r.status}).`);
+  const unsure = init.method !== "GET", broke = e => Object.assign(e, { network: true, unsure });
+  let r, data, unread = false;
+  try { r = await fetch(path, init); } catch (e) { throw broke(e); }
+  try { data = await r.json(); }
+  catch (e) {
+    if (e && e.name === "TypeError") throw broke(e);  // the connection broke while the answer came
+    unread = true;
+  }
+  // a refusal or a failure often isn't JSON (an error page), and its status says enough; an OK answer that isn't JSON is an error, never an empty one
+  if (!r.ok) throw Object.assign(new Error(data?.error || `Something went wrong (${r.status}).`), { unsure: unsure && r.status >= 500 });
+  if (unread) throw Object.assign(new Error(BAD_REPLY), { unsure });
   return data;
 }
+const BAD_REPLY = "HR Payments gave an answer this page can't read.";
+// What is said when it isn't known whether a change was made.
+const NOT_KNOWN = "It isn't known whether it was saved: check before doing it again.";
+// An error's words for an action that changes something: the reason, and when it isn't known whether it was made, that.
+const changeError = e => e && e.unsure ? `${e.message} ${NOT_KNOWN}` : e.message;
+// The same as an error, for an action whose caller says what was thrown (a click handler's message).
+const changeThrown = e => e && e.unsure ? Object.assign(new Error(changeError(e)), { unsure: true, network: e.network }) : e;
 
 // The records' overview (companies, accounts, types, pages), read again. Each reading that works is counted: what waits for the records to be read
 // again (First run's note of what was saved and not read) can tell that one has happened, whatever it found.

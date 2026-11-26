@@ -115,8 +115,9 @@ function clPanelHtml(d) {
   return out.join("") + many;
 }
 
-async function viewChecklist(main) {
-  const [d, next] = await Promise.all([api(`/api/month?entity=${state.entity}&month=${state.month}`), loadNext(state.entity)]);
+async function viewChecklist(main) { return pageDraw("main", page => checklistDraw(page, main)); }
+async function checklistDraw(page, main) {
+  const [d, next] = await page.read(Promise.all([api(`/api/month?entity=${state.entity}&month=${state.month}`), loadNext(state.entity)]));
   state.data = d;
   const C = clState(), e = d.entity, ro = !!d.closed_at, tab = clTab();
   if (state.mark) C.shown = Math.max(C.shown, d.tasks.length);   // a link marks items: every item shows, so none it names is on a later page

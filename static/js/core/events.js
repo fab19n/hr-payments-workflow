@@ -20,7 +20,7 @@ document.addEventListener("click", async ev => {
     if (ds.view) return go(ds.view, ds.entity);
     if (ds.goField) { ev.preventDefault(); const f = document.getElementById(ds.goField); f?.scrollIntoView?.({ block: "center" }); return f?.focus?.(); }
     if (ds.copyDetails !== undefined) return copyDetails(ds.copyDetails);
-    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return ds.retry === "start" ? (start.running ? undefined : start()) : render({ saved: ds.retry === "saved" }); }
+    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return ds.retry === "start" ? (start.running ? undefined : start({ again: true })) : render({ saved: ds.retry === "saved" }); }
     if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
     if (ds.restore) return await openRestore(+ds.restore, ds.restoreTitle);
     if (ds.restoreGo) return await restoreGo(+ds.restoreGo, t);  // awaited: a refusal or a stopped app reaches the catch below, and is said
@@ -41,19 +41,21 @@ document.addEventListener("click", async ev => {
       await go("settings"); $("#bkPw")?.focus();  // the password is typed there; a plain backup is not offsite
       return;
     }
-    if (ds.pickEntity) { if (!(await closeDrawer())) return; state.entity = +ds.pickEntity; state.addr.id = null; state.addr.params = {}; return redraw(); }
+    if (ds.pickEntity) { if (!(await closeDrawer())) return; state.entity = +ds.pickEntity; state.addr.id = null; state.addr.params = {}; state.asAt = null; return redraw(); }
     if (ds.fix) return fixIt(ds.fix, +ds.id);
     if (ds.closeMonth) return await markFiled(ds.closeMonth === "built");
     if (ds.reopenMonth) {
       const r = await api("/api/months/close", { json: { entity_id: state.entity, month: state.month, closed: false } });
-      toast(`${monthName(state.month)} reopened.${r.pack_ticked ? " Its audit pack item stays ticked; untick it if the pack needs doing again." : ""}`); return render();
+      toast(`${monthName(state.month)} reopened.${r.pack_ticked ? " Its audit pack item stays ticked; untick it if the pack needs doing again." : ""}`); return afterSaved(render);
     }
     if (ds.openMonth) {
       await api("/api/months/open", { json: { entity_id: +ds.openMonth, month: state.month } });
-      toast(`${monthName(state.month)} is set up`); return render();
+      toast(`${monthName(state.month)} is set up`); return afterSaved(render);
     }
     if (t.id === "prevMonth" || t.id === "nextMonth" || t.id === "thisMonth") {
+      if (!state.meta || state.startFailed) return;  // nothing is started yet, or the start failed: there is no month to move
       if (!(await closeDrawer())) return;
+      state.asAt = null;  // a Next up row's day is not carried to another month
       state.month = t.id === "thisMonth" ? currentCycle() : shiftMonth(state.month, t.id === "prevMonth" ? -1 : 1);
       state.addr.params = state.view === "bank" && state.addr.params.filter ? { filter: state.addr.params.filter } : {};  // the filters were used up; the to-explain list stays
       return redraw();
@@ -177,17 +179,17 @@ document.addEventListener("click", async ev => {
     }
     if (ds.removeDoc) {
       if (!(await ask("It is left out of the audit pack; the file itself is kept on this PC.", { title: `Remove \u201c${ds.name}\u201d?`, yes: "Remove document", no: "Cancel", danger: true, tone: "bad", glyph: "trash", closing: "You can add the file to the payment again." }))) return;
-      await api(`/api/documents/${ds.removeDoc}/remove`, { json: {} }); toast(`Removed ${ds.name}`); return render();
+      await api(`/api/documents/${ds.removeDoc}/remove`, { json: {} }); toast(`Removed ${ds.name}`); return afterSaved(render);
     }
     if (t.id === "deletePayment") {
       if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = "Click again to remove"; return; }
       let r;
       try { r = await api(`/api/payments/${state.openPayment}`, { method: "DELETE", json: {} }); }
-      catch (e) { t.dataset.confirm = ""; t.textContent = "Remove this payment"; throw e; }
+      catch (e) { t.dataset.confirm = ""; t.textContent = "Remove this payment"; throw changeThrown(e); }
       // A voucher of a month before the first month tracked goes back under Before tracking, not under SQL entries not linked.
       const bt = r.before_tracking || [], back = r.unlinked.filter(n => !bt.includes(n));
       closeDrawer(true); toast(`Payment removed${back.length ? `; ${back.join(", ")} back under SQL entries not linked` : ""}${bt.length ? `; ${bt.join(", ")} back under Before tracking on the SQL page` : ""}${r.lines
-        ? `; ${r.lines} bank line${r.lines > 1 ? "s" : ""} back under lines to explain` : ""}`); return render();
+        ? `; ${r.lines} bank line${r.lines > 1 ? "s" : ""} back under lines to explain` : ""}`); return afterSaved(render);
     }
     if (t.id === "addPayment") return addPaymentDrawer();
     if (ds.explain) return explainLine(+ds.explain);
@@ -200,7 +202,7 @@ document.addEventListener("click", async ev => {
     if (ds.rvConfirmAll) {
       const r = await api("/api/recon/confirm-matched", { json: { entity_id: state.entity, statement_id: RV().sid } });
       toast(`${r.confirmed} line${r.confirmed === 1 ? "" : "s"} confirmed${r.needs_date_tick ? `; ${r.needs_date_tick} with a different date left for you to select and tick` : ""}.`);
-      return reloadReview();
+      return afterSaved(bankAgain());
     }
     if (t.id === "rvApply") { t.disabled = true; try { return await rvApply(); } finally { t.disabled = false; } }
     // Bank and reconciliation (pages/bank.js): Mark reconciled with its note and Prepared by; Reopen month (a reason is
@@ -230,7 +232,7 @@ document.addEventListener("click", async ev => {
     if (ds.unlink) {
       const r = await api(`/api/statement-lines/${ds.unlink}`, { json: { payment_id: null } });
       toast(r.removed ? `Undone. ${r.removed} was created from the bank statement and had nothing else on it, so it was removed too.` : "Undone. The line is waiting to be explained.");
-      return render();
+      return afterSaved(render);
     }
     // The SQL import page (pages/sql.js): Import says what it did in place of the preview, Fetch reads the folder.
     if (t.id === "sqlApply") return await sqlApply(t);
@@ -238,16 +240,17 @@ document.addEventListener("click", async ev => {
     if (t.id === "sqlFetch") return await sqlFetch();
     if (ds.sqlTake != null) {  // an export from a company not in Setup: taken only when the owner says whose it is
       if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = `Click again: "${ds.sqlTake}" is ${ent().code}`; return; }
-      await api("/api/sql/take-company", { json: { entity_id: state.entity, company: ds.sqlTake } });
-      toast(`Exports printed for "${ds.sqlTake}" are taken for ${ent().code} from now on. Fetching again…`);
-      renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, fetch: true } }));
-      return;
+      const eid = state.entity, code = ent().code, S = sqState();
+      await api("/api/sql/take-company", { json: { entity_id: eid, company: ds.sqlTake } });
+      t.dataset.confirm = ""; t.disabled = true;  // the name is taken: the button can't send it again while the folder is read
+      toast(`Exports printed for "${ds.sqlTake}" are taken for ${code} from now on. Fetching again…`);
+      return afterSaved(savedPart(() => sqOn(S), async () => renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: eid, fetch: true } }), { from: S })));
     }
     if (ds.sqlMove) {  // a voucher changed in SQL: its payment's link moves to the new entry only on this click
       const box = t.closest("[data-sql-changed]"), follow = box?.querySelector("[data-sql-follow]")?.checked || false;
       const r = await api(`/api/sql/entries/${ds.sqlMove}/move-link`, { json: { to: +ds.sqlMoveTo, update_amount: follow } });
       toast(`${r.doc_no}: the link of ${r.payment} moved to the amount SQL gives now${r.amount_changed ? ", and the payment's amount changed with it" : "; the payment's amount is as it was"}${matchedNote(r)}`);
-      return render();
+      return afterSaved(render);
     }
     if (t.id === "sqlDirSave") return await sqlDirSave();
     if (t.id === "sqlCancel") return sqlCancel();
@@ -255,18 +258,18 @@ document.addEventListener("click", async ev => {
     if (t.id === "sqlIgnoreAll") return await sqlIgnoreAll();
     if (t.id === "rematch") {
       const r = await api("/api/statements/rematch", { json: { entity_id: state.entity } });
-      toast(`${r.matched} more bank lines matched; ${r.no_docs} marked as bank charges or own transfers`); return render();
+      toast(`${r.matched} more bank lines matched; ${r.no_docs} marked as bank charges or own transfers`); return afterSaved(render);
     }
     if (ds.sqlCreate) return await sqlEntryCreate(+ds.sqlCreate);
     if (ds.sqlIgnore) return await sqlEntryIgnore(+ds.sqlIgnore);
     if (ds.sqlIgnoreIds) {  // every row of a listing entry, so one listed on several rows leaves the list at once
       const r = await api("/api/sql/entries/ignore", { json: { ids: ds.sqlIgnoreIds.split(",").map(Number) } });
-      toast(r.ignored === 1 ? "1 entry ignored; it is listed under Ignored" : `${r.ignored} entries ignored; they are listed under Ignored`); return render();
+      toast(r.ignored === 1 ? "1 entry ignored; it is listed under Ignored" : `${r.ignored} entries ignored; they are listed under Ignored`); return afterSaved(render);
     }
     if (ds.sqlDeletedIds) {  // every row of the listing entry; kept, marked ignored, Un-ignore puts it back
       const r = await api("/api/sql/entries/deleted", { json: { ids: ds.sqlDeletedIds.split(",").map(Number) } });
       state.sqlOpen.ignored = true;  // where it is listed now, with its Deleted in SQL pill
-      toast(`${r.doc_nos.join(", ")} marked as deleted in SQL; listed under Ignored${reconMoved(r)}`); return render();
+      toast(`${r.doc_nos.join(", ")} marked as deleted in SQL; listed under Ignored${reconMoved(r)}`); return afterSaved(render);
     }
     if (ds.sqlLinkGo) return await sqlEntryLink(+ds.sqlLinkGo);
     if (ds.invSetup) return goSetupRecord("entities", state.entity);
@@ -278,37 +281,50 @@ document.addEventListener("click", async ev => {
       const list = r.before_tracking ? "Before tracking" : "SQL entries not linked";  // where the SQL page now lists it
       toast(r.kind === "journal" ? `${r.doc_no} unlinked${r.removed ? `, and the payment made from it was removed` : ` from ${r.payment}`}`
         : r.removed ? `${r.doc_no} is back under ${list}, and the payment made from it was removed`
-        : `${r.doc_no} unlinked from ${r.payment}; it's back under ${list}`); return render();
+        : `${r.doc_no} unlinked from ${r.payment}; it's back under ${list}`); return afterSaved(render);
     }
-    if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.kind === "journal" || r.kind === "invoice" ? "Journals and invoices" : r.before_tracking ? "Before tracking" : "SQL entries not linked"}${reconMoved(r)}`); return render(); }
+    if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.kind === "journal" || r.kind === "invoice" ? "Journals and invoices" : r.before_tracking ? "Before tracking" : "SQL entries not linked"}${reconMoved(r)}`); return afterSaved(render); }
     if (ds.editPayee) { if (!(await mayLeave())) return; return await editPayee(ds.editPayee); }
     if (ds.addMonth) {
       const r = await api(`/api/payees/${ds.addMonth}/add-to-month`, { json: { month: state.month } });
       toast(r.opened ? `${monthName(state.month)} is set up: its checklist and recurring payments were added` : `Added to ${monthName(state.month)}`);
-      return render();
+      return afterSaved(render);
     }
     if (t.id === "buildPack") {
       t.disabled = true; t.textContent = "Building…"; $("#packOut").hidden = true;
+      const here = pageHere();
       let r;
       try { r = await api("/api/audit-pack", { json: { entity_id: state.entity, month: state.month } }); }
       catch (e) {
         // The button works again, and the reason (which document) stays under it after the message goes.
         t.disabled = false; t.textContent = "Build audit pack PDF";
-        $("#packOut").textContent = `The pack wasn't built: ${e.message}`; $("#packOut").hidden = false; throw e;
+        const out = here() && $("#packOut");
+        if (out) { out.textContent = e.unsure ? `It isn't known whether the pack was built: ${e.message} Look under Recent packs before building it again.` : `The pack wasn't built: ${e.message}`; out.hidden = false; }
+        throw e;
       }
-      window.open(r.url, "_blank"); return render();
+      window.open(r.url, "_blank"); return afterSaved(render);
     }
     if (t.id === "auditorPack") {
       if (!(await ask("The auditor package holds staff pay, bank and ID details. It stays on this PC until you send it. Build it now?", { title: "Build the auditor package?", yes: "Build package", no: "Cancel", tone: "warn", glyph: "pack" }))) return;
       t.disabled = true; t.textContent = "Building…"; $("#packOut").hidden = true;
-      try {
-        const r = await api("/api/auditor-export", { json: { entity_id: state.entity, month: state.month } });
-        // The package also built a fresh audit pack: show it in Recent packs and Before you print, then the link.
-        await render();
-        $("#packOut").innerHTML = `Auditor package built (${r.files} files${r.left_out ? `, ${r.left_out} left out because they changed or are missing` : ""}): <a href="${r.url}">${esc(r.name)}</a>. It also built a fresh audit pack, and it is in the exports folder on this PC.`;
-        $("#packOut").hidden = false; return;
-      } catch (e) { $("#packOut").textContent = `The package wasn't built: ${e.message}`; }
-      t.disabled = false; t.textContent = "Auditor package"; $("#packOut").hidden = false; return;
+      const here = pageHere();
+      let r;
+      try { r = await api("/api/auditor-export", { json: { entity_id: state.entity, month: state.month } }); }
+      catch (e) {
+        t.disabled = false; t.textContent = "Auditor package";
+        const words = e.unsure ? `It isn't known whether the package was built: ${e.message} Check before building it again.` : `The package wasn't built: ${e.message}`;
+        const out = here() && $("#packOut");
+        if (!out) return toast(words, true);
+        out.textContent = words; out.hidden = false; return;
+      }
+      // The package also built a fresh audit pack: show it in Recent packs and Before you print, then the link. With the page left, or not
+      // read back, the link comes in a message that stays.
+      const built = `Auditor package built (${r.files} files${r.left_out ? `, ${r.left_out} left out because they changed or are missing` : ""})`;
+      const drawn = here() && await afterSaved(render);
+      const out = drawn && here() ? $("#packOut") : null;
+      if (!out) return toast(`${built}: ${r.name}. It also built a fresh audit pack, and it is in the exports folder on this PC.`, false, { ms: 0, action: { label: "Download", href: r.url } });
+      out.innerHTML = `${built}: <a href="${r.url}">${esc(r.name)}</a>. It also built a fresh audit pack, and it is in the exports folder on this PC.`;
+      out.hidden = false; return;
     }
     if (t.id === "doBackup" || t.id === "doBackupEnc") {
       const enc = t.id === "doBackupEnc", out = $("#setOut");
@@ -332,7 +348,9 @@ document.addEventListener("click", async ev => {
       state.meta.backup_dir = r.backup_dir; toast(r.backup_dir ? "Backup folder saved" : "Backup folder cleared"); return;
     }
     if (t.id === "doCheck") {
+      const here = pageHere();
       const r = await api("/api/integrity");
+      if (!here() || !$("#setOut")) return;  // another page since: its result isn't written there
       $("#setOut").textContent = r.problems.length ? `${r.problems.length} of ${r.checked} documents are missing or changed: ${r.problems.map(p => p.stored_path).join(", ")}` : `All ${r.checked} documents match their upload fingerprints.`;
     }
   } catch (e) { toast(e.message, true); }
@@ -365,17 +383,18 @@ document.addEventListener("change", async ev => {
       // A tick by hand while something is still missing asks first, naming it.
       const task = state.data.tasks.find(x => x.id === +t.dataset.task);
       if (t.checked && task?.lacking.length && !(await ask(`${task.lacking.join(". ")}.`, { title: "Tick anyway?", yes: "Tick anyway", no: "Cancel", tone: "warn", glyph: "checklist", note: "It stays marked Ticked by hand until the missing item is added.", closing: "You can untick it at any time." }))) { t.checked = false; return; }
-      await api(`/api/tasks/${t.dataset.task}`, { json: { done: t.checked } }); render();
+      await api(`/api/tasks/${t.dataset.task}`, { json: { done: t.checked } }); await afterSaved(render);
     }
     // A payment picked in the SQL preview (data-sql-row) is handled by pages/sql.js.
     if (t.id === "sqlJournalPick") {  // the note is worked out again for the journal chosen
-      renderSqlPreview(await api("/api/sql/preview", { json: { token: state.sqlPreview.token, journal_id: t.value || null } }));
+      const S = sqState();
+      renderSqlPreview(await api("/api/sql/preview", { json: { token: state.sqlPreview.token, journal_id: t.value || null } }), { from: S });
     }
     if (t.dataset.sqlMap) {
       // The links picked by hand go along, so reading the columns again keeps them for the rows still there.
-      const p = state.sqlPreview; const mapping = { ...p.mapping, [t.dataset.sqlMap]: t.value === "" ? null : +t.value };
+      const S = sqState(), p = state.sqlPreview; const mapping = { ...p.mapping, [t.dataset.sqlMap]: t.value === "" ? null : +t.value };
       const picks = Object.fromEntries(p.records.filter(r => r.picked).map(r => [r.row, r.payment_id]));
-      renderSqlPreview(await api("/api/sql/preview", { json: { token: p.token, header_row: p.header_row, mapping, picks } }));
+      renderSqlPreview(await api("/api/sql/preview", { json: { token: p.token, header_row: p.header_row, mapping, picks } }), { from: S });
     }
     if (t.dataset.pasteMap) {
       // A column picked by hand: the list is read again with it (nothing saved).
@@ -409,22 +428,22 @@ document.addEventListener("submit", async ev => {
     ev.preventDefault();
     const f = $("#stmtFile").files[0];
     if (!f) return toast("Choose the statement PDF first.", true);
-    const fd = new FormData(); fd.append("file", f); fd.append("account_id", $("#stmtAcct").value);
-    try {
-      const r = await api("/api/statements", { form: fd });
-      toast(`Imported ${r.lines} lines for ${monthName(r.month)}; ${r.matched} matched, ${r.no_docs} bank charges or own transfers.`);
-      Object.assign(state.recon, { rv: null, account: +$("#stmtAcct").value, year: r.month.slice(0, 4), open: r.month });
-      render();
-    } catch (e) { toast(e.message, true); }
+    const acct = $("#stmtAcct").value, here = pageHere();
+    const fd = new FormData(); fd.append("file", f); fd.append("account_id", acct);
+    let r;
+    try { r = await api("/api/statements", { form: fd }); } catch (e) { return toast(changeError(e), true); }
+    toast(`Imported ${r.lines} lines for ${monthName(r.month)}; ${r.matched} matched, ${r.no_docs} bank charges or own transfers.`);
+    if (here()) Object.assign(state.recon, { rv: null, account: +acct, year: r.month.slice(0, 4), open: r.month });  // shown, if the page still is
+    await afterSaved(render);
   }
   if (ev.target.id === "openingForm") {
     ev.preventDefault();
     const amount = LT.typedAmount($("#openAmount").value);
     if (!$("#openMonth").value || amount === null) return toast("Choose the month and type the balance as a number.", true);
-    try {
-      await api("/api/recon/book-opening", { json: { entity_id: state.entity, account_id: state.recon.account, month: $("#openMonth").value, amount } });
-      toast("Book opening saved."); drawRecon();
-    } catch (e) { toast(e.message, true); }
+    try { await api("/api/recon/book-opening", { json: { entity_id: state.entity, account_id: state.recon.account, month: $("#openMonth").value, amount } }); }
+    catch (e) { return toast(changeError(e), true); }
+    toast("Book opening saved.");
+    await afterSaved(bankAgain());
   }
   // The SQL import page's Read pasted rows and Read file: pages/sql.js (what is wrong is said under the box).
   if (ev.target.id === "addForm") {  // New payment's Add payment (pages/payment.js)

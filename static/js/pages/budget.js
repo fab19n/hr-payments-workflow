@@ -43,17 +43,21 @@ const budgetOther = d => !!(d.stored && d.balance != null && d.saved_as_at && d.
 const BUD = { key: null, printing: null, shown: {}, sel: new Set(), paidOpen: true, tick: null, visible: new Set() };
 const BUD_STEP = 25;
 
-async function viewBudget(main) {
+async function viewBudget(main) { return pageDraw("main", page => budgetDraw(page, main)); }
+async function budgetDraw(page, main) {
   // From a row of Next up (as_at: today) the page is as at that day, which is what the row totals; the balance kept with the
-  // budget is for its own date, so it is left out until that date is asked for ("Use <date>").
-  const here = state.asAt; state.asAt = null;
+  // budget is for its own date, so it is left out until that date is asked for ("Use <date>"). The day is used up once the page
+  // has been read with it, so a draw overtaken or failed doesn't lose it.
+  const here = state.asAt;
   const key = `${state.entity}:${state.month}`;
   if (BUD.key !== key) Object.assign(BUD, { key, shown: {}, sel: new Set(), paidOpen: true, visible: new Set() });
   BUD.printing = null; BUD.tick = null;
   const load = asAt => api(`/api/budget?entity=${state.entity}&month=${state.month}${asAt ? "&as_at=" + asAt : ""}`);
-  let d = await load(here);
-  // A balance this browser kept before slice 8 goes across to the stored budget once (core/legacy.js).
-  if (await carryBrowserBalance(d)) d = await load(here);
+  let d = await page.read(load(here));
+  if (state.asAt === here) state.asAt = null;
+  // A balance this browser kept before slice 8 goes across to the stored budget once (core/legacy.js). It is a change made while
+  // the page is read: if the page can't be read after it, render() says it was saved (kept).
+  if (await page.read(carryBrowserBalance(d))) d = await page.read(load(here).catch(e => { throw Object.assign(e, { kept: true }); }));
   const held = d.stored ? d.lines.length : d.to_pay.length + d.paid.length;
   if (!d.stored && !d.set_up && !held && !d.previous) {
     main.innerHTML = `<div id="bud">${budgetHead(d, false)}${emptyState({ glyph: "calendar", title: `${monthName(d.month)} isn't set up yet`,
@@ -76,11 +80,21 @@ async function viewBudget(main) {
       if (el) { el.focus(); if (el.tagName === "INPUT") el.value = keep.v; }
     }
   };
-  const refresh = async asAt => { d = await load(asAt || d.as_at); draw(); };
-  // A change: sent, then the page drawn again from the server. ok runs once the server took it (before the redraw).
+  // Reading the budget again to draw it in this box is a part of the page (core/page.js): of two reads, the one asked for last is
+  // drawn. Resolves true when it drew.
+  const refresh = asAt => pageDraw("budget", async part => { d = await part.read(load(asAt || d.as_at)); draw(); return true; });
+  const shown = () => state.view === "budget" && BUD.key === key && box.isConnected !== false;
+  // A change: sent, then the page drawn again from the server. ok(r) runs once the server took it, before the reading back (its
+  // message, a tick); then(r) once the page has been drawn with it.
   const change = async (call, then, ok) => {
-    try { const r = await call(); if (ok) ok(r); await refresh(); if (then) then(r); return true; }
-    catch (e) { toast(e.message, true); try { await refresh(); } catch {} return false; }
+    let r;
+    try { r = await call(); }
+    catch (e) { toast(changeError(e), true); try { await refresh(); } catch {} return false; }
+    if (ok) ok(r);
+    let drew = false;
+    await afterSaved(savedPart(shown, async () => { drew = await refresh(); }));
+    if (drew && then) then(r);
+    return true;
   };
   const eid = d.entity.id, month = d.month;
   const header = body => api("/api/budget/header", { json: { entity_id: eid, month, ...body } });
@@ -102,7 +116,7 @@ async function viewBudget(main) {
     const dateBox = $("#bud-date")?.value;
     const at = !other && d.saved_as_at ? d.saved_as_at : R.inRange(dateBox) ? dateBox : null;
     BUD.tick = null; saving = true;
-    try { await change(() => header({ balance: n, ...(at ? { as_at: at } : {}) }), null, () => { BUD.tick = "bal"; }); }
+    try { await change(() => header({ balance: n, ...(at ? { as_at: at } : {}) }), null, () => { if (shown()) BUD.tick = "bal"; }); }
     finally { saving = false; }
   };
   const saveDate = async () => {
@@ -114,7 +128,7 @@ async function viewBudget(main) {
     markField("bud-date", "");
     if (!d.stored) { try { await refresh(v); } catch (e) { toast(e.message, true); } return; }  // nothing to keep: the list follows the date
     BUD.tick = null;
-    await change(async () => { await header({ as_at: v }); d.as_at = v; }, null, () => { BUD.tick = "date"; });
+    await change(async () => { await header({ as_at: v }); d.as_at = v; }, null, () => { if (shown()) BUD.tick = "date"; });
   };
 
   draw();
@@ -153,7 +167,7 @@ async function viewBudget(main) {
     if (ds.add) return change(() => api("/api/budget/lines", { json: { entity_id: eid, month, currency: ds.add } }),
       r => { BUD.shown[ds.add] = Math.max(BUD.shown[ds.add] ?? BUD_STEP, d.lines.filter(x => x.currency === ds.add).length); draw();
         document.querySelector?.(`tr[data-line="${r.result}"] [data-f="description"]`)?.focus(); toast("Line added. Describe it and set its amount."); });
-    if (ds.addPayment) return change(() => api("/api/budget/lines", { json: { entity_id: eid, month, payment_id: +ds.addPayment } }), () => toast("Added to the budget"));
+    if (ds.addPayment) return change(() => api("/api/budget/lines", { json: { entity_id: eid, month, payment_id: +ds.addPayment } }), null, () => toast("Added to the budget"));
     if (ds.del) {
       const x = d.lines.find(l => l.id === +ds.del);
       return remove([+ds.del], "Delete this line?", "The line comes out of the budget. This cannot be undone here.",
@@ -172,8 +186,9 @@ async function viewBudget(main) {
 async function setUpBudget(d) {
   try {
     const r = await api("/api/budget/setup", { json: { entity_id: d.entity.id, month: d.month } });
-    toast(`Budget set up with ${r.result} line${r.result === 1 ? "" : "s"}`); await render();
-  } catch (e) { toast(e.message, true); }
+    toast(`Budget set up with ${r.result} line${r.result === 1 ? "" : "s"}`);
+  } catch (e) { return toast(changeError(e), true); }
+  await afterSaved(render);
 }
 
 const cycleNote = d => `Covers the payments for the ${esc(monthName(d.month).split(" ")[0])} payroll month, including the bills and statutory payments paid in early ${esc(monthName(shiftMonth(d.month, 1)).split(" ")[0])}.`;

@@ -6,11 +6,12 @@ const READY_HEADS = { statement: "Bank statements", lines: "Bank statements", pa
   task: "Checklist documents missing", task_open: "Checklist items not done", not_in_sql: "Paid, not recorded in SQL",
   unprintable: "Files that won't print" };
 
-async function viewAudit(main) {
-  const r = await api(`/api/audit-readiness?entity_id=${state.entity}&month=${state.month}`);
+async function viewAudit(main) { return pageDraw("main", page => auditDraw(page, main)); }
+async function auditDraw(page, main) {
+  const r = await page.read(api(`/api/audit-readiness?entity_id=${state.entity}&month=${state.month}`));
   const setUp = r.set_up ? "" : notSetUp(r.entity, r.month, r.payments);
   if (!r.set_up && !r.payments) { main.innerHTML = entityPicker() + setUp; return; }
-  const packs = await api(`/api/audit-packs?entity=${state.entity}&month=${state.month}`);
+  const packs = await page.read(api(`/api/audit-packs?entity=${state.entity}&month=${state.month}`));
   let head = "";
   const open = r.items.map(x => `${READY_HEADS[x.kind] !== head ? `<h3>${esc(head = READY_HEADS[x.kind])}</h3>` : ""}
     <button class="fix" data-fix="${x.fix}" data-id="${x.id ?? ""}"><b>${esc(x.title)}</b><span>${esc(x.detail)}</span></button>`).join("");

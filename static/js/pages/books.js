@@ -66,46 +66,54 @@ async function viewBooks(main) {
 
 const booksQuery = () => { const B = state.books; return `entity=${state.entity}${B.from ? `&from=${B.from}` : ""}${B.to ? `&to=${B.to}` : ""}`; };
 
-async function drawBooks() {
+// The report on show in the frame viewBooks wrote: a part of its own (core/page.js), so of two tabs or dates picked quickly only the last
+// one's answer is used. saved: it reads back a change that was kept, so a failure is said that way, in the report's place.
+function drawBooks({ saved = false } = {}) { return pageDraw("books", page => booksDraw(page, saved || page.saved)); }
+async function booksDraw(page, saved) {
   const B = state.books, body = $("#booksBody");
   if (!body) return;
   body.innerHTML = `<div class="note">Loading…</div>`;
   booksExcelLink(true);
   try {
     if (B.tab === "statutory") {
-      const d = await api(`/api/statutory?${booksQuery()}`);
+      const d = await page.read(api(`/api/statutory?${booksQuery()}`));
       if (!$("#booksBody")) return;
       body.innerHTML = statutoryHtml(d);
     } else if (B.tab === "parties") {
-      const d = B.party ? await api(`/api/books/party?${booksQuery()}&code=${encodeURIComponent(B.party)}`)
-        : await api(`/api/books/parties?${booksQuery()}&side=${B.side}`);
+      const d = await page.read(B.party ? api(`/api/books/party?${booksQuery()}&code=${encodeURIComponent(B.party)}`)
+        : api(`/api/books/parties?${booksQuery()}&side=${B.side}`));
       if (!$("#booksBody")) return;
       B.from = d.from; B.to = d.to;
       body.innerHTML = B.party ? partyHtml(d) : partiesHtml(d);
     } else if (B.tab === "pl") {
-      const d = await api(`/api/books/profit-and-loss?${booksQuery()}&columns=${B.months ? "month" : "total"}`);
+      const d = await page.read(api(`/api/books/profit-and-loss?${booksQuery()}&columns=${B.months ? "month" : "total"}`));
       if (!$("#booksBody")) return;
       B.from = d.from; B.to = d.to;
       body.innerHTML = plHtml(d);
     } else if (B.tab === "bs") {
-      const d = await api(`/api/books/balance-sheet?entity=${state.entity}${B.to ? `&as_at=${B.to}` : ""}`);
+      const d = await page.read(api(`/api/books/balance-sheet?entity=${state.entity}${B.to ? `&as_at=${B.to}` : ""}`));
       if (!$("#booksBody")) return;
       B.to = d.as_at;
       body.innerHTML = bsHtml(d);
     } else if (B.tab === "tb") {
-      const d = await api(`/api/books/trial-balance?${booksQuery()}&rollup=${B.rollup ? 1 : 0}`);
+      const d = await page.read(api(`/api/books/trial-balance?${booksQuery()}&rollup=${B.rollup ? 1 : 0}`));
       if (!$("#booksBody")) return;
       B.from = d.from; B.to = d.to; B.tb = d;
       body.innerHTML = tbHtml(d); paintTbRows();
     } else {
-      const d = await api(`/api/books/ledger?${booksQuery()}${B.account ? `&account=${encodeURIComponent(B.account)}` : ""}`);
+      const d = await page.read(api(`/api/books/ledger?${booksQuery()}${B.account ? `&account=${encodeURIComponent(B.account)}` : ""}`));
       if (!$("#booksBody")) return;
       B.from = d.from; B.to = d.to; B.choices = d.choices;
       body.innerHTML = ledgerHtml(d);
     }
     $("#bkFrom").value = B.from || ""; $("#bkTo").value = B.to || "";
     booksExcelLink();
-  } catch (e) { body.innerHTML = `<div class="note warn-text">${esc(e.message)}</div>`; booksExcelLink(true); }
+  } catch (e) {
+    page.check();
+    body.innerHTML = saved ? errorState({ body: SAVED_NOT_READ, retry: "saved", nothingChanged: false }) : `<div class="note warn-text">${esc(e.message)}</div>`;
+    booksExcelLink(true);
+    return !saved;  // false: the words that it was saved are on the page (core/saved.js)
+  }
 }
 
 // The Excel button: the report shown, for the dates and options on the screen (none for one customer's or supplier's
@@ -377,22 +385,24 @@ async function statutoryUse(t) {
   try {
     const r = await api("/api/statutory/use-suggested", { json: { entity_id: state.entity } });
     toast(`${plural(r.added, "statutory account")} added.`);
-    await drawBooks();
-  } catch (e) { toast(e.message, true); t.disabled = false; }
+  } catch (e) { toast(changeError(e), true); t.disabled = false; return; }
+  await afterSaved(savedPart(() => ["books", "parties", "statutory"].includes(state.view), () => drawBooks({ saved: true })));
 }
 
 // A doc no. in the ledger opens that document's lines below its row, as on the SQL page; clicking it again closes them.
-async function booksDoc(t) {
+function booksDoc(t) {
   const row = t.closest("tr"), next = row?.nextElementSibling, no = t.dataset.bkDoc;
   if (next?.classList.contains("sql-lines-row") && next.dataset.doc === no) { next.remove(); return; }
   if (next?.classList.contains("sql-lines-row")) next.remove();
-  try {
-    const v = await api(`/api/ledger/doc?entity=${state.entity}&doc_no=${encodeURIComponent(no)}`);
-    const tr = document.createElement("tr");
-    tr.className = "sql-lines-row"; tr.dataset.doc = no;
-    tr.innerHTML = `<td colspan="${row.children.length}">${ledgerDocView(v)}</td>`;
-    row.after(tr);
-  } catch (e) { toast(e.message, true); }
+  return pageDraw(null, async page => {
+    try {
+      const v = await page.read(api(`/api/ledger/doc?entity=${state.entity}&doc_no=${encodeURIComponent(no)}`));
+      const tr = document.createElement("tr");
+      tr.className = "sql-lines-row"; tr.dataset.doc = no;
+      tr.innerHTML = `<td colspan="${row.children.length}">${ledgerDocView(v)}</td>`;
+      row.after(tr);
+    } catch (e) { page.check(); toast(e.message, true); }
+  });
 }
 
 // Which of the print settings are too long to print in full (their end is cut off), with where to shorten them.

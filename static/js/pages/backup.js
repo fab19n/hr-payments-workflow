@@ -1,7 +1,8 @@
 "use strict";
 /* ---------------- Backup ---------------- */
-async function viewSettings(main) {
-  const log = await api("/api/activity");
+async function viewSettings(main) { return pageDraw("main", page => backupDraw(page, main)); }
+async function backupDraw(page, main) {
+  const log = await page.read(api("/api/activity"));
   main.innerHTML = `
     <div class="card"><h1>Backup</h1>
       <div class="note">Everything is stored on this PC in <span class="mono">${esc(state.meta.data_dir)}</span>: the database (records.db), uploaded documents and audit packs. Nothing is sent anywhere else.</div>

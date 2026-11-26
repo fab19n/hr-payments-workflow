@@ -10,8 +10,10 @@ const sen2rm = n => money(n == null ? null : n / 100);
 const pcTone = c => c.fix || c.to_fix ? "bad" : c.check || c.to_check ? "warn" : "ok";
 const pcKey = c => c.fix ? "fix" : c.check ? "check" : "ok";
 const pcWhen = at => esc(String(at || "").replace("T", " "));
-async function viewPayroll(main, checkId) {
-  const r = await api(`/api/payroll-check?entity_id=${state.entity}&month=${state.month}${checkId ? `&check=${checkId}` : ""}`);
+async function viewPayroll(main, checkId) { return pageDraw("main", page => payrollDraw(page, main, checkId)); }
+async function payrollDraw(page, main, checkId) {
+  const still = pageHere();  // the company and month this page is of
+  const r = await page.read(api(`/api/payroll-check?entity_id=${state.entity}&month=${state.month}${checkId ? `&check=${checkId}` : ""}`));
   const ch = r.chosen, rep = ch?.report, code = esc(r.entity.code), label = esc(r.label);
   const f = rep && state.pcFilter && rep.counts[state.pcFilter] ? state.pcFilter : "all";
   const where = r.task ? `It is filed as the month's payroll summary on the checklist item <b>${esc(r.task.title)}</b>.`
@@ -73,13 +75,26 @@ async function viewPayroll(main, checkId) {
     if (!file) return toast("Choose the payroll workbook first.", true);
     const fd = new FormData(); fd.append("file", file); fd.append("entity_id", state.entity); fd.append("month", state.month);
     const go = $("#pcGo"); go.disabled = true; go.setAttribute("aria-busy", "true"); go.textContent = "Checking…";
-    try { const out = await api("/api/payroll-check", { form: fd }); state.pcFilter = null; toast(out.chosen?.report?.headline || "Checked"); await viewPayroll(main); }
+    const here = pageHere(), idle = () => { go.disabled = false; go.removeAttribute("aria-busy"); go.textContent = ch ? "Check again" : "Check the workbook"; };
+    let out;
+    try { out = await api("/api/payroll-check", { form: fd }); }
     catch (e) {
-      go.disabled = false; go.removeAttribute("aria-busy"); go.textContent = ch ? "Check again" : "Check the workbook";
-      $("#pcRefused").innerHTML = refusedNote(e.message, { title: `${file.name} wasn't checked` }) +
-        `<div class="note">${r.checks.length ? "Nothing was kept: the check below is still the latest, and its workbook stays filed." : "Nothing was kept."}</div>`;
+      idle();
+      const title = e.unsure ? `It isn't known whether ${file.name} was checked` : `${file.name} wasn't checked`;
+      if (!here() || !$("#pcRefused")) return toast(`${title}. ${changeError(e)}`, true);  // another page since: said in a message
+      $("#pcRefused").innerHTML = refusedNote(changeError(e), { title }) + (e.unsure ? "" :
+        `<div class="note">${r.checks.length ? "Nothing was kept: the check below is still the latest, and its workbook stays filed." : "Nothing was kept."}</div>`);
+      return;
     }
+    idle();
+    const picked = $("#pcFile");
+    if (picked) picked.value = "";  // checked and kept: the form doesn't hold it to be sent again while the page is read
+    state.pcFilter = null; toast(out.chosen?.report?.headline || "Checked");
+    await afterSaved(savedPart(() => state.view === "payroll", () => viewPayroll(main)));
   };
-  main.querySelectorAll("[data-pc-show]").forEach(b => b.onclick = () => viewPayroll(main, +b.dataset.pcShow).catch(e => toast(e.message, true)));
-  main.querySelectorAll("[data-pc-filter]").forEach(b => b.onclick = () => { state.pcFilter = b.dataset.pcFilter; viewPayroll(main, checkId).catch(e => toast(e.message, true)); });
+  // Only while this company's month is still the one asked for: these stay clickable, dimmed, while the next page is read, and a draw
+  // from them then would take the place of the one being read.
+  const show = (id, filter) => { if (!still()) return; if (filter) state.pcFilter = filter; viewPayroll(main, id).catch(e => toast(e.message, true)); };
+  main.querySelectorAll("[data-pc-show]").forEach(b => b.onclick = () => show(+b.dataset.pcShow));
+  main.querySelectorAll("[data-pc-filter]").forEach(b => b.onclick = () => show(checkId, b.dataset.pcFilter));
 }

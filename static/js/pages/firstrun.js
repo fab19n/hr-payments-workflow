@@ -73,9 +73,10 @@ function frHtml() {
       <ol class="fr-steps">${steps}</ol></section></div></div>`;
 }
 
-// Draws the page again, keeping the focus on the same control (or the one named by focus).
+// Draws the page again, keeping the focus on the same control (or the one named by focus). Only while First run is the page on show: an
+// answer that comes after another page was opened paints nothing over it.
 function frPaint(focus) {
-  const main = $("#main"); if (!main) return;
+  const main = $("#main"); if (!main || state.view !== "overview") return;
   const a = document.activeElement, id = focus || (a && a.id) || null;
   main.innerHTML = frHtml();
   if (id) document.getElementById(id)?.focus?.({ preventScroll: true });
@@ -99,7 +100,7 @@ async function frImport() {
   FR.why = $("#fr-why")?.value || FR.why; FR.busy = "import"; frPaint();
   try {
     try { await api("/api/setup/import", { json: { setup: FR.file, reason: FR.why.trim() || "Started this install from a setup file." } }); }
-    catch (e) { if (appStopped(e)) throw e; Object.assign(FR, { busy: "", preview: null, file: null, refused: e.message }); frPaint("fr-imp-h"); return; }
+    catch (e) { if (appStopped(e)) throw e; if (e.unsure) throw new Error(changeError(e)); Object.assign(FR, { busy: "", preview: null, file: null, refused: e.message }); frPaint("fr-imp-h"); return; }
     Object.assign(FR, { file: null, preview: null, name: "", why: "" });
     await frFinish({ imported: true });
   } finally { if (FR.busy) { FR.busy = ""; frPaint(); } }  // a network failure: the page is usable again, with what was typed
@@ -147,7 +148,7 @@ async function frAddCompany() {
       const fields = { code, name, uses_sql: FR.kind === "sql" ? 1 : 0 };
       if (FR.reg.trim()) fields.reg_no = FR.reg.trim();
       await api("/api/setup/entities", { json: { fields } });
-    } catch (e) { if (appStopped(e)) throw e; Object.assign(FR, { busy: "", addError: e.message }); frPaint("fr-code"); return; }
+    } catch (e) { if (appStopped(e)) throw e; if (e.unsure) throw new Error(changeError(e)); Object.assign(FR, { busy: "", addError: e.message }); frPaint("fr-code"); return; }
     const kept = FR.kind === "sql" ? "Kept in SQL Account" : "Kept here";
     Object.assign(FR, { tried: false, kind: "", code: "", cname: "", reg: "" });
     await frFinish({ code, kept });

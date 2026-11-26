@@ -140,41 +140,56 @@ function go(view, entity) {
   return place ? navigate(place, { fresh: true }) : Promise.resolve(false);
 }
 
+// Draws the page the state names. The page is numbered at once (pageTurn, core/page.js): every draw asked for before is overtaken and
+// writes nothing more, and an overtaken page is never drawn again by itself.
 // opts.saved: a change was kept and this draw is the reading back of it: if it fails the page says so (it was saved) and never that nothing was
-// changed, and its Try again says it again (data-retry="saved"). Returns false when it painted an error, true otherwise.
+// changed, and its Try again says it again (data-retry="saved"). A failure marked kept (a change made while the page was read) is said the same
+// way. opts.unsure: it isn't known whether a change was made, so a failure doesn't say that nothing was changed.
+// Returns false when it painted an error, true otherwise (also when a newer draw overtook it).
 async function render(opts) {
-  const main = $("#main"), saved = !!(opts && opts.saved === true);
-  if (dayKey() !== state.day) await newDay();
+  const main = $("#main"), unsure = !!opts?.unsure;
+  const seq = pageTurn(), overtaken = () => seq !== PAGE.n;
+  state.startFailed = false;  // a page is drawn over what a failed start left (main.js)
+  if (dayKey() !== state.day) { await newDay(); if (overtaken()) return true; }
   // A page the company does not use. Switching company while on it: that company's Overview instead, and the toast says why.
   // Reaching it any other way (a link): the card that says it is not used, with a way to a company that does.
   const gone = unusedPage(), switched = render.company !== undefined && render.company !== state.entity;
   render.company = state.entity;
   if (gone && switched) { const e = ent(); const was = state.view; state.view = "entity"; renderNav(); switchedNote(gone, e, PAGE_RULES[was]?.plural); }
-  else if (gone) { render.n = (render.n || 0) + 1; render.last = null; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return; }
   if (state.view !== "setup") setupLeft();  // any other page: Setup's draws still reading are overtaken, and their hold of the page's height is gone
+  if (gone && !switched) { render.last = render.asked = null; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return true; }
   // A page that takes visible time: the old page stays, slightly dimmed, and a skeleton comes after 0.3 s (never a flash);
-  // drawing the same page again keeps what is there.
-  const seq = render.n = (render.n || 0) + 1, key = `${state.view}:${state.entity}`, fresh = render.last !== key;
+  // drawing the same page again keeps what is there. render.last: the page drawn whole last; render.asked: the one asked for last (when
+  // they differ, what is on show may be another page's frame).
+  const key = `${state.view}:${state.entity}`, fresh = render.last !== key || (render.asked ?? key) !== key;
+  render.asked = key;
   if (fresh) main.classList.add("loading");
-  const slow = fresh ? setTimeout(() => { if (seq === render.n) main.innerHTML = loadingSkeleton(3); }, 300) : null;
-  let failed = false;
+  let failed = false, slow = null;
   try {
     const first = firstRunDue();  // an install with no company yet (pages/firstrun.js) takes the Overview's place, with no shell around it
     firstRunShell(first);
     const draw = first ? viewFirstRun : ROUTES[state.view]?.draw();  // the page's draw function, from the one table of pages
-    if (draw) await draw(main);
-    if (state.view === "overview" && !first) trailNotice();
-    if (seq === render.n) render.last = key;  // a draw that was overtaken doesn't say what the page on show is
+    if (fresh) {
+      // The skeleton comes only while this draw has written nothing into the page: one that has written its own frame (Bank, Books,
+      // Setup) keeps it and fills it. Whether it has is told by the first node, which every write replaces, even with the same words.
+      const shown = () => main.firstChild || main.innerHTML, before = shown();
+      slow = setTimeout(() => { if (!overtaken() && shown() === before) main.innerHTML = loadingSkeleton(3); }, 300);
+    }
+    if (draw) await drawnAs(opts?.saved === true, () => draw(main));
+    if (!overtaken()) {  // a draw that was overtaken doesn't say what the page on show is
+      render.last = key;
+      if (state.view === "overview" && !first) trailNotice();
+    }
   } catch (e) {
     // nor does it paint over the page now shown; after a change was kept the page says so (whatever failed, the app having stopped too), never that
     // nothing was changed or sent
-    if (seq === render.n) {
+    if (!overtaken()) {
       failed = true; render.last = null;
-      main.innerHTML = saved ? errorState({ body: SAVED_NOT_READ, retry: "saved", nothingChanged: false })
-        : appStopped(e) ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true });
+      main.innerHTML = opts?.saved === true || e.kept ? errorState({ body: SAVED_NOT_READ, retry: "saved", nothingChanged: false })
+        : appStopped(e) && !unsure ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true, nothingChanged: !unsure });
     }
   }
-  finally { clearTimeout(slow); if (seq === render.n) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } } dlgRestore(); }  // the menu's numbers follow the Next up rows this page may have just read
+  finally { clearTimeout(slow); if (!overtaken()) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } dlgRestore(); } }  // the menu's numbers follow the Next up rows this page may have just read
   return !failed;
 }
 

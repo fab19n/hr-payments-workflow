@@ -269,14 +269,16 @@ function ovPaint(id) {
   catch (e) { html = ovFailed(id, e.message); }  // an answer the card can't read fails that card alone
   slot.innerHTML = html;
 }
-// Reads one card (its own route) and draws it; seq: the Overview drawn, so a late answer for a page since left is dropped.
-async function ovLoad(id, seq) {
-  OV.data[id] = { busy: true }; ovPaint(id);
-  let x;
-  try { x = { d: await api(`/api/overview/${id}?${ovQuery()}`) }; } catch (e) { x = { err: e.message || "Could not load" }; }
-  if (seq !== OV.seq || state.view !== "overview") return false;
-  OV.data[id] = x; ovPaint(id);
-  return true;
+// Reads one card (its own route) and draws it; seq: the Overview drawn, so a late answer for a page since left is dropped. The cards are
+// read side by side, so each is a draw of the page and no part (core/page.js).
+function ovLoad(id, seq) {
+  return pageDraw(null, async page => {
+    OV.data[id] = { busy: true }; ovPaint(id);
+    const x = await page.read(api(`/api/overview/${id}?${ovQuery()}`).then(d => ({ d }), e => ({ err: e.message || "Could not load" })));
+    if (seq !== OV.seq || state.view !== "overview") return false;
+    OV.data[id] = x; ovPaint(id);
+    return true;
+  });
 }
 // The page the answer was asked for is still on show: the same Overview drawn, the same month and company choice.
 const ovSame = (seq, month, scope) => seq === OV.seq && state.view === "overview" && state.month === month && ovScope() === scope;
@@ -298,15 +300,16 @@ function ovActHtml(r) {
   if (!r.items.length) return `<div class="ov-act-empty">${icon("trail")}<span>No activity for ${ovScope() ? esc(ent()?.code || "this company") : "these companies"} yet</span></div>`;
   return `<ul class="ov-acts">${r.items.map(a => `<li><span>${esc(a.text)}</span><span class="sub">${esc([a.who, a.company, ovWhen(a.at)].filter(Boolean).join(" · "))}</span></li>`).join("")}</ul>`;
 }
-async function ovActivity(seq, focus) {
-  OV.act = null; const box = $("#ovAct"); if (box) box.innerHTML = ovActHtml(null);
-  const month = state.month, scope = ovScope();
-  let r;
-  try { r = await api(`/api/overview/activity?${ovQuery()}`); } catch (e) { r = { error: e.message }; }
-  if (!r.error && !Array.isArray(r.items)) r = { error: "The answer had no entries in it" };
-  if (!ovSame(seq, month, scope)) return;  // a late answer for a page since left: dropped, and no focus moved
-  OV.act = r; const b = $("#ovAct"); if (b) b.innerHTML = ovActHtml(r);
-  if (focus) $("#ov-act-h")?.focus?.({ preventScroll: true });
+function ovActivity(seq, focus) {
+  return pageDraw("activity", async page => {
+    OV.act = null; const box = $("#ovAct"); if (box) box.innerHTML = ovActHtml(null);
+    const month = state.month, scope = ovScope();
+    let r = await page.read(api(`/api/overview/activity?${ovQuery()}`).catch(e => ({ error: e.message })));
+    if (!r.error && !Array.isArray(r.items)) r = { error: "The answer had no entries in it" };
+    if (!ovSame(seq, month, scope)) return;  // a late answer for a page since left: dropped, and no focus moved
+    OV.act = r; const b = $("#ovAct"); if (b) b.innerHTML = ovActHtml(r);
+    if (focus) $("#ov-act-h")?.focus?.({ preventScroll: true });
+  });
 }
 
 // ---------- the rollover banner ----------
@@ -340,7 +343,8 @@ function ovWho() {
 }
 
 // ---------- the page ----------
-async function viewOverview(main) {
+async function viewOverview(main) { return pageDraw("main", page => overviewDraw(page, main)); }
+async function overviewDraw(page, main) {
   const seq = ++OV.seq, scope = ovScope();
   OV.data = {}; OV.act = null; OV.scope = scope;
   const live = (state.meta.entities || []).filter(isActive);
@@ -350,7 +354,7 @@ async function viewOverview(main) {
     OV.done = Promise.resolve();
     return;
   }
-  const [next, ro] = await Promise.all([loadNext(scope), api(`/api/overview/rollover?${ovQuery()}`).catch(e => ({ error: e.message }))]);
+  const [next, ro] = await page.read(Promise.all([loadNext(scope), api(`/api/overview/rollover?${ovQuery()}`).catch(e => ({ error: e.message }))]));
   if (seq !== OV.seq) return;
   // Nothing answered at all (the records can't be reached): the page's own Couldn't load card, not a page of failed cards.
   if (next.error && ro.error) throw new Error(next.error);

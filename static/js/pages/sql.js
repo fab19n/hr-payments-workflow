@@ -500,16 +500,17 @@ function sqImportsHtml(d) {
       : sqNone("inbox", "mute", "None yet.")}</section>`;
 }
 
-async function viewSql(main) {
+async function viewSql(main) { return pageDraw("main", page => sqlDraw(page, main)); }
+async function sqlDraw(page, main) {
   const e = ent();
   if (!e.uses_sql) { main.innerHTML = unusedCard("sql", e); return; }  // render() shows this card before; kept for a direct call
-  const d = await api(`/api/sql/entries?entity=${state.entity}`);
+  const d = await page.read(api(`/api/sql/entries?entity=${state.entity}`));
   state.sqData = d;
   const S = sqState();
   // A question asked before (Create payments for all, Ignore all) never comes back armed; an import's result stays only while
-  // the page is drawn again after it, not when it is opened again from another page.
+  // the page is drawn again after it (also by a Try again after that failed), not when it is opened again from another page.
   S.confirmAll = false; S.confirmIgnore = false;
-  if (render.last !== `sql:${state.entity}`) { S.done = null; S.arrive = false; }
+  if (!page.saved && render.last !== `sql:${state.entity}`) { S.done = null; S.arrive = false; }
   // Find an SQL entry: the shared list bar (its search and count), worded as the board has it.
   const bar = listBar("sql", "SQL entries").replace('placeholder="Search SQL entries"', 'placeholder="Find an SQL entry: doc no., description, amount or payment"')
     .replace('data-count="sql"', 'id="sq-count" data-count="sql"');
@@ -567,8 +568,17 @@ function sqJump(id) {
   el.focus?.({ preventScroll: true });
 }
 
-// The preview of what was read (a fetch, a paste, a file, journal lines); arrive: it is new, so it is brought into view.
-function renderSqlPreview(p, { arrive = false } = {}) {
+// Whether what was asked from the SQL page of S (a company's: sqState) can still be painted: that page is the one on show.
+const sqOn = S => state.view === "sql" && state.sq === S && S.entity === state.entity;
+// The preview of what was read (a fetch, a paste, a file, journal lines); arrive: it is new, so it is brought into view. from: the
+// state of the page that asked (sqState() before the read). Read after another page was opened, the preview is kept for that company's
+// SQL page and nothing is painted; after another company's SQL page was opened, it is dropped, and that company's is left alone.
+function renderSqlPreview(p, { arrive = false, from = null } = {}) {
+  if (from) {
+    from.reading = null;
+    if (state.sq !== from) return;
+    if (!sqOn(from)) { state.sqlPreview = p; from.done = null; return; }
+  }
   state.sqlPreview = p;
   const S = sqState();
   S.reading = null; S.done = null; S.cols = S.cols && !arrive;
@@ -599,9 +609,10 @@ async function sqlFetch() {
   Object.assign(S, { reading: "fetch", fetchErr: "", done: null, folderEdit: false, folderMsg: "", folderErr: "" });
   if (card) { sqPaint("fetch"); $("#sqlFetch")?.focus?.(); }
   sqPaint("result"); sqFetchBtnPaint();
-  try { renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, fetch: true } }), { arrive: true }); }
+  try { renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: state.entity, fetch: true } }), { arrive: true, from: S }); }
   catch (e) {
     S.reading = null; S.done = was;
+    if (!sqOn(S)) { if (state.sq === S && !appStopped(e)) S.fetchErr = e.message; return; }  // said on that page when it is opened again
     if (appStopped(e)) { sqPaint("fetch"); sqPaint("result"); throw e; }
     S.fetchErr = e.message; sqPaint("fetch"); sqPaint("result"); $("#sqlFetch")?.focus?.();
   }
@@ -625,9 +636,10 @@ async function sqlRead(kind) {
   const was = S.done;  // the preview shown stays until the new one arrives (see sqlFetch)
   Object.assign(S, { reading: kind, done: null, pasteErr: "", fileErr: "" });
   sqReadBtnsPaint(); sqPaint("result"); sqFetchBtnPaint();
-  try { renderSqlPreview(await api("/api/sql/preview", body), { arrive: true }); }
+  try { renderSqlPreview(await api("/api/sql/preview", body), { arrive: true, from: S }); }
   catch (e) {
     S.reading = null; S.done = was;
+    if (!sqOn(S)) { if (state.sq === S && !appStopped(e)) { if (kind === "paste") S.pasteErr = e.message; else S.fileErr = e.message; } return; }
     if (appStopped(e)) { sqPaint("result"); sqReadBtnsPaint(); throw e; }
     if (kind === "paste") S.pasteErr = e.message; else S.fileErr = e.message;
     sqPaint("bring"); sqPaint("result"); sqFetchBtnPaint();
@@ -658,14 +670,18 @@ async function sqlApply(t) {
   const p = state.sqlPreview;
   if (!p || t.getAttribute?.("aria-busy") === "true") return;
   t.disabled = true; t.setAttribute?.("aria-busy", "true");
-  const links = {}; for (const r of p.records) if (r.payment_id && (!r.exists || r.kind === "invoice")) links[r.row] = r.payment_id;
+  const S = sqState(), links = {}; for (const r of p.records) if (r.payment_id && (!r.exists || r.kind === "invoice")) links[r.row] = r.payment_id;
   let res;
   try { res = await api("/api/sql/apply", { json: { token: p.token, header_row: p.header_row, mapping: p.mapping, links, journal_id: p.journal_lines?.chosen } }); }
-  catch (e) { t.disabled = false; t.removeAttribute?.("aria-busy"); throw e; }
-  state.sqlPreview = null; delete state.sqlPaste[state.entity];
-  const S = sqState();
-  Object.assign(S, { done: sqDone(p, res), arrive: true, file: null, sel: {} });
-  return render();
+  catch (e) { t.disabled = false; t.removeAttribute?.("aria-busy"); throw changeThrown(e); }
+  // What follows is about the company imported into, whatever page is on show by now.
+  if (state.sqlPreview === p) state.sqlPreview = null;
+  delete state.sqlPaste[S.entity];
+  const done = sqDone(p, res);
+  Object.assign(S, { done, arrive: true, file: null, sel: {} });
+  const here = sqOn(S), say = () => toast(`${done.title}. ${done.text || ""}`.trim());
+  if (!here) say();  // its result card isn't on show: said here
+  if (!(await afterSaved(render)) && here) say();  // nor is it when the page couldn't be read back
 }
 function sqlCancel() {
   state.sqlPreview = null; delete state.sqlPaste[state.entity];
@@ -719,21 +735,24 @@ async function sqAsk(what) {
   S.asking = true;
   const b = $(`#sq-${what}`);
   if (b) { b.disabled = true; b.setAttribute?.("aria-busy", "true"); }
+  let kept = false, unsure = false;
   try {
     if (what === "all-yes") {
       const r = await api("/api/sql/entries/create-all", { json: { entity_id: state.entity } });
+      kept = true;
       toast(`Created ${r.created} payments from SQL${r.linked ? `; ${r.linked} linked to existing payments with the same SQL number` : ""}${r.left ? `; ${r.left} left for you to check (number already linked, changed in SQL?)` : ""}${r.corrections.length ? `; ${r.corrections.length} left out as probably corrections (no money moved)` : ""}; ${r.bank_lines_matched} bank lines matched${heldNote(r.held)}`);
     } else {
       const r = await api("/api/sql/entries/ignore", { json: { ids: state.sqlCorrections } });
+      kept = true;
       toast(r.ignored === 1 ? "1 entry ignored; it is listed under Ignored" : `${r.ignored} entries ignored; they are listed under Ignored`);
     }
-  } catch (e) { if (appStopped(e)) throw e; toast(e.message, true); }
+  } catch (e) { unsure = !!e.unsure; if (appStopped(e)) throw e; toast(changeError(e), true); }
   finally {
     // Done or refused, the question goes: the lists are read again, so it is never left armed with an old list.
     S.asking = false; S.confirmAll = false; S.confirmIgnore = false;
     sqPaint("entries");
   }
-  return render();
+  return kept ? afterSaved(render) : render({ unsure });
 }
 // The entry an action is on, from what the page last read.
 const sqEntry = id => { const d = state.sqData; return d ? [...d.unlinked, ...(d.documents || []), ...(d.before_tracking || []), ...d.linked, ...d.ignored].find(x => x.id === id) || null : null; };
@@ -744,7 +763,7 @@ const sqUndo = no => async () => {
   toast(r.removed ? `Undone. ${no.doc} is not linked, and the payment made from it was removed.`
     : no.made ? `Undone. ${no.doc} is not linked; the payment made from it stays, because something is on it now (a matched bank line or a document).`
     : `Undone. ${no.doc} is not linked.`);
-  return render();
+  return afterSaved(render);
 };
 async function sqlEntryLink(id) {
   const v = $(`select[data-sql-link="${id}"]`)?.value;
@@ -754,21 +773,21 @@ async function sqlEntryLink(id) {
   delete sqState().sel[id];
   toast(`Linked ${no}${pay ? ` to ${pay.description}` : ""}. The voucher number is now on the payment${matchedNote(r)}.`, false,
     { undo: sqUndo({ id, doc: no, made: false }) });
-  return render();
+  return afterSaved(render);
 }
 async function sqlEntryCreate(id) {
   const x = sqEntry(id), no = x?.doc_no || "the entry";
   const r = await api(`/api/sql/entries/${id}`, { json: { create_payment: {} } });
   toast(`Created a payment from ${no} and linked it${matchedNote(r)}.`, false,
     { undo: sqUndo({ id, doc: no, made: true }) });
-  return render();
+  return afterSaved(render);
 }
 async function sqlEntryIgnore(id) {
   const x = sqEntry(id), no = x?.doc_no || "The entry";
   await api(`/api/sql/entries/${id}`, { json: { status: "ignored" } });
   toast(`Ignored ${no}. It is kept under Ignored, below.`, false,
-    { undo: async () => { await api(`/api/sql/entries/${id}/unignore`, { json: {} }); toast(`Undone. ${no} is back under SQL entries not linked.`); return render(); } });
-  return render();
+    { undo: async () => { await api(`/api/sql/entries/${id}/unignore`, { json: {} }); toast(`Undone. ${no} is back under SQL entries not linked.`); return afterSaved(render); } });
+  return afterSaved(render);
 }
 // A lines pill or Lines button: opens the document's account lines in a row under it (or closes them).
 async function sqlLinesToggle(t, no) {
@@ -779,12 +798,14 @@ async function sqlLinesToggle(t, no) {
     for (const b of row.querySelectorAll("[data-sql-lines]")) { b.setAttribute("aria-expanded", "false"); b.querySelector(".chev")?.classList.remove("on"); }
   }
   if (open) return;
-  const v = await api(`/api/ledger/doc?entity=${state.entity}&doc_no=${encodeURIComponent(no)}`);
-  const tr = document.createElement("tr");
-  tr.className = "sql-lines-row"; tr.dataset.doc = no; tr.id = `sq-l-${String(no).replace(/[^\w-]/g, "_")}`;
-  tr.innerHTML = `<td colspan="${row.children.length}">${ledgerDocView(v)}</td>`;
-  row.after(tr);
-  t.setAttribute("aria-expanded", "true"); t.setAttribute("aria-controls", tr.id); t.querySelector(".chev")?.classList.add("on");
+  return pageDraw(null, async page => {
+    const v = await page.read(api(`/api/ledger/doc?entity=${state.entity}&doc_no=${encodeURIComponent(no)}`));
+    const tr = document.createElement("tr");
+    tr.className = "sql-lines-row"; tr.dataset.doc = no; tr.id = `sq-l-${String(no).replace(/[^\w-]/g, "_")}`;
+    tr.innerHTML = `<td colspan="${row.children.length}">${ledgerDocView(v)}</td>`;
+    row.after(tr);
+    t.setAttribute("aria-expanded", "true"); t.setAttribute("aria-controls", tr.id); t.querySelector(".chev")?.classList.add("on");
+  });
 }
 // A file chosen in the box or dropped on it: one that can't be an SQL export is refused here, with what to do.
 function sqTakeFile(f, many) {

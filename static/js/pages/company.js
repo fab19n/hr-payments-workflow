@@ -163,8 +163,9 @@ function regBulkHtml(d) {
     ${R.err ? `<p id="regBulkErr" class="bulk-err">${icon("alert")}${esc(R.err)}</p>` : ""}</div>`;
 }
 
-async function viewEntity(main) {
-  const [d, next] = await Promise.all([api(`/api/month?entity=${state.entity}&month=${state.month}`), loadNext(state.entity)]);
+async function viewEntity(main) { return pageDraw("main", page => entityDraw(page, main)); }
+async function entityDraw(page, main) {
+  const [d, next] = await page.read(Promise.all([api(`/api/month?entity=${state.entity}&month=${state.month}`), loadNext(state.entity)]));
   state.data = d;
   // A tab this company doesn't have (Not in SQL on a company kept here) is dropped, so the address written after the draw is clean.
   if (state.addr?.params?.tab && regTab(d) !== state.addr.params.tab) { const { tab: _, ...rest } = state.addr.params; state.addr.params = rest; }
@@ -268,12 +269,12 @@ async function regBulk(what) {
     if (!day) { R.err = "Choose the paid date first."; regPaint(); return $("#regBulkDate")?.focus?.(); }
     const todo = pays.filter(p => !p.paid_date), skipped = pays.length - todo.length, refused = [];
     for (const p of todo) {
-      try { await api(`/api/payments/${p.id}`, { method: "PATCH", json: { paid_date: day } }); } catch (e) { refused.push({ p, why: e.message }); }
+      try { await api(`/api/payments/${p.id}`, { method: "PATCH", json: { paid_date: day } }); } catch (e) { refused.push({ p, why: e.message, unsure: !!e.unsure }); }
     }
     R.picked = refused.map(x => x.p.id); R.err = "";
     const kept = skipped ? `; ${plural(skipped)} already paid kept ${skipped === 1 ? "its" : "their"} own date` : "";
-    await render();
-    if (refused.length) toast(`Paid date ${shortDate(day)} set on ${todo.length - refused.length} of ${todo.length}${kept}; not set on: ${refused.map(x => `${x.p.description} (${x.why})`).join("; ")}`, true);
+    await bulkReadBack(todo.length - refused.length, refused);
+    if (refused.length) toast(`Paid date ${shortDate(day)} set on ${todo.length - refused.length} of ${todo.length}${kept}${bulkFailed(refused, "not set on", "it isn't known whether it was set on")}`, true);
     else toast(todo.length ? `Paid date ${shortDate(day)} set on ${plural(todo.length)}${kept}` : `Nothing changed: the ${plural(skipped)} picked ${skipped === 1 ? "is" : "are"} paid already and keep${skipped === 1 ? "s its" : " their"} own date`);
     return;
   }
@@ -286,14 +287,23 @@ async function regBulk(what) {
     for (const p of pays) {
       const fd = new FormData();
       fd.append("file", file); fd.append("payment_id", p.id); fd.append("doc_type", p.required.includes("bank") && docActive("bank") ? "bank" : fallback);
-      try { await api("/api/upload", { form: fd }); } catch (e) { refused.push({ p, why: e.message }); }
+      try { await api("/api/upload", { form: fd }); } catch (e) { refused.push({ p, why: e.message, unsure: !!e.unsure }); }
     }
     R.picked = refused.map(x => x.p.id);
     const n = pays.length - refused.length;
-    await render();
-    if (refused.length) toast(`${file.name} added to ${n} of ${pays.length}; not added to: ${refused.map(x => `${x.p.description} (${x.why})`).join("; ")}`, true);
+    await bulkReadBack(n, refused);
+    if (refused.length) toast(`${file.name} added to ${n} of ${pays.length}${bulkFailed(refused, "not added to", "it isn't known whether it was added to")}`, true);
     else toast(`Added ${file.name} to ${plural(n)}`);
   }
+}
+
+// After a bulk action, the page is read again. done: how many were changed (then a failed reading says it was saved); with none, it doesn't
+// say that nothing was changed unless the server refused every one.
+const bulkReadBack = (done, failed) => done ? afterSaved(render) : render({ unsure: failed.some(x => x.unsure) });
+// The ones that weren't changed, each with why: refused by the server (sure), or not known (unsure), said apart.
+function bulkFailed(failed, sure, unsure) {
+  return [[failed.filter(x => !x.unsure), sure], [failed.filter(x => x.unsure), unsure]].filter(([list]) => list.length)
+    .map(([list, words]) => `; ${words}: ${list.map(x => `${x.p.description} (${x.why})`).join("; ")}`).join("");
 }
 
 /* ---------------- Drawers and the payment dialog ---------------- */
@@ -353,6 +363,7 @@ async function mayLeave() {
 // nothing to ask it closes at once, before the first await.
 async function closeDrawer(force) {
   if (!force && drawerDirty() && !(await mayLeave())) return false;
+  DLG.seq++;  // a dialog still being read is not opened after this (core/dialog.js dialogDraw)
   hideDrawer(); state.openPayment = null; state.pay = null; state.np = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
   Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null, paste: null });
   if (state.addr.id || state.setup.id != null) { state.addr.id = null; state.setup.id = null; syncAddr(); }  // a closed drawer is not in the address
@@ -382,13 +393,16 @@ function pickFile(many = true) {
 async function uploadFiles(files, fields) {
   if (!files.length) return;
   const refused = [];
+  let unsure = false;
   for (const f of files) {
     const fd = new FormData(); fd.append("file", f);
     for (const [k, v] of Object.entries(fields)) if (v != null) fd.append(k, v);
-    try { await api("/api/upload", { form: fd }); } catch (e) { refused.push(`${f.name} wasn't added: ${e.message}`); }
+    try { await api("/api/upload", { form: fd }); }
+    catch (e) { unsure ||= !!e.unsure; refused.push(e.unsure ? `${f.name}: ${changeError(e)}` : `${f.name} wasn't added: ${e.message}`); }
   }
   const n = files.length - refused.length;
-  if (n) await render();
+  if (n) await afterSaved(render);
+  else if (unsure) await render({ unsure });
   if (refused.length) throw new Error((n ? `Added ${n} of ${files.length} files. ` : "") + refused.join(" "));
   toast(fields.replaces ? `Replaced with ${files[0].name}` : n > 1 ? `Added ${n} files` : `Added ${files[0].name}`);
 }

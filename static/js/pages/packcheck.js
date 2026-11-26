@@ -12,11 +12,14 @@ async function openPackCheck(event, file) {
   $("#drawer").innerHTML = `<div class="ex-head"><div class="row spread"><div><div class="eyebrow">Check this pack</div><h2>${esc(file || "Audit pack")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div></div>
     <div id="pcBody"><div class="note">Loading…</div></div>`;
   showDrawer();
+  return dialogDraw(dlg => packCheckFill(dlg, event, file));
+}
+async function packCheckFill(dlg, event, file) {
   let r;
   try {
-    r = await api(event ? `/api/audit-pack/check?event=${encodeURIComponent(event)}`
-      : `/api/audit-pack/check?entity=${state.entity}&month=${state.month}&file=${encodeURIComponent(file)}`);
-  } catch (e) { if ($("#pcBody")) $("#pcBody").innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; return; }
+    r = await dlg.read(api(event ? `/api/audit-pack/check?event=${encodeURIComponent(event)}`
+      : `/api/audit-pack/check?entity=${state.entity}&month=${state.month}&file=${encodeURIComponent(file)}`));
+  } catch (e) { dlg.check(); if ($("#pcBody")) $("#pcBody").innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; return; }
   if (!$("#pcBody")) return;
   const p = r.pack, pr = p.printed || {}, [tone, word] = PACK_FILE[r.file.state];
   const cover = pr.trail_entry ? `On its cover: ${pr.generated ? `generated ${esc(pr.generated)}, ` : ""}audit trail entry ${esc(pr.trail_entry)} · check code ${esc(pr.check_code)}${pr.worked_out ? " (worked out from the trail)" : ""}.` : "";
@@ -44,7 +47,7 @@ async function markFiled(afterBuild) {
   const r = await api(`/api/audit-readiness?entity_id=${state.entity}&month=${state.month}`);
   if (r.still_open.length && !(await ask(`${r.entity.code} still has things open:${afterBuild ? "" : "\nIf this month was already filed outside the app, that is fine."}`, { title: `Mark ${r.label} as filed?`, yes: "File anyway", no: "Go back", tone: "brand", glyph: "pack", list: r.still_open.map(text => ({ glyph: "alert", tone: "warn", text })), closing: "A filed month can be reopened later." }))) return;
   await api("/api/months/close", { json: { entity_id: state.entity, month: state.month, closed: true } });
-  toast(`${r.label} marked as filed`); await render();
+  toast(`${r.label} marked as filed`); await afterSaved(render);
   // The password is typed each time, so a backup is offered, not made.
   if (await ask("A backup keeps the filed month safe if this PC fails. You'll be asked for the backup password next.", { title: `${r.label} is filed. Make an encrypted backup now?`, yes: "Make a backup", no: "Not now", safe: "yes", tone: "brand", glyph: "vault", closing: "Not now changes nothing; back up any time from Backup." })) { await go("settings"); $("#bkPw")?.focus(); }
 }

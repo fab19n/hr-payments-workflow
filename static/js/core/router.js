@@ -210,6 +210,7 @@ async function applyPlace(place, opts = {}) {
     state.asAt = v === "budget" ? p.as_at || null : null;
     state.bankOnly = v === "bank" && p.filter === "to_explain";
     if (opts.link) state.focusBank = v === "bank" ? { account: +p.account || null } : null;
+    else if (opts.fresh) state.focusBank = null;  // one a page left unused (its read failed) isn't kept for a later visit
     if (v === "books" && p.tab) {  // the Statutory tab on its month to today, Next up's rows, or the tab an address names
       if (B.entity !== state.entity) Object.assign(B, { entity: state.entity, from: null, to: null, account: null, q: "", party: null });
       B.tab = p.tab === "gl" ? "ledger" : p.tab === "customers" || p.tab === "suppliers" ? "parties" : p.tab;
@@ -226,9 +227,11 @@ async function applyPlace(place, opts = {}) {
     if (opts.write) writeAddr(currentAddr(), opts.replace);
     if (opts.link) window.scrollTo?.(0, 0);
     renderNav();
-    await render();
-    // the record the address names opens in its drawer; a section drawn in place of the one named (a link's old address) has no such record
-    if (v === "setup" && place.id && state.view === "setup" && state.setup.kind && state.setup.kind === place.sub) {
+    const drawing = render(), drawn = PAGE.n;  // render() numbers its page at once
+    await drawing;
+    // the record the address names opens in its drawer, unless another page has been asked for meanwhile; a section drawn in place of the
+    // one named (a link's old address) has no such record
+    if (drawn === PAGE.n && v === "setup" && place.id && state.view === "setup" && state.setup.kind && state.setup.kind === place.sub) {
       try { await openSetup(state.setup.kind, +place.id, { force: true }); } catch (err) { toast(err.message, true); }
     }
     settleAddr();

@@ -121,7 +121,7 @@ async function pasteSave(preview, over = {}) {
     const current = () => state.setup.paste === P && P.seq === seq && pasteSameForm(form, pasteForm());
     let r;
     try { r = await api(`/api/setup/${P.kind}/paste`, { json: body }); }
-    catch (e) { if (current()) paintPaste(); throw e; }
+    catch (e) { if (!current()) return; paintPaste(); throw e; }  // nor does a stale read's failure say anything
     if (!current()) return;  // changed (or read again) while it was read: that preview is stale
     P.preview = r; P.previewFor = form; return paintPaste();
   }
@@ -247,7 +247,7 @@ async function moveImport(reason) {
   const M = state.setup.move;
   if (!M?.file) return;
   try { await api("/api/setup/import", { json: { setup: M.file, reason } }); }
-  catch (e) { if (appStopped(e)) throw e; Object.assign(M, { file: null, preview: null, refused: e.message }); moveRepaint("mv-refused"); return; }
+  catch (e) { if (appStopped(e) || e.unsure) throw e; Object.assign(M, { file: null, preview: null, refused: e.message }); moveRepaint("mv-refused"); return; }  // "Nothing was added" only for a refusal
   Object.assign(M, { file: null, preview: null, name: "", refused: "" });
   toast("Setup imported");
   await afterSaved(async o => {

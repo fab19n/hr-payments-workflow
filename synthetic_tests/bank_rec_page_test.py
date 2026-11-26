@@ -150,6 +150,7 @@ const run = code => vm.runInContext(code, ctx);
 const out = {};
 (async () => {
   run(fs.readFileSync(appPath, "utf8"));
+  await new Promise(r => setTimeout(r, 60));  // the app's own start (main.js) draws its first page: it is over before the checks draw theirs
   run(`state.meta = ${JSON.stringify(fx.meta)}; state.entity = ${fx.entity}; state.view = "bank"; state.month = "2026-11"; state.day = dayKey();`);
   // every toast the page raises, and whether it offered Undo
   run(`var SEEN = []; toast = (m, bad, o) => { SEEN.push({ m, bad: !!bad, undo: !!(o && o.undo) }); return null; }`);

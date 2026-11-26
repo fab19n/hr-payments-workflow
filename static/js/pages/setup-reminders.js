@@ -124,8 +124,8 @@ async function remSave(preview) {
   } else body.id = O.id;
   const reason = $("#rm-reason").value.trim();
   if (reason) body.reason = reason;
-  const r = await api("/api/setup/reminders", { json: body });
-  if (preview) return showPreview("#rm-preview", r, "reminder");
+  const dialog = DLG.seq, r = await api("/api/setup/reminders", { json: body });
+  if (preview) return DLG.seq === dialog ? showPreview("#rm-preview", r, "reminder") : undefined;  // not into a dialog opened since
   // Drawn again on the month the change starts from, so it shows the term just saved.
   const keep = { "rm-from": body.from_month };
   if (!isNew) return remDone(r, O.id, "Saved", keep, true);

@@ -296,7 +296,7 @@ function pdForm(p, ro) {
   // The tick only where the payment can be changed; what the estimate is short by is said in the Bank statement box.
   const estTick = !ro && (p.amount_is_estimate || estimateShort(p)) ? `<label class="pd-tick"><input type="checkbox" id="pf-confirm"> The amount above is the real figure, not an estimate</label>` : "";
   return `<form class="pd-form" id="payForm" novalidate aria-labelledby="pd-det-h"><div class="pd-sec-h">${icon("edit")}<h3 id="pd-det-h">Details</h3></div>
-    <div id="pd-refused-box" tabindex="-1">${S.refused ? refusedNote(S.refused.text) : ""}</div>
+    <div id="pd-refused-box" tabindex="-1">${S.refused ? refusedNote(S.refused.text, { title: S.refused.title }) : ""}</div>
     <div class="pd-fields">
       <label class="field"><span>Amount (${esc(cur === "MYR" ? "RM" : cur)})</span><input id="pf-amount" type="number" step="0.01" inputmode="decimal" class="num" value="${p.amount ?? ""}"${off}></label>
       <label class="field"><span>${into ? "Received on" : "Paid on"}</span><input id="pf-paid" type="date" value="${p.paid_date || ""}"${off}></label>
@@ -383,9 +383,9 @@ async function paySave() {
   S.saving = true; S.refused = null; pdBusy(true);
   try { await api(`/api/payments/${id}`, { method: "PATCH", json: changed }); }
   catch (e) {
-    S.saving = false; S.refused = { text: e.message }; pdBusy(false);
+    S.saving = false; S.refused = { text: changeError(e), title: e.unsure ? "It may not have been saved" : "Nothing was saved" }; pdBusy(false);
     const box = pdQ("#pd-refused-box");
-    if (box) { box.innerHTML = refusedNote(e.message); box.focus?.(); }
+    if (box) { box.innerHTML = refusedNote(S.refused.text, { title: S.refused.title }); box.focus?.(); }
     return;
   }
   S.saving = false; S.histStale = true; state.payLoaded = now;
@@ -398,10 +398,13 @@ async function paySave() {
     await api(`/api/payments/${id}`, { method: "PATCH", json: back });
     toast("Undone. The details are back as they were; the undo is a new entry in the audit trail.");
     if (state.openPayment === id) state.payLoaded = { ...state.payLoaded, ...back };
-    await render();
+    await afterSaved(render);
   } } : undefined);
-  await render();
-  pdFocus("#pd-save", "#drawerTitle");
+  const form = pdQ("#payForm");
+  const ok = await afterSaved(render);
+  // A dialog still open that wasn't drawn again (another page overtook the reading back) is not left saying Saving…
+  if (state.openPayment === id && pdQ("#payForm") === form) pdBusy(false);
+  if (ok) pdFocus("#pd-save", "#drawerTitle");
 }
 function pdBusy(on) {
   const f = pdQ("#payForm"), b = pdQ("#pd-save");
@@ -432,13 +435,16 @@ function pdUpload(items) {
 }
 async function pdSend(list) {
   const S = state.pay, pid = state.openPayment;
-  let added = 0;
+  let added = 0, unsure = false;
   for (const u of list) {
     try { await pdPost(u, pid); u.st = "ok"; u.pct = 100; added++; }
-    catch (e) { u.st = "fail"; u.net = !!e.net; u.why = e.net ? "The upload stopped before it finished. Check the records folder can be reached, then try again." : e.message; }
+    catch (e) { unsure ||= !!e.unsure; u.st = "fail"; u.net = !!e.net; u.why = e.net ? "The upload stopped before it finished. Check the records folder can be reached, then try again." : changeError(e); }
     if (state.pay === S) payPaint();
   }
-  if (!added) return;
+  if (!added) {
+    if (unsure && state.view === "entity") await render({ unsure });  // it may be there: the page shows what is
+    return;
+  }
   const okOnes = list.filter(u => u.st === "ok"), one = okOnes[0];
   S.ups = S.ups.filter(u => u.st !== "ok"); S.histStale = true;
   const said = (one.replaces ? `Replaced with ${one.file.name}` : okOnes.length > 1 ? `Added ${okOnes.length} files` : `Added ${one.file.name}`)
@@ -447,13 +453,16 @@ async function pdSend(list) {
   // register or its dialog (closed and opened again), and the focus stays wherever it is now.
   const same = state.openPayment === pid && dlgDrawerOpen();
   if (state.pay !== S || !same) {
-    if (state.view === "entity" && (!state.openPayment || same)) await render();
+    if (state.view === "entity" && (!state.openPayment || same)) await afterSaved(render);
     return toast(said);
   }
-  await render();
+  const ok = await afterSaved(render);
   toast(said);
+  // The dialog was closed because the page couldn't be read back: the files not added are named, as their rows went with it.
+  const failed = S.ups.filter(u => u.st === "fail");
+  if (!ok && !state.openPayment && failed.length) toast(`Not added: ${failed.map(u => `${u.file.name} (${u.why})`).join("; ")}`, true);
   // Focus moves to the documents only if it isn't in a field being typed in.
-  if (state.pay === S && state.openPayment === pid && dlgDrawerOpen() && !document.activeElement?.closest?.("#payForm")) pdFocus(one.replaces ? "" : `#pd-add-${pdSlug(one.type)}`, "#pd-multi", "#drawerTitle");
+  if (ok && state.pay === S && state.openPayment === pid && dlgDrawerOpen() && !document.activeElement?.closest?.("#payForm")) pdFocus(one.replaces ? "" : `#pd-add-${pdSlug(one.type)}`, "#pd-multi", "#drawerTitle");
 }
 // One file, with its progress shown on its row as it goes (XMLHttpRequest reports it; fetch does not).
 function pdPost(u, pid) {
@@ -472,12 +481,15 @@ function pdPost(u, pid) {
       if (s) s.textContent = u.pct + "%";
     };
     x.onload = () => {
-      let data = {};
-      try { data = JSON.parse(x.responseText || "{}"); } catch { /* not JSON */ }
-      if (x.status >= 200 && x.status < 300) resolve(data);
-      else reject(new Error(data.error || (x.status === 413 ? `It is ${pdSize(u.file.size)}; a file can be up to 40 MB.` : `Something went wrong (${x.status}).`)));
+      let data = null;
+      try { data = JSON.parse(x.responseText); } catch { /* not JSON */ }
+      const ok = x.status >= 200 && x.status < 300;
+      if (ok && data) resolve(data);
+      else if (ok) reject(Object.assign(new Error(BAD_REPLY), { unsure: true }));  // as api(): an OK answer that can't be read is an error
+      else reject(Object.assign(new Error(data?.error || (x.status === 413 ? `It is ${pdSize(u.file.size)}; a file can be up to 40 MB.` : `Something went wrong (${x.status}).`)),
+        { unsure: x.status >= 500 }));
     };
-    x.onerror = () => { const e = new Error("network"); e.net = true; reject(e); };
+    x.onerror = () => { const e = new Error("network"); e.net = e.unsure = true; reject(e); };
     x.send(fd);
   });
 }
@@ -527,10 +539,10 @@ async function payClick(t, ds) {
     if (!doc) { payPaint(); return true; }
     if (A.act === "replace") { await pdUpload([{ file: A.file, type: doc.doc_type, replaces: doc.id }]); return true; }
     try { await api(`/api/documents/${doc.id}/remove`, { json: {} }); }
-    catch (e) { payPaint(); toast(e.message, true); return true; }
-    await render();
+    catch (e) { payPaint(); toast(changeError(e), true); return true; }
+    const ok = await afterSaved(render);
     toast(`Removed ${doc.original_name}`);
-    pdFocus(`#pd-add-${pdSlug(doc.doc_type)}`, `#pd-up-${pdSlug(doc.doc_type)}`, "#drawerTitle");
+    if (ok) pdFocus(`#pd-add-${pdSlug(doc.doc_type)}`, `#pd-up-${pdSlug(doc.doc_type)}`, "#drawerTitle");
     return true;
   }
   if (ds.pdMulti) {
@@ -680,7 +692,8 @@ function npFoot() {
   const ah = pdQ("#np-acct-hint");
   if (ah) ah.textContent = !e ? "The accounts show once a company is chosen." : !(e.accounts || []).some(isActive) ? `${e.code} has no bank account yet, so the payment is added without one.` : N.dir === "in" ? "The account the money comes into." : "The account the money goes out from.";
   const foot = pdQ("#np-foot");
-  if (foot) foot.textContent = N.saving ? `Adding the payment to ${e ? `${e.code}'s ` : ""}${monthName(state.month)}…` : N.refused ? "Nothing was added. Fix what the message says, then add it again."
+  if (foot) foot.textContent = N.saving ? `Adding the payment to ${e ? `${e.code}'s ` : ""}${monthName(state.month)}…`
+    : N.refused ? N.unsure ? "It isn't known whether it was added: check the month's payments before adding it again." : "Nothing was added. Fix what the message says, then add it again."
     : !bad.length ? "It is added as not paid yet." : N.tried ? "Fix the fields above, then add it." : `Still needed: ${bad.map(k => k === "amt" ? "A valid amount" : NP_LABEL[k]).join(", ")}.`;
   const sub = pdQ("#np-submit"); if (sub) sub.setAttribute?.("aria-disabled", bad.length ? "true" : "false");
   if (!N.tried) return;
@@ -722,9 +735,9 @@ async function npSave() {
   let r;
   try { r = await api("/api/payments", { json: body }); }
   catch (e) {
-    N.saving = false; N.refused = e.message; npBusy(false); npFoot();
+    N.saving = false; N.refused = changeError(e); N.unsure = !!e.unsure; npBusy(false); npFoot();
     const box = pdQ("#np-refused");
-    if (box) { box.innerHTML = refusedNote(e.message); box.focus?.(); }
+    if (box) { box.innerHTML = refusedNote(N.refused, { title: e.unsure ? "It may not have been added" : "Nothing was saved" }); box.focus?.(); }
     return;
   }
   const id = r.id;
@@ -733,11 +746,11 @@ async function npSave() {
   toast(npFromOverview() ? `Payment added to ${e.code}'s ${monthName(state.month)}` : "Payment added", false, { undo: async () => {
     await api(`/api/payments/${id}`, { method: "DELETE", json: {} });
     toast("Undone. The payment is taken off again; the undo is a new entry in the audit trail.");
-    await render();
+    await afterSaved(render);
   } });
-  await render();
+  const ok = await afterSaved(render);
   const now = document.activeElement;
-  if (!now || now === document.body || now === $("#main")) pdFocus("#addPayment");   // back on the button that opened it, drawn again
+  if (ok && (!now || now === document.body || now === $("#main"))) pdFocus("#addPayment");   // back on the button that opened it, drawn again
 }
 function npBusy(on) {
   const f = pdQ("#addForm"), b = pdQ("#np-submit");

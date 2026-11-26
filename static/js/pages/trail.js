@@ -49,19 +49,20 @@ function entryHead(e) {
 }
 const entryHtml = e => `<div class="tr-row" id="tx-${e.id}"><button type="button" class="tr-head" data-tx="${e.id}" aria-expanded="false">${entryHead(e)}</button><div class="tr-body" hidden></div></div>`;
 
-async function toggleEntry(id, btn) {
+function toggleEntry(id, btn) { return pageDraw(null, page => entryToggle(page, id, btn)); }
+async function entryToggle(page, id, btn) {
   const body = btn.nextElementSibling, open = btn.getAttribute("aria-expanded") === "true";
   btn.setAttribute("aria-expanded", String(!open));
   if (open) { body.hidden = true; return; }
   body.hidden = false; body.innerHTML = `<div class="note">Loading…</div>`;
   try {
-    const e = await api(`/api/audit/tx/${id}${state.trail.show ? "?show=1" : ""}`);
+    const e = await page.read(api(`/api/audit/tx/${id}${state.trail.show ? "?show=1" : ""}`));
     // The activity log's own line is the entry's headline already; it shows here only when nothing else changed.
     const shown = e.changes.some(ch => ch.table !== "activity") ? e.changes.filter(ch => ch.table !== "activity") : e.changes;
     body.innerHTML = `${shown.map(ch => changeHtml(ch)).join("") || `<div class="note">Nothing changed in the records (an event only).</div>`}
       ${e.not_shown ? `<div class="note">And ${e.not_shown} more records as they stood.</div>` : ""}
       <div class="note mono">Entry ${e.id} · ${esc(e.action)}${e.machine ? ` · ${esc(e.machine)}` : ""} · check code ${esc(e.check_code)}</div>`;
-  } catch (err) { body.innerHTML = `<div class="note bad-text">${esc(err.message)}</div>`; }
+  } catch (err) { page.check(); body.innerHTML = `<div class="note bad-text">${esc(err.message)}</div>`; }
 }
 
 function statusHtml(st) {
@@ -90,10 +91,11 @@ function outsideHtml(o) {
       <button class="btn" id="trailAccept" style="align-self:end">Accept ${more > 0 ? `these ${o.changes.length}` : "these changes"}</button></div></div>`;
 }
 
-async function viewTrail(main) {
+async function viewTrail(main) { return pageDraw("main", draw => trailDraw(draw, main)); }
+async function trailDraw(draw, main) {
   const T = state.trail;
-  const [st, page, outside] = await Promise.all([api("/api/audit/status"), api("/api/audit?" + trailQuery()),
-    api("/api/audit/outside" + (T.show ? "?show=1" : ""))]);
+  const [st, page, outside] = await draw.read(Promise.all([api("/api/audit/status"), api("/api/audit?" + trailQuery()),
+    api("/api/audit/outside" + (T.show ? "?show=1" : ""))]));
   T.entries = page.entries; T.more = page.more; T.labels = page.labels; T.seq = (T.seq || 0) + 1;
   const opt = (v, label, cur) => `<option value="${esc(v)}"${String(cur ?? "") === String(v) ? " selected" : ""}>${esc(label)}</option>`;
   main.innerHTML = `
@@ -121,16 +123,17 @@ async function viewTrail(main) {
 const listHtml = list => list.map(entryHtml).join("") || `<div class="empty">No entries match.</div>`;
 
 // A filter changed: the list again from the newest, without redrawing the page (the box being typed in keeps its focus).
-async function refreshTrailList() {
+function refreshTrailList() { return pageDraw(null, trailListRead); }
+async function trailListRead(draw) {
   const T = state.trail, seq = T.seq = (T.seq || 0) + 1;
   try {
-    const page = await api("/api/audit?" + trailQuery());
+    const page = await draw.read(api("/api/audit?" + trailQuery()));
     if (seq !== T.seq || !$("#trailList")) return;  // a newer change, or another page, came first
     T.entries = page.entries; T.more = page.more;
     $("#trailList").innerHTML = listHtml(T.entries);
     $("#trailMoreRow").hidden = !T.more;
     $("#trailExport").href = "/api/audit/export.xlsx?" + trailQuery();
-  } catch (e) { toast(e.message, true); }
+  } catch (e) { draw.check(); toast(e.message, true); }
 }
 
 async function trailMore(btn) {
@@ -138,24 +141,31 @@ async function trailMore(btn) {
   if (!last || btn.disabled) return;
   btn.disabled = true;
   try {
-    const page = await api("/api/audit?" + trailQuery({ before_id: last.id }));
-    if (seq !== T.seq || !$("#trailList")) return;  // the filters changed meanwhile: that list is gone
-    T.entries.push(...page.entries); T.more = page.more;
-    $("#trailList").insertAdjacentHTML("beforeend", page.entries.map(entryHtml).join(""));
-    $("#trailMoreRow").hidden = !T.more;
-  } catch (e) { toast(e.message, true); }
-  finally { btn.disabled = false; }
+    await pageDraw(null, async draw => {
+      try {
+        const page = await draw.read(api("/api/audit?" + trailQuery({ before_id: last.id })));
+        if (seq !== T.seq || !$("#trailList")) return;  // the filters changed meanwhile: that list is gone
+        T.entries.push(...page.entries); T.more = page.more;
+        $("#trailList").insertAdjacentHTML("beforeend", page.entries.map(entryHtml).join(""));
+        $("#trailMoreRow").hidden = !T.more;
+      } catch (e) { draw.check(); toast(e.message, true); }
+    });
+  } finally { btn.disabled = false; }
 }
 
 async function trailCheck(btn) {
   btn.disabled = true; btn.textContent = "Checking…";
+  const here = pageHere();
   try {
-    const r = await api("/api/audit/check", { json: {} });
+    const r = await api("/api/audit/check", { json: {} });  // the check itself is noted in the audit trail
     const text = r.ok ? `All ${r.checked} entries check out, and all ${r.replay.checked} records match the trail. Check code ${esc(r.check_code)}.`
       : `<b class="bad-text">Problems found.</b> ${[...r.problems, ...r.replay.problems.map(p => `${p.table_label} ${p.record} ${p.problem}.`)].map(esc).join(" ")}${r.replay.more ? ` And ${r.replay.more} more.` : ""}${r.replay.count ? " Records that differ are listed under Changes made outside this app." : ""}`;
-    if (!$("#trailOut")) { toast(r.ok ? `Audit trail checked: all ${r.checked} entries check out.` : "The audit trail check found problems. Open the audit trail to see them.", !r.ok); return; }
-    if (r.replay.count) { await render(); }  // the differences now wait to be accepted
-    $("#trailOut").innerHTML = text;
+    // The differences now wait to be accepted, so the page is read again. The result goes on the page while it is the one on show and could
+    // be drawn; else it is said in a message.
+    const drawn = !(here() && r.replay.count) || await afterSaved(render);
+    const out = here() && drawn ? $("#trailOut") : null;
+    if (out) out.innerHTML = text;
+    else toast(r.ok ? `Audit trail checked: all ${r.checked} entries check out.` : "The audit trail check found problems. Open the audit trail to see them.", !r.ok);
   } catch (e) { toast(e.message, true); }
   finally { btn.disabled = false; btn.textContent = "Check the audit trail"; }
 }
@@ -166,18 +176,22 @@ async function trailAccept(btn) {
   btn.disabled = true;
   try {
     const r = await api("/api/audit/accept-outside", { json: { reason, upto_id: state.trail.upto } });
-    state.trail.reason = ""; toast(`Accepted ${r.accepted} change${r.accepted === 1 ? "" : "s"}`); render();
-  } catch (e) { toast(e.message, true); btn.disabled = false; }
+    state.trail.reason = ""; toast(`Accepted ${r.accepted} change${r.accepted === 1 ? "" : "s"}`);
+  } catch (e) { toast(changeError(e), true); btn.disabled = false; return; }
+  await afterSaved(render);
 }
 
 // Bank details on or off: the open entries and the outside card again; the list itself doesn't show them.
-async function trailShow(on) {
+function trailShow(on) { return pageDraw("trail-show", draw => trailShowDraw(draw, on)); }
+async function trailShowDraw(draw, on) {
   state.trail.show = on;
   try {
-    const o = await api("/api/audit/outside" + (on ? "?show=1" : ""));
+    const o = await draw.read(api("/api/audit/outside" + (on ? "?show=1" : "")));
     if ($("#trailOutsideSlot")) $("#trailOutsideSlot").innerHTML = outsideHtml(o);
-    for (const b of document.querySelectorAll('.tr-head[aria-expanded="true"]')) { b.setAttribute("aria-expanded", "false"); await toggleEntry(+b.dataset.tx, b); }
-  } catch (e) { toast(e.message, true); }
+    for (const b of document.querySelectorAll('.tr-head[aria-expanded="true"]')) {
+      b.setAttribute("aria-expanded", "false"); await toggleEntry(+b.dataset.tx, b); draw.check();
+    }
+  } catch (e) { draw.check(); toast(e.message, true); }
 }
 
 // A record's history, newest first (in a drawer section, or in a drawer of its own for a budget line).
@@ -195,8 +209,10 @@ async function openHistory(tbl, key, title) {
   if (!(await closeDrawer())) return;
   $("#drawer").innerHTML = `<div class="row spread"><div><div class="eyebrow">History</div><h2>${esc(title || "Record")}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div><div id="histOnly" class="note">Loading…</div>`;
   showDrawer();
-  try { const h = await api(`/api/audit/record/${encodeURIComponent(tbl)}/${encodeURIComponent(key)}`); if ($("#histOnly")) $("#histOnly").outerHTML = `<div>${historyHtml(h)}</div>`; }
-  catch (e) { if ($("#histOnly")) $("#histOnly").textContent = e.message; }
+  return dialogDraw(async dlg => {
+    try { const h = await dlg.read(api(`/api/audit/record/${encodeURIComponent(tbl)}/${encodeURIComponent(key)}`)); if ($("#histOnly")) $("#histOnly").outerHTML = `<div>${historyHtml(h)}</div>`; }
+    catch (e) { dlg.check(); if ($("#histOnly")) $("#histOnly").textContent = e.message; }
+  });
 }
 
 /* ---- Put back a deleted Setup record (hrp/restore.py) ---- */
@@ -205,7 +221,8 @@ const deletedToggle = kind => `<label class="row tight"><input type="checkbox" d
 
 // Show deleted: the section's records deleted in this app and not put back since, newest first, with when, who and why, and Put it
 // back, or why it can't be now (design/canvas/Setup.dc.html).
-async function drawDeleted(kind) {
+function drawDeleted(kind) { return pageDraw("deleted", draw => deletedDraw(draw, kind)); }
+async function deletedDraw(draw, kind) {
   const box = $("#setupDeleted");
   if (!box) return;
   if (!state.setup.deleted) { box.innerHTML = ""; return; }
@@ -213,7 +230,7 @@ async function drawDeleted(kind) {
   if (per && !state.entity) { box.innerHTML = ""; return; }
   box.innerHTML = `<div class="note" role="status">Loading…</div>`;
   try {
-    const d = await api(`/api/setup/restore?kind=${encodeURIComponent(kind)}${per ? `&entity=${state.entity}` : ""}`);
+    const d = await draw.read(api(`/api/setup/restore?kind=${encodeURIComponent(kind)}${per ? `&entity=${state.entity}` : ""}`));
     if ($("#setupDeleted") !== box || !state.setup.deleted) return;  // another page or section was drawn meanwhile, or Show deleted was unticked
     const own = state.setup.types?.kinds?.[kind], plural = own?.deleted_plural || own?.plural || d.plural;  // the section's own words (Filing words, not SQL filing words)
     const row = r => `<tr><td>${esc(r.name)}${r.code ? `<div class="note st-sub">${esc(r.code)}</div>` : ""}</td><td>${esc(fmtWhen(r.at))}<div class="note st-sub">Entry ${esc(r.entry)}</div></td><td>${esc(r.actor || "")}</td><td>${esc(r.reason || "")}</td>
@@ -224,7 +241,7 @@ async function drawDeleted(kind) {
       <div class="note">Deleted in this app and not put back since, newest first. Putting one back asks why; it comes back as it was, with its history.</div>
       <div class="tbl-wrap"><table class="st-table"><thead><tr><th scope="col">Name</th><th scope="col">Deleted</th><th scope="col">By</th><th scope="col">Why</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead><tbody>
         ${d.rows.map(row).join("") || `<tr><td colspan="5" class="empty">None deleted.</td></tr>`}</tbody></table></div></section>`;
-  } catch (e) { if ($("#setupDeleted") === box && state.setup.deleted) box.innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; }
+  } catch (e) { draw.check(); if ($("#setupDeleted") === box && state.setup.deleted) box.innerHTML = `<div class="note bad-text">${esc(e.message)}</div>`; }
 }
 
 // Put it back (from the audit trail, a record's History or Show deleted): a dialog shows what it would do first (a preview: nothing is
@@ -238,9 +255,13 @@ async function openRestore(rowId, title) {
     <div class="pd-foot"><span class="pd-foot-note ro" id="rs-foot"></span><div class="pd-foot-acts" id="rsActs"><button type="button" class="ghost" data-su-close="1">Close</button></div></div></div>`;
   showDrawer("setup");
   watchDrawer();
+  return dialogDraw(dlg => restoreFill(dlg, rowId, title));
+}
+async function restoreFill(dlg, rowId, title) {
   let p;
-  try { p = await api(`/api/setup/restore/${rowId}`, { json: { preview: true } }); }
+  try { p = await dlg.read(api(`/api/setup/restore/${rowId}`, { json: { preview: true } })); }
   catch (e) {
+    dlg.check();
     if ($("#rsBody")) $("#rsBody").innerHTML = appStopped(e)
       ? `<div class="note bad-text" role="alert">Couldn't load this. Try again.</div><div class="row"><button type="button" class="ghost small" data-restore="${esc(rowId)}" data-restore-title="${esc(title || "")}">${icon("refresh")}Try again</button></div>`
       : refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." });
@@ -275,7 +296,12 @@ async function restoreGo(rowId, btn) {
   btn.disabled = true; restoreGo.busy = true;
   let r;
   try { r = await api(`/api/setup/restore/${rowId}`, { json: { reason } }); }
-  catch (e) { if (btn.isConnected) btn.disabled = false; if (appStopped(e)) throw e; if ($("#rsErr")) $("#rsErr").innerHTML = refusedNote(`${e.message} Nothing was changed.`, { title: "This can't be put back." }); return; }
+  catch (e) {
+    if (btn.isConnected) btn.disabled = false;
+    if (appStopped(e)) throw e;
+    if ($("#rsErr")) $("#rsErr").innerHTML = refusedNote(e.unsure ? changeError(e) : `${e.message} Nothing was changed.`, { title: e.unsure ? "It may not have been put back" : "This can't be put back." });
+    return;
+  }
   finally { restoreGo.busy = false; }
   closeDrawer(true);
   toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
@@ -286,13 +312,15 @@ async function restoreGo(rowId, btn) {
 }
 
 // The Overview says when the trail needs attention (changes made outside the app, a records.db behind or rebuilt).
-async function trailNotice() {
-  try {
-    const st = await api("/api/audit/status?quick=1");
-    if (!(st.outside || st.head_behind || st.head_rewritten) || state.view !== "overview" || $("#trailNotice")) return;
-    $("#main").insertAdjacentHTML("afterbegin", `<div class="banner bad noprint" id="trailNotice"><b>The audit trail needs attention</b>
-      <span>${st.outside ? `${st.outside} change(s) were made to the records outside this app.` : "records.db doesn't match the last entry recorded beside it."}</span>
-      <button class="ghost small" data-view="trail">Open the audit trail</button></div>`);
-  } catch { /* the notice is a convenience; the page works without it */ }
+function trailNotice() {
+  return pageDraw(null, async page => {
+    try {
+      const st = await page.read(api("/api/audit/status?quick=1"));
+      if (!(st.outside || st.head_behind || st.head_rewritten) || state.view !== "overview" || $("#trailNotice")) return;
+      $("#main").insertAdjacentHTML("afterbegin", `<div class="banner bad noprint" id="trailNotice"><b>The audit trail needs attention</b>
+        <span>${st.outside ? `${st.outside} change(s) were made to the records outside this app.` : "records.db doesn't match the last entry recorded beside it."}</span>
+        <button class="ghost small" data-view="trail">Open the audit trail</button></div>`);
+    } catch { page.check(); /* the notice is a convenience; the page works without it */ }
+  });
 }
 

@@ -193,15 +193,17 @@ function eiPanel(d) {
 }
 
 /* ---------------- The page ---------------- */
-async function viewEinvoices(main) {
+async function viewEinvoices(main) { return pageDraw("main", page => einvoicesDraw(page, main)); }
+async function einvoicesDraw(page, main) {
   const e = ent(), S = eiState();
   S.notes = {}; S.open = {};  // read again each time the page is drawn: a fetch may have changed them
   if (!EI_ZIP.busy) Object.assign(EI_ZIP, { key: null, done: "", err: "" });  // a zip being made stays so: its answer is still awaited
   if (!e.uses_sql) { state.eiData = null; main.innerHTML = `<div class="sq ei" id="ei">${eiHead(e)}${eiHereCard(e)}${eiList(null)}<div class="sr-only" role="status" id="ei-say"></div></div>`; return; }
   let d;
-  try { d = await api(`/api/einvoices?entity=${state.entity}`); }
+  try { d = await page.read(api(`/api/einvoices?entity=${state.entity}`)); }
   catch (err) {
-    if (appStopped(err)) throw err;
+    page.check();
+    if (appStopped(err) || page.saved) throw err;  // reading back a kept change: render() says it was saved
     state.eiData = null;
     main.innerHTML = `<div class="sq ei" id="ei">${eiHead(e)}${errorState({ title: "Couldn't load the e-Invoices", body: err.message })}</div>`;
     return;
@@ -244,16 +246,18 @@ function eiMore() {
   S.shown += EI_STEP; eiPaint();
   $(`#ei-row-${at}`)?.focus?.();
 }
-// The print check of each printable document shown, read once per visit, a few at a time; its marker is drawn beside its PDF.
-async function eiChecks() {
+// The print check of each printable document shown, read once per visit, a few at a time; its marker is drawn beside its PDF. A draw of the
+// page: once another page (or this one again, which reads the checks afresh) is asked for, its answers are dropped.
+function eiChecks() { return pageDraw(null, eiChecksDraw); }
+async function eiChecksDraw(page) {
   const d = state.eiData, tab = eiTab();
   if (!d || tab === "received") return;
   const S = eiState(), rows = slice(eiRows(d, tab), S.shown).map((x, i) => ({ x, i })).filter(r => r.x.print_kind && r.x.id && !(r.x.id in S.notes));
   for (const r of rows) S.notes[r.x.id] = null;
   const paint = id => { const at = $(`#ei-pn-${+id}`); if (at) at.innerHTML = eiNote(id); };
   const one = async ({ x }) => {
-    try { const c = await api(`/api/invoices/${+x.id}/check`); S.notes[x.id] = { notes: c.notes || [] }; }
-    catch (err) { S.notes[x.id] = { notes: [], err: err.message }; }
+    const note = await page.read(api(`/api/invoices/${+x.id}/check`).then(c => ({ notes: c.notes || [] }), err => ({ notes: [], err: err.message })));
+    S.notes[x.id] = note;
     if (state.ei === S) paint(x.id);
   };
   for (let k = 0; k < rows.length; k += 3) await Promise.all(rows.slice(k, k + 3).map(one));

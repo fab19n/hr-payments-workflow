@@ -3,7 +3,14 @@
    The drawer is a modal dialog: openers draw it and call showDrawer(); closeDrawer() (pages/company.js) calls hideDrawer().
    ask() is the styled confirm that replaces the browser's own question box. Motion and focus rules: design/motion-keyboard-spec.md
    section 3. Everything that touches the page is guarded, so the script also runs where there is no real DOM. */
-const DLG = { opener: null, sel: "", want: null, click: null, timer: null, closing: false, wired: false, dim: null, asking: 0, n: 0 };
+const DLG = { opener: null, sel: "", want: null, click: null, timer: null, closing: false, wired: false, dim: null, asking: 0, n: 0, seq: 0 };  // seq: goes up each time a dialog is shown or closed
+// A dialog that is read before it opens, or filled once it is open: draw(dlg) waits with dlg.read, and writes only if no dialog has been
+// shown or closed since it was asked for (a quicker one, Close, or going to another page, which closes the dialog first). As pageDraw
+// (core/page.js). A page drawn again behind the dialog does not end it.
+function dialogDraw(draw) {
+  const at = DLG.seq;
+  return drawWhile(drawTicket(() => DLG.seq !== at, false), draw);
+}
 const DLG_FOCUSABLE = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 
 const dlgCalm = () => !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -92,6 +99,7 @@ function dlgWire(d) {
 // (pages/payment.js), "new" as the narrower New payment dialog, "setup" as Setup's record dialog (pages/setup.js); anything else as the side panel.
 function showDrawer(kind) {
   const d = $("#drawer"); if (!d) return;
+  DLG.seq++;
   dlgWire(d);
   const was = !d.hidden;
   clearTimeout(DLG.timer); DLG.closing = false;

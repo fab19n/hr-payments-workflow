@@ -19,6 +19,9 @@ const PREP_KEY = "hrp-prepared-by";
 const preparedBy = () => { try { return localStorage.getItem(PREP_KEY) || ""; } catch { return ""; } };
 const keepPreparedBy = v => { try { if (v) localStorage.setItem(PREP_KEY, v); } catch { /* private window: not kept */ } };
 const reconXlsx = s => `/api/export/recon.xlsx?entity_id=${state.entity}&account_id=${s.account.id}&month=${s.month}`;
+// The reading back after a change made on this page (core/saved.js): the review that is open, else the year; once another page is on
+// show, that page. reset: as for reloadReview.
+const bankAgain = (reset = true) => savedPart(() => state.view === "bank", () => state.recon.rv ? reloadReview(reset) : drawRecon());
 
 // SQL entries the lock kept from being linked (Link or create all, an import): how many and why, for the SQL page's
 // toast and result ("2 entries were not linked: Main September 2026 is marked reconciled and locked").
@@ -155,7 +158,7 @@ async function viewBank(main) {
   // or a Next up link) shows the month as it stands, and Print makes a new one.
   R.print = null;
   // Opened from Before you print or Next up: that account is shown, and with lines to explain its review opens.
-  const focus = state.focusBank; state.focusBank = null;
+  const focus = state.focusBank;
   if (focus?.account && e.accounts.some(a => a.id === focus.account)) { if (R.account !== focus.account) { R.rv = null; R.print = null; } R.account = focus.account; }
   if (!e.accounts.some(a => a.id === R.account)) R.account = defaultAccount(e)?.id;
   if (focus && state.month) R.year = state.month.slice(0, 4);
@@ -171,20 +174,24 @@ async function viewBank(main) {
   await drawRecon(focus);
 }
 
-async function drawRecon(focus) {
+// The year view, the review and the print preview share the page's #stmtList: one part (core/page.js), so the one asked for last is drawn.
+function drawRecon(focus) { return pageDraw("bank", page => reconDraw(page, focus)); }
+async function reconDraw(page, focus) {
   const R = state.recon, box = $("#stmtList");
   if (!box) return;
-  if (R.print) return drawPrint();
-  if (R.rv) return reloadReview(false);
+  const used = () => { if (focus && state.focusBank === focus) state.focusBank = null; };
+  if (R.print) { used(); return drawPrint(); }
+  if (R.rv) { used(); return reloadReview(false); }
   const e = ent();
-  const y = await api(rcUrl("year", `&account_id=${R.account}${R.year ? `&year=${R.year}` : ""}`));
+  const y = await page.read(api(rcUrl("year", `&account_id=${R.account}${R.year ? `&year=${R.year}` : ""}`)));
+  used();
   R.year = y.year; R.data = y;
   if (focus) {
     const row = y.rows.find(r => r.month === state.month && r.statement_id);
     if (row && state.bankOnly) return openReview(row.statement_id, false);  // the page is at the top already
     if (row) R.open = row.month;
   }
-  R.panel = R.open && y.rows.some(r => r.month === R.open) ? await api(rcUrl("month", `&account_id=${R.account}&month=${R.open}`)) : null;
+  R.panel = R.open && y.rows.some(r => r.month === R.open) ? await page.read(api(rcUrl("month", `&account_id=${R.account}&month=${R.open}`))) : null;
   const cur = y.account.currency;
   const rowHtml = r => `<tr class="${R.open === r.month ? "focus" : ""}"><td><button class="link" id="bk-m-${r.month}" data-rc-open="${r.month}" aria-expanded="${R.open === r.month}">${esc(r.label)}</button></td>
       <td><div class="bk-status">${rcPill(r.status, r.status_text)}${r.locked ? lockedPill() : ""}${r.reopened_at ? `<span class="muted small">Reopened ${esc(shortDate(r.reopened_at))}</span>` : ""}</div>${r.book_changed ? `<div class="note bad-text">${esc(r.book_changed.text)}: book closing ${money(r.book_changed.old.closing, cur)} at sign-off, ${money(r.book_changed.new.closing, cur)} now (in ${money(r.book_changed.old.in, cur)} → ${money(r.book_changed.new.in, cur)}, out ${money(r.book_changed.old.out, cur)} → ${money(r.book_changed.new.out, cur)})</div>` : ""}</td>
@@ -238,14 +245,14 @@ async function reopenGo(btn) {
     await api("/api/recon/reopen", { json: { entity_id: state.entity, statement_id: sid, reason: why } });
   } catch (e) {
     btn.disabled = false; btn.textContent = "Reopen month"; btn.removeAttribute("aria-busy");
-    if (err) err.textContent = e.message;   // refused: nothing was changed (a later month carries on from this one)
+    if (err) err.textContent = changeError(e);   // refused: nothing was changed (a later month carries on from this one)
     return;
   }
   const s = rcShown();
   await closeDrawer(true);
   // No Undo: signing off again is its own step (Mark reconciled, or Reconciled before tracking), never a toast's.
-  toast(`${s.label} reopened for ${s.account.label}. It needs the sign-off again.`);
-  return state.recon.rv ? reloadReview() : drawRecon();
+  toast(`${s?.label || "The month"} reopened${s ? ` for ${s.account.label}` : ""}. It needs the sign-off again.`);
+  return afterSaved(bankAgain());
 }
 
 // The month on screen: the review's, else the open panel's.
@@ -258,7 +265,7 @@ async function rcSign(sid, note, by) {
   await api("/api/recon/sign-off", { json: { entity_id: state.entity, statement_id: sid, note, prepared_by: by } });
   const s = rcShown();
   toast(`Marked as reconciled. ${s?.label || "The month"} is locked for ${s?.account.label || "this account"}.`);
-  return state.recon.rv ? reloadReview() : drawRecon();
+  return afterSaved(bankAgain());
 }
 
 // The signed statement, filed on the month's bank reconciliation checklist item under a name that starts with the
@@ -270,16 +277,17 @@ async function rcSignedUpload(taskId, code) {
   fd.append("task_id", taskId); fd.append("doc_type", "recon");
   await api("/api/upload", { form: fd });
   toast(`Filed the signed statement ${code}.`);
-  return render();
+  return afterSaved(render);
 }
 
 /* ---- the print preview of the reconciliation statement (PrintBankRec) ---- */
-async function openPrint(month) {
+function openPrint(month) { return pageDraw("bank", page => printOpen(page, month)); }
+async function printOpen(page, month) {
   const R = state.recon, sid = rcShown()?.statement?.id;
   // the name typed under Prepared by, else the one remembered on this computer
   const by = (sid && document.querySelector(`[data-rc-by="${sid}"]`)?.value.trim()) || preparedBy();
   keepPreparedBy(by);
-  const r = await api("/api/recon/print", { json: { entity_id: state.entity, account_id: R.account, month, printed_by: by } });
+  const r = await page.read(api("/api/recon/print", { json: { entity_id: state.entity, account_id: R.account, month, printed_by: by } }));
   R.print = { month, ...r };
   drawPrint();
   $("#stmtList")?.scrollIntoView?.({ block: "start" });
@@ -330,8 +338,9 @@ function drawPrint() {
 /* ---- the review of one statement ---- */
 const RV = () => state.recon.rv;
 
-async function openReview(sid, scroll = true) {
-  const d = await api(rcUrl("review", `&statement_id=${sid}`));
+function openReview(sid, scroll = true) { return pageDraw("bank", page => reviewOpen(page, sid, scroll)); }
+async function reviewOpen(page, sid, scroll) {
+  const d = await page.read(api(rcUrl("review", `&statement_id=${sid}`)));
   // A locked month, or one with nothing left to explain, opens with its matched lines shown (BankReview's savings state).
   const V = state.recon.rv = { sid, d, sel: {}, choice: {}, keep: {}, checked: false, why: {},
     showMatched: !!d.summary.locked || !d.lines.some(l => l.state === "open") };
@@ -342,8 +351,11 @@ async function openReview(sid, scroll = true) {
 
 // reset false (the page redrew after a one-line action): the rows chosen, their date ticks, the check tick and the
 // descriptions typed stay for lines that are as they were.
-async function reloadReview(reset = true) {
-  const V = RV(), d = await api(rcUrl("review", `&statement_id=${V.sid}`));
+function reloadReview(reset = true) { return pageDraw("bank", page => reviewReload(page, reset)); }
+async function reviewReload(page, reset) {
+  const V = RV();
+  if (!V) return;
+  const d = await page.read(api(rcUrl("review", `&statement_id=${V.sid}`)));
   const typed = [...document.querySelectorAll("[data-rv-desc],[data-rv-cat],[data-rv-note]")].map(el => [el.matches("[data-rv-desc]") ? "desc" : el.matches("[data-rv-cat]") ? "cat" : "note", el.dataset.rvDesc || el.dataset.rvCat || el.dataset.rvNote, el.value]);
   const was = Object.fromEntries(V.d.lines.map(l => [l.id, l.state + ":" + l.payment?.id]));
   if (reset) { V.sel = {}; V.keep = {}; V.checked = false; }
@@ -494,12 +506,12 @@ async function pairTick(t) {
   const on = t.checked, title = p.docs.map(d => d.ref || d.description).join(" and ");
   if (on && !why) { t.checked = false; if (err) err.textContent = "Give the pair a reason first: it is kept with the sign-off."; box?.querySelector("[data-pair-why]")?.focus(); return; }
   const send = (confirmed, reason) => api("/api/recon/pair", { json: { entity_id: state.entity, account_id: s.account.id, month: s.month, key, reason, confirmed } });
-  try { await send(on, why); } catch (e) { t.checked = !on; if (err) err.textContent = e.message; return; }
+  try { await send(on, why); } catch (e) { t.checked = !on; if (err) err.textContent = changeError(e); return; }
   delete V.why[key];
   toast(on ? `Pair confirmed: ${title}, no money moved.` : `Pair no longer confirmed: ${title}.`, false, { undo: async () => {
-    await send(!on, why); toast(on ? "Undone. The pair is waiting to be confirmed." : "Undone. The pair is confirmed again."); await reloadReview(false);
+    await send(!on, why); toast(on ? "Undone. The pair is waiting to be confirmed." : "Undone. The pair is confirmed again."); await afterSaved(bankAgain(false));
   } });
-  await reloadReview(false);
+  await afterSaved(bankAgain(false));
   document.querySelector(`[data-pair-tick="${typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key}"]`)?.focus?.();
 }
 
@@ -579,16 +591,18 @@ async function rvApply() {
     rows.push(r);
   }
   const r = await api("/api/recon/apply", { json: { entity_id: state.entity, statement_id: V.sid, checked: V.checked, rows } });
+  // They are applied: nothing stays ticked, so Apply can't send them again while the review is read again (or if it can't be).
+  Object.assign(V, { sel: {}, keep: {}, checked: false });
+  if (RV() === V) drawRvList();
   toast(`Applied ${rows.length} row${rows.length === 1 ? "" : "s"}: ${r.linked} linked, ${r.created} created, ${r.explained} explained, ${r.confirmed} confirmed.`);
-  return reloadReview();
+  return afterSaved(bankAgain());
 }
 
 // Sign-off actions (from the month panel or the review): ask the server, then draw the screen that was open again.
 async function rcAct(path, body, done) {
   await api(`/api/recon/${path}`, { json: { entity_id: state.entity, ...body } });
   toast(done);
-  if (state.recon.rv) return reloadReview();
-  return drawRecon();
+  return afterSaved(bankAgain());
 }
 
 // The dialog of the one-line actions (link one payment or several, create a payment, no documents), kept beside the
@@ -664,8 +678,13 @@ function explainLine(lineId) {
     if (j === null) return;
     e.preventDefault(); pick.cur = rows[j].p.id; paint(); document.getElementById(`br-opt-${pick.cur}`)?.focus();
   };
-  const done = async (body, msg) => { try { await api(`/api/statement-lines/${lineId}`, { json: body }); await closeDrawer(); toast(msg || "Line explained", false, { undo: async () => {
-    await api(`/api/statement-lines/${lineId}`, { json: { payment_id: null } }); toast("Undone. The line is waiting to be explained."); render(); } }); render(); } catch (e) { toast(e.message, true); } };
+  const done = async (body, msg) => {
+    try { await api(`/api/statement-lines/${lineId}`, { json: body }); } catch (e) { return toast(changeError(e), true); }
+    await closeDrawer();
+    toast(msg || "Line explained", false, { undo: async () => {
+      await api(`/api/statement-lines/${lineId}`, { json: { payment_id: null } }); toast("Undone. The line is waiting to be explained."); await afterSaved(render); } });
+    await afterSaved(render);
+  };
   $("#ex-link").onclick = () => !pick.sels.length ? ($("#ex-err").textContent = "Choose a payment from the list first.")
     : done(pick.sels.length === 1 ? { payment_id: pick.sels[0] } : { payment_ids: pick.sels }, pick.sels.length > 1 ? `Line linked to ${pick.sels.length} payments.` : "Line explained");
   $("#ex-create").onclick = () => { if (!$("#ex-desc").value.trim()) return toast("Give the payment a description.", true); done({ create_payment: { description: $("#ex-desc").value.trim(), category: $("#ex-cat").value } }); };

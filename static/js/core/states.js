@@ -54,12 +54,13 @@ async function copyDetails(text) {
 // The page is open but the app has stopped: a fetch that never reached the server fails with a TypeError (the browser's
 // "Failed to fetch"). Replaces the blank page and that wording with what to do.
 const appStopped = e => !!e && (e.name === "TypeError" || e instanceof TypeError);
-function stoppedState({ detail = "" } = {}) {
+// retry: what its Try again does (data-retry): "1" draws the page again, "start" starts the app again.
+function stoppedState({ detail = "", retry = "1" } = {}) {
   const title = "HR Payments isn't running";
   return `<div class="state bad stopped" role="alert">${stPlate("laptop", "warn")}<div class="stopped-text"><h2>${esc(title)}</h2>`
     + `<p>The black window that runs it was closed, so this page can't reach your records. Nothing you typed since then was sent or saved.</p>`
     + `<ol><li>Double-click <b>Start HR Payments.bat</b>.</li><li>Keep the black window open while you work.</li><li>Come back here and press Try again.</li></ol>`
-    + `<div class="state-actions"><button type="button" class="btn" data-retry="1" data-busy="Looking for it…">${icon("refresh")}Try again</button>`
+    + `<div class="state-actions"><button type="button" class="btn" data-retry="${esc(retry)}" data-busy="Looking for it…">${icon("refresh")}Try again</button>`
     + `<button type="button" class="ghost" data-copy-details="${esc(title + (detail ? "\n" + detail : ""))}">Copy details</button>`
     + `<span class="state-note" role="status"></span></div></div></div>`;
 }
