@@ -19,9 +19,9 @@ const PREP_KEY = "hrp-prepared-by";
 const preparedBy = () => { try { return localStorage.getItem(PREP_KEY) || ""; } catch { return ""; } };
 const keepPreparedBy = v => { try { if (v) localStorage.setItem(PREP_KEY, v); } catch { /* private window: not kept */ } };
 const reconXlsx = s => `/api/export/recon.xlsx?entity_id=${state.entity}&account_id=${s.account.id}&month=${s.month}`;
-// The reading back after a change made on this page (core/saved.js): the review that is open, else the year; once another page is on
-// show, that page. reset: as for reloadReview.
-const bankAgain = (reset = true) => savedPart(() => state.view === "bank", () => state.recon.rv ? reloadReview(reset) : drawRecon());
+// The reading back after a change made on this page (core/saved.js): the review that is open, else the year; once another page (or another
+// company's or month's) is on show, that page. Ask for it before the change is sent. reset: as for reloadReview.
+const bankAgain = (reset = true) => savedPart(pageHere(), () => state.recon.rv ? reloadReview(reset) : drawRecon());
 
 // SQL entries the lock kept from being linked (Link or create all, an import): how many and why, for the SQL page's
 // toast and result ("2 entries were not linked: Main September 2026 is marked reconciled and locked").
@@ -241,18 +241,19 @@ async function reopenGo(btn) {
   const err = $("#bk-why-err");
   if (!why) { if (err) err.textContent = "Say why you're reopening this month."; $("#bk-why")?.setAttribute("aria-invalid", "true"); $("#bk-why")?.focus(); return; }
   btn.disabled = true; btn.textContent = "Reopening…"; btn.setAttribute("aria-busy", "true");
+  const here = dialogHere(), s = rcShown(), again = bankAgain();   // the month as asked about: another may be on show by the time the server answers
   try {
     await api("/api/recon/reopen", { json: { entity_id: state.entity, statement_id: sid, reason: why } });
   } catch (e) {
     btn.disabled = false; btn.textContent = "Reopen month"; btn.removeAttribute("aria-busy");
+    if (!here()) return toast(`${s?.label || "The month"}: ${changeError(e)}`, true);
     if (err) err.textContent = changeError(e);   // refused: nothing was changed (a later month carries on from this one)
     return;
   }
-  const s = rcShown();
-  await closeDrawer(true);
+  if (here()) await closeDrawer(true);
   // No Undo: signing off again is its own step (Mark reconciled, or Reconciled before tracking), never a toast's.
   toast(`${s?.label || "The month"} reopened${s ? ` for ${s.account.label}` : ""}. It needs the sign-off again.`);
-  return afterSaved(bankAgain());
+  return afterSaved(again);
 }
 
 // The month on screen: the review's, else the open panel's.
@@ -262,10 +263,10 @@ const rcShown = () => state.recon.rv ? state.recon.rv.d.summary : state.recon.pa
 // person gives (Reopen month), never by a toast.
 async function rcSign(sid, note, by) {
   keepPreparedBy(by);
+  const s = rcShown(), again = bankAgain();
   await api("/api/recon/sign-off", { json: { entity_id: state.entity, statement_id: sid, note, prepared_by: by } });
-  const s = rcShown();
   toast(`Marked as reconciled. ${s?.label || "The month"} is locked for ${s?.account.label || "this account"}.`);
-  return afterSaved(bankAgain());
+  return afterSaved(again);
 }
 
 // The signed statement, filed on the month's bank reconciliation checklist item under a name that starts with the
@@ -506,12 +507,14 @@ async function pairTick(t) {
   const on = t.checked, title = p.docs.map(d => d.ref || d.description).join(" and ");
   if (on && !why) { t.checked = false; if (err) err.textContent = "Give the pair a reason first: it is kept with the sign-off."; box?.querySelector("[data-pair-why]")?.focus(); return; }
   const send = (confirmed, reason) => api("/api/recon/pair", { json: { entity_id: state.entity, account_id: s.account.id, month: s.month, key, reason, confirmed } });
+  const again = bankAgain(false);
   try { await send(on, why); } catch (e) { t.checked = !on; if (err) err.textContent = changeError(e); return; }
   delete V.why[key];
   toast(on ? `Pair confirmed: ${title}, no money moved.` : `Pair no longer confirmed: ${title}.`, false, { undo: async () => {
-    await send(!on, why); toast(on ? "Undone. The pair is waiting to be confirmed." : "Undone. The pair is confirmed again."); await afterSaved(bankAgain(false));
+    const after = bankAgain(false);
+    await send(!on, why); toast(on ? "Undone. The pair is waiting to be confirmed." : "Undone. The pair is confirmed again."); await afterSaved(after);
   } });
-  await afterSaved(bankAgain(false));
+  await afterSaved(again);
   document.querySelector(`[data-pair-tick="${typeof CSS !== "undefined" && CSS.escape ? CSS.escape(key) : key}"]`)?.focus?.();
 }
 
@@ -590,19 +593,21 @@ async function rvApply() {
     if (rvNeedsTick(l)) r.keep_date = !!V.keep[l.id];
     rows.push(r);
   }
+  const again = bankAgain();
   const r = await api("/api/recon/apply", { json: { entity_id: state.entity, statement_id: V.sid, checked: V.checked, rows } });
   // They are applied: nothing stays ticked, so Apply can't send them again while the review is read again (or if it can't be).
   Object.assign(V, { sel: {}, keep: {}, checked: false });
   if (RV() === V) drawRvList();
   toast(`Applied ${rows.length} row${rows.length === 1 ? "" : "s"}: ${r.linked} linked, ${r.created} created, ${r.explained} explained, ${r.confirmed} confirmed.`);
-  return afterSaved(bankAgain());
+  return afterSaved(again);
 }
 
 // Sign-off actions (from the month panel or the review): ask the server, then draw the screen that was open again.
 async function rcAct(path, body, done) {
+  const again = bankAgain();
   await api(`/api/recon/${path}`, { json: { entity_id: state.entity, ...body } });
   toast(done);
-  return afterSaved(bankAgain());
+  return afterSaved(again);
 }
 
 // The dialog of the one-line actions (link one payment or several, create a payment, no documents), kept beside the
@@ -679,8 +684,9 @@ function explainLine(lineId) {
     e.preventDefault(); pick.cur = rows[j].p.id; paint(); document.getElementById(`br-opt-${pick.cur}`)?.focus();
   };
   const done = async (body, msg) => {
+    const here = dialogHere();
     try { await api(`/api/statement-lines/${lineId}`, { json: body }); } catch (e) { return toast(changeError(e), true); }
-    await closeDrawer();
+    if (here()) await closeDrawer();
     toast(msg || "Line explained", false, { undo: async () => {
       await api(`/api/statement-lines/${lineId}`, { json: { payment_id: null } }); toast("Undone. The line is waiting to be explained."); await afterSaved(render); } });
     await afterSaved(render);

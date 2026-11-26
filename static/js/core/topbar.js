@@ -125,7 +125,8 @@ async function tbPick(key) {
 async function tbAddCompany() {
   tbClose(false);
   state.setup.kind = "entities";
-  if (await go("setup")) await openSetup("entities", "new");
+  // the add form only over Setup's Companies: not over a page asked for while Setup was still read
+  if (await go("setup") && state.view === "setup" && state.setup.kind === "entities") await openSetup("entities", "new");
 }
 
 document.addEventListener("keydown", ev => {

@@ -112,8 +112,10 @@ j("post", "/api/upload", data={"file": (io.BytesIO(b"made-up receipt"), "receipt
 DOC = j("get", f"/api/month?entity={QFB}&month={MONTH}")["payments"][0]["documents"][0]["id"]
 LINE = j("get", f"/api/budget?entity={QFB}&month={MONTH}")["lines"][0]["id"]
 TASK = j("get", f"/api/month?entity={QFB}&month={MONTH}")["tasks"][0]["id"]
-PAYEE = j("get", f"/api/payees?entity={QFB}&month={MONTH}")[0]["id"]
-FX = {"QFB": QFB, "MBS": MBS, "TYD": IDS["TYD"], "ACCT": ACCT["QFB"], "MONTH": MONTH, "BEFORE": BEFORE, "PAY": PAY, "DOC": DOC, "LINE": LINE, "TASK": TASK, "PAYEE": PAYEE,
+PAYEE, PAYEE2 = [p["id"] for p in j("get", f"/api/payees?entity={QFB}&month={MONTH}")][:2]
+PAY2 = pays[1]["id"]
+TYPES = [r["id"] for r in j("get", "/api/setup/payment_types")["rows"]][:2]
+FX = {"QFB": QFB, "MBS": MBS, "TYD": IDS["TYD"], "ACCT": ACCT["QFB"], "MONTH": MONTH, "BEFORE": BEFORE, "PAY": PAY, "DOC": DOC, "LINE": LINE, "TASK": TASK, "PAYEE": PAYEE, "PAYEE2": PAYEE2, "PAY2": PAY2, "TYPES": TYPES,
       "STATIC_IDS": re.findall(r'\bid="([\w-]+)"', (STATIC / "index.html").read_text(encoding="utf-8"))}
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
@@ -588,6 +590,110 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     "Budget: the browser's old balance carried over": { prep: async () => { await open("settings"); NET.extra = p => p.startsWith("/api/budget?") ? [200, JSON.parse(JSON.stringify({ ...answers.get(`/api/budget?entity=${FX.QFB}&month=${FX.MONTH}`)?.body, balance: null, saved_as_at: null }))] : undefined; run(`localStorage.setItem("bal-${FX.QFB}-${FX.MONTH}", "500")`); }, route: /\/api\/budget\/header$/, reply: {}, act: () => go("budget") },
     "Payroll: a workbook checked": { prep: () => open("payroll"), route: /\/api\/payroll-check$/, reply: { chosen: { report: { headline: "Nothing to fix" } } }, act: () => { el("pcFile").files = [{ name: "payroll.xlsx" }]; el("pcForm").onsubmit({ preventDefault() {} }); }, partOnly: true },
   };
+  /* ---- B3. dialogs ---- */
+  // two dialogs asked for, each read first, the first answered first (the real server answers one request at a time): the one asked for last
+  // is the one shown
+  for (const how of ["answer", "fail"]) await tryit(`lastAsked:${how}`, async () => {
+    const res = {};
+    for (const [k, page, a, b, slowA, slowB, shows] of [
+      ["recurring", "payees", `editPayee(${FX.PAYEE})`, `editPayee(${FX.PAYEE2})`, `/api/payees/${FX.PAYEE}/usage`, `/api/payees/${FX.PAYEE2}/usage`, () => run(`$("#py-name")?.value ?? null`)],
+      ["setup", "setup:payment_types", `openSetup("payment_types", ${FX.TYPES[0]})`, `openSetup("payment_types", ${FX.TYPES[1]})`, `/api/setup/payment_types/${FX.TYPES[0]}`, `/api/setup/payment_types/${FX.TYPES[1]}`, () => run(`state.setup.drawer?.id ?? null`)]]) {
+      fresh(); await open(page);
+      NET.delay = p => p === slowA ? 500 : p === slowB ? 1000 : 0;
+      if (how === "fail") NET.fail = p => p === slowA ? "500" : null;
+      clicked(a); await settle(now + 50); clicked(b); await settle();
+      res[k] = { open: !roots.drawer.hidden, shows: shows(), toasts: toasts().length };
+    }
+    res.want = { recurring: run(`state.payees?.find(p => p.id === ${FX.PAYEE2})?.name ?? null`) };
+    await open("payees"); res.want.recurring = run(`state.payees.find(p => p.id === ${FX.PAYEE2}).name`); res.want.setup = FX.TYPES[1];
+    return res;
+  });
+
+  // a change answered after its dialog was closed and another one opened: the other one is left alone
+  const slowWrite = (reply, status = 200) => { NET.reply = (p, m) => m !== "GET" ? [status, reply] : undefined; NET.delay = (p, m) => m !== "GET" ? 900 : 0; };
+  const swap = async openOther => { await settle(now + 100); run(`closeDrawer(true)`); run(openOther); await settle(now + 100); };
+  const msgs = () => toasts().map(t => t.msg);
+  // the payment dialog's Save: refused, kept, and kept with a page that can't be read back
+  for (const [k, status, reply, down] of [["saveRefused", 409, { error: "The month is filed." }], ["saveKept", 200, {}], ["saveNotRead", 200, {}, "500"]]) await tryit(`otherDialog:${k}`, async () => {
+    fresh(); await open("entity"); run(`openPayment(${FX.PAY})`); await settle();
+    slowWrite(reply, status); if (down) NET.afterWrite = down;
+    set("pf-notes", "first dialog"); run(`paySave()`);
+    await settle(now + 100); run(`closeDrawer(true)`); run(`openPayment(${FX.PAY2})`); set("pf-notes", "typed in the second");
+    await settle();
+    return { open: run(`state.openPayment`) === FX.PAY2 && !roots.drawer.hidden, notes: el("pf-notes")?.value ?? null, unsaved: run(`Object.keys(unsavedEdits()).join()`),
+      refused: el("pd-refused-box")?.innerHTML || "", msgs: msgs() };
+  });
+  // New payment: refused, and kept
+  for (const [k, status, reply] of [["addRefused", 409, { error: "The month is filed." }], ["addKept", 200, { id: 999 }]]) await tryit(`otherDialog:${k}`, async () => {
+    fresh(); await open("entity"); run(`addPaymentDrawer()`); await settle();
+    slowWrite(reply, status); set("ap-desc", "A made-up bill"); run(`npSave()`); await swap(`addPaymentDrawer()`); set("ap-desc", "A second made-up bill"); await settle();
+    return { open: !roots.drawer.hidden && run(`!!state.np`), desc: el("ap-desc")?.value ?? null, refused: el("np-refused")?.innerHTML || "", msgs: msgs() };
+  });
+  await tryit("otherDialog:removed", async () => {
+    fresh(); await open("entity"); run(`openPayment(${FX.PAY})`); await settle();
+    slowWrite({ unlinked: [], before_tracking: [], lines: 0 }); click({ id: "deletePayment", confirm: "1" }); await swap(`openPayment(${FX.PAY2})`); await settle();
+    return { open: run(`state.openPayment`) === FX.PAY2 && !roots.drawer.hidden };
+  });
+  await tryit("otherDialog:recurringSaved", async () => {
+    fresh(); await open("payees"); run(`editPayee(${FX.PAYEE})`); await settle();
+    slowWrite({}); set("py-notes", "first dialog"); sandbox.__submit = payeeForm(); run(`__submit()`); await swap(`editPayee(${FX.PAYEE2})`); set("py-notes", "typed in the second"); await settle();
+    return { open: !roots.drawer.hidden, name: el("py-name")?.value ?? null, notes: el("py-notes")?.value ?? null, want: run(`state.payees.find(p => p.id === ${FX.PAYEE2}).name`) };
+  });
+  await tryit("otherDialog:recurringDeleted", async () => {
+    fresh(); await open("payees"); run(`editPayee(${FX.PAYEE})`); await settle(); run(`payeeAct("delete", ${FX.PAYEE}, __btn)`);
+    slowWrite({}); await why(); await swap(`editPayee(${FX.PAYEE2})`); await settle();
+    return { open: !roots.drawer.hidden, name: el("py-name")?.value ?? null, want: run(`state.payees.find(p => p.id === ${FX.PAYEE2}).name`) };
+  });
+  // a stop refused after its dialog was closed: said in a message, not under the next dialog's reason box
+  await tryit("otherDialog:stopRefused", async () => {
+    fresh(); await open("payees"); run(`editPayee(${FX.PAYEE})`); await settle(); run(`payeeAct("stop", ${FX.PAYEE}, __btn)`);
+    slowWrite({ error: "It is in use." }, 409); await why(); await swap(`editPayee(${FX.PAYEE2})`);
+    run(`payeeAct("stop", ${FX.PAYEE2}, __btn)`); set("su-reason", "typed for the second"); await settle();
+    return { box: el("su-why-msg")?.innerHTML || "", reason: el("su-reason")?.value ?? null, said: msgs().includes("It is in use.") };
+  });
+  await tryit("otherDialog:reopened", async () => {
+    fresh(); await open("bank"); run(panel); run(`reopenDialog(7)`); await settle();
+    slowWrite({}); set("bk-why", "A made-up reason"); sandbox.__go = { dataset: { sid: "7" }, setAttribute() {}, removeAttribute() {}, disabled: false, textContent: "" }; run(`reopenGo(__go)`);
+    await swap(`openHistory("budget_lines", ${FX.LINE}, "Opened since")`); await settle();
+    return { open: !roots.drawer.hidden, other: /Opened since/.test(roots.drawer.full()) };
+  });
+  await tryit("otherDialog:putBack", async () => {
+    fresh(); await open("trail");
+    const preview = { label: "Bank account", name: "Spare", table: "accounts", kind: "accounts", id: 2, same_id: true, notes: [], lines: [], affected: {},
+      deleted: { at: "2026-11-02T10:00:00", actor: "Made-up user", entry: 4, key: 2, reason: "Made up" } };
+    NET.reply = (p, m) => p === "/api/setup/restore/5" ? [200, preview] : undefined;
+    run(`openRestore(5, "A record")`); await settle(); set("pb-why", "A made-up reason");
+    slowWrite({ label: "Bank account", kind: "accounts", id: 2, same_id: true }); sandbox.__go = btn(); run(`restoreGo(5, __go)`);
+    await swap(`openHistory("budget_lines", ${FX.LINE}, "Opened since")`); await settle();
+    return { open: !roots.drawer.hidden, other: /Opened since/.test(roots.drawer.full()) };
+  });
+  // Mark as filed: the month's readiness read after another page was opened asks nothing there and files nothing
+  await tryit("filedElsewhere", async () => {
+    fresh(); await open("audit"); NET.delay = p => p.startsWith("/api/audit-readiness") ? 900 : 0; NET.writes.length = 0;
+    run(`globalThis.__asked = 0; ask = async () => { __asked++; return true; }`);
+    click({ closeMonth: "1" }); await settle(now + 100); NET.delay = () => 0; go("settings"); await settle();
+    const res = { asked: run(`__asked`), writes: NET.writes.length };
+    run(`ask = async () => true`);
+    return res;
+  });
+  // Add company from the switcher: Setup read after another page was opened gets no add form over it
+  await tryit("addCompanyElsewhere", async () => {
+    fresh(); await open("settings"); let used = false; NET.delay = p => !used && p.startsWith("/api/setup/entities") ? (used = true, 900) : 0;
+    run(`tbAddCompany()`); await settle(now + 100); const asked = used; go("audit"); await settle();
+    return { asked, dialog: !roots.drawer.hidden, audit: /Audit pack/.test(shown()) };
+  });
+  // every page that reads anything is among the pages these checks go through: a new one has to be added to PAGES
+  await tryit("routes", async () => {
+    const res = { all: run(`Object.keys(ROUTES)`), missed: [] };
+    for (const v of res.all) {
+      if (PAGES.some(p => view(p) === v)) continue;
+      fresh(); await open("settings"); NET.reads.length = 0; await open(v);
+      const own = NET.reads.filter(p => !p.startsWith("/api/next"));
+      if (own.length) res.missed.push([v, own]);
+    }
+    return res;
+  });
+
   // what the page keeps of the budget before the flows: read once, so the carry-over case has an answer to alter
   fresh(); await open("budget");
 
@@ -629,6 +735,21 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     t?.action.fn(); await settle();
     return { had: !!t, audit: /Audit pack/.test(shown()), payroll: /Payroll check ·/.test(shown()), sent: NET.writes.length - writes };
   });
+  // a part's change answered while the same page of another company is being read, and then a read that fails: that page is not left with
+  // nothing (its own draw is not overtaken by the part)
+  await tryit("otherCompanyPart", async () => {
+    const res = {};
+    for (const [k, page, route, reply, act] of [
+      ["payroll", "payroll", /\/api\/payroll-check$/, { chosen: null }, () => { el("pcFile").files = [{ name: "payroll.xlsx" }]; el("pcForm").onsubmit({ preventDefault() {} }); }],
+      ["bank", "bank", /\/api\/recon\/sign-off$/, {}, () => run(`rcSign(7, "", "").catch(e => toast(e.message, true))`)]]) {
+      fresh(); await open(page);
+      NET.reply = (p, m) => m !== "GET" && route.test(p) ? [200, reply] : undefined; NET.delay = (p, m) => m !== "GET" ? 500 : 1000;
+      NET.afterWrite = "500";   // read after the change is answered: fails. The other company's page, asked for before that, reads fine
+      act(); await settle(now + 100); NET.down = false; go(page, FX.MBS); await settle(now + 100); NET.down = "500"; await settle();
+      res[k] = { company: run(`state.entity`) === FX.MBS, filled: filled(page) || onPage(), loading: main().classList.contains("loading"), saved: said().includes(SAVED) || onPage() };
+    }
+    return res;
+  });
   // a change answered after the user left: the page now shown is left alone, and the result is said in a message
   await tryit("lateWrite", async () => {
     const res = {};
@@ -646,8 +767,8 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     NET.reply = (p, m) => m !== "GET" ? [200, { id: 500 }] : undefined; NET.afterWrite = "500"; NET.delay = (p, m) => m === "GET" ? 500 : 0;
     set("py-name", "A made-up payee"); set("py-day", "5"); const submit = payeeForm(); sandbox.__submit = submit; run(`__submit()`); await settle(now + 100);
     const n = el("py-notes"); if (n) n.value = "typed while the list is read"; await settle();
-    const open1 = !roots.drawer.hidden; run(`__submit()`); await settle();
-    return { open: open1, writes: NET.writes.length, toast: toasts().some(t => /This was saved/.test(t.msg)) };
+    const open1 = !roots.drawer.hidden, said = toasts().filter(t => t.msg === SAVED && t.action).length; run(`__submit()`); await settle();
+    return { open: open1, writes: NET.writes.length, toast: toasts().some(t => /This was saved/.test(t.msg)), said };
   });
   // an advance added whose list can't be read back, with other typing in the dialog: the new advance's boxes are empty, so Add can't send it again
   await tryit("advanceTwice", async () => {
@@ -843,6 +964,56 @@ for where in ("company", "page"):
             check(f"B: SQL Fetch {'failing' if how == 'fail' else 'answered'} after {'another company' + chr(39) + 's SQL page' if where == 'company' else 'another page'} was opened paints nothing there, leaves nothing reading"
                   + ("" if kept is None else ", and its preview is there when you come back"), r["changed"] == [] and r["reading"] is None and (kept is None or r["preview"] == kept), r)
 
+# ---------- B: dialogs ----------
+for how in ("answer", "fail"):
+    r = ran(f"lastAsked:{how}")
+    if r is not None:
+        check(f"B: two dialogs asked for, both read first, the first {'answering' if how == 'answer' else 'failing'} before the second: the one asked for last is shown, and nothing is said of the first",
+              all(r[k] == {"open": True, "shows": r["want"][k], "toasts": 0} for k in ("recurring", "setup")), r)
+r = ran("otherDialog:saveRefused")
+if r is not None:
+    check("B: a payment's Save refused after its dialog was closed and another payment opened writes nothing into that one, and is said in a message with the payment's name",
+          r["open"] and r["notes"] == "typed in the second" and r["unsaved"] == "pf-notes" and not r["refused"].strip() and any(m.endswith(": The month is filed.") for m in r["msgs"]), r)
+for k, what in (("saveKept", "kept"), ("saveNotRead", "kept, then not read back,")):
+    r = ran(f"otherDialog:{k}")
+    if r is not None:
+        check(f"B: a payment's Save {what} after another payment was opened leaves that one open with what is typed in it, still counted as unsaved against its own figures",
+              r["open"] and r["notes"] == "typed in the second" and r["unsaved"] == "pf-notes" and (k == "saveKept" or "It was saved, but this page could not reload. Try again." in r["msgs"]), r)
+r = ran("otherDialog:addRefused")
+if r is not None:
+    check("B: a new payment refused after its dialog was closed and another opened writes nothing into that one, and is said in a message",
+          r["open"] and r["desc"] == "A second made-up bill" and not r["refused"].strip() and "A made-up bill: The month is filed." in r["msgs"], r)
+r = ran("otherDialog:addKept")
+if r is not None:
+    check("B: a new payment added after another New payment was opened doesn't close it: what is typed there stays", r["open"] and r["desc"] == "A second made-up bill", r)
+r = ran("otherDialog:removed")
+if r is not None:
+    check("B: a payment removed after another payment was opened doesn't close that one", r["open"], r)
+r = ran("otherDialog:recurringSaved")
+if r is not None:
+    check("B: a recurring payment saved after another one's dialog was opened leaves that dialog, and what is typed in it, alone (the saved one is not opened over it)",
+          r["open"] and r["name"] == r["want"] and r["notes"] == "typed in the second", r)
+r = ran("otherDialog:recurringDeleted")
+if r is not None:
+    check("B: a recurring payment deleted after another one's dialog was opened doesn't close that one", r["open"] and r["name"] == r["want"], r)
+r = ran("otherDialog:stopRefused")
+if r is not None:
+    check("B: a stop refused after its dialog was closed is said in a message: the next dialog's reason box keeps its reason and gets no message",
+          r == {"box": "", "reason": "typed for the second", "said": True}, r)
+for k, what in (("reopened", "a bank month reopened"), ("putBack", "a record put back")):
+    r = ran(f"otherDialog:{k}")
+    if r is not None:
+        check(f"B: {what} after another dialog was opened doesn't close it", r == {"open": True, "other": True}, r)
+r = ran("filedElsewhere")
+if r is not None:
+    check("B: Mark as filed, left for another page while the month is looked at, asks nothing over that page and files nothing", r == {"asked": 0, "writes": 0}, r)
+r = ran("addCompanyElsewhere")
+if r is not None:
+    check("B: Add company, left for another page while Setup is read, opens no form over that page", r == {"asked": True, "dialog": False, "audit": True}, r)
+r = ran("routes")
+if r is not None:
+    check("B: every page in the table of pages that reads anything is one these checks go through (a new page has to be added to PAGES)", len(r["all"]) > 15 and r["missed"] == [], r["missed"] or r)
+
 # ---------- C ----------
 flows = [k for k in o if k.startswith("C:")]
 check("C: every action that changes something and then reads back was tried", len({k.rsplit(":", 1)[0] for k in flows}) >= 62, len(flows))
@@ -875,13 +1046,17 @@ for name in ("payment dialog: Save details", "payment dialog: a document uploade
 r = ran("tryAgainElsewhere")
 if r is not None:
     check("C: a part's Try again pressed after another page was opened reads that page again, and never draws the part over it", r == {"had": True, "audit": True, "payroll": False, "sent": 0}, r)
+r = ran("otherCompanyPart")
+if r is not None:
+    check("C: a part's change answered while the same page of another company is read, with its re-read failing: that page is not left blank or on Loading, and it says the change was saved",
+          all(x == {"company": True, "filled": True, "loading": False, "saved": True} for x in r.values()), r)
 r = ran("lateWrite")
 if r is not None:
     check("C: a change answered after another page was opened leaves that page alone: a refusal and a kept result are said in a message",
           r["refused"] == {"same": True, "toast": True} and r["kept"] == {"audit": True, "payroll": False, "toast": True}, r)
 r = ran("addTwice")
 if r is not None:
-    check("C: a recurring payment's Add left open (typed in while the list was read) refuses a second Add", r == {"open": True, "writes": 1, "toast": True}, r)
+    check("C: a recurring payment's Add left open (typed in while the list was read) refuses a second Add", r == {"open": True, "writes": 1, "toast": True, "said": 1}, r)
 r = ran("advanceTwice")
 if r is not None:
     check("C: an advance added with the dialog left open (other typing kept) leaves its boxes empty, so Add can't send it again",

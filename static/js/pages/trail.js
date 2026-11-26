@@ -294,16 +294,18 @@ async function restoreGo(rowId, btn) {
   }
   if (err) err.innerHTML = ""; if (inp?.removeAttribute) inp.removeAttribute("aria-invalid");
   btn.disabled = true; restoreGo.busy = true;
+  const here = dialogHere();
   let r;
   try { r = await api(`/api/setup/restore/${rowId}`, { json: { reason } }); }
   catch (e) {
     if (btn.isConnected) btn.disabled = false;
     if (appStopped(e)) throw e;
+    if (!here()) return toast(`Put it back: ${changeError(e)}`, true);  // its dialog was closed: another one on show is left alone
     if ($("#rsErr")) $("#rsErr").innerHTML = refusedNote(e.unsure ? changeError(e) : `${e.message} Nothing was changed.`, { title: e.unsure ? "It may not have been put back" : "This can't be put back." });
     return;
   }
   finally { restoreGo.busy = false; }
-  closeDrawer(true);
+  if (here()) closeDrawer(true);
   toast(`${r.label} put back${r.same_id ? "" : ` as #${r.id}`}`);
   return afterSaved(async o => {
     if (["checklist", "reminders", "payees"].includes(r.kind)) await reloadMeta(); else await afterSetupChange(r.kind);

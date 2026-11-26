@@ -212,9 +212,10 @@ async function payeeDialog(dlg, id, { saved = null, keep = {} } = {}) {
     if (id !== "new") body.id = +id;
     const btn = ev.target.querySelector("button[type=submit]");
     btn.disabled = true; btn.setAttribute?.("aria-busy", "true");
+    const here = dialogHere();
     try {
       let r;
-      try { r = await api("/api/payees", { json: body }); } catch (e) { return toast(changeError(e), true); }
+      try { r = await api("/api/payees", { json: body }); } catch (e) { return toast(here() ? changeError(e) : `${body.name}: ${changeError(e)}`, true); }
       added = id === "new";
       const keep = Object.fromEntries(Object.entries(drawerEdits()).filter(([k]) => k.startsWith("adv-")));  // an advance being typed stays
       toast(id === "new" ? `${body.name} added` : "Saved");
@@ -225,7 +226,7 @@ async function payeeDialog(dlg, id, { saved = null, keep = {} } = {}) {
         const nid = id !== "new" ? +id : r.id ?? (same.length ? Math.max(...same.map(x => x.id)) : null);
         if (nid && state.payees?.some(x => x.id === nid)) return editPayee(nid, { saved: r, keep: id === "new" ? {} : keep });
         state.payeeSaved = r; closeDrawer(true); return afterSaved(render);
-      }, { dialogSaved: k => k.startsWith("py-") });
+      }, { dialogSaved: k => k.startsWith("py-"), here });
     } finally { if (btn.isConnected) { btn.disabled = false; btn.removeAttribute?.("aria-busy"); } }
   };
 }
@@ -251,46 +252,51 @@ const advBody = k => {
     note: $(`#adv-${k}-note`).value.trim() };
 };
 // After a change made in the recurring payment's drawer: the list is drawn again, then the drawer, showing what the change
-// did and keeping what was typed elsewhere in it (drop: the inputs whose values were just saved).
-async function payeeChanged(pid, r, head, drop = "") {
+// did and keeping what was typed elsewhere in it (drop: the inputs whose values were just saved). here: as for afterSaved.
+async function payeeChanged(pid, r, head, drop = "", here = null) {
   const keep = drawerEdits();
   if (drop) for (const k in keep) if (k.startsWith(drop)) delete keep[k];
-  return afterSaved(render, () => editPayee(pid, { saved: r && { ...r, head }, keep }), { dialogSaved: drop ? k => k.startsWith(drop) : false });
+  return afterSaved(render, () => editPayee(pid, { saved: r && { ...r, head }, keep }), { dialogSaved: drop ? k => k.startsWith(drop) : false, here });
 }
 async function payeeAct(act, pid, btn) {
   const label = { stop: "Stop using it", use: "Use it again", delete: "Delete it" }[act];
   return askWhy(btn, label, async reason => {
+    const here = dialogHere();
     if (act === "delete") {
       await api(`/api/payees/${pid}`, { method: "DELETE", json: { reason } });
-      closeDrawer(true); toast("Recurring payment deleted"); return afterSaved(render);
+      if (here()) closeDrawer(true);
+      toast("Recurring payment deleted"); return afterSaved(render);
     }
     const r = await api(`/api/payees/${pid}/${act}`, { json: { reason } });
     toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
-    return payeeChanged(pid, r, act === "stop" ? "Stopped" : "In use again");
+    return payeeChanged(pid, r, act === "stop" ? "Stopped" : "In use again", "", here);
   });
 }
 async function advAdd(pid, btn) {
   const body = advBody("new");
   if (body.monthly_deduction == null || !body.start_month || !body.end_month) return toast("Type the monthly deduction and choose its first and last month.", true);
   btn.disabled = true;
+  const here = dialogHere();
   try {
     const r = await api(`/api/payees/${pid}/advances`, { json: body }).catch(e => { throw changeThrown(e); });
     // added: the row it was typed in is emptied, so a drawer left open can't add it a second time
-    for (const k of ["amt", "from", "to", "note"]) { const el = $(`#adv-new-${k}`); if (el) el.value = ""; }
-    toast("Advance added"); return await payeeChanged(pid, r, "Advance added", "adv-new-");
+    if (here()) for (const k of ["amt", "from", "to", "note"]) { const el = $(`#adv-new-${k}`); if (el) el.value = ""; }
+    toast("Advance added"); return await payeeChanged(pid, r, "Advance added", "adv-new-", here);
   }
   finally { if (btn.isConnected) btn.disabled = false; }
 }
 async function advSave(aid, btn) {
   const pid = state.payees?.find(p => (p.advances || []).some(a => a.id === aid))?.id;
   btn.disabled = true;
-  try { const r = await api(`/api/advances/${aid}`, { method: "PATCH", json: advBody(aid) }).catch(e => { throw changeThrown(e); }); toast("Advance saved"); return await payeeChanged(pid, r, "Advance saved", `adv-${aid}-`); }
+  const here = dialogHere();
+  try { const r = await api(`/api/advances/${aid}`, { method: "PATCH", json: advBody(aid) }).catch(e => { throw changeThrown(e); }); toast("Advance saved"); return await payeeChanged(pid, r, "Advance saved", `adv-${aid}-`, here); }
   finally { if (btn.isConnected) btn.disabled = false; }
 }
 function advDelete(aid, btn) {
   const pid = state.payees?.find(p => (p.advances || []).some(a => a.id === aid))?.id;
   return askWhy(btn, "Remove it", async reason => {
+    const here = dialogHere();
     const r = await api(`/api/advances/${aid}`, { method: "DELETE", json: { reason } });
-    toast("Advance removed"); return payeeChanged(pid, r, "Advance removed", `adv-${aid}-`);
+    toast("Advance removed"); return payeeChanged(pid, r, "Advance removed", `adv-${aid}-`, here);
   });
 }

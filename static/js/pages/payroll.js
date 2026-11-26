@@ -90,7 +90,7 @@ async function payrollDraw(page, main, checkId) {
     const picked = $("#pcFile");
     if (picked) picked.value = "";  // checked and kept: the form doesn't hold it to be sent again while the page is read
     state.pcFilter = null; toast(out.chosen?.report?.headline || "Checked");
-    await afterSaved(savedPart(() => state.view === "payroll", () => viewPayroll(main)));
+    await afterSaved(savedPart(here, () => viewPayroll(main)));
   };
   // Only while this company's month is still the one asked for: these stay clickable, dimmed, while the next page is read, and a draw
   // from them then would take the place of the one being read.

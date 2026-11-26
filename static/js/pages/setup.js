@@ -481,8 +481,14 @@ async function whySubmit() {
   if (!run) return hideWhy();
   goBtn.disabled = true; goBtn.setAttribute("aria-busy", "true");
   state.whyBusy = true;
-  try { await run(reason); hideWhy(); }
-  catch (e) { if (appStopped(e)) toast(e.message, true); else { setWhyMsg(changeError(e), !e.unsure); $("#su-reason")?.focus?.(); } }
+  // The box is written to only while it is still this change's: a box drawn since (another dialog's), or asked again for another change, is
+  // left alone.
+  const box = $("#setupWhy"), same = () => $("#setupWhy") === box;
+  try { await run(reason); if (same() && (!state.why || state.why === run)) hideWhy(); }
+  catch (e) {
+    if (appStopped(e) || !same() || state.why !== run) toast(changeError(e), true);
+    else { setWhyMsg(changeError(e), !e.unsure); $("#su-reason")?.focus?.(); }
+  }
   finally { state.whyBusy = false; if (goBtn.isConnected) { goBtn.disabled = false; goBtn.removeAttribute("aria-busy"); } }
 }
 

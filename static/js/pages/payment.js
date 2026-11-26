@@ -381,14 +381,18 @@ async function paySave() {
   for (const k in now) if (now[k] !== was[k]) changed[k] = now[k];
   if (!Object.keys(changed).length) return toast("Nothing has changed.");
   S.saving = true; S.refused = null; pdBusy(true);
+  const here = dialogHere(), name = p.description;
   try { await api(`/api/payments/${id}`, { method: "PATCH", json: changed }); }
   catch (e) {
-    S.saving = false; S.refused = { text: changeError(e), title: e.unsure ? "It may not have been saved" : "Nothing was saved" }; pdBusy(false);
+    S.saving = false; S.refused = { text: changeError(e), title: e.unsure ? "It may not have been saved" : "Nothing was saved" };
+    if (!here()) return toast(`${name}: ${S.refused.text}`, true);  // its dialog was closed: whatever is open now is left alone
+    pdBusy(false);
     const box = pdQ("#pd-refused-box");
     if (box) { box.innerHTML = refusedNote(S.refused.text, { title: S.refused.title }); box.focus?.(); }
     return;
   }
-  S.saving = false; S.histStale = true; state.payLoaded = now;
+  S.saving = false; S.histStale = true;
+  if (here()) state.payLoaded = now;
   // Undo puts back fields that nothing else follows from: references, notes, a paid date typed in. A change of amount,
   // estimate or bank account moves bank lines and figures with it, so it is changed back by hand.
   const plain = ["bank_ref", "sql_ref", "einvoice_ref", "notes", "difference_note", ...(p.paid_source === "manual" || !p.paid_date ? ["paid_date"] : [])];
@@ -401,7 +405,8 @@ async function paySave() {
     await afterSaved(render);
   } } : undefined);
   const form = pdQ("#payForm");
-  const ok = await afterSaved(render);
+  const ok = await afterSaved(render, null, { here });
+  if (!here()) return;
   // A dialog still open that wasn't drawn again (another page overtook the reading back) is not left saying Saving…
   if (state.openPayment === id && pdQ("#payForm") === form) pdBusy(false);
   if (ok) pdFocus("#pd-save", "#drawerTitle");
@@ -732,23 +737,27 @@ async function npSave() {
   const body = { entity_id: e.id, month: state.month, description: desc, category: $("#ap-cat").value, direction: N.dir,
     amount: npAmount($("#ap-amt").value), due_date: $("#ap-due").value || null, account_id: a ? a.id : null };
   N.saving = true; npBusy(true); npFoot();
+  const here = dialogHere();
   let r;
   try { r = await api("/api/payments", { json: body }); }
   catch (e) {
-    N.saving = false; N.refused = changeError(e); N.unsure = !!e.unsure; npBusy(false); npFoot();
+    N.saving = false; N.refused = changeError(e); N.unsure = !!e.unsure;
+    if (!here()) return toast(`${body.description}: ${N.refused}`, true);
+    npBusy(false); npFoot();
     const box = pdQ("#np-refused");
     if (box) { box.innerHTML = refusedNote(N.refused, { title: e.unsure ? "It may not have been added" : "Nothing was saved" }); box.focus?.(); }
     return;
   }
   const id = r.id;
-  await closeDrawer(true);
+  if (here()) await closeDrawer(true);  // its own dialog only: one opened since keeps what is typed in it
+  const mine = dialogHere();
   state.mark = { pay: x => x.id === id };
   toast(npFromOverview() ? `Payment added to ${e.code}'s ${monthName(state.month)}` : "Payment added", false, { undo: async () => {
     await api(`/api/payments/${id}`, { method: "DELETE", json: {} });
     toast("Undone. The payment is taken off again; the undo is a new entry in the audit trail.");
     await afterSaved(render);
   } });
-  const ok = await afterSaved(render);
+  const ok = await afterSaved(render, null, { here: mine });
   const now = document.activeElement;
   if (ok && (!now || now === document.body || now === $("#main"))) pdFocus("#addPayment");   // back on the button that opened it, drawn again
 }

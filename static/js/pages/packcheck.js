@@ -44,9 +44,12 @@ async function packCheckFill(dlg, event, file) {
 // it asks first, naming it: a month filed outside the app can still be marked. afterBuild: asked from 'Printed and
 // filed?' on the Audit page.
 async function markFiled(afterBuild) {
-  const r = await api(`/api/audit-readiness?entity_id=${state.entity}&month=${state.month}`);
+  // The company and month the button was on. Another page opened while they are looked at: nothing is asked over it and nothing is filed.
+  const entity = state.entity, month = state.month, here = pageHere();
+  const r = await api(`/api/audit-readiness?entity_id=${entity}&month=${month}`);
+  if (!here()) return;
   if (r.still_open.length && !(await ask(`${r.entity.code} still has things open:${afterBuild ? "" : "\nIf this month was already filed outside the app, that is fine."}`, { title: `Mark ${r.label} as filed?`, yes: "File anyway", no: "Go back", tone: "brand", glyph: "pack", list: r.still_open.map(text => ({ glyph: "alert", tone: "warn", text })), closing: "A filed month can be reopened later." }))) return;
-  await api("/api/months/close", { json: { entity_id: state.entity, month: state.month, closed: true } });
+  await api("/api/months/close", { json: { entity_id: entity, month, closed: true } });
   toast(`${r.label} marked as filed`); await afterSaved(render);
   // The password is typed each time, so a backup is offered, not made.
   if (await ask("A backup keeps the filed month safe if this PC fails. You'll be asked for the backup password next.", { title: `${r.label} is filed. Make an encrypted backup now?`, yes: "Make a backup", no: "Not now", safe: "yes", tone: "brand", glyph: "vault", closing: "Not now changes nothing; back up any time from Backup." })) { await go("settings"); $("#bkPw")?.focus(); }

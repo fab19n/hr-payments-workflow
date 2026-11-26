@@ -45,12 +45,13 @@ document.addEventListener("click", async ev => {
     if (ds.fix) return fixIt(ds.fix, +ds.id);
     if (ds.closeMonth) return await markFiled(ds.closeMonth === "built");
     if (ds.reopenMonth) {
-      const r = await api("/api/months/close", { json: { entity_id: state.entity, month: state.month, closed: false } });
-      toast(`${monthName(state.month)} reopened.${r.pack_ticked ? " Its audit pack item stays ticked; untick it if the pack needs doing again." : ""}`); return afterSaved(render);
+      const month = state.month, r = await api("/api/months/close", { json: { entity_id: state.entity, month, closed: false } });
+      toast(`${monthName(month)} reopened.${r.pack_ticked ? " Its audit pack item stays ticked; untick it if the pack needs doing again." : ""}`); return afterSaved(render);
     }
     if (ds.openMonth) {
-      await api("/api/months/open", { json: { entity_id: +ds.openMonth, month: state.month } });
-      toast(`${monthName(state.month)} is set up`); return afterSaved(render);
+      const month = state.month;
+      await api("/api/months/open", { json: { entity_id: +ds.openMonth, month } });
+      toast(`${monthName(month)} is set up`); return afterSaved(render);
     }
     if (t.id === "prevMonth" || t.id === "nextMonth" || t.id === "thisMonth") {
       if (!state.meta || state.startFailed) return;  // nothing is started yet, or the start failed: there is no month to move
@@ -184,11 +185,13 @@ document.addEventListener("click", async ev => {
     if (t.id === "deletePayment") {
       if (t.dataset.confirm !== "1") { t.dataset.confirm = "1"; t.textContent = "Click again to remove"; return; }
       let r;
+      const here = dialogHere();
       try { r = await api(`/api/payments/${state.openPayment}`, { method: "DELETE", json: {} }); }
       catch (e) { t.dataset.confirm = ""; t.textContent = "Remove this payment"; throw changeThrown(e); }
       // A voucher of a month before the first month tracked goes back under Before tracking, not under SQL entries not linked.
       const bt = r.before_tracking || [], back = r.unlinked.filter(n => !bt.includes(n));
-      closeDrawer(true); toast(`Payment removed${back.length ? `; ${back.join(", ")} back under SQL entries not linked` : ""}${bt.length ? `; ${bt.join(", ")} back under Before tracking on the SQL page` : ""}${r.lines
+      if (here()) closeDrawer(true);
+      toast(`Payment removed${back.length ? `; ${back.join(", ")} back under SQL entries not linked` : ""}${bt.length ? `; ${bt.join(", ")} back under Before tracking on the SQL page` : ""}${r.lines
         ? `; ${r.lines} bank line${r.lines > 1 ? "s" : ""} back under lines to explain` : ""}`); return afterSaved(render);
     }
     if (t.id === "addPayment") return addPaymentDrawer();
@@ -200,9 +203,9 @@ document.addEventListener("click", async ev => {
     if (ds.rvBack) { state.recon.rv = null; return drawRecon(); }
     if (ds.rvToggle) { RV().showMatched = !RV().showMatched; return drawRvList(); }
     if (ds.rvConfirmAll) {
-      const r = await api("/api/recon/confirm-matched", { json: { entity_id: state.entity, statement_id: RV().sid } });
+      const again = bankAgain(), r = await api("/api/recon/confirm-matched", { json: { entity_id: state.entity, statement_id: RV().sid } });
       toast(`${r.confirmed} line${r.confirmed === 1 ? "" : "s"} confirmed${r.needs_date_tick ? `; ${r.needs_date_tick} with a different date left for you to select and tick` : ""}.`);
-      return afterSaved(bankAgain());
+      return afterSaved(again);
     }
     if (t.id === "rvApply") { t.disabled = true; try { return await rvApply(); } finally { t.disabled = false; } }
     // Bank and reconciliation (pages/bank.js): Mark reconciled with its note and Prepared by; Reopen month (a reason is
@@ -286,8 +289,8 @@ document.addEventListener("click", async ev => {
     if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.kind === "journal" || r.kind === "invoice" ? "Journals and invoices" : r.before_tracking ? "Before tracking" : "SQL entries not linked"}${reconMoved(r)}`); return afterSaved(render); }
     if (ds.editPayee) { if (!(await mayLeave())) return; return await editPayee(ds.editPayee); }
     if (ds.addMonth) {
-      const r = await api(`/api/payees/${ds.addMonth}/add-to-month`, { json: { month: state.month } });
-      toast(r.opened ? `${monthName(state.month)} is set up: its checklist and recurring payments were added` : `Added to ${monthName(state.month)}`);
+      const month = state.month, r = await api(`/api/payees/${ds.addMonth}/add-to-month`, { json: { month } });
+      toast(r.opened ? `${monthName(month)} is set up: its checklist and recurring payments were added` : `Added to ${monthName(month)}`);
       return afterSaved(render);
     }
     if (t.id === "buildPack") {
@@ -440,10 +443,11 @@ document.addEventListener("submit", async ev => {
     ev.preventDefault();
     const amount = LT.typedAmount($("#openAmount").value);
     if (!$("#openMonth").value || amount === null) return toast("Choose the month and type the balance as a number.", true);
+    const again = bankAgain();
     try { await api("/api/recon/book-opening", { json: { entity_id: state.entity, account_id: state.recon.account, month: $("#openMonth").value, amount } }); }
     catch (e) { return toast(changeError(e), true); }
     toast("Book opening saved.");
-    await afterSaved(bankAgain());
+    await afterSaved(again);
   }
   // The SQL import page's Read pasted rows and Read file: pages/sql.js (what is wrong is said under the box).
   if (ev.target.id === "addForm") {  // New payment's Add payment (pages/payment.js)

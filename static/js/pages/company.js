@@ -363,7 +363,7 @@ async function mayLeave() {
 // nothing to ask it closes at once, before the first await.
 async function closeDrawer(force) {
   if (!force && drawerDirty() && !(await mayLeave())) return false;
-  DLG.seq++;  // a dialog still being read is not opened after this (core/dialog.js dialogDraw)
+  DLG.seq++; DLG.closed++;  // a dialog still being read is not opened after this, and a change made in this one leaves the next alone (core/dialog.js)
   hideDrawer(); state.openPayment = null; state.pay = null; state.np = null; state.drawerDirty = null; state.drawerAt = null; state.why = null;
   Object.assign(state.setup, { drawer: null, chkOpen: null, remOpen: null, paste: null });
   if (state.addr.id || state.setup.id != null) { state.addr.id = null; state.setup.id = null; syncAddr(); }  // a closed drawer is not in the address

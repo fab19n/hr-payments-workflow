@@ -3,13 +3,23 @@
    The drawer is a modal dialog: openers draw it and call showDrawer(); closeDrawer() (pages/company.js) calls hideDrawer().
    ask() is the styled confirm that replaces the browser's own question box. Motion and focus rules: design/motion-keyboard-spec.md
    section 3. Everything that touches the page is guarded, so the script also runs where there is no real DOM. */
-const DLG = { opener: null, sel: "", want: null, click: null, timer: null, closing: false, wired: false, dim: null, asking: 0, n: 0, seq: 0 };  // seq: goes up each time a dialog is shown or closed
-// A dialog that is read before it opens, or filled once it is open: draw(dlg) waits with dlg.read, and writes only if no dialog has been
-// shown or closed since it was asked for (a quicker one, Close, or going to another page, which closes the dialog first). As pageDraw
-// (core/page.js). A page drawn again behind the dialog does not end it.
+// seq: goes up each time a dialog is shown or closed; asked: each time one is asked for that reads first (dialogDraw); closed: each time
+// the dialog is closed (closeDrawer, pages/company.js).
+const DLG = { opener: null, sel: "", want: null, click: null, timer: null, closing: false, wired: false, dim: null, asking: 0, n: 0, seq: 0, asked: 0, closed: 0 };
+// A dialog that is read before it opens, or filled once it is open: draw(dlg) waits with dlg.read, and writes only while it is still the one
+// wanted: none that reads has been asked for since (the one asked for last wins, whatever order the answers come in), and none has been shown
+// or closed (one that needs no read, Close, or going to another page, which closes the dialog first). As pageDraw (core/page.js): read
+// first, then show. A page drawn again behind the dialog does not end it.
 function dialogDraw(draw) {
-  const at = DLG.seq;
-  return drawWhile(drawTicket(() => DLG.seq !== at, false), draw);
+  const ask = ++DLG.asked, at = DLG.seq;
+  return drawWhile(drawTicket(() => DLG.asked !== ask || DLG.seq !== at, false), draw);
+}
+// For what a dialog's own change does once the server has answered (close the dialog, write into it, open it again): says whether that
+// dialog has not been closed since. Once it has, whatever dialog is on show is another one, and the answer leaves it alone (it is said in a
+// message). Ask before the first await.
+function dialogHere() {
+  const at = DLG.closed;
+  return () => DLG.closed === at;
 }
 const DLG_FOCUSABLE = 'button:not([disabled]),a[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])';
 

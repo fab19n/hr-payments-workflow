@@ -33,8 +33,9 @@ async function api(path, opts = {}) {
 const BAD_REPLY = "HR Payments gave an answer this page can't read.";
 // What is said when it isn't known whether a change was made.
 const NOT_KNOWN = "It isn't known whether it was saved: check before doing it again.";
-// An error's words for an action that changes something: the reason, and when it isn't known whether it was made, that.
-const changeError = e => e && e.unsure ? `${e.message} ${NOT_KNOWN}` : e.message;
+// An error's words for an action that changes something: the reason, and when it isn't known whether it was made, that. (A broken connection's
+// reason is said in our words, not the browser's "Failed to fetch".)
+const changeError = e => e && e.unsure ? `${e.network ? "The connection to HR Payments broke." : e.message} ${NOT_KNOWN}` : e.message;
 // The same as an error, for an action whose caller says what was thrown (a click handler's message).
 const changeThrown = e => e && e.unsure ? Object.assign(new Error(changeError(e)), { unsure: true, network: e.network }) : e;
 

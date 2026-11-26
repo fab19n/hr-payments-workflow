@@ -382,11 +382,12 @@ function statutoryHtml(d) {
 // Use these accounts: the accounts suggested from the chart are added as Setup would add them, then the check is drawn.
 async function statutoryUse(t) {
   t.disabled = true;
+  const here = pageHere();
   try {
     const r = await api("/api/statutory/use-suggested", { json: { entity_id: state.entity } });
     toast(`${plural(r.added, "statutory account")} added.`);
   } catch (e) { toast(changeError(e), true); t.disabled = false; return; }
-  await afterSaved(savedPart(() => ["books", "parties", "statutory"].includes(state.view), () => drawBooks({ saved: true })));
+  await afterSaved(savedPart(here, () => drawBooks({ saved: true })));
 }
 
 // A doc no. in the ledger opens that document's lines below its row, as on the SQL page; clicking it again closes them.
