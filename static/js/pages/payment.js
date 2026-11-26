@@ -439,7 +439,7 @@ function pdUpload(items) {
   return pdSend(add.filter(u => u.st === "up"));
 }
 async function pdSend(list) {
-  const S = state.pay, pid = state.openPayment;
+  const S = state.pay, pid = state.openPayment, here = dialogHere();
   let added = 0, unsure = false;
   for (const u of list) {
     try { await pdPost(u, pid); u.st = "ok"; u.pct = 100; added++; }
@@ -458,10 +458,10 @@ async function pdSend(list) {
   // register or its dialog (closed and opened again), and the focus stays wherever it is now.
   const same = state.openPayment === pid && dlgDrawerOpen();
   if (state.pay !== S || !same) {
-    if (state.view === "entity" && (!state.openPayment || same)) await afterSaved(render);
+    if (state.view === "entity" && (!state.openPayment || same)) await afterSaved(render, null, { here });
     return toast(said);
   }
-  const ok = await afterSaved(render);
+  const ok = await afterSaved(render, null, { here });
   toast(said);
   // The dialog was closed because the page couldn't be read back: the files not added are named, as their rows went with it.
   const failed = S.ups.filter(u => u.st === "fail");
@@ -543,9 +543,10 @@ async function payClick(t, ds) {
     const doc = p?.documents.find(x => x.id === A.doc);
     if (!doc) { payPaint(); return true; }
     if (A.act === "replace") { await pdUpload([{ file: A.file, type: doc.doc_type, replaces: doc.id }]); return true; }
+    const here = dialogHere();
     try { await api(`/api/documents/${doc.id}/remove`, { json: {} }); }
     catch (e) { payPaint(); toast(changeError(e), true); return true; }
-    const ok = await afterSaved(render);
+    const ok = await afterSaved(render, null, { here });
     toast(`Removed ${doc.original_name}`);
     if (ok) pdFocus(`#pd-add-${pdSlug(doc.doc_type)}`, `#pd-up-${pdSlug(doc.doc_type)}`, "#drawerTitle");
     return true;

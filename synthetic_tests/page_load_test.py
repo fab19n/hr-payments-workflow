@@ -554,6 +554,8 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     "bank review: Undo a line": { prep: openRV, route: /\/api\/statement-lines\/31$/, reply: {}, act: () => click({ unlink: "31" }) },
     "bank: Match again": { prep: () => open("bank"), route: /\/api\/statements\/rematch$/, reply: { matched: 0, no_docs: 0 }, act: () => click({ id: "rematch" }) },
     "bank: Explain a line": { prep: async () => { await openRV(); run(`state.recon.rv.d.lines = [{ id: 31, state: "open", txn_date: ${JSON.stringify(FX.MONTH + "-03")}, amount: -5, balance: 1, description: "Sample line", suggestions: [], vouchers: [] }]; explainLine(31)`); await settle(); }, route: /\/api\/statement-lines\/31$/, reply: {}, act: () => el("ex-none").onclick() },
+    "bank: Explain a line, then Undo": { prep: async () => { await openRV(); run(`state.recon.rv.d.lines = [{ id: 31, state: "open", txn_date: ${JSON.stringify(FX.MONTH + "-03")}, amount: -5, balance: 1, description: "Sample line", suggestions: [], vouchers: [] }]; explainLine(31)`); await settle(); }, route: /\/api\/statement-lines\/31$/, reply: {}, first: () => el("ex-none").onclick(), act: undo => undo() },
+    "bank: before tracking": { prep: () => open("bank"), route: /\/api\/recon\/before-tracking$/, reply: {}, act: () => run(`rcAct("before-tracking", { statement_id: 7 }, "Marked.").catch(e => toast(e.message, true))`) },
     "bank: statement imported": { prep: () => open("bank"), route: /\/api\/statements$/, reply: { lines: 3, month: FX.MONTH, matched: 1, no_docs: 0 }, act: () => { el("stmtFile").files = [{ name: "s.pdf" }]; fire("submit", { id: "stmtForm", querySelector: () => null }); } },
     "bank: book opening saved": { prep: () => open("bank"), route: /\/api\/recon\/book-opening$/, reply: {}, act: () => { set("openMonth", FX.MONTH); set("openAmount", "10.00"); fire("submit", { id: "openingForm", querySelector: () => null }); } },
     "SQL page: Import": { prep: async () => { await open("sql"); run(sqPreview(FX.QFB)); }, route: /\/api\/sql\/apply$/, reply: { added: 2, linked: 1, skipped: 0 }, act: () => { sandbox.__go = btn(); run(`sqlApply(__go).catch(e => toast(e.message, true))`); }, after: () => ({ done: run(`state.sq?.done?.title || null`) }), want: { done: "Imported 2 entries" }, keeps: "Imported 2 entries" },
@@ -628,6 +630,13 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     fresh(); await open("entity"); run(`addPaymentDrawer()`); await settle();
     slowWrite(reply, status); set("ap-desc", "A made-up bill"); run(`npSave()`); await swap(`addPaymentDrawer()`); set("ap-desc", "A second made-up bill"); await settle();
     return { open: !roots.drawer.hidden && run(`!!state.np`), desc: el("ap-desc")?.value ?? null, refused: el("np-refused")?.innerHTML || "", msgs: msgs() };
+  });
+  // an upload answered after its dialog was closed and New payment opened, the page then not read back: New payment stays
+  await tryit("otherDialog:upload", async () => {
+    fresh(); await open("entity"); run(`openPayment(${FX.PAY})`); await settle();
+    slowWrite({ id: 1 }); NET.afterWrite = "500"; run(`pdUpload([{ file: { name: "bill.pdf", size: 10 }, type: "invoice" }])`); await settle(now + 100);
+    run(`closeDrawer(true)`); run(`addPaymentDrawer()`); await settle();
+    return { open: !roots.drawer.hidden && run(`!!state.np`), writes: NET.writes.length, said: msgs().includes("It was saved, but this page could not reload. Try again.") };
   });
   await tryit("otherDialog:removed", async () => {
     fresh(); await open("entity"); run(`openPayment(${FX.PAY})`); await settle();
@@ -986,6 +995,9 @@ if r is not None:
 r = ran("otherDialog:addKept")
 if r is not None:
     check("B: a new payment added after another New payment was opened doesn't close it: what is typed there stays", r["open"] and r["desc"] == "A second made-up bill", r)
+r = ran("otherDialog:upload")
+if r is not None:
+    check("B: a file's upload answered after New payment was opened, with the page then not read back, leaves New payment open, and says the file was saved", r == {"open": True, "writes": 1, "said": True}, r)
 r = ran("otherDialog:removed")
 if r is not None:
     check("B: a payment removed after another payment was opened doesn't close that one", r["open"], r)
@@ -1016,7 +1028,7 @@ if r is not None:
 
 # ---------- C ----------
 flows = [k for k in o if k.startswith("C:")]
-check("C: every action that changes something and then reads back was tried", len({k.rsplit(":", 1)[0] for k in flows}) >= 62, len(flows))
+check("C: every action that changes something and then reads back was tried", len({k.rsplit(":", 1)[0] for k in flows}) >= 64, len(flows))
 for key in flows:
     name, how = key[2:].rsplit(":", 1)
     r = ran(key)

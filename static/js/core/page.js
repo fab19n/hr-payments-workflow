@@ -22,7 +22,9 @@
    An overtaken page is never drawn again by itself: the newer draw is the page.
    part: the name of what the draw writes into. Two draws of one part can race on one page (two tabs clicked quickly), so only
    the last one started counts, and draws of other parts are left alone. "main" is a whole page. null: only the page counts.
-   A dialog that is read before it opens has the same rule, by the dialogs opened and closed (dialogDraw, core/dialog.js). */
+   A dialog that is read before it opens has the same rule, by the dialogs asked for, opened and closed (dialogDraw, core/dialog.js), and what a
+   change made in a dialog does once the server answers asks first whether that dialog is still there (dialogHere). What is read back after a
+   change goes through afterSaved (core/saved.js). */
 const PAGE = { n: 0, saved: false, parts: Object.create(null) };
 // A new page is asked for (render() only): every draw asked for before is overtaken.
 const pageTurn = () => ++PAGE.n;
