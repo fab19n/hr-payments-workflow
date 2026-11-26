@@ -24,10 +24,15 @@
    the last one started counts, and draws of other parts are left alone. "main" is a whole page. null: only the page counts.
    A dialog that is read before it opens has the same rule, by the dialogs asked for, opened and closed (dialogDraw, core/dialog.js), and what a
    change made in a dialog does once the server answers asks first whether that dialog is still there (dialogHere). What is read back after a
-   change goes through afterSaved (core/saved.js). */
-const PAGE = { n: 0, saved: false, parts: Object.create(null) };
+   change goes through afterSaved (core/saved.js). While the page is being read, what is still on show can be clicked: what would then draw
+   a part the page's own draw writes too (unless it paints its own failure there, as a Books report does), or write a change's result into
+   the page, does so only while pageWhole(). */
+const PAGE = { n: 0, drawn: 0, saved: false, parts: Object.create(null) };
 // A new page is asked for (render() only): every draw asked for before is overtaken.
 const pageTurn = () => ++PAGE.n;
+// Whether the page asked for last has been drawn whole (render() sets PAGE.drawn). It hasn't while it is being read, even when it is the
+// same company's and month's as the one before, whose content may still be on show; nor when it failed and shows why.
+const pageWhole = () => PAGE.drawn === PAGE.n;
 // Starts a page's draw (render() only). saved: it reads back a change that was kept, which the draws started by this call know of (a page
 // that words its own failed read says it was saved, or lets the failure through to render()). A draw asked for later knows nothing of it.
 function drawnAs(saved, start) {

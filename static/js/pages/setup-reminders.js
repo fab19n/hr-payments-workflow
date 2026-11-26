@@ -109,7 +109,7 @@ async function remDone(r, id, head, keep = {}, dialogSaved = false) {
   return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
     if (id != null && (state.setup.rem?.rules || []).some(x => x.id === +id)) return openReminder(+id, { force: true, keep, saved: { ...r, head } });
     closeDrawer(true);
-  }, { dialogSaved });
+  }, { dialogSaved, here: suOwnDialog });
 }
 
 // Preview (nothing kept) or Save: adds the reminder, or changes it for people starting (or leaving) from the month chosen.

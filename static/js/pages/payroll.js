@@ -81,7 +81,7 @@ async function payrollDraw(page, main, checkId) {
     catch (e) {
       idle();
       const title = e.unsure ? `It isn't known whether ${file.name} was checked` : `${file.name} wasn't checked`;
-      if (!here() || !$("#pcRefused")) return toast(`${title}. ${changeError(e)}`, true);  // another page since: said in a message
+      if (!here() || !pageWhole() || !$("#pcRefused")) return toast(`${title}. ${changeError(e)}`, true);  // another page since, or this one read again: said in a message
       $("#pcRefused").innerHTML = refusedNote(changeError(e), { title }) + (e.unsure ? "" :
         `<div class="note">${r.checks.length ? "Nothing was kept: the check below is still the latest, and its workbook stays filed." : "Nothing was kept."}</div>`);
       return;
@@ -90,11 +90,11 @@ async function payrollDraw(page, main, checkId) {
     const picked = $("#pcFile");
     if (picked) picked.value = "";  // checked and kept: the form doesn't hold it to be sent again while the page is read
     state.pcFilter = null; toast(out.chosen?.report?.headline || "Checked");
-    await afterSaved(savedPart(here, () => viewPayroll(main)));
+    await afterSaved(savedPagePart(here, () => viewPayroll(main)));
   };
-  // Only while this company's month is still the one asked for: these stay clickable, dimmed, while the next page is read, and a draw
-  // from them then would take the place of the one being read.
-  const show = (id, filter) => { if (!still()) return; if (filter) state.pcFilter = filter; viewPayroll(main, id).catch(e => toast(e.message, true)); };
+  // Only while this company's month is still the one asked for, and no reading of the page is under way: these stay clickable, dimmed,
+  // while the next page is read (this one asked for again, too), and a draw from them then would take the place of the one being read.
+  const show = (id, filter) => { if (!still() || !pageWhole()) return; if (filter) state.pcFilter = filter; viewPayroll(main, id).catch(e => toast(e.message, true)); };
   main.querySelectorAll("[data-pc-show]").forEach(b => b.onclick = () => show(+b.dataset.pcShow));
   main.querySelectorAll("[data-pc-filter]").forEach(b => b.onclick = () => show(checkId, b.dataset.pcFilter));
 }

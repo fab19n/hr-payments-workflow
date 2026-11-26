@@ -160,9 +160,9 @@ async function trailCheck(btn) {
     const r = await api("/api/audit/check", { json: {} });  // the check itself is noted in the audit trail
     const text = r.ok ? `All ${r.checked} entries check out, and all ${r.replay.checked} records match the trail. Check code ${esc(r.check_code)}.`
       : `<b class="bad-text">Problems found.</b> ${[...r.problems, ...r.replay.problems.map(p => `${p.table_label} ${p.record} ${p.problem}.`)].map(esc).join(" ")}${r.replay.more ? ` And ${r.replay.more} more.` : ""}${r.replay.count ? " Records that differ are listed under Changes made outside this app." : ""}`;
-    // The differences now wait to be accepted, so the page is read again. The result goes on the page while it is the one on show and could
-    // be drawn; else it is said in a message.
-    const drawn = !(here() && r.replay.count) || await afterSaved(render);
+    // The differences now wait to be accepted, so the page is read again. The result goes on the page while it is the one on show, drawn whole
+    // (never one about to be replaced by a reading of it asked for since); else it is said in a message.
+    const drawn = r.replay.count && here() ? await readBackPage() : pageWhole();
     const out = here() && drawn ? $("#trailOut") : null;
     if (out) out.innerHTML = text;
     else toast(r.ok ? `Audit trail checked: all ${r.checked} entries check out.` : "The audit trail check found problems. Open the audit trail to see them.", !r.ok);

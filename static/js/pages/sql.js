@@ -617,6 +617,20 @@ async function sqlFetch() {
     S.fetchErr = e.message; sqPaint("fetch"); sqPaint("result"); $("#sqlFetch")?.focus?.();
   }
 }
+// The exports read again once a printed name is kept (Take it for), as the reading back of that change. A refusal says what is wrong with
+// the exports, so it is said with its reason, as Fetch says it; any other failure is a reading that failed, which afterSaved says.
+async function sqlTakenFetch(eid, S) {
+  let p;
+  try { p = await api("/api/sql/preview", { json: { entity_id: eid, fetch: true } }); }
+  catch (e) {
+    if (e.unsure) throw e;  // no clear answer (this POST only reads, so api() calls it unsure just as it would a change)
+    toast(`The name was kept, but the exports weren't fetched: ${e.message}`, true);
+    if (state.sq === S) S.fetchErr = e.message;  // and in the Fetch card, now or when this page is opened again
+    if (sqOn(S)) sqPaint("fetch");
+    return;
+  }
+  renderSqlPreview(p, { from: S });
+}
 // Read pasted rows / Read file: what is wrong is said under the box, in place; the preview comes into view.
 async function sqlRead(kind) {
   const S = sqState();
@@ -681,7 +695,7 @@ async function sqlApply(t) {
   Object.assign(S, { done, arrive: true, file: null, sel: {} });
   const here = sqOn(S), say = () => toast(`${done.title}. ${done.text || ""}`.trim());
   if (!here) say();  // its result card isn't on show: said here
-  if (!(await afterSaved(render)) && here) say();  // nor is it when the page couldn't be read back
+  if (!(await readBackPage()) && here) say();  // nor is it when the page couldn't be read back, or was left or asked for again while it was
 }
 function sqlCancel() {
   state.sqlPreview = null; delete state.sqlPaste[state.entity];

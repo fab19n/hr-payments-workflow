@@ -144,7 +144,8 @@ function go(view, entity) {
 // writes nothing more, and an overtaken page is never drawn again by itself.
 // opts.saved: a change was kept and this draw is the reading back of it: if it fails the page says so (it was saved) and never that nothing was
 // changed, and its Try again says it again (data-retry="saved"). A failure marked kept (a change made while the page was read) is said the same
-// way. opts.unsure: it isn't known whether a change was made, so a failure doesn't say that nothing was changed.
+// way. opts.unsure: it isn't known whether a change was made, so a failure doesn't say that nothing was changed (nor, with the app stopped, that
+// nothing was sent or saved), and its Try again keeps to that (data-retry="unsure").
 // Returns false when it painted an error, true otherwise (also when a newer draw overtook it).
 async function render(opts) {
   const main = $("#main"), unsure = !!opts?.unsure;
@@ -157,7 +158,7 @@ async function render(opts) {
   render.company = state.entity;
   if (gone && switched) { const e = ent(); const was = state.view; state.view = "entity"; renderNav(); switchedNote(gone, e, PAGE_RULES[was]?.plural); }
   if (state.view !== "setup") setupLeft();  // any other page: Setup's draws still reading are overtaken, and their hold of the page's height is gone
-  if (gone && !switched) { render.last = render.asked = null; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return true; }
+  if (gone && !switched) { render.last = render.asked = null; PAGE.drawn = seq; main.classList.remove("loading"); main.innerHTML = unusedCard(); dlgRestore(); return true; }
   // A page that takes visible time: the old page stays, slightly dimmed, and a skeleton comes after 0.3 s (never a flash);
   // drawing the same page again keeps what is there. render.last: the page drawn whole last; render.asked: the one asked for last (when
   // they differ, what is on show may be another page's frame).
@@ -177,7 +178,7 @@ async function render(opts) {
     }
     if (draw) await drawnAs(opts?.saved === true, () => draw(main));
     if (!overtaken()) {  // a draw that was overtaken doesn't say what the page on show is
-      render.last = key;
+      render.last = key; PAGE.drawn = seq;
       if (state.view === "overview" && !first) trailNotice();
     }
   } catch (e) {
@@ -186,7 +187,8 @@ async function render(opts) {
     if (!overtaken()) {
       failed = true; render.last = null;
       main.innerHTML = opts?.saved === true || e.kept ? errorState({ body: SAVED_NOT_READ, retry: "saved", nothingChanged: false })
-        : appStopped(e) && !unsure ? stoppedState({ detail: e.message }) : errorState({ body: e.message, retry: true, nothingChanged: !unsure });
+        : appStopped(e) ? stoppedState({ detail: e.message, unsure, retry: unsure ? "unsure" : "1" })
+        : errorState({ body: e.message, retry: unsure ? "unsure" : true, nothingChanged: !unsure });
     }
   }
   finally { clearTimeout(slow); if (!overtaken()) { main.classList.remove("loading"); if (state.meta) { renderNav(); menuNextEnsure(); } dlgRestore(); } }  // the menu's numbers follow the Next up rows this page may have just read

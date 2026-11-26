@@ -751,14 +751,13 @@ async function npSave() {
   }
   const id = r.id;
   if (here()) await closeDrawer(true);  // its own dialog only: one opened since keeps what is typed in it
-  const mine = dialogHere();
   state.mark = { pay: x => x.id === id };
   toast(npFromOverview() ? `Payment added to ${e.code}'s ${monthName(state.month)}` : "Payment added", false, { undo: async () => {
     await api(`/api/payments/${id}`, { method: "DELETE", json: {} });
     toast("Undone. The payment is taken off again; the undo is a new entry in the audit trail.");
     await afterSaved(render);
   } });
-  const ok = await afterSaved(render, null, { here: mine });
+  const ok = await afterSaved(render);  // its dialog is closed by now: any on show was opened since
   const now = document.activeElement;
   if (ok && (!now || now === document.body || now === $("#main"))) pdFocus("#addPayment");   // back on the button that opened it, drawn again
 }

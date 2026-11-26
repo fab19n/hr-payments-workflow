@@ -17,7 +17,9 @@ Checks:
     trail's filters), for dialogs read before they open, for the SQL page's Fetch, and for a render held up by the day's first month set-up.
  C. A change that was kept, then a page that can't be read back: for every such action, the change is sent once, the page says it was saved
     (never that nothing was changed, nor that the app being stopped means nothing was saved), and Try again only reads, whether it fails
-    again or works. What a stale page or dialog still holds can't send it again.
+    again or works. What a stale page or dialog still holds can't send it again. With the app stopped (or failing) a change that got no answer
+    leaves the page saying so, with the steps to start it, never that nothing was sent; a read-back never takes the place of the same page
+    asked for again; a result is never written into a page about to be replaced; and only the change's own dialog is ever closed.
  D. "Nothing was changed" is said only when the server refused the change: a server failure or an answer that can't be read says it isn't
     known; a 200 that isn't JSON is an error (never an empty answer).
 
@@ -524,6 +526,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
   const FLOWS = {
     "payment dialog: Save details": { prep: openDialog, route: /\/api\/payments\/\d+$/, reply: {}, act: () => { set("pf-notes", "A made-up note"); run(`paySave()`); }, dialog: "closed" },
     "payment dialog: Save details, then Undo": { prep: openDialog, route: /\/api\/payments\/\d+$/, reply: {}, first: () => { set("pf-notes", "A made-up note"); run(`paySave()`); }, act: undo => undo() },
+    "payment dialog: an SQL voucher unlinked": { prep: openDialog, route: /\/api\/sql\/entries\/41\/unlink$/, reply: { doc_no: "PV-1", payment: "x" }, act: () => click({ sqlUnlink: "41" }), dialog: "closed" },
     "payment dialog: a document uploaded": { prep: openDialog, route: /\/api\/upload$/, reply: { id: 1 }, act: () => run(`pdUpload([{ file: { name: "bill.pdf", size: 10 }, type: "invoice" }])`), dialog: "closed" },
     "payment dialog: a document removed": { prep: openDialog, route: /\/api\/documents\/\d+\/remove$/, reply: {}, act: () => { run(`state.pay.ask = { act: "remove", doc: ${FX.DOC} }`); click({ pdAsk: "yes" }); }, dialog: "closed" },
     "New payment: Add": { prep: async () => { await open("entity"); run(`addPaymentDrawer()`); await settle(); }, route: /\/api\/payments$/, reply: { id: 999 }, act: () => { set("ap-desc", "A made-up bill"); run(`npSave()`); } },
@@ -823,6 +826,157 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     return res;
   });
 
+  /* ---- a change that got no answer, with the app stopped (or the server failing): the page says what to do, and never that nothing was
+     changed, sent or saved, nor on Try again ---- */
+  const visible = () => shown().replace(/<[^>]*>/g, " ").replace(/&#39;/g, "'");   // what is read (Copy details keeps the cause in an attribute)
+  const UNANSWERED = {
+    "the register's bulk Set paid date": [() => open("entity"), () => { run(`regState().picked = [${FX.PAY}]; regPaint()`); set("regBulkDate", FX.MONTH + "-05"); run(`regBulk("date")`); }],
+    "the register's one bank slip": [() => open("entity"), () => run(`regState().picked = [${FX.PAY}]; regPaint(); regBulk("upload")`)],
+    "a checklist item's upload": [() => open("checklist"), () => click({ taskUpload: String(FX.TASK), type: "other", upload: "other" })],
+    "the payment dialog's upload": [openDialog, () => run(`pdUpload([{ file: { name: "bill.pdf", size: 10 }, type: "invoice" }])`)],
+  };
+  for (const [name, [prep, act]] of Object.entries(UNANSWERED)) for (const how of ["net", "500"]) await tryit(`unanswered:${name}:${how}`, async () => {
+    fresh(); await prep(); await settle(); toasts().length = 0;
+    NET.reply = (p, m) => m !== "GET" ? (how === "net" ? "net" : [500, { error: "The server could not save it." }]) : undefined; NET.afterWrite = how;
+    act(); await settle();
+    const first = visible(), told = toasts().map(t => t.msg).join("\n"), button = /data-retry="(\w+)"/.exec(shown());
+    const reads = NET.reads.length;
+    if (button) click({ retry: button[1] });
+    await settle();
+    return { first, said: told, pressed: !!button && NET.reads.length > reads, again: visible() };
+  });
+
+  /* ---- a read-back never takes the place of the same page asked for again while it was out ---- */
+  const AGAIN = {
+    payroll: { route: /\/api\/payroll-check$/, reply: { chosen: null }, act: () => { el("pcFile").files = [{ name: "payroll.xlsx" }]; el("pcForm").onsubmit({ preventDefault() {} }); } },
+    bank: { route: /\/api\/recon\/sign-off$/, reply: {}, act: () => run(`rcSign(7, "", "").catch(e => toast(e.message, true))`) },
+  };
+  const outcome = page => ({ filled: filled(page) || onPage(), loading: main().classList.contains("loading"), saved: said().includes(SAVED) || onPage() });
+  for (const [page, A] of Object.entries(AGAIN)) for (const how of ["menu", "away and back"]) await tryit(`samePage:${page}:${how}`, async () => {
+    fresh(); await open(page);
+    NET.reply = (p, m) => m !== "GET" && A.route.test(p) ? [200, A.reply] : undefined; NET.delay = (p, m) => m !== "GET" ? 500 : 1000;
+    NET.afterWrite = "500";   // read after the change is answered: fails. The page asked for again before that reads fine
+    A.act(); await settle(now + 100); NET.down = false;
+    if (how === "away and back") { go("audit"); await settle(now + 10); }
+    go(page); await settle(now + 100); NET.down = "500"; await settle();
+    return outcome(page);
+  });
+  // ... nor when the change is sent from the old content, still on show while the page is asked for again
+  await tryit("samePage:payroll:old form", async () => {
+    fresh(); await open("payroll"); NET.delay = (p, m) => m !== "GET" ? 500 : 1000;
+    go("audit"); await settle(now + 10); go("payroll"); await settle(now + 10);
+    NET.reply = (p, m) => m !== "GET" ? [200, { chosen: null }] : undefined; NET.afterWrite = "500";
+    AGAIN.payroll.act(); await settle();
+    return outcome("payroll");
+  });
+  // ... and a check's chip left on it is not followed then
+  await tryit("samePage:payroll:old chip", async () => {
+    fresh(); const m = main(), chips = [{ dataset: { pcShow: "1" } }]; m.querySelectorAll = s => s === "[data-pc-show]" ? chips : [];
+    await open("payroll"); const old = chips[0].onclick;
+    NET.delay = p => p.startsWith("/api/payroll-check") ? 1000 : p.startsWith("/api/audit-readiness") ? 600 : 0;
+    NET.fail = p => p.includes("check=") ? "500" : null;
+    go("audit"); await settle(now + 10); go("payroll"); await settle(now + 10);
+    if (old) old(); await settle(); m.querySelectorAll = () => [];
+    return { bound: !!old, filled: filled("payroll"), loading: main().classList.contains("loading"), toasts: toasts().length, read: NET.reads.some(p => p.includes("check=")) };
+  });
+
+  /* ---- a result is never lost into a page about to be replaced by a reading of it asked for since ---- */
+  const lostCase = async (name, page, reply, act, { write = 0, read = 0, then = () => go(page), status = 200 } = {}) => tryit(`result:${name}`, async () => {
+    fresh(); await open(page);
+    NET.reply = (p, m) => m !== "GET" ? [status, reply] : undefined; NET.delay = (p, m) => m !== "GET" ? write : read;
+    toasts().length = 0; act(); await settle(now + 100); then(); await settle();
+    return { said: said() };
+  });
+  const AUDITOR = { url: "/api/auditor-export/file?x=1", files: 3, left_out: 0, name: "package.zip" };
+  await lostCase("the auditor package's link, the page asked for again while it is read back", "audit", AUDITOR, () => click({ id: "auditorPack" }), { read: 800 });
+  await lostCase("the auditor package refused, the page asked for again while it is built", "audit", { error: "A made-up reason it can't be built." }, () => click({ id: "auditorPack" }), { write: 500, read: 1000, status: 400 });
+  const CHECKED = n => ({ ok: !n, checked: 3, check_code: "x", problems: [], replay: { checked: 1, problems: [], count: n, more: 0 } });
+  await lostCase("the audit trail check's result, the page asked for again while it is read back", "trail", CHECKED(1), () => click({ id: "trailCheck" }), { read: 800 });
+  await lostCase("the audit trail check's result, the page asked for again while it checks", "trail", CHECKED(0), () => click({ id: "trailCheck" }), { write: 500, read: 1000 });
+  await lostCase("a payroll workbook refused, the page asked for again while it is checked", "payroll", { error: "Not a payroll workbook." }, () => AGAIN.payroll.act(), { write: 500, read: 1000, status: 400 });
+  await lostCase("a backup made, another page opened meanwhile", "settings", { file: "made-up-backup.zip" }, () => click({ id: "doBackup" }), { write: 900, then: () => go("audit") });
+  await tryit("result:an SQL import, the page left while it is read back", async () => {
+    fresh(); await open("sql"); run(sqPreview(FX.QFB)); NET.reply = (p, m) => m !== "GET" ? [200, { added: 2, linked: 1, skipped: 0 }] : undefined; NET.delay = (p, m) => m === "GET" && p.startsWith("/api/sql/") ? 800 : 0;
+    toasts().length = 0; sandbox.__go = btn(); run(`sqlApply(__go)`); await settle(now + 100); go("audit"); await settle();
+    return { said: said() };
+  });
+  await tryit("result:a backup made, still on its page", async () => {
+    fresh(); await open("settings"); NET.reply = (p, m) => m !== "GET" ? [200, { file: "made-up-backup.zip" }] : undefined; toasts().length = 0;
+    click({ id: "doBackup" }); await settle();
+    return { written: el("setOut")?.textContent || "", toasts: toasts().length };
+  });
+  await tryit("result:a pair's refusal, its review left meanwhile", async () => {
+    fresh(); await openRV(); run(`state.recon.rv.d.summary.pairs = [{ key: "k1", nil: true, reason: "reversal", docs: [], confirmed_at: null }]`);
+    NET.reply = (p, m) => m !== "GET" ? [409, { error: "The month is locked." }] : undefined; NET.delay = (p, m) => m !== "GET" ? 900 : 0; toasts().length = 0;
+    const err = { textContent: "", isConnected: true }; sandbox.__box = { checked: true, dataset: { pairTick: "k1" }, closest: () => ({ querySelector: s => /alert/.test(s) ? err : null }) };
+    run(`pairTick(__box)`); await settle(now + 100); err.isConnected = false; go("audit"); await settle();
+    return { said: said() };
+  });
+
+  /* ---- only the change's own dialog is closed when the page can't be read back: one opened since, with or without typing, stays ---- */
+  const readsFail = () => { NET.down = "500"; };   // from now on (the newer dialog has been read)
+  const newer = async (name, prep, send, openOther, check, reply = {}) => tryit(`newer:${name}`, async () => {
+    fresh(); NET.extra = null; await prep(); await settle(); slowWrite(reply); toasts().length = 0; NET.writes.length = 0; send(); await settle(now + 100);
+    run(`closeDrawer(true)`); run(openOther); await settle(now + 100); readsFail(); await settle();
+    return { ...check(), saved: said().includes(SAVED) || onPage(), writes: NET.writes.length };
+  });
+  const other = () => ({ open: !roots.drawer.hidden, other: /Opened since/.test(roots.drawer.full()) });
+  const second = () => ({ open: !roots.drawer.hidden && run(`state.openPayment`) === FX.PAY2 });
+  const SINCE = `openHistory("budget_lines", ${FX.LINE}, "Opened since")`;
+  const sendNew = () => { set("ap-desc", "A made-up bill"); run(`npSave()`); };
+  const newPayment = async () => { await open("entity"); run(`addPaymentDrawer()`); };
+  await newer("a new payment, then another payment", newPayment, sendNew, `openPayment(${FX.PAY2})`, second, { id: 999 });
+  await newer("a new payment, then a second New payment", newPayment, sendNew, `addPaymentDrawer()`, () => ({ open: !roots.drawer.hidden && run(`!!state.np`) }), { id: 999 });
+  await newer("a payment removed", openDialog, () => click({ id: "deletePayment", confirm: "1" }), `openPayment(${FX.PAY2})`, second, { unlinked: [], before_tracking: [], lines: 0 });
+  await newer("a recurring payment deleted", async () => { await open("payees"); run(`editPayee(${FX.PAYEE})`); await settle(); run(`payeeAct("delete", ${FX.PAYEE}, __btn)`); },
+    () => { el("su-reason").value = "A made-up reason"; el("setupWhy").hidden = false; run(`whySubmit()`); }, SINCE, other);
+  await newer("a bank month reopened", async () => { await open("bank"); run(panel); run(`reopenDialog(7)`); },
+    () => { set("bk-why", "A made-up reason"); sandbox.__go = { dataset: { sid: "7" }, setAttribute() {}, removeAttribute() {}, disabled: false, textContent: "" }; run(`reopenGo(__go)`); }, SINCE, other);
+  await tryit("newer:a record put back", async () => {
+    fresh(); await open("trail");
+    NET.reply = (p, m) => p === "/api/setup/restore/5" ? [200, { label: "Bank account", name: "Spare", table: "accounts", kind: "accounts", id: 2, same_id: true, notes: [], lines: [], affected: {},
+      deleted: { at: "2026-11-02T10:00:00", actor: "Made-up user", entry: 4, key: 2, reason: "Made up" } }] : undefined;
+    run(`openRestore(5, "A record")`); await settle(); set("pb-why", "A made-up reason");
+    slowWrite({ label: "Bank account", kind: "accounts", id: 2, same_id: true }); sandbox.__go = btn(); toasts().length = 0; NET.writes.length = 0; run(`restoreGo(5, __go)`); await settle(now + 100);
+    run(`closeDrawer(true)`); run(SINCE); await settle(now + 100); readsFail(); await settle();
+    return { ...other(), saved: said().includes(SAVED) || onPage(), writes: NET.writes.length };
+  });
+  // an Undo in a message is a change with no dialog of its own: the payment opened since stays
+  await tryit("newer:Undo of Save details with another payment open", async () => {
+    fresh(); await openDialog(); NET.reply = (p, m) => m !== "GET" ? [200, {}] : undefined; set("pf-notes", "A made-up note"); run(`paySave()`); await settle();
+    const undo = toasts().find(t => t.undo)?.undo; run(`closeDrawer(true)`); run(`openPayment(${FX.PAY2})`); await settle();
+    toasts().length = 0; NET.writes.length = 0; NET.afterWrite = "500"; undo(); await settle();
+    return { ...second(), saved: said().includes(SAVED) || onPage(), writes: NET.writes.length };
+  });
+  // a change made on the page, then a dialog opened over it with something typed that no unsaved check watches (Explain a line)
+  await tryit("newer:Confirm all matched, then Explain a line with text typed", async () => {
+    fresh(); await openRV(); run(`state.recon.rv.d.lines = [{ id: 31, state: "open", txn_date: ${JSON.stringify(FX.MONTH + "-03")}, amount: -5, balance: 1, description: "Sample line", suggestions: [], vouchers: [] }]`);
+    slowWrite({ confirmed: 1, needs_date_tick: 0 }); toasts().length = 0; NET.writes.length = 0; click({ rvConfirmAll: "1" }); await settle(now + 100);
+    run(`explainLine(31)`); set("ex-desc", "typed while Confirm all was saving"); readsFail(); await settle();
+    return { open: !roots.drawer.hidden, typed: el("ex-desc")?.value ?? null, saved: said().includes(SAVED) || onPage(), writes: NET.writes.length };
+  });
+  // Unlink is on the SQL page too: sent from there it has no dialog, so one shown while it is sent (here without any other being closed) stays
+  await tryit("newer:Unlink on the SQL page, then a dialog shown over it", async () => {
+    fresh(); await open("sql"); slowWrite({ doc_no: "PV-1", payment: "x" }); toasts().length = 0; NET.writes.length = 0; click({ sqlUnlink: "41" }); await settle(now + 100);
+    run(`$("#drawer").innerHTML = "<h2>Shown since</h2>"; showDrawer()`); readsFail(); await settle();
+    return { open: !roots.drawer.hidden, saved: said().includes(SAVED) || onPage(), writes: NET.writes.length };
+  });
+  // the payment dialog's own upload, with another file waiting for its type (or picked to replace one) by then: the dialog stays with it
+  for (const [k, waits, still] of [["waiting for their type", `pdAskTypes(payOf(${FX.PAY}), [{ name: "later.pdf", size: 10 }])`, `state.pay?.pick?.length ?? 0`],
+    ["picked to replace one", `state.pay.ask = { act: "replace", doc: ${FX.DOC}, file: { name: "later.pdf", size: 10 } }`, `state.pay?.ask?.file ? 1 : 0`]]) await tryit(`newer:files ${k}`, async () => {
+    fresh(); await openDialog(); slowWrite({ id: 1 }); NET.afterWrite = "500"; toasts().length = 0; NET.writes.length = 0;
+    run(`pdUpload([{ file: { name: "bill.pdf", size: 10 }, type: "invoice" }])`); await settle(now + 100); run(waits); await settle();
+    return { open: !roots.drawer.hidden, kept: run(still), saved: said().includes(SAVED) || onPage(), writes: NET.writes.length };
+  });
+
+  // SQL Take it for: the Fetch after it refused gives the server's reason, not "could not reload"
+  await tryit("takeRefused", async () => {
+    fresh(); await open("sql"); toasts().length = 0; NET.writes.length = 0;
+    NET.reply = (p, m) => p === "/api/sql/preview" ? [400, { error: "The SQL exports folder wasn't found." }] : m !== "GET" ? [200, {}] : undefined;
+    click({ sqlTake: "Quillon Fab", confirm: "1" }); await settle();
+    return { said: toasts().map(t => t.msg), card: run(`sqState().fetchErr`), shown: visible().includes("The SQL exports folder wasn't found."), writes: NET.writes.length };
+  });
+
   /* ======== D. "nothing was changed" only when the server refused ======== */
   const REPLIES = { refused: [409, { error: "The month is filed." }], failed: [500, { error: "The server could not save it." }], unread: [200, null, "bad"] };
   await tryit("api", async () => {
@@ -1050,7 +1204,7 @@ for name, want in (("bank review: Apply selected", {"sel": 0}), ("SQL page: Impo
             check(f"C: {name}: after the failed re-read nothing stays ticked, so Apply can't send it again", r["after"] == want, r["after"])
         else:
             check(f"C: {name}: the import's result is on the page once Try again has read it (it is not lost with the failed reading)", r["triedOk"] is not None and r["after"] == want and r["ok"]["after"] == want, [r["triedOk"], r["after"], r["ok"]["after"]])
-for name in ("payment dialog: Save details", "payment dialog: a document uploaded", "payment dialog: a document removed", "Recurring: add a payment", "Recurring: save a payment", "Recurring: delete",
+for name in ("payment dialog: Save details", "payment dialog: an SQL voucher unlinked", "payment dialog: a document uploaded", "payment dialog: a document removed", "Recurring: add a payment", "Recurring: save a payment", "Recurring: delete",
              "Recurring: stop using", "Recurring: add an advance", "Recurring: save an advance", "Recurring: remove an advance"):
     r = ran(f"C:{name}:500")
     if r is not None:
@@ -1084,6 +1238,63 @@ r = ran("typedUpload")
 if r is not None:
     check("C: a file added while something is typed in the payment dialog: the dialog stays with what was typed, and a message says it was saved (the page's words are behind the dialog)",
           r == {"open": True, "notes": "typed and not saved", "said": 1, "writes": 1}, r)
+
+# ---------- C: changes with no answer, the same page asked for again, results and dialogs ----------
+NOTHING_SAID = re.compile(r"Nothing was changed|Nothing was kept|Nothing you typed since then was sent or saved|Nothing was added|Nothing was saved")
+unanswered = [k for k in o if k.startswith("unanswered:")]
+check("C: every bulk action and upload that got no answer was tried", len(unanswered) == 8, unanswered)
+for key in unanswered:
+    _, name, how = key.split(":")
+    r = ran(key)
+    if r is None:
+        continue
+    texts = [r["first"], r["again"]]
+    never = [m.group(0) for m in (NOTHING_SAID.search(t) for t in texts + [r["said"]]) if m]
+    if how == "net":
+        ok = (r["pressed"] and not never and "Failed to fetch" not in r["first"] + r["again"] + r["said"] and (name.startswith("the payment dialog") or "The connection to HR Payments broke." in r["said"])
+              and all("HR Payments isn't running" in t and "Start HR Payments.bat" in t and "isn't known whether your last change was saved" in t for t in texts))
+        check(f"C: {name} with the app stopped: the page says it isn't running, with the steps to start it, and that it isn't known whether the change was saved (also after Try again), never in the browser's own words", ok, r)
+    else:
+        check(f"C: {name} with the server failing: neither the page nor its Try again says that nothing was changed", r["pressed"] and not never and all("Couldn't load this page" in t for t in texts), r)
+for key in [k for k in o if k.startswith("samePage:") and not k.endswith("old chip")]:
+    _, page, how = key.split(":")
+    r = ran(key)
+    if r is not None:
+        check(f"C: {page}: a change answered while that page is asked for again ({how}), its re-read failing, leaves it neither blank nor on Loading, and says the change was saved",
+              r == {"filled": True, "loading": False, "saved": True}, r)
+r = ran("samePage:payroll:old chip")
+if r is not None:
+    check("B: a payroll check chip left on show while the same page is asked for again isn't followed, so it can't take that page's draw",
+          r == {"bound": True, "filled": True, "loading": False, "toasts": 0, "read": False}, r)
+for name, words in (("the auditor package's link, the page asked for again while it is read back", "package.zip"), ("the auditor package refused, the page asked for again while it is built", "A made-up reason it can't be built."),
+                    ("the audit trail check's result, the page asked for again while it is read back", "found problems"), ("the audit trail check's result, the page asked for again while it checks", "3 entries check out"),
+                    ("a payroll workbook refused, the page asked for again while it is checked", "Not a payroll workbook."), ("a backup made, another page opened meanwhile", "made-up-backup.zip"),
+                    ("a pair's refusal, its review left meanwhile", "The month is locked."), ("an SQL import, the page left while it is read back", "Imported 2 entries")):
+    r = ran(f"result:{name}")
+    if r is not None:
+        check(f"C: {name}: it is still said", words in r["said"].replace("&#39;", "'"), r["said"][-900:])
+r = ran("result:a backup made, still on its page")
+if r is not None:
+    check("C: a backup made while its page stays is written under the buttons, with no message", r == {"written": "Saved made-up-backup.zip", "toasts": 0}, r)
+newer = [k for k in o if k.startswith("newer:") and not k.startswith("newer:files ")]
+check("C: every case of a dialog opened since was tried", len(newer) == 9, newer)
+for key in newer:
+    r = ran(key)
+    if r is None:
+        continue
+    kept = {k: v for k, v in r.items() if k not in ("saved", "writes")}
+    want = {"open": True, "typed": "typed while Confirm all was saving"} if "Explain" in key else {k: True for k in kept}
+    check(f"C: {key[6:]}, then the page not read back: the dialog opened since stays (with what is typed in it), and the change is said to be saved, sent once",
+          bool(kept) and kept == want and r["saved"] and r["writes"] == 1, r)
+for k in ("waiting for their type", "picked to replace one"):
+    r = ran(f"newer:files {k}")
+    if r is not None:
+        check(f"C: the payment dialog's upload, not read back, with a file {k} by then: the dialog stays, and the file with it", r == {"open": True, "kept": 1, "saved": True, "writes": 1}, r)
+r = ran("takeRefused")
+if r is not None:
+    check("C: SQL Take it for, with the Fetch after it refused: the server's reason is said, with that the name was kept (never that the page could not reload), and is in the Fetch card",
+          r["said"] and r["said"][-1] == "The name was kept, but the exports weren't fetched: The SQL exports folder wasn't found." and "It was saved, but this page could not reload. Try again." not in r["said"]
+          and r["card"] == "The SQL exports folder wasn't found." and r["shown"] and r["writes"] == 1, r)
 
 # ---------- D ----------
 r = ran("xhr")

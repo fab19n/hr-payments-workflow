@@ -676,6 +676,10 @@ function suRefused(e) {
   box.focus?.({ preventScroll: true });
 }
 
+// A Setup save made from a record dialog doesn't ask yet which dialog was its own (limit (l), slice 9c): as before, the one on show when
+// the reading back starts counts as that (afterSaved's here, core/saved.js).
+const suOwnDialog = () => true;
+
 // Save: a new record is added; one already there sends only the fields changed.
 async function setupSave() {
   const D = state.setup.drawer;
@@ -694,7 +698,7 @@ async function setupSave() {
     D.saved = true;
     toast(`${spec.label} added`);
     return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); },
-      () => r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true }), { dialogSaved: true });
+      () => r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true }), { dialogSaved: true, here: suOwnDialog });
   }
   const changed = {};
   for (const k in now) if (!(k in D.locked) && JSON.stringify(now[k]) !== JSON.stringify(D.loaded[k])) changed[k] = now[k];
@@ -705,7 +709,7 @@ async function setupSave() {
   let r;
   try { r = await api(`/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields: changed } }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e); }
   toast("Saved");
-  return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, notes: r.notes }), { dialogSaved: true });
+  return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, notes: r.notes }), { dialogSaved: true, here: suOwnDialog });
 }
 
 // Stop using, Use again and Delete ask why first, with what the change does; Tidy up counts first, then asks. A refusal (the cash
@@ -731,7 +735,7 @@ async function setupAct(act, btn) {
     await api(`/api/setup/${D.kind}/${D.id}/${act}`, { json: { reason } });
     toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
     const keep = drawerEdits();
-    return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, keep }));
+    return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, keep }), { here: suOwnDialog });
   }, { note, glyph: { stop: "eyeOff", use: "eye", delete: "trash" }[act], danger: act === "delete" });
 }
 
@@ -747,7 +751,7 @@ async function tidyMonths(eid, btn) {
     const r = await api("/api/months/tidy", { json: { entity_id: +eid, reason } });
     toast(`Removed ${r.payments} payments and ${r.tasks} checklist items from ${e?.code || "the company"}`);
     const keep = drawerEdits();
-    return afterSaved(o => render(o), () => openSetup("entities", eid, { force: true, keep }));
+    return afterSaved(o => render(o), () => openSetup("entities", eid, { force: true, keep }), { here: suOwnDialog });
   });
 }
 

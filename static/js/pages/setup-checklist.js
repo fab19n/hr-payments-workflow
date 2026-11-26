@@ -152,7 +152,7 @@ async function chkDone(r, id, head, keep = {}, dialogSaved = false) {
   return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
     if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep, saved: { ...r, head } });
     closeDrawer(true);
-  }, { dialogSaved });
+  }, { dialogSaved, here: suOwnDialog });
 }
 
 // Preview (nothing kept) or Save: adds the item, or changes it from the month chosen.

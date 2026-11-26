@@ -92,7 +92,7 @@ async function budgetDraw(page, main) {
     catch (e) { toast(changeError(e), true); try { await refresh(); } catch {} return false; }
     if (ok) ok(r);
     let drew = false;
-    await afterSaved(savedPart(shown, async () => { drew = await refresh(); }));
+    await afterSaved(savedPart(shown, async () => { drew = await refresh(); }));  // the lines are a part of their own, never the page's own draw
     if (drew && then) then(r);
     return true;
   };

@@ -269,7 +269,7 @@ async function regBulk(what) {
     if (!day) { R.err = "Choose the paid date first."; regPaint(); return $("#regBulkDate")?.focus?.(); }
     const todo = pays.filter(p => !p.paid_date), skipped = pays.length - todo.length, refused = [];
     for (const p of todo) {
-      try { await api(`/api/payments/${p.id}`, { method: "PATCH", json: { paid_date: day } }); } catch (e) { refused.push({ p, why: e.message, unsure: !!e.unsure }); }
+      try { await api(`/api/payments/${p.id}`, { method: "PATCH", json: { paid_date: day } }); } catch (e) { refused.push(bulkMiss(p, e)); }
     }
     R.picked = refused.map(x => x.p.id); R.err = "";
     const kept = skipped ? `; ${plural(skipped)} already paid kept ${skipped === 1 ? "its" : "their"} own date` : "";
@@ -287,7 +287,7 @@ async function regBulk(what) {
     for (const p of pays) {
       const fd = new FormData();
       fd.append("file", file); fd.append("payment_id", p.id); fd.append("doc_type", p.required.includes("bank") && docActive("bank") ? "bank" : fallback);
-      try { await api("/api/upload", { form: fd }); } catch (e) { refused.push({ p, why: e.message, unsure: !!e.unsure }); }
+      try { await api("/api/upload", { form: fd }); } catch (e) { refused.push(bulkMiss(p, e)); }
     }
     R.picked = refused.map(x => x.p.id);
     const n = pays.length - refused.length;
@@ -300,6 +300,8 @@ async function regBulk(what) {
 // After a bulk action, the page is read again. done: how many were changed (then a failed reading says it was saved); with none, it doesn't
 // say that nothing was changed unless the server refused every one.
 const bulkReadBack = (done, failed) => done ? afterSaved(render) : render({ unsure: failed.some(x => x.unsure) });
+// A payment a bulk action didn't (or may not have) changed, with why, as it reads in brackets after its name.
+const bulkMiss = (p, e) => ({ p, why: errorWords(e), unsure: !!e.unsure });
 // The ones that weren't changed, each with why: refused by the server (sure), or not known (unsure), said apart.
 function bulkFailed(failed, sure, unsure) {
   return [[failed.filter(x => !x.unsure), sure], [failed.filter(x => x.unsure), unsure]].filter(([list]) => list.length)

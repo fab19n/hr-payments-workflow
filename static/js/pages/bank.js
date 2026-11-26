@@ -21,7 +21,7 @@ const keepPreparedBy = v => { try { if (v) localStorage.setItem(PREP_KEY, v); } 
 const reconXlsx = s => `/api/export/recon.xlsx?entity_id=${state.entity}&account_id=${s.account.id}&month=${s.month}`;
 // The reading back after a change made on this page (core/saved.js): the review that is open, else the year; once another page (or another
 // company's or month's) is on show, that page. Ask for it before the change is sent. reset: as for reloadReview.
-const bankAgain = (reset = true) => savedPart(pageHere(), () => state.recon.rv ? reloadReview(reset) : drawRecon());
+const bankAgain = (reset = true) => savedPagePart(pageHere(), () => state.recon.rv ? reloadReview(reset) : drawRecon());
 
 // SQL entries the lock kept from being linked (Link or create all, an import): how many and why, for the SQL page's
 // toast and result ("2 entries were not linked: Main September 2026 is marked reconciled and locked").
@@ -508,7 +508,13 @@ async function pairTick(t) {
   if (on && !why) { t.checked = false; if (err) err.textContent = "Give the pair a reason first: it is kept with the sign-off."; box?.querySelector("[data-pair-why]")?.focus(); return; }
   const send = (confirmed, reason) => api("/api/recon/pair", { json: { entity_id: state.entity, account_id: s.account.id, month: s.month, key, reason, confirmed } });
   const again = bankAgain(false);
-  try { await send(on, why); } catch (e) { t.checked = !on; if (err) err.textContent = changeError(e); return; }
+  try { await send(on, why); }
+  catch (e) {
+    t.checked = !on;
+    // under the pair while it is still on show; left, or being read again, said in a message
+    if (err && err.isConnected !== false && pageWhole()) err.textContent = changeError(e); else toast(`Pair ${title}: ${changeError(e)}`, true);
+    return;
+  }
   delete V.why[key];
   toast(on ? `Pair confirmed: ${title}, no money moved.` : `Pair no longer confirmed: ${title}.`, false, { undo: async () => {
     const after = bankAgain(false);

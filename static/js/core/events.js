@@ -20,7 +20,7 @@ document.addEventListener("click", async ev => {
     if (ds.view) return go(ds.view, ds.entity);
     if (ds.goField) { ev.preventDefault(); const f = document.getElementById(ds.goField); f?.scrollIntoView?.({ block: "center" }); return f?.focus?.(); }
     if (ds.copyDetails !== undefined) return copyDetails(ds.copyDetails);
-    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return ds.retry === "start" ? (start.running ? undefined : start({ again: true })) : render({ saved: ds.retry === "saved" }); }
+    if (ds.retry) { if (ds.busy) { t.disabled = true; t.setAttribute("aria-busy", "true"); t.innerHTML = `<span class="spin" aria-hidden="true"></span>${esc(ds.busy)}`; } return ds.retry === "start" ? (start.running ? undefined : start({ again: true })) : render({ saved: ds.retry === "saved", unsure: ds.retry === "unsure" }); }
     if (ds.histOpen) { const [tbl, key] = ds.histOpen.split(":"); return openHistory(tbl, key, ds.histTitle); }
     if (ds.restore) return await openRestore(+ds.restore, ds.restoreTitle);
     if (ds.restoreGo) return await restoreGo(+ds.restoreGo, t);  // awaited: a refusal or a stopped app reaches the catch below, and is said
@@ -247,7 +247,7 @@ document.addEventListener("click", async ev => {
       await api("/api/sql/take-company", { json: { entity_id: eid, company: ds.sqlTake } });
       t.dataset.confirm = ""; t.disabled = true;  // the name is taken: the button can't send it again while the folder is read
       toast(`Exports printed for "${ds.sqlTake}" are taken for ${code} from now on. Fetching again…`);
-      return afterSaved(savedPart(() => sqOn(S), async () => renderSqlPreview(await api("/api/sql/preview", { json: { entity_id: eid, fetch: true } }), { from: S })));
+      return afterSaved(savedPart(() => sqOn(S), () => sqlTakenFetch(eid, S)));
     }
     if (ds.sqlMove) {  // a voucher changed in SQL: its payment's link moves to the new entry only on this click
       const box = t.closest("[data-sql-changed]"), follow = box?.querySelector("[data-sql-follow]")?.checked || false;
@@ -280,11 +280,13 @@ document.addEventListener("click", async ev => {
     if (ds.invImgRemove) return printImage(ds.invImgRemove, true);
     if (ds.sqlNameRemove) return await removeSqlName(t);
     if (ds.sqlUnlink) {
+      // Unlink is also in the payment dialog's Linked records: then that dialog is the change's own (the page behind it can't be clicked)
+      const here = state.openPayment && drawerShown() ? dialogHere() : null;
       const r = await api(`/api/sql/entries/${ds.sqlUnlink}/unlink`, { json: {} });
       const list = r.before_tracking ? "Before tracking" : "SQL entries not linked";  // where the SQL page now lists it
       toast(r.kind === "journal" ? `${r.doc_no} unlinked${r.removed ? `, and the payment made from it was removed` : ` from ${r.payment}`}`
         : r.removed ? `${r.doc_no} is back under ${list}, and the payment made from it was removed`
-        : `${r.doc_no} unlinked from ${r.payment}; it's back under ${list}`); return afterSaved(render);
+        : `${r.doc_no} unlinked from ${r.payment}; it's back under ${list}`); return afterSaved(render, null, { here });
     }
     if (ds.sqlUnignore) { const r = await api(`/api/sql/entries/${ds.sqlUnignore}/unignore`, { json: {} }); toast(`${r.doc_no} is back under ${r.kind === "journal" || r.kind === "invoice" ? "Journals and invoices" : r.before_tracking ? "Before tracking" : "SQL entries not linked"}${reconMoved(r)}`); return afterSaved(render); }
     if (ds.editPayee) { if (!(await mayLeave())) return; return await editPayee(ds.editPayee); }
@@ -302,8 +304,8 @@ document.addEventListener("click", async ev => {
         // The button works again, and the reason (which document) stays under it after the message goes.
         t.disabled = false; t.textContent = "Build audit pack PDF";
         const out = here() && $("#packOut");
-        if (out) { out.textContent = e.unsure ? `It isn't known whether the pack was built: ${e.message} Look under Recent packs before building it again.` : `The pack wasn't built: ${e.message}`; out.hidden = false; }
-        throw e;
+        if (out) { out.textContent = e.unsure ? `It isn't known whether the pack was built: ${errorWords(e)} Look under Recent packs before building it again.` : `The pack wasn't built: ${e.message}`; out.hidden = false; }
+        throw changeThrown(e);
       }
       window.open(r.url, "_blank"); return afterSaved(render);
     }
@@ -315,15 +317,15 @@ document.addEventListener("click", async ev => {
       try { r = await api("/api/auditor-export", { json: { entity_id: state.entity, month: state.month } }); }
       catch (e) {
         t.disabled = false; t.textContent = "Auditor package";
-        const words = e.unsure ? `It isn't known whether the package was built: ${e.message} Check before building it again.` : `The package wasn't built: ${e.message}`;
-        const out = here() && $("#packOut");
+        const words = e.unsure ? `It isn't known whether the package was built: ${errorWords(e)} Check before building it again.` : `The package wasn't built: ${e.message}`;
+        const out = here() && pageWhole() && $("#packOut");
         if (!out) return toast(words, true);
         out.textContent = words; out.hidden = false; return;
       }
-      // The package also built a fresh audit pack: show it in Recent packs and Before you print, then the link. With the page left, or not
-      // read back, the link comes in a message that stays.
+      // The package also built a fresh audit pack: show it in Recent packs and Before you print, then the link. With the page left, asked for
+      // again while it was read back, or not read back, the link comes in a message that stays.
       const built = `Auditor package built (${r.files} files${r.left_out ? `, ${r.left_out} left out because they changed or are missing` : ""})`;
-      const drawn = here() && await afterSaved(render);
+      const drawn = here() && await readBackPage();
       const out = drawn && here() ? $("#packOut") : null;
       if (!out) return toast(`${built}: ${r.name}. It also built a fresh audit pack, and it is in the exports folder on this PC.`, false, { ms: 0, action: { label: "Download", href: r.url } });
       out.innerHTML = `${built}: <a href="${r.url}">${esc(r.name)}</a>. It also built a fresh audit pack, and it is in the exports folder on this PC.`;
@@ -339,11 +341,15 @@ document.addEventListener("click", async ev => {
         body = { password: pw };
       }
       t.disabled = true;
+      let said, bad = false;
       try {
         const r = await api("/api/backup", { json: body });
-        out.textContent = r.warning || `Saved ${r.file}${r.copied ? " and copied to " + r.copied : ""}${r.not_copied ? ". " + r.not_copied : ""}`;
-      } catch (e) { out.textContent = e.message; }
+        said = r.warning || `Saved ${r.file}${r.copied ? " and copied to " + r.copied : ""}${r.not_copied ? ". " + r.not_copied : ""}`;
+        bad = !!(r.warning || r.not_copied);
+      } catch (e) { said = changeError(e); bad = true; }
       finally { body = null; if ($("#bkPw")) { $("#bkPw").value = ""; $("#bkPw2").value = ""; } t.disabled = false; }
+      // Written under the buttons while they are still on show; with the page left, or being read again, said in a message that stays.
+      if (out.isConnected !== false && pageWhole()) out.textContent = said; else toast(`Backup: ${said}`, bad, { ms: 0 });
       return;
     }
     if (t.id === "saveBackupDir") {
