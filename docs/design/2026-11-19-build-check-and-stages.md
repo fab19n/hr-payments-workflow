@@ -215,26 +215,74 @@ fetch, an e-Invoice print, a budget print.
 | Wave | Open together | Why this pairing |
 |---|---|---|
 | 3.1 | **1** Overview ∥ **9a** Setup | 1 needs 8 (done). 2 and 4 are merged, so only the Books links still use interim landings. 9a adds no migration |
+| 3.1b | **0g** Shell loading fix ∥ **9c** Setup follow-ups (added 26 November) | Both fix what wave 3.1 left (see below). 0g owns `core/` and the pages outside Setup; 9c owns the Setup pages, First run and one argument in `core/topbar.js`. Neither adds a migration. Done before 3.2 so slices 7 and 9b build on the fixed page loader |
 | 3.2 | **7** Books, parties, statutory ∥ **9b** Audit pack, trail, backup | 7 adds a migration and changes `nextup.py`, so it is kept apart from 1. 9b adds none |
 | 3.3 | **10** Search, notifications, Undo | Needs 9a and 9b. It adds the events migration |
 
 **Exit:** the whole redesign walk: light and dark, keyboard only, every card and its link.
 
+#### Wave 3.1b, slice 0g: Shell loading fix (its own change, owner 26 November)
+The known limits (a), (b), (c) and (e) to (h) in slice 9a's plan note. They are shared-code problems, so they are fixed
+once in the shell, not inside a slice (round 8 of 9a showed that a page loader changed from inside a slice did harm).
+1. **No page paints over a newer page.** Every page draw gets a render number from `render()` and checks it before it
+   writes anything (markup, state, toasts). A draw that a newer one overtook writes nothing. Setup's own `viewSetup.n`
+   is the model; after 0g Setup uses the shared number.
+2. **No page is left on "Loading".** `render()`'s 300 ms skeleton no longer replaces a shell a page has already
+   written, so Bank, Books, Customers and suppliers and Statutory payables fill the body they drew, whatever the
+   read's time. Checked with every read delayed 300 ms, 900 ms and 1.5 s, on arrival, on a company switch and on a
+   month change.
+3. **"It was saved" after a kept write whose re-read fails.** Setup's `afterSaved` becomes a shared helper in `core/`,
+   used by the payment dialog and register, the company page, Recurring payments, the SQL import page, Bank, Budget,
+   the audit pack, the audit trail's accept and the click handlers in `core/events.js`. Its Try again only reads again;
+   it never sends the write again. "Nothing was changed" is said only when the server refused the write.
+4. **Start and api leftovers:** a 200 reply that is not JSON is an error, not `{}` (e); the month arrows do nothing,
+   with no raw toast, while the start has failed (f); a network failure at start shows the stopped page's text (g);
+   focus stays on Try again after a failed retry (h).
+- **Tests:** a synthetic test that delays reads and opens pages out of order (A slow, B fast, A returns: B stays), a
+  test per write-then-reread flow (kept write, failing re-read: "saved", no second write), and the slice tests as they
+  are. Live click-through with slow reads.
+
+#### Wave 3.1b, slice 9c: Setup follow-ups (owner answers of 26 November)
+1. **Company switcher shows full names**, as CompanySwitcher.dc.html and Topbar.dc.html draw: `x.name` in place of
+   `companyShortName(x)` in `tbCompanyHtml` (`core/topbar.js`); Setup's "Switcher:" line goes (`SETUP_SUB.entities`);
+   `topbar_test` back to full names. The Short name field stays, for other uses.
+2. **Matching words: the Move grip and "Try a voucher description"**, as SetupMatching.dc.html draws: drag (and
+   keyboard: arrow keys on the grip) to reorder, saved as the Order field; a box to type a voucher description that
+   shows which rule matches it and what it gives.
+3. **First run's import reason:** the reason box is filled with "Started this install from <file name>." (editable),
+   so the audit trail says what the screen showed. An emptied box gets the same sentence.
+4. **Required documents matrix** (owner, 26 November: yes), as SetupRequired.dc.html draws, in place of today's table
+   and side drawer: payment types down the side, document types across; click any boxes, each changed box marked
+   "Changed, not saved yet", one Save applies every changed type from the payroll month picked (never a filed
+   month), with Discard and the "Discard your changes?" prompt on leaving; For: every company or one company, a type
+   one company has changed marked so, with "Follow all companies again"; Earlier sets per type; box sources (from
+   SQL, from an approved form, posted here; for a company Kept here, SQL Account's own documents greyed as today).
+   Under 700 pixels the grid scrolls sideways with the type names held in place. Approval boxes show the marker only:
+   Approvals arrive with slice 11. The server's rules (`/api/setup/required`) stay as they are; a save of several
+   types is one write with one reason, all or nothing, shown in the audit trail per type.
+5. The Setup-only known limits of 9a's plan note: (j) `typed()` also counts a half-typed reason, (k) the checklist and
+   reminders Add dialogs get a saved marker, (l) an Add dialog during a slow POST.
+- Already as the owner wants, no change: the import preview counts the starter checklists (`setupfile._Import.more`).
+
 ### Stage 4: HR step 1 (slices 11, 12, then 13 ∥ 14)
-- **Entry:** stages 1 to 3 merged. The needs-approval defaults are answered. The QR library is chosen
-  (plan decision 6), or uploads start with the typed code and PDF text only.
+- **Entry:** stages 1 to 3 merged. The needs-approval defaults are answered. QR reading was approved by the owner on
+  16 November (plan decision 6): slice 11 picks the library (offline on Windows, licence checked) as a build check,
+  not an owner question. A typed code is the fallback.
 - **Order:** 11 Approvals and To pay, then 12 Staff (preferred name on the staff record, answered), then 13 Leave ∥ 14
   Claims and advances (migration numbers agreed first).
 - **Exit:** a paper round trip (print a form, sign it, scan it, upload it, pay from To pay), then a joiner, leave, a
   claim from entry to paid, and an advance.
 
 ### Stage 5: Payroll (slices 15a, 15b, 15c, then the parallel run)
-- **Entry:** plan decisions 3 (payslip email) and 4 (Maybank bulk file) before 15b. The payroll checks in plan 7.1
-  (age-60 timing, Lindung 24 Jam bands, HRD Corp registration, 2027 holidays).
+- **Entry:** the payroll checks in plan 7.1 (age-60 timing, Lindung 24 Jam bands, HRD Corp registration, 2027
+  holidays). Plan decisions 3 (payslip email) and 4 (Maybank bulk file) are **on hold** (owner, 26 November): 15b
+  does not wait for them. It builds payslips to print and download as PDF, and shows **Email payslips** and **Maybank
+  bulk file** as Coming soon placeholders in their places on the boards. Each is built when the owner decides.
 - **Exit:** two to three months of parallel run signed off, then the switch-over.
 
 ### Stage 6: Users and access (slice 16)
-- **Entry:** the hosting decision (plan decision 5). Stage 2 of the books does not wait for it.
+- **Entry:** the hosting decision (plan decision 5), **on hold** until the owner is ready (26 November). Nothing
+  before stage 6 waits for it, and stage 2 of the books does not either.
 
 ---
 
@@ -250,6 +298,18 @@ fetch, an e-Invoice print, a budget print.
    adds.
 4. **Preferred name on the staff record: Yes.** Used in reminders; the bracketed payee name is the fallback.
 
+**Answered 26 November (owner):**
+5. **Company switcher: follow the design** (full names). Slice 9c.
+6. **Import preview counts the starter checklists: Yes.** Already built that way in 9a; no change.
+7. **Matching words grip and "Try a voucher description": now.** Slice 9c.
+8. **Required documents matrix: Yes**, in place of the table and drawer. Slice 9c.
+9. **First run's default import reason: as suggested** ("Started this install from <file name>.", shown in the box).
+   Slice 9c.
+10. **Payslip email and Maybank bulk file: on hold**, with Coming soon placeholders in 15b.
+11. **QR library:** already approved on 16 November; only the pick of the library is left, in slice 11.
+12. **Hosting: on hold** until the owner is ready.
+13. **Shell loading problems: plan the fix.** Slice 0g, wave 3.1b.
+
 The table below is kept as asked.
 
 | # | Question | Needed before |
@@ -258,4 +318,4 @@ The table below is kept as asked.
 | 2 | Customers overdue: do balances brought forward from before tracking count as overdue? | Slice 1 (stage 3) |
 | 3 | Needs-approval default: also Yes for Staff claim - overseas service, Inter-company transfer and any type a company adds? | Slice 11 (stage 4) |
 | 4 | A "preferred name" field on the staff record, used in reminders, with the bracketed payee name as fallback? | Slice 12 (stage 4) |
-| 5 | Plan decisions 3 to 6 as listed there: payslip email, Maybank bulk file, hosting, QR library | Stages 4 to 6 |
+| 5 | Plan decisions 3 to 6 as listed there: payslip email, Maybank bulk file, hosting, QR library | Stages 4 to 6 (26 November: 3, 4 and 5 on hold; 6 approved, library picked in slice 11) |

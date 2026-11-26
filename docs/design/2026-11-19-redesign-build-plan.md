@@ -1055,16 +1055,24 @@ Every slice ends with a click-through on sample data. These are the larger walk-
 Decisions 1 and 2 are closed (below); the numbers stay as they are.
 
 3. **How payslips are emailed** (slice 15b). The boards draw emailed and failed payslips "with the mail server's
-   reason". Which mail account sends them, and where is it set? Nothing in the sources decides this.
+   reason". Which mail account sends them, and where is it set? Nothing in the sources decides this. **On hold
+   (owner, 26 November):** 15b shows Email payslips as a Coming soon placeholder; payslips print and download as PDF.
 4. **Maybank bulk payment** (slice 15b). The scope says to confirm, when payroll is built, that the company uses
-   Maybank's bulk payment file.
+   Maybank's bulk payment file. **On hold (owner, 26 November):** 15b shows the bulk file as a Coming soon
+   placeholder.
 5. **Hosting** (slice 16). Where the app is hosted, and when. Sign-in is built with it. Stage 2 does not wait for
-   this decision.
+   this decision. **On hold until the owner is ready (26 November).**
 6. **Reading QR codes from scans and photos** (slice 11). Already approved by the owner on 16 November: add a
    QR-reading library when HR is built (for example zxing-cpp). Still to confirm in slice 11: which one, checked for
    offline use on Windows and its licence (some ship a native file, a DLL, with the app); `segno`, already there, only
    makes QR codes. A typed code is the fallback either way. Signers of digitally signed PDFs are read with `pypdf`,
-   already there, with no new library.
+   already there, with no new library. (26 November: confirmed as decided; the pick is a build check in slice 11.)
+
+**Owner answers of 26 November** (built in slices 0g and 9c, wave 3.1b; details in the stages document, section 5):
+company switcher shows full names as the boards draw; the import preview counts starter checklists (already so);
+Matching words get the Move grip and "Try a voucher description" now; First run's reason box is filled with
+"Started this install from <file name>."; the shell loading fix is planned as slice 0g; Required documents becomes the
+board's matrix, replacing 9a's departure (table and drawer).
 
 **Closed since the old plan:**
 - **Decision 1, fonts** (slice 0): decided 19 November, bundled. Inter and Space Grotesk (variable, SIL Open Font
