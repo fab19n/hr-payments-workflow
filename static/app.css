@@ -1788,7 +1788,6 @@ body.rank-dragging, body.rank-dragging * { cursor: grabbing !important; user-sel
 .st-pb { display: grid; gap: 8px; font-size: 13px; }
 .st-back { align-items: flex-start; flex-wrap: nowrap; }
 .st-back .glyph { width: 18px; height: 18px; color: var(--accent); margin-top: 1px; }
-.chip.off { text-decoration: line-through; color: var(--muted); background: transparent; border-style: dashed; }   /* a document a company Kept here is not asked for */
 .plate.mute { background: var(--mute-soft); color: var(--muted); --glyph-tint: var(--tint-mute); }
 /* Move setup */
 .st-move { gap: 16px; }
@@ -1831,3 +1830,71 @@ body.first-run .side, body.first-run .top { display: none; }
 .fr-step-words { flex: 1 1 260px; display: grid; gap: 2px; min-width: 0; }
 .fr-step a.pill { text-decoration: none; }
 @media (max-width: 760px) { .fr-cards { grid-template-columns: minmax(0, 1fr); } .fr-main { padding: 20px 16px 60px; } .fr-top { padding: 12px 16px; } }
+
+/* Setup › Required documents (design/canvas/SetupRequired.dc.html): payment types down the side, document types across, each box a button. The
+   grid scrolls sideways in its own frame with the payment types held in place. */
+.rq { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
+.rq p { margin: 0; }
+.rq-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+.rq-bar .field select { min-width: 180px; }
+.rq-bar .rq-why { flex: 1 1 260px; }
+.rq-go { display: flex; gap: 10px; margin-left: auto; }
+.rq-scope-note { display: flex; gap: 8px; align-items: flex-start; padding: 10px 14px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--info-line); font-size: 13px; }
+.rq-scope-note .glyph { width: 16px; height: 16px; flex: none; margin-top: 2px; color: var(--accent); }
+#rq-impact { display: grid; gap: 8px; }
+.rq-strip { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 10px 14px; border-radius: 10px; font-size: 13px; background: var(--mute-soft); color: var(--mute-ink); overflow-wrap: anywhere; }
+.rq-strip .glyph { width: 16px; height: 16px; flex: none; }
+.rq-strip > span { flex: 1 1 200px; min-width: 0; }
+.rq-strip.msg > span { font-weight: 600; }
+.rq-strip ul { flex: 1 1 100%; margin: 0; padding-left: 26px; }
+.rq-strip.warn { background: var(--warn-soft); color: var(--warn); }
+.rq-strip.ok { background: var(--ok-soft); color: var(--ok); font-weight: 600; }
+.card.rq-card { padding: 0; gap: 0; overflow: hidden; }
+.rq-card > .note { padding: 12px 18px; }
+.rq-wrap { overflow-x: auto; scroll-padding-left: 220px; }
+.rq-table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 720px; }
+.rq-table thead th { vertical-align: bottom; text-align: center; white-space: normal; padding: 10px 4px; }
+.rq-table .rq-type { position: sticky; left: 0; z-index: 2; width: 220px; min-width: 220px; max-width: 220px; box-sizing: border-box; padding: 10px 14px; background: var(--surface); box-shadow: inset -1px 0 0 var(--line); text-align: left; overflow-wrap: anywhere; }
+.rq-table tbody th.rq-type { text-transform: none; letter-spacing: normal; font-size: .9rem; color: var(--ink); white-space: normal; vertical-align: middle; border-bottom: 1px solid var(--hairline); }
+.rq-n { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
+.rq-stopped .rq-name { color: var(--muted); }
+.rq-doc { min-width: 72px; max-width: 112px; overflow-wrap: anywhere; }
+.rq-dh { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.rq-src { display: inline-flex; align-items: center; gap: 3px; min-height: 18px; padding: 0 6px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .02em; text-transform: none; white-space: nowrap; }
+.rq-src .glyph { width: 11px; height: 11px; }
+.rq-src.off { background: var(--mute-soft); color: var(--mute-ink); }
+.rq-table td.rq-cell { text-align: center; vertical-align: middle; padding: 8px 4px; }
+.rq-table td.rq-cell.na, .rq-table th.rq-doc.na { background: var(--mute-soft); }
+.rq-box { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 34px; padding: 0; border: 1px solid var(--control-border); border-radius: 9px; background: var(--field-bg); cursor: pointer; }
+.rq-box:hover { box-shadow: inset 0 0 0 2px var(--info-line); }
+.rq-box .glyph { width: 16px; height: 16px; pointer-events: none; }
+.rq-box.on { background: var(--accent-solid); border-color: var(--accent-solid); color: var(--on-accent); --glyph-tint: rgba(255, 255, 255, .28); }
+.rq-box.off { border-style: dashed; background: transparent; }                       /* kept as it is: not asked for (Kept here), or no longer in use */
+.rq-box.on.off { background: var(--surface); border-color: var(--control-border); color: var(--muted); --glyph-tint: var(--tint-mute); }
+.rq-box[aria-disabled="true"] { cursor: default; box-shadow: none; }
+.rq-dot { position: absolute; top: -4px; right: -4px; width: 10px; height: 10px; border: 2px solid var(--surface); border-radius: 99px; background: var(--warn); pointer-events: none; }
+.rq-table td.rq-since, .rq-table td.rq-for { vertical-align: middle; font-size: 13px; }
+.rq-since { min-width: 150px; }
+.rq-since > span { display: block; }
+.rq-act { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; font-size: 12px; font-weight: 600; text-align: left; cursor: pointer; }
+.rq-act[aria-disabled="true"] { color: var(--muted); cursor: default; }
+.rq-chev { display: inline-flex; }
+.rq-chev .glyph { width: 14px; height: 14px; pointer-events: none; }
+.rq-act[aria-expanded="true"] .rq-chev { transform: rotate(90deg); }
+.rq-for { min-width: 170px; }
+.rq-for > * { margin: 2px 6px 2px 0; }
+.rq-for .pill { white-space: normal; line-height: 1.3; padding-top: 3px; padding-bottom: 3px; }
+.rq-table tr.rq-hist td { background: var(--bg); padding: 10px 14px; font-size: 13px; }
+.rq-hist-in { position: sticky; left: 14px; display: grid; gap: 3px; width: max-content; max-width: min(640px, 78vw); overflow-wrap: anywhere; }
+.rq-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 12px 18px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-2); }
+.rq-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.rq-box.sample { width: 18px; height: 18px; border-radius: 5px; cursor: default; box-shadow: none; }
+.rq-box.sample .glyph { width: 12px; height: 12px; }
+.rq-box.sample .rq-dot { position: static; border: 0; }
+@media (max-width: 700px) {
+  .rq-wrap { scroll-padding-left: 128px; }
+  .rq-table .rq-type { width: 128px; min-width: 128px; max-width: 128px; padding: 8px 10px; }
+  .rq-table tbody th.rq-type { font-size: .82rem; }
+  .rq-bar .field { flex: 1 1 100%; }
+  .rq-go { margin-left: 0; }
+}

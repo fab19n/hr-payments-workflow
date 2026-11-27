@@ -124,9 +124,9 @@ async function tbPick(key) {
 // No company yet: Setup > Companies, with its add form open.
 async function tbAddCompany() {
   tbClose(false);
-  state.setup.kind = "entities";
-  // the add form only over Setup's Companies, once drawn: not over a page asked for while Setup was still read
-  await navigate(goPlace("setup"), { fresh: true, then: () => state.view === "setup" && state.setup.kind === "entities" ? openSetup("entities", "new") : null });
+  // the section goes in the place, not into the state: with something unsaved on Setup you may stay where you are.
+  // The add form only over Setup's Companies, once drawn: not over a page asked for while Setup was still read
+  await navigate({ ...goPlace("setup"), sub: "entities" }, { fresh: true, then: () => state.view === "setup" && state.setup.kind === "entities" ? openSetup("entities", "new") : null });
 }
 
 document.addEventListener("keydown", ev => {

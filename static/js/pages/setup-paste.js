@@ -259,108 +259,10 @@ async function moveImport(reason) {
   }, () => document.getElementById("mv-imp-h")?.focus?.({ preventScroll: true }));
 }
 
-/* Required documents: the documents each payment type needs before a payment counts as complete, for every company or
-   for one company of its own. A change starts from a month after the last one filed: the months before it keep the
-   rules they had, and filed months never change. */
-const reqDocName = k => (state.setup.req?.doc_types || []).find(x => x.key === k)?.label || docLabel(k);
-// Since when the set showing has been in force; a type with no set of its own needs what Other needs.
-const reqSince = t => t.follows_other ? "Same as Other" : !t.since || t.since === "0000-00" ? "From the start" : `Since ${monthName(t.since)}`;
 // The months a set was in force: from from_month until to_month, the month the next set took over (either end open).
 function reqRange(h) {
   const from = !h.from_month || h.from_month === "0000-00" ? null : monthName(h.from_month), to = h.to_month ? monthName(shiftMonth(h.to_month, -1)) : null;
   return from && to ? (from === to ? from : `${from} to ${to}`) : from ? `From ${from}` : to ? `Until ${to}` : "From the start";
-}
-const reqWho = id => id == null ? "all companies" : state.meta.entities.find(e => e.id === +id)?.code || "one company";
-// What a change did to the open payments, in words.
-function reqAffected(a = {}) {
-  const miss = +a.now_missing || 0, done = +a.now_complete || 0, s = n => n === 1 ? "" : "s", is = n => n === 1 ? "is" : "are";
-  if (!miss && !done) return "Saved. No open payment changes status.";
-  const m = miss ? `${miss} open payment${s(miss)} now miss${miss === 1 ? "es" : ""} a document` : "";
-  const c = !done ? "" : miss ? `${done} ${is(done)} now complete` : `${done} open payment${s(done)} ${is(done)} now complete`;
-  return `Saved. ${[m, c].filter(Boolean).join("; ")}.`;
-}
-
-async function setupRequired(box) {
-  const S = state.setup, live = state.meta.entities.filter(isActive);
-  if (S.reqScope != null && !live.some(e => e.id === S.reqScope)) S.reqScope = null;
-  const d = await api(`/api/setup/required?entity=${S.reqScope ?? ""}`);
-  if (!(box = setupBox(box))) return;
-  S.req = d;
-  const co = S.reqScope != null ? live.find(e => e.id === S.reqScope) : null;
-  const scopeBtn = (v, label, on, title = "") => `<button class="${on ? "btn" : "ghost"} small" data-req-scope="${v}"${title ? ` title="${esc(title)}"` : ""}>${esc(label)}</button>`;
-  const types = [...d.types.filter(isActive), ...d.types.filter(t => !isActive(t))];
-  // A company Kept here is not asked for the documents SQL Account issues (rulebook.required_docs), so those are greyed in its table.
-  const notAsked = k => !!co && !co.uses_sql && (d.doc_types || []).some(x => x.key === k && +x.from_sql);
-  const chips = t => t.docs?.length ? `<div class="row" style="gap:4px">${t.docs.map(k => notAsked(k)
-    ? `<span class="chip off" title="Issued by SQL Account, so not asked for while ${esc(co.code)} is Kept here">${esc(reqDocName(k))}<span class="sr-only"> (not asked for)</span></span>`
-    : `<span class="chip">${esc(reqDocName(k))}</span>`).join("")}</div>` : `<span class="muted">None</span>`;
-  const sqlDocs = (d.doc_types || []).filter(x => +x.from_sql && isActive(x)).map(x => reqDocName(x.key).split(" (")[0]), sqlIssued = andList(sqlDocs.map(esc)), many = sqlDocs.length > 1;
-  const greyed = types.some(t => (t.docs || []).some(notAsked));
-  const row = t => `<tr${isActive(t) ? "" : ` class="muted"`}>
-      <td><b>${esc(t.label || t.key)}</b>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}</td>
-      <td>${chips(t)}</td><td>${esc(reqSince(t))}</td>
-      ${co ? `<td>${t.own ? `<span class="pill">Its own set</span>` : `<span class="muted">Follows all companies</span>`}</td>` : ""}
-      <td><button class="ghost small" data-req-edit="${esc(t.key)}">Edit</button></td></tr>`;
-  box.innerHTML = `${setupHead("required", setupSpec(), { intro: "What each payment type needs before it counts as Complete. A change applies from the payroll month you pick and never reaches a filed month." })}
-    <div class="card">
-    <div class="row noprint">${scopeBtn("all", "All companies", !co)}${live.map(e => scopeBtn(e.id, e.code, co?.id === e.id, e.name)).join("")}</div>
-    ${co ? `<div class="note">${esc(co.code)} follows the documents set for all companies, unless it has its own set for a type.</div>
-    <div class="note">${esc(co.code)} is ${esc(keptLabel(co))}: ${co.uses_sql ? "its payment vouchers are issued by SQL Account and read in on the SQL import page." : sqlIssued ? `${sqlIssued} ${many ? "are" : "is"} issued by SQL Account, so ${many ? "they are" : "it is"} not asked for while ${esc(co.code)} is Kept here.${greyed ? " Where a type lists them below they are greyed." : ""} Every other document a type needs is asked for.` : "nothing a type needs is issued by SQL Account, so every document in the table is asked for."}</div>` : ""}
-    <div class="tbl-wrap"><table><thead><tr><th>Type of payment</th><th>Documents needed</th><th>In force</th>${co ? `<th>For ${esc(co.code)}</th>` : ""}<th></th></tr></thead><tbody>
-      ${types.map(row).join("") || `<tr><td colspan="${co ? 5 : 4}" class="empty">No payment types yet.</td></tr>`}
-    </tbody></table></div></div>`;
-}
-
-// The drawer of one payment type's documents, for the scope showing: the document types in use in pack order, ticked
-// when in the set; the month the change starts; its history.
-async function openRequired(key, { force = false, keep = {} } = {}) {
-  if (!force && !(await mayLeave())) return;
-  const S = state.setup, d = S.req, t = d?.types.find(x => x.key === key);
-  if (!t) return;
-  const co = d.scope != null ? state.meta.entities.find(e => e.id === +d.scope) : null;
-  const pack = (d.doc_types || []).filter(isActive), set = t.docs || [];
-  const gone = set.filter(k => !pack.some(x => x.key === k));  // stopped since: they can't be listed again
-  const box = x => `<label class="row tight"><input type="checkbox" id="rq-doc-${esc(x.key)}" ${set.includes(x.key) ? "checked" : ""}>
-      <span>${esc(x.label || x.key)}${+x.from_sql ? ` <span class="muted">(from SQL, only for companies kept in SQL)</span>` : ""}</span></label>`;
-  const hist = (t.history || []).map(h => `<li>${esc(reqRange(h))}, ${esc(reqWho(h.entity_id))}: ${h.docs?.length ? h.docs.map(k => esc(reqDocName(k))).join(", ") : "none"}</li>`).join("");
-  state.openPayment = null; state.why = null; S.drawer = null; S.reqOpen = key;
-  $("#drawer").innerHTML = `
-    <div class="ex-head"><div class="row spread"><div><div class="eyebrow">Required documents · ${co ? esc(co.code) : "All companies"}</div><h2>${esc(t.label || t.key)}</h2></div><button class="ghost small" id="closeDrawer">Close</button></div>
-      <div class="row">${isActive(t) ? "" : `<span class="pill grey">Stopped</span>`}${co ? (t.own ? `<span class="pill">Its own set</span>` : `<span class="pill grey">Follows all companies</span>`) : ""}<span class="muted">${esc(reqSince(t))}</span></div></div>
-    <form class="form setup-form" id="reqForm">
-      <div role="group" aria-label="Documents needed" class="req-docs"><span class="muted">Documents needed</span>
-        ${pack.map(box).join("") || `<div class="note">No document types in use.</div>`}</div>
-      ${gone.length ? `<div class="note" style="grid-column:1/-1">No longer in use, so left out when you save: ${gone.map(k => esc(reqDocName(k))).join(", ")}.</div>` : ""}
-      <label class="field"><span>From which month?</span><input id="rq-from" type="month" value="${esc(d.default_from || "")}"${d.first_allowed ? ` min="${esc(d.first_allowed)}"` : ""} required>
-        <span class="note">Months before this keep their current rules. Filed months never change.</span></label>
-      <label class="field"><span>Why are you making this change? (optional)</span><input id="rq-reason" maxlength="500" autocomplete="off"></label>
-      <div class="row" style="grid-column:1/-1"><button class="btn" type="submit">Save</button>
-        ${co && t.own ? `<button class="ghost" type="button" data-req-follow="${esc(key)}">Follow all companies again</button>` : ""}</div></form>
-    ${co ? `<div class="note">${t.own ? `Follow all companies again ends ${esc(co.code)}'s own set from the month above.` : `Saving gives ${esc(co.code)} its own set for this type from the month above.`}</div>` : ""}
-    ${t.follows_other ? `<div class="note">This type has no documents set of its own, so it needs what Other needs. Saving gives it its own set.</div>` : ""}
-    ${isActive(t) ? "" : `<div class="note">This type is stopped. Its payments still need the documents set for it.</div>`}
-    <div><h3>History</h3>${hist ? `<ul class="used">${hist}</ul>` : `<div class="note">Nothing recorded yet.</div>`}</div>`;
-  showDrawer();
-  watchDrawer(keep);
-}
-
-// Save (follow: the company follows all companies again): the ticked documents, in the set's order with those newly
-// ticked after them in pack order.
-async function reqSave(follow) {
-  const S = state.setup, d = S.req, key = S.reqOpen, t = d?.types.find(x => x.key === key);
-  if (!t) return;
-  const from = $("#rq-from").value;
-  if (!/^\d{4}-\d{2}$/.test(from)) throw new Error("Choose the month the change starts from.");
-  let docs = null;
-  if (!follow) {
-    const on = k => !!document.getElementById("rq-doc-" + k)?.checked, pack = (d.doc_types || []).filter(isActive).map(x => x.key), set = t.docs || [];
-    docs = [...set.filter(k => pack.includes(k) && on(k)), ...pack.filter(k => on(k) && !set.includes(k))];
-  }
-  const body = { payment_type: key, entity_id: d.scope ?? null, docs, from_month: from }, reason = $("#rq-reason").value.trim();
-  if (reason) body.reason = reason;
-  const r = await api("/api/setup/required", { json: body });
-  closeDrawer(true); toast(reqAffected(r.affected));
-  return afterSaved(o => render(o));
 }
 
 /* Monthly checklist (per company) and joiner and leaver reminders (every company). Each item or reminder has terms: what

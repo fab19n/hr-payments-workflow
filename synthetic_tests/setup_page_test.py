@@ -1202,7 +1202,7 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       "checklist: copy another company's": { kind: "checklist", path: CH, w: chkPost, prep: () => { run(`state.setup.chkOpen = { id: "copy" }`); el("cp-from").value = "2"; el("cl-from").value = "2026-11"; }, fire: () => run(`chkCopySave(false)`) },
       "reminders: save": { kind: "reminders", path: RM, w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); el("rm-from").value = "2026-11"; el("rm-title").value = "A title"; el("rm-days").value = "5"; }, fire: () => run(`remSave(false)`) },
       "reminders: delete": { kind: "reminders", path: RM, w: remPost, prep: () => { run(`state.setup.remOpen = { id: ${rem.id} }`); }, fire: why("remAct", "delete") },
-      "required documents: save": { kind: "required", path: RQ, w: () => writesOf("POST", /\/api\/setup\/required$/), prep: () => { run(`state.setup.reqOpen = ${JSON.stringify(req.key)}`); el("rq-from").value = "2026-11"; }, fire: () => run(`reqSave(false)`) },
+      "required documents: save": { kind: "required", path: RQ, w: () => writesOf("POST", /\/api\/setup\/required$/), prep: () => run(`rqToggle(${JSON.stringify(req.key)}, "invoice")`), fire: () => run(`rqSave()`) },
       "bank account: delete": { kind: "accounts", path: AC, w: () => writesOf("DELETE", /\/api\/setup\/accounts\/\d+$/), prep: async () => { await run(`openSetup("accounts", ${FX.OLD})`); await sleep(20); }, fire: why("setupAct", "delete") },
       "tidy up": { kind: "entities", path: EN, w: () => writesOf("POST", /^\/api\/months\/tidy$/), prep: async () => { await run(`openSetup("entities", ${EXA})`); await sleep(40); }, fire: why("setupAct", "tidy", "__btnArmed") },
       "general settings": { kind: "settings", path: ST, w: () => writesOf("PATCH", /\/api\/setup\/settings$/),
@@ -1860,10 +1860,10 @@ bl = o["bankLink"]
 check("Open Setup > Bank accounts in a company's dialog opens the accounts of that company, not of the company in the top bar",
       has(bl["html"], f'data-setup-kind="accounts" data-setup-entity="{EXA}"') and bl["before"] == EXB and bl["entity"] == EXA and bl["kind"] == "accounts", bl)
 rq = o["requiredHere"]
-check("Required documents for a company Kept here greys the documents SQL Account issues and says so; the others stay; every company's table shows none greyed",
-      has(rq["here"], "Payment Voucher, Journal Voucher and Official Receipt are issued by SQL Account, so they are not asked for while EXB is Kept here. Where a type lists them below they are greyed.")
-      and n(rq["here"], r'class="chip off"') >= 3 and 'class="chip">' in rq["here"] and "where the rules above say so" not in rq["here"]
-      and 'class="chip off"' not in rq["all"], (n(rq["here"], r'class="chip off"'), re.findall(r"EXB is Kept here:[^<]*", rq["here"])))
+check("Required documents for a company Kept here greys the documents SQL Account issues and says so; the others stay; every company's grid shows none greyed",
+      has(rq["here"], "Payment Voucher, Journal Voucher and Official Receipt are issued by SQL Account, so they are not asked for while EXB is Kept here. Their boxes are greyed and stay as they are.")
+      and n(rq["here"], r'class="rq-box[^"]* off"') >= 3 and 'class="rq-box on"' in rq["here"] and "where the rules above say so" not in rq["here"]
+      and not re.search(r'class="rq-box[^"]* off"', rq["all"]) and 'class="rq-cell na"' not in rq["all"], (n(rq["here"], r'class="rq-box[^"]* off"'), re.findall(r"EXB is Kept here:[^<]*", rq["here"])))
 ms = o["moveStates"]
 check("Move setup's Export buttons are downloads that say so: the file's name, that it is noted in the audit trail, and recurring payments when ticked",
       has(ms["empty"], 'data-move-export="template"', 'data-move-export="full"')
@@ -1936,7 +1936,8 @@ check("...and in the Put it back dialog (its heading is text, its body and the t
 check("...and in First run's note after a company is added",
       "E&amp;&lt;B is ready: Kept here." in es["banner"] and "E&<B" not in es["banner"], es["banner"][:300])
 check("Required documents for a company Kept in SQL Account greys nothing and has no Kept here note: it is not asked for fewer documents",
-      'class="chip off"' not in o["requiredSql"] and "is Kept here" not in o["requiredSql"] and "not asked for" not in o["requiredSql"] and 'class="chip">' in o["requiredSql"], o["requiredSql"][:300])
+      not re.search(r'class="rq-box[^"]* off"', o["requiredSql"]) and 'class="rq-cell na"' not in o["requiredSql"] and "is Kept here" not in o["requiredSql"] and "not asked for" not in o["requiredSql"]
+      and 'class="rq-box on"' in o["requiredSql"], o["requiredSql"][:300])
 
 # ---------- round 3 ----------
 s2 = o["frSavedTwice"]

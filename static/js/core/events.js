@@ -42,7 +42,7 @@ document.addEventListener("click", async ev => {
       return;
     }
     if (ds.pickEntity) {  // the page's own company buttons: what a link left for the company it named (a day, marks, a bank review) is dropped
-      if (!(await closeDrawer())) return;
+      if (!(await closeDrawer()) || rqHeld() && !(await rqMayLeave())) return;
       state.entity = +ds.pickEntity; state.addr.id = null; state.addr.params = {}; Object.assign(state, { asAt: null, mark: null, focusBank: null });
       return redraw();
     }
@@ -59,7 +59,7 @@ document.addEventListener("click", async ev => {
     }
     if (t.id === "prevMonth" || t.id === "nextMonth" || t.id === "thisMonth") {
       if (!state.meta || state.startFailed) return;  // nothing is started yet, or the start failed: there is no month to move
-      if (!(await closeDrawer())) return;
+      if (!(await closeDrawer()) || rqHeld() && !(await rqMayLeave())) return;
       state.asAt = null; state.mark = null;  // a Next up row's day and a link's marks are not carried to another month
       state.month = t.id === "thisMonth" ? currentCycle() : shiftMonth(state.month, t.id === "prevMonth" ? -1 : 1);
       state.addr.params = state.view === "bank" && state.addr.params.filter ? { filter: state.addr.params.filter } : {};  // the filters were used up; the to-explain list stays
@@ -67,7 +67,7 @@ document.addEventListener("click", async ev => {
     }
     if (t.id === "closeDrawer") return closeDrawer();
     if (ds.setupKind) {
-      if (!(await closeDrawer())) return;
+      if (!(await closeDrawer()) || rqHeld() && !(await rqMayLeave())) return;
       // Open Setup > Bank accounts in a company's dialog: that company's accounts, not the top bar's
       if (ds.setupEntity && (state.meta.entities || []).some(x => x.id === +ds.setupEntity)) state.entity = +ds.setupEntity;
       Object.assign(state.setup, { kind: ds.setupKind, id: null });
@@ -118,12 +118,11 @@ document.addEventListener("click", async ev => {
     }
     if (ds.setupAct) return await setupAct(ds.setupAct, t);
     if (ds.whyCancel) return hideWhy();
-    if (ds.reqScope) {
-      if (!(await closeDrawer())) return;
-      state.setup.reqScope = ds.reqScope === "all" ? null : +ds.reqScope; return render();
-    }
-    if (ds.reqEdit) return openRequired(ds.reqEdit);
-    if (ds.reqFollow) { t.disabled = true; try { return await reqSave(true); } finally { if (t.isConnected) t.disabled = false; } }
+    if (ds.rqDoc) return rqToggle(ds.rqType, ds.rqDoc);  // Setup's Required documents grid (pages/setup-required.js)
+    if (ds.rqFollow) return rqFollow(ds.rqType, ds.rqFollow === "1");
+    if (ds.rqHist) return rqHistory(ds.rqType);
+    if (ds.rqDiscard) return rqDiscard();
+    if (ds.rqDismiss) return rqDismiss();
     if (ds.chkNew) return openChecklist("new");
     if (ds.chkOpen) return openChecklist(+ds.chkOpen);
     if (ds.chkCopy) return openChkCopy();
@@ -426,7 +425,7 @@ document.addEventListener("change", async ev => {
 
 document.addEventListener("submit", async ev => {
   if (ev.target.id === "setupWhy") { ev.preventDefault(); return whySubmit(); }
-  const SETUP_SAVES = { setupForm: setupSave, settingsForm: settingsSave, reqForm: () => reqSave(false), chkForm: () => chkSave(false),
+  const SETUP_SAVES = { setupForm: setupSave, settingsForm: settingsSave, reqForm: rqSave, chkForm: () => chkSave(false),
     chkCopyForm: () => chkCopySave(false), remForm: () => remSave(false), pasteForm: () => pasteSave(false) };
   if (SETUP_SAVES[ev.target.id]) {
     ev.preventDefault();

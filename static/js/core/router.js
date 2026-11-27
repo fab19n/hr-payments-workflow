@@ -246,11 +246,12 @@ async function applyPlace(place, opts = {}) {
   } finally { ROUTER.busy--; }
 }
 
-// Asks to leave an unsaved drawer (the Discard dialog), then writes the address and applies the place. false: you kept editing.
+// Asks to leave an unsaved drawer, and what a page holds unsaved (Setup's Required documents grid) with the Discard dialog, then writes the
+// address and applies the place. false: you kept editing.
 async function navigate(place, opts = {}) {
   ROUTER.busy++;
   try {
-    if (!(await closeDrawer())) return false;
+    if (!(await closeDrawer()) || rqHeld() && !(await rqMayLeave())) return false;
     await applyPlace(place, { write: true, ...opts });
     return true;
   } finally { ROUTER.busy--; }
@@ -269,7 +270,7 @@ async function onHashChange() {
   const h = L.hash, home = !h || h === "#" || h === "#/", place = home ? homePlace() : parseAddr(h), was = ROUTER.at, wasI = ROUTER.i, cur = entryNo();
   ROUTER.busy++;
   try {
-    if (!(await closeDrawer())) {  // Keep editing: step back to the entry you were on (a typed address, which has no number, is replaced); nothing is drawn
+    if (!(await closeDrawer()) || rqHeld() && !(await rqMayLeave())) {  // Keep editing: step back to the entry you were on (a typed address, which has no number, is replaced); nothing is drawn
       if (was) {
         ROUTER.at = was;
         if (cur != null && cur !== wasI && window.history && window.history.go) window.history.go(wasI - cur);

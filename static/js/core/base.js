@@ -152,7 +152,7 @@ const dayKey = () => { const t = new Date(); return `${t.getFullYear()}-${String
 const state = { meta: null, view: "overview", entity: null, month: null, day: null, data: null, openPayment: null, sqlOpen: {}, sqlPaste: {},
   nextAll: {}, menuNext: null, menuFold: null, bankOnly: false, addr: { all: true, id: null, params: {} }, lists: {}, counts: {}, books: { entity: null, tab: "tb", from: null, to: null, rollup: true, account: null, q: "", months: false, side: "customers", party: null }, recon: { entity: null, account: null, year: null, open: null, panel: null, rv: null },
   trail: { f: {}, entries: [], more: false, labels: null, show: false },
-  setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, req: null, reqOpen: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null, probe: "" } };
+  setup: { kind: null, id: null, types: null, stopped: false, deleted: false, view: {}, closed: {}, drawer: null, reqScope: null, reqMonth: null, req: null, reqDraft: null, reqOpen: {}, reqSaving: false, reqMsg: [], reqResult: "", reqImpact: null, chk: null, chkOpen: null, rem: null, remOpen: null, paste: null, probe: "" } };
 // Glyphs come from the one sprite, /static/icons.svg (80 two-tone glyphs; the colour is the text colour, the tint is
 // --glyph-tint). A page key maps to its glyph name; a name the sprite has is used as it is.
 const GLYPH = { entity: "company", sql: "database", payees: "recurring", audit: "pack", settings: "vault", setup: "sliders" };

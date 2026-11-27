@@ -73,6 +73,7 @@ async function setupDraw(page, main) {
   const T = S.types, e = ent(), groups = setupGroups(T, e);
   if (!T.kinds[S.kind] || SETUP_LINKS[S.kind]) S.kind = groups[0]?.kinds[0] || null;  // a link's old address (Recurring payments) has no page here
   if (S.kind !== "move" && S.move) S.move.justImported = false;
+  if (S.kind !== "required") rqLeft();  // the grid's boxes are never kept past it (leaving it asked first)
   const at = setupMoreAt(setupSpec());  // the rows Show 25 more showed stay shown only while the same list is drawn again
   if (S.moreAt !== at) { S.more = {}; S.moreAt = at; }
   renderNav();  // the breadcrumb names the section
@@ -134,6 +135,7 @@ function setupLeft() {
   S.more = {}; S.moreAt = null;
   if (S.move) S.move.justImported = false;
   rankLeft();  // a rule picked up is not saved, and what Try held is dropped
+  rqLeft();  // Required documents' boxes that weren't saved (leaving asked first), its month and messages
 }
 
 // A field's choices as [value, label] pairs: payment types in use only, unless all (to name a value already saved). The
