@@ -666,6 +666,11 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     calm(); await submit().done; await idle(); r.again = { posts: posts().length, msgs: strips("msg"), previews: previews().length, changed: changedBoxes() };
     answer(true); await pick("rq-month", M[1]); await idle(60);
     r.moved = { month: $("#rq-month").value, changed: changedBoxes(), months: $("#rq-month").querySelectorAll("option").map(o => [o.value, o.textContent, o.hasAttribute("disabled")]).slice(0, 3), note: $("#rq-month-note").textContent };
+    // a month picked for one company that another has filed: For that company shows the month offered, and says why
+    await open(); await pick("rq-scope", String(FX.EXB)); await idle(60); await pick("rq-month", M[0]); await idle(60);
+    const picked = $("#rq-month").value;
+    calm(); await pick("rq-scope", String(FX.EXA)); await idle(60);
+    r.fallback = { picked, month: $("#rq-month").value, msgs: strips("msg"), reads: reads() };
     return r;
   });
 
@@ -973,6 +978,9 @@ holds("a month filed while the boxes wait: the save is refused with the server's
 holds("...Save from it sends nothing; another month is picked through Discard your changes?, and the filed one can't be picked",
       lambda: fl["again"]["posts"] == 0 and fl["again"]["previews"] == 0 and fl["again"]["changed"] == ["rental.approval"] and "is filed" in fl["again"]["msgs"][0]
       and fl["moved"]["month"] == M1 and fl["moved"]["changed"] == [] and fl["moved"]["months"][0] == [M0, f"{MONTH(M0)} (filed)", True] and fl["moved"]["months"][1] == [M1, MONTH(M1), False], (fl["again"], fl["moved"]))
+holds("a month picked that the company chosen next has filed gives way to the month offered, and says so",
+      lambda: fl["fallback"] == {"picked": M0, "month": M1, "msgs": [f"{MONTH(M0)} can't be picked now that a month is filed, so the grid shows {MONTH(M1)}."],
+                                 "reads": [f"/api/setup/required?entity={EXA}&month={M0}", f"/api/setup/required?entity={EXA}"]}, fl["fallback"])
 holds("nothing was thrown that no one heard", lambda: o["unheard"] == [], o["unheard"])
 
 # ---------- narrow screens ----------

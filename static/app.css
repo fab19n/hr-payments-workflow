@@ -1858,7 +1858,7 @@ body.first-run .side, body.first-run .top { display: none; }
 .rq-table tbody th.rq-type { text-transform: none; letter-spacing: normal; font-size: .9rem; color: var(--ink); white-space: normal; vertical-align: middle; border-bottom: 1px solid var(--hairline); }
 .rq-n { display: block; margin-top: 2px; font-size: 12px; font-weight: 400; color: var(--muted); }
 .rq-stopped .rq-name { color: var(--muted); }
-.rq-doc { min-width: 72px; max-width: 112px; overflow-wrap: anywhere; }
+.rq-table thead th.rq-doc { min-width: 72px; max-width: 112px; overflow-wrap: anywhere; text-transform: none; letter-spacing: normal; font-size: 12px; }
 .rq-dh { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .rq-src { display: inline-flex; align-items: center; gap: 3px; min-height: 18px; padding: 0 6px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .02em; text-transform: none; white-space: nowrap; }
 .rq-src .glyph { width: 11px; height: 11px; }

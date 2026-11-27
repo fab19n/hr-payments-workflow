@@ -425,7 +425,7 @@ async function rqSave() {
   return afterSaved(o => render(o));
 }
 async function rqRefused(e, draft) {
-  const S = state.setup, words = e.unsure ? changeError(e) : `${e.message} Nothing was saved.`;
+  const S = state.setup, words = e.unsure ? changeError(e) : /nothing was saved/i.test(e.message) ? e.message : `${e.message} Nothing was saved.`;
   const elsewhere = () => toast(e.unsure ? `Required documents: ${words}` : `Required documents wasn't saved: ${e.message}`, true);
   if (!rqOnPage()) return elsewhere();
   if (S.reqDraft !== draft) { elsewhere(); rqPaint(); return e.unsure ? render({ unsure: true }) : null; }  // left and come back: this grid is another
