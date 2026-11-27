@@ -316,6 +316,11 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     await tick("utility", "pv"); await sleep(340); await tick("utility", "invoice"); await sleep(10);
     r.working = status();
     await idle(800); r.late = { status: status(), n }; quiet();
+    // ... also one that comes while the newer boxes' preview is still waiting to be asked
+    await click($("#rq-discard")); await idle(); calm();
+    NET.delay = (m, p, b) => b && b.preview && b.changes[0].payment_type === "utility" && b.changes.length === 1 ? 450 : 0;
+    await tick("utility", "pv"); await sleep(600); await tick("salary", "invoice"); await sleep(220);
+    r.betweenLate = status(); await idle(); r.betweenEnd = status(); quiet();
     return { before, ...r };
   });
 
@@ -460,6 +465,9 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
       calm(); answer(true); await pick(id, value); await idle(60);
       r[id] = { kept, gone: { asks: asks().length, value: $("#" + id).value, changed: changedBoxes(), reason: $("#rq-reason").value, reads: reads(), draft: draft(), save: $("#rq-save").textContent, focus: document.activeElement.id } };
     }
+    // what the grid said (here, why a box can't be changed) isn't said over the other company's grid
+    await open(); await pick("rq-scope", String(FX.EXB)); await idle(60); await tick("utility", "pv"); const saidBefore = strips("msg").length;
+    await pick("rq-scope", "all"); await idle(60); r.said = { before: saidBefore, after: strips("msg") };
     // with nothing changed they just draw the other grid, and the month picked stays with another company
     await open(); await pick("rq-month", M[2]); await idle(60); await pick("rq-scope", String(FX.EXB)); await idle(60);
     r.clean = { asks: asks().length, month: $("#rq-month").value, scope: $("#rq-scope").value, reads: reads() };
@@ -793,6 +801,8 @@ holds("Discard puts every box back with nothing asked or sent, and leaves the fo
       and c["discarded"]["focus"] == "rq-save" and c["discarded"]["box"] == "true", c["discarded"])
 holds("a preview answered after the boxes changed again is not shown for them",
       lambda: has(c["working"], "Working out what changes for open payments") and c["late"]["n"] == 2 and has(c["late"]["status"], "2 unsaved changes", "2 open payments will be complete."), (c["working"], c["late"]))
+holds("...nor one that comes before the newer boxes have been asked about",
+      lambda: has(c["betweenLate"], "2 unsaved changes", "Working out what changes for open payments") and "will" not in c["betweenLate"] and "Working out" not in c["betweenEnd"], (c["betweenLate"], c["betweenEnd"]))
 
 # ---------- one save ----------
 s = o["save"]
@@ -870,6 +880,7 @@ for pid, words, value, url in (("rq-scope", "For", str(EXB), f"/api/setup/requir
     holds(f"...Discard changes shows the grid picked with no box or reason carried over, the focus back on {words}",
           lambda: x["gone"]["asks"] == 1 and x["gone"]["value"] == value and x["gone"]["changed"] == [] and x["gone"]["reason"] == "" and x["gone"]["draft"] is None
           and x["gone"]["reads"] == [url] and x["gone"]["focus"] == pid, x["gone"])
+holds("what the grid said for one company is gone from the next one's", lambda: p["said"] == {"before": 1, "after": []}, p["said"])
 holds("with nothing changed the pickers just draw; the month picked stays for another company, and Save is from it",
       lambda: p["clean"]["asks"] == 0 and p["clean"]["month"] == M2 and p["clean"]["scope"] == str(EXB) and p["savedFrom"] == [[EXB, M2]], (p["clean"], p["savedFrom"]))
 holds("Setup opened again shows For as it was left and the month a change is offered from", lambda: p["comeBack"] == {"month": M0, "scope": str(EXB)}, p["comeBack"])
