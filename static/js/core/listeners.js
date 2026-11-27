@@ -49,6 +49,7 @@ document.addEventListener("keydown", async ev => {
   if (ev.key !== "Escape" || DLG.asking) return;  // a confirm on top takes the Escape itself
   if (ev.target.id === "regQ" && ev.target.value) { ev.target.value = ""; return regSearch(""); }
   if (ev.target.closest?.("#setupWhy")) return hideWhy();
+  if (rankEscape(ev)) return;  // a matching rule picked up goes back where it was (pages/setup-words.js)
   if (payEscape()) return;   // in the payment dialog: an open menu, a question, the files waiting for their type, the viewer first
   await closeDrawer();
 });

@@ -139,7 +139,7 @@ KINDS["doc_types"] = {
 }
 KINDS["guess_words"] = {
     "label": "Payment type from SQL vouchers", "plural": "payment type guesses", "table": "guess_words", "per_entity": False,
-    "name_field": "label",
+    "name_field": "label", "ordered": True, "tried": True,  # the first rule that matches wins: the Move grip, and Try a voucher description
     "help": "When an SQL voucher is added as a payment, its description is checked against these in order; the first match "
             "gives its type. Words match anywhere in the description, in capitals.",
     "columns": [{"key": "sort", "label": "Order"}, {"key": "label", "label": "Name"}, {"key": "payment_type", "label": "Payment type"},
@@ -166,7 +166,7 @@ KINDS["hint_words"] = {
 }
 KINDS["filing_words"] = {
     "label": "SQL documents on the checklist", "plural": "filing words", "table": "filing_words", "per_entity": False,
-    "name_field": "label",
+    "name_field": "label", "ordered": True,
     "help": "An SQL document with one of these words is filed on that checklist item of its month. They act on SQL imports "
             "from now on; documents already filed stay where they are.",
     "columns": [{"key": "sort", "label": "Order"}, {"key": "label", "label": "Name"}, {"key": "doc_kind", "label": "Documents"},
@@ -1054,6 +1054,32 @@ def update(con, kind, rid, fields, quiet=False):
         db.log(con, f"Changed {s['label'].lower()} {rec[s['name_field']]}: {named}")
     rulebook.forget(con)
     return notes(con, kind, {**rec, **vals})
+
+
+ORDER_CHANGED = "These rules, or their order, have changed since this list was read."
+
+
+def reorder(con, kind, ids, was, moved=None):
+    """The Move grip: the rules of an ordered list of matching words put in the order ids gives (all of them, stopped ones
+    too), saved as their Order field, 1, 2, 3 and so on. Each rule whose Order changes is saved as editing that field saves
+    it (update): the same checks, trail rows and log line, the one moved first. All or nothing, in one change.
+    was: the order the list showed. When the rules or their order are no longer that (another change came first), it is
+    refused, so a list read earlier never puts an older order back; asking again for the order they are in changes nothing.
+    Returns the list as it is then."""
+    s = spec(kind)
+    if not s.get("ordered"):
+        raise Refused("This list has no order to change.", 404)
+    whole = lambda v: isinstance(v, list) and all(type(x) is int for x in v) and len(set(v)) == len(v)
+    if not whole(ids) or not whole(was) or sorted(ids) != sorted(was):
+        raise Refused("Give the new order of all the rules, and the order they were in.")
+    now = {r["id"]: r["sort"] for r in con.execute(f"SELECT id, sort FROM {s['table']} ORDER BY sort, id")}
+    if list(now) != ids:
+        if list(now) != was:
+            raise Refused(ORDER_CHANGED, 409)
+        changes = sorted(((rid, n) for n, rid in enumerate(ids, 1) if now[rid] != n), key=lambda c: c[0] != moved)
+        for rid, n in changes:
+            update(con, kind, rid, {"sort": n})
+    return listing(con, kind)
 
 
 def set_active(con, kind, rid, active):

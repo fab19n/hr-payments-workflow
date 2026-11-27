@@ -1733,6 +1733,29 @@ button.pill.pill-btn[aria-expanded="true"] .chev { transform: rotate(90deg); }
 .st-row { cursor: pointer; }
 .st-row:hover { background: var(--hover); }
 .st-row.stopped td { color: var(--ink-2); }
+/* Matching words: the Move grip, the place in the order, and Try a voucher description (pages/setup-words.js) */
+.rank-table .rank-move { width: 40px; }
+.rank-grip { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; cursor: grab; touch-action: none; }
+.rank-grip:hover { background: var(--hover); }
+.rank-grip .glyph { width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+.rank-grip[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+.rank-grip[aria-disabled="true"] { cursor: not-allowed; opacity: .5; }
+.rank-n { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; border-radius: 8px; background: var(--btn-off); font-weight: 700; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.st-row.mt-hit, .st-row.mt-hit:hover { background: var(--ok-wash); }
+.st-row.rank-held, .st-row.rank-held:hover { background: var(--accent-soft); box-shadow: 0 4px 14px var(--shadow); }
+.st-row.rank-flash { animation: flash .9s ease-out; }
+body.rank-dragging, body.rank-dragging * { cursor: grabbing !important; user-select: none; }
+.mt-words { display: flex; flex-wrap: wrap; gap: 6px; }
+.mt-word { display: inline-flex; align-items: center; min-height: 24px; padding: 0 8px; border-radius: 6px; background: var(--btn-off); color: var(--ink-2); font-family: ui-monospace, Consolas, monospace; font-size: .72rem; font-weight: 600; overflow-wrap: anywhere; }
+.mt-word.hit { background: var(--ok); color: var(--surface); }
+.mt-try { gap: 10px; }
+.mt-try .field > span { display: inline-flex; align-items: center; gap: 8px; }
+.mt-try .field > span .glyph { width: 16px; height: 16px; color: var(--accent); }
+.mt-try input { width: 100%; box-sizing: border-box; }
+.mt-result { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; background: var(--btn-off); color: var(--ink-2); font-size: 13px; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.mt-result.ok { background: var(--ok-soft); color: var(--ok); }
+.mt-result.stale { opacity: .6; }
+.mt-result .glyph { width: 18px; height: 18px; flex: none; }
 .st-used { text-align: right; min-width: 110px; max-width: 260px; }
 .st-used b { font-variant-numeric: tabular-nums; }
 .st-problem { display: flex; gap: 6px; align-items: flex-start; margin-top: 4px; color: var(--warn); }

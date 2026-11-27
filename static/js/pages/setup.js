@@ -133,6 +133,7 @@ function setupLeft() {
   if (main?.style) main.style.minHeight = "";  // nor does its hold stay on that page
   S.more = {}; S.moreAt = null;
   if (S.move) S.move.justImported = false;
+  rankLeft();  // a rule picked up is not saved, and what Try held is dropped
 }
 
 // A field's choices as [value, label] pairs: payment types in use only, unless all (to name a value already saved). The
@@ -307,8 +308,8 @@ async function setupList(box, kind) {
   const noun = setupNoun(spec.label), plural = spec.plural;
   const add = `<button type="button" class="btn" data-setup-new="${esc(kind)}" aria-haspopup="dialog">${icon("plus")}Add ${esc(noun)}</button>`;
   const paste = spec.paste ? `<button type="button" class="ghost" data-setup-paste="${esc(kind)}" aria-haspopup="dialog">${icon("clipboard")}Paste a list</button>` : "";
-  // Registered before the list's first listState, so a sort chosen earlier is kept.
-  SORTS[id] ||= Object.fromEntries([...cols.map(c => [c.key, [isNum(c) ? "num" : "text", r => setupCell(kind, fieldOf(c.key), r, c.key)]]),
+  // Registered before the list's first listState, so a sort chosen earlier is kept. An ordered list (Matching words) is never sorted.
+  if (!spec.ordered) SORTS[id] ||= Object.fromEntries([...cols.map(c => [c.key, [isNum(c) ? "num" : "text", r => setupCell(kind, fieldOf(c.key), r, c.key)]]),
     ["used", ["num", r => r.used_total]], ["status", ["text", r => r.status]]]);
   if (spec.per_entity && !e) {
     box.innerHTML = `${setupHead(kind, spec, { actions: `${paste.replace("<button", "<button disabled")}${add.replace("<button", "<button disabled")}` })}
@@ -320,7 +321,8 @@ async function setupList(box, kind) {
   if (!(box = setupBox(box))) return;
   (S.more ||= {})[id] ??= SETUP_PAGE;  // the rows shown stay shown across a redraw (a save, a stop)
   const stopped = r => r.status === "stopped", nStopped = rows.filter(stopped).length;
-  const text = r => [...cols.map(c => setupCell(kind, fieldOf(c.key), r, c.key)), SETUP_SUB[kind]?.(r) || "", usedText(r.used_by), stopped(r) ? "stopped" : "in use", +r.system ? "used by the app" : ""].join(" ");
+  const ranked = spec.ordered ? rankNew(box, kind, spec, rows) : null;  // the first rule that matches wins: pages/setup-words.js
+  const text = r => [...cols.filter(c => !ranked || c.key !== "sort").map(c => setupCell(kind, fieldOf(c.key), r, c.key)), SETUP_SUB[kind]?.(r) || "", usedText(r.used_by), stopped(r) ? "stopped" : "in use", +r.system ? "used by the app" : ""].join(" ");
   const sub = SETUP_SUB[kind] || (() => "");
   const cell = (r, c, i) => {
     const v = setupCell(kind, fieldOf(c.key), r, c.key);
@@ -330,7 +332,8 @@ async function setupList(box, kind) {
   const usedCell = r => `<td class="st-used" title="${esc(usedText(r.used_by) || "Not used yet")}"><b>${+r.used_total || 0}</b><div class="note st-sub">${esc(usedText(r.used_by) || "Not used yet")}</div></td>`;
   const statusCell = r => `<td><div class="row tight">${stopped(r) ? `<span class="pill grey">Stopped</span>` : `<span class="pill ok">In use</span>`}${systemPill(r)}</div></td>`;
   const view = setupView(kind, spec), closed = S.closed[treeId(kind, spec)] ||= new Set();
-  const table = () => view === "tree" ? treeTable() : flatTable();
+  const table = () => ranked ? rankTable(ranked, { cols, cell: (r, c) => cell(r, c, 1), text, usedCell, statusCell, emptyRow })
+    : view === "tree" ? treeTable() : flatTable();
   // Nothing to show: none yet, only stopped ones, or the search finds none: what it means and the one thing to do.
   const emptyRow = (span, nShown, nRows) => `<tr><td colspan="${span}">${nRows === 0 ? emptyState({ compact: true, glyph: spec.glyph, title: "None yet.", action: { label: `Add ${noun}`, attr: "data-setup-new", value: kind, glyph: "plus", ghost: true } })
     : nShown === 0 ? emptyState({ compact: true, glyph: "eyeOff", title: `Only stopped ${plural}: tick Show stopped to see them.`, action: { label: "Show stopped", attr: "data-setup-show-stopped", value: kind } })
@@ -356,13 +359,14 @@ async function setupList(box, kind) {
   };
   box.innerHTML = `${setupHead(kind, spec, { title: spec.per_entity ? `${sectionLabel(spec)} · ${e.code}` : undefined, actions: `${paste}${add}` })}
     ${setupTabsHtml(kind, tabs, rows.length)}
+    ${ranked?.tried ? tryHtml() : ""}
     <section class="card st-list" aria-labelledby="st-list-h"><h2 id="st-list-h">${spec.per_entity ? `${esc(sectionLabel(spec))} of ${esc(e.code)}` : `All ${esc(plural)}`}</h2>
       <div class="row st-tools">${listBar(id, plural)}<label class="row tight"><input type="checkbox" data-setup-stopped ${S.stopped ? "checked" : ""}> Show stopped (${nStopped})</label>
         ${deletedToggle(kind)}
         ${spec.tree ? `<div class="seg" role="group" aria-label="Show the ${esc(plural)} as">${[["tree", "Tree"], ["flat", "Flat list"]].map(([v, l]) =>
           `<button type="button" data-setup-view="${v}" aria-pressed="${view === v}">${l}</button>`).join("")}</div>` : ""}
         ${view === "tree" ? `<button type="button" class="ghost small" data-tree-all="open">Open all</button><button type="button" class="ghost small" data-tree-all="close">Close all</button>` : ""}</div>
-      <div class="note">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</div>
+      ${ranked ? rankNoteHtml(ranked) : `<div class="note">Click a row to change it. Something already used can't be deleted: stop using it instead, and its history stays.</div>`}
       ${view === "tree" ? `<div class="note" id="treeSearchNote" hidden>While searching, everything found is shown open. Parent accounts stay as context. Clear the search to open or close the groups.</div>` : ""}
       <div class="tbl-wrap" id="setupList">${table()}</div></section>
     <div id="setupDeleted"></div>`;
@@ -375,7 +379,8 @@ async function setupList(box, kind) {
     const note = $("#treeSearchNote");
     if (note) note.hidden = !on;
   };
-  LIST_REDRAW[id] = () => { if (!$("#setupList")) return; $("#setupList").innerHTML = table(); paintCount(id); if (view === "tree") treeBar(); };
+  LIST_REDRAW[id] = () => { if (!$("#setupList")) return; if (ranked) rankRedrawing(ranked); $("#setupList").innerHTML = table(); paintCount(id); if (view === "tree") treeBar(); };
+  if (ranked?.tried) tryRun();  // what was typed before the list was drawn again (a save, a stop, a new order) is tried on it
   if (view === "tree") treeBar();
   if (spec.tree) (S.treeKeys ||= {})[treeId(kind, spec)] = treeKeys(rows);  // what Close all closes
   await deleted;

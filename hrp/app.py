@@ -2262,12 +2262,16 @@ def _after_unlink(c, pid, entry=None):
 
 def _guess_category(text, c=None):
     """The payment type an SQL voucher's description suggests: the first of Setup's guesses (checklistbook; the code's
-    own without a connection) with a word anywhere in it, in capitals; else other."""
-    t = (text or "").upper()
-    for words, cat in (checklistbook.get(c) if c is not None else checklistbook.FROZEN).guess:
-        if any(w in t for w in words):
-            return cat
-    return "other"
+    own without a connection) with a word anywhere in it, in capitals (checklistbook's guess_match); else other."""
+    book = checklistbook.get(c) if c is not None else checklistbook.FROZEN
+    found = book.guess_match(text)
+    return book.guess[found[0]][1] if found else "other"
+
+
+def _voucher_type(c, description, chosen=None):
+    """The payment type a money-out SQL voucher is added with: the one chosen, else the guess from its description; kept
+    only while that type is in use and money out, else Other payment (valid_cat)."""
+    return valid_cat(c, chosen or _guess_category(description, c), "out")
 
 
 @app.get("/api/sql/entries")
@@ -2612,7 +2616,7 @@ def _payment_from_entry(c, s, category=None):
     """Adds an SQL voucher that isn't in the tracker (a claim, an advance, a one-off bill) as a paid payment."""
     acct = masters.first_active_account(c, s["entity_id"])  # the cash book account, as SQL's cash book listing is for it
     direction = s["direction"] or "out"
-    category = "receipt" if direction == "in" else valid_cat(c, category or _guess_category(s["description"], c), "out")
+    category = "receipt" if direction == "in" else _voucher_type(c, s["description"], category)
     # Its month as the SQL page and Next up count it (db.entry_month): one dated 30 September for October's rent goes
     # in October, never in a month before the first month tracked.
     ent = c.execute("SELECT * FROM entities WHERE id = ?", (s["entity_id"],)).fetchone()
@@ -3482,6 +3486,37 @@ def setup_reminders_save():
     if b.get("action") in ("stop", "use", "delete"):
         _reason()
     return _setup_call(lambda c: monthly.reminders_save(c, b), preview=b.get("preview") is True)
+
+
+@app.post("/api/setup/guess_words/try")
+def setup_guess_try():
+    """Setup's "Try a voucher description": the first guess that matches the text typed and the type a money-out SQL voucher
+    with that description would be added with, by the same matching as adding one (_guess_category, _voucher_type). The
+    guess is named by its place among all of them in order, stopped ones counted, as the list numbers them. It only reads;
+    the text travels in the body, so a voucher's words stay out of addresses."""
+    text = _body().get("text")
+    if not isinstance(text, str):
+        return err("Type a voucher description.")
+    c = con()
+    book, R = checklistbook.get(c), rulebook.get(c)
+    added = _voucher_type(c, text)
+    out = {"rule_id": None, "payment_type": added, "label": R.label(added)}
+    found = book.guess_match(text)
+    if found:
+        i, words = found
+        rid, cat = book.guess_ids[i], book.guess[i][1]
+        order = [r[0] for r in c.execute("SELECT id FROM guess_words ORDER BY sort, id")]
+        name = c.execute("SELECT label FROM guess_words WHERE id = ?", (rid,)).fetchone()[0]
+        out.update(rule_id=rid, rule_name=name, position=order.index(rid) + 1, words=words, rule_type=cat, rule_type_label=R.label(cat))
+    return jsonify(out)
+
+
+@app.post("/api/setup/<kind>/order")
+def setup_order(kind):
+    """The Move grip of a list of matching words: the new order of all its rules ({ids, was, moved}), saved as their Order
+    field (masters.reorder). No reason is asked, as editing the Order field asks none."""
+    b = _body()
+    return _setup_call(lambda c: masters.reorder(c, kind, b.get("ids"), b.get("was"), b.get("moved")))
 
 
 @app.post("/api/setup/<kind>/paste")

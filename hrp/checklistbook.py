@@ -71,13 +71,15 @@ def _live(t, month):
 class Book:
     """The checklist, reminders and words as one records.db (or the code) has them."""
 
-    def __init__(self, items=None, terms=None, people=None, pterms=None, guess=None, hints=None, filing=None, filing_codes=None):
+    def __init__(self, items=None, terms=None, people=None, pterms=None, guess=None, hints=None, filing=None, filing_codes=None,
+                 guess_ids=None):
         self.from_tables = items is not None
         self.items = items or {}            # (entity_id, code) -> {id, entity_id, code, completion, system, name}
         self.terms = terms or {}            # item id -> [term] by from_month
         self._people = people               # [{id, key, kind, short_name, sort}] in (sort, id) order
         self._pterms = pterms or {}         # people task key -> [term]
         self.guess = guess if guess is not None else [(words, cat) for _, words, cat in GUESS]
+        self.guess_ids = guess_ids or [None] * len(self.guess)  # per rule: its row in guess_words (none for the code's own)
         self.hints = hints if hints is not None else dict(sqlimport.CATEGORY_HINTS)
         self.filing = filing if filing is not None else list(sqlimport.TASK_RULES)
         self.filing_codes = filing_codes or [None] * len(self.filing)  # per rule: (company or None, a party's SQL code)
@@ -155,6 +157,18 @@ class Book:
         t = self.term(entity_id, code, month)
         return (t["due_offset"], t["due_day"]) if t and _live(t, month) and t["in_use"] else fallback
 
+    # ---- payment type guesses ----
+    def guess_match(self, text):
+        """The first payment type guess with a word anywhere in the text, in capitals: (its place in self.guess, the words
+        of it that the text holds), or None. The one matching of SQL vouchers' descriptions: app._guess_category adds
+        payments by it, and Setup's "Try a voucher description" answers with it."""
+        t = (text or "").upper()
+        for i, (words, _) in enumerate(self.guess):
+            found = [w for w in words if w in t]
+            if found:
+                return i, found
+        return None
+
     # ---- joiner and leaver reminders ----
     def people(self):
         """Every reminder rule, stopped ones too, in order: [{key, kind, short_name, sort}]."""
@@ -201,8 +215,8 @@ def from_tables(con):
     for t in _rows(con, "SELECT * FROM people_task_terms ORDER BY people_task_id, from_month, id"):
         t["docs"] = json.loads(t["docs"])
         pterms.setdefault(keys.get(t["people_task_id"]), []).append(t)
-    guess = [(tuple(json.loads(r["words"])), r["payment_type"])
-             for r in _rows(con, "SELECT * FROM guess_words WHERE active = 1 ORDER BY sort, id")]
+    guess_rows = _rows(con, "SELECT * FROM guess_words WHERE active = 1 ORDER BY sort, id")
+    guess = [(tuple(json.loads(r["words"])), r["payment_type"]) for r in guess_rows]
     hints = {}
     for r in _rows(con, "SELECT * FROM hint_words WHERE active = 1 ORDER BY sort, id"):
         hints[r["payment_type"]] = hints.get(r["payment_type"], ()) + tuple(json.loads(r["words"]))
@@ -213,7 +227,7 @@ def from_tables(con):
         parties = {p["id"]: (p["entity_id"], (p["sql_code"] or "").upper())
                    for p in _rows(con, "SELECT id, entity_id, sql_code FROM parties WHERE active = 1 AND sql_code IS NOT NULL")}
     codes = [parties.get(r.get("party_id")) for r in rows]
-    return Book(items, terms, people, pterms, guess, hints, filing, codes)
+    return Book(items, terms, people, pterms, guess, hints, filing, codes, guess_ids=[r["id"] for r in guess_rows])
 
 
 def get(con):
