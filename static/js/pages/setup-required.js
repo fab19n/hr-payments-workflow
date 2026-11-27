@@ -29,6 +29,12 @@ const rqOffered = (d, key) => !!rqDocInfo(d, key) && isActive(rqDocInfo(d, key))
 // A company Kept here is not asked for the documents SQL Account issues (rulebook.required_docs).
 const rqNotAsked = (d, key) => { const co = rqCompany(d); return !!co && !co.uses_sql && !!+(rqDocInfo(d, key)?.from_sql || 0); };
 const rqRows = d => [...d.types.filter(isActive), ...d.types.filter(t => !isActive(t))];
+// The board's glyphs for the payment types and documents the app comes with; one added in Setup has the plain document's.
+const RQ_TYPE_GLYPH = { salary: "users", director: "person", consultant: "person", statutory: "vault", utility: "receipt", rental: "receipt",
+  claim: "claim", claim_overseas: "claim", transfer: "coins", receipt: "coins", other: "document" };
+const RQ_DOC_GLYPH = { pv: "database", jv: "database", or: "document", invoice: "receipt", bank: "bank", einvoice: "document", portal: "check",
+  claim: "claim", approval: "approval", payroll: "payroll", payslip: "users", other: "document" };
+const rqGlyph = (glyphs, key) => Object.hasOwn(glyphs, key) ? glyphs[key] : "document";
 // The document types in use, in pack order, and any other a set shown asks for (one stopped since): a document asked for is never off the grid.
 function rqColumns(d) {
   const cols = (d.doc_types || []).filter(isActive).map(x => x.key);
@@ -46,12 +52,13 @@ function rqLocked(d, key) {
 
 /* ---- what is not saved ---- */
 const rqEdited = draft => draft ? [...new Set([...Object.keys(draft.edits), ...Object.keys(draft.follows)])] : [];
-// Boxes changed, and each type that is to follow all companies again counted once.
-const rqCount = draft => draft ? Object.values(draft.edits).reduce((n, x) => n + Object.keys(x).length, 0) + Object.keys(draft.follows).length : 0;
+// Boxes changed, and each type that is to follow all companies again counted once. The boxes ticked on such a type before are kept for
+// Keep its own set, and count again only once that is pressed.
+const rqCount = draft => draft ? Object.entries(draft.edits).reduce((n, [k, x]) => n + (draft.follows[k] ? 0 : Object.keys(x).length), 0) + Object.keys(draft.follows).length : 0;
 const rqHeld = () => { const draft = state.setup.reqDraft; return !!draft && (rqEdited(draft).length > 0 || !!draft.reason.trim()); };
 const rqDraftFor = d => state.setup.reqDraft ||= { scope: d.scope ?? null, month: d.month, edits: {}, follows: {}, seen: {}, names: {}, reason: "" };
 // What a type's row was when it was changed: a page read again says when the records have moved under it.
-const rqSeen = at => JSON.stringify([at.docs, at.own, at.follows_other, at.later, at.returns, at.follow]);
+const rqSeen = at => JSON.stringify([at.docs, at.own, at.follows_other, at.later, at.returns, at.follow, at.every_later]);
 function rqNoted(draft, t) { draft.names[t.key] = t.label; draft.seen[t.key] ||= rqSeen(t.at); }
 function rqTidy(draft, key) {
   if (draft.edits[key] && !Object.keys(draft.edits[key]).length) delete draft.edits[key];
@@ -59,15 +66,22 @@ function rqTidy(draft, key) {
   if (!rqEdited(draft).length && !draft.reason.trim() && state.setup.reqDraft === draft) state.setup.reqDraft = null;
 }
 // Whether a box shows ticked: as the records have it, or as the person left it; for a type to follow all companies again, what that gives.
-function rqTicked(draft, t, key) {
-  if (draft?.follows[t.key]) return !!t.at.follow?.includes(key);
+// Where that is what Other needs, it is Other as the same save leaves it: following all companies too, changed here, or as the records
+// have it.
+function rqTicked(d, draft, t, key) {
+  if (draft?.follows[t.key]) {
+    const other = t.at.follow_other ? rqType(d, "other") : null;
+    if (!other) return !!t.at.follow?.includes(key);
+    if (draft.follows.other) return !!other.at.follow?.includes(key);
+    return draft.edits.other ? rqDocsFor(d, draft, other).includes(key) : other.at.docs.includes(key);
+  }
   return draft?.edits[t.key]?.[key] ?? t.at.docs.includes(key);
 }
-const rqChanged = (draft, t, key) => rqTicked(draft, t, key) !== t.at.docs.includes(key);
+const rqChanged = (d, draft, t, key) => rqTicked(d, draft, t, key) !== t.at.docs.includes(key);
 // A changed type's new set: the documents it had that stay ticked, in their order, then those newly ticked in pack order (the server compares
 // the lists as they are). A document no longer in use can't be listed again.
 function rqDocsFor(d, draft, t) {
-  const on = k => rqOffered(d, k) && rqTicked(draft, t, k), had = t.at.docs;
+  const on = k => rqOffered(d, k) && rqTicked(d, draft, t, k), had = t.at.docs;
   return [...had.filter(on), ...(d.doc_types || []).map(x => x.key).filter(k => !had.includes(k) && on(k))];
 }
 // What Save sends: each changed type with what the page showed for it. No other type.
@@ -83,7 +97,10 @@ function rqRebase(d) {
     const t = rqType(d, key);
     if (!t) { delete draft.edits[key]; delete draft.follows[key]; delete draft.seen[key]; said.push(`${draft.names[key] || key} is no longer a payment type, so its boxes that weren't saved were dropped.`); continue; }
     const moved = draft.seen[key] !== rqSeen(t.at);
-    if (draft.follows[key] && !t.at.can_follow) { delete draft.follows[key]; said.push(`${t.label} has no set of its own left from ${month}, so Follow all companies again was taken off it.`); }
+    if (draft.follows[key] && !t.at.can_follow) {  // the boxes ticked before it were of the set that has gone: they don't come back
+      said.push(`${t.label} has no set of its own left from ${month}, so Follow all companies again was taken off it${draft.edits[key] ? ", with the boxes ticked on it before" : ""}.`);
+      delete draft.follows[key]; delete draft.edits[key];
+    }
     for (const [doc, on] of Object.entries(draft.edits[key] || {})) {
       const lock = rqLocked(d, doc);
       if (lock) { delete draft.edits[key][doc]; said.push(`A box of ${t.label} that wasn't saved was dropped. ${lock}`); }
@@ -118,6 +135,16 @@ function rqImpactText(a = {}) {
   const c = !done ? "" : miss ? `${done} will be complete` : `${done} open payment${s(done)} will be complete`;
   return `${[m, c].filter(Boolean).join("; ")}.`;
 }
+// For every company: the companies in use with their own set of a type, in the month shown or later (own_in: the spans they have it in).
+const rqOwnIn = t => (t.own_in || []).filter(x => isActive(state.meta.entities.find(e => e.id === x.entity_id) || { active: 0 }));
+// Those months in words, "" for a set in force with no end: "until June 2027", "from March 2027", "from March 2027 until June 2027".
+const rqSpans = spans => andList(spans.map(s => [s.from_month ? `from ${monthName(s.from_month)}` : "", s.to_month ? `until ${monthName(s.to_month)}` : ""].filter(Boolean).join(" ")).filter(Boolean));
+// The months outside them, which a change for every company does reach.
+function rqReached(spans) {
+  const out = spans[0].from_month ? [`before ${monthName(spans[0].from_month)}`] : [];
+  spans.forEach((s, i) => { if (s.to_month) out.push(`from ${monthName(s.to_month)}${spans[i + 1] ? ` until ${monthName(spans[i + 1].from_month)}` : ""}`); });
+  return andList(out);
+}
 // What a save would do that the changed boxes don't show by themselves.
 function rqWarnings(d, draft) {
   const out = [], co = rqCompany(d), month = monthName(d.month), changed = rqRows(d).filter(t => rqEdited(draft).includes(t.key));
@@ -127,21 +154,25 @@ function rqWarnings(d, draft) {
     // A company's new set of its own runs on with no end: over a month it was to follow all companies again from, and over their later sets.
     if (co && !draft.follows[t.key]) {
       if (t.at.returns?.length) out.push(`${co.code} was to follow all companies again for ${t.label} from ${andList(t.at.returns.map(monthName))}. Saving from ${month} does away with that: its own set carries on.`);
-      const theirs = t.at.own ? [] : (t.history || []).filter(h => h.entity_id == null && h.from_month > d.month).map(h => h.from_month).sort();
+      const theirs = t.at.every_later || [];
       if (theirs.length) out.push(`All companies have another set for ${t.label} from ${andList(theirs.map(monthName))}. ${co.code} keeps its own set then too.`);
     }
     const gone = draft.follows[t.key] ? [] : t.at.docs.filter(k => !rqOffered(d, k)).map(k => rqShort(rqDocName(d, k)));
     if (gone.length) out.push(`${andList(gone)} ${gone.length === 1 ? "is" : "are"} no longer in use, so ${gone.length === 1 ? "it is" : "they are"} left out of the new set of ${t.label}.`);
-    const live = (t.own_in || []).filter(x => isActive(state.meta.entities.find(e => e.id === x.entity_id) || { active: 0 }));
-    for (const x of live) out.push(x.from_month ? `${rqCode(x.entity_id)} has its own set for ${t.label} from ${monthName(x.from_month)}, so from then this change doesn't reach it.`
-      : `${rqCode(x.entity_id)} has its own set for ${t.label}, so this change doesn't reach it.`);
+    for (const x of rqOwnIn(t)) {
+      const has = `${rqCode(x.entity_id)} has its own set for ${t.label}`, from = x.spans[0].from_month;
+      out.push(x.spans.some(s => s.to_month) ? `${has} ${rqSpans(x.spans)}. This change reaches it ${rqReached(x.spans)}.`
+        : `${has}${from ? ` from ${monthName(from)}, so from then` : ", so"} this change doesn't reach it.`);
+    }
   }
   if (changed.some(t => t.key === "other")) {
     const along = rqRows(d).filter(t => draft.follows[t.key] ? t.at.follow_other : t.at.follows_other && !draft.edits[t.key]);
     if (along.length) out.push(`${names(along)} ${along.length === 1 ? "has no set of its own and needs" : "have no set of their own and need"} what Other needs, so this changes ${along.length === 1 ? "it" : "them"} too.`);
   }
-  const fresh = co ? changed.filter(t => !draft.follows[t.key] && !t.at.own) : [];
-  if (fresh.length) out.push(`Saving gives ${co.code} its own set for ${names(fresh)} from ${month}.`);
+  // For one company: each type that gets its own set. For every company: each that needed what Other needs, which from then on it doesn't.
+  const fresh = changed.filter(t => !draft.follows[t.key] && (co ? !t.at.own : t.at.follows_other)), one = fresh.length === 1;
+  if (fresh.length) out.push(co ? `Saving gives ${co.code} its own set for ${names(fresh)} from ${month}.`
+    : `Saving gives ${names(fresh)} ${one ? "a set of its own" : "sets of their own"} from ${month}, so later changes to Other no longer reach ${one ? "it" : "them"}.`);
   return out;
 }
 
@@ -162,11 +193,11 @@ const rqSource = (d, key) => (+(rqDocInfo(d, key)?.from_sql || 0) ? `<span class
   + (rqOffered(d, key) ? "" : `<span class="rq-src off">Not in use</span>`);
 function rqHeadHtml(d, cols) {
   const co = rqCompany(d);
-  return `<tr><th scope="col" class="rq-type">Payment type</th>${cols.map(c => `<th scope="col" class="rq-doc${rqNotAsked(d, c.key) ? " na" : ""}" title="${esc(c.full)}"><span class="rq-dh"><span>${esc(c.name)}</span>${rqSource(d, c.key)}</span></th>`).join("")}<th scope="col">In force</th><th scope="col">${co ? `For ${esc(co.code)}` : "Companies"}</th></tr>`;
+  return `<tr><th scope="col" class="rq-type">Payment type</th>${cols.map(c => `<th scope="col" class="rq-doc${rqNotAsked(d, c.key) ? " na" : ""}" title="${esc(c.full)}"><span class="rq-dh">${icon(rqGlyph(RQ_DOC_GLYPH, c.key), "rq-hg")}<span>${esc(c.name)}</span>${rqSource(d, c.key)}</span></th>`).join("")}<th scope="col">In force</th><th scope="col">${co ? `For ${esc(co.code)}` : "Companies"}</th></tr>`;
 }
 // One box: a button that is pressed while the document is required. Its label says the type, the document and everything its looks say.
 function rqBoxHtml(d, draft, t, col, r, c) {
-  const on = rqTicked(draft, t, col.key), changed = rqChanged(draft, t, col.key), form = col.key === "approval";
+  const on = rqTicked(d, draft, t, col.key), changed = rqChanged(d, draft, t, col.key), form = col.key === "approval";
   const na = rqNotAsked(d, col.key), gone = !rqOffered(d, col.key), co = rqCompany(d);
   const off = state.setup.reqSaving || !!rqLocked(d, col.key) || !!draft?.follows[t.key];
   const words = [on ? "required" : "not needed", on && form ? "from an approved form" : "", na ? `issued by SQL Account, so not asked for while ${co.code} is Kept here` : "",
@@ -178,8 +209,7 @@ function rqBoxHtml(d, draft, t, col, r, c) {
 function rqForHtml(d, draft, t, r) {
   const co = rqCompany(d), busy = state.setup.reqSaving ? ` aria-disabled="true"` : "";
   if (!co) {
-    const own = (t.own_in || []).filter(x => isActive(state.meta.entities.find(e => e.id === x.entity_id) || { active: 0 }));
-    return own.map(x => `<span class="pill">${esc(rqCode(x.entity_id))} has its own set${x.from_month ? ` from ${esc(monthName(x.from_month))}` : ""}</span>`).join("");
+    return rqOwnIn(t).map(x => { const months = rqSpans(x.spans); return `<span class="pill">${esc(rqCode(x.entity_id))} has its own set${months ? ` ${esc(months)}` : ""}</span>`; }).join("");
   }
   const button = (on, words, label) => `<button type="button" class="link rq-act" id="rq-f-${r}" data-rq-type="${esc(t.key)}" data-rq-follow="${on}" aria-label="${esc(label)}"${busy}>${words}</button>`;
   if (draft?.follows[t.key]) return `<span class="pill grey">Will follow all companies</span>${button("0", "Keep its own set", `Keep its own set for ${t.label}`)}`;
@@ -197,8 +227,9 @@ function rqSetsHtml(d, t) {
 function rqBodyHtml(d) {
   const S = state.setup, draft = S.reqDraft, cols = rqColumns(d), span = cols.length + 3;
   const rows = rqRows(d).map((t, r) => {
-    const n = cols.filter(c => rqTicked(draft, t, c.key)).length, open = !!S.reqOpen?.[t.key], later = t.at.later;
-    return `<tr${isActive(t) ? "" : ` class="rq-stopped"`}><th scope="row" class="rq-type"><span class="rq-name">${esc(t.label || t.key)}</span>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}<span class="rq-n">${plural(n, "document")}</span></th>
+    // the documents its payments are asked for: not a greyed box of SQL Account's for a company Kept here
+    const n = cols.filter(c => !rqNotAsked(d, c.key) && rqTicked(d, draft, t, c.key)).length, open = !!S.reqOpen?.[t.key], later = t.at.later;
+    return `<tr${isActive(t) ? "" : ` class="rq-stopped"`}><th scope="row" class="rq-type"><div class="rq-th">${icon(rqGlyph(RQ_TYPE_GLYPH, t.key), "rq-tg")}<div><span class="rq-name">${esc(t.label || t.key)}</span>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}<span class="rq-n">${plural(n, "document")}</span></div></div></th>
       ${cols.map((c, i) => rqBoxHtml(d, draft, t, c, r, i)).join("")}
       <td class="rq-since"><span>${esc(draft?.follows[t.key] ? "Follows all companies" : rqSince(t.at))}</span>${later.length || t.at.returns?.length ? `<span class="note">Changes from ${esc(monthName([...later.map(x => x.from_month), ...(t.at.returns || [])].sort()[0]))}</span>` : ""}<button type="button" class="link rq-act" id="rq-h-${r}" data-rq-type="${esc(t.key)}" data-rq-hist="1" aria-expanded="${open}" aria-label="${esc(`Earlier sets for ${t.label}`)}"><span class="rq-chev" aria-hidden="true">${icon("chevronRight")}</span>Earlier sets</button></td>
       <td class="rq-for">${rqForHtml(d, draft, t, r)}</td></tr>${open ? `<tr class="rq-hist"><td colspan="${span}"><div class="rq-hist-in">${rqSetsHtml(d, t)}</div></td></tr>` : ""}`;
@@ -328,7 +359,7 @@ function rqToggle(typeKey, doc) {
   const why = S.reqDraft?.follows[typeKey] ? `${t.label} will follow all companies again when you save. Press Keep its own set to change its boxes.` : rqLocked(d, doc);
   S.reqResult = "";
   if (why) { S.reqMsg = [why]; return rqPaint(); }
-  const draft = rqDraftFor(d), on = !rqTicked(draft, t, doc);
+  const draft = rqDraftFor(d), on = !rqTicked(d, draft, t, doc);
   rqNoted(draft, t);
   const edits = draft.edits[typeKey] ||= {};
   if (on === t.at.docs.includes(doc)) delete edits[doc]; else edits[doc] = on;  // as the records have it: not a change
@@ -344,7 +375,7 @@ function rqFollow(typeKey, on) {
   if (!t || on && !t.at.can_follow) return;
   const draft = rqDraftFor(d);
   rqNoted(draft, t);
-  if (on) { delete draft.edits[typeKey]; draft.follows[typeKey] = true; } else delete draft.follows[typeKey];
+  if (on) draft.follows[typeKey] = true; else delete draft.follows[typeKey];  // boxes ticked before stay, for Keep its own set
   rqTidy(draft, typeKey);
   S.reqMsg = []; S.reqResult = "";
   rqPaint();
@@ -435,9 +466,12 @@ async function rqRefused(e, draft) {
   const elsewhere = () => toast(e.unsure ? `Required documents: ${words}` : `Required documents wasn't saved: ${e.message}`, true);
   if (!rqOnPage()) return elsewhere();
   if (S.reqDraft !== draft) { elsewhere(); rqPaint(); return e.unsure ? render({ unsure: true }) : null; }  // left and come back: this grid is another
+  // Leave while saving? may be up over this grid. What is written on the grid goes with it if you choose Leave, so it is then said in a message.
+  let told = false;
+  RQ.leaving?.then(left => { if (left && !told) elsewhere(); });
   S.reqMsg = [words];
   rqPaint();
-  if (!(await render(e.unsure ? { unsure: true } : undefined))) toast(`Required documents: ${words}`, true);  // the page shows why it can't be read
+  if (!(await render(e.unsure ? { unsure: true } : undefined))) { told = true; toast(`Required documents: ${words}`, true); }  // the page shows why it can't be read
 }
 
 document.addEventListener("change", ev => {

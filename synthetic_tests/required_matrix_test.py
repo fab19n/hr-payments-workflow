@@ -159,7 +159,7 @@ check("...while the fields of before still show the latest set, as they did", ty
 one("rental", ["invoice"], entity=EXB, month=M1)
 ev = typed(view(None, M0), "rental")["own_in"], typed(view(None, M1), "rental")["own_in"]
 check("for every company, a type a company has its own set for names that company: from the month it starts, or in force",
-      ev == ([{"entity_id": EXB, "from_month": M1}], [{"entity_id": EXB, "from_month": None}]), ev)
+      ev == ([{"entity_id": EXB, "spans": [{"from_month": M1, "to_month": None}]}], [{"entity_id": EXB, "spans": [{"from_month": None, "to_month": None}]}]), ev)
 b0, b1 = at("rental", EXB, M0), at("rental", EXB, M1)
 every_rental = at("rental", month=M0)["docs"]
 check("for a company before its own set starts: it follows every company, and following would end the later set",
@@ -324,6 +324,58 @@ one("tst_twin_a", ["pv", "bank"], month=M1)
 batch([change("tst_twin_b", ["pv", "bank"], month=M1)], month=M1)
 check("from a month before later sets, the grid's save leaves exactly the sets a save of the type alone leaves",
       shape_of("tst_twin_a") == shape_of("tst_twin_b") == [(None, M0, M1, ["bank"]), (None, M1, None, ["pv", "bank"])], (shape_of("tst_twin_a"), shape_of("tst_twin_b")))
+
+# ---------- the months of a company's own sets, as the view for every company gives them ----------
+def spans(key, month=M0):
+    return [(x["entity_id"], [(s["from_month"], s["to_month"]) for s in x.get("spans", [])]) for x in typed(view(None, month), key)["own_in"]]
+
+
+def own_steps(key, *steps):
+    """A new type with a set for every company, then EXB's changes of it: (month, documents, or None to follow again)."""
+    call("post", "/api/setup/payment_types", json={"fields": {"key": key, "label": key, "direction": "out"}})
+    one(key, ["bank"], month=M0)
+    for month, docs in steps:
+        one(key, docs, entity=EXB, month=month)
+
+
+own_steps("tst_until", (M0, ["invoice"]), (M2, None))
+check("an own set that gives way to every company's later says until when, in force or still to come",
+      spans("tst_until") == [(EXB, [(None, M2)])] and spans("tst_until", M2) == [] and spans("tst_until", M3) == [], (spans("tst_until"), spans("tst_until", M2)))
+reach = batch([change("tst_until", ["bank", "pv"])], preview=True)
+batch([change("tst_until", ["bank", "pv"])])
+c2 = db.connect()
+seen_by = [rulebook.get(c2).required_docs("tst_until", 1, m, EXB) for m in (M0, M1, M2)]
+c2.close()
+check("...and a change for every company does reach that company from then", reach["ok"] and seen_by == [["invoice"], ["invoice"], ["bank", "pv"]], seen_by)
+own_steps("tst_between", (M1, ["invoice"]), (M2, None))
+check("...one to come that ends again says both months", spans("tst_between") == [(EXB, [(M1, M2)])], spans("tst_between"))
+own_steps("tst_gap", (M0, ["invoice"]), (M1, None), (M2, ["claim"]))
+check("...months between two own sets are left out of them, where a change for every company reaches the company",
+      spans("tst_gap") == [(EXB, [(None, M1), (M2, None)])] and spans("tst_gap", M1) == [(EXB, [(M2, None)])], (spans("tst_gap"), spans("tst_gap", M1)))
+own_steps("tst_joined", (M0, ["invoice"]), (M1, ["claim"]), (M3, ["approval"]))
+check("...and own sets that follow on from one another are one span", spans("tst_joined") == [(EXB, [(None, None)])], spans("tst_joined"))
+
+# ---------- a company's new set stands over every company's later ones ----------
+call("post", "/api/setup/payment_types", json={"fields": {"key": "tst_over", "label": "Test over", "direction": "out"}})
+one("tst_over", ["bank"], month=M0)
+stale_view = at("tst_over", EXB, M0)
+one("tst_over", ["invoice"], month=M2)
+now_view = at("tst_over", EXB, M0)
+check("the view for a company that would get a set of its own names the later months every company's set changes; the view for every company names none",
+      stale_view.get("every_later") == [] and now_view.get("every_later") == [M2] and at("tst_over", month=M0).get("every_later") == [] and at("tst_over", EXB, M2).get("every_later") == [],
+      (stale_view, now_view))
+refused("a company's save made before every company's later set was added is refused, so it doesn't stand over it unseen",
+        [change("tst_over", ["claim"], entity=EXB, was=stale_view)], ["for Test over", "changed after this page read it."], code=409, entity=EXB)
+r = batch([change("tst_over", ["claim"], entity=EXB)], entity=EXB)
+check("...saved having seen it, it is kept", r["ok"] and at("tst_over", EXB, M2)["docs"] == ["claim"], r)
+mine = at("tst_over", EXB, M0)
+one("tst_over", ["pv"], month=M3)
+r = batch([change("tst_over", ["claim", "bank"], entity=EXB, was=mine)], entity=EXB)
+check("a company that has its own set in force already isn't refused for a later set of every company: it stood over it before", r["ok"] and mine.get("every_later") == [], (r, mine))
+seen_follow = at("tst_over", EXB, M1)
+one("tst_over", ["approval"], month=M2)
+r = batch([change("tst_over", None, entity=EXB, month=M1, was=seen_follow)], entity=EXB, month=M1)
+check("...nor is Follow all companies again, which takes every company's later sets", r["ok"] is True, r)
 
 # ---------- 6. filed months never change ----------
 filed_was = at("salary", month=MP)

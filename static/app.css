@@ -1860,6 +1860,10 @@ body.first-run .side, body.first-run .top { display: none; }
 .rq-stopped .rq-name { color: var(--muted); }
 .rq-table thead th.rq-doc { min-width: 72px; max-width: 112px; overflow-wrap: anywhere; text-transform: none; letter-spacing: normal; font-size: 12px; }
 .rq-dh { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.rq-dh .rq-hg { width: 18px; height: 18px; color: var(--muted); }
+.rq-th { display: flex; align-items: center; gap: 10px; }
+.rq-th > div { min-width: 0; }
+.rq-th .rq-tg { width: 20px; height: 20px; color: var(--accent); }
 .rq-src { display: inline-flex; align-items: center; gap: 3px; min-height: 18px; padding: 0 6px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 700; letter-spacing: .02em; text-transform: none; white-space: nowrap; }
 .rq-src .glyph { width: 11px; height: 11px; }
 .rq-src.off { background: var(--mute-soft); color: var(--mute-ink); }
@@ -1895,6 +1899,7 @@ body.first-run .side, body.first-run .top { display: none; }
   .rq-wrap { scroll-padding-left: 128px; }
   .rq-table .rq-type { width: 128px; min-width: 128px; max-width: 128px; padding: 8px 10px; }
   .rq-table tbody th.rq-type { font-size: .82rem; }
+  .rq-th .rq-tg { display: none; }                                                  /* the narrow column is for the name */
   .rq-bar .field { flex: 1 1 100%; }
   .rq-go { margin-left: 0; }
 }

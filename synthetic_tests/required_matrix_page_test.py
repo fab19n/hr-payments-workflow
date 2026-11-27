@@ -541,8 +541,15 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     await tick("utility", "invoice"); await idle(); r.locked = { msgs: strips("msg"), invoice: info("utility", "invoice"), draft: draft() };
     await click(rowOf("utility").querySelector("[data-rq-follow]")); await idle();
     r.undone = { draft: draft(), approval: info("utility", "approval"), for: rowOf("utility").querySelector(".rq-for").textContent, focus: document.activeElement.id };
-    await tick("utility", "invoice"); await click(rowOf("utility").querySelector("[data-rq-follow]")); await idle();
-    r.replaced = { draft: draft(), invoice: info("utility", "invoice").pressed };
+    await tick("utility", "invoice"); await tick("utility", "tst_memo"); await idle();
+    const ticked = () => ({ changed: changedBoxes(), status: status(), invoice: info("utility", "invoice").pressed, memo: info("utility", "tst_memo").pressed, draft: draft() });
+    r.ticks = ticked();
+    await click(rowOf("utility").querySelector("[data-rq-follow]")); await idle();
+    r.replaced = { ...ticked(), sent: previews().slice(-1)[0].changes };
+    calm(); answer(false); await run(`go("settings")`); await idle(60); r.replaced.asked = asks().map(a => a.message);
+    await click(rowOf("utility").querySelector("[data-rq-follow]")); await idle();
+    r.kept2 = ticked();
+    await click(rowOf("utility").querySelector("[data-rq-follow]")); await idle();
     await tick("claim", "tst_memo"); await typeReason("As everyone"); await idle(); calm();
     await submit().done; await idle();
     r.followed = { sent: posts(), for: rowOf("utility").querySelector(".rq-for").textContent, mine: await held("utility", FX.EXB), follow: !!rowOf("utility").querySelector("[data-rq-follow]") };
@@ -668,6 +675,133 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     const mid = { off: info("rental", "bank").off, save: $("#rq-save").textContent };
     await five.done; await idle();
     r.back = { mid, memo: info("rental", "tst_memo"), off: info("rental", "bank").off, save: $("#rq-save").textContent, result: strips("ok") };
+    return r;
+  });
+
+  /* ======== review fixes: what the grid shows and says before a save ======== */
+  const made = async (key, label = key) => (await server("POST", "/api/setup/payment_types", { fields: { key, label, direction: "out" } })).status;
+  const asCompany = async id => { await open(); await pick("rq-scope", String(id)); await idle(60); };
+  const shownDocs = type => $("#rq-body").querySelectorAll(`[data-rq-type="${type}"][data-rq-doc][aria-pressed="true"]`).map(b => b.dataset.rqDoc).sort();
+  const countOf = type => rowOf(type).querySelector(".rq-n").textContent;
+  const followRow = async type => { await click(rowOf(type).querySelector("[data-rq-follow]")); };
+
+  await tryit("reach", async () => {
+    const r = {};
+    // an own set to give way later (in force, and to come), one between two others, and one that stays
+    const cases = { tst_until: [[["invoice"], M[0]], [null, M[2]]], tst_between: [[["invoice"], M[1]], [null, M[2]]],
+      tst_gap: [[["invoice"], M[0]], [null, M[1]], [["claim"], M[2]]], tst_stays: [[["invoice"], M[1]]] };
+    for (const [type, steps] of Object.entries(cases)) {
+      await made(type, "Test " + type.slice(4)); await single(type, ["bank"], null, M[0]);
+      for (const [docs, month] of steps) await single(type, docs, FX.EXB, month);
+    }
+    await open();
+    for (const type of Object.keys(cases)) {
+      await tick(type, "tst_memo"); await idle();
+      r[type] = { pill: rowOf(type).querySelector(".rq-for").textContent, warnings: warnings() };
+      await click($("#rq-discard")); await idle();
+    }
+    await tick("tst_until", "tst_memo"); await idle(); calm(); await submit().done; await idle();
+    r.then = [(await held("tst_until", FX.EXB, M[1])).docs, (await held("tst_until", FX.EXB, M[2])).docs];
+    return r;
+  });
+
+  await tryit("followOther", async () => {
+    const r = {};
+    const every = (await held("other")).docs;
+    await made("tst_along", "Test along"); await single("tst_along", ["approval"], FX.EXA, M[0]); await single("other", ["claim"], FX.EXA, M[0]);
+    const both = () => ({ along: shownDocs("tst_along"), other: shownDocs("other"), count: countOf("tst_along") });
+    await asCompany(FX.EXA);
+    await followRow("tst_along"); await idle(); r.alone = both();
+    await followRow("other"); await idle(); r.both = both();
+    await followRow("other"); await idle();  // Other keeps its own set again, and a box of it is changed
+    await tick("other", "tst_memo"); await idle(); r.edited = both();
+    await tick("other", "claim"); await idle(); r.unticked = both();
+    await tick("other", "claim"); await tick("other", "tst_memo"); await idle(); r.putBack = both();
+    await tick("other", "tst_memo"); await idle(); calm(); await submit().done; await idle();
+    r.savedEdit = { along: (await held("tst_along", FX.EXA)).docs, other: (await held("other", FX.EXA)).docs };
+    // both follow, saved: what the grid showed is what the type then needs
+    await single("tst_along", ["approval"], FX.EXA, M[0]);
+    await asCompany(FX.EXA); await followRow("tst_along"); await followRow("other"); await idle(); r.before = both();
+    calm(); await submit().done; await idle();
+    r.after = { along: (await held("tst_along", FX.EXA)).docs, other: (await held("other", FX.EXA)).docs };
+    return { ...r, every };
+  });
+
+  await tryit("counts", async () => {
+    const r = {};
+    await made("tst_cnt", "Test count"); await single("tst_cnt", ["invoice", "pv", "bank"], null, M[0]);
+    await made("tst_orx", "Test receipt only"); await single("tst_orx", ["or"], null, M[0]);
+    await asCompany(FX.EXB); r.here = [countOf("tst_cnt"), countOf("tst_orx"), pressed("tst_cnt", "pv"), pressed("tst_orx", "or")];
+    await tick("tst_orx", "bank"); await idle(); r.ticked = countOf("tst_orx"); run(`rqDrop()`);
+    await asCompany(FX.EXA); r.sql = [countOf("tst_cnt"), countOf("tst_orx")];
+    await open(); r.every = [countOf("tst_cnt"), countOf("tst_orx")];
+    return r;
+  });
+
+  await tryit("stale", async () => {
+    const r = {};
+    await made("tst_late", "Test late"); await single("tst_late", ["bank"], null, M[0]);
+    await asCompany(FX.EXB); await tick("tst_late", "tst_memo"); await idle(); r.before = warnings();
+    r.other = await single("tst_late", ["invoice"], null, M[2]);  // planned for every company after this grid was read
+    calm(); await submit().done; await idle();
+    r.after = { posts: posts().length, msgs: strips("msg"), warnings: warnings(), changed: changedBoxes(), mine: (await held("tst_late", FX.EXB)).own };
+    run(`rqDrop()`);
+    return r;
+  });
+
+  await tryit("followGone", async () => {
+    const r = {};
+    await made("tst_gone", "Test gone"); await single("tst_gone", ["bank"], null, M[0]); await single("tst_gone", ["invoice"], FX.EXB, M[0]);
+    await asCompany(FX.EXB); await tick("tst_gone", "tst_memo"); await followRow("tst_gone"); await idle();
+    await single("tst_gone", null, FX.EXB, M[0]);  // someone else makes it follow all companies
+    await run(`render()`); await idle();
+    r.read = { msgs: strips("msg"), changed: changedBoxes(), draft: draft(), shown: shownDocs("tst_gone") };
+    await submit().done; await idle(); r.posts = posts().length;
+    return r;
+  });
+
+  await tryit("freshEvery", async () => {
+    const r = {};
+    await made("tst_new_a", "Test new A"); await made("tst_new_b", "Test new B");
+    await open(); await tick("tst_new_a", "approval"); await idle(); r.one = warnings();
+    await tick("tst_new_b", "approval"); await idle(); r.two = warnings();
+    await click($("#rq-discard")); await idle(); await tick("utility", "tst_memo"); await idle(); r.own = warnings();
+    run(`rqDrop()`);
+    return r;
+  });
+
+  await tryit("icons", async () => {
+    await open();
+    const use = el => el.querySelectorAll("use").map(u => u.getAttribute("href").split("#i-")[1]);
+    const heads = Object.fromEntries($("#setupMain").querySelectorAll("th.rq-doc").map(t => [t.getAttribute("title"), use(t.querySelector(".rq-dh"))]));
+    const rows = Object.fromEntries($("#rq-body").querySelectorAll("th.rq-type").map(t => [t.querySelector(".rq-name").textContent, use(t)]));
+    const cls = [$("#setupMain").querySelectorAll("th.rq-doc .rq-hg").length, $("#rq-body").querySelectorAll("th.rq-type .rq-tg").length];
+    return { heads, rows, cls, odd: ["constructor", "toString", "__proto__", "tst_x"].map(k => run(`rqGlyph(RQ_DOC_GLYPH, ${JSON.stringify(k)}) + " " + rqGlyph(RQ_TYPE_GLYPH, ${JSON.stringify(k)})`)) };
+  });
+
+  /* ======== review fixes: a save refused, or not answered, while Leave while saving? is up ======== */
+  await tryit("leaveWhile", async () => {
+    const r = {};
+    await made("tst_wait", "Test wait"); await single("tst_wait", ["bank"], null, M[0]);
+    let n = 0;
+    for (const [name, how, leave] of [["refused", "stale", true], ["lost", "lost", true], ["never", "net", true], ["stays", "stale", false], ["down", "down", true], ["saved", null, true]]) {
+      await single("tst_wait", ++n % 2 ? ["bank"] : ["invoice", "bank"], null, M[0]);
+      await open(); await tick("tst_wait", "tst_memo"); await idle(); calm();
+      if (how === "stale") await single("tst_wait", ["claim", n % 2 ? "bank" : "invoice"], null, M[0]);  // the records move before it is sent
+      let down = false;
+      NET.delay = (m, p, b) => m === "POST" && b && !b.preview ? 250 : 0;
+      NET.fail = (m, p, b) => down ? "net" : m === "POST" && b && !b.preview ? (how === "lost" ? "lost" : how === "net" || how === "down" ? "net" : null) : null;
+      let say; sandbox.__held = new Promise(res => { say = res; }); run(`__answers.push(__held)`);
+      const saving = submit(); await sleep(60);
+      if (how === "down") down = true;  // the app stops: neither the save nor the reading after it gets through
+      const going = run(`go("overview")`); await sleep(20);
+      const title = asks().map(a => a.title);
+      await saving.done; await sleep(60);
+      const asked = toasts();
+      down = false; say(leave); await going; await idle();
+      r[name] = { title, asked, after: toasts(), view: run(`state.view`), msgs: $("#rq-body") ? strips("msg") : null, draft: draft() };
+      quiet();
+    }
     return r;
   });
 
@@ -878,6 +1012,67 @@ holds("Escape on the grid leaves it as it is, and two ways at once ask once",
       lambda: lv["escape"]["asks"] == 0 and lv["escape"]["changed"] == ["utility.tst_memo"] and lv["twoAsks"] == 1 and lv["twoKept"] == {"changed": ["utility.tst_memo"], "view": "setup"}, (lv["escape"], lv["twoKept"]))
 holds("as before, nothing in the app stands in the way of closing or reloading the tab", lambda: lv["unload"] == 0, lv["unload"])
 
+# ---------- review fixes, round 1 ----------
+rc = o["reach"]
+UNTIL, FROM2 = MONTH(M2), MONTH(M1)
+holds("for every company, an own set that is to give way to every company's says until when, and that the change reaches the company from then",
+      lambda: rc["tst_until"] == {"pill": f"EXB has its own set until {UNTIL}", "warnings": [f"EXB has its own set for Test until until {UNTIL}. This change reaches it from {UNTIL}."]}
+      and rc["then"] == [["invoice"], ["bank", "tst_memo"]], (rc["tst_until"], rc["then"]))
+holds("...one to come that ends again says it reaches the company before and after it",
+      lambda: rc["tst_between"] == {"pill": f"EXB has its own set from {FROM2} until {UNTIL}",
+          "warnings": [f"EXB has its own set for Test between from {FROM2} until {UNTIL}. This change reaches it before {FROM2} and from {UNTIL}."]}, rc["tst_between"])
+holds("...with months between two own sets, those are the months it reaches",
+      lambda: rc["tst_gap"] == {"pill": f"EXB has its own set until {FROM2} and from {UNTIL}",
+          "warnings": [f"EXB has its own set for Test gap until {FROM2} and from {UNTIL}. This change reaches it from {FROM2} until {UNTIL}."]}, rc["tst_gap"])
+holds("...and one that only starts later and stays says from then it isn't reached",
+      lambda: rc["tst_stays"] == {"pill": f"EXB has its own set from {FROM2}", "warnings": [f"EXB has its own set for Test stays from {FROM2}, so from then this change doesn't reach it."]}, rc["tst_stays"])
+fo = o["followOther"]
+EVERY = sorted(fo["every"] or [])
+holds("a type to follow all companies again that then needs what Other needs shows Other as it is while Other stays as it is",
+      lambda: fo["alone"]["along"] == ["claim"] == fo["alone"]["other"], fo["alone"])
+holds("...and with Other to follow all companies too, every company's Other, as the save then makes it",
+      lambda: fo["both"]["along"] == EVERY == fo["both"]["other"] != ["claim"] and fo["both"]["count"] == f"{len(EVERY)} documents"
+      and sorted(fo["after"]["along"]) == sorted(fo["after"]["other"]) == EVERY == fo["before"]["along"], (fo["both"], fo["before"], fo["after"]))
+holds("...with a box of Other changed here, Other as changed: ticked, unticked and put back",
+      lambda: fo["edited"]["along"] == ["claim", "tst_memo"] == fo["edited"]["other"] and fo["unticked"]["along"] == ["tst_memo"] and fo["unticked"]["count"] == "1 document"
+      and fo["putBack"]["along"] == ["claim"] and sorted(fo["savedEdit"]["along"]) == sorted(fo["savedEdit"]["other"]) == ["claim", "tst_memo"], (fo["edited"], fo["unticked"], fo["putBack"], fo["savedEdit"]))
+cn = o["counts"]
+holds("a row counts the documents its payments are asked for: for a company Kept here, not SQL Account's greyed boxes",
+      lambda: cn["here"] == ["2 documents", "0 documents", "true", "true"] and cn["ticked"] == "1 document" and cn["sql"] == ["3 documents", "1 document"] and cn["every"] == ["3 documents", "1 document"], cn)
+st = o["stale"]
+LATE = f"All companies have another set for Test late from {MONTH(M2)}. EXB keeps its own set then too."
+holds("a company's save from a grid read before every company's later set was added is refused, and the grid then says what the new set would stand over",
+      lambda: st["other"] == 200 and LATE not in st["before"] and st["after"]["posts"] == 1 and "changed after this page read it. Nothing was saved." in st["after"]["msgs"][0]
+      and LATE in st["after"]["warnings"] and st["after"]["changed"] == ["tst_late.tst_memo"] and st["after"]["mine"] is False, st)
+fg = o["followGone"]
+holds("Follow all companies again taken off because the company's own set has gone takes the boxes ticked before it, and says so; they are never saved",
+      lambda: f"Test gone has no set of its own left from {MONTH(M0)}, so Follow all companies again was taken off it, with the boxes ticked on it before." in fg["read"]["msgs"]
+      and fg["read"]["changed"] == [] and fg["read"]["draft"] is None and fg["read"]["shown"] == ["bank"] and fg["posts"] == 0, fg)
+fe = o["freshEvery"]
+holds("for every company, a change to a type that needs what Other needs says saving gives it a set of its own, which Other no longer reaches",
+      lambda: fe["one"] == [f"Saving gives Test new A a set of its own from {MONTH(M0)}, so later changes to Other no longer reach it."]
+      and fe["two"] == [f"Saving gives Test new A and Test new B sets of their own from {MONTH(M0)}, so later changes to Other no longer reach them."]
+      and not any("set of its own from" in w for w in fe["own"]), fe)
+ic = o["icons"]
+SPRITE = set(re.findall(r'id="i-([A-Za-z0-9]+)"', (Path(__file__).resolve().parents[1] / "static" / "icons.svg").read_text(encoding="utf-8")))
+holds("each document's heading and each payment type's name has the board's glyph; one added in Setup has the plain document's",
+      lambda: all(len(v) >= 1 for v in ic["heads"].values()) and all(len(v) == 1 for v in ic["rows"].values()) and ic["cls"] == [len(ic["heads"]), len(ic["rows"])]
+      and ic["heads"]["Invoice / bill"][0] == "receipt" and ic["heads"]["Payslip"][0] == "users" and ic["heads"]["Bank receipt / transfer slip"][0] == "bank" and ic["heads"][ODD_DOC] == ["document"]
+      and ic["rows"][LABEL["salary"]] == ["users"] and ic["rows"][LABEL["statutory"]] == ["vault"] and ic["rows"][LABEL["transfer"]] == ["coins"] and ic["rows"][ODD_TYPE] == ["document"]
+      and {g for v in [*ic["heads"].values(), *ic["rows"].values()] for g in v} <= SPRITE and ic["odd"] == ["document document"] * 4, (ic["heads"], ic["rows"], ic["odd"]))
+lw = o["leaveWhile"]
+holds("a save refused while Leave while saving? is up is said in a message once you choose Leave",
+      lambda: lw["refused"]["title"] == ["Leave while saving?"] and lw["refused"]["asked"] == [] and lw["refused"]["view"] == "overview" and lw["refused"]["draft"] is None
+      and lw["refused"]["after"] == [f"Required documents wasn't saved: What is required from {MONTH(M0)} for Test wait changed after this page read it."], lw["refused"])
+holds("...so is one whose answer is lost, or that never gets there: it isn't known whether it was saved",
+      lambda: all(lw[k]["asked"] == [] and lw[k]["after"] == ["Required documents: The connection to HR Payments broke. It isn't known whether it was saved: check before doing it again."] for k in ("lost", "never")),
+      (lw["lost"], lw["never"]))
+holds("...choosing Stay here keeps it on the grid, with no message besides",
+      lambda: lw["stays"]["view"] == "setup" and lw["stays"]["after"] == [] and "Nothing was saved." in lw["stays"]["msgs"][0], lw["stays"])
+holds("...with the app stopped it is told once, and one that was saved is told as saved, once",
+      lambda: len(lw["down"]["after"]) == 1 and "isn't known whether it was saved" in lw["down"]["after"][0] and lw["saved"]["after"] == [f"Saved from {MONTH(M0)}"]
+      and lw["saved"]["view"] == "overview", (lw["down"], lw["saved"]))
+
 # ---------- For and the month ----------
 p = o["pickers"]
 for pid, words, value, url in (("rq-scope", "For", str(EXB), f"/api/setup/required?entity={EXB}"), ("rq-month", "the month", M1, f"/api/setup/required?entity=&month={M1}")):
@@ -929,10 +1124,14 @@ holds("Follow all companies again waits for Save: the row shows what all compani
       and co["pending"]["for"] == "Will follow all companiesKeep its own set" and co["pending"]["since"].startswith("Follows all companies") and co["pending"]["changed"] == ["utility.approval"]
       and co["pending"]["approval"]["off"] is True and has(co["pending"]["status"], "1 unsaved change") and co["pending"]["focus"] == co["button"]["id"]
       and co["pending"]["previews"]["changes"][0]["docs"] is None, co["pending"])
-holds("...a click on a locked box says why; Keep its own set takes it back; ticking first and then following drops the ticks",
+holds("...a click on a locked box says why; Keep its own set takes it back; boxes ticked before Follow are kept for it",
       lambda: co["locked"]["msgs"] == ["Utility / telco will follow all companies again when you save. Press Keep its own set to change its boxes."] and co["locked"]["draft"]["edits"] == {}
       and co["undone"]["draft"] is None and co["undone"]["approval"]["pressed"] == "true" and co["undone"]["for"] == "Its own setFollow all companies again" and co["undone"]["focus"] == co["button"]["id"]
-      and co["replaced"]["draft"]["edits"] == {} and co["replaced"]["draft"]["follows"] == {"utility": True} and co["replaced"]["invoice"] == "true", (co["locked"], co["undone"], co["replaced"]))
+      and co["ticks"]["changed"] == ["utility.invoice", "utility.tst_memo"] and "2 unsaved changes" in co["ticks"]["status"]
+      and co["replaced"]["draft"]["follows"] == {"utility": True} and "1 unsaved change" in co["replaced"]["status"] and co["replaced"]["memo"] == "false"
+      and [(x["payment_type"], x["docs"]) for x in co["replaced"]["sent"]] == [("utility", None)] and co["replaced"]["asked"] == ["1 unsaved change on Required documents will be lost."]
+      and co["kept2"]["changed"] == ["utility.invoice", "utility.tst_memo"] and co["kept2"]["invoice"] == co["ticks"]["invoice"] and co["kept2"]["memo"] == "true"
+      and co["kept2"]["draft"]["edits"] == co["ticks"]["draft"]["edits"] and co["kept2"]["draft"]["follows"] == {}, (co["locked"], co["undone"], co["replaced"]))
 holds("...saved with another change in the same request: the follow sent as no documents, and the company follows all companies again",
       lambda: len(co["followed"]["sent"]) == 1 and [(x["payment_type"], x["docs"] is None) for x in co["followed"]["sent"][0]["changes"]] == [("utility", True), ("claim", False)]
       and co["followed"]["for"] == "Follows all companies" and co["followed"]["mine"]["own"] is False and co["followed"]["follow"] is False, co["followed"])
@@ -951,7 +1150,8 @@ holds("a type with a later set says that saving from an earlier month replaces i
       and "tst_memo" in wn["laterSets"]["docs"] and wn["laterSets"]["later"] == [], (wn["later"], wn["laterSets"]))
 holds("a change to Other names the types that need what Other needs; one of them changed too gets what its own row says",
       lambda: wn["other"]["warnings"] == [f"{ODD_TYPE} and Test old kind have no set of their own and need what Other needs, so this changes them too."]
-      and wn["otherAndFollower"] == ["Test old kind has no set of its own and needs what Other needs, so this changes it too."]
+      and wn["otherAndFollower"] == ["Test old kind has no set of its own and needs what Other needs, so this changes it too.",
+                                     f"Saving gives {ODD_TYPE} a set of its own from {MONTH(M0)}, so later changes to Other no longer reach it."]
       and wn["otherSaved"]["odd"] == ["invoice", "pv", "bank", "approval"] and wn["otherSaved"]["other"] == ["invoice", "pv", "bank", "tst_memo"]
       and wn["otherSaved"]["oldKind"]["follows_other"] is True and wn["otherSaved"]["oldKind"]["docs"] == wn["otherSaved"]["other"], (wn["other"], wn["otherAndFollower"], wn["otherSaved"]))
 holds("a company that was to follow all companies again says when, on its row and before Save, which would do away with it",
