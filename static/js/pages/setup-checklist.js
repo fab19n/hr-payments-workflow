@@ -178,7 +178,7 @@ async function chkSave(preview) {
   finally { O.saving = false; }
   if (isNew) O.saved = true;
   const own = still();
-  suSent(own, sent);
+  suSent(own, sent, S.chkOpen !== O);
   // Drawn again on the month the change starts from, so it shows the term just saved.
   return chkDone(r, isNew ? r.item_id : O.id, isNew ? "Item added" : "Saved", { "cl-from": body.from_month }, own);
 }

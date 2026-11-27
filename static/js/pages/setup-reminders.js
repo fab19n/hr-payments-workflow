@@ -139,7 +139,7 @@ async function remSave(preview) {
   finally { O.saving = false; }
   if (isNew) O.saved = true;
   const own = still();
-  suSent(own, sent);
+  suSent(own, sent, S.remOpen !== O);
   // Drawn again on the month the change starts from, so it shows the term just saved.
   return remDone(r, isNew ? r.id ?? r.item_id : O.id, isNew ? "Reminder added" : "Saved", { "rm-from": body.from_month }, own, isNew ? body.key : null);
 }

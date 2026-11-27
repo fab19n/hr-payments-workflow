@@ -686,14 +686,22 @@ function suRefused(e) {
 }
 
 // Which dialog a change is sent from, asked before it is sent: the function it returns says, once the server has answered, whether that
-// dialog is still the one on show: not closed since (dialogHere), nor drawn as another one (open: what the dialog holds, as drawn).
+// dialog is still the one on show: not closed since (dialogHere), and holding what it did (open: what the dialog holds, as drawn) or the
+// same record drawn again meanwhile (an earlier change's late reading back). A new record's dialog drawn again is another one.
 function suDialog(open) {
   const here = dialogHere(), mine = open();
-  return () => here() && open() === mine && drawerShown();
+  const same = now => now === mine || !!now && !!mine && typeof now.id === "number" && now.id === mine.id && now.kind === mine.kind;
+  return () => here() && drawerShown() && same(open());
 }
 // What a Save held when it was sent is what was saved: only what is typed from then on counts as not saved (a dialog that stays open keeps
-// it, and the saved record's dialog opened in its place gets it).
-const suSent = (own, sent) => { if (own) state.drawerAt = sent; };
+// it, and the saved record's dialog opened in its place gets it). redrawn: the record was drawn again meanwhile, so only what still shows
+// what was sent counts as saved there.
+function suSent(own, sent, redrawn) {
+  if (!own) return;
+  if (!redrawn) { state.drawerAt = sent; return; }
+  const now = drawerInputs();
+  for (const k in now) if (now[k] === sent[k]) (state.drawerAt ||= {})[k] = now[k];
+}
 // A dialog that was added from stays open when something was typed in it since: it must never add the record again.
 const SU_SAVED_ALREADY = "This was saved. Close it and open it again from the list.";
 
@@ -744,7 +752,7 @@ async function suSendSave(D, path, opts) {
   }
   finally { D.saving = false; }
   const own = still();
-  suSent(own, sent);
+  suSent(own, sent, state.setup.drawer !== D);
   return { r: r || {}, own };
 }
 
