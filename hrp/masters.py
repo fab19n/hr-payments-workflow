@@ -63,7 +63,7 @@ KINDS = {
             _f("code", "Code", "code", required=True, max=16,
                hint="Short, capitals: ABC. Shown in the company switcher; folders and audit packs are named by it."),
             _f("name", "Name", "text", required=True, wide=True),
-            _f("short_name", "Short name", "text", hint="Shown in the company switcher's list beside the code. Empty: the name without Sdn Bhd or Ltd."),
+            _f("short_name", "Short name", "text", hint="Optional. The company switcher shows the full name."),
             _f("uses_sql", "Kept in SQL Account", "bool", default=1, wide=True,
                hint="On: Kept in SQL Account, and payments need their PV, JV or OR from SQL. Off: Kept here, with no SQL import."),
             _f("first_month", "First month tracked", "month",

@@ -260,11 +260,10 @@ function treeKeys(rows) {
   return out;
 }
 
-// The line under a record's name in a list (design/canvas/Setup*.dc.html): an account's last four digits, a company's switcher name,
-// a type's plural, a customer's short name.
+// The line under a record's name in a list (design/canvas/Setup*.dc.html): an account's last four digits, a type's plural, a customer's
+// short name.
 const SETUP_SUB = {
   accounts: r => { const last = String(r.number || "").replace(/\s/g, "").slice(-4); return last ? `···· ${last}` : "No account number yet"; },
-  entities: r => `Switcher: ${companyShortName(r)}`,
   payment_types: r => r.plural ? `Several: ${r.plural}` : "",
   doc_types: r => r.plural ? `Several: ${r.plural}` : "",
   parties: r => r.short_name || "",

@@ -53,14 +53,6 @@ async function readMeta() {
 const SAVED_NOT_READ = "It was saved, but this page could not reload. Try again.";
 const SAVED_NOT_REOPENED = "It was saved, but its dialog could not be opened again.";
 
-// A company's short name, as the company switcher and Setup's list show it: the one set in Setup, else its name without the Sdn Bhd, Bhd, Ltd or
-// Limited it ends with (the whole name when nothing is left).
-function companyShortName(e) {
-  const set = String(e?.short_name ?? "").trim(), name = String(e?.name ?? "").trim();
-  if (set) return set;
-  return name.replace(/(?:^|[\s,]+)(?:sdn\.?\s*bhd\.?|bhd\.?|ltd\.?|limited)\s*$/i, "").trim() || name;
-}
-
 // toast(message, bad, opts): opts { title, body, glyph, undo: fn, action: {label, fn}, ms, progress }. Drawn by toastShow() in core/states.js.
 function toast(msg, bad, opts) { return toastShow(msg, bad, opts); }
 // Money received shows with a green +, so it can't be read as a payment.

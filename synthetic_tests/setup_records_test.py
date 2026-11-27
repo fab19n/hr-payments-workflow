@@ -666,10 +666,10 @@ with section("18. a big chart of accounts is listed, pasted and edited in a mome
     n, why = statements(lambda rc: edit(rc, {"name": "x", "notes": "y", "code": "999-0002"}, free), EXISTS)
     check("...and one that nothing uses is changed (not refused), having asked each table once", why is None and n == SOURCES, (n, why))
 
-# 19. the company switcher's names come from the records' overview: a company's short name travels in it, as Setup keeps it
+# 19. a company's short name travels in the records' overview, as Setup keeps it (the company switcher shows the full name since slice 9c)
 with section("19. the records' overview (/api/meta) carries each company's short name"):
     names = {e["code"]: e for e in call("get", "/api/meta")["entities"]}
-    check("/api/meta lists every company with its short_name key (empty when none is set), which the company switcher reads", all("short_name" in e for e in names.values()) and names["EXA"]["short_name"] in (None, ""), names["EXA"])
+    check("/api/meta lists every company with its short_name key (empty when none is set)", all("short_name" in e for e in names.values()) and names["EXA"]["short_name"] in (None, ""), names["EXA"])
     call("patch", f"/api/setup/entities/{EXA}", json={"fields": {"short_name": "Alpha"}})
     check("...and the one set in Setup is there at once", {e["code"]: e["short_name"] for e in call("get", "/api/meta")["entities"]}["EXA"] == "Alpha")
 

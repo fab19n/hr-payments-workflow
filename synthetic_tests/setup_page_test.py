@@ -1330,15 +1330,6 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     async function go2(kind) { run(`state.entity = ${EXA}; state.view = "setup"; state.setup.kind = ${JSON.stringify(kind)}; state.setup.stopped = false; state.setup.deleted = false`); await run(`viewSetup(__el("main"))`); await sleep(20); }
   });
 
-  // L5. Setup's list says the short name the company switcher shows, from the same function
-  await tryit("shortNames", async () => {
-    const mk = (name, short) => ({ id: 1, code: "S1", name, short_name: short });
-    const list = [mk("Example Alpha Sdn Bhd", null), mk("Example Beta Sdn. Bhd.", ""), mk("Example Gamma Bhd", undefined), mk("Example Delta Ltd", null), mk("Example Epsilon Limited", null),
-      mk("Example Zeta Ltd.", "  Zed "), mk("Example <b>Eta</b> Ltd", "<i>Eta</i> & Co"), mk("Ltd", null), mk("Example Theta Sdn Bhd Services", null), mk("Example Iota, Ltd", null),
-      mk("Sdn Bhd", null), mk("Bhd", null), mk("Limited", null)];
-    return { sub: list.map(e => run(`SETUP_SUB.entities(${JSON.stringify(e)})`)), short: list.map(e => run(`companyShortName(${JSON.stringify(e)})`)) };
-  });
-
   // Round 8. render() leaves a page that was overtaken as it always did (a late draw can paint over a newer page: a known limit, which wants a fix in
   // the shell), but never draws anything again: a slow page A, a fast page B opened meanwhile, A's late paint, and then page C, which stays on show
   await tryit("noRedo", async () => {
@@ -1454,7 +1445,10 @@ check("Used by says how many and what uses it; a stopped record is left out unti
       re.search(r'<td class="st-used"[^>]*><b>\d+</b><div class="note st-sub">[^<]*payment', page) is not None and "Old savings" not in page and "Show stopped (1)" in page)
 ent = o["entities"]
 check("a company's list has the Books column: Kept in SQL Account or Kept here, never a code or a yes",
-      has(ent, ">Books<", "Kept in SQL Account", "Kept here", "Switcher: ") or has(ent, ">Books<", "Kept in SQL Account", "Kept here"), ent[:900])
+      has(ent, ">Books<", "Kept in SQL Account", "Kept here"), ent[:900])
+short_hint = next(f.get("hint", "") for f in call("get", "/api/setup/types")["kinds"]["entities"]["fields"] if f["key"] == "short_name")
+check("slice 9c: the company switcher shows full names, so Setup's Companies list has no Switcher line, and the Short name field no longer says the switcher shows it",
+      "Switcher:" not in ent and "beside the code" not in short_hint and "full name" in short_hint, (short_hint, ent[:900]))
 check("an empty section says None yet, and offers to add one (a name that keeps its capitals: GL account)",
       has(o["emptyNone"], "None yet.", 'data-setup-new="gl_accounts"', "Add GL account"), o["emptyNone"][-700:])
 check("a section with only stopped records says so and offers Show stopped",
@@ -1841,10 +1835,6 @@ check("L2: 'it was saved' belongs to the page that says it: after a saved change
       nl["afterToast"] == {"saved": False, "says": True}, nl)
 check("...and so does the next place after a page that said it was saved (applyPlace), and a section switch (redraw)",
       nl["pageSaved"] is True and nl["afterPlace"] == {"saved": False, "says": True} and nl["pageSaved2"] is True and nl["afterRedraw"] == {"saved": False, "says": True}, nl)
-sn = o["shortNames"]
-check("L5: Setup's list says the short name the switcher shows: the one set (trimmed), else the name without Sdn Bhd, Sdn. Bhd., Bhd, Ltd or Limited at its end (the whole name when nothing is left, a name that is only a suffix too), from one function",
-      sn["short"] == ["Example Alpha", "Example Beta", "Example Gamma", "Example Delta", "Example Epsilon", "Zed", "<i>Eta</i> & Co", "Ltd", "Example Theta Sdn Bhd Services", "Example Iota", "Sdn Bhd", "Bhd", "Limited"]
-      and sn["sub"] == ["Switcher: " + s for s in sn["short"]], sn)
 nr = o["noRedo"]
 check("round 8: render() leaves a page that was overtaken as it always did and draws nothing again: slow A, quick B, A's late paint, then C stays on show, and B was drawn once (a redo of B would land over C)",
       nr["timeline"] == {"page": "<div>C page</div>", "view": "pageC", "a": 1, "b": 1, "c": 1}, nr["timeline"])

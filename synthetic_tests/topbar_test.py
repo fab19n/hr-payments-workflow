@@ -231,9 +231,8 @@ const ENTS = [{ id: 1, code: "AAA", name: "Alpha Test Sdn Bhd", short_name: "Alp
   await click(btn("company"));
   ok("a click opens the menu: aria-expanded true, role menu, a click-away layer", btn("company").getAttribute("aria-expanded") === "true" && menu("company").getAttribute("role") === "menu" && !!E.body.querySelector("button[data-tb-away]"));
   ok("it lists the companies in use only: a stopped company is left out", same(rowCodes(), ["AAA", "BBB", "DDD"]) && !slot("company").innerHTML.includes("CCC"), rowCodes());
-  ok("each row shows the code, the company's short name (Setup's, here) and the kind; the full name is in the row's title",
-    /Alpha/.test(text(rows()[0])) && !/Sdn Bhd/.test(text(rows()[0])) && /Kept in SQL Account/.test(text(rows()[0])) && /Kept here/.test(text(rows()[1])) && /Delta/.test(text(rows()[2])) && !/Sdn Bhd/.test(text(rows()[2]))
-    && /class="tb-name" title="Alpha Test Sdn Bhd">Alpha</.test(rowHtml(0)) && /class="tb-name" title="Delta Test Sdn Bhd">Delta</.test(rowHtml(2)), text(rows()[0]) + " | " + rowHtml(0).slice(0, 400));
+  ok("each row shows the code, the name and the kind",
+    /Alpha Test Sdn Bhd/.test(text(rows()[0])) && /Kept in SQL Account/.test(text(rows()[0])) && /Kept here/.test(text(rows()[1])) && /Delta Test Sdn Bhd/.test(text(rows()[2])), text(rows()[0]) + " | " + rowHtml(0).slice(0, 400));
   ok("the footnote says stopped companies are not offered", /Stopped companies are not offered\./.test(text(menu("company"))));
   ok("the company on show is checked", rows()[0].getAttribute("aria-checked") === "true" && rows()[1].getAttribute("aria-checked") === "false");
   ok("All companies is not offered away from the Overview", !rowCodes().includes("all companies"));
@@ -271,20 +270,19 @@ const ENTS = [{ id: 1, code: "AAA", name: "Alpha Test Sdn Bhd", short_name: "Alp
   ok("opening one menu closes the other", !!menu("company") && !menu("user"));
   await shut();
 
-  // ---- the short name: the one set in Setup, else the name without Sdn Bhd, Bhd, Ltd or Limited; the full name for a screen reader ----
+  // ---- full names (slice 9c): the Short name set in Setup is not used, however long or odd the name; escaped; no tooltip (design/canvas/CompanySwitcher.dc.html) ----
   { const was = run("JSON.stringify(state.meta.entities)");
     const mkE = (id, code, name, short) => ({ id, code, name, short_name: short, uses_sql: 1, active: 1, accounts: [], pages: SQLP });
-    const LIST = [mkE(1, "S1", "Example Alpha Sdn Bhd", null), mkE(2, "S2", "Example Beta Sdn. Bhd.", ""), mkE(3, "S3", "Example Gamma Bhd", null), mkE(4, "S4", "Example Delta Ltd", null),
-      mkE(5, "S5", "Example Epsilon Limited", null), mkE(6, "S6", "Example Zeta Ltd.", "  Zed "), mkE(7, "S7", "Example <b>Eta</b> Ltd", "<i>Eta</i> & Co"), mkE(8, "S8", "Ltd", null),
-      mkE(9, "S9", "Example Theta Sdn Bhd Services", null), mkE(10, "S10", "Example Iota, Ltd", null), mkE(11, "S11", "Sdn Bhd", null), mkE(12, "S12", "Limited", null)];
+    const LONG = "Example Very Long Company Name For International Trading And Property Holdings Sdn Bhd";
+    const LIST = [mkE(1, "S1", "Example Alpha Sdn Bhd", "Alf"), mkE(2, "S2", LONG, null), mkE(3, "S3", "Example <b>Eta</b> & Co Ltd", "<i>Eta</i>"), mkE(4, "S4", "Ltd", "Zed")];
     run(`state.meta.entities = ${JSON.stringify(LIST)}`);
     await click(btn("company"));
-    const shown = LIST.map((_, i) => (/class="tb-name"[^>]*>(.*?)<\/span>/.exec(rowHtml(i)) || [])[1]), all = html("company");
-    ok("a row shows the short name set in Setup (trimmed), else the name without Sdn Bhd, Sdn. Bhd., Bhd, Ltd or Limited at its end; the whole name when nothing is left; escaped",
-      same(shown, ["Example Alpha", "Example Beta", "Example Gamma", "Example Delta", "Example Epsilon", "Zed", "&lt;i&gt;Eta&lt;/i&gt; &amp; Co", "Ltd", "Example Theta Sdn Bhd Services", "Example Iota", "Sdn Bhd", "Limited"]) && !/<i>|<b>/.test(all), shown);
-    ok("the full name is in the row's title when the row shows less, and in what a screen reader hears (escaped)",
-      /class="tb-name" title="Example Alpha Sdn Bhd">/.test(rowHtml(0)) && /class="tb-name" title="Example Zeta Ltd\.">/.test(rowHtml(5)) && !/title=/.test((/class="tb-name"[^>]*>/.exec(rowHtml(7)) || [""])[0])
-      && all.includes('aria-label="S1, Example Alpha Sdn Bhd, Kept in SQL Account') && all.includes('aria-label="S7, Example &lt;b&gt;Eta&lt;/b&gt; Ltd, Kept in SQL Account') && all.includes('title="Example &lt;b&gt;Eta&lt;/b&gt; Ltd"'), rowHtml(0).slice(0, 300));
+    const shown = LIST.map((_, i) => (/class="tb-name">(.*?)<\/span>/.exec(rowHtml(i)) || [])[1]), all = html("company");
+    ok("a row shows the company's full name, not its short name (set or not), escaped",
+      same(shown, ["Example Alpha Sdn Bhd", LONG, "Example &lt;b&gt;Eta&lt;/b&gt; &amp; Co Ltd", "Ltd"]) && !/<i>|<b>/.test(all) && !/Alf<|Zed<|&lt;i&gt;/.test(all), shown);
+    ok("no row has a title (the board draws none), and a screen reader hears the full name (escaped)",
+      !/\btitle=/.test(all) && all.includes('aria-label="S1, Example Alpha Sdn Bhd, Kept in SQL Account') && all.includes('aria-label="S3, Example &lt;b&gt;Eta&lt;/b&gt; &amp; Co Ltd, Kept in SQL Account'), rowHtml(0).slice(0, 300));
+    ok("the company button itself names only the code and the kind, so a long name never widens the top bar", text(btn("company")) === "S1·Kept in SQL Account", text(btn("company")));
     await shut();
     run(`state.meta.entities = ${was}`); }
 
@@ -400,6 +398,13 @@ except Exception:
     results = [["the probe printed its results", False, (out.stdout + out.stderr)[:800]]]
 for name, ok_, detail in results:
     check(name, ok_, detail)
+
+# a long full name stays inside the menu, cut with an ellipsis, and the menu never wider than a narrow screen (slice 9c)
+css = Path(__file__).resolve().parents[1].joinpath("static", "app.css").read_text(encoding="utf-8")
+check("the switcher cuts a long name with an ellipsis inside a menu no wider than the screen, so a narrow top bar never breaks",
+      ".tb-names { flex: 1; min-width: 0;" in css and ".tb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }" in css
+      and ".tb-menu { position: absolute; top: 46px; left: 0; z-index: 2; width: min(340px, calc(100vw - 28px)); box-sizing: border-box;" in css
+      and ".tb-menu, .tb-user .tb-menu { left: 14px; right: 14px; top: 100%; margin-top: 4px; width: auto; }" in css)
 
 readme = Path(__file__).resolve().parents[1].joinpath("README.md").read_text(encoding="utf-8")
 check("the README lists this test", "topbar_test" in readme)

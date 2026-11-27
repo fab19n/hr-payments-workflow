@@ -39,14 +39,14 @@ function tbCompanyHtml() {
   h += `<button type="button" class="tb-away" tabindex="-1" aria-hidden="true" data-tb-away="1"></button><div role="menu" id="tb-menu-company" aria-label="Company" class="tb-menu mn">`;
   if (none) h += `<a href="#/admin/setup/entities" role="menuitem" id="tb-mi-company-0" tabindex="-1" class="tm tb-add" data-tb-add="1" data-ta="add">${icon("plus")}<span>Add your first company</span></a>`;
   else {
-    // The list shows each company's short name beside its code (Setup › Companies); a screen reader hears the full name (design/canvas/CompanySwitcher.dc.html).
-    const row = (key, code, name, kindText, on, i, full = name) => { const t = tbTally(key);
-      return `<button type="button" role="menuitemradio" id="tb-mi-company-${i}" class="tm tb-row${on ? " on" : ""}" aria-checked="${on}" aria-label="${esc((key === "all" ? name : `${code}, ${full}, ${kindText}`) + tbSay(t))}" tabindex="-1" data-tb-pick="${key}" data-ta="${esc(key === "all" ? "all companies" : code)}">`
-        + `<span class="tb-code">${esc(code)}</span><span class="tb-names"><span class="tb-name"${full !== name ? ` title="${esc(full)}"` : ""}>${esc(name)}</span>${kindText ? `<span class="tb-kindline">${esc(kindText)}</span>` : ""}</span>${tbBadge(t)}<span class="tb-tick">${on ? icon("check") : ""}</span></button>`; };
+    // Each row shows the code and the company's full name, cut with an ellipsis where the menu is too narrow (design/canvas/CompanySwitcher.dc.html).
+    const row = (key, code, name, kindText, on, i) => { const t = tbTally(key);
+      return `<button type="button" role="menuitemradio" id="tb-mi-company-${i}" class="tm tb-row${on ? " on" : ""}" aria-checked="${on}" aria-label="${esc((key === "all" ? name : `${code}, ${name}, ${kindText}`) + tbSay(t))}" tabindex="-1" data-tb-pick="${key}" data-ta="${esc(key === "all" ? "all companies" : code)}">`
+        + `<span class="tb-code">${esc(code)}</span><span class="tb-names"><span class="tb-name">${esc(name)}</span>${kindText ? `<span class="tb-kindline">${esc(kindText)}</span>` : ""}</span>${tbBadge(t)}<span class="tb-tick">${on ? icon("check") : ""}</span></button>`; };
     h += `<div class="tb-menu-head" aria-hidden="true"><span>Company</span><span>Next up</span></div>`;
     let i = 0;
     if (state.view === "overview" || all) h += row("all", "All", "All companies", "", all, i++) + `<div role="separator" class="tb-sep"></div>`;
-    for (const x of live) h += row(x.id, x.code, companyShortName(x), keptLabel(x), !all && !!e && x.id === e.id, i++, x.name);
+    for (const x of live) h += row(x.id, x.code, x.name, keptLabel(x), !all && !!e && x.id === e.id, i++);
     h += `<div class="tb-menu-foot">Stopped companies are not offered.</div>`;
   }
   return h + `</div>`;
