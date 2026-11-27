@@ -996,7 +996,7 @@ holds("nothing was thrown that no one heard", lambda: o["unheard"] == [], o["unh
 
 # ---------- narrow screens ----------
 css = (Path(__file__).resolve().parents[1] / "static" / "app.css").read_text(encoding="utf-8")
-narrow = css[css.index("/* Setup › Required documents ("):]
+narrow = css[css.find("/* Setup › Required documents ("):]
 holds("the grid scrolls sideways in its own frame with the payment types held in place, narrower under 700 pixels, never widening the page",
       lambda: re.search(r"\.rq-wrap \{[^}]*overflow-x: auto", narrow) and re.search(r"\.rq-table \.rq-type \{[^}]*position: sticky; left: 0;[^}]*background: var\(--surface\)", narrow)
       and re.search(r"@media \(max-width: 700px\) \{[^@]*\.rq-table \.rq-type \{ width: 128px", narrow) and re.search(r"\.rq \{[^}]*grid-template-columns: minmax\(0, 1fr\)", narrow))
