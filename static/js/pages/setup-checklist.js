@@ -152,7 +152,7 @@ async function chkDone(r, id, head, keep = {}, own = false) {
   toast(`${head}. ${effectText(r.affected, "checklist item")}`);
   return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
     if (id != null && (state.setup.chk?.items || []).some(x => x.id === +id)) return openChecklist(+id, { force: true, keep: { ...keep, ...drawerEdits() }, saved: { ...r, head } });
-    if (!Object.keys(drawerEdits()).length) closeDrawer(true);  // one with something typed in it since stays (it can't add again)
+    if (!drawerDirty()) closeDrawer(true);  // one with something typed in it since stays (it can't add again)
   }, { here: () => own });
 }
 

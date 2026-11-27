@@ -539,6 +539,7 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     await idle(); NET.delay = {};
     r.saved = { said: said(), posts: posts(), ids: shown().slice(0, 3), server: (await order()).slice(0, 4), focus: focusId(), off: grips().some(x => x.hasAttribute("aria-disabled")),
       flash: grip(a).closest("tr").classList.contains("rank-flash"), result: result(), marked: marked(), places: places().slice(0, 3), toasts: toasts() };
+    run(`LIST_REDRAW["setup-guess_words"]()`); r.flashAfter = grip(a).closest("tr").classList.contains("rank-flash");
     // dropped where it was: nothing is sent
     NET.sent.length = 0;
     await click(grip(c)); await key(grip(c), "ArrowDown"); await key(grip(c), "ArrowUp"); await click(grip(c)); await idle();
@@ -634,8 +635,12 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     r.backAgain = { posts: posts().length, ids: shown().slice(0, 3) };
     // Escape during a drag puts it back, and the release after it does nothing
     await reset(); NET.sent.length = 0; run(`__closed = 0`);
-    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); await key(grip(a), "Escape"); pointer(body, "pointerup", midOf(2) + 5, 0); await idle();
-    r.escaped = { posts: posts().length, ids: shown().slice(0, 3), closed: run(`__closed`), cls: body.classList.contains("rank-dragging") };
+    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); await key(grip(a), "Escape"); await sleep(30);
+    run(`__opened.length = 0`); pointer(body, "pointermove", midOf(3) + 5);   // the button is still down after Escape
+    r.escapedDown = shown().slice(0, 3);
+    pointer(body, "pointerup", midOf(2) + 5, 0); dispatch(rowsOnShow()[2].querySelector(".rank-n"), { type: "click", button: 0 }); await idle();   // let go over a row
+    r.escaped = { posts: posts().length, ids: shown().slice(0, 3), closed: run(`__closed`), cls: body.classList.contains("rank-dragging"), opened: run(`__opened.slice()`) };
+    await run(`closeDrawer(true)`);
     // the pointer taken away (pointercancel), or let go where the page couldn't hear it: back where it was, nothing sent
     pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); pointer(body, "pointercancel", 0, 0); await idle();
     r.cancel = { posts: posts().length, ids: shown().slice(0, 3) };
@@ -690,18 +695,17 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     // answered after another section was opened: nothing of the old list is drawn over it, and a message says it was saved
     await reset(); NET.delay[P] = 300;
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await idle(); NET.delay = {};
-    r.section = { kind: run(`state.setup.kind`), rank: $("#main").innerHTML.includes("rank-table"), types: $("#setupMain").innerHTML.includes('data-setup-new="doc_types"'), toasts: toasts(), server: (await order()).slice(0, 3) };
+    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await sleep(40); NET.sent.length = 0; await idle(); NET.delay = {};
+    r.section = { kind: run(`state.setup.kind`), rank: $("#main").innerHTML.includes("rank-table"), types: $("#setupMain").innerHTML.includes('data-setup-new="doc_types"'), toasts: toasts(), server: (await order()).slice(0, 3), reads: NET.sent.filter(x => x[0] === "GET").length };
     // answered after another page was opened: the same
     await reset(); NET.delay[P] = 300;
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`navigate({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} }, { fresh: true })`); await idle(); NET.delay = {};
-    r.page = { view: run(`state.view`), html: $("#main").innerHTML, toasts: toasts() };
-    // the same, and the page now on show can't be read again: it says it was saved, never that nothing was changed
+    await run(`navigate({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} }, { fresh: true })`); await sleep(40); NET.sent.length = 0; await idle(); NET.delay = {};
+    r.page = { view: run(`state.view`), html: $("#main").innerHTML, toasts: toasts(), reads: NET.sent.filter(x => x[0] === "GET").length };
+    // the same section asked for again while it is saved, and then it can't be read: it says it was saved, never that nothing was changed
     await reset(); NET.delay[P] = 300;
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await sleep(60);
-    NET.fail["/api/setup/doc_types"] = "net"; await idle(); NET.delay = {}; NET.fail = {};
+    await run(`render()`); await sleep(40); NET.fail["/api/setup/guess_words"] = "net"; await idle(); NET.delay = {}; NET.fail = {};
     r.noRead = { page: $("#main").innerHTML, toasts: toasts(), posts: posts().length };
     // the same section asked for again while it is saved, and read before the save: it is read once more, and shows the saved order
     await reset(); NET.delay[P] = 300; NET.sent.length = 0;
@@ -839,6 +843,7 @@ check("while it is on its way no other move starts: a second drop, another grip,
 check("once saved: the records have the order, the screen reader is told where it dropped and that it applies from now on, the grip keeps the focus, and Try answers on the new order",
       k["saved"]["server"] == [HID, B, A, C] and k["saved"]["said"] == f"Dropped at position 3 of {N}. Applies to SQL imports from now on." and k["saved"]["focus"] == f"rank-grip-{A}" and k["saved"]["off"] is False
       and k["saved"]["flash"] is True and k["saved"]["places"] == ["2", "3", "4"] and "Rule 2 (Zebra rent)" in k["saved"]["result"]["text"] and k["saved"]["marked"]["rows"] == [B] and k["saved"]["toasts"] == [], k["saved"])
+check("the row lights up once: drawing the list again doesn't light it again", k["flashAfter"] is False, k["flashAfter"])
 check("a rule dropped where it was sends nothing", k["nowhere"]["posts"] == 0 and k["nowhere"]["said"].endswith("where it was.") and k["nowhere"]["pressed"] == "false", k["nowhere"])
 e = o["escape"]
 check("Escape puts a picked-up rule back where it was, sends nothing and does nothing else; with nothing picked up it does what it did",
@@ -868,7 +873,8 @@ check("letting go saves the order shown, once; the click the release raises open
 check("a later click on a row still opens its rule", len(g["rowClick"]) == 1 and g["rowClick"][0][0] == "guess_words", g["rowClick"])
 check("a rule dragged up goes before the one it is above", g["up"] == [C, A, HID, B], g["up"])
 check("dragged there and back, nothing is sent", g["backAgain"] == {"posts": 0, "ids": [A, B, C]}, g["backAgain"])
-check("Escape during a drag puts it back and sends nothing, also when let go after", g["escaped"] == {"posts": 0, "ids": [A, B, C], "closed": 0, "cls": False}, g["escaped"])
+check("Escape during a drag puts it back and sends nothing: the pointer moving on moves nothing, and the click when it is let go opens no rule",
+      g["escapedDown"] == [A, B, C] and g["escaped"] == {"posts": 0, "ids": [A, B, C], "closed": 0, "cls": False, "opened": []}, (g["escapedDown"], g["escaped"]))
 check("a pointer taken away, or let go where the page couldn't hear it, puts it back and sends nothing",
       g["cancel"] == {"posts": 0, "ids": [A, B, C]} and g["lost"] == {"posts": 0, "ids": [A, B, C], "cls": False}, (g["cancel"], g["lost"]))
 check("a second drag while the first is being saved doesn't start", g["twice"] == {"posts": 1, "server": [HID, B, C, A], "shown": [B, C, A]}, g["twice"])
@@ -890,11 +896,11 @@ check("with the app stopped, the stopped page says it isn't known whether the ch
       and "Nothing you typed since then" not in u["stopped"]["page"] and "Nothing was changed" not in " ".join(u["stopped"]["toasts"]), u["stopped"]["page"][:600])
 el = o["elsewhere"]
 check("answered after another section was opened: that section stays, nothing of the list is drawn over it, and a message says it was saved",
-      el["section"] == {"kind": "doc_types", "rank": False, "types": True, "toasts": [f"The new order is saved. Dropped at position 2 of {N}. Applies to SQL imports from now on."], "server": [HID, A, B]}, el["section"])
-check("...and so after another page was opened", el["page"]["view"] == "overview" and "Overview page" in el["page"]["html"] and "rank-table" not in el["page"]["html"]
-      and len(el["page"]["toasts"]) == 1 and el["page"]["toasts"][0].startswith("The new order is saved."), el["page"])
+      el["section"] == {"kind": "doc_types", "rank": False, "types": True, "toasts": [f"The new order is saved. Dropped at position 2 of {N}. Applies to SQL imports from now on."], "server": [HID, A, B], "reads": 0}, el["section"])
+check("...and so after another page was opened: nothing is read or drawn again for it", el["page"]["view"] == "overview" and "Overview page" in el["page"]["html"] and "rank-table" not in el["page"]["html"]
+      and len(el["page"]["toasts"]) == 1 and el["page"]["toasts"][0].startswith("The new order is saved.") and el["page"]["reads"] == 0, el["page"])
 nr = el["noRead"]
-check("...and when the page now on show can't be read again after it, it says it was saved, never that nothing was changed",
+check("the same section asked for again while it is saved, and then not readable: it says it was saved, never that nothing was changed",
       "It was saved, but this page could not reload. Try again." in nr["page"] and "Nothing was changed" not in nr["page"] + " ".join(nr["toasts"]) and nr["posts"] == 1, nr["page"][:500])
 check("the same section drawn again while the order is being saved has its grips off, and is read once more after the save, so it shows what was saved",
       el["mid"] == {"off": True, "read": 1} and el["again"] == {"ids": [A, B, C], "off": False, "read": 2}, (el["mid"], el["again"]))

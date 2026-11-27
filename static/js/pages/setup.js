@@ -716,7 +716,7 @@ async function setupSave() {
     D.saved = true;
     toast(`${spec.label} added`);
     return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); },
-      () => r.id != null ? openSetup(D.kind, r.id, { force: true, keep: drawerEdits }) : Object.keys(drawerEdits()).length ? null : closeDrawer(true), { here: () => own });
+      () => r.id != null ? openSetup(D.kind, r.id, { force: true, keep: drawerEdits }) : drawerDirty() ? null : closeDrawer(true), { here: () => own });
   }
   const changed = {};
   for (const k in now) if (!(k in D.locked) && JSON.stringify(now[k]) !== JSON.stringify(D.loaded[k])) changed[k] = now[k];
@@ -738,7 +738,8 @@ async function suSendSave(D, path, opts) {
   try { r = await api(path, opts); }
   catch (e) {
     if (appStopped(e)) throw e;
-    if (still()) suRefused(e); else toast(`${state.setup.types?.kinds?.[D.kind]?.label || "Setup"} wasn't confirmed as saved: ${changeError(e)}`, true);
+    const what = state.setup.types?.kinds?.[D.kind]?.label || "Setup";
+    if (still()) suRefused(e); else toast(e.unsure ? `${what}: ${changeError(e)}` : `${what} wasn't saved: ${e.message}`, true);
     return {};
   }
   finally { D.saving = false; }

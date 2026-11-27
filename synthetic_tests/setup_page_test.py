@@ -1508,6 +1508,11 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
         r[key] = { same: el("drawer").innerHTML === other && run(`state.setup.drawer.id`) === FX.MAIN, typed: el("su-label").value, dirty: dirty(), inDialog: el("su-refused").innerHTML,
           toasts: sandbox.__toasts.map(t => t.msg), posts: sent(AC) };
       }
+      // ...and a server failure then is said as not known
+      FX.post[AC] = { status: 500, body: { error: "The server could not save it." } };
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
+      saving = run(`setupSave()`); await sleep(40); await run(`closeDrawer(true)`); await saving; await sleep(40);
+      r.l2unsure = sandbox.__toasts.map(t => t.msg);
       FX.post[AC] = { status: 200, body: { id: 777 } };
       await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
       saving = run(`setupSave()`); await sleep(40); await run(`closeDrawer(true)`); await saving; await sleep(60);
@@ -2118,7 +2123,9 @@ check("(l) the record Add closed while on its way, another record opened: it isn
       v["same"] is True and v["typed"] == "typed in the other" and v["dirty"] is True and v["posts"] == 1, v)
 v = lm["l2refused"]
 check("(l) a refusal answered after that is said in a message, never in the other record's dialog",
-      v["same"] is True and v["inDialog"] == "" and any("A made-up refusal." in m and m.startswith("Bank account") for m in v["toasts"]), v)
+      v["same"] is True and v["inDialog"] == "" and v["toasts"] == ["Bank account wasn't saved: A made-up refusal."], v)
+check("...and a server failure then says it isn't known whether it was saved",
+      lm["l2unsure"] == ["Bank account: The server could not save it. It isn't known whether it was saved: check before doing it again."], lm["l2unsure"])
 check("(l) closed while it is on its way, or while the saved record is read, and nothing else opened: it stays closed",
       lm["l2closed"] == {"closed": True} and lm["l2read"] == {"closed": True}, (lm["l2closed"], lm["l2read"]))
 check("(l) a new Add opened meanwhile isn't taken as saved: what is typed in it counts", lm["l2new"] == {"id": "new", "typed": "typed in the new one", "dirty": True, "saved": False}, lm["l2new"])

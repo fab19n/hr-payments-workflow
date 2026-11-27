@@ -131,9 +131,11 @@ async function rankSave(L, moved, ids) {
   rankMarks(RANK.list);  // also a list drawn while it was being saved
   if (failed) return rankNotSaved(L, failed);
   if (!rankOn(L)) toast(`The new order is saved. ${words}`);  // the list that would say so is no longer on show
+  if (state.view !== "setup" || state.setup.kind !== L.kind) return;  // nothing on show holds this order: nothing to read back or draw again
   return afterSaved(savedPagePart(() => rankOn(L), async () => {
     L.rows = r.rows; L.saved = r.rows.map(x => x.id); L.flash = moved;
     rankRedraw(L);
+    L.flash = null;  // it fades once: a later search doesn't light it again
     rankSay(words);
     tryRun();
   }));
@@ -182,7 +184,7 @@ function rankDragEnd(drop) {
   const P = rankDragOff();
   if (!P?.dragging) return;
   RANK.quiet = true; setTimeout(() => { RANK.quiet = false; }, 0);
-  if (!rankOn(P.L)) return;
+  if (P.over || !rankOn(P.L)) return;  // over: Escape ended it before the button was let go
   return drop ? rankDrop(P.L) : rankCancel(P.L);
 }
 // Escape while a rule is picked up or dragged puts it back, and does nothing else (core/listeners.js asks first).
@@ -190,8 +192,8 @@ function rankEscape(ev) {
   const L = RANK.list;
   if (!L || L.held == null || !rankOn(L)) return false;
   ev.preventDefault?.(); ev.stopPropagation?.();
-  const dragged = rankDragOff();
-  if (dragged?.dragging) { RANK.quiet = true; setTimeout(() => { RANK.quiet = false; }, 0); }
+  // A drag ends here, but the button may still be down: the press is kept until it is let go, so the click that raises is kept back too.
+  if (RANK.press?.dragging) { RANK.press.over = true; document.body?.classList?.remove("rank-dragging"); } else rankDragOff();
   rankCancel(L);
   return true;
 }
@@ -290,6 +292,7 @@ document.addEventListener("pointermove", ev => {
   if (!P || ev.pointerId !== P.pointer) return;
   if (!rankOn(P.L)) return void rankDragOff();
   if (!ev.buttons) return void rankDragEnd(false);  // let go where the page couldn't hear it: nothing is saved
+  if (P.over) return;
   if (!P.dragging) {
     if (Math.abs(ev.clientY - P.y) < 5) return;
     if (P.L.held !== P.id && (P.L.held != null || !rankPickUp(P.L, P.id))) return void rankDragOff();  // not while another move is on

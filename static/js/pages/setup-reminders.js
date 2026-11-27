@@ -110,7 +110,7 @@ async function remDone(r, id, head, keep = {}, own = false, key = null) {
   return afterSaved(async o => { await reloadMeta(); return render(o); }, () => {
     const x = (state.setup.rem?.rules || []).find(y => id != null ? y.id === +id : key != null && y.key === key);
     if (x) return openReminder(x.id, { force: true, keep: { ...keep, ...drawerEdits() }, saved: { ...r, head } });
-    if (!Object.keys(drawerEdits()).length) closeDrawer(true);  // one with something typed in it since stays (it can't add again)
+    if (!drawerDirty()) closeDrawer(true);  // one with something typed in it since stays (it can't add again)
   }, { here: () => own });
 }
 
