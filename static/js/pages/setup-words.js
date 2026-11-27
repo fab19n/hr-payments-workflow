@@ -16,6 +16,7 @@ const RANK = { list: null, saving: false, press: null, quiet: false, timer: null
 // The ordered list setupList has just drawn. rows: as the page shows them; saved: their ids as the server keeps them; held: the rule
 // picked up, from: the rows as they were then; answer: Try's last answer and the text it was for.
 function rankNew(box, kind, spec, rows) {
+  if (RANK.list?.kind === kind) rankLost(RANK.list);  // the same list drawn again takes a rule picked up with it
   rankDragOff();
   return RANK.list = { id: "setup-" + kind, kind, box, nameKey: spec.name_field, tried: !!spec.tried, rows, saved: rows.map(r => r.id), held: null, from: null, flash: null, answer: null, painting: false };
 }
@@ -187,15 +188,37 @@ function rankDragEnd(drop) {
   if (P.over || !rankOn(P.L)) return;  // over: Escape ended it before the button was let go
   return drop ? rankDrop(P.L) : rankCancel(P.L);
 }
-// Escape while a rule is picked up or dragged puts it back, and does nothing else (core/listeners.js asks first).
-function rankEscape(ev) {
+// A rule picked up that has been moved goes without having been dropped, and not by your own Escape or search: that is said.
+const RANK_LOST = "The rule you were moving is back where it was: its new place wasn't saved.";
+function rankLost(L) {
+  if (L.held != null && L.rows.some((r, i) => r.id !== L.saved[i])) toast(RANK_LOST);
+}
+// Puts back a rule picked up or dragged on the list on show. False: there is none.
+function rankPutBack() {
   const L = RANK.list;
   if (!L || L.held == null || !rankOn(L)) return false;
-  ev.preventDefault?.(); ev.stopPropagation?.();
   // A drag ends here, but the button may still be down: the press is kept until it is let go, so the click that raises is kept back too.
   if (RANK.press?.dragging) { RANK.press.over = true; document.body?.classList?.remove("rank-dragging"); } else rankDragOff();
   rankCancel(L);
   return true;
+}
+// Escape while a rule is picked up or dragged puts it back, and does nothing else (core/listeners.js asks first).
+function rankEscape(ev) {
+  if (!rankPutBack()) return false;
+  ev.preventDefault?.(); ev.stopPropagation?.();
+  return true;
+}
+// A dialog is about to cover the list (showDrawer, core/dialog.js: a click on a row opens its rule with nothing else leaving the grip): a
+// rule picked up goes back first, so it is never held behind the dialog, where Escape and the dialog's Save would meet it unseen.
+function rankCovered() {
+  const L = RANK.list;
+  if (!rankOn(L)) return;
+  rankLost(L);
+  rankPutBack();
+}
+// A Setup section is drawn: a rule picked up on another section's list went when that list was left, so nothing says so later.
+function rankSection(kind) {
+  if (RANK.list && RANK.list.kind !== kind) RANK.list.held = null;
 }
 // Another page is opened (setupLeft, pages/setup.js): a rule picked up there is not saved, and what was typed in Try is dropped. A move
 // already sent stays sent, and says what came of it in a message.

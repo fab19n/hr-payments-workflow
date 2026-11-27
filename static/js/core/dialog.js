@@ -116,6 +116,7 @@ function dlgWire(d) {
 // (pages/payment.js), "new" as the narrower New payment dialog, "setup" as Setup's record dialog (pages/setup.js); anything else as the side panel.
 function showDrawer(kind) {
   const d = $("#drawer"); if (!d) return;
+  if (typeof rankCovered === "function") rankCovered();  // a matching rule picked up on Setup's list goes back first (pages/setup-words.js)
   DLG.seq++;
   dlgWire(d);
   const was = !d.hidden;

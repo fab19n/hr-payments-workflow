@@ -731,6 +731,55 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     return r;
   });
 
+  /* ======== review fixes, round 1: a rule picked up never waits behind a dialog, and one that goes unasked is said ======== */
+  await tryit("covered", async () => {
+    const r = {};
+    const [a, , b, c] = FX.ORDER;
+    const cell = id => $("#setupList").querySelector(`tr[data-setup-row="${id}"] .rank-n`);
+    const now = () => ({ dialog: run(`drawerShown()`), held: run(`RANK.list && RANK.list.held`), ids: shown().slice(0, 3), toasts: toasts(),
+      pressed: grips().filter(x => x.getAttribute("aria-pressed") === "true").length });
+    const escape = async () => { await key($("#drawer"), "Escape"); await idle(); };
+    const move = async () => { grip(a).focus(); await click(grip(a)); await key(grip(a), "ArrowDown"); await key(grip(a), "ArrowDown"); };
+    const pickMoved = async () => { await reset(); await move(); NET.sent.length = 0; };
+    // picked up and moved, then a plain cell of another row clicked: its dialog opens with nothing held behind it, and one Escape closes it
+    await pickMoved(); await click(cell(c)); await idle(); r.opened = { ...now(), said: said() };
+    await escape(); r.escaped = { ...now(), posts: posts().length };
+    // ...and the dialog's Save sends only what the dialog holds
+    await pickMoved(); await click(cell(c)); await idle();
+    // this stand-in page gives a select no value of its own: the option the markup has selected
+    for (const el of $("#drawer").querySelectorAll("select")) { const o = el.querySelectorAll("option"); el.value = (o.find(x => x.hasAttribute("selected")) || o[0])?.getAttribute("value") || ""; }
+    const label = $("#su-label"), was = label.value;
+    label.value = was + " (renamed)"; dispatch(label, { type: "input" });
+    NET.sent.length = 0; await run(`setupSave()`); await idle();
+    r.saved = { ...now(), orders: posts().length, patches: NET.sent.filter(x => x[0] === "PATCH").map(x => x[2].fields) , server: (await order()).slice(0, 3) };
+    await server("PATCH", `/api/setup/guess_words/${c}`, { fields: { label: was } });
+    // picked up and not moved: nothing is lost, so nothing is said
+    await reset(); grip(a).focus(); await click(grip(a)); await click(cell(c)); await idle(); r.unmoved = now();
+    await run(`closeDrawer(true)`);
+    // picked up while the record clicked is still being read: it goes back when the dialog arrives
+    await reset(); NET.delay[`/api/setup/guess_words/${c}`] = 250;
+    await click(cell(c)); await move(); const reading = now(); await sleep(300); await idle(); NET.delay = {};
+    r.arrives = { reading, ...now() };
+    await run(`closeDrawer(true)`);
+    // a drag a dialog arrives over: it is over, nothing is sent when the button is let go, and the click that raises opens nothing
+    await reset(); NET.sent.length = 0;
+    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5);
+    await run(`openSetup("guess_words", ${c})`); await idle();
+    pointer(body, "pointermove", midOf(3) + 5); const mid = { ...now(), cls: body.classList.contains("rank-dragging") };
+    pointer(body, "pointerup", midOf(3) + 5, 0); await idle();
+    r.dragged = { mid, posts: posts().length, ids: shown().slice(0, 3) };
+    await run(`closeDrawer(true)`);
+    // the same list drawn again under a moved rule says so; under one not moved, or put back by Escape, nothing is said
+    await pickMoved(); await run(`render()`); await idle(); r.redrawn = { ...now(), posts: posts().length };
+    await reset(); await click(grip(a)); await run(`render()`); await idle(); r.redrawnStill = now();
+    await pickMoved(); await key(grip(a), "Escape"); await run(`render()`); await idle(); r.afterEscape = now();
+    // another Setup section drops it silently, as opening another page does, also when its list is opened again
+    await pickMoved();
+    const to = sub => run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: ${JSON.stringify(sub)}, id: null, params: {} }, { fresh: true })`);
+    await to("doc_types"); await idle(); await to("guess_words"); await idle(); r.section = now();
+    return { ...r, ids: { a, b, c } };
+  });
+
   await setOrder(FX.ORDER);
   out.unheard = unheard;
   process.stdout.write("@@OUT " + JSON.stringify(out) + "\n");
@@ -784,7 +833,7 @@ def soften(v):
 
 
 o = soften(o)
-for k in ("drawn", "others", "tryBox", "keys", "escape", "leaving", "search", "drag", "refused", "unsure", "elsewhere"):
+for k in ("drawn", "others", "tryBox", "keys", "escape", "leaving", "search", "drag", "refused", "unsure", "elsewhere", "covered"):
     if o[k].get("error"):
         print(f"     {k}: {o[k]['error']}")
 
@@ -915,6 +964,31 @@ check("the same section drawn again while the order is being saved has its grips
       el["mid"] == {"off": True, "read": 1} and el["again"] == {"ids": [A, B, C], "off": False, "read": 2}, (el["mid"], el["again"]))
 rl = el["refusedLeft"]
 check("a refusal answered after another section was opened is only said: the page on show isn't read again", len(rl["toasts"]) == 1 and "Nothing was changed." in rl["toasts"][0] and rl["reads"] == 0 and rl["types"] is True, rl)
+
+# ---------- review fixes, round 1 ----------
+cv = o["covered"]
+ca, cb, cc = (cv.get("ids") or {}).get("a"), (cv.get("ids") or {}).get("b"), (cv.get("ids") or {}).get("c")
+SAVED_ORDER = [A, B, C]
+GONE = "The rule you were moving is back where it was: its new place wasn't saved."
+quietly = {"dialog": True, "held": None, "ids": SAVED_ORDER, "toasts": [GONE], "pressed": 0}
+check("with a rule picked up and moved, a click on a row opens its dialog with the rule back where it was, and that is said",
+      cv["opened"] == {**quietly, "said": "Cancelled, back where it was."}, cv["opened"])
+check("...so one Escape closes the dialog, and nothing of the move is sent", cv["escaped"] == {**quietly, "dialog": False, "posts": 0}, cv["escaped"])
+sv = cv["saved"]
+check("...and the dialog's Save sends only what the dialog holds, after the move was said to be gone",
+      sv["held"] is None and sv["ids"] == SAVED_ORDER and sv["server"] == [A, HID, B] and sv["orders"] == 0 and len(sv["patches"]) == 1 and "label" in sv["patches"][0] and "sort" not in sv["patches"][0]
+      and sv["toasts"][0] == GONE and "Saved" in sv["toasts"], sv)
+check("a rule picked up and not moved goes back with nothing said", cv["unmoved"] == {**quietly, "toasts": []}, cv["unmoved"])
+ar = cv["arrives"]
+check("one picked up while the record clicked was still being read goes back when its dialog arrives",
+      ar["reading"]["dialog"] is False and ar["reading"]["held"] == ca and ar["reading"]["ids"] == [B, A, C] and {k: ar[k] for k in quietly} == quietly, ar)
+dg = cv["dragged"]
+check("a dialog that arrives over a drag ends it: the rows go back, nothing moves or is sent after",
+      dg["mid"] == {**quietly, "cls": False} and dg["posts"] == 0 and dg["ids"] == SAVED_ORDER, dg)
+check("the same list drawn again under a moved rule says the move wasn't saved; one not moved, or put back by Escape, says nothing",
+      cv["redrawn"] == {**quietly, "dialog": False, "posts": 0} and cv["redrawnStill"]["toasts"] == [] and cv["redrawnStill"]["held"] is None
+      and cv["afterEscape"]["toasts"] == [], (cv["redrawn"], cv["redrawnStill"], cv["afterEscape"]))
+check("another Setup section drops a picked-up rule silently, also once its list is opened again", cv["section"] == {**quietly, "dialog": False, "toasts": []}, cv["section"])
 check("no failure went unheard", o["unheard"] == [], o["unheard"])
 
 if failed:

@@ -1541,6 +1541,26 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
       saving = run(`setupSave()`); await sleep(40); await run(`closeDrawer(true)`); await openRec("accounts", "new", EXA); el("su-label").value = "typed in the new one"; await saving; await sleep(60);
       r.l2new = { id: run(`state.setup.drawer.id`), typed: el("su-label").value, dirty: dirty(), saved: run(`!!state.setup.drawer.saved`) };
+
+      // review fixes, round 1: a refusal written into the dialog while Discard your changes? is up over it goes with the dialog: with Discard it
+      // is then said in a message; with Keep editing it stays where it is written, with no message besides
+      run(`globalThis.__realAsk = ask; globalThis.__asked = []; ask = (m, o) => { __asked.push(o.title); return new Promise(res => { globalThis.__say = res; }); }`);
+      const STOP = TEMPREC + "/stop";
+      try {
+        for (const [key, status, discard, act] of [["askSave", 400, true, "save"], ["askSaveKept", 400, false, "save"], ["askSaveUnsure", 500, true, "save"],
+          ["askWhy", 400, true, "why"], ["askWhyKept", 400, false, "why"]]) {
+          const path = act === "save" ? AC : STOP;
+          await reset(); run(`__asked.length = 0`);
+          if (act === "save") { await openRec("accounts", "new", EXA); fillAll(); }
+          else { await openRec("accounts", FX.TEMP, EXB); await run(`setupAct("stop", __btn)`); el("su-reason").value = "A reason"; }
+          FX.post[path] = { status, body: { error: "A made-up refusal." } }; postDelays[path] = 150; el("su-refused").innerHTML = ""; el("su-why-msg").innerHTML = "";
+          const sending = run(act === "save" ? `setupSave()` : `whySubmit()`); await sleep(40);
+          const closing = run(`closeDrawer()`); await sending; await sleep(30);
+          const during = sandbox.__toasts.map(t => t.msg), written = el(act === "save" ? "su-refused" : "su-why-msg").innerHTML;
+          run(`__say(${discard})`); await closing; await sleep(30);
+          r[key] = { asked: run(`__asked.slice()`), during, written, after: sandbox.__toasts.map(t => t.msg), open: shownNow() };
+        }
+      } finally { run(`ask = __realAsk`); delete FX.post[STOP]; FX.post[AC] = { status: 200, body: { id: 777 } }; }
     } finally {
       drawerInputsOn = false; clean();
       if (was777 === undefined) delete FX.get["/api/setup/accounts/777"]; else FX.get["/api/setup/accounts/777"] = was777;
@@ -2152,6 +2172,21 @@ check("...and a server failure then says it isn't known whether it was saved",
 check("(l) closed while it is on its way, or while the saved record is read, and nothing else opened: it stays closed",
       lm["l2closed"] == {"closed": True} and lm["l2read"] == {"closed": True}, (lm["l2closed"], lm["l2read"]))
 check("(l) a new Add opened meanwhile isn't taken as saved: what is typed in it counts", lm["l2new"] == {"id": "new", "typed": "typed in the new one", "dirty": True, "saved": False}, lm["l2new"])
+
+
+def asked_over(key, said, open_after):
+    v = lm.get(key) or {}
+    return (v.get("asked") == ["Discard your changes?"] and v.get("during") == [] and "A made-up refusal." in v.get("written", "") and v.get("after") == said and v.get("open") is open_after), v
+
+
+for label, key, said, open_after in [
+        ("a Save refused while Discard your changes? is up over its dialog is said in a message once you discard", "askSave", ["Bank account wasn't saved: A made-up refusal."], False),
+        ("...and one the server failed on says it isn't known whether it was saved", "askSaveUnsure",
+         ["Bank account: A made-up refusal. It isn't known whether it was saved: check before doing it again."], False),
+        ("...with Keep editing it stays in the dialog, with no message besides", "askSaveKept", [], True),
+        ("so with a change asked for in the reason box: discarded, its refusal is said in a message", "askWhy", ["A made-up refusal."], False),
+        ("...and kept, it stays under the reason box", "askWhyKept", [], True)]:
+    check(label, *asked_over(key, said, open_after))
 
 # ---------- slice 9c: First run's import reason ----------
 fr = o["frReason"]

@@ -74,6 +74,7 @@ async function setupDraw(page, main) {
   if (!T.kinds[S.kind] || SETUP_LINKS[S.kind]) S.kind = groups[0]?.kinds[0] || null;  // a link's old address (Recurring payments) has no page here
   if (S.kind !== "move" && S.move) S.move.justImported = false;
   if (S.kind !== "required") rqLeft();  // the grid's boxes are never kept past it (leaving it asked first)
+  rankSection(S.kind);  // nor is a rule picked up on another section's list
   const at = setupMoreAt(setupSpec());  // the rows Show 25 more showed stay shown only while the same list is drawn again
   if (S.moreAt !== at) { S.more = {}; S.moreAt = at; }
   renderNav();  // the breadcrumb names the section
@@ -494,8 +495,9 @@ async function whySubmit() {
   const used = () => { if (same() && state.why === run) hideWhy(); };
   try { await run(reason, used); if (same() && (!state.why || state.why === run)) hideWhy(); }
   catch (e) {
-    if (appStopped(e) || !same() || state.why !== run) toast(changeError(e), true);
-    else { setWhyMsg(changeError(e), !e.unsure); $("#su-reason")?.focus?.(); }
+    const elsewhere = () => toast(changeError(e), true);
+    if (appStopped(e) || !same() || state.why !== run) elsewhere();
+    else { setWhyMsg(changeError(e), !e.unsure); $("#su-reason")?.focus?.(); ifDiscarded(elsewhere); }
   }
   finally { state.whyBusy = false; if (goBtn.isConnected) { goBtn.disabled = false; goBtn.removeAttribute("aria-busy"); } }
 }
@@ -749,7 +751,8 @@ async function suSendSave(D, path, opts) {
   catch (e) {
     if (appStopped(e)) throw e;
     const what = state.setup.types?.kinds?.[D.kind]?.label || "Setup";
-    if (still()) suRefused(e); else toast(e.unsure ? `${what}: ${changeError(e)}` : `${what} wasn't saved: ${e.message}`, true);
+    const elsewhere = () => toast(e.unsure ? `${what}: ${changeError(e)}` : `${what} wasn't saved: ${e.message}`, true);
+    if (still()) { suRefused(e); ifDiscarded(elsewhere); } else elsewhere();
     return {};
   }
   finally { D.saving = false; }

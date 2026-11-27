@@ -347,6 +347,8 @@ const drawerDirty = () => drawerShown() && (Object.keys(unsavedEdits()).length >
 // Asks before edits not saved yet are lost. Resolves true when there are none, or when you choose to discard them. Two asks
 // at once (Escape twice) share one dialog.
 let leavePending = null;
+// A refused change written into a dialog while Discard your changes? is up over it goes with the dialog if you discard it: say() tells it then.
+const ifDiscarded = say => { leavePending?.then(yes => { if (yes) say(); }); };
 async function mayLeave() {
   if (!drawerDirty()) return true;
   const name = ($("#drawerTitle")?.textContent || "").trim();
