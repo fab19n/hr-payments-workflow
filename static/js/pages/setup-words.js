@@ -299,6 +299,10 @@ document.addEventListener("pointermove", ev => {
     P.dragging = true;
     document.body?.classList?.add("rank-dragging");
   }
+  if (P.L.held !== P.id) {  // dropped or put back by a key while the button is still down: the drag is over
+    P.over = true; document.body?.classList?.remove("rank-dragging");
+    return;
+  }
   ev.preventDefault?.();
   rankDragTo(P.L, P.id, ev.clientY);
 });

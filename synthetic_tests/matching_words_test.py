@@ -641,7 +641,14 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     pointer(body, "pointerup", midOf(2) + 5, 0); dispatch(rowsOnShow()[2].querySelector(".rank-n"), { type: "click", button: 0 }); await idle();   // let go over a row
     r.escaped = { posts: posts().length, ids: shown().slice(0, 3), closed: run(`__closed`), cls: body.classList.contains("rank-dragging"), opened: run(`__opened.slice()`) };
     await run(`closeDrawer(true)`);
+    // dropped by a key while the button is still down (Enter on the grip, which clicks it): moving on moves nothing, and nothing more is sent
+    await reset(); NET.sent.length = 0;
+    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(1) + 5); await click(grip(a)); await idle();
+    pointer(body, "pointermove", midOf(3) + 5); r.keyDropMoved = shown().slice(0, 3);
+    pointer(body, "pointerup", midOf(3) + 5, 0); await idle();
+    r.keyDrop = { posts: posts().length, ids: shown().slice(0, 3), server: (await order()).slice(0, 4), cls: body.classList.contains("rank-dragging") };
     // the pointer taken away (pointercancel), or let go where the page couldn't hear it: back where it was, nothing sent
+    await reset(); NET.sent.length = 0;
     pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); pointer(body, "pointercancel", 0, 0); await idle();
     r.cancel = { posts: posts().length, ids: shown().slice(0, 3) };
     pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); pointer(body, "pointermove", midOf(3), 0); await idle();
@@ -875,6 +882,8 @@ check("a rule dragged up goes before the one it is above", g["up"] == [C, A, HID
 check("dragged there and back, nothing is sent", g["backAgain"] == {"posts": 0, "ids": [A, B, C]}, g["backAgain"])
 check("Escape during a drag puts it back and sends nothing: the pointer moving on moves nothing, and the click when it is let go opens no rule",
       g["escapedDown"] == [A, B, C] and g["escaped"] == {"posts": 0, "ids": [A, B, C], "closed": 0, "cls": False, "opened": []}, (g["escapedDown"], g["escaped"]))
+check("a rule dropped by a key while the mouse button is still down is saved once, and moving on or letting go changes nothing",
+      g["keyDropMoved"] == [B, A, C] and g["keyDrop"] == {"posts": 1, "ids": [B, A, C], "server": [HID, B, A, C], "cls": False}, (g["keyDropMoved"], g["keyDrop"]))
 check("a pointer taken away, or let go where the page couldn't hear it, puts it back and sends nothing",
       g["cancel"] == {"posts": 0, "ids": [A, B, C]} and g["lost"] == {"posts": 0, "ids": [A, B, C], "cls": False}, (g["cancel"], g["lost"]))
 check("a second drag while the first is being saved doesn't start", g["twice"] == {"posts": 1, "server": [HID, B, C, A], "shown": [B, C, A]}, g["twice"])
