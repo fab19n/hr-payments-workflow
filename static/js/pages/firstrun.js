@@ -7,6 +7,16 @@
    /api/setup/entities, each audited like every Setup change. Departures from the board, kept for later slices: no Undo on the note
    (Undo is slice 10), no "Runs payroll in this app" tick (slice 15), no name or Sign out in the header (sign-in is slice 16). */
 const FR = { name: "", preview: null, file: null, error: "", refused: "", why: "", done: null, note: null, saved: null, alerted: false, addOpen: false, busy: "", tried: false, kind: "", code: "", cname: "", reg: "", addError: "" };
+// What an import is noted with unless another reason is typed: the reason box is filled with it when a file is chosen, and a box emptied gets
+// it back, so the audit trail says what the screen showed (slice 9c). A file name too long for the reason's 500 characters is cut short.
+const FR_WHY_MAX = 500;
+function frReason(name) {
+  const say = n => `Started this install from ${n}.`;
+  if (say(name).length <= FR_WHY_MAX) return say(name);
+  let cut = "";
+  for (const ch of String(name)) { if (say(cut + ch + "\u2026").length > FR_WHY_MAX) break; cut += ch; }  // whole characters only
+  return say(cut + "\u2026");
+}
 
 // The page takes the place of the Overview while there is no company, and after one is added or a file imported, until Open Overview.
 function firstRunDue() {
@@ -90,16 +100,18 @@ async function viewFirstRun(main) {
 async function frPick() {
   const [f] = await pickFile(false);
   if (!f) return;
-  Object.assign(FR, { name: f.name, preview: null, file: null, error: "", refused: "" });
+  Object.assign(FR, { name: f.name, preview: null, file: null, error: "", refused: "", why: frReason(f.name) });  // each file its own reason
   try { const r = await readSetupFile(f); Object.assign(FR, { file: r.setup, preview: r.preview }); }
   catch (e) { if (appStopped(e)) throw e; if (e.refused) FR.refused = e.message; else FR.error = e.message; }
   frPaint(FR.preview ? "fr-why" : "fr-imp-h");
 }
 async function frImport() {
   if (!FR.file || FR.busy) return;
-  FR.why = $("#fr-why")?.value || FR.why; FR.busy = "import"; frPaint();
+  FR.why = $("#fr-why")?.value || FR.why;
+  if (!FR.why.trim()) FR.why = frReason(FR.name);  // an emptied box: shown in it again before it is sent
+  FR.busy = "import"; frPaint();
   try {
-    try { await api("/api/setup/import", { json: { setup: FR.file, reason: FR.why.trim() || "Started this install from a setup file." } }); }
+    try { await api("/api/setup/import", { json: { setup: FR.file, reason: FR.why.trim() } }); }
     catch (e) { if (appStopped(e)) throw e; if (e.unsure) throw new Error(changeError(e)); Object.assign(FR, { busy: "", preview: null, file: null, refused: e.message }); frPaint("fr-imp-h"); return; }
     Object.assign(FR, { file: null, preview: null, name: "", why: "" });
     await frFinish({ imported: true });

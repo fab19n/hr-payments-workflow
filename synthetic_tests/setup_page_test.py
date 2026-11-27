@@ -454,6 +454,40 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
   });
   FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"; FR.addOpen = false; FR.done = null; FR.note = null; FR.saved = null; FR.code = ""; FR.cname = ""; FR.kind = ""; FR.tried = false`);
 
+  // slice 9c: First run's import reason is filled in from the file chosen; what is sent is what the box shows
+  await tryit("frReason", async () => {
+    const r = {}, P = { what: "full", made: "2026-11-14T10:00:00", counts: [["companies", 1]], notes: [] };
+    FX.post["/api/setup/import?preview"] = { status: 200, body: P };
+    withCompanies([]);
+    run(`globalThis.__realPick = pickFile; pickFile = async () => [__file]`);
+    const pick = async name => { sandbox.__file = { name, text: async () => JSON.stringify({ format: "hrp-setup" }) }; el("fr-why").value = "";
+      run(`state.view = "overview"; FR.busy = ""; FR.done = null; FR.note = null; FR.saved = null; FR.preview = null; FR.file = null`); await run(`frPick()`); };
+    const box = () => (/<input id="fr-why"[^>]*? value="([^"]*)"/.exec(run(`frHtml()`)) || [])[1];
+    const typeIt = v => { el("fr-why").value = v; for (const f of listeners.input || []) f({ target: el("fr-why") }); };
+    const send = async () => { calls.length = 0; await run(`frImport().catch(e => e.name)`); return calls.filter(x => x[1] === "/api/setup/import" && !x[2].preview).map(x => x[2].reason); };
+    try {
+      await pick("Setup everything 2026-11-14.json"); r.shown = box(); r.sentUntouched = await send();
+      await pick("setup.json"); typeIt("Moved from the old PC"); r.editedShown = box(); r.sentEdited = await send();
+      r.emptied = [];
+      for (const gone of ["", "   "]) {
+        await pick("Office setup.json"); typeIt(gone);
+        FX.fail = { "/api/setup/import": true };   // the app can't be reached: the box shows what was sent
+        const first = await send(); FX.fail = {};
+        r.emptied.push({ first, box: box(), again: await send() });
+      }
+      FX.post["/api/setup/import"] = { status: 400, body: { error: "This setup file was made by a newer version of the app." } };
+      await pick("first.json"); typeIt("About the first file"); await send(); delete FX.post["/api/setup/import"];
+      await pick("second.json"); r.afterRefusal = box();
+      typeIt("About the second file"); await run(`click({ frCancelImport: "1" })`); await pick("third.json"); r.afterCancel = box(); r.sentThird = await send();
+      const long = "\u{1F600}".repeat(300) + ".json";
+      await pick(long); const shownLong = run(`FR.why`); r.long = { shown: shownLong, sent: await send(), units: shownLong.length,
+        whole: !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(shownLong), max: (/<input id="fr-why"[^>]*maxlength="(\d+)"/.exec((await pick("a.json"), run(`frHtml()`))) || [])[1] };
+      await pick(`a"<b>&.json`); r.escaped = run(`frHtml()`);
+    } finally { run(`pickFile = __realPick; FR.preview = null; FR.file = null; FR.why = ""; FR.name = ""; FR.refused = ""; FR.error = ""; FR.done = null; FR.note = null`); delete FX.post["/api/setup/import"]; FX.fail = {}; }
+    FX.get["/api/meta"] = meta0; run(`state.meta = ${JSON.stringify(meta0)}; state.view = "setup"`);
+    return r;
+  });
+
   // 8. the rows shown stay shown across a redraw; they start again with another section or company
   await tryit("moreKept", async () => {
     const count = h => (h.match(/class="st-row/g) || []).length, r = {};   // the page drawn whole, or the list alone once Show more has redrawn it
@@ -1839,6 +1873,22 @@ nr = o["noRedo"]
 check("round 8: render() leaves a page that was overtaken as it always did and draws nothing again: slow A, quick B, A's late paint, then C stays on show, and B was drawn once (a redo of B would land over C)",
       nr["timeline"] == {"page": "<div>C page</div>", "view": "pageC", "a": 1, "b": 1, "c": 1}, nr["timeline"])
 check("...and a normal render draws once", nr["once"] == 1, nr)
+
+# ---------- slice 9c: First run's import reason ----------
+fr = o["frReason"]
+said = "Started this install from Setup everything 2026-11-14.json."
+check("First run fills the reason box from the file chosen, and an untouched box is sent as it shows",
+      fr["shown"] == said and fr["sentUntouched"] == [said], fr)
+check("...a reason typed over it is sent instead", fr["editedShown"] == "Moved from the old PC" and fr["sentEdited"] == ["Moved from the old PC"], fr)
+office = "Started this install from Office setup.json."
+check("...and an emptied box (or only spaces) gets the same sentence back, shown in the box, and sent",
+      fr["emptied"] == [{"first": [office], "box": office, "again": [office]}] * 2, fr["emptied"])
+check("each file chosen has its own sentence: after a refused one, and after Cancel, nothing typed or said for an earlier file stays",
+      fr["afterRefusal"] == "Started this install from second.json." and fr["afterCancel"] == "Started this install from third.json." and fr["sentThird"] == ["Started this install from third.json."], fr)
+lg = fr["long"]
+check("a very long file name is cut, whole characters only, so the sentence fits the reason's 500 and is sent as shown",
+      lg["units"] <= 500 and lg["units"] >= 498 and lg["whole"] is True and lg["shown"].startswith("Started this install from \U0001F600") and lg["shown"].endswith("\u2026.") and lg["sent"] == [lg["shown"]] and lg["max"] == "500", lg)
+check("the file name is shown as it is written, never as HTML", 'value="Started this install from a&quot;&lt;b&gt;&amp;.json."' in fr["escaped"] and "<b>&.json" not in fr["escaped"], fr["escaped"][:600])
 
 # ---------- the layout keeps today's narrow rules ----------
 check("the form keeps Setup's 520-pixel rule: two columns, one under 520 pixels, in the new dialog too",
