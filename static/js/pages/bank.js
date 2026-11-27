@@ -184,13 +184,12 @@ async function reconDraw(page, focus) {
   if (R.rv) { used(); return reloadReview(false); }
   const e = ent();
   const y = await page.read(api(rcUrl("year", `&account_id=${R.account}${R.year ? `&year=${R.year}` : ""}`)));
-  used();
   R.year = y.year; R.data = y;
-  if (focus) {
-    const row = y.rows.find(r => r.month === state.month && r.statement_id);
-    if (row && state.bankOnly) return openReview(row.statement_id, false);  // the page is at the top already
-    if (row) R.open = row.month;
-  }
+  const row = focus && y.rows.find(r => r.month === state.month && r.statement_id);
+  // A link to the lines to explain: its focus is used up once the review has been read, so a page asked for again meanwhile opens it too.
+  if (row && state.bankOnly) return openReview(row.statement_id, false, used);  // the page is at the top already
+  used();
+  if (row) R.open = row.month;
   R.panel = R.open && y.rows.some(r => r.month === R.open) ? await page.read(api(rcUrl("month", `&account_id=${R.account}&month=${R.open}`))) : null;
   const cur = y.account.currency;
   const rowHtml = r => `<tr class="${R.open === r.month ? "focus" : ""}"><td><button class="link" id="bk-m-${r.month}" data-rc-open="${r.month}" aria-expanded="${R.open === r.month}">${esc(r.label)}</button></td>
@@ -339,9 +338,11 @@ function drawPrint() {
 /* ---- the review of one statement ---- */
 const RV = () => state.recon.rv;
 
-function openReview(sid, scroll = true) { return pageDraw("bank", page => reviewOpen(page, sid, scroll)); }
-async function reviewOpen(page, sid, scroll) {
+// read: told once the review has been read and is about to be shown.
+function openReview(sid, scroll = true, read) { return pageDraw("bank", page => reviewOpen(page, sid, scroll, read)); }
+async function reviewOpen(page, sid, scroll, read) {
   const d = await page.read(api(rcUrl("review", `&statement_id=${sid}`)));
+  read?.();
   // A locked month, or one with nothing left to explain, opens with its matched lines shown (BankReview's savings state).
   const V = state.recon.rv = { sid, d, sel: {}, choice: {}, keep: {}, checked: false, why: {},
     showMatched: !!d.summary.locked || !d.lines.some(l => l.state === "open") };

@@ -181,7 +181,8 @@ function settleAddr() { const a = currentAddr(); if (a && placeLoc() && placeLoc
 // Sets the state from a place and draws it. opts: write (put the address in the history first), replace (in place of the
 // current entry), fresh (a page change: searches and the review start again, as go() always did), link (arrived by a link or
 // address: the page starts at the top and a bank page takes its focus), fromAddress (also: a page this company doesn't use
-// gives the Overview and the toast), bad (the address was not one of ours: the Overview and the toast).
+// gives the Overview and the toast), bad (the address was not one of ours: the Overview and the toast), then (done once the
+// page is drawn, unless you have gone elsewhere or asked for a dialog by then).
 async function applyPlace(place, opts = {}) {
   ROUTER.busy++;
   try {
@@ -227,12 +228,16 @@ async function applyPlace(place, opts = {}) {
     if (opts.write) writeAddr(currentAddr(), opts.replace);
     if (opts.link) window.scrollTo?.(0, 0);
     renderNav();
-    const drawing = render(), drawn = PAGE.n;  // render() numbers its page at once
-    await drawing;
-    // the record the address names opens in its drawer, unless another page has been asked for meanwhile; a section drawn in place of the
-    // one named (a link's old address) has no such record
-    if (drawn === PAGE.n && v === "setup" && place.id && state.view === "setup" && state.setup.kind && state.setup.kind === place.sub) {
-      try { await openSetup(state.setup.kind, +place.id, { force: true }); } catch (err) { toast(err.message, true); }
+    // The record a Setup address names opens in its drawer; a section drawn in place of the one named (a link's old address) has no such record.
+    const record = v === "setup" && place.id
+      ? () => state.view === "setup" && state.setup.kind && state.setup.kind === place.sub ? openSetup(state.setup.kind, +place.id, { force: true }) : null : null;
+    // It waits for the page, not for this draw of it: a late change's reading back, or a Try again, asks for the same page again while it is
+    // read. Going to another place closes the dialog first, so dialogsSince (core/dialog.js) says that too.
+    const then = opts.then || record, wanted = dialogsSince();
+    await render();
+    if (then) {
+      await pageSettled(wanted);
+      if (wanted()) try { await then(); } catch (err) { toast(err.message, true); }
     }
     settleAddr();
   } finally { ROUTER.busy--; }

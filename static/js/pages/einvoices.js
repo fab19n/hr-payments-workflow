@@ -280,9 +280,14 @@ async function eiZip() {
     eiSave(await r.blob(), z.file);
     if (mine()) { Object.assign(EI_ZIP, { busy: false, done: z.file }); if (eiZipInfo(state.eiData).key === z.key) eiSay(`Saved ${z.file}.`); }
   } catch (err) { if (mine()) Object.assign(EI_ZIP, { busy: false, err: appStopped(err) ? "HR Payments isn't running, so the zip couldn't be made. Start it again, then try again." : err.message }); }
-  if (!mine() || state.view !== "einvoices") return;
+  if (!mine()) return;
+  const shown = () => state.view === "einvoices" && !!state.eiData && eiZipInfo(state.eiData).key === z.key;
+  // A zip that couldn't be made is said in a message too when its card isn't on show, drawn whole: opening the page again clears the card.
+  // (A zip that was made is the browser's own download.)
+  if (EI_ZIP.err && !(shown() && pageWhole())) toast(`${z.file}: ${EI_ZIP.err}`, true, { ms: 0 });
+  if (state.view !== "einvoices") return;
   eiPaintPrint();
-  if (eiZipInfo(state.eiData).key === z.key) $("#ei-zip")?.focus?.();
+  if (shown()) $("#ei-zip")?.focus?.();
 }
 function eiSave(blob, name) {
   if (typeof URL === "undefined" || !URL.createObjectURL || typeof document.createElement !== "function" || !document.body) return;

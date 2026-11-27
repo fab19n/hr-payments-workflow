@@ -2,7 +2,8 @@
 /* ---------------- Audit trail ---------------- */
 // Every change to the records, as the server recorded it when it was saved (hrp/audit.py), newest first. An entry opens
 // to show what changed field by field; a record's own history shows in its drawer (payments, recurring payments) or from
-// its History button (budget lines). The page is drawn once; the filters redraw only the list.
+// its History button (budget lines). The page is drawn once; the filters redraw only the list. While the page is being
+// read again, what is picked on the one still on show is read by the page's own draw.
 const SRC_TONE = { user: "", auto: "grey", import: "grey", migration: "grey", seed: "grey", system: "grey", outside: "bad" };
 const fmtWhen = iso => iso ? `${fmtDate(iso)} ${iso.slice(11, 16)}` : "—";
 const trailVal = v => v == null || v === "" ? `<span class="muted">empty</span>` : esc(typeof v === "object" ? JSON.stringify(v) : v);
@@ -94,8 +95,14 @@ function outsideHtml(o) {
 async function viewTrail(main) { return pageDraw("main", draw => trailDraw(draw, main)); }
 async function trailDraw(draw, main) {
   const T = state.trail;
-  const [st, page, outside] = await draw.read(Promise.all([api("/api/audit/status"), api("/api/audit?" + trailQuery()),
-    api("/api/audit/outside" + (T.show ? "?show=1" : ""))]));
+  let asked, st, page, outside;
+  // The filters and the bank details tick of the page still on show can be changed while this reads: the list and the changes
+  // made outside the app are read again until they are the ones for what the boxes painted below will say.
+  do {
+    asked = trailQuery();  // the filters, and show=1 with the tick
+    [st, page, outside] = await draw.read(Promise.all([st || api("/api/audit/status"), api("/api/audit?" + asked),
+      api("/api/audit/outside" + (T.show ? "?show=1" : ""))]));
+  } while (asked !== trailQuery());
   T.entries = page.entries; T.more = page.more; T.labels = page.labels; T.seq = (T.seq || 0) + 1;
   const opt = (v, label, cur) => `<option value="${esc(v)}"${String(cur ?? "") === String(v) ? " selected" : ""}>${esc(label)}</option>`;
   main.innerHTML = `
@@ -122,8 +129,12 @@ async function trailDraw(draw, main) {
 }
 const listHtml = list => list.map(entryHtml).join("") || `<div class="empty">No entries match.</div>`;
 
+// The Export link takes the filters and the tick as they are now.
+function trailExportLink() { const a = $("#trailExport"); if (a) a.href = "/api/audit/export.xlsx?" + trailQuery(); }
+
 // A filter changed: the list again from the newest, without redrawing the page (the box being typed in keeps its focus).
-function refreshTrailList() { return pageDraw(null, trailListRead); }
+// While the page is being read, its own draw writes the list, for what is picked by then (trailDraw).
+function refreshTrailList() { trailExportLink(); return pageWhole() ? pageDraw(null, trailListRead) : Promise.resolve(); }
 async function trailListRead(draw) {
   const T = state.trail, seq = T.seq = (T.seq || 0) + 1;
   try {
@@ -132,13 +143,12 @@ async function trailListRead(draw) {
     T.entries = page.entries; T.more = page.more;
     $("#trailList").innerHTML = listHtml(T.entries);
     $("#trailMoreRow").hidden = !T.more;
-    $("#trailExport").href = "/api/audit/export.xlsx?" + trailQuery();
   } catch (e) { draw.check(); toast(e.message, true); }
 }
 
 async function trailMore(btn) {
   const T = state.trail, seq = T.seq, last = T.entries[T.entries.length - 1];
-  if (!last || btn.disabled) return;
+  if (!last || btn.disabled || !pageWhole()) return;  // while the page is read again, its draw writes the list
   btn.disabled = true;
   try {
     await pageDraw(null, async draw => {
@@ -181,10 +191,13 @@ async function trailAccept(btn) {
   await afterSaved(render);
 }
 
-// Bank details on or off: the open entries and the outside card again; the list itself doesn't show them.
-function trailShow(on) { return pageDraw("trail-show", draw => trailShowDraw(draw, on)); }
+// Bank details on or off: the open entries and the outside card again; the list itself doesn't show them. While the page is
+// being read, its own draw writes them, as ticked by then.
+function trailShow(on) {
+  state.trail.show = on; trailExportLink();
+  return pageWhole() ? pageDraw("trail-show", draw => trailShowDraw(draw, on)) : Promise.resolve();
+}
 async function trailShowDraw(draw, on) {
-  state.trail.show = on;
   try {
     const o = await draw.read(api("/api/audit/outside" + (on ? "?show=1" : "")));
     if ($("#trailOutsideSlot")) $("#trailOutsideSlot").innerHTML = outsideHtml(o);

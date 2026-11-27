@@ -147,7 +147,8 @@ function go(view, entity) {
 // way. opts.unsure: it isn't known whether a change was made, so a failure doesn't say that nothing was changed (nor, with the app stopped, that
 // nothing was sent or saved), and its Try again keeps to that (data-retry="unsure").
 // Returns false when it painted an error, true otherwise (also when a newer draw overtook it).
-async function render(opts) {
+function render(opts) { return PAGE.latest = renderPage(opts); }  // kept for pageSettled (core/page.js)
+async function renderPage(opts) {
   const main = $("#main"), unsure = !!opts?.unsure;
   const seq = pageTurn(), overtaken = () => seq !== PAGE.n;
   state.startFailed = false;  // a page is drawn over what a failed start left (main.js)

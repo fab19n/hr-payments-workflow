@@ -1,5 +1,7 @@
 "use strict";
 /* ---------------- Backup ---------------- */
+// Backup, with the focus on the password once the page is drawn: it is typed there (Next up's backup row, Mark as filed's offer).
+const goToBackupPassword = () => navigate(goPlace("settings"), { fresh: true, then: () => $("#bkPw")?.focus() });
 async function viewSettings(main) { return pageDraw("main", page => backupDraw(page, main)); }
 async function backupDraw(page, main) {
   const log = await page.read(api("/api/activity"));

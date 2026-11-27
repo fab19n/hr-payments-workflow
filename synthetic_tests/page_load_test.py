@@ -22,6 +22,11 @@ Checks:
     asked for again; a result is never written into a page about to be replaced; and only the change's own dialog is ever closed.
  D. "Nothing was changed" is said only when the server refused the change: a server failure or an answer that can't be read says it isn't
     known; a 200 that isn't JSON is an error (never an empty answer).
+ E. Review round 2: a filter, tick or date picked on a page still on show while it is read again is the one the page ends on; what follows a
+    link or a button (a Setup record, Add company's form, the backup password's focus, a bank review, a Next up row's day) still happens when
+    a late change's reading back asks for that page while it is read, and not once you have gone elsewhere or asked for a dialog; a payment's
+    upload with no clear answer is never said to be not added; and the document check's result, and an e-Invoices zip's failure, are never
+    dropped.
 
 HRP_KEEP_GOING=1 lists every check that fails. HRP_TEST_STATIC=<a static folder> runs the checks against that copy of the page script (used
 to show that they fail without the fix).
@@ -154,6 +159,7 @@ async function settle(until = Infinity) {
 /* ---- the stand-in page ---- */
 let written = 0;   // every write into the page's content (the menu and the top bar, the shell's own, aside), also into a node no longer on show
 const SHELL = new Set(["nav", "orgName", "pageTitle", "tbCompany", "tbUser", "monthLabel", "thisMonth", "prevMonth", "nextMonth"]);
+const FOCUSED = [];   // what was given the focus, by id
 const unesc = s => s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
 const listeners = {};
 class El {
@@ -193,7 +199,7 @@ class El {
   addEventListener(t, f) { (this.on[t] ||= []).push(f); } removeEventListener() {}
   querySelector(s) { const m = /^#([\w-]+)$/.exec(s); return m ? this.find(m[1]) : null; }
   querySelectorAll(s) { return /input\[id\]/.test(s) ? this.kids.flatMap(k => [...(["INPUT", "SELECT", "TEXTAREA"].includes(k.tagName) ? [k] : []), ...k.querySelectorAll(s)]) : []; }
-  closest() { return null; } contains() { return false; } focus() {} blur() {} click() {} scrollIntoView() {} after() {} remove() {} appendChild() {} setSelectionRange() {}
+  closest() { return null; } contains() { return false; } focus() { FOCUSED.push(this.id); } blur() {} click() {} scrollIntoView() {} after() {} remove() {} appendChild() {} setSelectionRange() {}
   getBoundingClientRect() { return { top: 0, height: 100 }; }
 }
 const roots = {}; for (const id of FX.STATIC_IDS) roots[id] = new El(id);
@@ -1014,6 +1020,146 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     });
   }
 
+  /* ======== E. review round 2 ======== */
+  // E1. the audit trail: what is picked on the page still on show while it is read again
+  const TX = (id, headline) => ({ id, at: FX.MONTH + "-05T10:00:00", headline, source: "user", source_label: "You", actor: "Made-up user", company: null, reason: "", late: false });
+  const CH = record => ({ table: "payees", op: "update", op_label: "Changed", table_label: "Recurring payment", record, fields: [] });
+  const trailReplies = p => p.startsWith("/api/audit/status") ? [200, { entries: 2, check_code: "MADEUP", problems: [], check: { checked: 2, problems: [] }, last_full_check: null }]
+    : p.startsWith("/api/audit/outside") ? [200, { total: 1, upto_id: 9, changes: [CH(p.includes("show=1") ? "DETAILS-SHOWN" : "DETAILS-MASKED")] }]
+    : p.startsWith("/api/audit?") ? [200, { entries: p.includes("q=needle") ? [TX(2, "ONLY-FILTERED")] : [TX(1, "UNFILTERED-ENTRY")], more: true, labels: { tables: {}, sources: {} } }] : undefined;
+  const openTrail = async (tick = false) => { fresh(); NET.reply = trailReplies; run(`state.trail.show = ${tick}`); await open("trail"); };
+  const exportHref = () => el("trailExport")?.href || el("trailExport")?.attrs.href || "";
+  const ORDERS = [["page", 600, 700], ["pick", 900, 50]];   // which answers first: the page's reads, or what the pick would read
+  for (const [order, pageMs, pickMs] of ORDERS) {
+    await tryit(`E:trail:filter:${order}`, async () => {
+      await openTrail(); NET.delay = p => p.includes("q=needle") ? pickMs : p.startsWith("/api/audit") ? pageMs : 0;
+      NET.reads.length = 0; run(`render()`); await settle(now + 100); fire("change", { dataset: { tf: "q" }, value: "needle", type: "search", id: "" }); await settle();
+      return { box: /data-tf="q" value="needle"/.test(shown()), filtered: shown().includes("ONLY-FILTERED"), old: shown().includes("UNFILTERED-ENTRY"),
+        kept: run(`state.trail.entries.map(e => e.headline).join()`), export: exportHref().includes("q=needle"), whole: run(`pageWhole()`), reads: NET.reads.filter(p => p.includes("q=needle")).length };
+    });
+    for (const to of [true, false]) await tryit(`E:trail:tick:${to ? "ticked" : "unticked"}:${order}`, async () => {
+      await openTrail(!to); NET.delay = p => p === "/api/audit/outside" + (to ? "?show=1" : "") ? pickMs : p.startsWith("/api/audit") ? pageMs : 0;
+      NET.reads.length = 0; run(`render()`); await settle(now + 100); fire("change", { id: "trailShow", checked: to, dataset: {} }); await settle();
+      return { box: /id="trailShow" checked/.test(shown()) === to, card: shown().includes(to ? "DETAILS-SHOWN" : "DETAILS-MASKED") && !shown().includes(to ? "DETAILS-MASKED" : "DETAILS-SHOWN"),
+        export: exportHref().includes("show=1") === to, reads: NET.reads.filter(p => p === "/api/audit/outside" + (to ? "?show=1" : "")).length };
+    });
+  }
+  await tryit("E:trail:export", async () => {
+    await openTrail(); fire("change", { id: "trailShow", checked: true, dataset: {} }); await settle(); const on = exportHref().includes("show=1");
+    fire("change", { id: "trailShow", checked: false, dataset: {} }); await settle();
+    return { on, off: !exportHref().includes("show=1") };
+  });
+  await tryit("E:trail:older", async () => {
+    await openTrail(); NET.delay = p => p.startsWith("/api/audit") ? 600 : 0; run(`render()`); await settle(now + 100); NET.reads.length = 0; click({ trailMore: "1" }); await settle();
+    return { asked: NET.reads.filter(p => p.includes("before_id=")).length, kept: run(`state.trail.entries.length`) };
+  });
+
+  // E2. what follows a link or a button once its page is drawn, with a late change's reading back asking for that page while it is read
+  const LINK = `navigate({ view: "setup", entity: ${FX.QFB}, month: ${JSON.stringify(FX.MONTH)}, sub: "accounts", id: ${FX.ACCT}, params: {} }, { fresh: true })`;
+  const linked = () => ({ open: !roots.drawer.hidden && !!byId("setupForm"), id: run(`String(state.setup.id)`) });
+  const LATE = `afterSaved(render)`;
+  const since = () => /Opened since/.test(roots.drawer.hidden ? "" : roots.drawer.full());
+  const OTHER = `openHistory("budget_lines", ${FX.LINE}, "Opened since")`;
+  const LATES = [["one late reading back", [200], 600, 600], ["two late readings back", [200, 220], 600, 600], ["the late one answered first", [200], 900, 50], ["another while a late one is waited for", [200, 700], 600, 600]];
+  for (const [name, late, first, again] of LATES) await tryit(`E:link:${name}`, async () => {
+    fresh(); await open("settings"); let n = 0; NET.delay = p => p.startsWith("/api/setup/accounts?") ? (n++ ? again : first) : 0;
+    const from = now; run(LINK); for (const at of late) { await settle(from + at); run(LATE); } await settle();
+    return linked();
+  });
+  for (const [name, then] of [["another page", () => go("audit")], ["the same section without a record", () => go("setup:accounts")], ["a month arrow", () => click({ id: "nextMonth" })],
+    ["another record's History", () => run(OTHER)]]) await tryit(`E:linkLeft:${name}`, async () => {
+    fresh(); await open("settings"); NET.delay = p => p.startsWith("/api/setup/accounts?") ? 600 : 0;
+    run(LINK); await settle(now + 200); run(LATE); await settle(now + 50); then(); await settle();
+    return { record: !roots.drawer.hidden && !!byId("setupForm"), other: since() };
+  });
+  await tryit("E:linkDialog", async () => {   // no late reading back: a dialog asked for while the section is read isn't replaced by the linked record
+    fresh(); await open("settings"); NET.delay = p => p.startsWith("/api/setup/accounts?") ? 600 : 0;
+    run(LINK); await settle(now + 200); run(OTHER); await settle();
+    return { record: !roots.drawer.hidden && !!byId("setupForm"), other: since() };
+  });
+  await tryit("E:linkDialogReading", async () => {
+    fresh(); await open("settings"); NET.delay = p => p.startsWith("/api/setup/accounts?") ? 600 : p.startsWith("/api/payees/") ? 900 : 0;
+    run(LINK); await settle(now + 200); run(`editPayee(${FX.PAYEE})`); await settle();
+    return { record: !roots.drawer.hidden && !!byId("setupForm"), other: !roots.drawer.hidden && !!byId("payeeForm") };
+  });
+  await tryit("E:addCompany", async () => {
+    fresh(); await open("settings"); run(`state.setup.types = null`); NET.delay = p => p === "/api/setup/types" ? 600 : 0;
+    run(`tbAddCompany()`); await settle(now + 200); run(LATE); await settle();
+    return linked();
+  });
+  await tryit("E:backupPassword", async () => {
+    fresh(); await open("audit"); NET.delay = p => p.startsWith("/api/activity") ? 600 : 0; FOCUSED.length = 0;
+    const from = now; click({ nextBackup: "1" }); for (const at of [200, 700]) { await settle(from + at); run(LATE); } await settle();
+    return { focused: FOCUSED.includes("bkPw"), drawn: !!byId("bkPw") };
+  });
+  await tryit("E:bankLink", async () => {
+    fresh(); await open("settings");
+    const YEAR = { year: FX.MONTH.slice(0, 4), years: [FX.MONTH.slice(0, 4)], account: { id: FX.ACCT, label: "Main", currency: "MYR" }, openings: [], source: "sql", listing_note: "",
+      rows: [{ month: FX.MONTH, label: "Sample month", statement_id: 7, status: "to_review", status_text: "To review", locked: false, bank_closing: 10, book_closing: 0, book_note: "", reconciled_at: null, document_id: null }] };
+    NET.reply = p => p.startsWith("/api/recon/year") ? [200, YEAR] : p.startsWith("/api/recon/review") ? [200, RV] : undefined;
+    NET.delay = p => p.startsWith("/api/recon/review") ? 600 : 0;
+    run(`goTo({ view: "bank", entity_id: ${FX.QFB}, month: ${JSON.stringify(FX.MONTH)}, account_id: ${FX.ACCT}, filter: "to_explain" })`); await settle(now + 200); run(LATE); await settle();
+    return { review: run(`state.recon.rv?.sid ?? null`), drawn: shown().includes("statement · review"), used: run(`state.focusBank === null`) };
+  });
+  await tryit("E:budgetLink", async () => {   // a Next up row's day, with the page asked for again while it is read after the browser's balance went across
+    fresh(); await open("settings"); const at = FX.MONTH + "-03";
+    run(`localStorage.setItem("bal-${FX.QFB}-${FX.MONTH}", "1234.00")`);
+    let n = 0; NET.delay = (p, m) => m === "GET" && p.startsWith("/api/budget?") && ++n === 2 ? 600 : 0;
+    NET.reads.length = 0; NET.writes.length = 0; run(`goTo({ view: "budget", entity_id: ${FX.QFB}, month: ${JSON.stringify(FX.MONTH)}, as_at: "${at}" })`); await settle(now + 200); run(LATE); await settle();
+    const reads = NET.reads.filter(p => p.startsWith("/api/budget?"));
+    return { carried: NET.writes.length, reads: reads.length, last: reads[reads.length - 1].endsWith("as_at=" + at), used: run(`state.asAt === null`) };
+  });
+  const pickDate = v => { set("bud-date", v); bud("change", { id: "bud-date" }); };
+  for (const [order, pageMs, pickMs] of ORDERS) await tryit(`E:budgetDate:${order}`, async () => {   // a month with no budget set up keeps its date nowhere
+    fresh(); await open("budget", FX.QFB, FX.BEFORE); const at = FX.BEFORE + "-02", was = el("bud-date").value;
+    NET.delay = p => p.includes("as_at=" + at) ? pickMs : p.startsWith("/api/budget?") ? pageMs : 0;
+    run(`render()`); await settle(now + 100); pickDate(at); await settle();
+    return { differs: was !== at, box: el("bud-date").value === at, whole: run(`pageWhole()`) };
+  });
+  await tryit("E:budgetDateOtherCompany", async () => {
+    fresh(); await open("budget", FX.QFB, FX.BEFORE); const at = FX.BEFORE + "-02";
+    NET.delay = p => p.startsWith("/api/budget?") ? 600 : 0; NET.reads.length = 0;
+    go("budget", FX.MBS, FX.BEFORE); await settle(now + 100); pickDate(at); await settle();
+    return { reads: NET.reads.filter(p => p.startsWith("/api/budget?") && p.includes("as_at=" + at)).length, box: el("bud-date").value !== at };
+  });
+
+  // E3. the payment dialog's uploads with no clear answer: never said to be not added. XMLHttpRequest, as the browser has it.
+  const xhr = (replies, ms) => { let n = 0; sandbox.XMLHttpRequest = class { constructor() { this.upload = {}; } open(m, p) { this.path = p; } setRequestHeader() {}
+    send() { const w = replies[n++]; NET.writes.push(["POST", this.path]); if (NET.afterWrite) NET.down = NET.afterWrite;
+      vSetTimeout(() => { if (w === "net") return this.onerror(); this.status = w[0]; this.responseText = JSON.stringify(w[1]); this.onload(); }, ms); } }; };
+  const uploads = async (replies, { down = null, close = false } = {}) => {
+    fresh(); await openDialog(); xhr(replies, close ? 500 : 0); NET.afterWrite = down; toasts().length = 0; NET.writes.length = 0;
+    run(`pdUpload(${JSON.stringify(replies.map((_, i) => ({ file: { name: `made-up-${i + 1}.pdf`, size: 10 }, type: "invoice" })))})`);
+    if (close) { await settle(now + 100); run(`closeDrawer(true)`); }
+    await settle(); delete sandbox.XMLHttpRequest;
+    return { open: !roots.drawer.hidden, rows: roots.drawer.hidden ? "" : roots.drawer.full(), msgs: toasts().map(t => t.msg), writes: NET.writes.length };
+  };
+  const KEPT = [200, { id: 1 }], UP = { net: "net", failed: [500, { error: "The server could not save it." }], unread: [200, null], refused: [409, { error: "The month is filed." }] };
+  for (const [k, rep] of Object.entries(UP)) {
+    await tryit(`E:upload:closedByReadBack:${k}`, () => uploads([KEPT, rep], { down: "net" }));
+    await tryit(`E:upload:rows:${k}`, () => uploads([KEPT, rep]));
+    await tryit(`E:upload:closedByYou:${k}`, () => uploads([rep], { close: true }));
+    await tryit(`E:upload:closedByYouAfterOne:${k}`, () => uploads([KEPT, rep], { close: true }));
+  }
+
+  // E4. the document check's result: under the buttons while their page stays, else in a message
+  const INTEGRITY = p => p === "/api/integrity" ? [200, { checked: 3, problems: [{ stored_path: "made-up/lost.pdf" }] }] : undefined;
+  for (const [name, then, pageMs] of [["another page opened", () => go("audit"), 0], ["another page slow to read", () => go("audit"), 900], ["Backup asked for again", () => go("settings"), 900], ["its page staying", () => {}, 0]]) await tryit(`E:docCheck:${name}`, async () => {
+    fresh(); await open("settings"); NET.reply = INTEGRITY; NET.delay = p => p === "/api/integrity" ? 600 : p.startsWith("/api/activity") || p.startsWith("/api/audit-readiness") ? pageMs : 0; toasts().length = 0;
+    click({ id: "doCheck" }); await settle(now + 100); then(); await settle();
+    return { written: el("setOut")?.textContent || "", msgs: toasts().map(t => t.msg) };
+  });
+
+  // E5. an e-Invoices zip that can't be made: in its card while that is on show, else in a message too
+  const EI = { copy: false, sources: [], counts: {}, other: [], unmatched: [], received: [], self_billed: [], issued: [{ id: 5, doc_no: "IV-1", date: FX.MONTH + "-02", description: "Sample", amount: 1, party: {}, print_kind: "invoice", what: "invoice" }],
+    print: { missing: [], fonts: [], too_long: [], counts: { customer: { [FX.MONTH]: 1 } } } };
+  for (const [name, then] of [["another page opened", () => go("audit")], ["another company's e-Invoices opened", () => go("einvoices", FX.MBS)], ["its card staying", () => {}]]) await tryit(`E:zip:${name}`, async () => {
+    fresh(); NET.reply = p => p.startsWith("/api/einvoices") ? [200, EI] : p.startsWith("/api/invoices/month.zip") ? [500, null, "bad"] : p.startsWith("/api/invoices/") ? [200, { notes: [] }] : undefined;
+    await open("einvoices"); NET.delay = p => p.startsWith("/api/invoices/month.zip") ? 600 : 0; toasts().length = 0;
+    run(`eiZip()`); await settle(now + 100); then(); await settle();
+    return { card: !!byId("ei-print") && byId("ei-print").full().includes("couldn&#39;t be made"), msgs: toasts().map(t => t.msg) };
+  });
+
   await settle(); await turn();
   out.unheard = unheard;
   process.stdout.write("@@OUT " + JSON.stringify(out) + "\n");
@@ -1325,6 +1471,103 @@ for place, words in NOTHING.items():
             check(f"D: {label}: a refusal says so ({words!r}), with the server's reason", words in text and "The month is filed." in text and "isn't known" not in text, text[:700])
         else:
             check(f"D: {label}: a {'server failure' if kind == 'failed' else '200 that cannot be read'} never says {words!r}; it says it isn't known", words not in text and "isn't known" in text, text[:700])
+
+# ---------- E: review round 2 ----------
+for order, first_word in (("page", "the page's reads answered first"), ("pick", "the pick's read answered first")):
+    r = ran(f"E:trail:filter:{order}")
+    if r is not None:
+        check(f"E: audit trail: a filter picked while the page is read again ({first_word}): the list, the box, the entries kept and the Export link are all the picked filter's, read once, by the page's own draw",
+              r == {"box": True, "filtered": True, "old": False, "kept": "ONLY-FILTERED", "export": True, "whole": True, "reads": 1}, r)
+    for how in ("ticked", "unticked"):
+        r = ran(f"E:trail:tick:{how}:{order}")
+        if r is not None:
+            check(f"E: audit trail: bank details {how} while the page is read again ({first_word}): the tick, the changes made outside the app and the Export link agree, and they are read once for the tick, by the page's own draw",
+                  r == {"box": True, "card": True, "export": True, "reads": 1}, r)
+r = ran("E:trail:export")
+if r is not None:
+    check("E: audit trail: the Export link follows the bank details tick at once, on and off", r == {"on": True, "off": True}, r)
+r = ran("E:trail:older")
+if r is not None:
+    check("E: audit trail: Show older pressed while the page is read again reads nothing and adds nothing to a list about to be replaced", r == {"asked": 0, "kept": 1}, r)
+for name in ("one late reading back", "two late readings back", "the late one answered first", "another while a late one is waited for"):
+    r = ran(f"E:link:{name}")
+    if r is not None:
+        check(f"E: a link to a Setup record opens its dialog, with {name} asking for Setup while it is read", r == {"open": True, "id": str(ACCT["QFB"])}, r)
+for name in ("another page", "the same section without a record", "a month arrow", "another record's History"):
+    r = ran(f"E:linkLeft:{name}")
+    if r is not None:
+        check(f"E: after a late reading back, {name} asked for before Setup is read: the linked record isn't opened", r == {"record": False, "other": name == "another record's History"}, r)
+r = ran("E:linkDialog")
+if r is not None:
+    check("E: a dialog asked for while a linked record's section is read stays: the linked record isn't opened over it", r == {"record": False, "other": True}, r)
+r = ran("E:linkDialogReading")
+if r is not None:
+    check("E: a dialog still being read when the linked record's section arrives is the one shown: the linked record isn't asked for over it", r == {"record": False, "other": True}, r)
+r = ran("E:addCompany")
+if r is not None:
+    check("E: Add company opens its form, with a late reading back asking for Setup while it is read", r == {"open": True, "id": "new"}, r)
+r = ran("E:backupPassword")
+if r is not None:
+    check("E: Next up's backup row puts the focus on the password, with late readings back asking for Backup while it is read, one while another is waited for", r == {"focused": True, "drawn": True}, r)
+r = ran("E:bankLink")
+if r is not None:
+    check("E: a link to the lines to explain opens the review, with a late reading back asking for the page while the review is read", r == {"review": 7, "drawn": True, "used": True}, r)
+r = ran("E:budgetLink")
+if r is not None:
+    check("E: a Next up row's day holds, with the budget asked for again while it is read after the browser's balance went across",
+          r["carried"] == 1 and r["reads"] >= 3 and r["last"] and r["used"], r)
+for order in ("page", "pick"):
+    r = ran(f"E:budgetDate:{order}")
+    if r is not None:
+        check(f"E: budget not set up: a date picked while the page is read again is the one the page ends on (the {order}'s read answered first)", r == {"differs": True, "box": True, "whole": True}, r)
+r = ran("E:budgetDateOtherCompany")
+if r is not None:
+    check("E: a date picked in the old company's budget while another's is read isn't carried to it", r == {"reads": 0, "box": True}, r)
+
+
+def plain(t):
+    return t.replace("&#39;", "'")
+
+
+for k in ("net", "failed", "unread", "refused"):
+    sure = k == "refused"
+    why = {"net": "The connection to HR Payments broke.", "failed": "The server could not save it.", "unread": "HR Payments gave an answer this page can't read.", "refused": "The month is filed."}[k]
+    for way, label in (("closedByReadBack", "the dialog closed as the page couldn't be read back"), ("closedByYou", "the dialog closed during the upload"),
+                       ("closedByYouAfterOne", "the dialog closed during the upload, after a file was added")):
+        r = ran(f"E:upload:{way}:{k}")
+        if r is None:
+            continue
+        name = "made-up-1.pdf" if way == "closedByYou" else "made-up-2.pdf"
+        said = [plain(m) for m in r["msgs"] if name in m]
+        want = (len(said) == 1 and why in said[0] and not r["open"]
+                and (said[0].startswith("Not added to ") and "isn't known" not in said[0] if sure
+                     else said[0].startswith("It isn't known whether this was added to ") and "Not added" not in said[0]))
+        check(f"E: a payment's upload {'refused' if sure else 'with no clear answer (' + k + ')'}, {label}: a message says "
+              + ("it wasn't added, with why" if sure else "it isn't known whether it was added, never that it wasn't"), want, r["msgs"])
+    r = ran(f"E:upload:rows:{k}")
+    if r is not None:
+        rows = plain(re.sub(r"<[^>]*>", " ", r["rows"]))
+        if sure:
+            want = "Couldn't add" in rows and why in rows and "Not known if added" not in rows and "data-pd-retry" not in r["rows"]
+        else:
+            want = ("Not known if added" in rows and "Couldn't add" not in rows and why in rows and "n't known whether" in rows
+                    and ("data-pd-retry" in r["rows"]) == (k == "net") and (k != "net" or "check the payment's documents before you press Retry" in rows))
+        check(f"E: the payment dialog's row of an upload {'refused says it could not be added' if sure else 'with no clear answer (' + k + ') says it is not known whether it was added'}",
+              r["open"] and want and not [m for m in r["msgs"] if "made-up-2.pdf" in m and not m.startswith("Added ")], [rows[-1500:], r["msgs"]])
+LOST = "1 of 3 documents are missing or changed: made-up/lost.pdf"
+for name in ("another page opened", "another page slow to read", "Backup asked for again", "its page staying"):
+    r = ran(f"E:docCheck:{name}")
+    if r is not None:
+        want = {"written": LOST, "msgs": []} if name == "its page staying" else {"written": "", "msgs": ["Document check: " + LOST]}
+        check(f"E: the document check, with {name} before it answers: its result is " + ("written under the buttons" if name == "its page staying" else "said in a message"), r == want, r)
+
+ZIP = f"The zip couldn't be made (500)."
+for name in ("another page opened", "another company's e-Invoices opened", "its card staying"):
+    r = ran(f"E:zip:{name}")
+    if r is not None:
+        stays = name == "its card staying"
+        ok = r["card"] is stays and (r["msgs"] == [] if stays else len(r["msgs"]) == 1 and r["msgs"][0].startswith("QFB Invoices ") and r["msgs"][0].endswith(".zip: " + ZIP))
+        check(f"E: an e-Invoices zip that can't be made, with {name} before the answer: it is said " + ("in its card, with no message" if stays else "in a message"), ok, r)
 
 check("no read or change in any case above failed without somebody waiting for it", o.get("unheard") == [], o.get("unheard"))
 

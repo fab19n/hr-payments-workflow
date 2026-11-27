@@ -52,7 +52,7 @@ async function markFiled(afterBuild) {
   await api("/api/months/close", { json: { entity_id: entity, month, closed: true } });
   toast(`${r.label} marked as filed`); await afterSaved(render);
   // The password is typed each time, so a backup is offered, not made.
-  if (await ask("A backup keeps the filed month safe if this PC fails. You'll be asked for the backup password next.", { title: `${r.label} is filed. Make an encrypted backup now?`, yes: "Make a backup", no: "Not now", safe: "yes", tone: "brand", glyph: "vault", closing: "Not now changes nothing; back up any time from Backup." })) { await go("settings"); $("#bkPw")?.focus(); }
+  if (await ask("A backup keeps the filed month safe if this PC fails. You'll be asked for the backup password next.", { title: `${r.label} is filed. Make an encrypted backup now?`, yes: "Make a backup", no: "Not now", safe: "yes", tone: "brand", glyph: "vault", closing: "Not now changes nothing; back up any time from Backup." })) await goToBackupPassword();
 }
 
 // A line of Before you print opens the screen that fixes it, for this company and month: the payment's drawer on the Payments

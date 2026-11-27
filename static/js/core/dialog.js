@@ -14,6 +14,13 @@ function dialogDraw(draw) {
   const ask = ++DLG.asked, at = DLG.seq;
   return drawWhile(drawTicket(() => DLG.asked !== ask || DLG.seq !== at, false), draw);
 }
+// For what would open a dialog, or move the focus, once something else has been waited for (applyPlace, core/router.js): the function it
+// returns is true while no dialog has been asked for, shown or closed since this was called. Every way to another page closes the dialog
+// first, so it also says that you haven't gone elsewhere.
+function dialogsSince() {
+  const asked = DLG.asked, at = DLG.seq;
+  return () => DLG.asked === asked && DLG.seq === at;
+}
 // For what a dialog's own change does once the server has answered (close the dialog, write into it, open it again): says whether that
 // dialog has not been closed since. Once it has, whatever dialog is on show is another one, and the answer leaves it alone (it is said in a
 // message). Ask before the first await.

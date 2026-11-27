@@ -26,13 +26,21 @@
    change made in a dialog does once the server answers asks first whether that dialog is still there (dialogHere). What is read back after a
    change goes through afterSaved (core/saved.js). While the page is being read, what is still on show can be clicked: what would then draw
    a part the page's own draw writes too (unless it paints its own failure there, as a Books report does), or write a change's result into
-   the page, does so only while pageWhole(). */
-const PAGE = { n: 0, drawn: 0, saved: false, parts: Object.create(null) };
+   the page, does so only while pageWhole(). What is picked there (a filter, a tick, a date) is not lost: the pick is kept, and the page's
+   draw reads again for it before it writes (pages/trail.js, pages/budget.js). What waits for a page to follow something up (a link's
+   record) waits with pageSettled, as the page can be asked for again while it is read. */
+const PAGE = { n: 0, drawn: 0, saved: false, latest: null, parts: Object.create(null) };  // latest: the reading of the page asked for last (render)
 // A new page is asked for (render() only): every draw asked for before is overtaken.
 const pageTurn = () => ++PAGE.n;
 // Whether the page asked for last has been drawn whole (render() sets PAGE.drawn). It hasn't while it is being read, even when it is the
 // same company's and month's as the one before, whose content may still be on show; nor when it failed and shows why.
 const pageWhole = () => PAGE.drawn === PAGE.n;
+// Resolves once the page asked for last has been drawn, or says why it couldn't be. One asked for again while it is waited for (a late
+// change's reading back, say, which ends the draw waited for before it has drawn) is waited for too. It stops once wanted() says no.
+async function pageSettled(wanted = () => true) {
+  let n;
+  do { n = PAGE.n; await PAGE.latest; } while (n !== PAGE.n && wanted());
+}
 // Starts a page's draw (render() only). saved: it reads back a change that was kept, which the draws started by this call know of (a page
 // that words its own failed read says it was saved, or lets the failure through to render()). A draw asked for later knows nothing of it.
 function drawnAs(saved, start) {

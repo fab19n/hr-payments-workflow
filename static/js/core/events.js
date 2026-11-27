@@ -38,7 +38,7 @@ document.addEventListener("click", async ev => {
     if (ds.ovRoll) return ovRoll(ds.ovRoll);
     if (ds.savedBalance) return render();
     if (ds.nextBackup) {
-      await go("settings"); $("#bkPw")?.focus();  // the password is typed there; a plain backup is not offsite
+      await goToBackupPassword();  // the password is typed there; a plain backup is not offsite
       return;
     }
     if (ds.pickEntity) { if (!(await closeDrawer())) return; state.entity = +ds.pickEntity; state.addr.id = null; state.addr.params = {}; state.asAt = null; return redraw(); }
@@ -359,8 +359,11 @@ document.addEventListener("click", async ev => {
     if (t.id === "doCheck") {
       const here = pageHere();
       const r = await api("/api/integrity");
-      if (!here() || !$("#setOut")) return;  // another page since: its result isn't written there
-      $("#setOut").textContent = r.problems.length ? `${r.problems.length} of ${r.checked} documents are missing or changed: ${r.problems.map(p => p.stored_path).join(", ")}` : `All ${r.checked} documents match their upload fingerprints.`;
+      const found = r.problems.length ? `${r.problems.length} of ${r.checked} documents are missing or changed: ${r.problems.map(p => p.stored_path).join(", ")}` : `All ${r.checked} documents match their upload fingerprints.`;
+      // Written under the buttons while their page is on show, drawn whole; with it left, or being read again, said in a message that stays.
+      const out = here() && pageWhole() && $("#setOut");
+      if (!out) return toast(`Document check: ${found}`, r.problems.length > 0, { ms: 0 });
+      out.textContent = found;
     }
   } catch (e) { toast(e.message, true); }
 });

@@ -242,13 +242,13 @@ function pdPickHtml(p) {
     <div class="pd-pick-acts"><button type="button" class="ghost small" data-pd-pick="cancel">Cancel</button>
       <button type="button" class="btn small" id="pd-pick-go" data-pd-pick="go">Upload ${n} file${n === 1 ? "" : "s"}</button></div></div>`;
 }
-// The uploads: each file has its row with a progress bar, then a tick; one not added keeps its row with the reason and
-// what to do (Retry, or Dismiss).
+// The uploads: each file has its row with a progress bar, then a tick; one not added, or not known to be (unsure: no clear
+// answer came), keeps its row with the reason and what to do (Retry, or Dismiss).
 function pdUpsHtml() {
   const W = { up: "Uploading", ok: "Added", fail: "Couldn't add" };
   return `<ul class="pd-ups" aria-label="Uploads">${state.pay.ups.map(u => `<li class="pd-up ${u.st}" id="pd-upr-${u.id}">
     <span class="pd-plate ${u.st === "fail" ? "bad" : u.st === "ok" ? "ok" : "brand"}">${icon(u.st === "fail" ? "alert" : u.st === "ok" ? "check" : "upload")}</span>
-    <div class="pd-up-t"><div class="pd-up-top"><span><b>${esc(u.file.name)}</b> <span class="muted">as ${esc(docLabel(u.type))}</span></span><span class="pd-up-st" id="pd-ups-${u.id}">${u.st === "up" ? `${u.pct}%` : W[u.st]}</span></div>
+    <div class="pd-up-t"><div class="pd-up-top"><span><b>${esc(u.file.name)}</b> <span class="muted">as ${esc(docLabel(u.type))}</span></span><span class="pd-up-st" id="pd-ups-${u.id}">${u.st === "up" ? `${u.pct}%` : u.unsure ? "Not known if added" : W[u.st]}</span></div>
       ${u.st !== "fail" ? `<div class="bar pd-upbar" role="progressbar" aria-label="Uploading ${esc(u.file.name)}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${u.pct}" id="pd-upb-${u.id}"><i style="width:${u.pct}%"></i></div>` : ""}
       ${u.why ? `<span class="pd-up-why">${esc(u.why)}</span>` : ""}</div>
     ${u.st === "fail" && u.net ? `<button type="button" class="ghost small" data-pd-retry="${u.id}">${icon("refresh")}Retry</button>` : ""}
@@ -427,7 +427,7 @@ function pdUpload(items) {
   const S = state.pay;
   if (!S || !items.length) return;
   const add = items.map(x => {
-    const u = { id: ++S.n, file: x.file, type: x.type, replaces: x.replaces || null, pct: 0, st: "up", why: "", net: false };
+    const u = { id: ++S.n, file: x.file, type: x.type, replaces: x.replaces || null, pct: 0, st: "up", why: "", net: false, unsure: false };
     if (!PD_TYPES.includes(pdExt(x.file.name))) Object.assign(u, { st: "fail", why: `${pdExt(x.file.name) || "This file type"} isn't accepted. Upload a PDF, image, Excel, Word or email file.` });
     else if (x.file.size > PD_MAX) Object.assign(u, { st: "fail", why: `It is ${pdSize(x.file.size)}; a file can be up to 40 MB.` });
     return u;
@@ -439,15 +439,21 @@ function pdUpload(items) {
   return pdSend(add.filter(u => u.st === "up"));
 }
 async function pdSend(list) {
-  const S = state.pay, pid = state.openPayment, here = dialogHere();
+  const S = state.pay, pid = state.openPayment, here = dialogHere(), name = payOf(pid)?.description || "the payment";
+  const rowsShown = () => state.pay === S && state.openPayment === pid && dlgDrawerOpen();
   let added = 0, unsure = false;
   for (const u of list) {
     try { await pdPost(u, pid); u.st = "ok"; u.pct = 100; added++; }
-    catch (e) { unsure ||= !!e.unsure; u.st = "fail"; u.net = !!e.net; u.why = e.net ? "The upload stopped before it finished. Check the records folder can be reached, then try again." : changeError(e); }
+    catch (e) {
+      unsure ||= !!e.unsure;
+      Object.assign(u, { st: "fail", net: !!e.network, unsure: !!e.unsure, reason: errorWords(e),
+        why: e.network ? `${errorWords(e)} It isn't known whether the file was added: check the payment's documents before you press Retry.` : changeError(e) });
+    }
     if (state.pay === S) payPaint();
   }
   if (!added) {
     if (unsure && state.view === "entity") await render({ unsure });  // it may be there: the page shows what is
+    if (!rowsShown()) pdSayFailed(list, name);
     return;
   }
   const okOnes = list.filter(u => u.st === "ok"), one = okOnes[0];
@@ -459,15 +465,24 @@ async function pdSend(list) {
   const same = state.openPayment === pid && dlgDrawerOpen();
   if (state.pay !== S || !same) {
     if (state.view === "entity" && (!state.openPayment || same)) await afterSaved(render, null, { here });
-    return toast(said);
+    toast(said);
+    return pdSayFailed(list, name);
   }
   const ok = await afterSaved(render, null, { here });
   toast(said);
-  // The dialog was closed because the page couldn't be read back: the files not added are named, as their rows went with it.
-  const failed = S.ups.filter(u => u.st === "fail");
-  if (!ok && !state.openPayment && failed.length) toast(`Not added: ${failed.map(u => `${u.file.name} (${u.why})`).join("; ")}`, true);
+  // The dialog was closed meanwhile (by you, or because the page couldn't be read back): its rows went with it.
+  if (!rowsShown()) pdSayFailed(ok ? list : S.ups, name);
   // Focus moves to the documents only if it isn't in a field being typed in.
   if (ok && state.pay === S && state.openPayment === pid && dlgDrawerOpen() && !document.activeElement?.closest?.("#payForm")) pdFocus(one.replaces ? "" : `#pd-add-${pdSlug(one.type)}`, "#pd-multi", "#drawerTitle");
+}
+// Says in a message which of these files weren't added, once their rows are no longer on show: the ones refused, and apart
+// from them the ones it isn't known about.
+function pdSayFailed(ups, name) {
+  const failed = ups.filter(u => u.st === "fail"), unsure = failed.filter(u => u.unsure), sure = failed.filter(u => !u.unsure);
+  const files = (list, why) => list.map(u => `${u.file.name} (${why(u)})`).join("; ");
+  const said = [sure.length ? `Not added to ${name}: ${files(sure, u => u.why)}` : "",
+    unsure.length ? `It isn't known whether ${unsure.length === 1 ? "this was" : "these were"} added to ${name}: ${files(unsure, u => u.reason)}. Check the payment's documents before adding ${unsure.length === 1 ? "it" : "them"} again.` : ""].filter(Boolean).join(" ");
+  if (said) toast(said, true, { ms: 0 });
 }
 // One file, with its progress shown on its row as it goes (XMLHttpRequest reports it; fetch does not).
 function pdPost(u, pid) {
@@ -494,7 +509,7 @@ function pdPost(u, pid) {
       else reject(Object.assign(new Error(data?.error || (x.status === 413 ? `It is ${pdSize(u.file.size)}; a file can be up to 40 MB.` : `Something went wrong (${x.status}).`)),
         { unsure: x.status >= 500 }));
     };
-    x.onerror = () => { const e = new Error("network"); e.net = e.unsure = true; reject(e); };
+    x.onerror = () => { const e = new Error("network"); e.network = e.unsure = true; reject(e); };  // as api() marks it
     x.send(fd);
   });
 }
@@ -565,7 +580,7 @@ async function payClick(t, ds) {
   if (ds.pdDismiss) { S.ups = S.ups.filter(u => u.id !== +ds.pdDismiss); payPaint("#pd-multi", "#drawerTitle"); return true; }
   if (ds.pdRetry) {
     const u = S.ups.find(x => x.id === +ds.pdRetry);
-    if (u) { Object.assign(u, { st: "up", pct: 0, why: "", net: false }); payPaint(); await pdSend([u]); }
+    if (u) { Object.assign(u, { st: "up", pct: 0, why: "", net: false, unsure: false }); payPaint(); await pdSend([u]); }
     return true;
   }
   return false;
