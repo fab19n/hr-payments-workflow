@@ -173,7 +173,8 @@ async function budgetDraw(page, main) {
     if (ds.budPaid) { BUD.paidOpen = !BUD.paidOpen; draw(); return $("#bud-paid-btn")?.focus?.({ preventScroll: true }); }
     if (ds.add) return change(() => api("/api/budget/lines", { json: { entity_id: eid, month, currency: ds.add } }),
       r => { BUD.shown[ds.add] = Math.max(BUD.shown[ds.add] ?? BUD_STEP, d.lines.filter(x => x.currency === ds.add).length); draw();
-        document.querySelector?.(`tr[data-line="${r.result}"] [data-f="description"]`)?.focus(); toast("Line added. Describe it and set its amount."); });
+        document.querySelector?.(`tr[data-line="${r.result}"] [data-f="description"]`)?.focus(); },
+      () => toast("Line added. Describe it and set its amount."));  // said also with the page left, or read again, before the answer
     if (ds.addPayment) return change(() => api("/api/budget/lines", { json: { entity_id: eid, month, payment_id: +ds.addPayment } }), null, () => toast("Added to the budget"));
     if (ds.del) {
       const x = d.lines.find(l => l.id === +ds.del);

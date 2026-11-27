@@ -27,6 +27,9 @@ Checks:
     a late change's reading back asks for that page while it is read, and not once you have gone elsewhere or asked for a dialog; a payment's
     upload with no clear answer is never said to be not added; and the document check's result, and an e-Invoices zip's failure, are never
     dropped.
+ F. Review round 3: a line added to the budget is said also with the page left; the page's own company buttons (and a month arrow, for marks)
+    drop what a link left for the page it named; an SQL import's result doesn't come back on a later arrival, whatever overtakes it; a Try
+    again that fails behind a dialog says so again; and a backup the server says it didn't make (its own answer) says only that.
 
 HRP_KEEP_GOING=1 lists every check that fails. HRP_TEST_STATIC=<a static folder> runs the checks against that copy of the page script (used
 to show that they fail without the fix).
@@ -124,6 +127,30 @@ PAY2 = pays[1]["id"]
 TYPES = [r["id"] for r in j("get", "/api/setup/payment_types")["rows"]][:2]
 FX = {"QFB": QFB, "MBS": MBS, "TYD": IDS["TYD"], "ACCT": ACCT["QFB"], "MONTH": MONTH, "BEFORE": BEFORE, "PAY": PAY, "DOC": DOC, "LINE": LINE, "TASK": TASK, "PAYEE": PAYEE, "PAYEE2": PAYEE2, "PAY2": PAY2, "TYPES": TYPES,
       "STATIC_IDS": re.findall(r'\bid="([\w-]+)"', (STATIC / "index.html").read_text(encoding="utf-8"))}
+
+# a backup that can't be written (the disk full, say): the server's own answer, which the stand-in page is then given (F)
+import errno  # noqa: E402
+from hrp import app as server_app  # noqa: E402
+
+assert tmp in Path(server_app.BACKUP_DIR).parents, "the test must never write a backup outside its own folder"
+
+
+def no_room(zf, snap):
+    raise OSError(errno.ENOSPC, "No space left on device")
+
+
+write_backup, server_app._write_backup = server_app._write_backup, no_room
+FX["NO_BACKUP"] = {}
+try:
+    for kind, body in (("plain", {}), ("encrypted", {"password": "made-up words for a test"})):
+        r = client.post(BASE + "/api/backup", headers=H, json=body)
+        FX["NO_BACKUP"][kind] = [r.status_code, r.get_json()]
+finally:
+    server_app._write_backup = write_backup
+left = [p.name for p in Path(server_app.BACKUP_DIR).iterdir()]
+check("F: a backup that can't be written leaves no file, and the server answers it as a refusal that says it was not made (not as a failure of unknown outcome)",
+      left == [] and all(400 <= s < 500 and b["error"].startswith("The backup was not made: ") and "No space left on device" in b["error"] for s, b in FX["NO_BACKUP"].values()),
+      [left, FX["NO_BACKUP"]])
 
 # ---------------------------------------------------------------------------------------------------------------------------------------------
 PROBE = r"""
@@ -1160,6 +1187,106 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     return { card: !!byId("ei-print") && byId("ei-print").full().includes("couldn&#39;t be made"), msgs: toasts().map(t => t.msg) };
   });
 
+  /* ======== F. review round 3 ======== */
+  // F1. Budget, Add line: said as soon as the server keeps it, wherever the page has got to by then
+  const ADDED = "Line added. Describe it and set its amount.";
+  for (const [name, then] of [["its page staying", () => {}], ["another page opened", () => go("audit")], ["the budget asked for again", () => go("budget")],
+    ["a late reading back asking for it", () => run(LATE)]]) await tryit(`F:addLine:${name}`, async () => {
+    fresh(); await open("budget"); NET.reply = (p, m) => m !== "GET" ? [200, { result: 77 }] : undefined; NET.delay = (p, m) => m !== "GET" ? 1000 : 0; toasts().length = 0; NET.writes.length = 0;
+    bud("click", { closest: () => ({ dataset: { add: "MYR" } }) }); await settle(now + 100); then(); await settle();
+    return { said: msgs().filter(m => m === ADDED).length, writes: NET.writes.length };
+  });
+
+  // F2. what a link left for the page it named, and the page's own company buttons clicked while that page is read
+  const LINES = { year: FX.MONTH.slice(0, 4), years: [FX.MONTH.slice(0, 4)], account: { id: FX.ACCT, label: "Main", currency: "MYR" }, openings: [], source: "sql", listing_note: "",
+    rows: [{ month: FX.MONTH, label: "Sample month", statement_id: 7, status: "to_review", status_text: "To review", locked: false, bank_closing: 10, book_closing: 0, book_note: "", reconciled_at: null, document_id: null }] };
+  const toExplain = `goTo({ view: "bank", entity_id: ${FX.QFB}, month: ${JSON.stringify(FX.MONTH)}, account_id: ${FX.ACCT}, filter: "to_explain" })`;
+  for (const [name, path] of [["the year", "/api/recon/year"], ["the review", "/api/recon/review"]]) await tryit(`F:pickBank:${name}`, async () => {
+    fresh(); await open("settings"); NET.reply = p => p.startsWith("/api/recon/year") ? [200, LINES] : p.startsWith("/api/recon/review") ? [200, RV] : undefined;
+    NET.delay = p => p.startsWith(path) ? 600 : 0;
+    run(toExplain); await settle(now + 200); NET.reads.length = 0; click({ pickEntity: String(FX.MBS) }); await settle();
+    return { company: run(`state.entity`) === FX.MBS, review: run(`state.recon.rv?.sid ?? null`), year: /data-rc-open=/.test(shown()), reviews: NET.reads.filter(p => p.startsWith("/api/recon/review")).length,
+      params: run(`JSON.stringify(state.addr.params)`) };
+  });
+  await tryit("F:pickMarks", async () => {   // the Audit pack's own company buttons are still on show while the checklist one of its lines links to is read
+    fresh(); await open("audit"); NET.delay = p => p.startsWith("/api/month?") ? 600 : 0;
+    run(`fixIt("task", ${FX.TASK})`); await settle(now + 100); const had = run(`!!state.mark`); click({ pickEntity: String(FX.MBS) }); await settle(now + 10);
+    const kept = run(`!!state.mark`); await settle();
+    return { had, kept, company: run(`state.entity`) === FX.MBS };
+  });
+  await tryit("F:monthMarks", async () => {
+    fresh(); await open("settings"); NET.delay = p => p.startsWith("/api/month?") ? 600 : 0;
+    run(`goTo({ view: "entity", entity_id: ${FX.QFB}, month: ${JSON.stringify(FX.MONTH)}, filter: "past_due" })`); await settle(now + 100); const had = run(`!!state.mark`);
+    click({ id: "prevMonth" }); await settle(now + 10);
+    const kept = run(`!!state.mark`); await settle();
+    return { had, kept, month: run(`state.month`) === FX.BEFORE };
+  });
+
+  // F3. an SQL import's result, and a later arrival at its page that something overtakes
+  const imported = () => shown().includes("Imported 2 entries");
+  const applied = (p, m) => m !== "GET" ? [200, /rematch/.test(p) ? { matched: 0, no_docs: 0 } : { added: 2, linked: 1, skipped: 0 }] : undefined;
+  const importNow = async () => { await open("sql"); run(sqPreview(FX.QFB)); NET.reply = applied; sandbox.__go = btn(); run(`sqlApply(__go)`); await settle(); return imported(); };
+  const card = () => ({ shown: imported(), kept: run(`state.sq?.done?.title ?? null`), page: /id="sq-imports"/.test(shown()) });
+  await tryit("F:sqlCard:a slow change finishing while it opens", async () => {
+    fresh(); const had = await importNow(); await open("bank");
+    NET.delay = (p, m) => m !== "GET" ? 500 : p.startsWith("/api/sql/entries") ? 800 : 0;
+    click({ id: "rematch" }); await settle(now + 100); go("sql"); await settle();
+    return { had, ...card() };
+  });
+  await tryit("F:sqlCard:a late reading back while it opens", async () => {
+    fresh(); const had = await importNow(); await open("checklist");
+    NET.delay = p => p.startsWith("/api/sql/entries") ? 600 : 0; go("sql"); await settle(now + 200); run(LATE); await settle();
+    return { had, ...card() };
+  });
+  await tryit("F:sqlCard:back before another company's is drawn", async () => {
+    fresh(); const had = await importNow();
+    NET.delay = p => p.startsWith("/api/sql/entries") ? 600 : 0; go("sql", FX.MBS); await settle(now + 100); go("sql"); await settle();
+    return { had, ...card() };
+  });
+  await tryit("F:sqlCard:answered as its page is arrived at", async () => {   // the import just made is shown, and a late reading back keeps it
+    fresh(); await open("sql"); run(sqPreview(FX.QFB)); NET.reply = applied; NET.delay = (p, m) => m !== "GET" ? 500 : p.startsWith("/api/sql/entries") ? 800 : 0;
+    sandbox.__go = btn(); run(`sqlApply(__go)`); await settle(now + 100); go("audit"); await settle(now + 10); go("sql"); await settle();
+    const first = card(); run(LATE); await settle();
+    return { first, after: card() };
+  });
+
+  // F4. Try again on the "it was saved" message, failing again with a dialog left over the page: it is said again
+  const savedToasts = () => toasts().filter(t => t.msg === SAVED && t.action);
+  const press = async () => { const t = savedToasts().pop(); toasts().length = 0; const reads = NET.reads.length; t?.action.fn(); await settle(); return { had: !!t, read: NET.reads.length > reads }; };   // the click takes the message away
+  const triedBehind = async () => {
+    const open1 = !roots.drawer.hidden;
+    const one = await press(), said = savedToasts().length, two = await press(), saidTwice = savedToasts().length;
+    NET.afterWrite = null; NET.down = false; const last = await press();
+    return { open: open1, one, said, two, saidTwice, last, worked: savedToasts().length, stays: !roots.drawer.hidden, writes: NET.writes.length };
+  };
+  await tryit("F:tryAgain:Recurring", async () => {
+    fresh(); await open("payees"); run(`editPayee(${FX.PAYEE})`); await settle();
+    NET.reply = (p, m) => m !== "GET" ? [200, {}] : undefined; NET.afterWrite = "500"; NET.delay = (p, m) => m === "GET" ? 500 : 0; toasts().length = 0; NET.writes.length = 0;
+    set("py-notes", "A made-up note"); sandbox.__submit = payeeForm(); run(`__submit()`); await settle(now + 100); set("py-notes", "typed while the list is read"); await settle();
+    return triedBehind();
+  });
+  await tryit("F:tryAgain:payment", async () => {
+    fresh(); await openDialog(); NET.reply = (p, m) => m !== "GET" ? [200, { id: 1 }] : undefined; NET.afterWrite = "500"; toasts().length = 0; NET.writes.length = 0;
+    set("pf-notes", "typed and not saved"); run(`pdUpload([{ file: { name: "bill.pdf", size: 10 }, type: "invoice" }])`); await settle();
+    return triedBehind();
+  });
+  await tryit("F:tryAgain:closed since", async () => {   // the dialog closed before Try again: the page's own words say it, with no message
+    fresh(); await openDialog(); NET.reply = (p, m) => m !== "GET" ? [200, { id: 1 }] : undefined; NET.afterWrite = "500"; toasts().length = 0;
+    set("pf-notes", "typed and not saved"); run(`pdUpload([{ file: { name: "bill.pdf", size: 10 }, type: "invoice" }])`); await settle();
+    run(`closeDrawer(true)`); const one = await press();
+    return { one, said: savedToasts().length, card: onPage() };
+  });
+
+  // F5. a backup the server says it didn't make: its words alone, under the buttons or, with the page left, in a message
+  for (const kind of ["plain", "encrypted", "failed"]) for (const where of ["staying", "left"]) await tryit(`F:backup:${kind}:${where}`, async () => {
+    fresh(); await open("settings");
+    const reply = kind === "failed" ? [500, { error: "The server could not save it." }] : FX.NO_BACKUP[kind];
+    NET.reply = (p, m) => m !== "GET" ? reply : undefined; NET.delay = (p, m) => m !== "GET" ? 500 : 0; toasts().length = 0; NET.writes.length = 0;
+    if (kind === "encrypted") { set("bkPw", "made-up words for a test"); set("bkPw2", "made-up words for a test"); }
+    click({ id: kind === "encrypted" ? "doBackupEnc" : "doBackup" }); await settle(now + 100); if (where === "left") go("audit"); await settle();
+    return { said: where === "left" ? msgs().join(" | ") : el("setOut")?.textContent || "", error: reply[1].error, writes: NET.writes.length };
+  });
+
   await settle(); await turn();
   out.unheard = unheard;
   process.stdout.write("@@OUT " + JSON.stringify(out) + "\n");
@@ -1568,6 +1695,48 @@ for name in ("another page opened", "another company's e-Invoices opened", "its 
         stays = name == "its card staying"
         ok = r["card"] is stays and (r["msgs"] == [] if stays else len(r["msgs"]) == 1 and r["msgs"][0].startswith("QFB Invoices ") and r["msgs"][0].endswith(".zip: " + ZIP))
         check(f"E: an e-Invoices zip that can't be made, with {name} before the answer: it is said " + ("in its card, with no message" if stays else "in a message"), ok, r)
+
+# ---------- F: review round 3 ----------
+for name in ("its page staying", "another page opened", "the budget asked for again", "a late reading back asking for it"):
+    r = ran(f"F:addLine:{name}")
+    if r is not None:
+        check(f"F: a line added to the budget, with {name} before the answer: it is said to be added, once, and sent once", r == {"said": 1, "writes": 1}, r)
+for name in ("the year", "the review"):
+    r = ran(f"F:pickBank:{name}")
+    if r is not None:
+        check(f"F: a company picked on the Bank page while {name} of another's 'lines to explain' link is read: the picked company's year is shown, never a review of its own",
+              r == {"company": True, "review": None, "year": True, "reviews": 0, "params": "{}"}, r)
+r = ran("F:pickMarks")
+if r is not None:
+    check("F: nor are a link's marks carried to the company picked while the linked page is read", r == {"had": True, "kept": False, "company": True}, r)
+r = ran("F:monthMarks")
+if r is not None:
+    check("F: nor are they carried to another month", r == {"had": True, "kept": False, "month": True}, r)
+for name in ("a slow change finishing while it opens", "a late reading back while it opens", "back before another company's is drawn"):
+    r = ran(f"F:sqlCard:{name}")
+    if r is not None:
+        check(f"F: an SQL import's result doesn't come back when its page is arrived at again, with {name}", r == {"had": True, "shown": False, "kept": None, "page": True}, r)
+r = ran("F:sqlCard:answered as its page is arrived at")
+if r is not None:
+    kept = {"shown": True, "kept": "Imported 2 entries", "page": True}
+    check("F: an import answered as its page is arrived at again is shown there, and a late reading back keeps it", r == {"first": kept, "after": kept}, r)
+for name in ("Recurring", "payment"):
+    r = ran(f"F:tryAgain:{name}")
+    if r is not None:
+        pressed = {"had": True, "read": True}
+        check(f"F: {name}: Try again on the saved message, failing again behind the dialog left open, says it again each time; once it works nothing more is said, and nothing is sent again",
+              r == {"open": True, "one": pressed, "said": 1, "two": pressed, "saidTwice": 1, "last": pressed, "worked": 0, "stays": True, "writes": 1}, r)
+r = ran("F:tryAgain:closed since")
+if r is not None:
+    check("F: Try again failing with the dialog closed since says it on the page, with no message as well", r == {"one": {"had": True, "read": True}, "said": 0, "card": True}, r)
+for kind in ("plain", "encrypted", "failed"):
+    for where in ("staying", "left"):
+        r = ran(f"F:backup:{kind}:{where}")
+        if r is not None:
+            want = ("Backup: " if where == "left" else "") + r["error"] + (" It isn't known whether it was saved: check before doing it again." if kind == "failed" else "")
+            check(f"F: any other server failure of a backup, the page {where}, still says it isn't known whether it was made" if kind == "failed" else
+                  f"F: {'an encrypted' if kind == 'encrypted' else 'a plain'} backup the server says was not made, the page {where}: only the server's words, never that it isn't known",
+                  r["said"] == want and r["writes"] == 1, r)
 
 check("no read or change in any case above failed without somebody waiting for it", o.get("unheard") == [], o.get("unheard"))
 

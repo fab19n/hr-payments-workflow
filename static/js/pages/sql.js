@@ -508,7 +508,8 @@ async function sqlDraw(page, main) {
   state.sqData = d;
   const S = sqState();
   // A question asked before (Create payments for all, Ignore all) never comes back armed; an import's result stays only while
-  // the page is drawn again after it (also by a Try again after that failed), not when it is opened again from another page.
+  // the page is drawn again after it (also by a Try again after that failed), not when it is opened again from another page
+  // (dropped on the way in, core/router.js applyPlace; here, when this page was not drawn whole and this is no reading back).
   S.confirmAll = false; S.confirmIgnore = false;
   if (!page.saved && render.last !== `sql:${state.entity}`) { S.done = null; S.arrive = false; }
   // Find an SQL entry: the shared list bar (its search and count), worded as the board has it.

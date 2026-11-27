@@ -194,11 +194,14 @@ async function applyPlace(place, opts = {}) {
       const gone = e && unusedPage(place.view, e);
       if (gone) { switchedNote(gone, e, PAGE_RULES[place.view]?.plural); place = { ...homePlace(), month: place.month || state.month }; }
     }
-    const v = place.view, R = ROUTES[v], p = cleanParams(v, place.params), B = state.books;
+    const v = place.view, R = ROUTES[v], p = cleanParams(v, place.params), B = state.books, was = `${state.view}:${state.entity}`;
     state.view = v;
     if (v !== "setup") setupLeft();  // what Setup keeps only while it is on show (the rows Show more showed, the link after an import) goes
     if (place.entity && place.entity !== "all") state.entity = +place.entity;
     if (!state.entity) state.entity = firstEntityId();
+    // Arriving at an SQL import page from another page or company: an import's result is not shown again. Dropped here, not by the page's draw:
+    // a late change's reading back can end that draw before it gets there, and its own draw keeps the result (it may read back that import).
+    if (v === "sql" && was !== `sql:${state.entity}` && state.sq) Object.assign(state.sq, { done: null, arrive: false });
     if (R.month && MONTH_RE.test(place.month || "")) state.month = place.month;
     if (opts.fresh) {
       state.recon.rv = null; state.payeeSaved = null; state.reg = null; state.cl = null;

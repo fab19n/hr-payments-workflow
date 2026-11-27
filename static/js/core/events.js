@@ -41,7 +41,11 @@ document.addEventListener("click", async ev => {
       await goToBackupPassword();  // the password is typed there; a plain backup is not offsite
       return;
     }
-    if (ds.pickEntity) { if (!(await closeDrawer())) return; state.entity = +ds.pickEntity; state.addr.id = null; state.addr.params = {}; state.asAt = null; return redraw(); }
+    if (ds.pickEntity) {  // the page's own company buttons: what a link left for the company it named (a day, marks, a bank review) is dropped
+      if (!(await closeDrawer())) return;
+      state.entity = +ds.pickEntity; state.addr.id = null; state.addr.params = {}; Object.assign(state, { asAt: null, mark: null, focusBank: null });
+      return redraw();
+    }
     if (ds.fix) return fixIt(ds.fix, +ds.id);
     if (ds.closeMonth) return await markFiled(ds.closeMonth === "built");
     if (ds.reopenMonth) {
@@ -56,7 +60,7 @@ document.addEventListener("click", async ev => {
     if (t.id === "prevMonth" || t.id === "nextMonth" || t.id === "thisMonth") {
       if (!state.meta || state.startFailed) return;  // nothing is started yet, or the start failed: there is no month to move
       if (!(await closeDrawer())) return;
-      state.asAt = null;  // a Next up row's day is not carried to another month
+      state.asAt = null; state.mark = null;  // a Next up row's day and a link's marks are not carried to another month
       state.month = t.id === "thisMonth" ? currentCycle() : shiftMonth(state.month, t.id === "prevMonth" ? -1 : 1);
       state.addr.params = state.view === "bank" && state.addr.params.filter ? { filter: state.addr.params.filter } : {};  // the filters were used up; the to-explain list stays
       return redraw();

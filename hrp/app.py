@@ -3301,7 +3301,9 @@ def backup():
     except Exception as ex:
         if not encrypted:
             target.unlink(missing_ok=True)
-        return err(f"The backup was not made: {ex if isinstance(ex, OSError) else 'something went wrong writing the file'}.", 500)
+        # Not a 5xx: no backup is left, and the page says only these words. For a 5xx it would add that it isn't known whether it was
+        # made (api(), static/js/core/base.js).
+        return err(f"The backup was not made: {ex if isinstance(ex, OSError) else 'something went wrong writing the file'}.", 409)
     finally:
         snap.unlink(missing_ok=True)  # the unencrypted snapshot never stays on disk
         pw = None

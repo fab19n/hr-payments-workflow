@@ -7,7 +7,8 @@
    its own Try again) or throws when it can't read; anything else means it worked. reopen() then opens the record's dialog again, once, if no
    other dialog has been opened or closed meanwhile.
    When the reading back fails, a message says it was saved, with a Try again that only runs refresh again: it never reopens a record, never
-   closes a dialog and never sends the change again, and a page that painted the words doesn't get a message as well. The dialog of the change
+   closes a dialog and never sends the change again, and a page that painted the words doesn't get a message as well, unless a dialog covers it
+   (also after a Try again that failed). The dialog of the change
    is closed on a failure only if nothing has been typed in it since (an Add dialog left open would add the record twice, and the page's words
    would be hidden behind it); one with something typed in it, or another dialog opened meanwhile, is left alone, and then the message is said
    too, as that dialog covers the page. The same closing when the record's dialog can't be opened again after a good reading. Typed also
@@ -28,8 +29,13 @@ async function afterSaved(refresh, reopen, { dialogSaved = false, here = null } 
   const typed = () => Object.keys(unsavedEdits()).length > 0 || !!state.drawerDirty?.() || !!state.pay?.pick || !!state.pay?.ask?.file;
   const closeClean = () => { if (shown && DLG.seq === at && drawerShown() && !typed()) closeDrawer(true); };
   const said = () => toast(SAVED_NOT_READ, true, { ms: 0, action: { label: "Try again", fn: again } });
+  // The click took the message away: it comes back on the same rule as the first time (the failure was thrown, or the page's words are behind
+  // a dialog).
   const again = async () => {
-    try { return (await refresh({ saved: true })) !== false; } catch (e) { said(); return false; }
+    let ok = false, thrown = false;
+    try { ok = (await refresh({ saved: true })) !== false; } catch (e) { thrown = true; }
+    if (thrown || !ok && drawerShown()) said();
+    return ok;
   };
   let ok = false, thrown = false;
   try { ok = await refresh({ saved: true }); } catch (e) { thrown = true; }
