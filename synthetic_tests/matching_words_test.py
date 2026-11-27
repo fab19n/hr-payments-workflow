@@ -487,6 +487,18 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     $("#mt-try").value = "zebraword"; dispatch($("#mt-try"), { type: "input" }); await sleep(320);
     $("#mt-try").value = "filler01word"; dispatch($("#mt-try"), { type: "input" }); r.stale = { result: result(), marked: marked() };
     await sleep(900); await idle(); r.latest = result(); r.latestMarked = marked(); NET.delay = {};
+    // an older answer that comes after more was typed, before the newer text has been asked, is not shown
+    NET.delay["/api/setup/guess_words/try"] = [120];
+    $("#mt-try").value = "zebraword"; dispatch($("#mt-try"), { type: "input" }); await sleep(300);
+    $("#mt-try").value = "filler02word"; dispatch($("#mt-try"), { type: "input" }); await sleep(130); r.between = result();
+    await sleep(400); await idle(); NET.delay = {}; r.betweenAfter = result();
+    // the same text tried again after the rules changed: the first answer, coming late, never replaces the newer one
+    NET.delay["/api/setup/guess_words/try"] = [700, 20];
+    $("#mt-try").value = "zebraword again"; dispatch($("#mt-try"), { type: "input" }); await sleep(320);
+    await server("POST", `/api/setup/guess_words/${FX.ORDER[0]}/stop`, { reason: "For a moment" });
+    run(`tryRun()`); await sleep(900); await idle(); NET.delay = {}; r.changed = result();
+    await server("POST", `/api/setup/guess_words/${FX.ORDER[0]}/use`, { reason: "Used again" });
+    $("#mt-try").value = "filler01word"; dispatch($("#mt-try"), { type: "input" }); await sleep(400); await idle();
     // the list drawn again (a save, a stop) tries the same text on it
     await run(`render()`); await idle(); r.redrawn = { value: $("#mt-try").value, result: result(), marked: marked() };
     // no clear answer: it says it couldn't be tried
@@ -799,6 +811,9 @@ check("keys typed quickly ask once, for the last text", t["debounced"] == ["zebr
 check("while a newer text is being tried the older answer is dimmed with no row marked, and an older answer that comes late never replaces the newer one",
       "stale" in t["stale"]["result"]["cls"] and t["stale"]["marked"] == {"rows": [], "words": []} and "(Filler rule 01)" in t["latest"]["text"] and "stale" not in t["latest"]["cls"]
       and t["latestMarked"]["words"] == ["FILLER01WORD"], (t["stale"], t["latest"]))
+check("an older answer that comes after more was typed, before the newer text is asked, is not shown: the one on show stays, dimmed",
+      "(Filler rule 01)" in t["between"]["text"] and "stale" in t["between"]["cls"] and "(Filler rule 02)" in t["betweenAfter"]["text"], (t["between"], t["betweenAfter"]))
+check("a text tried again after the rules changed keeps the newer answer when the first one comes late", "(Zebra rent)" in t["changed"]["text"], t["changed"])
 check("the list drawn again keeps what was typed and tries it again", t["redrawn"]["value"] == "filler01word" and "(Filler rule 01)" in t["redrawn"]["result"]["text"] and t["redrawn"]["marked"]["words"] == ["FILLER01WORD"], t["redrawn"])
 check("an answer that never comes is said as not tried", t["broken"]["text"] == "The description couldn't be tried. The connection to HR Payments broke." and t["brokenToasts"] == [], t["broken"])
 check("an answer that comes after another section was opened writes and says nothing", t["left"] == {"same": True, "box": False, "toasts": []}, t["left"])
