@@ -3450,12 +3450,23 @@ def _out_types(c):
 @app.get("/api/setup/required")
 def setup_required():
     eid = request.args.get("entity", type=int)
-    return _setup_call(lambda c: masters.required_view(c, eid))
+    month = request.args.get("month") or None  # the payroll month the grid is asked for (default: the one a change starts from)
+    return _setup_call(lambda c: masters.required_view(c, eid, month))
 
 
 @app.post("/api/setup/required")
 def setup_required_save():
+    """One payment type ({payment_type, entity_id, docs, from_month}), or several at once ({entity_id, from_month,
+    changes, preview}: masters.required_save_many; preview makes the change, says what it would do and undoes it). Either
+    is one change of the audit trail, with the reason sent."""
     b = _body()
+    if "changes" in b:
+        # Which company must be said as it is: a value read as none would change every company's documents.
+        eid = b.get("entity_id")
+        if "entity_id" not in b or not (eid is None or type(eid) is int):
+            return err("Say which company the change is for, or every company.")
+        return _setup_call(lambda c: {"ok": True, "affected": masters.required_save_many(c, eid, b.get("from_month"), b.get("changes"))},
+                           preview=b.get("preview") is True)
     eid = b.get("entity_id") if isinstance(b.get("entity_id"), int) and not isinstance(b.get("entity_id"), bool) else None
     return _setup_call(lambda c: {"ok": True, "affected": masters.required_save(
         c, b.get("payment_type"), eid, b.get("docs"), b.get("from_month"))})

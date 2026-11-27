@@ -1380,10 +1380,63 @@ def _first_open(con, entity_id):
     return max(db.shift_month(last, 1), db.current_cycle()) if last else db.current_cycle()
 
 
-def required_view(con, entity_id=None):
-    """What each payment type needs now, for every company or one, with its sets over time (newest first)."""
+def _covering(R, payment_type, entity_id, month):
+    """The scope's own sets that cover the month (entity_id None: those for every company; at most one), and the scope's
+    sets that start after it, oldest first: what a save from that month ends, and what it replaces."""
+    mine = [s for s in R.sets if s["payment_type"] == payment_type and s["entity_id"] == entity_id]
+    covering = [s for s in mine if s["from_month"] <= month and (s["to_month"] is None or month < s["to_month"])]
+    later = sorted((s for s in mine if s["from_month"] > month), key=lambda s: s["from_month"])
+    return covering, later
+
+
+def _required_at(R, payment_type, entity_id, month):
+    """What the records hold for a payment type in one payroll month, for every company (entity_id None) or one: what
+    Setup's grid shows for the month picked, and what a save of several types sends back as `was`.
+    docs: the set in force (a type with none: Other's); own: it is this company's own; follows_other: the type has no set
+    then; since: the month the set in force starts; later: this scope's sets that start after the month, which a save from
+    it replaces; can_follow: Follow all companies again would change something; follow: what the company would then need
+    (None for every company); follow_other: it would need that because it is what Other needs."""
+    now = R.set_for(payment_type, month, entity_id)
+    follows = now is None
+    if follows:
+        now = R.set_for("other", month, entity_id)
+    covering, later = _covering(R, payment_type, entity_id, month)
+    follow, follow_other = None, False
+    if entity_id is not None:  # as rulebook.required_docs reads it once the company has no set of its own for the type
+        every = R.set_for(payment_type, month, None)
+        if every is None:
+            follow_other = payment_type != "other"
+            every = R.set_for("other", month, entity_id if follow_other else None)
+        follow = list(every["docs"]) if every else []
+    return {"docs": list(now["docs"]) if now else [],
+            "own": bool(entity_id is not None and now and not follows and now["entity_id"] == entity_id),
+            "follows_other": follows and payment_type != "other",
+            "since": now["from_month"] if now and not follows else None,
+            "later": [{"from_month": s["from_month"], "docs": list(s["docs"])} for s in later],
+            "can_follow": bool(entity_id is not None and (covering or later)),
+            "follow": follow, "follow_other": follow_other}
+
+
+def _own_sets_of(R, payment_type, month):
+    """The companies a change for every company from that month doesn't reach, or not for good: each with its own set in
+    force then (from_month None), or with one that starts later (from_month: when it starts)."""
+    out = []
+    for eid in sorted({s["entity_id"] for s in R.sets if s["payment_type"] == payment_type and s["entity_id"] is not None}):
+        covering, later = _covering(R, payment_type, eid, month)
+        if covering or later:
+            out.append({"entity_id": eid, "from_month": None if covering else later[0]["from_month"]})
+    return out
+
+
+def required_view(con, entity_id=None, month=None):
+    """What each payment type needs now, for every company or one, with its sets over time (newest first); and what it
+    needs in one payroll month (month, else the month a change is offered from) as `at` (_required_at) with, for every
+    company, the companies that have their own set (`own_in`)."""
     if entity_id is not None and not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
         raise Refused("There is no such company.", 404)
+    if month is not None and not MONTH.fullmatch(month):
+        raise Refused("From which month: months are written like 2026-10.")
+    month = month or _first_open(con, entity_id)
     R = rulebook.get(con)
     types = []
     for k, t in R.types.items():
@@ -1396,10 +1449,11 @@ def required_view(con, entity_id=None):
         types.append({"key": k, "label": t["label"], "active": t["active"], "direction": t["direction"],
                       "docs": now["docs"] if now else [], "own": bool(now and not follows and now["entity_id"] is not None),
                       "follows_other": follows and k != "other", "since": now["from_month"] if now and not follows else None,
-                      "history": [{**s} for s in hist]})
+                      "history": [{**s} for s in hist], "at": _required_at(R, k, entity_id, month),
+                      "own_in": _own_sets_of(R, k, month) if entity_id is None else []})
     docs = sorted(((k, d) for k, d in R.docs.items() if k not in INTERNAL_DOCS), key=lambda kv: (R.order(kv[0], 999), kv[1]["sort"]))
     last = _last_filed(con, entity_id)
-    return {"scope": entity_id, "default_from": _first_open(con, entity_id),
+    return {"scope": entity_id, "month": month, "default_from": _first_open(con, entity_id),
             "first_allowed": db.shift_month(last, 1) if last else None, "types": types,
             "doc_types": [{"key": k, "label": d["label"], "active": d["active"], "from_sql": d["from_sql"]} for k, d in docs]}
 
@@ -1413,13 +1467,14 @@ def _statuses(con, entity_id, month):
     return {p["id"]: db.payment_status(con, p, p["e_uses_sql"])[0] for p in rows}
 
 
-def required_save(con, payment_type, entity_id, docs, from_month):
-    """A new set of required documents for a payment type, from a payroll month on, for every company (entity_id None)
-    or one; docs None for a company: it follows every company's set again from that month. The months before keep
-    their sets; a filed month is never reached. Returns {payments, now_missing, now_complete} for the open months."""
-    R = rulebook.get(con)
+def _required_type(R, payment_type):
     if payment_type not in R.types:
         raise Refused("There is no such payment type.", 404)
+
+
+def _required_from(con, entity_id, from_month):
+    """The company (or every company) and the month a change starts from: the company exists, and the month is after the
+    last one filed."""
     if entity_id is not None and not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
         raise Refused("There is no such company.", 404)
     if not isinstance(from_month, str) or not MONTH.fullmatch(from_month):
@@ -1427,6 +1482,10 @@ def required_save(con, payment_type, entity_id, docs, from_month):
     last = _last_filed(con, entity_id)
     if last and from_month <= last:
         raise Refused(f"{db.month_label(last)} is filed, and filed months never change. Choose {db.month_label(db.shift_month(last, 1))} or later.")
+
+
+def _required_check(R, payment_type, entity_id, docs, from_month):
+    """Refuses documents a payment can't need, and a change that changes nothing."""
     if docs is None and entity_id is None:
         raise Refused("Choose the documents.")
     if docs is not None:
@@ -1435,14 +1494,16 @@ def required_save(con, payment_type, entity_id, docs, from_month):
         for d in docs:
             if not isinstance(d, str) or not (d in R.docs and R.docs[d]["active"]) or d in INTERNAL_DOCS:
                 raise Refused(f"{d} isn't a document type a payment can need.")
-    exact = [s for s in R.sets if s["payment_type"] == payment_type and s["entity_id"] == entity_id
-             and s["from_month"] <= from_month and (s["to_month"] is None or from_month < s["to_month"])]
-    later = [s for s in R.sets if s["payment_type"] == payment_type and s["entity_id"] == entity_id and s["from_month"] > from_month]
+    exact, later = _covering(R, payment_type, entity_id, from_month)
     if docs is None and not exact and not later:
         raise Refused("This company already follows the documents set for every company.")
     if docs is not None and exact and exact[0]["docs"] == docs and not later:
         raise Refused("Nothing changes: these are the documents already required from that month.")
-    before = _statuses(con, entity_id, from_month)
+
+
+def _required_write(con, payment_type, entity_id, docs, from_month):
+    """Writes a checked change: the scope's set that covers the month ends there, its sets from that month on go, and the
+    new one starts (docs None: no new one, so the company follows every company's sets); the activity log says so."""
     con.execute("""UPDATE required_sets SET to_month = ? WHERE payment_type = ? AND entity_id IS ? AND from_month < ?
                    AND (to_month IS NULL OR to_month > ?)""", (from_month, payment_type, entity_id, from_month, from_month))
     con.execute("DELETE FROM required_sets WHERE payment_type = ? AND entity_id IS ? AND from_month >= ?", (payment_type, entity_id, from_month))
@@ -1450,11 +1511,66 @@ def required_save(con, payment_type, entity_id, docs, from_month):
         con.execute("INSERT INTO required_sets (payment_type, entity_id, from_month, to_month, docs, set_at) VALUES (?, ?, ?, NULL, ?, ?)",
                     (payment_type, entity_id, from_month, json.dumps(docs), db.now()))
     rulebook.forget(con)
-    after = _statuses(con, entity_id, from_month)
+    R = rulebook.get(con)
     code = con.execute("SELECT code FROM entities WHERE id = ?", (entity_id,)).fetchone()[0] if entity_id is not None else "every company"
     what = ("follows every company's documents again" if docs is None
             else "needs " + (", ".join(R.short_doc(d) for d in docs) or "no documents"))
     db.log(con, f"Required documents: {R.label(payment_type)} ({code}) {what}, from {db.month_label(from_month)}")
+
+
+def _affected(before, after):
+    """The open payments whose status a change moved: from complete (a document now missing), or to it."""
     moved = [pid for pid in after if after[pid] != before.get(pid)]
     return {"payments": len(moved), "now_missing": sum(before[p] == "complete" for p in moved),
             "now_complete": sum(after[p] == "complete" for p in moved)}
+
+
+def required_save(con, payment_type, entity_id, docs, from_month):
+    """A new set of required documents for a payment type, from a payroll month on, for every company (entity_id None)
+    or one; docs None for a company: it follows every company's set again from that month. The months before keep
+    their sets; a filed month is never reached. Returns {payments, now_missing, now_complete} for the open months."""
+    R = rulebook.get(con)
+    _required_type(R, payment_type)
+    _required_from(con, entity_id, from_month)
+    _required_check(R, payment_type, entity_id, docs, from_month)
+    before = _statuses(con, entity_id, from_month)
+    _required_write(con, payment_type, entity_id, docs, from_month)
+    return _affected(before, _statuses(con, entity_id, from_month))
+
+
+def required_save_many(con, entity_id, from_month, changes):
+    """Several payment types changed from one payroll month, for every company or one (Setup's grid). changes is
+    [{payment_type, docs, was}]: docs as required_save takes it, and was what the page showed for the month (the type's
+    `at` in required_view). All of them are checked as required_save checks one, before anything is written; a type whose
+    records are no longer what the page showed is refused, so a save never replaces what its sender hasn't seen. The
+    caller commits once: one change of the audit trail with one reason, all or nothing. Only the types named are
+    written. Returns {payments, now_missing, now_complete} for the open months, each payment counted once."""
+    if not isinstance(changes, list) or not changes:
+        raise Refused("Nothing to save: no payment type was changed.")
+    for c in changes:
+        if not (isinstance(c, dict) and isinstance(c.get("payment_type"), str) and "docs" in c and isinstance(c.get("was"), dict)):
+            raise Refused("This change can't be read. Open the page again.")
+    keys = [c["payment_type"] for c in changes]
+    if len(set(keys)) != len(keys):
+        raise Refused("Each payment type can be changed once in a save.")
+    R = rulebook.get(con)
+    for k in keys:
+        _required_type(R, k)
+    _required_from(con, entity_id, from_month)
+    stale = []
+    for c in changes:
+        now = _required_at(R, c["payment_type"], entity_id, from_month)
+        seen = ["docs", "own", "follows_other", "later"] + (["follow"] if c["docs"] is None else [])
+        if any(c["was"].get(x) != now[x] for x in seen):
+            stale.append(R.label(c["payment_type"]))
+    if stale:
+        raise Refused(f"What is required from {db.month_label(from_month)} for {', '.join(stale)} changed after this page read it.", 409)
+    for c in changes:
+        try:
+            _required_check(R, c["payment_type"], entity_id, c["docs"], from_month)
+        except Refused as x:
+            raise Refused(f"{R.label(c['payment_type'])}: {x}", x.status)
+    before = _statuses(con, entity_id, from_month)
+    for c in changes:
+        _required_write(con, c["payment_type"], entity_id, c["docs"], from_month)
+    return _affected(before, _statuses(con, entity_id, from_month))
