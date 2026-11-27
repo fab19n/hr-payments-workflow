@@ -150,6 +150,7 @@ async function fetch(path, init = {}) {
   const method = init.method || "GET", body = init.body && typeof init.body === "string" ? JSON.parse(init.body) : null;
   if (method !== "GET") {
     calls.push([method, path, body]);
+    const held = postDelays[path]; if (held) await new Promise(r => setTimeout(r, Array.isArray(held) ? held.shift() || 0 : held));   // a change that takes its time
     if ((FX.fail || {})[path]) throw new TypeError("Failed to fetch");
     const hit = FX.post[path + (body && body.preview ? "?preview" : "")] || { status: 200, body: { ok: true } };
     return { ok: hit.status < 400, status: hit.status, json: async () => hit.body };
@@ -170,6 +171,7 @@ const win = { matchMedia: () => ({ matches: true }), location: { hash: "#/admin/
 let onGet = null;   // called with the path of each read: what the page looks like while it is waiting for the records
 const delays = {};  // path -> milliseconds a read of it takes (or a list of them, one for each read in turn)
 const lateFail = {};  // path -> how many of its next reads fail (after the delay)
+const postDelays = {};  // path -> milliseconds a change sent to it takes (or a list of them, one for each in turn)
 const sandbox = { document, fetch, FormData: class {}, console, setTimeout, clearTimeout, URLSearchParams, CSS: { escape: s => s },
   localStorage: { getItem: () => null, setItem() {} }, window: win, navigator: {}, __el: el, __calls: calls, __listeners: listeners,
   __btn: { closest: () => ({ after() {} }), getAttribute: () => "false", isConnected: true } };
@@ -1335,6 +1337,197 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
     return r;
   });
 
+  // slice 9c, known limits (j), (k) and (l): a half-typed reason counts as typed; the checklist and reminders Add dialogs never add twice; what is
+  // typed while a change is sent, a dialog closed or another opened meanwhile, and a second submit
+  await tryit("limits", async () => {
+    const r = {}, EXA = FX.EXA, EXB = FX.EXB, REFUSED = "This was saved. Close it and open it again from the list.", NOT_REOPENED = "It was saved, but its dialog could not be opened again.";
+    const CH = `/api/setup/checklist`, RM = "/api/setup/reminders", AC = "/api/setup/accounts", MAINREC = `/api/setup/accounts/${FX.MAIN}`, TEMPREC = `/api/setup/accounts/${FX.TEMP}`;
+    const openRec = async (kind, id, ent) => { run(`state.entity = ${ent}`); await run(`openSetup(${JSON.stringify(kind)}, ${JSON.stringify(id)})`); await sleep(20); };
+    const fillAll = () => { for (const f of run(`state.setup.types.kinds[state.setup.drawer.kind].fields`)) { const e = el("su-" + f.key); e.value = "1"; e.checked = true; } };
+    const clean = () => { for (const k of Object.keys(delays)) delete delays[k]; for (const k of Object.keys(lateFail)) delete lateFail[k]; for (const k of Object.keys(postDelays)) delete postDelays[k]; FX.fail = {}; };
+    const reset = async (kind = "accounts") => { clean(); await run(`closeDrawer(true)`); await view(kind, EXA); sandbox.__toasts.length = 0; calls.length = 0; el("su-refused").innerHTML = ""; };
+    const sent = path => calls.filter(x => x[0] !== "render" && x[0] !== "navigate" && x[1] === path && !(x[2] && x[2].preview)).length;
+    const toasted = msg => sandbox.__toasts.some(t => t.msg === msg);
+    const shownNow = () => !el("drawer").hidden;
+    const title = () => (/<h2[^>]*>([^<]*)<\/h2>/.exec(el("drawer").innerHTML) || [])[1] || "";
+    const dirty = () => run(`drawerDirty()`);
+    const was777 = FX.get["/api/setup/accounts/777"], wasPost = FX.post[AC];
+    FX.get["/api/setup/accounts/777"] = JSON.parse(JSON.stringify(FX.get[TEMPREC])); FX.get["/api/setup/accounts/777"].record = { ...FX.get[TEMPREC].record, id: 777, label: "The saved account" };
+    FX.post[AC] = { status: 200, body: { id: 777 } };
+    drawerInputsOn = true;
+    try {
+      // (j) a reason half-typed under Stop using, with nothing else typed: a Save whose record can't be opened again, or whose reading back fails, keeps the dialog and the reason
+      for (const [key, fail] of [["jReopen", TEMPREC], ["jReread", "/api/meta"]]) {
+        await reset(); await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq);
+        await run(`setupAct("stop", __btn)`); el("su-reason").value = "Half a reas";
+        lateFail[fail] = 1; await run(`setupSave()`); await sleep(60);
+        r[key] = { open: shownNow() && run(`state.setup.drawer`) !== null, reason: el("su-reason").value, box: el("setupWhy").hidden, said: toasted(fail === TEMPREC ? NOT_REOPENED : SAVED_MSG), writes: sent(TEMPREC) };
+      }
+      // ...but the reason of the change itself has left the box once the change is kept: the stale dialog closes, and a reason typed in a box
+      // opened while the page is read again counts
+      await reset(); await openRec("accounts", FX.TEMP, EXB);
+      await run(`setupAct("stop", __btn)`); el("su-reason").value = "A reason"; delays["/api/meta"] = [200]; lateFail["/api/meta"] = 1;
+      let stopping = run(`whySubmit()`); await sleep(60);
+      r.jGone = { hiddenWhileReading: el("setupWhy").hidden, value: el("su-reason").value };
+      await run(`setupAct("delete", __btn)`); el("su-reason").value = "Typed while it was read";
+      await stopping; await sleep(40);
+      r.jNew = { open: shownNow(), reason: el("su-reason").value, box: el("setupWhy").hidden };
+
+      // (k) the checklist's and the reminders' Add: kept, then the reading back fails with something typed since: the dialog stays and never adds again
+      const chkItem = () => run(`(() => { if (!state.setup.chk.items.some(x => x.id === 901)) state.setup.chk.items.push({ id: 901, code: "made", completion: "hand", in_use: 1, used: 0, can_delete: true,
+        now: { from_month: "0000-00", title: "Made item", detail: "", due_offset: 0, due_day: 5, docs: [], deadline: 0, in_use: 1 }, history: [] }); })()`);
+      const chkAdd = async () => { await reset("checklist"); chkItem(); await run(`openChecklist("new")`); el("cl-completion").value = "hand"; el("cl-title").value = "A new item"; el("cl-day").value = "5"; el("cl-from").value = "2026-11"; };
+      const remAdd = async () => { await reset("reminders"); await run(`openReminder("new")`); el("rm-key").value = "made_key"; el("rm-kind").value = "joiner"; el("rm-title").value = "Made reminder"; el("rm-detail").value = "Made detail"; el("rm-days").value = "3"; el("rm-from").value = "2026-11"; };
+      const ADDS = { checklist: { open: chkAdd, save: p => `chkSave(${p})`, path: CH, field: "cl-title", answer: { item_id: 901, affected: {}, lines: [] } },
+        reminders: { open: remAdd, save: p => `remSave(${p})`, path: RM, field: "rm-title", answer: { id: run(`0`), affected: {}, lines: [] } } };
+      const remRule = FX.get[RM].rules[0];
+      ADDS.reminders.answer.id = remRule.id;
+      for (const [kind, A] of Object.entries(ADDS)) {
+        FX.post[A.path] = { status: 200, body: A.answer };
+        await A.open(); delays["/api/meta"] = [200]; lateFail["/api/meta"] = 1;
+        const adding = run(A.save(false)); await sleep(60);
+        el(A.field).value = "typed after the add";
+        await adding; await sleep(40);
+        const k = r["k_" + kind] = { open: shownNow(), typed: el(A.field).value, posts: sent(A.path) };
+        await run(A.save(false)); await sleep(30);
+        k.again = { posts: sent(A.path), refused: toasted(REFUSED) };
+        calls.length = 0; await run(A.save(true)); k.preview = calls.filter(x => x[1] === A.path && x[2].preview).length;
+
+        // (l3) a second submit while the first is on its way sends nothing; after a refusal, or no answer, it can be sent again
+        await A.open(); postDelays[A.path] = 150;
+        await Promise.all([run(A.save(false)), run(A.save(false))]); await sleep(30);
+        const l3 = r["l3_" + kind] = { posts: sent(A.path) };
+        await A.open(); FX.post[A.path] = { status: 400, body: { error: "A made-up refusal." } };
+        l3.refused = await run(A.save(false) + `.then(() => "ok", e => e.message)`);
+        FX.fail = { [A.path]: true }; l3.lost = await run(A.save(false) + `.then(() => "ok", e => e.name)`); FX.fail = {};
+        FX.post[A.path] = { status: 200, body: A.answer }; await run(A.save(false)); await sleep(30);
+        l3.retry = sent(A.path);
+
+        // (l1) what is typed while the Add is on its way: with the reading back failing, the dialog stays as typed (and can't add again) ...
+        await A.open(); postDelays[A.path] = 150; lateFail["/api/meta"] = 1;
+        let going = run(A.save(false)); await sleep(50); el(A.field).value = "typed while it was sent"; await going; await sleep(40);
+        r["l1fail_" + kind] = { open: shownNow(), typed: el(A.field).value, dirty: dirty() };
+        // ... and with it working, the saved record's dialog opens with what was typed, not saved yet
+        await A.open(); postDelays[A.path] = 150;
+        going = run(A.save(false)); await sleep(50); el(A.field).value = "typed while it was sent"; await going; await sleep(40);
+        r["l1_" + kind] = { title: title(), typed: el(A.field).value, dirty: dirty() };
+
+        // (l2) closed while it is on its way, and another dialog opened: the saved record's dialog doesn't take its place; closed and nothing opened, it stays closed
+        await A.open(); postDelays[A.path] = 150;
+        going = run(A.save(false)); await sleep(40); await run(`closeDrawer(true)`); await openRec("accounts", FX.MAIN, EXA); run(`state.setup.kind = "${kind}"`);
+        const other = el("drawer").innerHTML; await going; await sleep(40);
+        r["l2other_" + kind] = { same: el("drawer").innerHTML === other && run(`state.setup.drawer && state.setup.drawer.id`) === FX.MAIN, dirty: dirty() };
+        await A.open(); postDelays[A.path] = 150;
+        going = run(A.save(false)); await sleep(40); await run(`closeDrawer(true)`); await going; await sleep(40);
+        r["l2closed_" + kind] = { closed: !shownNow() && run(`state.setup.${kind === "checklist" ? "chkOpen" : "remOpen"}`) === null };
+        // closed and the same Add opened again: the new dialog isn't taken as saved, and what is typed in it counts
+        await A.open(); postDelays[A.path] = 150;
+        going = run(A.save(false)); await sleep(40); await run(`closeDrawer(true)`); await run(kind === "checklist" ? `openChecklist("new")` : `openReminder("new")`);
+        el(A.field).value = "typed in the new one"; await going; await sleep(40);
+        r["l2again_" + kind] = { typed: el(A.field).value, dirty: dirty(), saved: run(`!!state.setup.${kind === "checklist" ? "chkOpen" : "remOpen"}?.saved`) };
+        delete FX.post[A.path];
+      }
+      // the server's answer names no reminder: it is found by its key, and not opened over a dialog opened meanwhile
+      FX.post[RM] = { status: 200, body: { affected: {}, lines: [] } };
+      await remAdd(); el("rm-key").value = remRule.key; postDelays[RM] = 150;
+      let going = run(`remSave(false)`); await sleep(40); await run(`closeDrawer(true)`); await openRec("accounts", FX.MAIN, EXA); run(`state.setup.kind = "reminders"`);
+      let other = el("drawer").innerHTML; await going; await sleep(60);
+      r.l2byKey = { same: el("drawer").innerHTML === other };
+      await remAdd(); el("rm-key").value = remRule.key; await run(`remSave(false)`); await sleep(60);
+      r.byKey = { opened: run(`state.setup.remOpen && state.setup.remOpen.id`) === remRule.id };
+      delete FX.post[RM];
+
+      // Delete, or Copy, answered after another dialog was opened: that one isn't closed
+      const meanwhile = async (kind, prep, fire, path) => {
+        await reset(kind); await prep(); postDelays[path] = 150;
+        const going = fire(); await sleep(40); await run(`closeDrawer(true)`); await openRec("accounts", FX.MAIN, EXA); run(`state.setup.kind = "${kind}"`);
+        const other = el("drawer").innerHTML; await going; await sleep(40);
+        return shownNow() && el("drawer").innerHTML === other;
+      };
+      const why = (fn, act) => async () => { await run(`${fn}(${JSON.stringify(act)}, __btn)`); el("su-reason").value = "A reason"; return run(`whySubmit()`); };
+      r.l2delete = {
+        record: await meanwhile("accounts", () => openRec("accounts", FX.OLD, EXA), why("setupAct", "delete"), `/api/setup/accounts/${FX.OLD}`),
+        checklist: await meanwhile("checklist", async () => { chkItem(); await run(`openChecklist(901)`); el("cl-from").value = "2026-11"; }, why("chkAct", "delete"), CH),
+        reminder: await meanwhile("reminders", async () => { await run(`openReminder(${remRule.id})`); el("rm-from").value = "2026-11"; }, why("remAct", "delete"), RM),
+        copy: await meanwhile("checklist", async () => { run(`state.setup.chkOpen = { id: "copy" }`); el("cp-from").value = "2"; el("cl-from").value = "2026-11"; }, () => run(`chkCopySave(false)`), CH),
+        paste: await meanwhile("parties", async () => { await run(`openPaste("parties", { force: true })`); el("ps-text").value = "a\tb"; el("ps-scope").value = "company"; el("ps-kind").value = "supplier";
+          run(`state.setup.paste.preview = { counts: { add: 1 }, rows: [] }; state.setup.paste.previewFor = pasteForm()`); }, () => run(`pasteSave(false)`), "/api/setup/parties/paste"),
+      };
+      // Stop using answered after another record was opened, and its reason box too: neither is touched
+      await reset(); await openRec("accounts", FX.TEMP, EXB); await run(`setupAct("stop", __btn)`); el("su-reason").value = "A reason"; postDelays[`/api/setup/accounts/${FX.TEMP}/stop`] = 150;
+      let stop2 = run(`whySubmit()`); await sleep(40); await run(`closeDrawer(true)`); await openRec("accounts", FX.MAIN, EXA); await run(`setupAct("stop", __btn)`); el("su-reason").value = "The other reason";
+      other = el("drawer").innerHTML; await stop2; await sleep(40);
+      r.l2stop = { same: el("drawer").innerHTML === other && run(`state.setup.drawer.id`) === FX.MAIN, reason: el("su-reason").value, box: el("setupWhy").hidden };
+      // Copy twice
+      await reset("checklist"); run(`state.setup.chkOpen = { id: "copy" }`); el("cp-from").value = "2"; el("cl-from").value = "2026-11"; postDelays[CH] = 100;
+      await Promise.all([run(`chkCopySave(false)`), run(`chkCopySave(false)`)]); r.l3copy = sent(CH);
+
+      // (l) the record dialog. l3: a second submit while the first is on its way
+      for (const [key, rec, path, ent] of [["add", "new", AC, EXA], ["save", FX.TEMP, TEMPREC, EXB]]) {
+        await reset(); await openRec("accounts", rec, ent); fillAll(); el("su-label").value = "Made account " + (++uniq); postDelays[path] = 150;
+        await Promise.all([run(`setupSave()`), run(`setupSave()`)]); await sleep(40);
+        const one = r["l3_" + key] = { posts: sent(path) };
+        await reset(); await openRec("accounts", rec, ent); fillAll(); el("su-label").value = "Made account " + (++uniq);
+        const good = FX.post[path]; FX.post[path] = { status: 400, body: { error: "A made-up refusal." } };
+        await run(`setupSave()`); one.refused = el("su-refused").innerHTML;
+        FX.fail = { [path]: true }; await run(`setupSave().catch(e => e.name)`); FX.fail = {};
+        if (good) FX.post[path] = good; else delete FX.post[path];
+        await run(`setupSave()`); await sleep(40); one.retry = sent(path);
+      }
+      // l1: typed while the Add or the Save is on its way
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150; lateFail["/api/meta"] = 1;
+      let saving = run(`setupSave()`); await sleep(50); el("su-label").value = "typed while it was sent"; await saving; await sleep(40);
+      r.l1addFail = { open: shownNow() && run(`state.setup.drawer.id`) === "new", typed: el("su-label").value, dirty: dirty(), said: toasted(SAVED_MSG) };
+      await run(`setupSave()`); r.l1addFail.again = { posts: sent(AC), refused: toasted(REFUSED) };
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
+      saving = run(`setupSave()`); await sleep(50); el("su-label").value = "typed while it was sent"; await saving; await sleep(60);
+      r.l1add = { id: run(`state.setup.drawer.id`), title: title(), typed: el("su-label").value, dirty: dirty(), foot: el("su-foot").textContent };
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); delays["/api/setup/accounts/777"] = [150];   // typed while the saved record is read
+      saving = run(`setupSave()`); await sleep(60); el("su-label").value = "typed while it was read"; await saving; await sleep(60);
+      r.l1read = { id: run(`state.setup.drawer.id`), typed: el("su-label").value, dirty: dirty() };
+      await reset(); await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq); postDelays[TEMPREC] = 150;
+      saving = run(`setupSave()`); await sleep(50); el("su-notes").value = "typed while it was saved"; await saving; await sleep(60);
+      r.l1save = { id: run(`state.setup.drawer.id`) === FX.TEMP, notes: el("su-notes").value, label: el("su-label").value, server: FX.get[TEMPREC].record.label, dirty: dirty() };
+      // nothing typed meanwhile: the saved record's dialog is clean
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 100; await run(`setupSave()`); await sleep(60);
+      r.l1clean = { id: run(`state.setup.drawer.id`), label: el("su-label").value, dirty: dirty() };
+      // what was typed in a field the saved record can't change isn't carried into it
+      const PT = "/api/setup/payment_types", PT7 = "/api/setup/payment_types/778";
+      FX.get[PT7] = JSON.parse(JSON.stringify(FX.get[`/api/setup/payment_types/${FX.SALARY}`])); FX.get[PT7].record = { ...FX.get[PT7].record, id: 778, key: "made_key", label: "Made type", system: 0 }; FX.get[PT7].locked = { key: "It never changes." };
+      FX.post[PT] = { status: 200, body: { id: 778 } };
+      await reset("payment_types"); await openRec("payment_types", "new", EXA); fillAll(); postDelays[PT] = 150;
+      saving = run(`setupSave()`); await sleep(50); el("su-key").value = "typed_key"; await saving; await sleep(60);
+      r.l1locked = { key: el("su-key").value, dirty: dirty() };
+      delete FX.post[PT]; delete FX.get[PT7];
+      // l2: closed while it is on its way and another opened, or nothing; the same while the saved record is read; a refusal then is said in a message
+      for (const [key, status] of [["l2add", 200], ["l2refused", 400]]) {
+        await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
+        FX.post[AC] = status === 200 ? { status, body: { id: 777 } } : { status, body: { error: "A made-up refusal." } };
+        saving = run(`setupSave()`); await sleep(40); await run(`closeDrawer(true)`); await openRec("accounts", FX.MAIN, EXA); el("su-label").value = "typed in the other";
+        other = el("drawer").innerHTML; el("su-refused").innerHTML = ""; await saving; await sleep(60);
+        r[key] = { same: el("drawer").innerHTML === other && run(`state.setup.drawer.id`) === FX.MAIN, typed: el("su-label").value, dirty: dirty(), inDialog: el("su-refused").innerHTML,
+          toasts: sandbox.__toasts.map(t => t.msg), posts: sent(AC) };
+      }
+      FX.post[AC] = { status: 200, body: { id: 777 } };
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
+      saving = run(`setupSave()`); await sleep(40); await run(`closeDrawer(true)`); await saving; await sleep(60);
+      r.l2closed = { closed: !shownNow() && run(`state.setup.drawer`) === null };
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); delays["/api/setup/accounts/777"] = [150];
+      saving = run(`setupSave()`); await sleep(60); await run(`closeDrawer(true)`); await saving; await sleep(60);
+      r.l2read = { closed: !shownNow() && run(`state.setup.drawer`) === null };
+      await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
+      saving = run(`setupSave()`); await sleep(40); await run(`closeDrawer(true)`); await openRec("accounts", "new", EXA); el("su-label").value = "typed in the new one"; await saving; await sleep(60);
+      r.l2new = { id: run(`state.setup.drawer.id`), typed: el("su-label").value, dirty: dirty(), saved: run(`!!state.setup.drawer.saved`) };
+    } finally {
+      drawerInputsOn = false; clean();
+      if (was777 === undefined) delete FX.get["/api/setup/accounts/777"]; else FX.get["/api/setup/accounts/777"] = was777;
+      if (wasPost === undefined) delete FX.post[AC]; else FX.post[AC] = wasPost;
+      delete FX.post[CH]; delete FX.post[RM];
+    }
+    await run(`closeDrawer(true)`); await view("accounts", EXA); run(`state.entity = ${EXA}`);
+    return r;
+  });
+
   // L2. what says "it was saved" belongs to the page that says it: a later, unrelated failure of the page says what it always said
   await tryit("noLeak", async () => {
     const r = {}, EXA = FX.EXA, AC = `/api/setup/accounts?entity=${EXA}`, P = `/api/setup/parties?entity=${EXA}`;
@@ -1873,6 +2066,62 @@ nr = o["noRedo"]
 check("round 8: render() leaves a page that was overtaken as it always did and draws nothing again: slow A, quick B, A's late paint, then C stays on show, and B was drawn once (a redo of B would land over C)",
       nr["timeline"] == {"page": "<div>C page</div>", "view": "pageC", "a": 1, "b": 1, "c": 1}, nr["timeline"])
 check("...and a normal render draws once", nr["once"] == 1, nr)
+
+# ---------- slice 9c: the Setup known limits (j), (k) and (l) ----------
+lm = o["limits"]
+if lm.get("error"):
+    print("     limits:", lm["error"])
+HALF = "Half a reas"
+check("(j) a reason half-typed under Stop using keeps the dialog, with the reason, when a Save's record can't be opened again, and when the reading back fails",
+      lm["jReopen"] == {"open": True, "reason": HALF, "box": False, "said": True, "writes": 1} and lm["jReread"] == {"open": True, "reason": HALF, "box": False, "said": True, "writes": 1}, (lm["jReopen"], lm["jReread"]))
+check("(j) the reason a change was made with leaves the box once it is kept, and one typed in a box opened while the page is read again keeps the dialog",
+      lm["jGone"] == {"hiddenWhileReading": True, "value": ""} and lm["jNew"] == {"open": True, "reason": "Typed while it was read", "box": False}, (lm["jGone"], lm["jNew"]))
+for kind in ("checklist", "reminders"):
+    k = lm["k_" + kind]
+    check(f"(k) the {kind} Add that was kept stays open with what was typed since, and never adds again from it, though Preview still works",
+          k["open"] is True and k["typed"] == "typed after the add" and k["posts"] == 1 and k["again"] == {"posts": 1, "refused": True} and k["preview"] == 1, k)
+    x = lm["l3_" + kind]
+    check(f"(l) a second submit of the {kind} Add while it is on its way sends nothing; after a refusal or no answer it can be sent again",
+          x["posts"] == 1 and x["refused"] == "A made-up refusal." and x["lost"] == "TypeError" and x["retry"] == 3, x)
+    check(f"(l) what is typed in the {kind} Add while it is on its way stays, with the dialog, when the reading back fails",
+          lm["l1fail_" + kind] == {"open": True, "typed": "typed while it was sent", "dirty": True}, lm["l1fail_" + kind])
+    v = lm["l1_" + kind]
+    check(f"(l) ...and goes into the saved record's dialog, not saved yet, when it works", v["typed"] == "typed while it was sent" and v["dirty"] is True and v["title"] not in ("", "Add item", "Add reminder"), v)
+    check(f"(l) the {kind} Add closed while it is on its way: a dialog opened since isn't replaced; with none opened, it stays closed",
+          lm["l2other_" + kind] == {"same": True, "dirty": False} and lm["l2closed_" + kind] == {"closed": True}, (lm["l2other_" + kind], lm["l2closed_" + kind]))
+    check(f"(l) ...and the same Add opened again meanwhile isn't taken as saved: what is typed in it counts",
+          lm["l2again_" + kind] == {"typed": "typed in the new one", "dirty": True, "saved": False}, lm["l2again_" + kind])
+check("(l) a new reminder the server's answer doesn't number is found by its key and opened, but never over a dialog opened since",
+      lm["byKey"] == {"opened": True} and lm["l2byKey"] == {"same": True}, (lm["byKey"], lm["l2byKey"]))
+check("(l) a Delete (record, checklist item, reminder), a checklist Copy or a Paste a list answered after another dialog was opened doesn't close it",
+      lm["l2delete"] == {"record": True, "checklist": True, "reminder": True, "copy": True, "paste": True}, lm["l2delete"])
+check("(l) a Stop using answered after another record was opened leaves that dialog and its reason box as they are",
+      lm["l2stop"] == {"same": True, "reason": "The other reason", "box": False}, lm["l2stop"])
+check("(l) a second Copy while the first is on its way sends nothing", lm["l3copy"] == 1, lm["l3copy"])
+for key in ("add", "save"):
+    x = lm["l3_" + key]
+    check(f"(l) a second submit of the record dialog's {key} while it is on its way sends nothing; after a refusal or no answer it can be sent again",
+          x["posts"] == 1 and "A made-up refusal." in x["refused"] and x["retry"] == 3, x)
+v = lm["l1addFail"]
+check("(l) what is typed while a record is added stays in the open dialog when the reading back fails, as not saved, and it never adds again",
+      v == {"open": True, "typed": "typed while it was sent", "dirty": True, "said": True, "again": {"posts": 1, "refused": True}}, v)
+check("(l) ...and goes into the saved record's dialog, said as Unsaved changes, when it works",
+      lm["l1add"] == {"id": 777, "title": "The saved account", "typed": "typed while it was sent", "dirty": True, "foot": "Unsaved changes"}, lm["l1add"])
+check("(l) what is typed while the saved record is read isn't lost either", lm["l1read"] == {"id": 777, "typed": "typed while it was read", "dirty": True}, lm["l1read"])
+v = lm["l1save"]
+check("(l) the same for a Save: what was typed while it was on its way stays, the other fields show what the server has",
+      v["id"] is True and v["notes"] == "typed while it was saved" and v["label"] == v["server"] and v["dirty"] is True, v)
+check("(l) with nothing typed meanwhile the saved record's dialog is clean", lm["l1clean"] == {"id": 777, "label": "The saved account", "dirty": False}, lm["l1clean"])
+check("(l) what was typed in a field the saved record can't change isn't carried into its dialog", lm["l1locked"] == {"key": "made_key", "dirty": False}, lm["l1locked"])
+v = lm["l2add"]
+check("(l) the record Add closed while on its way, another record opened: it isn't replaced or rebaselined, and what is typed in it counts",
+      v["same"] is True and v["typed"] == "typed in the other" and v["dirty"] is True and v["posts"] == 1, v)
+v = lm["l2refused"]
+check("(l) a refusal answered after that is said in a message, never in the other record's dialog",
+      v["same"] is True and v["inDialog"] == "" and any("A made-up refusal." in m and m.startswith("Bank account") for m in v["toasts"]), v)
+check("(l) closed while it is on its way, or while the saved record is read, and nothing else opened: it stays closed",
+      lm["l2closed"] == {"closed": True} and lm["l2read"] == {"closed": True}, (lm["l2closed"], lm["l2read"]))
+check("(l) a new Add opened meanwhile isn't taken as saved: what is typed in it counts", lm["l2new"] == {"id": "new", "typed": "typed in the new one", "dirty": True, "saved": False}, lm["l2new"])
 
 # ---------- slice 9c: First run's import reason ----------
 fr = o["frReason"]

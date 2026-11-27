@@ -260,7 +260,7 @@ async function payeeChanged(pid, r, head, drop = "", here = null) {
 }
 async function payeeAct(act, pid, btn) {
   const label = { stop: "Stop using it", use: "Use it again", delete: "Delete it" }[act];
-  return askWhy(btn, label, async reason => {
+  return askWhy(btn, label, async (reason, used) => {
     const here = dialogHere();
     if (act === "delete") {
       await api(`/api/payees/${pid}`, { method: "DELETE", json: { reason } });
@@ -268,6 +268,7 @@ async function payeeAct(act, pid, btn) {
       toast("Recurring payment deleted"); return afterSaved(render);
     }
     const r = await api(`/api/payees/${pid}/${act}`, { json: { reason } });
+    used();
     toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
     return payeeChanged(pid, r, act === "stop" ? "Stopped" : "In use again", "", here);
   });
@@ -294,9 +295,10 @@ async function advSave(aid, btn) {
 }
 function advDelete(aid, btn) {
   const pid = state.payees?.find(p => (p.advances || []).some(a => a.id === aid))?.id;
-  return askWhy(btn, "Remove it", async reason => {
+  return askWhy(btn, "Remove it", async (reason, used) => {
     const here = dialogHere();
     const r = await api(`/api/advances/${aid}`, { method: "DELETE", json: { reason } });
+    used();
     toast("Advance removed"); return payeeChanged(pid, r, "Advance removed", `adv-${aid}-`, here);
   });
 }

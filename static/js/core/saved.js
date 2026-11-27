@@ -12,7 +12,8 @@
    is closed on a failure only if nothing has been typed in it since (an Add dialog left open would add the record twice, and the page's words
    would be hidden behind it); one with something typed in it, or another dialog opened meanwhile, is left alone, and then the message is said
    too, as that dialog covers the page. The same closing when the record's dialog can't be opened again after a good reading. Typed also
-   means files waiting for their type in the payment dialog, or one picked to replace a document and not confirmed.
+   means files waiting for their type in the payment dialog, or one picked to replace a document and not confirmed, and a reason half-typed
+   in Setup's reason box (the reason of the change just made has left the box by then).
    here: which dialog is the change's own: dialogHere(), asked before the change was sent from that dialog. WITHOUT IT THE CHANGE HAS NO
    DIALOG (a change made on a page, an Undo in a message, a change that has already closed its dialog): none is closed or counted as saved,
    whatever is on show. With it, once the change's own dialog has been closed, a dialog on show is another one: it isn't touched and nothing
@@ -26,7 +27,7 @@ async function afterSaved(refresh, reopen, { dialogSaved = false, here = null } 
     else { const now = drawerInputs(); for (const k in now) if (dialogSaved(k)) state.drawerAt[k] = now[k]; }
   }
   const at = DLG.seq, asked = DLG.asked, shown = own && drawerShown();
-  const typed = () => Object.keys(unsavedEdits()).length > 0 || !!state.drawerDirty?.() || !!state.pay?.pick || !!state.pay?.ask?.file;
+  const typed = () => Object.keys(unsavedEdits()).length > 0 || !!state.drawerDirty?.() || reasonTyped() || !!state.pay?.pick || !!state.pay?.ask?.file;
   const closeClean = () => { if (shown && DLG.seq === at && drawerShown() && !typed()) closeDrawer(true); };
   const said = () => toast(SAVED_NOT_READ, true, { ms: 0, action: { label: "Try again", fn: again } });
   // The click took the message away: it comes back on the same rule as the first time (the failure was thrown, or the page's words are behind

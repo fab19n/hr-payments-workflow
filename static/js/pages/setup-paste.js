@@ -125,11 +125,11 @@ async function pasteSave(preview, over = {}) {
     if (!current()) return;  // changed (or read again) while it was read: that preview is stale
     P.preview = r; P.previewFor = form; return paintPaste();
   }
-  const r = await api(`/api/setup/${P.kind}/paste`, { json: body });
+  const still = suDialog(() => state.setup.paste), r = await api(`/api/setup/${P.kind}/paste`, { json: body });
   if (r.message) return toast(r.message, true);  // nothing was saved: the drawer stays open
   const kind = P.kind;
   toast(pasteCounts(r.counts));
-  closeDrawer(true);
+  if (still()) closeDrawer(true);  // a dialog opened meanwhile is left alone
   return afterSaved(async o => { await afterSetupChange(kind); return render(o); });
 }
 

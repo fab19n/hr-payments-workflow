@@ -458,7 +458,8 @@ function setWhyMsg(msg, refused) {
   if (m) m.innerHTML = msg ? `<span class="field-err">${icon("alert")}<span>${esc(msg)}${refused ? ` ${esc(state.whyEnd || "Nothing was changed.")}` : ""}</span></span>` : "";
   if (i && i.setAttribute) { if (msg) i.setAttribute("aria-invalid", "true"); else i.removeAttribute("aria-invalid"); }
 }
-// Shows the reason box under the button clicked; run(reason) does the change once a reason is given. note: what the change does
+// Shows the reason box under the button clicked; run(reason, used) does the change once a reason is given, and calls used() once it is
+// kept, before anything else is waited for: the box goes then, so a reason in it afterwards is one typed since. note: what the change does
 // (the section's stop, use again or delete note), with its glyph; danger: the go button is red; end: said after a refusal.
 function askWhy(btn, label, run, { note = "", glyph = "help", danger = false, end = "Nothing was changed." } = {}) {
   const f = $("#setupWhy");
@@ -488,7 +489,8 @@ async function whySubmit() {
   // The box is written to only while it is still this change's: a box drawn since (another dialog's), or asked again for another change, is
   // left alone.
   const box = $("#setupWhy"), same = () => $("#setupWhy") === box;
-  try { await run(reason); if (same() && (!state.why || state.why === run)) hideWhy(); }
+  const used = () => { if (same() && state.why === run) hideWhy(); };
+  try { await run(reason, used); if (same() && (!state.why || state.why === run)) hideWhy(); }
   catch (e) {
     if (appStopped(e) || !same() || state.why !== run) toast(changeError(e), true);
     else { setWhyMsg(changeError(e), !e.unsure); $("#su-reason")?.focus?.(); }
@@ -509,8 +511,9 @@ async function afterSetupChange(kind) {
 
 // The record dialog of one company, bank account, type, customer or supplier, account or word rule (id "new" to add one), as
 // design/canvas/Setup.dc.html draws it: the fields in their groups, Where used, In use (Stop using, Use again, Delete: each asks why),
-// the sections of a company's own, and History. keep: what was typed in it and not saved yet, when it is drawn again after a stop or
-// use again; notes: what the server said about the save just made.
+// the sections of a company's own, and History. keep: what was typed in it and not saved yet, when it is drawn again after a save, a
+// stop or use again (a function: asked just before it is drawn, so what is typed while the record is read isn't lost); notes: what the
+// server said about the save just made.
 async function openSetup(kind, id, { force = false, keep = {}, notes = [] } = {}) {
   if (!force && !(await mayLeave())) return;
   return dialogDraw(dlg => setupDialog(dlg, kind, id, keep, notes));
@@ -545,6 +548,8 @@ async function setupDialog(dlg, kind, id, keep, notes) {
   // A company switched to Kept here keeps the names confirmed while it was Kept in SQL Account: only they are listed, so they can be removed.
   const keptNames = kind === "entities" && !isNew && !+rec.uses_sql ? await dlg.read(api(`/api/setup/entities/${+id}/sql-names`).catch(() => null)) : null;
   const hereNames = !!keptNames?.names?.length;
+  // What was typed in the dialog this one replaces, now that every read is done; not what was typed in a field that can't change now.
+  const kept = Object.fromEntries(Object.entries(typeof keep === "function" ? keep() : keep).filter(([k]) => !(k.replace(/^su-/, "") in locked)));
   $("#drawer").innerHTML = `<form class="np st-form" id="setupForm" novalidate aria-describedby="su-sub">
     <div class="pd-head"><span class="plate brand">${icon(spec.glyph || "sliders")}</span>
       <div class="pd-words"><span class="eyebrow">${esc(spec.label)}${spec.per_entity ? ` · ${esc(e.code)}` : ""}</span>
@@ -570,7 +575,7 @@ async function setupDialog(dlg, kind, id, keep, notes) {
   </form>`;
   showDrawer("setup");
   state.setup.drawer = { kind, id, locked, used: r.used_by || [], keptHere: hereNames, loaded: formValues(fields, "su-") };
-  watchDrawer(keep);
+  watchDrawer(kept);
   suFoot();
   if (printed) { drawPrintSettings(id); drawSqlNames(id); }
   else if (hereNames) drawSqlNames(id, keptNames);
@@ -680,15 +685,24 @@ function suRefused(e) {
   box.focus?.({ preventScroll: true });
 }
 
-// A Setup save made from a record dialog doesn't ask yet which dialog was its own (limit (l), slice 9c): as before, the one on show when
-// the reading back starts counts as that (afterSaved's here, core/saved.js).
-const suOwnDialog = () => true;
+// Which dialog a change is sent from, asked before it is sent: the function it returns says, once the server has answered, whether that
+// dialog is still the one on show: not closed since (dialogHere), nor drawn as another one (open: what the dialog holds, as drawn).
+function suDialog(open) {
+  const here = dialogHere(), mine = open();
+  return () => here() && open() === mine && drawerShown();
+}
+// What a Save held when it was sent is what was saved: only what is typed from then on counts as not saved (a dialog that stays open keeps
+// it, and the saved record's dialog opened in its place gets it).
+const suSent = (own, sent) => { if (own) state.drawerAt = sent; };
+// A dialog that was added from stays open when something was typed in it since: it must never add the record again.
+const SU_SAVED_ALREADY = "This was saved. Close it and open it again from the list.";
 
-// Save: a new record is added; one already there sends only the fields changed.
+// Save: a new record is added; one already there sends only the fields changed. One at a time for each dialog: a second submit while it is
+// on its way sends nothing.
 async function setupSave() {
   const D = state.setup.drawer;
-  if (!D) return;
-  if (D.id === "new" && D.saved) return toast("This was saved. Close it and open it again from the list.", true);  // it stayed open (typed in since, or it couldn't be replaced): never a second record
+  if (!D || D.saving) return;
+  if (D.id === "new" && D.saved) return toast(SU_SAVED_ALREADY, true);  // it stayed open (typed in since, or it couldn't be replaced): never a second record
   const spec = state.setup.types.kinds[D.kind], fields = spec.fields || [], now = formValues(fields, "su-");
   const box = $("#su-refused"); if (box) box.innerHTML = "";
   if (!suCheck(fields, now, D.id === "new" ? {} : D.locked)) return;
@@ -697,12 +711,12 @@ async function setupSave() {
     const isCompany = k => fields.some(f => f.key === k && f.type === "company");
     const body = { fields: Object.fromEntries(Object.entries(now).filter(([k, v]) => v !== null && v !== "" || isCompany(k))) };
     if (spec.per_entity) body.entity_id = state.entity;
-    let r;
-    try { r = await api(`/api/setup/${D.kind}`, { json: body }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e); }
+    const { r, own } = await suSendSave(D, `/api/setup/${D.kind}`, { json: body });
+    if (!r) return;
     D.saved = true;
     toast(`${spec.label} added`);
     return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); },
-      () => r.id == null ? closeDrawer(true) : openSetup(D.kind, r.id, { force: true }), { dialogSaved: true, here: suOwnDialog });
+      () => r.id != null ? openSetup(D.kind, r.id, { force: true, keep: drawerEdits }) : Object.keys(drawerEdits()).length ? null : closeDrawer(true), { here: () => own });
   }
   const changed = {};
   for (const k in now) if (!(k in D.locked) && JSON.stringify(now[k]) !== JSON.stringify(D.loaded[k])) changed[k] = now[k];
@@ -710,10 +724,27 @@ async function setupSave() {
     const n = $("#su-foot"); if (n) { n.className = "pd-foot-note ro"; n.textContent = "Nothing has changed."; }
     return toast("Nothing has changed.");
   }
-  let r;
-  try { r = await api(`/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields: changed } }); } catch (e) { if (appStopped(e)) throw e; return suRefused(e); }
+  const { r, own } = await suSendSave(D, `/api/setup/${D.kind}/${D.id}`, { method: "PATCH", json: { fields: changed } });
+  if (!r) return;
   toast("Saved");
-  return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, notes: r.notes }), { dialogSaved: true, here: suOwnDialog });
+  return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, notes: r.notes, keep: drawerEdits }), { here: () => own });
+}
+// Sends a record dialog's Save. {r: the answer, own: whether the dialog is still the one on show}. Refused (or no clear answer): said in
+// the dialog, or in a message once it has gone, never in another record's dialog; then r is nothing.
+async function suSendSave(D, path, opts) {
+  const sent = drawerInputs(), still = suDialog(() => state.setup.drawer);  // before anything is awaited
+  D.saving = true;
+  let r;
+  try { r = await api(path, opts); }
+  catch (e) {
+    if (appStopped(e)) throw e;
+    if (still()) suRefused(e); else toast(`${state.setup.types?.kinds?.[D.kind]?.label || "Setup"} wasn't confirmed as saved: ${changeError(e)}`, true);
+    return {};
+  }
+  finally { D.saving = false; }
+  const own = still();
+  suSent(own, sent);
+  return { r: r || {}, own };
 }
 
 // Stop using, Use again and Delete ask why first, with what the change does; Tidy up counts first, then asks. A refusal (the cash
@@ -730,16 +761,19 @@ async function setupAct(act, btn) {
   const onInvoices = act === "stop" && (D.used || []).some(([w, n]) => /invoices/.test(w) && +n);
   const note = { stop: (spec.stop_note || "") + (onInvoices ? " Its company prints it under All payments to be made to. Once it is stopped, the print settings say that the bank account chosen for invoices is stopped." : ""),
     use: spec.use_note || "", delete: spec.delete_note || "" }[act];
-  return askWhy(btn, label, async reason => {
+  return askWhy(btn, label, async (reason, used) => {
+    const still = suDialog(() => state.setup.drawer);
     if (act === "delete") {
       await api(`/api/setup/${D.kind}/${D.id}`, { method: "DELETE", json: { reason } });
-      closeDrawer(true); toast(`${spec.label} deleted`);
+      if (still()) closeDrawer(true);  // a dialog opened meanwhile is left alone
+      toast(`${spec.label} deleted`);
       return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); });
     }
     await api(`/api/setup/${D.kind}/${D.id}/${act}`, { json: { reason } });
+    const own = still();
+    used();
     toast(act === "stop" ? "Stopped. Its history stays." : "In use again");
-    const keep = drawerEdits();
-    return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, keep }), { here: suOwnDialog });
+    return afterSaved(async o => { await afterSetupChange(D.kind); return render(o); }, () => openSetup(D.kind, D.id, { force: true, keep: drawerEdits }), { here: () => own });
   }, { note, glyph: { stop: "eyeOff", use: "eye", delete: "trash" }[act], danger: act === "delete" });
 }
 
@@ -751,11 +785,13 @@ async function tidyMonths(eid, btn) {
     if (!n.payments && !n.tasks) return toast(`Nothing to tidy up before ${before}.`);
     btn.dataset.armed = "1"; btn.textContent = `Click again to remove ${n.payments} payments and ${n.tasks} checklist items before ${before}`; return;
   }
-  return askWhy(btn, "Remove them", async reason => {
+  return askWhy(btn, "Remove them", async (reason, used) => {
+    const still = suDialog(() => state.setup.drawer);
     const r = await api("/api/months/tidy", { json: { entity_id: +eid, reason } });
+    const own = still();
+    used();
     toast(`Removed ${r.payments} payments and ${r.tasks} checklist items from ${e?.code || "the company"}`);
-    const keep = drawerEdits();
-    return afterSaved(o => render(o), () => openSetup("entities", eid, { force: true, keep }), { here: suOwnDialog });
+    return afterSaved(o => render(o), () => openSetup("entities", eid, { force: true, keep: drawerEdits }), { here: () => own });
   });
 }
 
