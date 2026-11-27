@@ -101,13 +101,14 @@ process.on("unhandledRejection", e => unheard.push(String(e && e.stack || e).sli
 const waiting = new Map(); let askN = 0;
 readline.createInterface({ input: process.stdin }).on("line", l => { const m = JSON.parse(l); const f = waiting.get(m.id); waiting.delete(m.id); f(m); });
 const server = (method, path, body) => new Promise(res => { const id = ++askN; waiting.set(id, res); process.stdout.write("@@REQ " + JSON.stringify({ id, method, path, body }) + "\n"); });
-// NET.delay(method, path, body): ms before the answer; NET.fail(...): "net" (never reaches the server), "lost" (done, the answer lost)
-const NET = { delay: () => 0, fail: () => null, sent: [] };
+// NET.gates: the answers held back, each for the next request its when(method, path, body) takes, until the probe lets it go (hold);
+// NET.fail(...): "net" (never reaches the server), "lost" (done, the answer lost)
+const NET = { gates: [], fail: () => null, sent: [] };
 async function fetch(path, init = {}) {
   const method = init.method || "GET", body = init.body ? JSON.parse(init.body) : null;
   NET.sent.push([method, path, body]);
-  const how = NET.fail(method, path, body), ms = NET.delay(method, path, body);
-  const wait = ms ? sleep(ms) : null;
+  const how = NET.fail(method, path, body), held = NET.gates.findIndex(g => g.when(method, path, body));
+  const wait = held < 0 ? null : NET.gates.splice(held, 1)[0].wait;
   if (how === "net") { await wait; throw new TypeError("Failed to fetch"); }
   const r = await server(method, path, body);
   await wait;
@@ -256,7 +257,13 @@ const answer = (...a) => run(`__answers.push(...${JSON.stringify(a)})`);
 const server_view = async (entity = null, month = M[0]) => (await server("GET", `/api/setup/required?entity=${entity ?? ""}&month=${month}`, null)).body;
 const held = async (type, entity = null, month = M[0]) => (await server_view(entity, month)).types.find(t => t.key === type).at;
 const single = async (payment_type, docs, entity_id = null, from_month = M[0]) => (await server("POST", "/api/setup/required", { payment_type, docs, entity_id, from_month })).status;
-const quiet = () => { NET.delay = () => 0; NET.fail = () => null; };
+const quiet = () => { NET.gates = []; NET.fail = () => null; };
+// An answer held back is held until the probe lets it go, however slow the PC is: a state "while it is on its way" never rests on a time.
+const hold = when => { let go; NET.gates.push({ when, wait: new Promise(res => { go = res; }) }); return go; };
+const SAVE = (m, p, b) => m === "POST" && p === "/api/setup/required" && !b.preview, PREVIEW = (m, p, b) => m === "POST" && !!b?.preview;
+const READ = (m, p) => m === "GET" && p.startsWith("/api/setup/required");
+// waits until count() has reached n and the server has answered every request sent (a held answer is still not given to the page)
+const answered = async (count, n = 1) => { for (let i = 0; i < 3000; i++) { if (count().length >= n && !waiting.size) return; await sleep(5); } throw new Error("never sent and answered"); };
 const calm = () => { quiet(); run(`__toasts.length = 0; __asks.length = 0; __answers.length = 0;`); NET.sent.length = 0; };
 // the grid on show, as the menu opens it, with nothing waiting
 async function open() {
@@ -312,15 +319,15 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     r.discarded = { changed: changedBoxes(), draft: draft(), status: status(), asks: asks().length, posts: posts().length, focus: document.activeElement.id, box: info("utility", "pv").pressed };
     // a preview answered after the boxes changed again says nothing of the older boxes
     calm();
-    let n = 0; NET.delay = (m, p, b) => b && b.preview ? (++n === 1 ? 700 : 0) : 0;
-    await tick("utility", "pv"); await sleep(340); await tick("utility", "invoice"); await sleep(10);
+    const first = hold(PREVIEW);
+    await tick("utility", "pv"); await answered(previews); await tick("utility", "invoice");
     r.working = status();
-    await idle(800); r.late = { status: status(), n }; quiet();
+    await answered(previews, 2); await idle(); first(); await idle(60); r.late = { status: status(), n: previews().length }; quiet();
     // ... also one that comes while the newer boxes' preview is still waiting to be asked
     await click($("#rq-discard")); await idle(); calm();
-    NET.delay = (m, p, b) => b && b.preview && b.changes[0].payment_type === "utility" && b.changes.length === 1 ? 450 : 0;
-    await tick("utility", "pv"); await sleep(600); await tick("salary", "invoice"); await sleep(220);
-    r.betweenLate = status(); await idle(); r.betweenEnd = status(); quiet();
+    const older = hold(PREVIEW);
+    await tick("utility", "pv"); await answered(previews); await tick("salary", "invoice"); older(); await sleep(0);
+    r.betweenLate = status(); r.betweenAsked = previews().length; await idle(); r.betweenEnd = status(); quiet();
     return { before, ...r };
   });
 
@@ -486,14 +493,14 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     await open(); await tick("utility", "tst_memo"); await typeReason("Still here"); await idle(); calm();
     await run(`render()`); await idle();
     r.same = { changed: changedBoxes(), reason: $("#rq-reason").value, msgs: strips("msg"), asks: asks().length, status: status(), previews: previews().length };
-    NET.delay = (m, p) => m === "GET" && p.startsWith("/api/setup/required") ? 400 : 0;
-    const drawing = run(`render()`); await sleep(60);
+    const read = hold(READ);
+    const drawing = run(`render()`); await answered(reads);
     const during = { grid: !!$("#rq-body") };
     // a click or a Save arriving late, while the page is read (Setup has cleared the grid): it changes nothing and sends nothing
     await run(`rqToggle("utility", "invoice")`); await run(`rqFollow("utility", true)`); await run(`rqSave()`);
     during.draft = draft();
     during.posts = posts().length;
-    await drawing; await idle(); quiet();
+    read(); await drawing; await idle(); quiet();
     r.during = { ...during, changed: changedBoxes(), reason: $("#rq-reason").value };
     // another change under a ticked row is said when the page is read again; the boxes not ticked here follow the records
     r.base = (await held("utility")).docs;
@@ -641,39 +648,39 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
   await tryit("saving", async () => {
     const r = {};
     await open(); await tick("rental", "tst_memo"); await typeReason("Slow one"); await idle(); calm();
-    NET.delay = (m, p, b) => m === "POST" && !b.preview ? 500 : 0;
-    const one = submit(); await sleep(40);
+    const answerOne = hold(SAVE);
+    const one = submit(); await answered(posts);
     r.during = { save: $("#rq-save").textContent, busy: $("#rq-save").getAttribute("aria-busy"), disabled: [$("#rq-save").disabled, $("#rq-discard").disabled, $("#rq-scope").disabled, $("#rq-month").disabled, $("#rq-reason").readOnly],
       off: $("#rq-body").querySelectorAll("[data-rq-doc]").every(b => b.getAttribute("aria-disabled") === "true"), status: status() };
     await tick("rental", "approval"); await submit().done; await run(`rqDiscard()`);
     r.blocked = { posts: posts().length, changed: changedBoxes() };
-    await one.done; await idle();
+    answerOne(); await one.done; await idle();
     r.done = { posts: posts().length, changed: changedBoxes(), result: strips("ok"), off: info("rental", "bank").off };
     // leaving while it is on its way asks in its own words; staying keeps the page
     await tick("rental", "tst_memo"); await idle(); calm();
-    NET.delay = (m, p, b) => m === "POST" && !b.preview ? 500 : 0;
-    const two = submit(); await sleep(40); answer(false); await run(`go("settings")`);
+    const answerTwo = hold(SAVE);
+    const two = submit(); await answered(posts); answer(false); await run(`go("settings")`);
     r.stay = { asks: asks(), view: run(`state.view`), grid: !!$("#rq-body") };
-    calm(); NET.delay = (m, p, b) => 0; await two.done; await idle(700);
+    calm(); answerTwo(); await two.done; await idle(700);
     // left, and it is saved: only a message, and the page on show isn't read again
     await tick("rental", "tst_memo"); await idle(); calm();
-    NET.delay = (m, p, b) => m === "POST" && !b.preview ? 500 : 0;
-    const three = submit(); await sleep(40); answer(true); await run(`navigate({ view: "overview", entity: "all", month: ${JSON.stringify(M[0])}, sub: null, id: null, params: {} }, { fresh: true })`); await sleep(40);
-    NET.sent.length = 0; await three.done; await idle();
+    const answerThree = hold(SAVE);
+    const three = submit(); await answered(posts); answer(true); await run(`navigate({ view: "overview", entity: "all", month: ${JSON.stringify(M[0])}, sub: null, id: null, params: {} }, { fresh: true })`); await idle(60);
+    NET.sent.length = 0; answerThree(); await three.done; await idle();
     r.away = { view: run(`state.view`), main: $("#main").innerHTML, toasts: toasts(), reads: NET.sent.filter(x => x[0] === "GET").length, saving: run(`state.setup.reqSaving`), draft: draft() };
     // left, and it is refused: a message says it wasn't saved
     await open(); await tick("rental", "tst_memo"); await idle(); calm();
     await single("rental", ["bank"], null, M[0]);
-    NET.delay = (m, p, b) => m === "POST" && !b.preview ? 400 : 0;
-    const four = submit(); await sleep(40); answer(true); await run(`go("overview")`); await sleep(20); await four.done; await idle();
+    const answerFour = hold(SAVE);
+    const four = submit(); await answered(posts); answer(true); await run(`go("overview")`); await idle(60); answerFour(); await four.done; await idle();
     r.awayRefused = { toasts: toasts(), main: $("#main").innerHTML };
     // come back while it is still saving: the grid waits for it, then is read again
     await open(); await tick("rental", "tst_memo"); await idle(); calm();
-    NET.delay = (m, p, b) => m === "POST" && !b.preview ? 600 : 0;
-    const five = submit(); await sleep(40); answer(true); await run(`go("overview")`); await sleep(20);
+    const answerFive = hold(SAVE);
+    const five = submit(); await answered(posts); answer(true); await run(`go("overview")`); await sleep(20);
     await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: ${JSON.stringify(M[0])}, sub: "required", id: null, params: {} }, { fresh: true })`);
     const mid = { off: info("rental", "bank").off, save: $("#rq-save").textContent };
-    await five.done; await idle();
+    answerFive(); await five.done; await idle();
     r.back = { mid, memo: info("rental", "tst_memo"), off: info("rental", "bank").off, save: $("#rq-save").textContent, result: strips("ok") };
     return r;
   });
@@ -819,12 +826,12 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
       await single("tst_foc", ++flip % 2 ? ["bank"] : ["bank", "invoice"], null, M[0]);
       await open(); await tick("tst_foc", "tst_memo"); await idle(); calm();
       if (stale) await single("tst_foc", ["claim", flip % 2 ? "bank" : "invoice"], null, M[0]);
-      NET.delay = (m, p, b) => m === "POST" && !b.preview ? 250 : 0;
+      const answerSave = hold(SAVE);
       focused = null; start();
       const was = document.activeElement;
-      const saving = submit(); await sleep(60);
+      const saving = submit(); await answered(posts);
       during();
-      await saving.done; await idle();
+      answerSave(); await saving.done; await idle();
       r[name] = { at: where(), redrawn: !was.isConnected || was === body, msgs: strips("msg").length, ok: strips("ok").length, posts: posts().length };
       quiet();
     };
@@ -841,11 +848,11 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     await run1("nowhere", () => {}, () => {});
     // an answer that never comes, on a grid left and opened again meanwhile: the grid is read again, and the focus there kept
     await open(); await tick("tst_foc", "tst_memo"); await idle(); calm();
-    NET.delay = (m, p, b) => m === "POST" && !b.preview ? 500 : 0; NET.fail = (m, p, b) => m === "POST" && b && !b.preview ? "lost" : null;
-    const saving = submit(); await sleep(40); answer(true); await run(`go("overview")`); await sleep(20);
+    const answerLost = hold(SAVE); NET.fail = (m, p, b) => m === "POST" && b && !b.preview ? "lost" : null;
+    const saving = submit(); await answered(posts); answer(true); await run(`go("overview")`); await sleep(20);
     await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: ${JSON.stringify(M[0])}, sub: "required", id: null, params: {} }, { fresh: true })`);
     box("tst_foc", "bank").focus(); const before = [document.activeElement.id, document.activeElement];
-    await saving.done; await idle();
+    answerLost(); await saving.done; await idle();
     r.again = { at: where(), was: before[0], redrawn: !before[1].isConnected };
     quiet();
     return r;
@@ -861,19 +868,66 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
       await open(); await tick("tst_wait", "tst_memo"); await idle(); calm();
       if (how === "stale") await single("tst_wait", ["claim", n % 2 ? "bank" : "invoice"], null, M[0]);  // the records move before it is sent
       let down = false;
-      NET.delay = (m, p, b) => m === "POST" && b && !b.preview ? 250 : 0;
+      const answerSave = hold(SAVE);
       NET.fail = (m, p, b) => down ? "net" : m === "POST" && b && !b.preview ? (how === "lost" ? "lost" : how === "net" || how === "down" ? "net" : null) : null;
       let say; sandbox.__held = new Promise(res => { say = res; }); run(`__answers.push(__held)`);
-      const saving = submit(); await sleep(60);
+      const saving = submit(); await answered(posts);
       if (how === "down") down = true;  // the app stops: neither the save nor the reading after it gets through
       const going = run(`go("overview")`); await sleep(20);
       const title = asks().map(a => a.title);
-      await saving.done; await sleep(60);
+      answerSave(); await saving.done; await sleep(60);
       const asked = toasts();
       down = false; say(leave); await going; await idle();
       r[name] = { title, asked, after: toasts(), view: run(`state.view`), msgs: $("#rq-body") ? strips("msg") : null, draft: draft() };
       quiet();
     }
+    return r;
+  });
+
+  /* ======== review fixes, round 3: what a save does away with through Other ======== */
+  await tryit("viaOther", async () => {
+    const r = {};
+    const line = type => rowOf(type).querySelector(".rq-since .note")?.textContent || "";
+    // Other as one set for every company from this month, and no company with its own
+    for (const e of [FX.EXA, FX.EXB]) await single("other", null, e, M[0]);
+    await single("other", ["invoice", "pv"], null, M[0]);
+    await made("tst_pth", "Test path");
+    await single("other", ["invoice", "pv", "claim"], null, M[2]);  // planned for every company
+    await asCompany(FX.EXB);
+    r.before = [rowOf("tst_pth").querySelector(".rq-since span").textContent, line("tst_pth"), warnings()];
+    await tick("tst_pth", "approval"); await idle(); r.ticked = { line: line("tst_pth"), warnings: warnings() };
+    await tick("tst_pth", "approval"); await idle(); r.unticked = line("tst_pth");
+    // another change to Other planned after the grid was read: the save is refused, and the grid then names both
+    await tick("tst_pth", "approval"); await idle(); r.added = await single("other", ["invoice", "claim"], null, M[3]);
+    calm(); await submit().done; await idle();
+    r.stale = { posts: posts().length, msgs: strips("msg"), warnings: warnings(), changed: changedBoxes(), line: line("tst_pth"), mine: (await held("tst_pth", FX.EXB)).own };
+    calm(); await submit().done; await idle();
+    r.kept = [(await held("tst_pth", FX.EXB, M[3])).docs, (await held("tst_pth", FX.EXA, M[3])).docs];
+    // Other changed in the same save: a follower with no box changed keeps only a month that doesn't come through Other
+    await made("tst_pty", "Test path with its own later set"); await single("tst_pty", ["bank"], null, M[1]);
+    await made("tst_ptz", "Test path left alone");
+    await single("other", ["claim"], FX.EXB, M[2]);
+    await asCompany(FX.EXB);
+    const both = () => [line("tst_ptz"), line("tst_pty")];
+    r.asRead = both();
+    await tick("tst_ptz", "approval"); await idle(); r.ownOther = warnings(); await click($("#rq-discard")); await idle();
+    await tick("other", "tst_memo"); await idle(); r.otherTicked = both();
+    await click($("#rq-discard")); await idle(); await followRow("other"); await idle(); r.otherFollows = both();
+    await click($("#rq-discard")); await idle(); r.discarded = both();
+    // for every company: a company that needs its own Other for a type is named, with the months
+    for (const e of [FX.EXA, FX.EXB]) await single("other", null, e, M[0]);
+    await single("other", ["bank", "payslip", "portal"], FX.EXB, M[0]);
+    await single("other", ["claim", "portal"], FX.EXA, M[2]);
+    await made("tst_gas", "Test gas");
+    await open(); r.pill = rowOf("tst_gas").querySelector(".rq-for").textContent;
+    await tick("tst_gas", "approval"); await idle(); r.every = warnings();
+    // a company out of use is not named, as for a company's own set
+    await server("POST", `/api/setup/entities/${FX.EXB}/stop`, { reason: "Closed for a while" });
+    const m2 = (await server("GET", "/api/meta", null)).body; run(`state.meta = ${JSON.stringify(m2)}`);
+    run(`rqDrop()`); await open(); await tick("tst_gas", "approval"); await idle(); r.stoppedCo = warnings();
+    await server("POST", `/api/setup/entities/${FX.EXB}/use`, { reason: "Open again" });
+    const m3 = (await server("GET", "/api/meta", null)).body; run(`state.meta = ${JSON.stringify(m3)}`);
+    run(`rqDrop()`);
     return r;
   });
 
@@ -1016,7 +1070,7 @@ holds("Discard puts every box back with nothing asked or sent, and leaves the fo
 holds("a preview answered after the boxes changed again is not shown for them",
       lambda: has(c["working"], "Working out what changes for open payments") and c["late"]["n"] == 2 and has(c["late"]["status"], "2 unsaved changes", "2 open payments will be complete."), (c["working"], c["late"]))
 holds("...nor one that comes before the newer boxes have been asked about",
-      lambda: has(c["betweenLate"], "2 unsaved changes", "Working out what changes for open payments") and "will" not in c["betweenLate"] and "Working out" not in c["betweenEnd"], (c["betweenLate"], c["betweenEnd"]))
+      lambda: c["betweenAsked"] == 1 and has(c["betweenLate"], "2 unsaved changes", "Working out what changes for open payments") and "will" not in c["betweenLate"] and "Working out" not in c["betweenEnd"], (c["betweenLate"], c["betweenEnd"]))
 
 # ---------- one save ----------
 s = o["save"]
@@ -1169,6 +1223,29 @@ holds("...it is never taken from something else, nor given where the grid didn't
       lambda: fk["away"]["at"] == ["prevMonth", True] and fk["nowhere"]["at"] == ["", True], (fk["away"], fk["nowhere"]))
 holds("a grid read again for an answer that never came, after it was left and opened again, keeps the focus on its box",
       lambda: fk["again"]["redrawn"] and fk["again"]["was"].startswith("rq-c-") and fk["again"]["at"] == [fk["again"]["was"], True], fk["again"])
+
+# ---------- review fixes, round 3: through Other ----------
+vo = o["viaOther"]
+THROUGH = lambda code, label, months: f"Through Other, what {code} needs for {label} was to change from {months}. Saving from {MONTH(M0)} does away with that: its own set carries on."  # noqa: E731
+OWNS = f"Saving gives EXB its own set for Test path from {MONTH(M0)}."
+holds("a company's box ticked on a type that follows Other says the planned change through Other is done away with, and In force names no change it won't have",
+      lambda: vo["before"] == ["Same as Other", FROM(M2), []] and vo["ticked"] == {"line": "", "warnings": [THROUGH("EXB", "Test path", MONTH(M2)), OWNS]} and vo["unticked"] == FROM(M2), (vo["before"], vo["ticked"], vo["unticked"]))
+holds("...a save from a grid read before another change to Other was planned is refused, and the grid then names both months",
+      lambda: vo["added"] == 200 and vo["stale"]["posts"] == 1 and "changed after this page read it. Nothing was saved." in vo["stale"]["msgs"][0]
+      and f"What is required from {MONTH(M0)} for Test path changed since you ticked it. Check its row before you save." in vo["stale"]["msgs"]
+      and THROUGH("EXB", "Test path", f"{MONTH(M2)} and {MONTH(M3)}") in vo["stale"]["warnings"] and vo["stale"]["changed"] == ["tst_pth.approval"] and vo["stale"]["line"] == ""
+      and vo["stale"]["mine"] is False, (vo["added"], vo["stale"]))
+holds("...saved having seen it, EXB keeps its own set when Other changes, and another company's still changes",
+      lambda: vo["kept"] == [["invoice", "pv", "approval"], ["invoice", "claim"]], vo["kept"])
+holds("...so is a change through the company's own Other", lambda: THROUGH("EXB", "Test path left alone", MONTH(M2)) in vo["ownOther"], vo["ownOther"])
+holds("with Other changed in the same save, a follower with no box changed names no month that comes through Other, and keeps one that its own set brings; with Other to follow all companies again, none is claimed",
+      lambda: vo["asRead"] == [FROM(M2), FROM(M1)] and vo["otherTicked"] == ["", FROM(M1)] and vo["otherFollows"] == ["", ""] and vo["discarded"] == vo["asRead"],
+      (vo["asRead"], vo["otherTicked"], vo["otherFollows"], vo["discarded"]))
+OWN_OTHER = lambda code, months="": f"{code} needs its own Other list for Test gas{months}. This save gives it the new set instead."  # noqa: E731
+GIVES = f"Saving gives Test gas a set of its own from {MONTH(M0)}, so later changes to Other no longer reach it."
+holds("for every company, a type that follows Other names each company that needs its own Other list for it, with the months",
+      lambda: vo["pill"] == "" and vo["every"] == [OWN_OTHER("EXA", f" from {MONTH(M2)}"), OWN_OTHER("EXB"), GIVES], (vo["pill"], vo["every"]))
+holds("...not a company out of use", lambda: vo["stoppedCo"] == [OWN_OTHER("EXA", f" from {MONTH(M2)}"), GIVES], vo["stoppedCo"])
 
 # ---------- For and the month ----------
 p = o["pickers"]

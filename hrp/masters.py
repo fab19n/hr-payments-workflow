@@ -1389,12 +1389,27 @@ def _covering(R, payment_type, entity_id, month):
     return covering, later
 
 
+def _turns(month, sets):
+    """The months after this one in which one of these sets starts or ends, oldest first."""
+    return sorted({m for s in sets for m in (s["from_month"], s["to_month"]) if m and m > month})
+
+
 def _next_change(month, sets, in_force):
     """The first month after this one from which another set is in force than in this one, or None. in_force(month): the
     set in force then; sets: every set it can pick from."""
     now = in_force(month)
-    ends = sorted({m for s in sets for m in (s["from_month"], s["to_month"]) if m and m > month})
-    return next((m for m in ends if in_force(m) is not now), None)
+    return next((m for m in _turns(month, sets) if in_force(m) is not now), None)
+
+
+def _other_changes(R, payment_type, entity_id, month, sets):
+    """For a type with no set in force in the month: the later months, of those in which it still has none, from which
+    what Other gives it is another set than before. A set of the type's own from this month does away with each."""
+    last, out = R.set_for("other", month, entity_id), []
+    for m in _turns(month, sets):
+        if R.set_for(payment_type, m, entity_id) is None and R.set_for("other", m, entity_id) is not last:
+            out.append(m)
+            last = R.set_for("other", m, entity_id)
+    return out
 
 
 def _required_at(R, payment_type, entity_id, month):
@@ -1409,7 +1424,9 @@ def _required_at(R, payment_type, entity_id, month):
     follow: what the company would then need (None for every company); follow_other: it would need that because it is what
     Other needs; changes_from: the first later month from which another set is in force for the type here, whether its own,
     every company's or Other's (None: no later one), which the grid shows under In force; follow_changes_from: the same once
-    the company has followed every company again (None for every company)."""
+    the company has followed every company again (None for every company); other_later: for a type with no set in force,
+    the later months from which what Other gives it changes (_other_changes), which a set of its own from this month does
+    away with (empty for a type with a set in force)."""
     now = R.set_for(payment_type, month, entity_id)
     follows = now is None
     if follows:
@@ -1438,6 +1455,7 @@ def _required_at(R, payment_type, entity_id, month):
             "every_later": [s["from_month"] for s in _covering(R, payment_type, None, month)[1]] if entity_id is not None and not own else [],
             "can_follow": bool(entity_id is not None and (covering or later)),
             "follow": follow, "follow_other": follow_other,
+            "other_later": _other_changes(R, payment_type, entity_id, month, sets) if follows and payment_type != "other" else [],
             "changes_from": changes_from, "follow_changes_from": follow_changes_from}
 
 
@@ -1460,10 +1478,33 @@ def _own_sets_of(R, payment_type, month):
     return out
 
 
+def _other_own_of(R, payment_type, month):
+    """The companies that need their own Other set for a type from that month on, in months in which neither they nor
+    every company has a set of the type: each with those spans, as _own_sets_of gives them. A set of the type for every
+    company stands over a company's own Other, so a save for every company changes what these need."""
+    out = []
+    if payment_type == "other":
+        return out
+    for eid in sorted({s["entity_id"] for s in R.sets if s["payment_type"] == "other" and s["entity_id"] is not None}):
+        spans, inside = [], False
+        for m in [month, *_turns(month, [s for s in R.sets if s["payment_type"] in (payment_type, "other") and s["entity_id"] in (None, eid)])]:
+            other = R.set_for("other", m, eid)
+            here = R.set_for(payment_type, m, eid) is None and bool(other) and other["entity_id"] == eid
+            if here and not inside:
+                spans.append({"from_month": m if m > month else None, "to_month": None})
+            elif inside and not here:
+                spans[-1]["to_month"] = m
+            inside = here
+        if spans:
+            out.append({"entity_id": eid, "spans": spans})
+    return out
+
+
 def required_view(con, entity_id=None, month=None):
     """What each payment type needs now, for every company or one, with its sets over time (newest first); and what it
     needs in one payroll month (month, else the month a change is offered from) as `at` (_required_at) with, for every
-    company, the companies that have their own set and in which months (`own_in`, _own_sets_of)."""
+    company, the companies that have their own set and in which months (`own_in`, _own_sets_of), and those that need their
+    own Other set for the type and in which months (`other_own_in`, _other_own_of)."""
     if entity_id is not None and not con.execute("SELECT 1 FROM entities WHERE id = ?", (entity_id,)).fetchone():
         raise Refused("There is no such company.", 404)
     if month is not None and not MONTH.fullmatch(month):
@@ -1482,7 +1523,8 @@ def required_view(con, entity_id=None, month=None):
                       "docs": now["docs"] if now else [], "own": bool(now and not follows and now["entity_id"] is not None),
                       "follows_other": follows and k != "other", "since": now["from_month"] if now and not follows else None,
                       "history": [{**s} for s in hist], "at": _required_at(R, k, entity_id, month),
-                      "own_in": _own_sets_of(R, k, month) if entity_id is None else []})
+                      "own_in": _own_sets_of(R, k, month) if entity_id is None else [],
+                      "other_own_in": _other_own_of(R, k, month) if entity_id is None else []})
     docs = sorted(((k, d) for k, d in R.docs.items() if k not in INTERNAL_DOCS), key=lambda kv: (R.order(kv[0], 999), kv[1]["sort"]))
     last = _last_filed(con, entity_id)
     return {"scope": entity_id, "month": month, "default_from": _first_open(con, entity_id),
@@ -1592,8 +1634,9 @@ def required_save_many(con, entity_id, from_month, changes):
     stale = []
     for c in changes:
         now = _required_at(R, c["payment_type"], entity_id, from_month)
-        # a follow takes what every company gets, later changes too; a new set stands over every company's later ones
-        seen = ["docs", "own", "follows_other", "later", "returns", "follow" if c["docs"] is None else "every_later"]
+        # a follow takes what every company gets, later changes too; a new set stands over every company's later ones, and
+        # over what is still to change through Other
+        seen = ["docs", "own", "follows_other", "later", "returns", *(["follow"] if c["docs"] is None else ["every_later", "other_later"])]
         if any(c["was"].get(x) != now[x] for x in seen):
             stale.append(R.label(c["payment_type"]))
     if stale:

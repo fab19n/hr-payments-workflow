@@ -414,6 +414,58 @@ check("...and every company's Other, in every company's view and for a company t
 one("tst_via", ["approval"], month=M1)
 check("...until it is to have a set of its own, which Other's later ones don't change", changes("tst_via")[0] == M1 and changes("tst_via", month=M1)[0] is None, (changes("tst_via"), changes("tst_via", month=M1)))
 
+# ---------- changes through Other that a set of the type's own does away with ----------
+def via(key, entity=None, month=M0):
+    return at(key, entity, month).get("other_later", "missing")
+
+
+def needs(key, entity, month):
+    c = db.connect()
+    out = rulebook.get(c).required_docs(key, 1, month, entity)
+    c.close()
+    return out
+
+
+new_type("tst_path")
+base_other = at("other")["docs"]
+check("from the month of Other's last planned change on, no month is named for a type that needs what Other needs", via("tst_path", month=M3) == [] and via("tst_path", EXA, M3) == [],
+      (via("tst_path", month=M3), via("tst_path", EXA, M3)))
+path_was = at("tst_path", EXA, M0)
+one("other", [d for d in base_other if d != "einvoice"] + ["einvoice", "portal"], month=M2)  # this replaces the one planned for the month after
+check("a later change to every company's Other is named for the type, for every company and for a company; from that month on none is",
+      via("tst_path") == [M2] and via("tst_path", EXA) == [M2] and via("tst_path", EXA, M2) == [] and via("other", EXA) == [] and at("tst_path", EXA)["every_later"] == [], (via("tst_path"), via("tst_path", EXA)))
+refused("a company's save made before that change to Other was added is refused, so it doesn't do away with it unseen",
+        [change("tst_path", ["bank", "approval"], entity=EXA, was=path_was)], ["for tst_path", "changed after this page read it."], code=409, entity=EXA)
+one("other", ["claim", "bank"], entity=EXA, month=M1)
+check("a company with its own Other is changed by its own Other's changes, not by every company's", via("tst_path", EXA) == [M1] and via("tst_path") == [M2], (via("tst_path", EXA), via("tst_path")))
+one("other", None, entity=EXA, month=M3)
+check("...until it is to follow every company's Other again", via("tst_path", EXA) == [M1, M3], via("tst_path", EXA))
+one("tst_path", ["invoice"], month=M3)
+check("a month from which the type has a set of its own is no change through Other, and a type with a set in force has none",
+      via("tst_path", EXA) == [M1] and via("tst_path") == [M2] and via("tst_path", month=M3) == [] and via("tst_path", EXA, M3) == [], (via("tst_path", EXA), via("tst_path")))
+ahead = needs("tst_path", EXA, M1)
+r = batch([change("tst_path", ["pv"], entity=EXA)], entity=EXA)
+check("...saved having seen it, it is kept, and the company's type no longer follows Other's change", r["ok"] and ahead == ["claim", "bank"] and needs("tst_path", EXA, M1) == ["pv"], (r, ahead))
+
+
+def other_own(key, month=M0):
+    return [(x["entity_id"], [(s["from_month"], s["to_month"]) for s in x["spans"]]) for x in typed(view(None, month), key).get("other_own_in", [])]
+
+
+new_type("tst_fall")
+# EXA has its own Other from M1 until it follows every company's again from M3; EXB its own from M2 on
+check("for every company, a type with no set names the companies that need their own Other for it, with the months: from the one it starts in, until it follows every company again",
+      other_own("tst_fall") == [(EXA, [(M1, M3)]), (EXB, [(M2, None)])], other_own("tst_fall"))
+check("...one that needs it in the month shown has no starting month; one company's view, and Other itself, name none",
+      other_own("tst_fall", M2) == [(EXA, [(None, M3)]), (EXB, [(None, None)])] and typed(view(EXA, M1), "tst_fall").get("other_own_in") == []
+      and typed(view(None, M0), "other").get("other_own_in") == [], other_own("tst_fall", M2))
+one("tst_fall", ["approval"], entity=EXB, month=M3)
+check("...but not in the months the company has its own set for the type", other_own("tst_fall") == [(EXA, [(M1, M3)]), (EXB, [(M2, M3)])], other_own("tst_fall"))
+one("tst_fall", ["bank"], month=M2)
+check("...nor once every company has a set of the type, which stands over a company's own Other",
+      other_own("tst_fall") == [(EXA, [(M1, M2)])] and other_own("tst_fall", M2) == [] and needs("tst_fall", EXA, M1) == ["claim", "bank"] and needs("tst_fall", EXA, M2) == ["bank"],
+      (other_own("tst_fall"), other_own("tst_fall", M2)))
+
 # ---------- 6. filed months never change ----------
 filed_was = at("salary", month=MP)
 call("post", "/api/months/close", json={"entity_id": EXA, "month": M0, "closed": True})

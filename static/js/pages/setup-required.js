@@ -58,7 +58,7 @@ const rqCount = draft => draft ? Object.entries(draft.edits).reduce((n, [k, x]) 
 const rqHeld = () => { const draft = state.setup.reqDraft; return !!draft && (rqEdited(draft).length > 0 || !!draft.reason.trim()); };
 const rqDraftFor = d => state.setup.reqDraft ||= { scope: d.scope ?? null, month: d.month, edits: {}, follows: {}, seen: {}, names: {}, reason: "" };
 // What a type's row was when it was changed: a page read again says when the records have moved under it.
-const rqSeen = at => JSON.stringify([at.docs, at.own, at.follows_other, at.later, at.returns, at.follow, at.every_later]);
+const rqSeen = at => JSON.stringify([at.docs, at.own, at.follows_other, at.later, at.returns, at.follow, at.every_later, at.other_later]);
 function rqNoted(draft, t) { draft.names[t.key] = t.label; draft.seen[t.key] ||= rqSeen(t.at); }
 function rqTidy(draft, key) {
   if (draft.edits[key] && !Object.keys(draft.edits[key]).length) delete draft.edits[key];
@@ -135,8 +135,11 @@ function rqImpactText(a = {}) {
   const c = !done ? "" : miss ? `${done} will be complete` : `${done} open payment${s(done)} will be complete`;
   return `${[m, c].filter(Boolean).join("; ")}.`;
 }
-// For every company: the companies in use with their own set of a type, in the month shown or later (own_in: the spans they have it in).
-const rqOwnIn = t => (t.own_in || []).filter(x => isActive(state.meta.entities.find(e => e.id === x.entity_id) || { active: 0 }));
+// For every company: the companies in use with their own set of a type, in the month shown or later (own_in: the spans they have it in),
+// and those that need their own Other set for it (other_own_in).
+const rqInUse = list => (list || []).filter(x => isActive(state.meta.entities.find(e => e.id === x.entity_id) || { active: 0 }));
+const rqOwnIn = t => rqInUse(t.own_in);
+const rqOtherOwnIn = t => rqInUse(t.other_own_in);
 // Those months in words, "" for a set in force with no end: "until June 2027", "from March 2027", "from March 2027 until June 2027".
 const rqSpans = spans => andList(spans.map(s => [s.from_month ? `from ${monthName(s.from_month)}` : "", s.to_month ? `until ${monthName(s.to_month)}` : ""].filter(Boolean).join(" ")).filter(Boolean));
 // The months outside them, which a change for every company does reach.
@@ -156,6 +159,9 @@ function rqWarnings(d, draft) {
       if (t.at.returns?.length) out.push(`${co.code} was to follow all companies again for ${t.label} from ${andList(t.at.returns.map(monthName))}. Saving from ${month} does away with that: its own set carries on.`);
       const theirs = t.at.every_later || [];
       if (theirs.length) out.push(`All companies have another set for ${t.label} from ${andList(theirs.map(monthName))}. ${co.code} keeps its own set then too.`);
+      // ...and over what is still to change through Other, for a type with no set in force. (For every company, the line below says it.)
+      const via = t.at.other_later || [];
+      if (via.length) out.push(`Through Other, what ${co.code} needs for ${t.label} was to change from ${andList(via.map(monthName))}. Saving from ${month} does away with that: its own set carries on.`);
     }
     const gone = draft.follows[t.key] ? [] : t.at.docs.filter(k => !rqOffered(d, k)).map(k => rqShort(rqDocName(d, k)));
     if (gone.length) out.push(`${andList(gone)} ${gone.length === 1 ? "is" : "are"} no longer in use, so ${gone.length === 1 ? "it is" : "they are"} left out of the new set of ${t.label}.`);
@@ -164,6 +170,8 @@ function rqWarnings(d, draft) {
       out.push(x.spans.some(s => s.to_month) ? `${has} ${rqSpans(x.spans)}. This change reaches it ${rqReached(x.spans)}.`
         : `${has}${from ? ` from ${monthName(from)}, so from then` : ", so"} this change doesn't reach it.`);
     }
+    // A set for every company stands over a company's own Other, which that company needs for the type until then.
+    for (const x of rqOtherOwnIn(t)) { const months = rqSpans(x.spans); out.push(`${rqCode(x.entity_id)} needs its own Other list for ${t.label}${months ? ` ${months}` : ""}. This save gives it the new set instead.`); }
   }
   if (changed.some(t => t.key === "other")) {
     const along = rqRows(d).filter(t => draft.follows[t.key] ? t.at.follow_other : t.at.follows_other && !draft.edits[t.key]);
@@ -225,10 +233,14 @@ function rqSetsHtml(d, t) {
   return `<b>Earlier sets for ${esc(t.label)}</b>${at.follows_other ? `<div>This type has no documents set of its own from ${esc(monthName(d.month))}, so it needs what Other needs.</div>` : ""}${only ? `<div>No earlier sets: this set has been in force from the start.</div>` : ""}${hs.length ? hs.map(line).join("") : `<div class="muted">No set of its own is recorded.</div>`}`;
 }
 // The first later month from which another set is in force for a row, or none: as the records have it; for a type to follow all companies
-// again, as it is once it does. Where that is what Other needs and the same save changes Other too, the records don't say.
+// again, as it is once it does. Where that is what Other needs and the same save changes Other too, the records don't say. Nor is a month
+// named for a type with no set in force once a box of it is ticked (its own set from this month carries on), or, with Other changed in the
+// same save, one that comes through Other (other_later).
 function rqNext(draft, t) {
-  if (!draft?.follows[t.key]) return t.at.changes_from;
-  return t.at.follow_other && (draft.follows.other || draft.edits.other) ? null : t.at.follow_changes_from;
+  const other = !!(draft?.follows.other || draft?.edits.other);
+  if (draft?.follows[t.key]) return t.at.follow_other && other ? null : t.at.follow_changes_from;
+  if (t.at.follows_other && (draft?.edits[t.key] || draft?.follows.other || other && t.at.other_later?.includes(t.at.changes_from))) return null;
+  return t.at.changes_from;
 }
 function rqBodyHtml(d) {
   const S = state.setup, draft = S.reqDraft, cols = rqColumns(d), span = cols.length + 3;
