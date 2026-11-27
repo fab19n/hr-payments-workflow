@@ -2871,6 +2871,12 @@ def sql_entry_update(sid):
         db.log(c, f"Linked SQL entry {s['doc_no']} to payment: {desc}")
         matched = _match_payments(c, s["entity_id"], {int(b["payment_id"])})
     elif "create_payment" in b:
+        # Sent twice (a second click while the page reads the list again), it would add the same payment again and leave
+        # the first one on no entry. The link says so, not the status: a linked journal or invoice keeps its own.
+        has = s["payment_id"] and c.execute("SELECT description FROM payments WHERE id = ?", (s["payment_id"],)).fetchone()
+        if has:
+            return err(f"{s['doc_no']} is already linked to a payment ({has['description']}), so no new one was created. "
+                       "Unlink it first to create another.")
         pid = _payment_from_entry(c, _as_voucher(c, s), b["create_payment"].get("category"))
         made.append(pid)
         matched = _match_payments(c, s["entity_id"], {pid})
