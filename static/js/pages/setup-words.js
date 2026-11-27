@@ -268,7 +268,7 @@ document.addEventListener("click", async ev => {
   if (!b || RANK.quiet) return;
   const L = RANK.list, id = +b.dataset.grip;
   if (!rankOn(L)) return;
-  try { await (L.held === id ? rankDrop(L) : L.held == null ? rankPickUp(L, id) : rankDrop(L)); }
+  try { await (L.held == null ? rankPickUp(L, id) : rankDrop(L)); }  // with a rule picked up, a press drops it
   catch (e) { toast(e.message, true); }
 });
 document.addEventListener("keydown", ev => {
