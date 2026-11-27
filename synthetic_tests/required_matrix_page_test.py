@@ -579,6 +579,14 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     r.otherAndFollower = warnings();
     calm(); await submit().done; await idle();
     r.otherSaved = { sent: posts()[0].changes.map(c => [c.payment_type, c.docs]), odd: (await held("tst_odd")).docs, other: (await held("other")).docs, oldKind: (await held("tst_old")) };
+    // a company: it was to follow all companies again later, and all companies are to change later
+    await single("director", ["bank"], FX.EXB, M[0]); await single("director", null, FX.EXB, M[2]); await single("receipt", ["bank"], null, M[3]);
+    await open(); await pick("rq-scope", String(FX.EXB)); await idle(60);
+    r.backNote = rowOf("director").querySelector(".rq-since").textContent;
+    await tick("director", "tst_memo"); await idle(); r.back = warnings();
+    await click($("#rq-discard")); await idle(); await tick("receipt", "tst_memo"); await idle(); r.theirs = warnings();
+    await click($("#rq-discard")); await idle(); await pick("rq-scope", "all"); await idle(60); await tick("receipt", "tst_memo"); await idle(); r.theirsAll = warnings();
+    run(`rqDrop()`);
     return r;
   });
 
@@ -946,6 +954,12 @@ holds("a change to Other names the types that need what Other needs; one of them
       and wn["otherAndFollower"] == ["Test old kind has no set of its own and needs what Other needs, so this changes it too."]
       and wn["otherSaved"]["odd"] == ["invoice", "pv", "bank", "approval"] and wn["otherSaved"]["other"] == ["invoice", "pv", "bank", "tst_memo"]
       and wn["otherSaved"]["oldKind"]["follows_other"] is True and wn["otherSaved"]["oldKind"]["docs"] == wn["otherSaved"]["other"], (wn["other"], wn["otherAndFollower"], wn["otherSaved"]))
+holds("a company that was to follow all companies again says when, on its row and before Save, which would do away with it",
+      lambda: has(wn["backNote"], f"Changes from {MONTH(M2)}")
+      and f"EXB was to follow all companies again for Director allowance from {MONTH(M2)}. Saving from {MONTH(M0)} does away with that: its own set carries on." in wn["back"], (wn["backNote"], wn["back"]))
+holds("a company's new set says it also stands where all companies have another set later; for every company there is no such line",
+      lambda: f"All companies have another set for Money received from {MONTH(M3)}. EXB keeps its own set then too." in wn["theirs"]
+      and f"Saving gives EXB its own set for Money received from {MONTH(M0)}." in wn["theirs"] and not any("keeps its own set" in x for x in wn["theirsAll"]), (wn["theirs"], wn["theirsAll"]))
 sd = o["stoppedDoc"]
 holds("a document no longer in use that a set asks for keeps its column, marked Not in use, its boxes locked",
       lambda: sd["col"]["box"]["pressed"] == "true" and sd["col"]["box"]["off"] is True and sd["col"]["box"]["label"].endswith("required, no longer in use") and sd["col"]["head"][1].endswith("Not in use")

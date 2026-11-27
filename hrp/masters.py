@@ -1394,8 +1394,10 @@ def _required_at(R, payment_type, entity_id, month):
     Setup's grid shows for the month picked, and what a save of several types sends back as `was`.
     docs: the set in force (a type with none: Other's); own: it is this company's own; follows_other: the type has no set
     then; since: the month the set in force starts; later: this scope's sets that start after the month, which a save from
-    it replaces; can_follow: Follow all companies again would change something; follow: what the company would then need
-    (None for every company); follow_other: it would need that because it is what Other needs."""
+    it replaces; returns: the later months from which a company is to follow every company again (its own set ends with
+    none after it), which a new set of its own from this month does away with; can_follow: Follow all companies again
+    would change something; follow: what the company would then need (None for every company); follow_other: it would
+    need that because it is what Other needs."""
     now = R.set_for(payment_type, month, entity_id)
     follows = now is None
     if follows:
@@ -1413,6 +1415,8 @@ def _required_at(R, payment_type, entity_id, month):
             "follows_other": follows and payment_type != "other",
             "since": now["from_month"] if now and not follows else None,
             "later": [{"from_month": s["from_month"], "docs": list(s["docs"])} for s in later],
+            "returns": sorted(s["to_month"] for s in covering + later
+                              if s["to_month"] and s["to_month"] not in {x["from_month"] for x in later}),
             "can_follow": bool(entity_id is not None and (covering or later)),
             "follow": follow, "follow_other": follow_other}
 
@@ -1560,7 +1564,7 @@ def required_save_many(con, entity_id, from_month, changes):
     stale = []
     for c in changes:
         now = _required_at(R, c["payment_type"], entity_id, from_month)
-        seen = ["docs", "own", "follows_other", "later"] + (["follow"] if c["docs"] is None else [])
+        seen = ["docs", "own", "follows_other", "later", "returns"] + (["follow"] if c["docs"] is None else [])
         if any(c["was"].get(x) != now[x] for x in seen):
             stale.append(R.label(c["payment_type"]))
     if stale:

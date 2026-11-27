@@ -293,6 +293,24 @@ check("a follow and a change go in one write, the follow ending the company's ow
 refused("a follow where nothing of its own is left refuses the whole save", [change("claim", ["bank"], entity=EXB, month=M1), change("salary", None, entity=EXB, month=M1)],
         ["Salary: This company already follows the documents set for every company."], entity=EXB, month=M1)
 
+# a company that is to follow every company again from a later month: the view says so, and a save that would undo it unseen is refused
+call("post", "/api/setup/payment_types", json={"fields": {"key": "tst_back", "label": "Test back", "direction": "out"}})
+one("tst_back", ["bank"], entity=EXB, month=M0)
+seen_before = at("tst_back", EXB, M1)
+one("tst_back", None, entity=EXB, month=M3)
+back = at("tst_back", EXB, M1)
+check("a company's own set that is to give way to every company's later says from when; the earlier view, and every company's, name none",
+      back["returns"] == [M3] and back["later"] == [] and seen_before["returns"] == [] and at("tst_back", EXB, M3)["returns"] == [] and at("rental", month=M0)["returns"] == [], (back, seen_before))
+refused("...a save made from a view without it is refused, so it isn't undone unseen",
+        [change("tst_back", ["invoice"], entity=EXB, month=M1, was=seen_before)], ["for Test back", "changed after this page read it."], code=409, entity=EXB, month=M1)
+r = batch([change("tst_back", ["invoice"], entity=EXB, month=M1)], entity=EXB, month=M1)
+check("...saved having seen it, the company's new set carries on past that month, as a save of the type alone does",
+      r["ok"] and at("tst_back", EXB, M3)["own"] is True and at("tst_back", EXB, M3)["docs"] == ["invoice"], at("tst_back", EXB, M3))
+one("tst_back", ["bank"], entity=EXB, month=M1)
+one("tst_back", None, entity=EXB, month=M2)
+one("tst_back", ["approval"], entity=EXB, month=M3)
+check("...also when it is to have a set of its own again after that", at("tst_back", EXB, M1)["returns"] == [M2] and [x["from_month"] for x in at("tst_back", EXB, M1)["later"]] == [M3], at("tst_back", EXB, M1))
+
 # the same change by the grid and by one type alone writes the same sets
 def shape_of(key):
     return [(s["entity_id"], s["from_month"], s["to_month"], json.loads(s["docs"])) for s in sets(key)]

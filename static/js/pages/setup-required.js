@@ -51,7 +51,7 @@ const rqCount = draft => draft ? Object.values(draft.edits).reduce((n, x) => n +
 const rqHeld = () => { const draft = state.setup.reqDraft; return !!draft && (rqEdited(draft).length > 0 || !!draft.reason.trim()); };
 const rqDraftFor = d => state.setup.reqDraft ||= { scope: d.scope ?? null, month: d.month, edits: {}, follows: {}, seen: {}, names: {}, reason: "" };
 // What a type's row was when it was changed: a page read again says when the records have moved under it.
-const rqSeen = at => JSON.stringify([at.docs, at.own, at.follows_other, at.later, at.follow]);
+const rqSeen = at => JSON.stringify([at.docs, at.own, at.follows_other, at.later, at.returns, at.follow]);
 function rqNoted(draft, t) { draft.names[t.key] = t.label; draft.seen[t.key] ||= rqSeen(t.at); }
 function rqTidy(draft, key) {
   if (draft.edits[key] && !Object.keys(draft.edits[key]).length) delete draft.edits[key];
@@ -124,6 +124,12 @@ function rqWarnings(d, draft) {
   const names = list => andList(list.map(t => t.label));
   for (const t of changed) {
     if (t.at.later.length) out.push(`Saving from ${month} also replaces the later ${t.at.later.length === 1 ? "set" : "sets"} of ${t.label} (from ${andList(t.at.later.map(x => monthName(x.from_month)))}).`);
+    // A company's new set of its own runs on with no end: over a month it was to follow all companies again from, and over their later sets.
+    if (co && !draft.follows[t.key]) {
+      if (t.at.returns?.length) out.push(`${co.code} was to follow all companies again for ${t.label} from ${andList(t.at.returns.map(monthName))}. Saving from ${month} does away with that: its own set carries on.`);
+      const theirs = t.at.own ? [] : (t.history || []).filter(h => h.entity_id == null && h.from_month > d.month).map(h => h.from_month).sort();
+      if (theirs.length) out.push(`All companies have another set for ${t.label} from ${andList(theirs.map(monthName))}. ${co.code} keeps its own set then too.`);
+    }
     const gone = draft.follows[t.key] ? [] : t.at.docs.filter(k => !rqOffered(d, k)).map(k => rqShort(rqDocName(d, k)));
     if (gone.length) out.push(`${andList(gone)} ${gone.length === 1 ? "is" : "are"} no longer in use, so ${gone.length === 1 ? "it is" : "they are"} left out of the new set of ${t.label}.`);
     const live = (t.own_in || []).filter(x => isActive(state.meta.entities.find(e => e.id === x.entity_id) || { active: 0 }));
@@ -194,7 +200,7 @@ function rqBodyHtml(d) {
     const n = cols.filter(c => rqTicked(draft, t, c.key)).length, open = !!S.reqOpen?.[t.key], later = t.at.later;
     return `<tr${isActive(t) ? "" : ` class="rq-stopped"`}><th scope="row" class="rq-type"><span class="rq-name">${esc(t.label || t.key)}</span>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}<span class="rq-n">${plural(n, "document")}</span></th>
       ${cols.map((c, i) => rqBoxHtml(d, draft, t, c, r, i)).join("")}
-      <td class="rq-since"><span>${esc(draft?.follows[t.key] ? "Follows all companies" : rqSince(t.at))}</span>${later.length ? `<span class="note">Changes from ${esc(monthName(later[0].from_month))}</span>` : ""}<button type="button" class="link rq-act" id="rq-h-${r}" data-rq-type="${esc(t.key)}" data-rq-hist="1" aria-expanded="${open}" aria-label="${esc(`Earlier sets for ${t.label}`)}"><span class="rq-chev" aria-hidden="true">${icon("chevronRight")}</span>Earlier sets</button></td>
+      <td class="rq-since"><span>${esc(draft?.follows[t.key] ? "Follows all companies" : rqSince(t.at))}</span>${later.length || t.at.returns?.length ? `<span class="note">Changes from ${esc(monthName([...later.map(x => x.from_month), ...(t.at.returns || [])].sort()[0]))}</span>` : ""}<button type="button" class="link rq-act" id="rq-h-${r}" data-rq-type="${esc(t.key)}" data-rq-hist="1" aria-expanded="${open}" aria-label="${esc(`Earlier sets for ${t.label}`)}"><span class="rq-chev" aria-hidden="true">${icon("chevronRight")}</span>Earlier sets</button></td>
       <td class="rq-for">${rqForHtml(d, draft, t, r)}</td></tr>${open ? `<tr class="rq-hist"><td colspan="${span}"><div class="rq-hist-in">${rqSetsHtml(d, t)}</div></td></tr>` : ""}`;
   }).join("");
   return rows || `<tr><td colspan="${span}" class="empty">No payment types yet.</td></tr>`;
