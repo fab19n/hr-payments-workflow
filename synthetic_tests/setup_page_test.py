@@ -1504,13 +1504,19 @@ const tryit = async (name, fn) => { try { out[name] = await fn(); } catch (e) { 
       await reset(); await openRec("accounts", FX.TEMP, EXB); const asWas = JSON.parse(JSON.stringify(FX.get[TEMPREC]));
       await run(`setupAct("stop", __btn)`); el("su-reason").value = "A reason"; delays["/api/meta"] = [120]; const sentFrom = run(`globalThis.__sd = state.setup.drawer; 1`);
       const stopFirst = run(`whySubmit()`); await sleep(40);
-      el("su-label").value = "Saved right after the stop"; postDelays[TEMPREC] = 250;
+      el("su-label").value = "Saved right after the stop "; postDelays[TEMPREC] = 250;   // the server keeps it without the space at its end
+      FX.get[TEMPREC] = JSON.parse(JSON.stringify(asWas)); FX.get[TEMPREC].record.bank = "As the stop left it";   // what the redraw reads: not typed by anyone
       const saveNext = run(`setupSave()`); await sleep(180);                  // the stop's reopen has drawn the record again, as it still was
       const midway = { redrawn: run(`state.setup.drawer !== __sd`) };
-      FX.get[TEMPREC] = JSON.parse(JSON.stringify(asWas)); FX.get[TEMPREC].record.label = "Saved right after the stop";
+      FX.get[TEMPREC] = JSON.parse(JSON.stringify(asWas)); Object.assign(FX.get[TEMPREC].record, { label: "Saved right after the stop", bank: "As the save left it" });
       await Promise.all([stopFirst, saveNext]); await sleep(60); delete delays["/api/meta"];
-      r.sameRecord = { ...midway, label: el("su-label").value, dirty: dirty(), id: run(`state.setup.drawer.id`) === FX.TEMP };
+      r.sameRecord = { ...midway, label: el("su-label").value, bank: el("su-bank").value, dirty: dirty(), id: run(`state.setup.drawer.id`) === FX.TEMP };
       FX.get[TEMPREC] = asWas;
+      // another record's dialog drawn in its place, even with no close between: it is not the change's own
+      await reset(); await openRec("accounts", FX.TEMP, EXB); fillAll(); el("su-label").value = "Renamed account " + (++uniq); postDelays[TEMPREC] = 150;
+      const away = run(`setupSave()`); await sleep(40); await run(`openSetup("accounts", ${FX.MAIN}, { force: true })`); await sleep(20); el("su-label").value = "typed in the other";
+      const drawnOver = el("drawer").innerHTML; await away; await sleep(60);
+      r.noClose = { same: el("drawer").innerHTML === drawnOver && run(`state.setup.drawer.id`) === FX.MAIN, typed: el("su-label").value, dirty: dirty() };
       // l2: closed while it is on its way and another opened, or nothing; the same while the saved record is read; a refusal then is said in a message
       for (const [key, status] of [["l2add", 200], ["l2refused", 400]]) {
         await reset(); await openRec("accounts", "new", EXA); fillAll(); postDelays[AC] = 150;
@@ -2129,7 +2135,9 @@ v = lm["l1save"]
 check("(l) the same for a Save: what was typed while it was on its way stays, the other fields show what the server has",
       v["id"] is True and v["notes"] == "typed while it was saved" and v["label"] == v["server"] and v["dirty"] is True, v)
 check("(l) a Save sent before an earlier change's late redraw of the same record still opens it on what was saved, never with the older values as typed since",
-      lm["sameRecord"] == {"redrawn": True, "label": "Saved right after the stop", "dirty": False, "id": True}, lm["sameRecord"])
+      lm["sameRecord"] == {"redrawn": True, "label": "Saved right after the stop", "bank": "As the save left it", "dirty": False, "id": True}, lm["sameRecord"])
+check("(l) ...but another record's dialog drawn in its place, even with no close between, isn't replaced or rebaselined",
+      lm["noClose"] == {"same": True, "typed": "typed in the other", "dirty": True}, lm["noClose"])
 check("(l) with nothing typed meanwhile the saved record's dialog is clean", lm["l1clean"] == {"id": 777, "label": "The saved account", "dirty": False}, lm["l1clean"])
 check("(l) what was typed in a field the saved record can't change isn't carried into its dialog", lm["l1locked"] == {"key": "made_key", "dirty": False}, lm["l1locked"])
 v = lm["l2add"]
