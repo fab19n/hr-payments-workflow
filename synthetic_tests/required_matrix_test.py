@@ -377,6 +377,43 @@ one("tst_over", ["approval"], month=M2)
 r = batch([change("tst_over", None, entity=EXB, month=M1, was=seen_follow)], entity=EXB, month=M1)
 check("...nor is Follow all companies again, which takes every company's later sets", r["ok"] is True, r)
 
+# ---------- "Changes from" under In force: the first later month another set is in force ----------
+def new_type(key):
+    call("post", "/api/setup/payment_types", json={"fields": {"key": key, "label": key, "direction": "out"}})
+
+
+def changes(key, entity=None, month=M0):
+    a = at(key, entity, month)
+    return a.get("changes_from", "missing"), a.get("follow_changes_from", "missing")
+
+
+new_type("tst_chg")
+one("tst_chg", ["bank"], month=M0)
+one("tst_chg", ["invoice"], month=M2)
+check("a type's later set for every company is the next change, for every company and for a company that follows them; from that month on there is none",
+      changes("tst_chg") == (M2, None) and changes("tst_chg", EXA) == (M2, M2) and changes("tst_chg", EXA, M2) == (None, None), (changes("tst_chg"), changes("tst_chg", EXA)))
+one("tst_chg", ["claim"], entity=EXB, month=M3)
+check("...also before a company's own set that starts later still: every company's comes first",
+      changes("tst_chg", EXB)[0] == M2 and at("tst_chg", EXB, M0)["later"][0]["from_month"] == M3 and changes("tst_chg", EXB, M2)[0] == M3, changes("tst_chg", EXB))
+new_type("tst_chg_own")
+one("tst_chg_own", ["bank"], month=M0)
+one("tst_chg_own", ["claim"], entity=EXB, month=M0)
+one("tst_chg_own", ["invoice"], month=M2)
+check("a company's own set in force isn't changed by every company's later one; once it follows them again, it is",
+      changes("tst_chg_own", EXB) == (None, M2), changes("tst_chg_own", EXB))
+one("tst_chg_own", None, entity=EXB, month=M3)
+check("...with a month it is to follow them again from, that is the change as the records are, and every company's own as a follow now would be",
+      changes("tst_chg_own", EXB) == (M3, M2), changes("tst_chg_own", EXB))
+new_type("tst_via")
+other_was = at("other")["docs"]
+one("other", ["bank", "claim"], entity=EXB, month=M2)
+check("a type that needs what Other needs changes when Other does: a company's own Other, for that company alone",
+      changes("tst_via", EXB)[0] == M2 and at("tst_via", EXB, M0)["follows_other"] is True and at("tst_via", EXB, M0)["later"] == [] and changes("tst_via")[0] != M2, (changes("tst_via", EXB), changes("tst_via")))
+one("other", [d for d in other_was if d != "bank"] or ["bank"], month=M3)
+check("...and every company's Other, in every company's view and for a company that follows it", changes("tst_via")[0] == M3 and changes("tst_via", EXA)[0] == M3, (changes("tst_via"), changes("tst_via", EXA)))
+one("tst_via", ["approval"], month=M1)
+check("...until it is to have a set of its own, which Other's later ones don't change", changes("tst_via")[0] == M1 and changes("tst_via", month=M1)[0] is None, (changes("tst_via"), changes("tst_via", month=M1)))
+
 # ---------- 6. filed months never change ----------
 filed_was = at("salary", month=MP)
 call("post", "/api/months/close", json={"entity_id": EXA, "month": M0, "closed": True})

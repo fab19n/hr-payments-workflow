@@ -438,6 +438,15 @@ async function open(kind = "guess_words", entity = FX.EXA) {
   run(`__toasts.length = 0`); NET.sent.length = 0; focused = null;
 }
 async function reset() { await setOrder(FX.ORDER); await open(); run(`state.setup.stopped = false; LIST_REDRAW["setup-guess_words"]()`); }
+// A mouse click as a browser makes it: the focus goes first, to what was clicked or the nearest thing round it that takes the focus (a
+// control, or anything with a tabindex; else nowhere), leaving what had it with a focusout that names it; then the click.
+const mouse = async el => {
+  let to = el;
+  while (to && !matches(to, "button, a[href], input, select, textarea, summary, [tabindex]")) to = to.parent;
+  const was = document.activeElement;
+  if (was !== (to || body)) { focused = null; if (was !== body) dispatch(was, { type: "focusout", relatedTarget: to }); focused = to; }
+  const ev = dispatch(el, { type: "click", button: 0 }); await sleep(0); return ev;
+};
 const type = async (text, wait = 400) => { const el = $("#mt-try"); el.value = text; el.focus(); dispatch(el, { type: "input" }); await sleep(wait); await idle(); };
 const result = () => { const el = $("#mt-result"); return el ? { text: el.textContent, cls: el.className, role: el.getAttribute("role") } : null; };
 const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("mt-hit")).map(tr => +tr.dataset.setupRow), words: ($("#setupList")?.querySelectorAll("[data-word]") || []).filter(w => w.classList.contains("hit")).map(w => w.textContent) });
@@ -564,9 +573,9 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     await reset();
     await click(grip(a)); await key(grip(a), "ArrowDown"); NET.sent.length = 0;
     dispatch(grip(a), { type: "focusout", relatedTarget: null }); await idle(); r.noTarget = { posts: posts().length, pressed: grip(a).getAttribute("aria-pressed") };
-    const name = rowsOnShow()[0].querySelector("[data-setup-open]");
-    dispatch(grip(a), { type: "focusout", relatedTarget: name }); name.focus(); await idle();
-    r.blur = { posts: posts().length, server: (await order()).slice(0, 3), said: said(), focus: document.activeElement.dataset.setupOpen || "", was: name.dataset.setupOpen };
+    const search = $("#setupMain").querySelector('[data-search="setup-guess_words"]');
+    dispatch(grip(a), { type: "focusout", relatedTarget: search }); search.focus(); await idle();
+    r.blur = { posts: posts().length, server: (await order()).slice(0, 3), said: said(), stayed: document.activeElement === search };
     await reset();
     await click(grip(a)); await key(grip(a), "ArrowDown"); NET.sent.length = 0;
     const tab = await key(grip(a), "Tab"); const kept = grip(a); await idle();
@@ -673,6 +682,7 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     await setOrder(other);   // another change comes first
     NET.sent.length = 0;
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a)); await idle();
+    r.focus = focusId(); r.mine = `rank-grip-${a}`;
     r.stale = { posts: posts().length, toasts: toasts(), ids: shown().slice(0, 3), server: (await order()).slice(0, 4), read: NET.sent.filter(x => x[0] === "GET" && x[1] === "/api/setup/guess_words").length, off: grips().some(x => x.hasAttribute("aria-disabled")) };
     return { ...r, other: other.slice(0, 4) };
   });
@@ -684,6 +694,7 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     // the server saves it and the answer is lost: never said saved; the list read again shows what the records have
     await reset(); NET.fail[P] = "lost"; NET.sent.length = 0;
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a)); await sleep(5); await idle(); NET.fail = {};
+    r.lostFocus = [focusId(), `rank-grip-${a}`];
     r.lost = { toasts: toasts(), said: said(), ids: shown().slice(0, 3), server: (await order()).slice(0, 3), posts: posts().length, page: $("#main").innerHTML.includes("Applies to SQL imports"), off: grips().some(x => x.hasAttribute("aria-disabled")) };
     // it never reaches the server: not said saved, nor "nothing was changed"; the list shows the old order
     await reset(); NET.fail[P] = "net";
@@ -718,8 +729,10 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     await reset(); NET.delay[P] = 300; NET.sent.length = 0;
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
     await run(`render()`); await sleep(40);
+    grip(b).focus(); const old = grip(b);
     r.mid = { off: grips().every(x => x.getAttribute("aria-disabled") === "true"), read: NET.sent.filter(x => x[0] === "GET" && x[1] === "/api/setup/guess_words").length };
     await idle(); NET.delay = {};
+    r.againFocus = { at: focusId(), want: `rank-grip-${b}`, redrawn: !old.isConnected };
     r.again = { ids: shown().slice(0, 3), off: grips().some(x => x.hasAttribute("aria-disabled")), read: NET.sent.filter(x => x[0] === "GET" && x[1] === "/api/setup/guess_words").length };
     // refused after another section was opened: only a message, and the page on show isn't read again
     await reset(); NET.delay[P] = 300; const other = FX.ORDER.slice(0, -1); other.unshift(FX.ORDER[FX.ORDER.length - 1]);
@@ -780,6 +793,35 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     return { ...r, ids: { a, b, c } };
   });
 
+  /* ======== review fixes, round 2: a click, which moves the focus first, never saves a half-made move ======== */
+  await tryit("pointer", async () => {
+    const r = {};
+    const [a, , b, c] = FX.ORDER;
+    const cell = id => $("#setupList").querySelector(`tr[data-setup-row="${id}"] .rank-n`);
+    const pickMoved = async () => { await reset(); grip(a).focus(); await click(grip(a)); await key(grip(a), "ArrowDown"); await key(grip(a), "ArrowDown"); NET.sent.length = 0; run(`__toasts.length = 0`); };
+    const now = async () => ({ posts: posts().length, server: (await order()).slice(0, 3), dialog: run(`drawerShown()`), held: run(`RANK.list && RANK.list.held`), toasts: toasts() });
+    const clicked = async el => { await mouse(el()); await idle(); const x = await now(); await run(`closeDrawer(true)`); await idle(); return x; };
+    // a dialog opened from a plain cell and closed leaves the page itself taking the focus of clicks (dialog.js dlgBack)
+    await reset(); await mouse(cell(c)); await idle(); await key($("#drawer"), "Escape"); await idle();
+    r.main = $("#main").getAttribute("tabindex");
+    await pickMoved(); r.cell = await clicked(() => cell(c));
+    await pickMoved(); r.name = await clicked(() => $("#setupList").querySelector(`[data-setup-open="${c}"]`));
+    await pickMoved(); r.add = await clicked(() => $("#setupMain").querySelector(".pg-actions [data-setup-new]"));
+    // a plain place that opens nothing, and the page's heading: the rule stays held, and Escape still puts it back
+    for (const [k, el] of [["blank", () => $("#setupMain").querySelector("p.note")], ["heading", () => $("#pg-h1")]]) {
+      await pickMoved(); await mouse(el()); await idle(); r[k] = { ...await now(), at: document.activeElement.id };
+      await key(document.activeElement, "Escape"); await idle(); r[k + "Escape"] = { held: run(`RANK.list.held`), ids: shown().slice(0, 3), posts: posts().length };
+    }
+    // a button off the list's page (a message's), the Setup menu and the side menu: nothing is saved
+    const off = new Node("button"); off.id = "tst-off"; $("#toast").appendChild(off);
+    await pickMoved(); await mouse(off); await idle(); r.message = await now(); off.remove();
+    await pickMoved(); await mouse($("#main").querySelector('.setup-nav [data-setup-kind="doc_types"]')); await idle(); r.section = { ...await now(), kind: run(`state.setup.kind`) };
+    await pickMoved(); const item = $("#nav").querySelectorAll("a[data-menu]")[0]; await mouse(item); await idle(); r.menu = { ...await now(), links: $("#nav").querySelectorAll("a[data-menu]").length };
+    // a control of the list that opens nothing drops it, as leaving the grip by keyboard does
+    await pickMoved(); await mouse($("#setupMain").querySelector("[data-setup-stopped]")); await idle(); r.control = await now();
+    return { ...r, ids: { a, b, c } };
+  });
+
   await setOrder(FX.ORDER);
   out.unheard = unheard;
   process.stdout.write("@@OUT " + JSON.stringify(out) + "\n");
@@ -833,7 +875,7 @@ def soften(v):
 
 
 o = soften(o)
-for k in ("drawn", "others", "tryBox", "keys", "escape", "leaving", "search", "drag", "refused", "unsure", "elsewhere", "covered"):
+for k in ("drawn", "others", "tryBox", "keys", "escape", "leaving", "search", "drag", "refused", "unsure", "elsewhere", "covered", "pointer"):
     if o[k].get("error"):
         print(f"     {k}: {o[k]['error']}")
 
@@ -906,7 +948,7 @@ check("Escape puts a picked-up rule back where it was, sends nothing and does no
       e["ids"] == [A, B, C] and e["said"] == "Cancelled, back where it was." and e["pressed"] == "false" and e["posts"] == 0 and e["closed"] == 0 and e["prevented"] is True and e["focus"] == e["grip"] and e["later"] == 1, e)
 lv = o["leaving"]
 check("leaving the grip for another control drops it and keeps the focus there; a blur with nowhere to go doesn't",
-      lv["noTarget"] == {"posts": 0, "pressed": "true"} and lv["blur"]["posts"] == 1 and lv["blur"]["server"] == [HID, A, B] and lv["blur"]["focus"] == lv["blur"]["was"] != "", lv)
+      lv["noTarget"] == {"posts": 0, "pressed": "true"} and lv["blur"]["posts"] == 1 and lv["blur"]["server"] == [HID, A, B] and lv["blur"]["stayed"] is True, lv)
 check("Tab drops it, lets the focus move on, and doesn't draw the rows again under it",
       lv["tab"] == {"posts": 1, "server": [HID, A, B], "prevented": False} and lv["tabNoRedraw"] is True, (lv["tab"], lv["tabNoRedraw"]))
 check("opening another page with a rule picked up saves nothing, and the list comes back as it was", lv["left"] == {"posts": 0, "on": False} and lv["back"] == {"ids": [A, B, C], "pressed": 0}, lv)
@@ -989,6 +1031,29 @@ check("the same list drawn again under a moved rule says the move wasn't saved; 
       cv["redrawn"] == {**quietly, "dialog": False, "posts": 0} and cv["redrawnStill"]["toasts"] == [] and cv["redrawnStill"]["held"] is None
       and cv["afterEscape"]["toasts"] == [], (cv["redrawn"], cv["redrawnStill"], cv["afterEscape"]))
 check("another Setup section drops a picked-up rule silently, also once its list is opened again", cv["section"] == {**quietly, "dialog": False, "toasts": []}, cv["section"])
+# ---------- review fixes, round 2 ----------
+check("a refused move, and one never answered, keep the focus on the rule's grip once the list is read again",
+      rf.get("focus") == rf.get("mine") and u.get("lostFocus", [0, 1])[0] == u.get("lostFocus", [0, 1])[1], (rf.get("focus"), rf.get("mine"), u.get("lostFocus")))
+check("...and so does the section drawn again while a move was saved, once it is read again",
+      el["againFocus"].get("redrawn") is True and el["againFocus"]["at"] == el["againFocus"]["want"], el["againFocus"])
+pt = o["pointer"]
+UNSAVED = [A, HID, B]
+dropped = {"posts": 0, "server": UNSAVED, "dialog": True, "held": None, "toasts": [GONE]}
+check("with a dialog once closed, a click on a plain cell moves the focus to the page itself: the move isn't saved, the dialog opens with the rule back, and that is said",
+      pt["main"] == "-1" and pt["cell"] == dropped, (pt["main"], pt["cell"]))
+check("...so does a click on a rule's name", pt["name"] == dropped, pt["name"])
+check("...and on Add, which opens a dialog over the list too", pt["add"] == dropped, pt["add"])
+still = {"posts": 0, "server": UNSAVED, "dialog": False, "toasts": []}
+for place, words in (("blank", "a click on a plain place of the page"), ("heading", "a click on the page's heading")):
+    check(f"{words} saves nothing and keeps the rule held; Escape then puts it back",
+          {k: pt[place].get(k) for k in still} == still and pt[place]["held"] == (pt.get("ids") or {}).get("a") and pt[place + "Escape"] == {"held": None, "ids": SAVED_ORDER, "posts": 0},
+          (pt[place], pt[place + "Escape"]))
+check("a message's button saves nothing", {k: pt["message"].get(k) for k in still} == still, pt["message"])
+check("another section picked in Setup's menu, and an item of the side menu, save nothing: a rule picked up is never saved by opening another page",
+      pt["section"]["posts"] == 0 and pt["section"]["server"] == UNSAVED and pt["section"]["kind"] == "doc_types" and pt["menu"]["links"] > 0 and pt["menu"]["posts"] == 0 and pt["menu"]["server"] == UNSAVED,
+      (pt["section"], pt["menu"]))
+check("a control of the list that opens nothing over it still drops the rule, which is saved", pt["control"]["posts"] == 1 and pt["control"]["server"] == [HID, B, A], pt["control"])
+
 check("no failure went unheard", o["unheard"] == [], o["unheard"])
 
 if failed:

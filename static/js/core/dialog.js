@@ -84,6 +84,8 @@ function dlgBack(el, sel) {
   to?.focus?.({ preventScroll: true });
   DLG.want = sel ? { sel, at: Date.now() } : null;
 }
+// Nothing real has the focus: nothing was given it, or what had it has been drawn over.
+const focusLost = () => { const a = document.activeElement; return !a || a === document.body || a.isConnected === false; };
 function dlgRestore() {
   const w = DLG.want; DLG.want = null;
   if (!w || Date.now() - w.at > 1500) return;

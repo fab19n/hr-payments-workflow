@@ -224,14 +224,20 @@ function rqSetsHtml(d, t) {
   const only = hs.length === 1 && hs[0].from_month === "0000-00" && !hs[0].to_month;
   return `<b>Earlier sets for ${esc(t.label)}</b>${at.follows_other ? `<div>This type has no documents set of its own from ${esc(monthName(d.month))}, so it needs what Other needs.</div>` : ""}${only ? `<div>No earlier sets: this set has been in force from the start.</div>` : ""}${hs.length ? hs.map(line).join("") : `<div class="muted">No set of its own is recorded.</div>`}`;
 }
+// The first later month from which another set is in force for a row, or none: as the records have it; for a type to follow all companies
+// again, as it is once it does. Where that is what Other needs and the same save changes Other too, the records don't say.
+function rqNext(draft, t) {
+  if (!draft?.follows[t.key]) return t.at.changes_from;
+  return t.at.follow_other && (draft.follows.other || draft.edits.other) ? null : t.at.follow_changes_from;
+}
 function rqBodyHtml(d) {
   const S = state.setup, draft = S.reqDraft, cols = rqColumns(d), span = cols.length + 3;
   const rows = rqRows(d).map((t, r) => {
     // the documents its payments are asked for: not a greyed box of SQL Account's for a company Kept here
-    const n = cols.filter(c => !rqNotAsked(d, c.key) && rqTicked(d, draft, t, c.key)).length, open = !!S.reqOpen?.[t.key], later = t.at.later;
+    const n = cols.filter(c => !rqNotAsked(d, c.key) && rqTicked(d, draft, t, c.key)).length, open = !!S.reqOpen?.[t.key], next = rqNext(draft, t);
     return `<tr${isActive(t) ? "" : ` class="rq-stopped"`}><th scope="row" class="rq-type"><div class="rq-th">${icon(rqGlyph(RQ_TYPE_GLYPH, t.key), "rq-tg")}<div><span class="rq-name">${esc(t.label || t.key)}</span>${t.direction === "in" ? ` <span class="pill ok">Money in</span>` : ""}${isActive(t) ? "" : ` <span class="pill grey">Stopped</span>`}<span class="rq-n">${plural(n, "document")}</span></div></div></th>
       ${cols.map((c, i) => rqBoxHtml(d, draft, t, c, r, i)).join("")}
-      <td class="rq-since"><span>${esc(draft?.follows[t.key] ? "Follows all companies" : rqSince(t.at))}</span>${later.length || t.at.returns?.length ? `<span class="note">Changes from ${esc(monthName([...later.map(x => x.from_month), ...(t.at.returns || [])].sort()[0]))}</span>` : ""}<button type="button" class="link rq-act" id="rq-h-${r}" data-rq-type="${esc(t.key)}" data-rq-hist="1" aria-expanded="${open}" aria-label="${esc(`Earlier sets for ${t.label}`)}"><span class="rq-chev" aria-hidden="true">${icon("chevronRight")}</span>Earlier sets</button></td>
+      <td class="rq-since"><span>${esc(draft?.follows[t.key] ? "Follows all companies" : rqSince(t.at))}</span>${next ? `<span class="note">Changes from ${esc(monthName(next))}</span>` : ""}<button type="button" class="link rq-act" id="rq-h-${r}" data-rq-type="${esc(t.key)}" data-rq-hist="1" aria-expanded="${open}" aria-label="${esc(`Earlier sets for ${t.label}`)}"><span class="rq-chev" aria-hidden="true">${icon("chevronRight")}</span>Earlier sets</button></td>
       <td class="rq-for">${rqForHtml(d, draft, t, r)}</td></tr>${open ? `<tr class="rq-hist"><td colspan="${span}"><div class="rq-hist-in">${rqSetsHtml(d, t)}</div></td></tr>` : ""}`;
   }).join("");
   return rows || `<tr><td colspan="${span}" class="empty">No payment types yet.</td></tr>`;
@@ -418,6 +424,19 @@ function rqMayLeave() {
     .then(yes => { if (yes) rqDrop(); return yes; }).finally(() => { RQ.leaving = null; });
   return RQ.leaving;
 }
+// What has the focus on the grid, by its id, or "".
+const rqFocusAt = () => { const id = document.activeElement?.id || ""; return /^rq-/.test(id) ? id : ""; };
+// Runs draw, which reads and draws the grid again and so replaces what had the focus there: it goes back to the same box or button, else to
+// Save. from: where it was before, for a browser that takes the focus off a button as it is turned off. It is never taken from what has it.
+async function rqKeepFocus(from, draw) {
+  const on = rqFocusAt() || from;
+  const ok = await draw();
+  if (on && rqOnPage() && focusLost()) {
+    const el = document.getElementById(on);
+    (el && !el.disabled ? el : $("#rq-save"))?.focus?.({ preventScroll: true });
+  }
+  return ok;
+}
 // For or the month was picked: another company's or month's grid, asking first when something isn't saved. Boxes never go over to it.
 async function rqPick(el) {
   const S = state.setup, d = S.req, month = el.id === "rq-month";
@@ -428,9 +447,7 @@ async function rqPick(el) {
   if (!rqOnPage()) return;
   rqDrop();
   if (month) S.reqMonth = value; else S.reqScope = value === "all" ? null : +value;
-  await render();
-  const at = document.activeElement;
-  if (rqOnPage() && (!at || at === document.body || at.isConnected === false)) $("#" + el.id)?.focus?.({ preventScroll: true });
+  await rqKeepFocus(el.id, () => render());
 }
 
 /* ---- saving ---- */
@@ -441,14 +458,14 @@ async function rqSave() {
   const draft = S.reqDraft;
   const stop = rqFiled(d) ? rqFiledText(d) : !draft || !rqEdited(draft).length ? "Nothing changes: these are the documents already required from that month." : "";
   if (stop) { S.reqMsg = [stop]; S.reqResult = ""; return rqPaint(); }
-  const body = rqBody(d, draft), reason = draft.reason.trim(), month = d.month;
+  const body = rqBody(d, draft), reason = draft.reason.trim(), month = d.month, from = rqFocusAt();  // before Save is turned off
   if (reason) body.reason = reason;
   S.reqSaving = true; S.reqMsg = []; S.reqResult = ""; S.reqImpact = null;
   clearTimeout(RQ.timer); pageDrop("reqImpact");
   rqPaint();
   let r;
   try { r = await api(RQ_PATH, { json: body }); }
-  catch (e) { S.reqSaving = false; return rqRefused(e, draft); }
+  catch (e) { S.reqSaving = false; return rqRefused(e, draft, from); }
   S.reqSaving = false;
   const mine = S.reqDraft === draft, said = reqAffected(r.affected);
   if (mine) S.reqDraft = null;  // before the reading back, so the grid read back shows nothing as not saved
@@ -459,19 +476,19 @@ async function rqSave() {
   }
   S.reqResult = said;  // said on the grid too, also when it was left and opened again meanwhile
   toast(`Saved from ${monthName(month)}`);
-  return afterSaved(o => render(o));
+  return afterSaved(o => rqKeepFocus(from, () => render(o)));
 }
-async function rqRefused(e, draft) {
+async function rqRefused(e, draft, from) {
   const S = state.setup, words = e.unsure ? changeError(e) : /nothing was saved/i.test(e.message) ? e.message : `${e.message} Nothing was saved.`;
   const elsewhere = () => toast(e.unsure ? `Required documents: ${words}` : `Required documents wasn't saved: ${e.message}`, true);
   if (!rqOnPage()) return elsewhere();
-  if (S.reqDraft !== draft) { elsewhere(); rqPaint(); return e.unsure ? render({ unsure: true }) : null; }  // left and come back: this grid is another
+  if (S.reqDraft !== draft) { elsewhere(); rqPaint(); return e.unsure ? rqKeepFocus("", () => render({ unsure: true })) : null; }  // left and come back: this grid is another
   // Leave while saving? may be up over this grid. What is written on the grid goes with it if you choose Leave, so it is then said in a message.
   let told = false;
   RQ.leaving?.then(left => { if (left && !told) elsewhere(); });
   S.reqMsg = [words];
   rqPaint();
-  if (!(await render(e.unsure ? { unsure: true } : undefined))) { told = true; toast(`Required documents: ${words}`, true); }  // the page shows why it can't be read
+  if (!(await rqKeepFocus(from, () => render(e.unsure ? { unsure: true } : undefined)))) { told = true; toast(`Required documents: ${words}`, true); }  // the page shows why it can't be read
 }
 
 document.addEventListener("change", ev => {

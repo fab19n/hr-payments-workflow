@@ -3,9 +3,10 @@
    A list the server calls ordered (spec.ordered: the payment type guesses and the filing words) tries its rules in order, and the first
    that matches wins. Its rows show their place in that order (every rule counted, stopped ones too: the Order column) and a Move grip.
    The grip is dragged, or pressed (click, Enter or Space) to pick the rule up, moved with Up and Down, and pressed again to drop it;
-   Tab or leaving it drops it too, Escape puts it back. Only a drop sends anything: the whole new order, with the order the list showed,
-   which the server saves as each rule's Order field, or refuses when another change came first. While one is being saved no other move
-   starts. Nothing says it was saved before the server has said so; with no clear answer the list is read again.
+   Tab drops it too, as does moving to another control of the list's page that opens nothing over it (rankDropsTo); Escape puts it back.
+   Only a drop sends anything: the whole new order, with the order the list showed, which the server saves as each rule's Order field, or
+   refuses when another change came first. While one is being saved no other move starts. Nothing says it was saved before the server has
+   said so; with no clear answer the list is read again.
    Try a voucher description (spec.tried: the payment type guesses) asks the server which rule matches the text typed, so it answers by
    the very matching that adds SQL vouchers: no rule is matched here. It answers for the saved order only.
    Not sortable and not cut into pages of 25: a place in the order means nothing in another order, and a rule is moved among them all. */
@@ -63,10 +64,23 @@ function rankRedrawing(L) {
   const help = $("#rank-help");
   if (help) help.textContent = rankHelp(L);
 }
+// The grip or the rule's name that has the focus, as a way to find it again once the rows are drawn again; else null.
+function rankSpot() {
+  const d = document.activeElement?.dataset;
+  return d?.grip ? `[data-grip="${+d.grip}"]` : d?.setupOpen ? `[data-setup-open="${+d.setupOpen}"]` : null;
+}
+// Runs draw, which reads the list of this kind again (an order refused or not answered, or its section drawn again while it was saved) and
+// so replaces the grip or name that had the focus: it goes back to its twin, unless something else has the focus by then.
+async function rankKeepFocus(kind, draw) {
+  const on = rankSpot();
+  const ok = await draw();
+  if (on && focusLost() && state.view === "setup" && state.setup.kind === kind) $("#setupList")?.querySelector(on)?.focus?.({ preventScroll: true });
+  return ok;
+}
 // Draws the rows again. focus: where the focus goes (a grip being moved keeps it); without one it stays on the same grip or name if it
 // was on one, and is left alone anywhere else.
 function rankRedraw(L, focus, still = true) {
-  const a = document.activeElement, was = a?.dataset?.grip ? `[data-grip="${+a.dataset.grip}"]` : a?.dataset?.setupOpen ? `[data-setup-open="${+a.dataset.setupOpen}"]` : null;
+  const was = rankSpot();
   L.painting = true;  // the grip that has the focus is replaced: that is not leaving it
   try {
     LIST_REDRAW[L.id]?.();
@@ -133,13 +147,14 @@ async function rankSave(L, moved, ids) {
   if (failed) return rankNotSaved(L, failed);
   if (!rankOn(L)) toast(`The new order is saved. ${words}`);  // the list that would say so is no longer on show
   if (state.view !== "setup" || state.setup.kind !== L.kind) return;  // nothing on show holds this order: nothing to read back or draw again
-  return afterSaved(savedPagePart(() => rankOn(L), async () => {
+  const readBack = savedPagePart(() => rankOn(L), async () => {
     L.rows = r.rows; L.saved = r.rows.map(x => x.id); L.flash = moved;
     rankRedraw(L);
     L.flash = null;  // it fades once: a later search doesn't light it again
     rankSay(words);
     tryRun();
-  }));
+  });
+  return afterSaved(opts => rankKeepFocus(L.kind, () => readBack(opts)));
 }
 // Refused: nothing was changed. No clear answer: it isn't known whether it was saved. Either way the list, if it is still the one on show,
 // is read again, so it shows the order the records have.
@@ -148,7 +163,7 @@ function rankNotSaved(L, e) {
   const now = RANK.list;
   if (!rankOn(now) || now.kind !== L.kind) return;
   rankSay(e.unsure ? "It isn't known whether the new order was saved." : "The new order wasn't saved.");
-  return render(e.unsure ? { unsure: true } : undefined);
+  return rankKeepFocus(L.kind, () => render(e.unsure ? { unsure: true } : undefined));
 }
 
 /* The drag. boxes: the rows on show, in order, [{id, top, height}], the dragged one among them. It goes before the first other row whose
@@ -284,6 +299,13 @@ function tryRun() {
   });
 }
 
+// Whether the focus going from the held rule's grip to `to` drops the rule: only to another control of the list's own page that leaves
+// the list on show and uncovered. Not to a place that only takes the focus of a click (#main, a heading: no control), nor to what is off
+// the list's page (the side menu, the top bar, a message: opening another page never saves a move), nor to a button that opens a dialog
+// over the list (a rule's name, Add: the rule goes back as the dialog arrives, rankCovered, and that is said). Nor to nowhere (null).
+const RANK_CONTROL = 'button, a[href], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])';
+const rankDropsTo = (L, to) => !!to && L.box.contains(to) && to.closest(RANK_CONTROL) === to && to.getAttribute("aria-haspopup") !== "dialog";
+
 // The page's own listeners.
 document.addEventListener("click", ev => { if (RANK.quiet && ev.target?.closest?.("#setupList")) { ev.preventDefault(); ev.stopPropagation(); } }, true);
 document.addEventListener("click", async ev => {
@@ -302,7 +324,7 @@ document.addEventListener("keydown", ev => {
 });
 document.addEventListener("focusout", ev => {
   const L = RANK.list;
-  if (!L || L.held == null || L.painting || RANK.press?.dragging || !ev.relatedTarget || +ev.target?.dataset?.grip !== L.held || !rankOn(L)) return;
+  if (!L || L.held == null || L.painting || RANK.press?.dragging || +ev.target?.dataset?.grip !== L.held || !rankOn(L) || !rankDropsTo(L, ev.relatedTarget)) return;
   Promise.resolve(rankDrop(L)).catch(e => toast(e.message, true));
 });
 document.addEventListener("pointerdown", ev => {

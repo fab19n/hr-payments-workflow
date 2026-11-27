@@ -779,6 +779,78 @@ const here = () => ({ view: run(`state.view`), kind: run(`state.setup.kind`), gr
     return { heads, rows, cls, odd: ["constructor", "toString", "__proto__", "tst_x"].map(k => run(`rqGlyph(RQ_DOC_GLYPH, ${JSON.stringify(k)}) + " " + rqGlyph(RQ_TYPE_GLYPH, ${JSON.stringify(k)})`)) };
   });
 
+  /* ======== review fixes, round 2: "Changes from" under In force ======== */
+  await tryit("changesFrom", async () => {
+    const r = {};
+    const line = type => rowOf(type).querySelector(".rq-since .note")?.textContent || "";
+    const since = type => rowOf(type).querySelector(".rq-since span").textContent;
+    await made("tst_nx", "Test next"); await single("tst_nx", ["bank"], null, M[0]); await single("tst_nx", ["invoice"], null, M[2]);
+    await made("tst_nxo", "Test next own"); await single("tst_nxo", ["bank"], null, M[0]); await single("tst_nxo", ["claim"], FX.EXB, M[0]);
+    await single("tst_nxo", null, FX.EXB, M[3]); await single("tst_nxo", ["invoice"], null, M[2]);
+    await open(); r.every = line("tst_nx");
+    await asCompany(FX.EXB); r.follows = [since("tst_nx"), line("tst_nx"), warnings()];
+    r.own = [line("tst_nxo")];
+    await followRow("tst_nxo"); await idle(); r.own.push(since("tst_nxo"), line("tst_nxo"));
+    await followRow("tst_nxo"); await idle(); r.own.push(line("tst_nxo"));
+    run(`rqDrop()`);
+    await single("tst_nx", ["claim"], FX.EXB, M[3]);
+    await asCompany(FX.EXB); r.ownLater = line("tst_nx");
+    // through Other: a company's own Other changes later, then every company's
+    await made("tst_nxv", "Test next via Other");
+    await single("other", ["bank", "claim"], FX.EXB, M[1]);
+    await asCompany(FX.EXB); r.viaOwn = [since("tst_nxv"), line("tst_nxv")];
+    await single("other", ["claim"], null, M[3]);
+    await open(); r.viaEvery = [since("tst_nxv"), line("tst_nxv")];
+    // a type that is to follow all companies again and then needs what Other needs: Other as it is, else nothing is claimed
+    await made("tst_nxf", "Test next follow Other"); await single("tst_nxf", ["approval"], FX.EXB, M[0]);
+    await asCompany(FX.EXB); await followRow("tst_nxf"); await idle(); r.followOther = [line("tst_nxf")];
+    await tick("other", "tst_memo"); await idle(); r.followOther.push(line("tst_nxf"));
+    run(`rqDrop()`);
+    return r;
+  });
+
+  /* ======== review fixes, round 2: the focus after a save, saved or refused ======== */
+  await tryit("focus", async () => {
+    const r = {};
+    await made("tst_foc", "Test focus"); await single("tst_foc", ["bank"], null, M[0]);
+    const where = () => [document.activeElement.id, document.activeElement.isConnected !== false];
+    let flip = 0;
+    const run1 = async (name, start, during, stale = false) => {
+      await single("tst_foc", ++flip % 2 ? ["bank"] : ["bank", "invoice"], null, M[0]);
+      await open(); await tick("tst_foc", "tst_memo"); await idle(); calm();
+      if (stale) await single("tst_foc", ["claim", flip % 2 ? "bank" : "invoice"], null, M[0]);
+      NET.delay = (m, p, b) => m === "POST" && !b.preview ? 250 : 0;
+      focused = null; start();
+      const was = document.activeElement;
+      const saving = submit(); await sleep(60);
+      during();
+      await saving.done; await idle();
+      r[name] = { at: where(), redrawn: !was.isConnected || was === body, msgs: strips("msg").length, ok: strips("ok").length, posts: posts().length };
+      quiet();
+    };
+    const onSave = () => $("#rq-save").focus();
+    await run1("saved", onSave, () => {});
+    await run1("refused", onSave, () => {}, true);
+    // as a browser may: the focus leaves a button that is turned off
+    await run1("dropped", onSave, () => { focused = null; });
+    await run1("droppedRefused", onSave, () => { focused = null; }, true);
+    await run1("reason", () => $("#rq-reason").focus(), () => {});
+    await run1("moved", onSave, () => $("#rq-body").querySelector("[data-rq-hist]").focus());
+    r.hist = $("#rq-body").querySelector("[data-rq-hist]").id;
+    await run1("away", onSave, () => $("#prevMonth").focus());
+    await run1("nowhere", () => {}, () => {});
+    // an answer that never comes, on a grid left and opened again meanwhile: the grid is read again, and the focus there kept
+    await open(); await tick("tst_foc", "tst_memo"); await idle(); calm();
+    NET.delay = (m, p, b) => m === "POST" && !b.preview ? 500 : 0; NET.fail = (m, p, b) => m === "POST" && b && !b.preview ? "lost" : null;
+    const saving = submit(); await sleep(40); answer(true); await run(`go("overview")`); await sleep(20);
+    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: ${JSON.stringify(M[0])}, sub: "required", id: null, params: {} }, { fresh: true })`);
+    box("tst_foc", "bank").focus(); const before = [document.activeElement.id, document.activeElement];
+    await saving.done; await idle();
+    r.again = { at: where(), was: before[0], redrawn: !before[1].isConnected };
+    quiet();
+    return r;
+  });
+
   /* ======== review fixes: a save refused, or not answered, while Leave while saving? is up ======== */
   await tryit("leaveWhile", async () => {
     const r = {};
@@ -1072,6 +1144,31 @@ holds("...choosing Stay here keeps it on the grid, with no message besides",
 holds("...with the app stopped it is told once, and one that was saved is told as saved, once",
       lambda: len(lw["down"]["after"]) == 1 and "isn't known whether it was saved" in lw["down"]["after"][0] and lw["saved"]["after"] == [f"Saved from {MONTH(M0)}"]
       and lw["saved"]["view"] == "overview", (lw["down"], lw["saved"]))
+
+# ---------- review fixes, round 2 ----------
+cf = o["changesFrom"]
+FROM = lambda m: f"Changes from {MONTH(m)}"  # noqa: E731
+holds("a company that follows every company shows, under In force, the later month every company's set changes, with nothing ticked",
+      lambda: cf["every"] == FROM(M2) and cf["follows"] == [f"Since {MONTH(M0)}", FROM(M2), []], (cf["every"], cf["follows"]))
+holds("...also before its own set that starts later still", lambda: cf["ownLater"] == FROM(M2), cf["ownLater"])
+holds("a company's own set shows when the records change it; to follow all companies again, when it changes once it does",
+      lambda: cf["own"] == [FROM(M3), "Follows all companies", FROM(M2), FROM(M3)], cf["own"])
+holds("a type that needs what Other needs shows when Other changes, for a company and for every company",
+      lambda: cf["viaOwn"] == ["Same as Other", FROM(M1)] and cf["viaEvery"] == ["Same as Other", FROM(M3)], (cf["viaOwn"], cf["viaEvery"]))
+holds("...one to follow all companies again that then needs it too; with Other changed in the same save, no month is claimed",
+      lambda: cf["followOther"] == [FROM(M1), ""], cf["followOther"])
+fk = o["focus"]
+holds("after a save the focus is on the new Save button, not lost to the page",
+      lambda: fk["saved"] == {"at": ["rq-save", True], "redrawn": True, "msgs": 0, "ok": 1, "posts": 1}, fk["saved"])
+holds("...and after a refused one", lambda: fk["refused"]["at"] == ["rq-save", True] and fk["refused"]["redrawn"] and fk["refused"]["msgs"] >= 1 and fk["refused"]["ok"] == 0, fk["refused"])
+holds("...also where the browser took the focus off Save as it was turned off, saved or refused",
+      lambda: fk["dropped"]["at"] == ["rq-save", True] == fk["droppedRefused"]["at"] and fk["dropped"]["ok"] == 1 and fk["droppedRefused"]["msgs"] >= 1, (fk["dropped"], fk["droppedRefused"]))
+holds("...Enter in the reason box keeps it there, and a button moved to while it saves keeps it",
+      lambda: fk["reason"]["at"] == ["rq-reason", True] and fk["reason"]["redrawn"] and fk["moved"]["at"] == [fk["hist"], True] and fk["moved"]["redrawn"], (fk["reason"], fk["moved"]))
+holds("...it is never taken from something else, nor given where the grid didn't have it",
+      lambda: fk["away"]["at"] == ["prevMonth", True] and fk["nowhere"]["at"] == ["", True], (fk["away"], fk["nowhere"]))
+holds("a grid read again for an answer that never came, after it was left and opened again, keeps the focus on its box",
+      lambda: fk["again"]["redrawn"] and fk["again"]["was"].startswith("rq-c-") and fk["again"]["at"] == [fk["again"]["was"], True], fk["again"])
 
 # ---------- For and the month ----------
 p = o["pickers"]
