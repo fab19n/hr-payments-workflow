@@ -288,14 +288,14 @@ process.on("unhandledRejection", e => unheard.push(String(e && e.stack || e).sli
 const waiting = new Map(); let askN = 0;
 readline.createInterface({ input: process.stdin }).on("line", l => { const m = JSON.parse(l); const f = waiting.get(m.id); waiting.delete(m.id); f(m); });
 const server = (method, path, body) => new Promise(res => { const id = ++askN; waiting.set(id, res); process.stdout.write("@@REQ " + JSON.stringify({ id, method, path, body }) + "\n"); });
-// NET.delay[path]: ms before the answer; NET.fail[path]: "net" (never reaches the server), "lost" (the server does it, the answer is lost);
-// NET.down: no read or write reaches it
-const NET = { delay: {}, fail: {}, down: false, sent: [] };
+// NET.gates[path]: the answers held back, one for each request in turn, until the probe lets each go (hold); NET.fail[path]: "net" (never
+// reaches the server), "lost" (the server does it, the answer is lost); NET.down: no read or write reaches it
+const NET = { gates: {}, fail: {}, down: false, sent: [] };
 async function fetch(path, init = {}) {
   const method = init.method || "GET", body = init.body ? JSON.parse(init.body) : null;
   NET.sent.push([method, path, body]);
-  const how = NET.down ? "net" : NET.fail[path], ms = NET.delay[path];
-  const wait = ms ? sleep(Array.isArray(ms) ? ms.shift() || 0 : ms) : null;
+  const how = NET.down ? "net" : NET.fail[path];
+  const wait = NET.gates[path]?.shift() || null;
   if (how === "net") { await wait; throw new TypeError("Failed to fetch"); }
   const r = await server(method, path, body);
   await wait;
@@ -424,6 +424,14 @@ const said = () => $("#rank-say") ? $("#rank-say").textContent : null;
 const toasts = () => run(`__toasts.map(t => t.msg)`);
 const posts = () => NET.sent.filter(x => /\/order$/.test(x[1])).map(x => x[2]);
 const focusId = () => document.activeElement.id || "";
+// An answer held back is held until the probe lets it go, however slow the PC is: a state "while it is on its way" never rests on a time.
+// hold(path) holds the answer to the next request of that path and returns what lets it go; until(what) waits for what() to be so;
+// served: every request sent has been answered by the server (a held answer is still not given to the page).
+const hold = path => { let go; (NET.gates[path] ||= []).push(new Promise(res => { go = res; })); return go; };
+const until = async (what, say) => { for (let i = 0; i < 3000; i++) { if (what()) return; await sleep(5); } throw new Error("never " + say); };
+const served = () => until(() => !waiting.size, "answered by the server");
+// the text has been sent to be tried n times since NET.sent was last emptied, and the server has answered
+const triedFor = async (text, n = 1) => { await until(() => NET.sent.filter(x => /try$/.test(x[1]) && x[2].text === text).length >= n, "sent to be tried: " + text); await served(); };
 const click = async el => { if (el.tagName === "BUTTON") el.focus(); const ev = dispatch(el, { type: "click", button: 0 }); await sleep(0); return ev; };
 const key = async (el, k) => { const ev = dispatch(el, { type: "keydown", key: k }); await sleep(0); return ev; };
 const pointer = (el, type, y, buttons = 1, id = 1) => dispatch(el, { type, clientY: y, clientX: 10, button: 0, buttons, pointerId: id });
@@ -431,7 +439,7 @@ const midOf = i => 200 + i * 40 + 20;
 const order = async () => (await server("GET", "/api/setup/guess_words", null)).body.rows.map(r => r.id);
 const setOrder = async ids => server("POST", "/api/setup/guess_words/order", { ids, was: await order() });
 async function open(kind = "guess_words", entity = FX.EXA) {
-  Object.assign(NET, { delay: {}, fail: {}, down: false });
+  Object.assign(NET, { gates: {}, fail: {}, down: false });
   await run(`closeDrawer(true)`);
   await run(`navigate({ view: "setup", entity: ${entity}, month: "2026-11", sub: ${JSON.stringify(kind)}, id: null, params: {} }, { fresh: true })`);
   await idle();
@@ -492,20 +500,21 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     for (const t of ["z", "ze", "zeb", "zebra hall"]) { $("#mt-try").value = t; dispatch($("#mt-try"), { type: "input" }); await sleep(30); }
     await sleep(400); await idle(); r.debounced = NET.sent.filter(x => /try$/.test(x[1])).map(x => x[2].text); r.hall = result();
     // an older, slower answer never replaces a newer one; while the newer is on its way the old one is dimmed, with no row marked
-    NET.delay["/api/setup/guess_words/try"] = [600, 20];
-    $("#mt-try").value = "zebraword"; dispatch($("#mt-try"), { type: "input" }); await sleep(320);
-    $("#mt-try").value = "filler01word"; dispatch($("#mt-try"), { type: "input" }); r.stale = { result: result(), marked: marked() };
-    await sleep(900); await idle(); r.latest = result(); r.latestMarked = marked(); NET.delay = {};
+    const TRY = "/api/setup/guess_words/try", put = text => { $("#mt-try").value = text; dispatch($("#mt-try"), { type: "input" }); };
+    NET.sent.length = 0; const older = hold(TRY);
+    put("zebraword"); await triedFor("zebraword");
+    put("filler01word"); r.stale = { result: result(), marked: marked() };
+    await triedFor("filler01word"); await idle(); older(); await idle(); r.latest = result(); r.latestMarked = marked();
     // an older answer that comes after more was typed, before the newer text has been asked, is not shown
-    NET.delay["/api/setup/guess_words/try"] = [120];
-    $("#mt-try").value = "zebraword"; dispatch($("#mt-try"), { type: "input" }); await sleep(300);
-    $("#mt-try").value = "filler02word"; dispatch($("#mt-try"), { type: "input" }); await sleep(130); r.between = result();
-    await sleep(400); await idle(); NET.delay = {}; r.betweenAfter = result();
+    NET.sent.length = 0; const early = hold(TRY);
+    put("zebraword"); await triedFor("zebraword");
+    put("filler02word"); early(); await sleep(0); r.between = result(); r.betweenAsked = NET.sent.filter(x => x[2]?.text === "filler02word").length;
+    await triedFor("filler02word"); await idle(); r.betweenAfter = result();
     // the same text tried again after the rules changed: the first answer, coming late, never replaces the newer one
-    NET.delay["/api/setup/guess_words/try"] = [700, 20];
-    $("#mt-try").value = "zebraword again"; dispatch($("#mt-try"), { type: "input" }); await sleep(320);
+    NET.sent.length = 0; const first = hold(TRY);
+    put("zebraword again"); await triedFor("zebraword again");
     await server("POST", `/api/setup/guess_words/${FX.ORDER[0]}/stop`, { reason: "For a moment" });
-    run(`tryRun()`); await sleep(900); await idle(); NET.delay = {}; r.changed = result();
+    run(`tryRun()`); await triedFor("zebraword again", 2); await idle(); first(); await idle(); r.changed = result();
     await server("POST", `/api/setup/guess_words/${FX.ORDER[0]}/use`, { reason: "Used again" });
     $("#mt-try").value = "filler01word"; dispatch($("#mt-try"), { type: "input" }); await sleep(400); await idle();
     // the list drawn again (a save, a stop) tries the same text on it
@@ -513,11 +522,11 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     // no clear answer: it says it couldn't be tried
     NET.fail["/api/setup/guess_words/try"] = "net"; await type("zebraword again"); r.broken = result(); r.brokenToasts = toasts(); NET.fail = {};
     // an answer that comes after another section was opened writes nothing and says nothing
-    NET.delay["/api/setup/guess_words/try"] = 500;
-    $("#mt-try").value = "zebraword late"; dispatch($("#mt-try"), { type: "input" }); await sleep(320);
+    NET.sent.length = 0; const late = hold(TRY);
+    put("zebraword late"); await triedFor("zebraword late");
     await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "hint_words", id: null, params: {} }, { fresh: true })`);
-    run(`__toasts.length = 0`); const before = $("#main").innerHTML; await sleep(500); await idle();
-    r.left = { same: $("#main").innerHTML === before, box: !!$("#mt-try"), toasts: toasts() }; NET.delay = {};
+    await idle(); run(`__toasts.length = 0`); const before = $("#main").innerHTML; late(); await idle();
+    r.left = { same: $("#main").innerHTML === before, box: !!$("#mt-try"), toasts: toasts() };
     await open(); r.back = $("#mt-try").value;
     await run(`navigate({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} }, { fresh: true })`); await idle();
     await open(); r.gone = $("#mt-try").value;
@@ -537,15 +546,15 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     await key(grip(a), "ArrowDown"); r.moved = { said: said(), ids: shown().slice(0, 3), posts: posts().length };
     await type("zebraword", 50); r.heldTry = { result: result(), marked: marked() };
     grip(a).focus();
-    NET.delay["/api/setup/guess_words/order"] = 400;
-    await click(grip(a)); await sleep(60);
+    const answerDrop = hold("/api/setup/guess_words/order");
+    await click(grip(a)); await served();
     r.saving = { said: said(), off: grips().every(x => x.getAttribute("aria-disabled") === "true"), pressed: grip(a).getAttribute("aria-pressed"), posts: posts().length, result: result() };
     // nothing else can start while it is on its way: no second drop, no other pick up, no drag, no second request
     await click(grip(a)); await click(grip(c)); r.blockedSaid = said(); await key(grip(c), "ArrowDown");
     pointer(grip(b), "pointerdown", midOf(0)); pointer(grip(b), "pointermove", midOf(3)); pointer(grip(b), "pointerup", midOf(3), 0);
     await sleep(60); r.blocked = { posts: posts().length, pressed: grips().map(x => x.getAttribute("aria-pressed")).filter(x => x === "true").length, ids: shown().slice(0, 3) };
     grip(a).focus();
-    await idle(); NET.delay = {};
+    answerDrop(); await idle();
     r.saved = { said: said(), posts: posts(), ids: shown().slice(0, 3), server: (await order()).slice(0, 4), focus: focusId(), off: grips().some(x => x.hasAttribute("aria-disabled")),
       flash: grip(a).closest("tr").classList.contains("rank-flash"), result: result(), marked: marked(), places: places().slice(0, 3), toasts: toasts() };
     run(`LIST_REDRAW["setup-guess_words"]()`); r.flashAfter = grip(a).closest("tr").classList.contains("rank-flash");
@@ -581,8 +590,8 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     const tab = await key(grip(a), "Tab"); const kept = grip(a); await idle();
     r.tab = { posts: posts().length, server: (await order()).slice(0, 3), prevented: tab.defaultPrevented };
     // Tab drops without drawing the rows again at once: the focus is on its way to the next control
-    await reset(); await click(grip(a)); await key(grip(a), "ArrowDown"); NET.delay["/api/setup/guess_words/order"] = 200;
-    const before = grip(a); await key(before, "Tab"); r.tabNoRedraw = before.isConnected && grip(a) === before; await idle(); NET.delay = {};
+    await reset(); await click(grip(a)); await key(grip(a), "ArrowDown"); const answerTab = hold("/api/setup/guess_words/order");
+    const before = grip(a); await key(before, "Tab"); await served(); r.tabNoRedraw = before.isConnected && grip(a) === before; answerTab(); await idle();
     // another page opened while a rule is picked up: nothing is saved
     await reset(); await click(grip(a)); await key(grip(a), "ArrowDown"); NET.sent.length = 0;
     await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await idle();
@@ -642,6 +651,22 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     await reset(); NET.sent.length = 0;
     pointer(grip(b), "pointerdown", midOf(1)); pointer(body, "pointermove", midOf(3) + 5); pointer(body, "pointermove", midOf(1) - 5); pointer(body, "pointermove", midOf(1)); pointer(body, "pointerup", midOf(1), 0); await idle();
     r.backAgain = { posts: posts().length, ids: shown().slice(0, 3) };
+    // review fixes, round 3: there and back across the hidden stopped rule between the first two on show leaves it where it was
+    await reset(); NET.sent.length = 0;
+    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(1) + 5);
+    const away = shown().slice(0, 3);
+    pointer(body, "pointermove", midOf(0) - 5); const home = { ids: shown().slice(0, 3), places: places().slice(0, 3) };
+    pointer(body, "pointerup", midOf(0) - 5, 0); await idle();
+    r.hiddenBack = { away, home, posts: posts().length, said: said(), server: (await order()).slice(0, 4), toasts: toasts() };
+    // ...also by way of further down, and dragged on from there it goes where a drag straight there puts it
+    await reset(); NET.sent.length = 0;
+    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(3) + 5); pointer(body, "pointermove", midOf(0) - 5); pointer(body, "pointermove", midOf(2) + 5);
+    pointer(body, "pointerup", midOf(2) + 5, 0); await idle();
+    r.hiddenOn = (await order()).slice(0, 5);
+    // ...and a rule moved past the hidden one by keyboard, then dragged away and back to where it was picked up, is where it was then
+    await reset(); await click(grip(a)); await key(grip(a), "ArrowDown"); NET.sent.length = 0;
+    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(1) + 5); pointer(body, "pointermove", midOf(0) - 5); pointer(body, "pointerup", midOf(0) - 5, 0); await idle();
+    r.keyThenBack = { posts: posts().length, server: (await order()).slice(0, 3) };
     // Escape during a drag puts it back, and the release after it does nothing
     await reset(); NET.sent.length = 0; run(`__closed = 0`);
     pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); await key(grip(a), "Escape"); await sleep(30);
@@ -663,10 +688,10 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); pointer(body, "pointermove", midOf(3), 0); await idle();
     r.lost = { posts: posts().length, ids: shown().slice(0, 3), cls: body.classList.contains("rank-dragging") };
     // a second drag while the first is being saved doesn't start
-    await reset(); NET.sent.length = 0; NET.delay["/api/setup/guess_words/order"] = 300;
-    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); pointer(body, "pointerup", midOf(2) + 5, 0); await sleep(30);
+    await reset(); NET.sent.length = 0; const answerDrag = hold("/api/setup/guess_words/order");
+    pointer(grip(a), "pointerdown", midOf(0)); pointer(body, "pointermove", midOf(2) + 5); pointer(body, "pointerup", midOf(2) + 5, 0); await served();
     pointer(grip(c), "pointerdown", midOf(2)); pointer(body, "pointermove", midOf(0) - 5); pointer(body, "pointerup", midOf(0) - 5, 0);
-    await idle(); NET.delay = {};
+    answerDrag(); await idle();
     r.twice = { posts: posts().length, server: (await order()).slice(0, 4), shown: shown().slice(0, 3) };
     // the pure rule of where a drag puts a row: hidden rules keep their places while the order on show stays as it is
     const rows = JSON.stringify([1, 2, 3, 4].map(id => ({ id }))), boxes = JSON.stringify([{ id: 1, top: 0, height: 40 }, { id: 3, top: 40, height: 40 }, { id: 4, top: 80, height: 40 }]);
@@ -711,35 +736,35 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     const [a, , b] = FX.ORDER;
     const P = "/api/setup/guess_words/order";
     // answered after another section was opened: nothing of the old list is drawn over it, and a message says it was saved
-    await reset(); NET.delay[P] = 300;
+    await reset(); let go = hold(P);
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await sleep(40); NET.sent.length = 0; await idle(); NET.delay = {};
+    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await served(); NET.sent.length = 0; go(); await idle();
     r.section = { kind: run(`state.setup.kind`), rank: $("#main").innerHTML.includes("rank-table"), types: $("#setupMain").innerHTML.includes('data-setup-new="doc_types"'), toasts: toasts(), server: (await order()).slice(0, 3), reads: NET.sent.filter(x => x[0] === "GET").length };
     // answered after another page was opened: the same
-    await reset(); NET.delay[P] = 300;
+    await reset(); go = hold(P);
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`navigate({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} }, { fresh: true })`); await sleep(40); NET.sent.length = 0; await idle(); NET.delay = {};
+    await run(`navigate({ view: "overview", entity: "all", month: "2026-11", sub: null, id: null, params: {} }, { fresh: true })`); await served(); NET.sent.length = 0; go(); await idle();
     r.page = { view: run(`state.view`), html: $("#main").innerHTML, toasts: toasts(), reads: NET.sent.filter(x => x[0] === "GET").length };
     // the same section asked for again while it is saved, and then it can't be read: it says it was saved, never that nothing was changed
-    await reset(); NET.delay[P] = 300;
+    await reset(); go = hold(P);
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`render()`); await sleep(40); NET.fail["/api/setup/guess_words"] = "net"; await idle(); NET.delay = {}; NET.fail = {};
+    await run(`render()`); await served(); NET.fail["/api/setup/guess_words"] = "net"; go(); await idle(); NET.fail = {};
     r.noRead = { page: $("#main").innerHTML, toasts: toasts(), posts: posts().length };
     // the same section asked for again while it is saved, and read before the save: it is read once more, and shows the saved order
-    await reset(); NET.delay[P] = 300; NET.sent.length = 0;
+    await reset(); go = hold(P); NET.sent.length = 0;
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`render()`); await sleep(40);
+    await run(`render()`); await served();
     grip(b).focus(); const old = grip(b);
     r.mid = { off: grips().every(x => x.getAttribute("aria-disabled") === "true"), read: NET.sent.filter(x => x[0] === "GET" && x[1] === "/api/setup/guess_words").length };
-    await idle(); NET.delay = {};
+    go(); await idle();
     r.againFocus = { at: focusId(), want: `rank-grip-${b}`, redrawn: !old.isConnected };
     r.again = { ids: shown().slice(0, 3), off: grips().some(x => x.hasAttribute("aria-disabled")), read: NET.sent.filter(x => x[0] === "GET" && x[1] === "/api/setup/guess_words").length };
     // refused after another section was opened: only a message, and the page on show isn't read again
-    await reset(); NET.delay[P] = 300; const other = FX.ORDER.slice(0, -1); other.unshift(FX.ORDER[FX.ORDER.length - 1]);
+    await reset(); go = hold(P); const other = FX.ORDER.slice(0, -1); other.unshift(FX.ORDER[FX.ORDER.length - 1]);
     await setOrder(other);
     await click(grip(a)); await key(grip(a), "ArrowDown"); await click(grip(a));
-    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await sleep(40); NET.sent.length = 0;
-    await idle(); NET.delay = {};
+    await run(`navigate({ view: "setup", entity: ${FX.EXA}, month: "2026-11", sub: "doc_types", id: null, params: {} }, { fresh: true })`); await served(); NET.sent.length = 0;
+    go(); await idle();
     r.refusedLeft = { toasts: toasts(), reads: NET.sent.filter(x => x[0] === "GET").length, types: $("#setupMain").innerHTML.includes('data-setup-new="doc_types"') };
     return r;
   });
@@ -770,8 +795,8 @@ const marked = () => ({ rows: rowsOnShow().filter(tr => tr.classList.contains("m
     await reset(); grip(a).focus(); await click(grip(a)); await click(cell(c)); await idle(); r.unmoved = now();
     await run(`closeDrawer(true)`);
     // picked up while the record clicked is still being read: it goes back when the dialog arrives
-    await reset(); NET.delay[`/api/setup/guess_words/${c}`] = 250;
-    await click(cell(c)); await move(); const reading = now(); await sleep(300); await idle(); NET.delay = {};
+    await reset(); const answerRecord = hold(`/api/setup/guess_words/${c}`);
+    await click(cell(c)); await served(); await move(); const reading = now(); answerRecord(); await idle();
     r.arrives = { reading, ...now() };
     await run(`closeDrawer(true)`);
     // a drag a dialog arrives over: it is over, nothing is sent when the button is let go, and the click that raises opens nothing
@@ -914,7 +939,7 @@ check("while a newer text is being tried the older answer is dimmed with no row 
       "stale" in t["stale"]["result"]["cls"] and t["stale"]["marked"] == {"rows": [], "words": []} and "(Filler rule 01)" in t["latest"]["text"] and "stale" not in t["latest"]["cls"]
       and t["latestMarked"]["words"] == ["FILLER01WORD"], (t["stale"], t["latest"]))
 check("an older answer that comes after more was typed, before the newer text is asked, is not shown: the one on show stays, dimmed",
-      "(Filler rule 01)" in t["between"]["text"] and "stale" in t["between"]["cls"] and "(Filler rule 02)" in t["betweenAfter"]["text"], (t["between"], t["betweenAfter"]))
+      "(Filler rule 01)" in t["between"]["text"] and "stale" in t["between"]["cls"] and t["betweenAsked"] == 0 and "(Filler rule 02)" in t["betweenAfter"]["text"], (t["between"], t["betweenAfter"]))
 check("a text tried again after the rules changed keeps the newer answer when the first one comes late", "(Zebra rent)" in t["changed"]["text"], t["changed"])
 check("the list drawn again keeps what was typed and tries it again", t["redrawn"]["value"] == "filler01word" and "(Filler rule 01)" in t["redrawn"]["result"]["text"] and t["redrawn"]["marked"]["words"] == ["FILLER01WORD"], t["redrawn"])
 check("an answer that never comes is said as not tried", t["broken"]["text"] == "The description couldn't be tried. The connection to HR Payments broke." and t["brokenToasts"] == [], t["broken"])
@@ -971,6 +996,11 @@ check("letting go saves the order shown, once; the click the release raises open
 check("a later click on a row still opens its rule", len(g["rowClick"]) == 1 and g["rowClick"][0][0] == "guess_words", g["rowClick"])
 check("a rule dragged up goes before the one it is above", g["up"] == [C, A, HID, B], g["up"])
 check("dragged there and back, nothing is sent", g["backAgain"] == {"posts": 0, "ids": [A, B, C]}, g["backAgain"])
+check("dragged away and back across a hidden stopped rule, the rules are in the order they were picked up in: nothing is sent, and the stopped one keeps its place",
+      g["hiddenBack"] == {"away": [B, A, C], "home": {"ids": [A, B, C], "places": ["1", "3", "4"]}, "posts": 0, "said": f"Dropped at position 1 of {N}, where it was.", "server": [A, HID, B, C], "toasts": []}, g["hiddenBack"])
+check("...dragged on from there, it is saved as a drag straight there would be", g["hiddenOn"] == [HID, B, C, A, D], g["hiddenOn"])
+check("...also after a step by keyboard past the hidden rule: dragged back to where it was picked up, nothing is sent",
+      g["keyThenBack"] == {"posts": 0, "server": [A, HID, B]}, g["keyThenBack"])
 check("Escape during a drag puts it back and sends nothing: the pointer moving on moves nothing, and the click when it is let go opens no rule",
       g["escapedDown"] == [A, B, C] and g["escaped"] == {"posts": 0, "ids": [A, B, C], "closed": 0, "cls": False, "opened": []}, (g["escapedDown"], g["escaped"]))
 check("a rule dropped by a key while the mouse button is still down is saved once, and moving on or letting go changes nothing",

@@ -168,7 +168,8 @@ function rankNotSaved(L, e) {
 
 /* The drag. boxes: the rows on show, in order, [{id, top, height}], the dragged one among them. It goes before the first other row whose
    middle is below the pointer, else after the last one. Rules not on show keep their places, and nothing changes while the order on show
-   stays as it is. */
+   stays as it is. Dragged back to the order on show as it was when the rule was picked up, every rule is back where it was then (rankDragTo):
+   put next to a row on show again, it could be left the other side of a hidden one, and that saved as a move nobody saw. */
 function rankDragOrder(rows, id, boxes, y) {
   const me = rows.find(r => r.id === id), others = boxes.filter(b => b.id !== id);
   if (!me || !others.length) return rows;
@@ -184,8 +185,10 @@ function rankDragTo(L, id, y) {
     const b = tr.getBoundingClientRect();
     return { id: +tr.dataset.setupRow, top: b.top, height: b.height };
   });
-  const rows = rankDragOrder(L.rows, id, boxes, y);
+  let rows = rankDragOrder(L.rows, id, boxes, y);
   if (rows === L.rows) return;
+  const onShow = list => list.filter(rankShown).map(r => r.id).join();
+  if (onShow(rows) === onShow(L.from)) rows = L.from.slice();
   L.rows = rows;
   rankRedraw(L, `[data-grip="${+id}"]`);
 }
